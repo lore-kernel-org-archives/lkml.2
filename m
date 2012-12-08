@@ -1,221 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab2LHBPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:15:24 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:63100 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab2LHBPX (ORCPT
+	id S1757461Ab2LHBRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:17:32 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:37499 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab2LHBRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:15:23 -0500
-X-Greylist: delayed 1396 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 20:15:23 EST
-MIME-Version: 1.0
-In-Reply-To: <20121203075226.GA4065@blaptop>
-References: <1354258489-2703-1-git-send-email-ngupta@vflare.org>
-	<20121130135124.GA22196@blaptop>
-	<BA4DD5DA-0E4F-470E-98F5-DDA937636189@vflare.org>
-	<20121203075226.GA4065@blaptop>
-Date: Fri, 7 Dec 2012 16:45:53 -0800
-Message-ID: <CAPkvG_fRC4xU4wXE=0O_Qtv=C0if4gW_2jSgNp06NpxQ+YQzCA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] zsmalloc: add function to query object size
-From: Nitin Gupta <ngupta@vflare.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg KH <greg@kroah.com>, Jerome Marchand <jmarchan@redhat.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Dec 2012 20:17:30 -0500
+Message-ID: <1354928933.28379.37.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tang Chen <tangchen@cn.fujitsu.com>, Huxinwei <huxinwei@huawei.com>
+Date: Fri, 07 Dec 2012 18:08:53 -0700
+In-Reply-To: <50C1852D.3000104@huawei.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	     <50B5EFE9.3040206@huawei.com>
+	    <1354128096.26955.276.camel@misato.fc.hp.com>
+	   <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
+	   <50BC29C6.6050706@huawei.com>
+	 <1354579848.21585.54.camel@misato.fc.hp.com>  <50C0CA90.7010608@gmail.com>
+	 <1354849065.21116.61.camel@misato.fc.hp.com> <50C1852D.3000104@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 2, 2012 at 11:52 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Sun, Dec 02, 2012 at 11:20:42PM -0800, Nitin Gupta wrote:
->>
->>
->> On Nov 30, 2012, at 5:54 AM, Minchan Kim <minchan.kernel.2@gmail.com> wrote:
->>
->> > On Thu, Nov 29, 2012 at 10:54:48PM -0800, Nitin Gupta wrote:
->> >> Changelog v2 vs v1:
->> >> - None
->> >>
->> >> Adds zs_get_object_size(handle) which provides the size of
->> >> the given object. This is useful since the user (zram etc.)
->> >> now do not have to maintain object sizes separately, saving
->> >> on some metadata size (4b per page).
->> >>
->> >> The object handle encodes <page, offset> pair which currently points
->> >> to the start of the object. Now, the handle implicitly stores the size
->> >> information by pointing to the object's end instead. Since zsmalloc is
->> >> a slab based allocator, the start of the object can be easily determined
->> >> and the difference between the end offset encoded in the handle and the
->> >> start gives us the object size.
->> >>
->> >> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->> > Acked-by: Minchan Kim <minchan@kernel.org>
->> >
->> > I already had a few comment in your previous versoin.
->> > I'm OK although you ignore them because I can make follow up patch about
->> > my nitpick but could you answer below my question?
->> >
->> >> ---
->> >> drivers/staging/zsmalloc/zsmalloc-main.c |  177 +++++++++++++++++++++---------
->> >> drivers/staging/zsmalloc/zsmalloc.h      |    1 +
->> >> 2 files changed, 127 insertions(+), 51 deletions(-)
->> >>
->> >> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
->> >> index 09a9d35..65c9d3b 100644
->> >> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
->> >> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->> >> @@ -112,20 +112,20 @@
->> >> #define MAX_PHYSMEM_BITS 36
->> >> #else /* !CONFIG_HIGHMEM64G */
->> >> /*
->> >> - * If this definition of MAX_PHYSMEM_BITS is used, OBJ_INDEX_BITS will just
->> >> + * If this definition of MAX_PHYSMEM_BITS is used, OFFSET_BITS will just
->> >>  * be PAGE_SHIFT
->> >>  */
->> >> #define MAX_PHYSMEM_BITS BITS_PER_LONG
->> >> #endif
->> >> #endif
->> >> #define _PFN_BITS        (MAX_PHYSMEM_BITS - PAGE_SHIFT)
->> >> -#define OBJ_INDEX_BITS    (BITS_PER_LONG - _PFN_BITS)
->> >> -#define OBJ_INDEX_MASK    ((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
->> >> +#define OFFSET_BITS    (BITS_PER_LONG - _PFN_BITS)
->> >> +#define OFFSET_MASK    ((_AC(1, UL) << OFFSET_BITS) - 1)
->> >>
->> >> #define MAX(a, b) ((a) >= (b) ? (a) : (b))
->> >> /* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
->> >> #define ZS_MIN_ALLOC_SIZE \
->> >> -    MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
->> >> +    MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OFFSET_BITS))
->> >> #define ZS_MAX_ALLOC_SIZE    PAGE_SIZE
->> >>
->> >> /*
->> >> @@ -256,6 +256,11 @@ static int is_last_page(struct page *page)
->> >>    return PagePrivate2(page);
->> >> }
->> >>
->> >> +static unsigned long get_page_index(struct page *page)
->> >> +{
->> >> +    return is_first_page(page) ? 0 : page->index;
->> >> +}
->> >> +
->> >> static void get_zspage_mapping(struct page *page, unsigned int *class_idx,
->> >>                enum fullness_group *fullness)
->> >> {
->> >> @@ -433,39 +438,86 @@ static struct page *get_next_page(struct page *page)
->> >>    return next;
->> >> }
->> >>
->> >> -/* Encode <page, obj_idx> as a single handle value */
->> >> -static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
->> >> +static struct page *get_prev_page(struct page *page)
->> >> {
->> >> -    unsigned long handle;
->> >> +    struct page *prev, *first_page;
->> >>
->> >> -    if (!page) {
->> >> -        BUG_ON(obj_idx);
->> >> -        return NULL;
->> >> -    }
->> >> +    first_page = get_first_page(page);
->> >> +    if (page == first_page)
->> >> +        prev = NULL;
->> >> +    else if (page == (struct page *)first_page->private)
->> >> +        prev = first_page;
->> >> +    else
->> >> +        prev = list_entry(page->lru.prev, struct page, lru);
->> >>
->> >> -    handle = page_to_pfn(page) << OBJ_INDEX_BITS;
->> >> -    handle |= (obj_idx & OBJ_INDEX_MASK);
->> >> +    return prev;
->> >>
->> >> -    return (void *)handle;
->> >> }
->> >>
->> >> -/* Decode <page, obj_idx> pair from the given object handle */
->> >> -static void obj_handle_to_location(unsigned long handle, struct page **page,
->> >> -                unsigned long *obj_idx)
->> >> +static void *encode_ptr(struct page *page, unsigned long offset)
->> >> {
->> >> -    *page = pfn_to_page(handle >> OBJ_INDEX_BITS);
->> >> -    *obj_idx = handle & OBJ_INDEX_MASK;
->> >> +    unsigned long ptr;
->> >> +    ptr = page_to_pfn(page) << OFFSET_BITS;
->> >> +    ptr |= offset & OFFSET_MASK;
->> >> +    return (void *)ptr;
->> >> +}
->> >> +
->> >> +static void decode_ptr(unsigned long ptr, struct page **page,
->> >> +                    unsigned int *offset)
->> >> +{
->> >> +    *page = pfn_to_page(ptr >> OFFSET_BITS);
->> >> +    *offset = ptr & OFFSET_MASK;
->> >> +}
->> >> +
->> >> +static struct page *obj_handle_to_page(unsigned long handle)
->> >> +{
->> >> +    struct page *page;
->> >> +    unsigned int offset;
->> >> +
->> >> +    decode_ptr(handle, &page, &offset);
->> >> +    if (offset < get_page_index(page))
->> >> +        page = get_prev_page(page);
->> >> +
->> >> +    return page;
->> >> +}
->> >> +
->> >> +static unsigned int obj_handle_to_offset(unsigned long handle,
->> >> +                    unsigned int class_size)
->> >> +{
->> >> +    struct page *page;
->> >> +    unsigned int offset;
->> >> +
->> >> +    decode_ptr(handle, &page, &offset);
->> >> +    if (offset < get_page_index(page))
->> >> +        offset = PAGE_SIZE - class_size + get_page_index(page);
->> >> +    else
->> >> +        offset = roundup(offset, class_size) - class_size;
->> >> +
->> >> +    return offset;
->> >> }
->> >>
->> >> -static unsigned long obj_idx_to_offset(struct page *page,
->> >> -                unsigned long obj_idx, int class_size)
->> >> +/* Encode <page, offset, size> as a single handle value */
->> >> +static void *obj_location_to_handle(struct page *page, unsigned int offset,
->> >> +                unsigned int size, unsigned int class_size)
->> >> {
->> >> -    unsigned long off = 0;
->> >> +    struct page *endpage;
->> >> +    unsigned int endoffset;
->> >>
->> >> -    if (!is_first_page(page))
->> >> -        off = page->index;
->> >> +    if (!page) {
->> >> +        BUG_ON(offset);
->> >> +        return NULL;
->> >> +    }
->> >
->> > What do you expect to catch with above check?
->> >
->> >
->>
->> This would catch cases where, say, user passes handle to a zero page to this function. In general, just a sanity check since pfn 0 and any non-zero offset is invalid.
->
-> You mean zero_page is always pfn 0?
-> No, we can't assume it.
->
+On Fri, 2012-12-07 at 13:57 +0800, Jiang Liu wrote:
+> On 2012-12-7 10:57, Toshi Kani wrote:
+> > On Fri, 2012-12-07 at 00:40 +0800, Jiang Liu wrote:
+> >> On 12/04/2012 08:10 AM, Toshi Kani wrote:
+> >>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
+> >>>> On 2012/11/30 6:27, Toshi Kani wrote:
+> >>>>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
+ :
+> >>>
+> >>> If I read the code right, the framework calls ACPI drivers differently
+> >>> at boot-time and hot-add as follows.  That is, the new entry points are
+> >>> called at hot-add only, but .add() is called at both cases.  This
+> >>> requires .add() to work differently.
+> >>>
+> >>> Boot    : .add()
+> >>> Hot-Add : .add(), .pre_configure(), configure(), etc.
+> >>>
+> >>> I think the boot-time and hot-add initialization should be done
+> >>> consistently.  While there is difficulty with the current boot sequence,
+> >>> the framework should be designed to allow them consistent, not make them
+> >>> diverged.
+> >> Hi Toshi,
+> >> 	We have separated hotplug operations from driver binding/unbinding interface
+> >> due to following considerations.
+> >> 1) Physical CPU and memory devices are initialized/used before the ACPI subsystem
+> >>    is initialized. So under normal case, .add() of processor and acpi_memhotplug only
+> >>    figures out information about device already in working state instead of starting
+> >>    the device.
+> > 
+> > I agree that the current boot sequence is not very hot-plug friendly...
+> > 
+> >> 2) It's impossible to rmmod the processor and acpi_memhotplug driver at runtime 
+> >>    if .remove() of CPU and memory drivers do really remove the CPU/memory device
+> >>    from the system. And the ACPI processor driver also implements CPU PM funcitonality
+> >>    other than hotplug.
+> > 
+> > Agreed.
+> > 
+> >> And recently Rafael has mentioned that he has a long term view to get rid of the
+> >> concept of "ACPI device". If that happens, we could easily move the hotplug
+> >> logic from ACPI device drivers into the hotplug framework if the hotplug logic
+> >> is separated from the .add()/.remove() callbacks. Actually we could even move all
+> >> hotplug only logic into the hotplug framework and don't rely on any ACPI device
+> >> driver any more. So we could get rid of all these messy things. We could achieve
+> >> that by:
+> >> 1) moving code shared by ACPI device drivers and the hotplug framework into the core.
+> >> 2) moving hotplug only code to the framework.
+> > 
+> > Yes, the framework should allow such future work.  I also think that the
+> > framework itself should be independent from such ACPI issue.  Ideally,
+> > it should be able to support non-ACPI platforms.
+> The same point here. The ACPI based hotplug framework is designed as:
+> 1) an ACPI based hotplug slot driver to handle platform specific logic.
+>    Platform may provide platform specific slot drivers to discover, manage
+>    hotplug slots. We have provided a default implementation of slot driver
+>    according to the ACPI spec.
 
-Sorry, missed this point.    Though it's not correct to embed the
-assumption that the zero-page handle will have pfn of 0, but in
-general, PFN 0 is always invalid. However, for 0 size requests
-zsmalloc returns NULL, so user should be also to pass <PFN=0,offset=0>
-pair to this function. However, <PFN=0, offset!=0> is invalid and this
-is what this assert checks.
+The ACPI spec does not define that _EJ0 is required to receive a hot-add
+request, i.e. bus/device check.  This is a major issue.  Since Windows
+only supports hot-add, I think there are platforms that only support
+hot-add today.
+
+> 2) an ACPI based hotplug manager driver, which is a platform independent
+>    driver and manages all hotplug slot created by the slot driver.
+
+It is surely impressive work, but I think is is a bit overdoing.  I
+expect hot-pluggable servers come with management console and/or GUI
+where a user can manage hardware units and initiate hot-plug operations.
+I do not think the kernel needs to step into such area since it tends to
+be platform-specific. 
+
+> We haven't gone further enough to provide an ACPI independent hotplug framework
+> because we only have experience with x86 and Itanium, both are ACPI based.
+> We may try to implement an ACPI independent hotplug framework by pushing all
+> ACPI specific logic into the slot driver, I think it's doable. But we need
+> suggestions from experts of other architectures, such as SPARC and Power.
+> But seems Power already have some sorts of hotplug framework, right?
+
+I do not know about the Linux hot-plug support on other architectures.
+PA-RISC SuperDome also supports Node hot-plug, but it is not supported
+by Linux.  Since ARM is getting used by servers, I would not surprise if
+there will be an ARM based server with hot-plug support in future.
+
+> >> Hi Rafael, what's your thoughts here?
+> >>
+> >>>
+> >>>>>>> 1. Validate phase - Verify if the request is a supported operation.  All
+> >>>>>>> known restrictions are verified at this phase.  For instance, if a
+> >>>>>>> hot-remove request involves kernel memory, it is failed in this phase.
+> >>>>>>> Since this phase makes no change, no rollback is necessary to fail. 
+> >>>>>>
+> >>>>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
+> >>>>>>
+> >>>>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
+> >>>>>>    when memory device remove;
+> >>>>>
+> >>>>> Agreed.
+> >>>>>
+> >>>>>> 2) Dependency check involved. For instance, if hot-add a memory device,
+> >>>>>>    processor should be added first, otherwise it's not valid to this operation.
+> >>>>>
+> >>>>> I think FW should be the one that assures such dependency.  That is,
+> >>>>> when a memory device object is marked as present/enabled/functioning, it
+> >>>>> should be ready for the OS to use.
+> >>>>
+> >>>> Yes, BIOS should do something for the dependency, because BIOS knows the
+> >>>> actual hardware topology. 
+> >>>
+> >>> Right.
+> >>>
+> >>>> The ACPI specification provides _EDL method to
+> >>>> tell OS the eject device list, but still has no method to tell OS the add device
+> >>>> list now.
+> >>>
+> >>> Yes, but I do not think the OS needs special handling for add...
+> >> We have a plan to support triggering hot-adding events from OS provided interfaces,
+> >> so we also need to solve dependency issues when handling requests from those interfaces.
+> >> For need to power on the physical processor before powering on a memory device if
+> >> the memory device is attached to a physical processor.
+> > 
+> > I am afraid that this issue is platform-specific, and I am not sure if
+> > there is a common way to handle such things in general.  I'd recommend
+> > to work with FW folks to implement such platform-specific validation
+> > code in FW.
+> You are right, we may rely on firmware to validate the dependency.
+
+Great!
+
+> >>>> For some cases, OS should analyze the dependency in the validate phase. For example,
+> >>>> when hot remove a node (container device), OS should analyze the dependency to get
+> >>>> the remove order as following:
+> >>>> 1) Host bridge;
+> >>>> 2) Memory devices;
+> >>>> 3) Processor devices;
+> >>>> 4) Container device itself;
+> >>>
+> >>> This may be off-topic, but how do you plan to delete I/O devices under a
+> >>> node?  Are you planning to delete all I/O devices along with the node?
+> >>>
+> >>> On other OS, we made a separate step called I/O chassis delete, which
+> >>> off-lines all I/O devices under the node, and is required before a node
+> >>> hot-remove.  It basically triggers PCIe hot-remove to detach drivers
+> >>> from all devices.  It does not eject the devices so that they do not
+> >>> have to be on hot-plug slots.  This step runs user-space scripts to
+> >>> verify if the devices can be off-lined without disrupting user's
+> >>> applications, and provides comprehensive reports if any of them are in
+> >>> use.  Not sure if Linux's PCI hot-remove has such check, but I thought
+> >>> I'd mention it. :)
+> >> Yinghai is working on PCI host bridge hotplug, which just stops all PCI devices
+> >> under the host bridge. That's really a little dangerous and we do need help
+> >> from userspace to check whether the hot-removal operaitons is fatal, 
+> >> e.g. removing PCI device hosting the rootfs.
+> > 
+> > Agreed.
+> > 
+> >> So in our framework, we have an option to relay hotplug event from firmware
+> >> to userspace, so the userspace has a chance to reject the hotplug operations
+> >> if it may cause unacceptable disturbance to userspace services.
+> > 
+> > I think validation from user-space is necessary for deleting I/O
+> > devices.  For CPU and memory, the kernel check works fine.
+> Agreed. But we may need help from userspace to handle cgroup/cpuset/cpuisol
+> etc for cpu and memory hot-removal. Especially for telecom applications, they
+> have strong dependency on cgroup/cpuisol to guarantee latency.
+
+I have not looked at the code, but isn't these cpu attributes managed in
+the kernel?
 
 Thanks,
-Nitin
+-Toshi
+
+
