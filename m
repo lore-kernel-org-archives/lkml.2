@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab2LHOrk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 09:47:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49402 "EHLO
+	id S1756068Ab2LHOso (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 09:48:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49418 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab2LHOrj (ORCPT
+	with ESMTP id S1753169Ab2LHOsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 09:47:39 -0500
-Date: Sat, 8 Dec 2012 06:47:07 -0800
+	Sat, 8 Dec 2012 09:48:43 -0500
+Date: Sat, 8 Dec 2012 06:48:14 -0800
 From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-dc447eed59037c1c65feab9c72d372b6249af978@git.kernel.org>
+Message-ID: <tip-cff7f956ec4a1ede9b752cfae3c12f588292ad80@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
@@ -18,12 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1352508412-16914-10-git-send-email-jolsa@redhat.com>
-References: <1352508412-16914-10-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1352508412-16914-11-git-send-email-jolsa@redhat.com>
+References: <1352508412-16914-11-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests:
-  Move test__syscall_open_tp_fields into separate object
-Git-Commit-ID: dc447eed59037c1c65feab9c72d372b6249af978
+Subject: [tip:perf/core] perf tests: Move pmu tests into separate object
+Git-Commit-ID: cff7f956ec4a1ede9b752cfae3c12f588292ad80
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +31,21 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 06:47:13 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 06:48:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dc447eed59037c1c65feab9c72d372b6249af978
-Gitweb:     http://git.kernel.org/tip/dc447eed59037c1c65feab9c72d372b6249af978
+Commit-ID:  cff7f956ec4a1ede9b752cfae3c12f588292ad80
+Gitweb:     http://git.kernel.org/tip/cff7f956ec4a1ede9b752cfae3c12f588292ad80
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sat, 10 Nov 2012 01:46:49 +0100
+AuthorDate: Sat, 10 Nov 2012 01:46:50 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:50:09 -0300
+CommitDate: Wed, 14 Nov 2012 16:50:19 -0300
 
-perf tests: Move test__syscall_open_tp_fields into separate object
+perf tests: Move pmu tests into separate object
 
-Separating test__syscall_open_tp_fields test from the builtin-test into
-open-syscall-tp-fields object.
+Separating pmu's object tests into pmu object under tests directory.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -55,282 +53,490 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-10-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1352508412-16914-11-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                       |   1 +
- tools/perf/tests/builtin-test.c           | 112 ----------------------------
- tools/perf/tests/open-syscall-tp-fields.c | 117 ++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                  |   1 +
- 4 files changed, 119 insertions(+), 112 deletions(-)
+ tools/perf/Makefile             |   1 +
+ tools/perf/tests/builtin-test.c |   7 +-
+ tools/perf/tests/pmu.c          | 178 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |   1 +
+ tools/perf/util/pmu.c           | 185 ++--------------------------------------
+ tools/perf/util/pmu.h           |   4 +
+ 6 files changed, 191 insertions(+), 185 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e510b53..1e50559 100644
+index 1e50559..9af012f 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -434,6 +434,7 @@ LIB_OBJS += $(OUTPUT)tests/attr.o
- LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
- LIB_OBJS += $(OUTPUT)tests/open-syscall.o
- LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
-+LIB_OBJS += $(OUTPUT)tests/open-syscall-tp-fields.o
- LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
- LIB_OBJS += $(OUTPUT)tests/perf-record.o
+@@ -440,6 +440,7 @@ LIB_OBJS += $(OUTPUT)tests/perf-record.o
  LIB_OBJS += $(OUTPUT)tests/rdpmc.o
+ LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
+ LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
++LIB_OBJS += $(OUTPUT)tests/pmu.o
+ LIB_OBJS += $(OUTPUT)tests/util.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index c66caa7..bab8490 100644
+index bab8490..d3b95e0 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -35,118 +35,6 @@ static int test__perf_pmu(void)
- 	return perf_pmu__test();
- }
+@@ -30,11 +30,6 @@
+ #include <sched.h>
  
--static int test__syscall_open_tp_fields(void)
+ 
+-static int test__perf_pmu(void)
 -{
--	struct perf_record_opts opts = {
--		.target = {
--			.uid = UINT_MAX,
--			.uses_mmap = true,
--		},
--		.no_delay   = true,
--		.freq	    = 1,
--		.mmap_pages = 256,
--		.raw_samples = true,
--	};
--	const char *filename = "/etc/passwd";
--	int flags = O_RDONLY | O_DIRECTORY;
--	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
--	struct perf_evsel *evsel;
--	int err = -1, i, nr_events = 0, nr_polls = 0;
--
--	if (evlist == NULL) {
--		pr_debug("%s: perf_evlist__new\n", __func__);
--		goto out;
--	}
--
--	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
--	if (evsel == NULL) {
--		pr_debug("%s: perf_evsel__newtp\n", __func__);
--		goto out_delete_evlist;
--	}
--
--	perf_evlist__add(evlist, evsel);
--
--	err = perf_evlist__create_maps(evlist, &opts.target);
--	if (err < 0) {
--		pr_debug("%s: perf_evlist__create_maps\n", __func__);
--		goto out_delete_evlist;
--	}
--
--	perf_evsel__config(evsel, &opts, evsel);
--
--	evlist->threads->map[0] = getpid();
--
--	err = perf_evlist__open(evlist);
--	if (err < 0) {
--		pr_debug("perf_evlist__open: %s\n", strerror(errno));
--		goto out_delete_evlist;
--	}
--
--	err = perf_evlist__mmap(evlist, UINT_MAX, false);
--	if (err < 0) {
--		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
--		goto out_delete_evlist;
--	}
--
--	perf_evlist__enable(evlist);
--
--	/*
--	 * Generate the event:
--	 */
--	open(filename, flags);
--
--	while (1) {
--		int before = nr_events;
--
--		for (i = 0; i < evlist->nr_mmaps; i++) {
--			union perf_event *event;
--
--			while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
--				const u32 type = event->header.type;
--				int tp_flags;
--				struct perf_sample sample;
--
--				++nr_events;
--
--				if (type != PERF_RECORD_SAMPLE)
--					continue;
--
--				err = perf_evsel__parse_sample(evsel, event, &sample);
--				if (err) {
--					pr_err("Can't parse sample, err = %d\n", err);
--					goto out_munmap;
--				}
--
--				tp_flags = perf_evsel__intval(evsel, &sample, "flags");
--
--				if (flags != tp_flags) {
--					pr_debug("%s: Expected flags=%#x, got %#x\n",
--						 __func__, flags, tp_flags);
--					goto out_munmap;
--				}
--
--				goto out_ok;
--			}
--		}
--
--		if (nr_events == before)
--			poll(evlist->pollfd, evlist->nr_fds, 10);
--
--		if (++nr_polls > 5) {
--			pr_debug("%s: no events!\n", __func__);
--			goto out_munmap;
--		}
--	}
--out_ok:
--	err = 0;
--out_munmap:
--	perf_evlist__munmap(evlist);
--out_delete_evlist:
--	perf_evlist__delete(evlist);
--out:
--	return err;
+-	return perf_pmu__test();
 -}
 -
  static struct test {
  	const char *desc;
  	int (*func)(void);
-diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -71,7 +66,7 @@ static struct test {
+ 	},
+ 	{
+ 		.desc = "Test perf pmu format parsing",
+-		.func = test__perf_pmu,
++		.func = test__pmu,
+ 	},
+ 	{
+ 		.desc = "Test dso data interface",
+diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
 new file mode 100644
-index 0000000..b05b6a6
+index 0000000..a5f3798
 --- /dev/null
-+++ b/tools/perf/tests/open-syscall-tp-fields.c
-@@ -0,0 +1,117 @@
-+#include "perf.h"
-+#include "evlist.h"
-+#include "evsel.h"
-+#include "thread_map.h"
++++ b/tools/perf/tests/pmu.c
+@@ -0,0 +1,178 @@
++#include "parse-events.h"
++#include "pmu.h"
++#include "util.h"
 +#include "tests.h"
 +
-+int test__syscall_open_tp_fields(void)
++/* Simulated format definitions. */
++static struct test_format {
++	const char *name;
++	const char *value;
++} test_formats[] = {
++	{ "krava01", "config:0-1,62-63\n", },
++	{ "krava02", "config:10-17\n", },
++	{ "krava03", "config:5\n", },
++	{ "krava11", "config1:0,2,4,6,8,20-28\n", },
++	{ "krava12", "config1:63\n", },
++	{ "krava13", "config1:45-47\n", },
++	{ "krava21", "config2:0-3,10-13,20-23,30-33,40-43,50-53,60-63\n", },
++	{ "krava22", "config2:8,18,48,58\n", },
++	{ "krava23", "config2:28-29,38\n", },
++};
++
++#define TEST_FORMATS_CNT (sizeof(test_formats) / sizeof(struct test_format))
++
++/* Simulated users input. */
++static struct parse_events__term test_terms[] = {
++	{
++		.config    = (char *) "krava01",
++		.val.num   = 15,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava02",
++		.val.num   = 170,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava03",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava11",
++		.val.num   = 27,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava12",
++		.val.num   = 1,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava13",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava21",
++		.val.num   = 119,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava22",
++		.val.num   = 11,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++	{
++		.config    = (char *) "krava23",
++		.val.num   = 2,
++		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
++		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
++	},
++};
++#define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
++
++/*
++ * Prepare format directory data, exported by kernel
++ * at /sys/bus/event_source/devices/<dev>/format.
++ */
++static char *test_format_dir_get(void)
 +{
-+	struct perf_record_opts opts = {
-+		.target = {
-+			.uid = UINT_MAX,
-+			.uses_mmap = true,
-+		},
-+		.no_delay   = true,
-+		.freq	    = 1,
-+		.mmap_pages = 256,
-+		.raw_samples = true,
-+	};
-+	const char *filename = "/etc/passwd";
-+	int flags = O_RDONLY | O_DIRECTORY;
-+	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+	struct perf_evsel *evsel;
-+	int err = -1, i, nr_events = 0, nr_polls = 0;
++	static char dir[PATH_MAX];
++	unsigned int i;
 +
-+	if (evlist == NULL) {
-+		pr_debug("%s: perf_evlist__new\n", __func__);
-+		goto out;
++	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
++	if (!mkdtemp(dir))
++		return NULL;
++
++	for (i = 0; i < TEST_FORMATS_CNT; i++) {
++		static char name[PATH_MAX];
++		struct test_format *format = &test_formats[i];
++		FILE *file;
++
++		snprintf(name, PATH_MAX, "%s/%s", dir, format->name);
++
++		file = fopen(name, "w");
++		if (!file)
++			return NULL;
++
++		if (1 != fwrite(format->value, strlen(format->value), 1, file))
++			break;
++
++		fclose(file);
 +	}
 +
-+	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
-+	if (evsel == NULL) {
-+		pr_debug("%s: perf_evsel__newtp\n", __func__);
-+		goto out_delete_evlist;
-+	}
++	return dir;
++}
 +
-+	perf_evlist__add(evlist, evsel);
++/* Cleanup format directory. */
++static int test_format_dir_put(char *dir)
++{
++	char buf[PATH_MAX];
++	snprintf(buf, PATH_MAX, "rm -f %s/*\n", dir);
++	if (system(buf))
++		return -1;
 +
-+	err = perf_evlist__create_maps(evlist, &opts.target);
-+	if (err < 0) {
-+		pr_debug("%s: perf_evlist__create_maps\n", __func__);
-+		goto out_delete_evlist;
-+	}
++	snprintf(buf, PATH_MAX, "rmdir %s\n", dir);
++	return system(buf);
++}
 +
-+	perf_evsel__config(evsel, &opts, evsel);
++static struct list_head *test_terms_list(void)
++{
++	static LIST_HEAD(terms);
++	unsigned int i;
 +
-+	evlist->threads->map[0] = getpid();
++	for (i = 0; i < TERMS_CNT; i++)
++		list_add_tail(&test_terms[i].list, &terms);
 +
-+	err = perf_evlist__open(evlist);
-+	if (err < 0) {
-+		pr_debug("perf_evlist__open: %s\n", strerror(errno));
-+		goto out_delete_evlist;
-+	}
++	return &terms;
++}
 +
-+	err = perf_evlist__mmap(evlist, UINT_MAX, false);
-+	if (err < 0) {
-+		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
-+		goto out_delete_evlist;
-+	}
++#undef TERMS_CNT
 +
-+	perf_evlist__enable(evlist);
++int test__pmu(void)
++{
++	char *format = test_format_dir_get();
++	LIST_HEAD(formats);
++	struct list_head *terms = test_terms_list();
++	int ret;
 +
-+	/*
-+	 * Generate the event:
-+	 */
-+	open(filename, flags);
++	if (!format)
++		return -EINVAL;
 +
-+	while (1) {
-+		int before = nr_events;
++	do {
++		struct perf_event_attr attr;
 +
-+		for (i = 0; i < evlist->nr_mmaps; i++) {
-+			union perf_event *event;
++		memset(&attr, 0, sizeof(attr));
 +
-+			while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
-+				const u32 type = event->header.type;
-+				int tp_flags;
-+				struct perf_sample sample;
++		ret = perf_pmu__format_parse(format, &formats);
++		if (ret)
++			break;
 +
-+				++nr_events;
++		ret = perf_pmu__config_terms(&formats, &attr, terms);
++		if (ret)
++			break;
 +
-+				if (type != PERF_RECORD_SAMPLE)
-+					continue;
++		ret = -EINVAL;
 +
-+				err = perf_evsel__parse_sample(evsel, event, &sample);
-+				if (err) {
-+					pr_err("Can't parse sample, err = %d\n", err);
-+					goto out_munmap;
-+				}
++		if (attr.config  != 0xc00000000002a823)
++			break;
++		if (attr.config1 != 0x8000400000000145)
++			break;
++		if (attr.config2 != 0x0400000020041d07)
++			break;
 +
-+				tp_flags = perf_evsel__intval(evsel, &sample, "flags");
++		ret = 0;
++	} while (0);
 +
-+				if (flags != tp_flags) {
-+					pr_debug("%s: Expected flags=%#x, got %#x\n",
-+						 __func__, flags, tp_flags);
-+					goto out_munmap;
-+				}
-+
-+				goto out_ok;
-+			}
-+		}
-+
-+		if (nr_events == before)
-+			poll(evlist->pollfd, evlist->nr_fds, 10);
-+
-+		if (++nr_polls > 5) {
-+			pr_debug("%s: no events!\n", __func__);
-+			goto out_munmap;
-+		}
-+	}
-+out_ok:
-+	err = 0;
-+out_munmap:
-+	perf_evlist__munmap(evlist);
-+out_delete_evlist:
-+	perf_evlist__delete(evlist);
-+out:
-+	return err;
++	test_format_dir_put(format);
++	return ret;
 +}
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 1ef265d..f70f998 100644
+index f70f998..88a55df 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -10,6 +10,7 @@ int test__PERF_RECORD(void);
- int test__rdpmc(void);
+@@ -11,6 +11,7 @@ int test__rdpmc(void);
  int test__perf_evsel__roundtrip_name_test(void);
  int test__perf_evsel__tp_sched_test(void);
-+int test__syscall_open_tp_fields(void);
+ int test__syscall_open_tp_fields(void);
++int test__pmu(void);
  
  /* Util */
  int trace_event__id(const char *evname);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 18e8480..9bdc60c 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -22,7 +22,7 @@ static LIST_HEAD(pmus);
+  * Parse & process all the sysfs attributes located under
+  * the directory specified in 'dir' parameter.
+  */
+-static int pmu_format_parse(char *dir, struct list_head *head)
++int perf_pmu__format_parse(char *dir, struct list_head *head)
+ {
+ 	struct dirent *evt_ent;
+ 	DIR *format_dir;
+@@ -77,7 +77,7 @@ static int pmu_format(char *name, struct list_head *format)
+ 	if (stat(path, &st) < 0)
+ 		return 0;	/* no error if format does not exist */
+ 
+-	if (pmu_format_parse(path, format))
++	if (perf_pmu__format_parse(path, format))
+ 		return -1;
+ 
+ 	return 0;
+@@ -446,8 +446,9 @@ static int pmu_config_term(struct list_head *formats,
+ 	return 0;
+ }
+ 
+-static int pmu_config(struct list_head *formats, struct perf_event_attr *attr,
+-		      struct list_head *head_terms)
++int perf_pmu__config_terms(struct list_head *formats,
++			   struct perf_event_attr *attr,
++			   struct list_head *head_terms)
+ {
+ 	struct parse_events__term *term;
+ 
+@@ -467,7 +468,7 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms)
+ {
+ 	attr->type = pmu->type;
+-	return pmu_config(&pmu->format, attr, head_terms);
++	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
+ }
+ 
+ static struct perf_pmu__alias *pmu_find_alias(struct perf_pmu *pmu,
+@@ -551,177 +552,3 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
+-
+-/* Simulated format definitions. */
+-static struct test_format {
+-	const char *name;
+-	const char *value;
+-} test_formats[] = {
+-	{ "krava01", "config:0-1,62-63\n", },
+-	{ "krava02", "config:10-17\n", },
+-	{ "krava03", "config:5\n", },
+-	{ "krava11", "config1:0,2,4,6,8,20-28\n", },
+-	{ "krava12", "config1:63\n", },
+-	{ "krava13", "config1:45-47\n", },
+-	{ "krava21", "config2:0-3,10-13,20-23,30-33,40-43,50-53,60-63\n", },
+-	{ "krava22", "config2:8,18,48,58\n", },
+-	{ "krava23", "config2:28-29,38\n", },
+-};
+-
+-#define TEST_FORMATS_CNT (sizeof(test_formats) / sizeof(struct test_format))
+-
+-/* Simulated users input. */
+-static struct parse_events__term test_terms[] = {
+-	{
+-		.config    = (char *) "krava01",
+-		.val.num   = 15,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava02",
+-		.val.num   = 170,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava03",
+-		.val.num   = 1,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava11",
+-		.val.num   = 27,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava12",
+-		.val.num   = 1,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava13",
+-		.val.num   = 2,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava21",
+-		.val.num   = 119,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava22",
+-		.val.num   = 11,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-	{
+-		.config    = (char *) "krava23",
+-		.val.num   = 2,
+-		.type_val  = PARSE_EVENTS__TERM_TYPE_NUM,
+-		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
+-	},
+-};
+-#define TERMS_CNT (sizeof(test_terms) / sizeof(struct parse_events__term))
+-
+-/*
+- * Prepare format directory data, exported by kernel
+- * at /sys/bus/event_source/devices/<dev>/format.
+- */
+-static char *test_format_dir_get(void)
+-{
+-	static char dir[PATH_MAX];
+-	unsigned int i;
+-
+-	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
+-	if (!mkdtemp(dir))
+-		return NULL;
+-
+-	for (i = 0; i < TEST_FORMATS_CNT; i++) {
+-		static char name[PATH_MAX];
+-		struct test_format *format = &test_formats[i];
+-		FILE *file;
+-
+-		snprintf(name, PATH_MAX, "%s/%s", dir, format->name);
+-
+-		file = fopen(name, "w");
+-		if (!file)
+-			return NULL;
+-
+-		if (1 != fwrite(format->value, strlen(format->value), 1, file))
+-			break;
+-
+-		fclose(file);
+-	}
+-
+-	return dir;
+-}
+-
+-/* Cleanup format directory. */
+-static int test_format_dir_put(char *dir)
+-{
+-	char buf[PATH_MAX];
+-	snprintf(buf, PATH_MAX, "rm -f %s/*\n", dir);
+-	if (system(buf))
+-		return -1;
+-
+-	snprintf(buf, PATH_MAX, "rmdir %s\n", dir);
+-	return system(buf);
+-}
+-
+-static struct list_head *test_terms_list(void)
+-{
+-	static LIST_HEAD(terms);
+-	unsigned int i;
+-
+-	for (i = 0; i < TERMS_CNT; i++)
+-		list_add_tail(&test_terms[i].list, &terms);
+-
+-	return &terms;
+-}
+-
+-#undef TERMS_CNT
+-
+-int perf_pmu__test(void)
+-{
+-	char *format = test_format_dir_get();
+-	LIST_HEAD(formats);
+-	struct list_head *terms = test_terms_list();
+-	int ret;
+-
+-	if (!format)
+-		return -EINVAL;
+-
+-	do {
+-		struct perf_event_attr attr;
+-
+-		memset(&attr, 0, sizeof(attr));
+-
+-		ret = pmu_format_parse(format, &formats);
+-		if (ret)
+-			break;
+-
+-		ret = pmu_config(&formats, &attr, terms);
+-		if (ret)
+-			break;
+-
+-		ret = -EINVAL;
+-
+-		if (attr.config  != 0xc00000000002a823)
+-			break;
+-		if (attr.config1 != 0x8000400000000145)
+-			break;
+-		if (attr.config2 != 0x0400000020041d07)
+-			break;
+-
+-		ret = 0;
+-	} while (0);
+-
+-	test_format_dir_put(format);
+-	return ret;
+-}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 39f3aba..07d553f 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -37,6 +37,9 @@ struct perf_pmu {
+ struct perf_pmu *perf_pmu__find(char *name);
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
++int perf_pmu__config_terms(struct list_head *formats,
++			   struct perf_event_attr *attr,
++			   struct list_head *head_terms);
+ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
+ struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+ 				struct list_head *head_terms);
+@@ -46,6 +49,7 @@ void perf_pmu_error(struct list_head *list, char *name, char const *msg);
+ int perf_pmu__new_format(struct list_head *list, char *name,
+ 			 int config, unsigned long *bits);
+ void perf_pmu__set_format(unsigned long *bits, long from, long to);
++int perf_pmu__format_parse(char *dir, struct list_head *head);
+ 
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
