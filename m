@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab2LHB1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:27:49 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64583 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab2LHB1q (ORCPT
+	id S1757570Ab2LHB3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:29:48 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:19421 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757547Ab2LHB3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:27:46 -0500
+	Fri, 7 Dec 2012 20:29:47 -0500
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 20:29:47 EST
+Message-ID: <50C2947F.5030706@cavium.com>
+Date: Fri, 07 Dec 2012 17:14:39 -0800
+From: Aaron Williams <Aaron.Williams@cavium.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1354929004.20497.4@driftwood>
-References: <CALCETrUZyD=Z6bQ3vZC8_9giv67-BuZGm2PgshM0E5hUDe6=bQ@mail.gmail.com>
- <1354929004.20497.4@driftwood>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 7 Dec 2012 17:27:25 -0800
-Message-ID: <CALCETrXOk74kcfqHBwuAZEY3rpZJFc65e0zZszu-34Qk+ui1dA@mail.gmail.com>
-Subject: Re: [PATCH] Document how capability bits work
-To: Rob Landley <rob@landley.net>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
-        mtk.manpages@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+CC: "Williams, Aaron" <Aaron.Williams@caviumnetworks.com>
+Subject: Incrementing module reference count
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Dec 2012 01:14:40.0288 (UTC) FILETIME=[65B7B200:01CDD4E1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 7, 2012 at 5:10 PM, Rob Landley <rob@landley.net> wrote:
-> On 12/07/2012 01:32:18 PM, Andy Lutomirski wrote:
->>
->> On Fri, Dec 7, 2012 at 11:21 AM, Serge Hallyn
->> <serge.hallyn@canonical.com> wrote:
->> > Quoting Andy Lutomirski (luto@amacapital.net):
->> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> >> ---
->> >>  Documentation/security/capabilities.txt | 161
->> >> ++++++++++++++++++++++++++++++++
->> >>  1 file changed, 161 insertions(+)
->> >>  create mode 100644 Documentation/security/capabilities.txt
->> >
->> > TBH, I think a pointer to the capabilities.7 man page would be better.
->> > (plus, if you feel they are needed, updates to the man page)
->>
->> Updating capabilities.7 wouldn't be a bad idea, but IMO it certainly
->> needs work.  For example, it says:
->
-> ...
->
->> I would be happy to revise this patch to reference capabilities.7.
->
->
-> The capabilities.7 man page is existing maintained documentation on how to
-> use this from userspace, which seems to be the point of your document.
-> Having include/linux/uapi/capability.h mention its existence might be good.
-> Feeding fixes to the documentation we've already got would be good.
->
-> I read your document having largely ignored capabilities for years, and
-> don't feel I have a better understanding of them after reading it. (I'm
-> aware they exist, I'm aware they're used as a justification for extended
-> attributes, I'm aware people think breaking a fireplace into a bunch of
-> candleflames increases fire safety. I'm aware of
-> http://forums.grsecurity.net/viewtopic.php?f=7&t=2522 and I _used_ to be
-> aware of
-> http://userweb.kernel.org/~morgan/sendmail-capabilities-war-story.html but
-> kernel.org never bothered putting most of itself back together after the
-> breakin last year and archive.org doesn't have a copy. I'm aware that a
-> decade ago at Atlanta Linux Showcase in california Ted Tso was sad nobody
-> was using them yet. But I haven't hugely been tracking changes over the last
-> 5 years in how they work. It looks like figuring out who has what involves
-> working through exercises in set theory that cannot be explained using a 127
-> bit ascii set. Personally, I prefer "more dangerous" security setups that
-> don't require I pull out scratch paper to reason about the state of the
-> system, so perhaps I'm biased here.)
+Hi,
 
-Heh.  I agree this stuff is shockingly complicated.  (And this
-document isn't wriiten in ASCII...)
+I have a kernel module which other modules register with in order to 
+export access functions. So far I have everything working but I want to 
+prevent a module that is registered with my module from unloading since 
+now my module is dependent on the other module.
 
-I actually wrote this file because I was reading the code and trying
-to figure out wtf was going on.  This is the result :)  I'll see if I
-can improve capabilities.7.
+Is there a way I can cause the reference count of the module registering 
+with my module to increase? I tried calling get_device with the device 
+structure of the module that is registering but that does not seem to work.
 
-Any pointers to things you wanted to understand?
+For example, I have the following function:
 
---Andy
+/**
+  * Adds a mapping of a device node to a memory accessor
+  *
+  * @param[in] dev - device
+  * @param[in] macc - memory accessor
+  *
+  * @returns 0 for success or -ENOMEM
+  */
+int of_memory_accessor_register(struct device *dev,
+                 struct memory_accessor *macc)
+{
+     struct of_macc_entry *mentry;
+
+     mentry = kmalloc(sizeof(*mentry), GFP_KERNEL);
+     if (mentry == NULL)
+         return -ENOMEM;
+
+     mentry->dev = dev;
+     mentry->macc = macc;
+
+     mutex_lock(&lock);
+
+     get_device(dev);
+     list_add(&(mentry->list), &macc_list);
+
+     mutex_unlock(&lock);
+
+     return 0;
+}
+EXPORT_SYMBOL(of_memory_accessor_register);
+
+Basically my module is used for things like serial EEPROMs and whatnot 
+so that external modules can find the accessor functions based on the 
+device tree. In my case I am updating the Vitesse VSC848X driver so that 
+it can read the SFP module when it is plugged in using the AT24 I2C 
+EEPROM module. I want to prevent the at24 module from unloading while 
+other modules in turn are using it. The at24 module does not export any 
+symbols.
+
+NOTE that I plan to change the above code so that I only increment the 
+eeprom modules reference count when another module actually uses it and 
+release it only when all other modules are no longer using the accessor 
+functions.
+
+I also am not subscribed to the LKML so please CC me on any responses.
+
+-Aaron
+
+-- 
+Aaron Williams
+Software Engineer
+Cavium, Inc.
+(408) 943-7198  (510) 789-8988 (cell)
+
