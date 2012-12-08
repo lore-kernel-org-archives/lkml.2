@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab2LHL0x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 06:26:53 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:56137 "EHLO londo.lunn.ch"
+	id S932955Ab2LHLo6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 06:44:58 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33552 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab2LHL0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 06:26:51 -0500
-Date: Sat, 8 Dec 2012 12:26:24 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
- timer
-Message-ID: <20121208112624.GD25315@lunn.ch>
-References: <20121207225507.GB29262@obsidianresearch.com>
+	id S1755947Ab2LHLo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Dec 2012 06:44:57 -0500
+Date: Sat, 8 Dec 2012 12:44:53 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aaron Williams <Aaron.Williams@cavium.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Williams, Aaron" <Aaron.Williams@caviumnetworks.com>
+Subject: Re: Incrementing module reference count
+Message-ID: <20121208114453.GC11662@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Aaron Williams <Aaron.Williams@cavium.com>,
+	linux-kernel@vger.kernel.org,
+	"Williams, Aaron" <Aaron.Williams@caviumnetworks.com>
+References: <50C2947F.5030706@cavium.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121207225507.GB29262@obsidianresearch.com>
+In-Reply-To: <50C2947F.5030706@cavium.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 03:55:07PM -0700, Jason Gunthorpe wrote:
-> The intent of this patch is to expose the other bridge cause
-> interrupts to users in the kernel.
+On Fri, Dec 07, 2012 at 05:14:39PM -0800, Aaron Williams wrote:
+> Hi,
 > 
-> - Add orion_bridge_irq_init to create a new edge triggered interrupt
->   chip based on the bridge cause register
-> - Remove all interrupt register code from time.c and use normal
->   interrupt functions instead
-> - Update the machines that use orion_time_init to call
->   orion_bridge_irq_init and use the new signature
+> I have a kernel module which other modules register with in order to
+> export access functions. So far I have everything working but I want
+> to prevent a module that is registered with my module from unloading
+> since now my module is dependent on the other module.
+> 
+> Is there a way I can cause the reference count of the module
+> registering with my module to increase? I tried calling get_device
+> with the device structure of the module that is registering but that
+> does not seem to work.
+> 
+> For example, I have the following function:
+> 
+> /**
+>  * Adds a mapping of a device node to a memory accessor
+>  *
+>  * @param[in] dev - device
+>  * @param[in] macc - memory accessor
+>  *
+>  * @returns 0 for success or -ENOMEM
+>  */
+> int of_memory_accessor_register(struct device *dev,
+>                 struct memory_accessor *macc)
+> {
+>     struct of_macc_entry *mentry;
+> 
+>     mentry = kmalloc(sizeof(*mentry), GFP_KERNEL);
+>     if (mentry == NULL)
+>         return -ENOMEM;
+> 
+>     mentry->dev = dev;
+>     mentry->macc = macc;
+> 
+>     mutex_lock(&lock);
+> 
+>     get_device(dev);
+>     list_add(&(mentry->list), &macc_list);
+> 
+>     mutex_unlock(&lock);
+> 
+>     return 0;
+> }
+> EXPORT_SYMBOL(of_memory_accessor_register);
+> 
+> Basically my module is used for things like serial EEPROMs and
+> whatnot so that external modules can find the accessor functions
+> based on the device tree. In my case I am updating the Vitesse
+> VSC848X driver so that it can read the SFP module when it is plugged
+> in using the AT24 I2C EEPROM module. I want to prevent the at24
+> module from unloading while other modules in turn are using it. The
+> at24 module does not export any symbols.
 
-Hi Jason
+>From a quick code scan, at24 has this:
 
-I like the idea, but i think it needs to go a bit further. 
+	static struct i2c_driver at24_driver = {
+	        .driver = {
+	                .name = "at24",
+	                .owner = THIS_MODULE,
+	        },
+	        .probe = at24_probe,
+	        .remove = __devexit_p(at24_remove),
+	        .id_table = at24_ids,
+	};
 
-1) It should have an IRQ domain, like the other IRQ chips we have.
-2) It should have a DT binding, like the other IRQ chips we have.
-3) We then pass the timer interrupt via DT to the timer driver.
-4) We than pass the watchdog interrupt via DT.
+and then you could do:
 
-We plan to remove old style platforms in the next few cycles, so its
-important that changes like this are orientated towards DT but have
-the necessary backward compatibility for the old ways for the boards
-not yet converted. I think for Dove all boards are DT based...
+	try_module_get(at24_driver.driver->owner);
 
-3) is not so simple, because we currently don't have a timer binding
-for Orion SoC. However, with this cleanup, we are much closer to being
-able to use the 370/XP timer code.
+from your code. AFAICT, of course.
 
+HTH.
 
-> @@ -534,8 +535,9 @@ static void __init kirkwood_timer_init(void)
->  {
->  	kirkwood_tclk = kirkwood_find_tclk();
->  
-> -	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
-> -			IRQ_KIRKWOOD_BRIDGE, kirkwood_tclk);
-> +	orion_bridge_irq_init(IRQ_KIRKWOOD_BRIDGE, IRQ_KIRKWOOD_BRIDGE_START,
-> +			      BRIDGE_CAUSE);
-> +	orion_time_init(IRQ_KIRKWOOD_BRIDGE_TIMER1, kirkwood_tclk);
->  }
-
-I think it would be better to do this in kirkwood_init_irq(). Same for
-the other platforms. 
-
-> +static void bridge_irq_handler(unsigned irq, struct irq_desc *desc)
-> +{
-> +	struct irq_chip_generic *gc = irq_get_handler_data(irq);
-> +	u32 cause;
-> +	int i;
-> +
-> +	cause = readl(gc->reg_base) & readl(gc->reg_base + 4);
-
-Could you add a #define for this 4. I guess its an interrupt enable
-mask? Could regs.mask be used?
-
-> +	for (i = 0; i < 6; i++)
-> +		if ((cause & (1 << i)))
-> +			generic_handle_irq(i + gc->irq_base);
-> +}
-> +
-> +static void irq_gc_eoi_inv(struct irq_data *d)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> +	u32 mask = 1 << (d->irq - gc->irq_base);
-> +	struct irq_chip_regs *regs;
-> +
-> +	regs = &container_of(d->chip, struct irq_chip_type, chip)->regs;
-> +	irq_gc_lock(gc);
-> +	irq_reg_writel(~mask, gc->reg_base + regs->eoi);
-> +	irq_gc_unlock(gc);
-> +}
-> +
-> +void __init orion_bridge_irq_init(unsigned int bridge_irq,
-> +				  unsigned int irq_start,
-> +				  void __iomem *causeaddr)
-> +{
-> +	struct irq_chip_generic *gc;
-> +	struct irq_chip_type *ct;
-> +
-> +	gc = irq_alloc_generic_chip("orion_irq_edge", 1, irq_start,
-
-Maybe the name orion_bridge would be better?
-
-Thanks
-      Andrew
+-- 
+Regards/Gruss,
+    Boris.
