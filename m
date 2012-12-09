@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab2LIB1d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 20:27:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49859 "EHLO mx1.redhat.com"
+	id S1030375Ab2LIC6E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 21:58:04 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:59080 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756469Ab2LIB1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 20:27:32 -0500
-Date: Sat, 8 Dec 2012 20:27:24 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: David Airlie <airlied@linux.ie>, alexander.deucher@amd.com
-Subject: rs600 warn on while booting 3.7-rc8
-Message-ID: <20121209012724.GA18395@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	David Airlie <airlied@linux.ie>, alexander.deucher@amd.com
+	id S1030353Ab2LIC6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Dec 2012 21:58:01 -0500
+Date: Sat, 8 Dec 2012 19:57:48 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
+ timer
+Message-ID: <20121209025748.GA10405@obsidianresearch.com>
+References: <20121207225507.GB29262@obsidianresearch.com>
+ <20121208112624.GD25315@lunn.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121208112624.GD25315@lunn.ch>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   66.104790] WARNING: at drivers/gpu/drm/radeon/rs600.c:571 rs600_irq_set+0x1e2/0x200()
-[   66.105748] Hardware name: GA-MA78GM-S2H
-[   66.106220] Can't enable IRQ/MSI because no handler is installed
-[   66.106935] Modules linked in:
-[   66.107329] Pid: 43, comm: kworker/0:1 Not tainted 3.7.0-rc8+ #8
-[   66.108044] Call Trace:
-[   66.108350]  [<ffffffff8104da4f>] warn_slowpath_common+0x7f/0xc0
-[   66.109067]  [<ffffffff8104db46>] warn_slowpath_fmt+0x46/0x50
-[   66.109749]  [<ffffffff81480762>] rs600_irq_set+0x1e2/0x200
-[   66.110416]  [<ffffffff8146fa92>] ? radeon_irq_kms_enable_hpd+0x32/0x90
-[   66.111203]  [<ffffffff8146faca>] radeon_irq_kms_enable_hpd+0x6a/0x90
-[   66.111965]  [<ffffffff81480123>] rs600_hpd_init+0xb3/0xc0
-[   66.112627]  [<ffffffff814680f3>] radeon_modeset_init+0x323/0xb90
-[   66.113355]  [<ffffffff81444f40>] radeon_driver_load_kms+0xf0/0x180
-[   66.114103]  [<ffffffff8140f356>] drm_get_pci_dev+0x186/0x2c0
-[   66.114790]  [<ffffffff8119dda8>] ? kfree+0x298/0x2a0
-[   66.115397]  [<ffffffff8171e22a>] radeon_pci_probe+0xb1/0xb9
-[   66.116074]  [<ffffffff81357679>] local_pci_probe+0x79/0x100
-[   66.116751]  [<ffffffff8106db18>] work_for_cpu_fn+0x18/0x30
-[   66.117418]  [<ffffffff810711c7>] process_one_work+0x207/0x750
-[   66.118109]  [<ffffffff81071157>] ? process_one_work+0x197/0x750
-[   66.118825]  [<ffffffff8106db00>] ? too_many_workers+0x40/0x40
-[   66.119517]  [<ffffffff8107173c>] process_scheduled_works+0x2c/0x40
-[   66.120259]  [<ffffffff81071c82>] worker_thread+0x2f2/0x440
-[   66.120925]  [<ffffffff81071990>] ? rescuer_thread+0x240/0x240
-[   66.121622]  [<ffffffff8107844d>] kthread+0xed/0x100
-[   66.122218]  [<ffffffff810b7f1e>] ? put_lock_stats.isra.23+0xe/0x40
-[   66.122961]  [<ffffffff81078360>] ? kthread_create_on_node+0x160/0x160
-[   66.123739]  [<ffffffff81742e1c>] ret_from_fork+0x7c/0xb0
-[   66.124384]  [<ffffffff81078360>] ? kthread_create_on_node+0x160/0x160
+On Sat, Dec 08, 2012 at 12:26:24PM +0100, Andrew Lunn wrote:
+ 
+> 1) It should have an IRQ domain, like the other IRQ chips we have.
+> 2) It should have a DT binding, like the other IRQ chips we have.
 
+I was going to look at a DT binding for this as a follow on, since
+I'll want to bind to these interrupts. 
+
+Are you OK with keeping this patch as is and seeing DT in a follow up,
+or as a series? It is already pretty big.
+
+> 4) We than pass the watchdog interrupt via DT.
+
+Right now the watchdog driver is coded to cause a board reset, so it
+doesn't use interrupts at all. Adding interrupt support to watchdog
+seems orthogonal to this?
+
+What would it look like? For my boards I want the watchdog to panic(),
+because I have another watchdog that takes care of reset, but that
+won't be universal.
+
+> We plan to remove old style platforms in the next few cycles, so its
+
+Yay :)
+
+> 3) We then pass the timer interrupt via DT to the timer driver.
+> 3) is not so simple, because we currently don't have a timer binding
+> for Orion SoC. However, with this cleanup, we are much closer to being
+> able to use the 370/XP timer code.
+
+Interesting.. The 370/XP is a more advanced version of the same timer
+IP, there are several registers that driver is touching that are not
+HW supported, at least on kirkwood.
+
+It would be straightforward to add a binding in the style of
+time-armada-370-xp.c, I can probably send that as a third patch.
+
+The two DT bindings are straightforward, and my testing on Kirkwood
+should cover alot - but it would be great if non-kirkwood boards could
+review/test with this patch..
+
+Do you expect a DT conversion for all orion_time_init users, or just
+the one I can test or ..?
+
+> > @@ -534,8 +535,9 @@ static void __init kirkwood_timer_init(void)
+> >  {
+> >  	kirkwood_tclk = kirkwood_find_tclk();
+> >  
+> > -	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
+> > -			IRQ_KIRKWOOD_BRIDGE, kirkwood_tclk);
+> > +	orion_bridge_irq_init(IRQ_KIRKWOOD_BRIDGE, IRQ_KIRKWOOD_BRIDGE_START,
+> > +			      BRIDGE_CAUSE);
+> > +	orion_time_init(IRQ_KIRKWOOD_BRIDGE_TIMER1, kirkwood_tclk);
+> >  }
+> 
+> I think it would be better to do this in kirkwood_init_irq(). Same for
+> the other platforms. 
+
+Yes.. I left it like this because it is very easy to audit that it is
+correct (ie called, and called at the correc time). When DT support is
+added this will have to change again, so expecting that the next patch
+will have to change things so orion_bridge_irq_init is not called for
+the DT case, and the patch after so orion_time_init is not called for
+the DT case, are you OK with this patch leaving it here?
+
+> > +	u32 cause;
+> > +	int i;
+> > +
+> > +	cause = readl(gc->reg_base) & readl(gc->reg_base + 4);
+> 
+> Could you add a #define for this 4. I guess its an interrupt enable
+> mask? Could regs.mask be used?
+
+I will add a define, regs.mask could be used, but since the value is
+known and constant I left it as a constant as a micro-optimization.
+
+> > +	gc = irq_alloc_generic_chip("orion_irq_edge", 1, irq_start,
+> 
+> Maybe the name orion_bridge would be better?
+
+Sure
+
+Thanks,
+Jason
