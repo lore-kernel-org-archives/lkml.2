@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030405Ab2LIDlj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 22:41:39 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50702 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030390Ab2LIDli (ORCPT
+	id S1752143Ab2LIFVp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 00:21:45 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42083 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2LIFVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 22:41:38 -0500
-Message-ID: <1355024486.16481.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: 88pm8607: Update update_bit for BUCK2 in
- pm8607_set_voltage_sel
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 09 Dec 2012 11:41:26 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Sun, 9 Dec 2012 00:21:44 -0500
+Date: Sun, 09 Dec 2012 00:21:41 -0500 (EST)
+Message-Id: <20121209.002141.995257188036827568.davem@davemloft.net>
+To: joseph.gasparakis@intel.com
+Cc: shemminger@vyatta.com, chrisw@sous-sol.org, gospo@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry@broadcom.com, saeed.bishara@gmail.com,
+        bhutchings@solarflare.com
+Subject: Re: [PATCH v4 net-next 0/5] tunneling: Add support for
+ hardware-offloaded encapsulation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com>
+References: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUCK2 has the update_bit setting, but current code does not set update_bit
-in pm8607_set_voltage_sel.
+From: Joseph Gasparakis <joseph.gasparakis@intel.com>
+Date: Fri,  7 Dec 2012 16:14:13 -0800
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Haojian,
-I don't have the datasheet, can you check if this patch is correct or not?
-Thanks,
-Axel
- drivers/regulator/88pm8607.c |    1 +
- 1 file changed, 1 insertion(+)
+> The series contains updates to add in the NIC Rx and Tx checksumming
+> support for encapsulated packets.
 
-diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-index 2b55711..5c4879a 100644
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -236,6 +236,7 @@ static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
- 		return ret;
- 	switch (info->desc.id) {
- 	case PM8607_ID_BUCK1:
-+	case PM8607_ID_BUCK2:
- 	case PM8607_ID_BUCK3:
- 		ret = pm860x_set_bits(info->i2c, info->update_reg,
- 				      1 << info->update_bit,
--- 
-1.7.9.5
-
-
-
+Ok, all applied (except the ixgbe patch, of course), thanks.
