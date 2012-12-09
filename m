@@ -1,62 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2LIFYy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 00:24:54 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:42434 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab2LIFYx (ORCPT
+	id S1754128Ab2LIFZD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 00:25:03 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51489 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2LIFZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 00:24:53 -0500
-Date: Sun, 9 Dec 2012 16:24:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: John Linn <John.Linn@xilinx.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: fetch failure the xilinx tree
-Message-Id: <20121209162442.15fbb8509569c193bfd88986@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__9_Dec_2012_16_24_42_+1100_ZCd0D/lMBNQusfxl"
+	Sun, 9 Dec 2012 00:25:00 -0500
+X-AuditID: 85900ec0-d5479b900000152f-88-50c420a8764a
+Message-ID: <50C420A7.9090108@hitachi.com>
+Date: Sun, 09 Dec 2012 14:24:55 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Cong Ding <dinggnu@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v2] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate
+ const
+References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com> <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com> <20121207224949.GA6179@gmail.com> <50C27410.7050101@zytor.com> <20121207230302.GB6179@gmail.com> <50C27665.4090206@zytor.com> <20121207231729.GC6179@gmail.com>
+In-Reply-To: <20121207231729.GC6179@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__9_Dec_2012_16_24_42_+1100_ZCd0D/lMBNQusfxl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2012/12/08 8:17), Cong Ding wrote:
+>>>>>> Patch description please?
+>>>>> there are 2 consts in the definition of one variable
+>>>>>
+>>>>
+>>>> Please put in an actual patch description.  The first line (subject
+>>>> line) is a title; the patch should make sense without it.
+>>> sorry for that. so like this is fine?
+>>>
+>>
+>> Well, except that typically you should explain which variable it is.
+>> Yes, it is obvious if you look at the patch, but you're making the
+>> reader spend a few more moments than necessary.
+>>
+>> Also, you should explain what the harm is -- if it breaks anything
+>> or is just a cosmetic issue.
+> sorry again for lacking of experience...
+> and I missed another same error, so send version 2.
 
-Hi John,
+Ah, sorry for my mistake. I would like to make both the value
+pointed by the pointers and the pointers itself read-only.
+Thus the right way of the patch should be;
 
-Attempting to fetch the xilinx tree produces this error (and has for some
-days, now):
+-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
++	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX + 1]" \
 
-fatal: The remote end hung up unexpectedly
+Cong, could you update your patch? then I can Ack that.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thank you,
 
---Signature=_Sun__9_Dec_2012_16_24_42_+1100_ZCd0D/lMBNQusfxl
-Content-Type: application/pgp-signature
+> 
+> - cong
+> ---
+> From 6cf729b913287a6fc06325ca75ccf0efff9274e8 Mon Sep 17 00:00:00 2001
+> From: Cong Ding <dinggnu@gmail.com>
+> Date: Fri, 7 Dec 2012 23:14:32 +0000
+> Subject: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate const
+> 
+> fix the following sparse warning:
+> arch/x86/lib/inat-tables.c:1080:25: warning: duplicate const
+> arch/x86/lib/inat-tables.c:1095:25: warning: duplicate const
+> arch/x86/lib/inat-tables.c:1118:25: warning: duplicate const
+> 
+> for variable inat_escape_tables, inat_group_tables, and inat_avx_tables
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  arch/x86/tools/gen-insn-attr-x86.awk |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
+> index ddcf39b..987c7b2 100644
+> --- a/arch/x86/tools/gen-insn-attr-x86.awk
+> +++ b/arch/x86/tools/gen-insn-attr-x86.awk
+> @@ -356,7 +356,7 @@ END {
+>  		exit 1
+>  	# print escape opcode map's array
+>  	print "/* Escape opcode map array */"
+> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
+> +	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
+>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>  	for (i = 0; i < geid; i++)
+>  		for (j = 0; j < max_lprefix; j++)
+> @@ -365,7 +365,7 @@ END {
+>  	print "};\n"
+>  	# print group opcode map's array
+>  	print "/* Group opcode map array */"
+> -	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
+> +	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
+>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>  	for (i = 0; i < ggid; i++)
+>  		for (j = 0; j < max_lprefix; j++)
+> @@ -374,7 +374,7 @@ END {
+>  	print "};\n"
+>  	# print AVX opcode map's array
+>  	print "/* AVX opcode map array */"
+> -	print "const insn_attr_t const *inat_avx_tables[X86_VEX_M_MAX + 1]"\
+> +	print "const insn_attr_t *inat_avx_tables[X86_VEX_M_MAX + 1]"\
+>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>  	for (i = 0; i < gaid; i++)
+>  		for (j = 0; j < max_lprefix; j++)
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQxCCaAAoJEECxmPOUX5FEeAcP/3MNhMIalGNseq8MOEjRYh4D
-0w5RTo/EBShUYzDYoxY7K0bniYU6nJRnSuW+PRVKEv03RK5e9YMfHS2+prZxq9FW
-foL3RKPLUoUG10MKBnXjzvZ8nwHd+lE5i5Ui+QbskOsKi4z4y7pzBSuKSpRRgU4l
-TRikU4c1s+OLv8MogO4YTw+lYzp/h208BdltDT5zLMSxTzc5UCAyz2IwVof9RzTz
-6pr1FaO8Jcq1QWm3gLWZwT+w2YzkdLn6q5PKWgcCVqP+hj3jQ19gboEVZBuZLVBh
-BSWOgR8k2EdKsW3U3uFd3dFXt7xpknJ6UYnb66b8hM8AXBqUIgeSSAh6Agt7L7Db
-xkUIaFLX/LtD5tfsXvOM5Yb1Y7kAQcWjLpyXwSf5Mjha0CHlcrYlAp9Hyv6etawN
-T9w4u32BuQqdh4oUn5l566sMXNilJfKwQq2qnXmfq/KKmIzm32JXuMb3uURI6OFG
-pcDxF6/KDkmMG2B07g4iwrX78QV5HUBexeQXz3fc980Z8+AdA07RCiAYZhdCAh5U
-Eid4MPr/wRxYmUb1YSDRRUI7bZugN1iJjiDG2CtYV5+fsJCnAje6r38oSMwkkf5R
-lCATe0r0oIW7LGyzdtXRyakQAW3RTmLSUOtiEirM9YoRqh9M8oP2symJtBDN6I4w
-9Jo2ABPxo86hZyPShjED
-=dru2
------END PGP SIGNATURE-----
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---Signature=_Sun__9_Dec_2012_16_24_42_+1100_ZCd0D/lMBNQusfxl--
+
