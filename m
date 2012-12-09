@@ -1,339 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872Ab2LILFO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 06:05:14 -0500
-Received: from wren.arvixe.com ([50.97.138.99]:47153 "EHLO wren.arvixe.com"
+	id S1758397Ab2LILL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 06:11:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36375 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933844Ab2LILFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 06:05:12 -0500
-From: Przemo Firszt <przemo@firszt.eu>
-To: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        greg@kroah.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH 1/5] rtl8712: code clean up
-Date: Sun,  9 Dec 2012 10:15:06 +0000
-Message-Id: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.8.0.1
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - wren.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
-X-Get-Message-Sender-Via: wren.arvixe.com: authenticated_id: przemo@firszt.eu
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752554Ab2LILLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 06:11:54 -0500
+Date: Sun, 9 Dec 2012 11:11:46 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.7-rc8 boot failure due to recent workqueue-related patch
+Message-ID: <20121209111146.GB1009@suse.de>
+References: <20121208203524.GA1009@suse.de>
+ <alpine.LFD.2.02.1212081647500.4593@air.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1212081647500.4593@air.linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean some trivial formating problems in rtl8712 from staging tree. This patch
-also changes the way preprocessor macros are defined to keep checkpatch.pl
-quiet.
+On Sat, Dec 08, 2012 at 04:50:21PM -0800, Linus Torvalds wrote:
+> 
+> 
+> On Sat, 8 Dec 2012, Mel Gorman wrote:
+> >
+> > Commit 8852aac2 (workqueue: mod_delayed_work_on() shouldn't queue timer on
+> > 0 delay) is causing the following boot failure for me. Found by bisection
+> > but no further analysis unfortunately until I get back home properly.
+> > I've added the relevant maintainers for megasas and SCSI in case it's
+> > somehow specific to that driver.
+> 
+> This should be fixed by commit c1d390d8e612. The Megaraid SAS driver was 
+> doing insane things, using a work-struct for delayed work, and casting 
+> pointers around. It had happened to work for all the wrong reasons before, 
+> the mod_delayed_work_on() changes just exposed how crazy that crap was.
+> 
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
----
- drivers/staging/rtl8712/ieee80211.h        |   2 +-
- drivers/staging/rtl8712/rtl871x_cmd.h      |   2 +-
- drivers/staging/rtl8712/rtl871x_security.h |   6 +-
- drivers/staging/rtl8712/sta_info.h         |   2 +-
- drivers/staging/rtl8712/wifi.h             | 167 +++++++++++++----------------
- 5 files changed, 79 insertions(+), 100 deletions(-)
+Correct, it is fixed by commit c1d390d8e612. Sorry for the noise.
 
-diff --git a/drivers/staging/rtl8712/ieee80211.h b/drivers/staging/rtl8712/ieee80211.h
-index 21515c3..da4000e 100644
---- a/drivers/staging/rtl8712/ieee80211.h
-+++ b/drivers/staging/rtl8712/ieee80211.h
-@@ -777,7 +777,7 @@ extern inline int ieee80211_get_hdrlen(u16 fc)
- struct registry_priv;
- 
- u8 *r8712_set_ie(u8 *pbuf, sint index, uint len, u8 *source, uint *frlen);
--u8 *r8712_get_ie(u8*pbuf, sint index, sint *len, sint limit);
-+u8 *r8712_get_ie(u8 *pbuf, sint index, sint *len, sint limit);
- unsigned char *r8712_get_wpa_ie(unsigned char *pie, int *rsn_ie_len, int limit);
- unsigned char *r8712_get_wpa2_ie(unsigned char *pie, int *rsn_ie_len,
- 				 int limit);
-diff --git a/drivers/staging/rtl8712/rtl871x_cmd.h b/drivers/staging/rtl8712/rtl871x_cmd.h
-index 9d93189..0ce79b1 100644
---- a/drivers/staging/rtl8712/rtl871x_cmd.h
-+++ b/drivers/staging/rtl8712/rtl871x_cmd.h
-@@ -749,7 +749,7 @@ u8 r8712_setopmode_cmd(struct _adapter *padapter,
- u8 r8712_setdatarate_cmd(struct _adapter *padapter, u8 *rateset);
- u8 r8712_set_chplan_cmd(struct _adapter  *padapter, int chplan);
- u8 r8712_setbasicrate_cmd(struct _adapter *padapter, u8 *rateset);
--u8 r8712_getrfreg_cmd(struct _adapter *padapter, u8 offset, u8 * pval);
-+u8 r8712_getrfreg_cmd(struct _adapter *padapter, u8 offset, u8 *pval);
- u8 r8712_setrfintfs_cmd(struct _adapter *padapter, u8 mode);
- u8 r8712_setrfreg_cmd(struct _adapter  *padapter, u8 offset, u32 val);
- u8 r8712_setrttbl_cmd(struct _adapter  *padapter,
-diff --git a/drivers/staging/rtl8712/rtl871x_security.h b/drivers/staging/rtl8712/rtl871x_security.h
-index a13395f..c732aea 100644
---- a/drivers/staging/rtl8712/rtl871x_security.h
-+++ b/drivers/staging/rtl8712/rtl871x_security.h
-@@ -207,9 +207,9 @@ void seccalctkipmic(
- 	u8  *Miccode,
- 	u8   priority);
- 
--void r8712_secmicsetkey(struct mic_data *pmicdata, u8 * key);
--void r8712_secmicappend(struct mic_data *pmicdata, u8 * src, u32 nBytes);
--void r8712_secgetmic(struct mic_data *pmicdata, u8 * dst);
-+void r8712_secmicsetkey(struct mic_data *pmicdata, u8 *key);
-+void r8712_secmicappend(struct mic_data *pmicdata, u8 *src, u32 nBytes);
-+void r8712_secgetmic(struct mic_data *pmicdata, u8 *dst);
- u32 r8712_aes_encrypt(struct _adapter *padapter, u8 *pxmitframe);
- u32 r8712_tkip_encrypt(struct _adapter *padapter, u8 *pxmitframe);
- void r8712_wep_encrypt(struct _adapter *padapter, u8  *pxmitframe);
-diff --git a/drivers/staging/rtl8712/sta_info.h b/drivers/staging/rtl8712/sta_info.h
-index f8016e9..c4e0ef2 100644
---- a/drivers/staging/rtl8712/sta_info.h
-+++ b/drivers/staging/rtl8712/sta_info.h
-@@ -140,7 +140,7 @@ void r8712_free_all_stainfo(struct _adapter *padapter);
- struct sta_info *r8712_get_stainfo(struct sta_priv *pstapriv, u8 *hwaddr);
- void r8712_init_bcmc_stainfo(struct _adapter *padapter);
- struct sta_info *r8712_get_bcmc_stainfo(struct _adapter *padapter);
--u8 r8712_access_ctrl(struct wlan_acl_pool *pacl_list, u8 * mac_addr);
-+u8 r8712_access_ctrl(struct wlan_acl_pool *pacl_list, u8 *mac_addr);
- 
- #endif /* _STA_INFO_H_ */
- 
-diff --git a/drivers/staging/rtl8712/wifi.h b/drivers/staging/rtl8712/wifi.h
-index 793443e..c08ed2a 100644
---- a/drivers/staging/rtl8712/wifi.h
-+++ b/drivers/staging/rtl8712/wifi.h
-@@ -159,99 +159,85 @@ enum WIFI_REG_DOMAIN {
- #define _PRIVACY_	BIT(14)
- #define _ORDER_		BIT(15)
- 
--#define SetToDs(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_TO_DS_); \
--	} while (0)
-+#define SetToDs(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_TO_DS_); \
-+})
- 
- #define GetToDs(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 			le16_to_cpu(_TO_DS_)) != 0)
- 
--#define ClearToDs(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_TO_DS_)); \
--	} while (0)
-+#define ClearToDs(pbuf)	({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_TO_DS_)); \
-+})
- 
--#define SetFrDs(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_FROM_DS_); \
--	} while (0)
-+#define SetFrDs(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_FROM_DS_); \
-+})
- 
- #define GetFrDs(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 			le16_to_cpu(_FROM_DS_)) != 0)
- 
--#define ClearFrDs(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_FROM_DS_)); \
--	} while (0)
-+#define ClearFrDs(pbuf)	({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_FROM_DS_)); \
-+})
- 
- #define get_tofr_ds(pframe)	((GetToDs(pframe) << 1) | GetFrDs(pframe))
- 
- 
--#define SetMFrag(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_MORE_FRAG_); \
--	} while (0)
-+#define SetMFrag(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_MORE_FRAG_); \
-+})
- 
- #define GetMFrag(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 			le16_to_cpu(_MORE_FRAG_)) != 0)
- 
--#define ClearMFrag(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_MORE_FRAG_)); \
--	} while (0)
-+#define ClearMFrag(pbuf) ({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_MORE_FRAG_)); \
-+})
- 
--#define SetRetry(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_RETRY_); \
--	} while (0)
-+#define SetRetry(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_RETRY_); \
-+})
- 
- #define GetRetry(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 			le16_to_cpu(_RETRY_)) != 0)
- 
--#define ClearRetry(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_RETRY_)); \
--	} while (0)
-+#define ClearRetry(pbuf) ({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_RETRY_)); \
-+})
- 
--#define SetPwrMgt(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_PWRMGT_); \
--	} while (0)
-+#define SetPwrMgt(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_PWRMGT_); \
-+})
- 
- #define GetPwrMgt(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 			le16_to_cpu(_PWRMGT_)) != 0)
- 
--#define ClearPwrMgt(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_PWRMGT_)); \
--	} while (0)
-+#define ClearPwrMgt(pbuf) ({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_PWRMGT_)); \
-+})
- 
--#define SetMData(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_MORE_DATA_); \
--	} while (0)
-+#define SetMData(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_MORE_DATA_); \
-+})
- 
- #define GetMData(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 			le16_to_cpu(_MORE_DATA_)) != 0)
- 
--#define ClearMData(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_MORE_DATA_)); \
--	} while (0)
-+#define ClearMData(pbuf) ({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_MORE_DATA_)); \
-+})
- 
--#define SetPrivacy(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_PRIVACY_); \
--	} while (0)
-+#define SetPrivacy(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_PRIVACY_); \
-+})
- 
- #define GetPrivacy(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 				le16_to_cpu(_PRIVACY_)) != 0)
- 
--#define ClearPrivacy(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) &= (~cpu_to_le16(_PRIVACY_)); \
--	} while (0)
-+#define ClearPrivacy(pbuf) ({ \
-+	*(unsigned short *)(pbuf) &= (~cpu_to_le16(_PRIVACY_)); \
-+})
- 
- 
- #define GetOrder(pbuf)	(((*(unsigned short *)(pbuf)) & \
-@@ -287,48 +273,42 @@ enum WIFI_REG_DOMAIN {
- #define GetTupleCache(pbuf)	(cpu_to_le16(*(unsigned short *)\
- 				((addr_t)(pbuf) + 22)))
- 
--#define SetFragNum(pbuf, num) \
--	do {    \
--		*(unsigned short *)((addr_t)(pbuf) + 22) = \
--			((*(unsigned short *)((addr_t)(pbuf) + 22)) & \
--			le16_to_cpu(~(0x000f))) | \
--			cpu_to_le16(0x0f & (num));     \
--	} while (0)
--
--#define SetSeqNum(pbuf, num) \
--	do {    \
--		*(unsigned short *)((addr_t)(pbuf) + 22) = \
--			((*(unsigned short *)((addr_t)(pbuf) + 22)) & \
--			le16_to_cpu((unsigned short)0x000f)) | \
--			le16_to_cpu((unsigned short)(0xfff0 & (num << 4))); \
--	} while (0)
--
--#define SetDuration(pbuf, dur) \
--	do {    \
--		*(unsigned short *)((addr_t)(pbuf) + 2) |= \
--			cpu_to_le16(0xffff & (dur)); \
--	} while (0)
--
--#define SetPriority(pbuf, tid)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(tid & 0xf); \
--	} while (0)
-+#define SetFragNum(pbuf, num) ({ \
-+	*(unsigned short *)((addr_t)(pbuf) + 22) = \
-+	((*(unsigned short *)((addr_t)(pbuf) + 22)) & \
-+	le16_to_cpu(~(0x000f))) | \
-+	cpu_to_le16(0x0f & (num));     \
-+})
-+
-+#define SetSeqNum(pbuf, num) ({ \
-+	*(unsigned short *)((addr_t)(pbuf) + 22) = \
-+	((*(unsigned short *)((addr_t)(pbuf) + 22)) & \
-+	le16_to_cpu((unsigned short)0x000f)) | \
-+	le16_to_cpu((unsigned short)(0xfff0 & (num << 4))); \
-+})
-+
-+#define SetDuration(pbuf, dur) ({ \
-+	*(unsigned short *)((addr_t)(pbuf) + 2) |= \
-+	cpu_to_le16(0xffff & (dur)); \
-+})
-+
-+#define SetPriority(pbuf, tid) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(tid & 0xf); \
-+})
- 
- #define GetPriority(pbuf)	((le16_to_cpu(*(unsigned short *)(pbuf))) & 0xf)
- 
--#define SetAckpolicy(pbuf, ack)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16((ack & 3) << 5); \
--	} while (0)
-+#define SetAckpolicy(pbuf, ack) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16((ack & 3) << 5); \
-+})
- 
- #define GetAckpolicy(pbuf) (((le16_to_cpu(*(unsigned short *)pbuf)) >> 5) & 0x3)
- 
- #define GetAMsdu(pbuf) (((le16_to_cpu(*(unsigned short *)pbuf)) >> 7) & 0x1)
- 
--#define SetAMsdu(pbuf, amsdu)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16((amsdu & 1) << 7); \
--	} while (0)
-+#define SetAMsdu(pbuf, amsdu) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16((amsdu & 1) << 7); \
-+})
- 
- #define GetAid(pbuf)	(cpu_to_le16(*(unsigned short *)((addr_t)(pbuf) + 2)) \
- 			& 0x3fff)
-@@ -526,10 +506,9 @@ static inline unsigned char *get_hdr_bssid(unsigned char *pframe)
- #define IEEE80211_DELBA_PARAM_TID_MASK 0xF000
- #define IEEE80211_DELBA_PARAM_INITIATOR_MASK 0x0800
- 
--#define SetOrderBit(pbuf)	\
--	do	{	\
--		*(unsigned short *)(pbuf) |= cpu_to_le16(_ORDER_); \
--	} while (0)
-+#define SetOrderBit(pbuf) ({ \
-+	*(unsigned short *)(pbuf) |= cpu_to_le16(_ORDER_); \
-+})
- 
- #define GetOrderBit(pbuf)	(((*(unsigned short *)(pbuf)) & \
- 				le16_to_cpu(_ORDER_)) != 0)
 -- 
-1.8.0.1
-
+Mel Gorman
+SUSE Labs
