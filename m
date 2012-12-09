@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab2LIBPz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 20:15:55 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64571 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab2LIBPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 20:15:53 -0500
+	id S1756486Ab2LIB1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 20:27:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756469Ab2LIB1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Dec 2012 20:27:32 -0500
+Date: Sat, 8 Dec 2012 20:27:24 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: David Airlie <airlied@linux.ie>, alexander.deucher@amd.com
+Subject: rs600 warn on while booting 3.7-rc8
+Message-ID: <20121209012724.GA18395@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	David Airlie <airlied@linux.ie>, alexander.deucher@amd.com
 MIME-Version: 1.0
-In-Reply-To: <20121208194613.GC3897@kroah.com>
-References: <20121207005232.756641002@linuxfoundation.org>
-	<CAKocOOM-QZ88+sV40C8OJWAN89W4QkDKx+gLjrmZEeUs=CJ57g@mail.gmail.com>
-	<CAKocOOOKAeD=BuRnDa6U7KtHOXAK7b-VCibQohPGkAB-ZYX4aA@mail.gmail.com>
-	<CAKocOOO8bJ+vBuG3Dwx_-EnAqcVJ00G69Rc764eFTuhgszJntQ@mail.gmail.com>
-	<20121208194613.GC3897@kroah.com>
-Date: Sat, 8 Dec 2012 18:15:52 -0700
-Message-ID: <CAKocOOMLzEzMPOTghQhQJ=pyV0spvWe3qcUM3g5VtT=k69wF9g@mail.gmail.com>
-Subject: Re: [ 00/20] 3.4.23-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 8, 2012 at 12:46 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Dec 07, 2012 at 05:59:24PM -0700, Shuah Khan wrote:
->> On Fri, Dec 7, 2012 at 5:52 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->> > On Fri, Dec 7, 2012 at 5:49 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->> >> On Thu, Dec 6, 2012 at 5:54 PM, Greg Kroah-Hartman
->> >> <gregkh@linuxfoundation.org> wrote:
->> >>> This is the start of the stable review cycle for the 3.4.23 release.
->> >>> There are 20 patches in this series, all will be posted as a response
->> >>> to this one.  If anyone has any issues with these being applied, please
->> >>> let me know.
->> >>>
->> >>> Responses should be made by Sun Dec  9 00:50:03 UTC 2012.
->> >>> Anything received after that time might be too late.
->> >>>
->> >>> The whole patch series can be found in one patch at:
->> >>>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.23-rc1.gz
->> >>> and the diffstat can be found below.
->> >>>
->> >>> thanks,
->> >>>
->> >>> greg k-h
->> >>
->> >> Patche applied cleanly and compiled and booted on the following systems:
->> >>
->> >> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
->> >> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
->> >>
->> >> Cross-compile tests
->> >> alpha: defconfig passed
->> >> arm: defconfig passed
->> >> c6x: defconfig passed
->> >> mips: defconfig passed
->> >> mipsel: defconfig passed
->> >> powerpc: wii_defconfig passed
->> >> sh: defconfig passed
->> >> sparc: defconfig passed
->> >> tile: tilegx_defconfig passed
->> >
->> > Correction.
->> > tile: tilegx_defconfig failed:
->> >
->> > tile tilegx_defconfig
->> >
->> > Just a snippet, I can send a full log.
->> >
->> >  LD      init/built-in.o
->> >   HOSTCC  usr/gen_init_cpio
->> >   /home/shuah/lkml/linux_stable_testing_3.0.56/scripts/gen_initramfs_list.sh:
->> > Cannot open 'usr/contents.txt'
->> > make[1]: *** [usr/initramfs_data.cpio] Error 1
->> > make: *** [usr] Error 2
->> >
->> > Didn't get a chance to investigate.
->>
->> Sorry tile failure is for 3.0.56
->
-> Is that caused by something new in 3.0.56, or has it always been that
-> way?
+[   66.104790] WARNING: at drivers/gpu/drm/radeon/rs600.c:571 rs600_irq_set+0x1e2/0x200()
+[   66.105748] Hardware name: GA-MA78GM-S2H
+[   66.106220] Can't enable IRQ/MSI because no handler is installed
+[   66.106935] Modules linked in:
+[   66.107329] Pid: 43, comm: kworker/0:1 Not tainted 3.7.0-rc8+ #8
+[   66.108044] Call Trace:
+[   66.108350]  [<ffffffff8104da4f>] warn_slowpath_common+0x7f/0xc0
+[   66.109067]  [<ffffffff8104db46>] warn_slowpath_fmt+0x46/0x50
+[   66.109749]  [<ffffffff81480762>] rs600_irq_set+0x1e2/0x200
+[   66.110416]  [<ffffffff8146fa92>] ? radeon_irq_kms_enable_hpd+0x32/0x90
+[   66.111203]  [<ffffffff8146faca>] radeon_irq_kms_enable_hpd+0x6a/0x90
+[   66.111965]  [<ffffffff81480123>] rs600_hpd_init+0xb3/0xc0
+[   66.112627]  [<ffffffff814680f3>] radeon_modeset_init+0x323/0xb90
+[   66.113355]  [<ffffffff81444f40>] radeon_driver_load_kms+0xf0/0x180
+[   66.114103]  [<ffffffff8140f356>] drm_get_pci_dev+0x186/0x2c0
+[   66.114790]  [<ffffffff8119dda8>] ? kfree+0x298/0x2a0
+[   66.115397]  [<ffffffff8171e22a>] radeon_pci_probe+0xb1/0xb9
+[   66.116074]  [<ffffffff81357679>] local_pci_probe+0x79/0x100
+[   66.116751]  [<ffffffff8106db18>] work_for_cpu_fn+0x18/0x30
+[   66.117418]  [<ffffffff810711c7>] process_one_work+0x207/0x750
+[   66.118109]  [<ffffffff81071157>] ? process_one_work+0x197/0x750
+[   66.118825]  [<ffffffff8106db00>] ? too_many_workers+0x40/0x40
+[   66.119517]  [<ffffffff8107173c>] process_scheduled_works+0x2c/0x40
+[   66.120259]  [<ffffffff81071c82>] worker_thread+0x2f2/0x440
+[   66.120925]  [<ffffffff81071990>] ? rescuer_thread+0x240/0x240
+[   66.121622]  [<ffffffff8107844d>] kthread+0xed/0x100
+[   66.122218]  [<ffffffff810b7f1e>] ? put_lock_stats.isra.23+0xe/0x40
+[   66.122961]  [<ffffffff81078360>] ? kthread_create_on_node+0x160/0x160
+[   66.123739]  [<ffffffff81742e1c>] ret_from_fork+0x7c/0xb0
+[   66.124384]  [<ffffffff81078360>] ? kthread_create_on_node+0x160/0x160
 
-Sorry forgot to mention that it is not a regression in 3.0.56. I
-compared the patch
-and this source file is not patched in 3.0.56-rc1. git log shows that
-this file was last
-touched back in Jan of 2011 and very likely this error was introduced
-in a commit from
-Sept 2010.
-
-You can choose to leave this in and I sent a patch which can go
-through its normal process
-and get pulled in when it gets approved by the powerpc maintainers.
-
--- Shuah
