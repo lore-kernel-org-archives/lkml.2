@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934110Ab2LIM7n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 07:59:43 -0500
-Received: from nm17.bullet.mail.bf1.yahoo.com ([98.139.212.176]:20336 "EHLO
-	nm17.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934096Ab2LIM7m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 07:59:42 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 786737.92955.bm@omp1014.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=5Xdup/vCBQ7cZtHMzw8Y/4CA/K6tOKQpiK30mloVqN+hJLxzhm26xZNMGs5+RN3O4gfpa41vNQeX8knTVZkwBdeF9mxKIH/YIoYlOyewKGnABN4u+eDITtF/kK9J1sI46YZEkWPB7vx+XYUAVcfJEDhYoOLWpf3I6dmsPNVKoeQ=;
-X-YMail-OSG: hqoWlAoVM1l7F_mAiYHADBaOhXZkG72bCt6eIijYjNDRC3g
- RLzCJedLvkm84RZR5RLY8vbkZ.opNlp6x9ywy4OS0ZX4B_2y7ShuL.Vt36B5
- 34jQsYv4GuXNOJp7xpFx7cfaouoweSHeUsVZ3qxwItiSf0pp_76IN9dGOL17
- gZp8jXc7vmAV3WM0G4u4VGEHhA60EI9B9giOXtDHpovy5jXAy6tdIP37WJ3b
- FNRNDsg2kKm.2fb2zn4T303qIpQw6vedqVla9F9GLGXhYWtMGjs0NOf.v7qC
- 7qrzFvNrqv3bx_ba8iO07esto0q7tU8gYdr24ifTM5LkpLuAiH2_7Azr0wVs
- DN.Duf_I1S9igl2UpwAnPcod4r7.nvipSaOGByJsQgFcjjMroJspx4dyGuhB
- leD2NkuqaC1XWjou3atsygp5BO_6IJkGGkGLQVgafEFtKXVqW44iiJR_Fq8X
- syefkT1tuwzRtSuBMgNh208VEG_UEpIH0torXxo.ReoSecf2ewMACLHSCzce
- .K6RCTEkV9v8ypkk.A8.ErJc-
-X-Rocket-MIMEInfo: 001.001,PiBPaCwgbWF5YmUgSSB3YXNuJ3QgY2xlYXIgLSBJIHdhc24ndCB0YWxraW5nIGFib3V0IHN0YXRpc3RpY2FsCgo.IHNpZ25pZmljYW5jZSBidXQgcmF0aGVyIGFib3V0IHByYWN0aWNhbCBzaWduaWZpY2FuY2UuCgpPSy4gwqBJIHdpbGwgbm90IGFyZ3VlIHdpdGggdGhhdCA6KQoKPiBBIG1pbnVzY3VsZSBzcGVlZHVwIChhIGxvdCBsZXNzIHRoYW4gMSUpIHNob3dpbmcgb25seSBpbiBhICpzaW5nbGUqCj4gd29ya2xvYWQgc28gZmFyIGFuZCByZWxldmFudCBvbmx5IGZvciBhICp2ZXJ5KiAqc21hbGwqIG51bWIBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.128.478
-References: <1354745355.79857.YahooMailNeo@web140001.mail.bf1.yahoo.com> <20121205222738.GB6239@liondog.tnic> <1354748412.17691.YahooMailNeo@web140005.mail.bf1.yahoo.com> <20121205230835.GF6222@liondog.tnic> <1354968839.35825.YahooMailNeo@web140006.mail.bf1.yahoo.com> <20121209111857.GC24106@liondog.tnic> <1355054935.13447.YahooMailNeo@web140004.mail.bf1.yahoo.com> <20121209122907.GD24106@liondog.tnic>
-Message-ID: <1355057981.88866.YahooMailNeo@web140001.mail.bf1.yahoo.com>
-Date: Sun, 9 Dec 2012 04:59:41 -0800 (PST)
-From: John <da_audiophile@yahoo.com>
-Reply-To: John <da_audiophile@yahoo.com>
-Subject: Re: [PATCH] Expand CPU compiler options
-To: Borislav Petkov <bp@alien8.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20121209122907.GD24106@liondog.tnic>
+	id S934125Ab2LINGy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 08:06:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53369 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934112Ab2LINGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 08:06:52 -0500
+Message-ID: <50C48CE8.9070400@gmail.com>
+Date: Sun, 09 Dec 2012 14:06:48 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
+ timer
+References: <20121207225507.GB29262@obsidianresearch.com> <20121208112624.GD25315@lunn.ch> <20121209025748.GA10405@obsidianresearch.com> <20121209083046.GA25466@lunn.ch>
+In-Reply-To: <20121209083046.GA25466@lunn.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Oh, maybe I wasn't clear - I wasn't talking about statistical
+On 12/09/2012 09:30 AM, Andrew Lunn wrote:
+> On Sat, Dec 08, 2012 at 07:57:48PM -0700, Jason Gunthorpe wrote:
+>> On Sat, Dec 08, 2012 at 12:26:24PM +0100, Andrew Lunn wrote:
+>>
+>>> 1) It should have an IRQ domain, like the other IRQ chips we have.
+>>> 2) It should have a DT binding, like the other IRQ chips we have.
+>>
+>> I was going to look at a DT binding for this as a follow on, since
+>> I'll want to bind to these interrupts.
+>>
+>> Are you OK with keeping this patch as is and seeing DT in a follow up,
+>> or as a series? It is already pretty big.
+>
+> Hi Jason
+>
+> A patch series is great. However, its not so good practice to add
+> something on the first patch, and then move it somewhere else in the
+> next. So i would suggest initializing the controller in
+> kirkwood_irq_init(), etc as its added.
 
-> significance but rather about practical significance.
+Hi Andrew, Jason,
 
-OK.  I will not argue with that :)
+first of all I have adjusted the Cc list a little bit: Gregory is missing,
+and I removed Mike and Olof as they might not be that interested in discussing
+mvebu internals. Please re-add if I am wrong.
 
-> A minuscule speedup (a lot less than 1%) showing only in a *single*
-> workload so far and relevant only for a *very* *small* number of linux
-> users - only those who build their own kernels - is simply not worth
-> including in the kernel.
+I have an irqchip driver for orion that I wrote some weeks ago. I can
+prepare a patch today. I will allow to have main irq controller by DT
+and I can also add a secondary irq controller for the bridge registers
+as chained irq handler.
 
+If I dig hard enough in my branches I will also find time-orion drivers,
+that are either "standalone" (i.e. orion only) or merged with time-mvebu.
 
-My only confusion is why some of these are already included in the linux kernel source today, for example CORE2.  As I stated in my previous email, the two 'new' ones I tested preform as-good-as or better-than the CORE2 which is already included.  Does my confusion make sense?
+The main irq controller will be required for sure, but for the secondary
+irq controller we had a discussion long ago. IIRC Gregory proposed to have
+shared irqs handled by timer and watchdog, I was proposing chained irqs.
 
-Thanks again for the consideration!
+For mvebu archs, IIRC, we have wrt to timer-related irqs:
+- Armada 370/XP with different irq handler and timer irq handling within
+   timer registers.
+- Orion SoCs with Bridge irq registers for timer related stuff (timer0/1)
+- Kirkwood and Dove with watchdog timers (both with wdt irq in bridge irqs)
+- RTC in bridge irqs, but Dove with RTC connected to PMU irqs
+
+I think we should have patches for irqchip-orion first and then rethink
+if we want a standalone timer-orion or merge it with timer-mvebu. Having
+watchdog using irqs is kind of independent from this.
+
+> ...
+>>> 3) We then pass the timer interrupt via DT to the timer driver.
+>>> 3) is not so simple, because we currently don't have a timer binding
+>>> for Orion SoC. However, with this cleanup, we are much closer to being
+>>> able to use the 370/XP timer code.
+>>
+>> Interesting.. The 370/XP is a more advanced version of the same timer
+>> IP, there are several registers that driver is touching that are not
+>> HW supported, at least on kirkwood.
+>
+> Yes, the 25MHz and the divider for example. I'm not 100% sure it will
+> actually work, it will need a different compatibility string, and a
+> bit of configuration based on that string, but i think it goes. If you
+> compare the two different drivers, they are very similar.
+
+Back in the days when Gregory, Thomas, and I were looking into merged timer
+we agreed not to have an extra check on 25MHz support. If you put the
+property in the node, it will try to set the timer to fixed 25MHz. If you
+use the property on Orion timer, it will just break timer handling.
+
+Sebastian
