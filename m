@@ -1,70 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab2LIRH5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 12:07:57 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:53227 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab2LIRHz (ORCPT
+	id S1758755Ab2LIRIU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 12:08:20 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:40286 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758738Ab2LIRIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 12:07:55 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Sun, 09 Dec 2012 11:07:54 -0600
-X-Originating-IP: 108.223.40.66
-Date: Sun, 9 Dec 2012 09:07:54 -0800
-From: Guenter Roeck <groeck-dsl@sbcglobal.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: anish kumar <anish198519851985@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
- gpio chip
-Message-ID: <20121209170754.GA27468@roeck-us.net>
-References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
- <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
- <20121207145955.GA28704@roeck-us.net>
- <20121207164906.08b65046@pyramind.ukuu.org.uk>
- <1355047099.1673.5.camel@anish-Inspiron-N5050>
- <20121209110319.459a762a@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121209110319.459a762a@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 9 Dec 2012 12:08:18 -0500
+X-IronPort-AV: E=Sophos;i="4.84,246,1355094000"; 
+   d="scan'208";a="185305007"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: kernel-janitors@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/video/wm8505fb.c: use devm_ functions
+Date: Sun,  9 Dec 2012 19:08:11 +0100
+Message-Id: <1355076491-2246-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 09, 2012 at 11:03:19AM +0000, Alan Cox wrote:
-> On Sun, 09 Dec 2012 01:58:19 -0800
-> anish kumar <anish198519851985@gmail.com> wrote:
-> 
-> > On Fri, 2012-12-07 at 16:49 +0000, Alan Cox wrote:
-> > > > I could imagine declaring the activity request buttons to be "input", but for
-> > > > presence detects it is a bit far fetched and would add too much complexity.
-> > > 
-> > > Android tries to address this with its switch class driver, but I'm not
-> > > sure its actually got anything over making them input devices.
-> > 
-> > Sorry for not understanding the context here.How the debounce sysfs
-> > added by Guenter has anything to do with switch driver in android?
-> 
-> The other more general option is to make the input layer do the debounce
-> and make them all inputs rather than just relying on any gpio layer
-> support.
-> 
-The gpio pins I am dealing with are provided by an FPGA which is used on various
-boards. While the gpio access registers are always the same, the actual usage is
-board specific. This means I either need to write ugly code, or use the gpio
-subsystem to provide access to the gpio pins. Ugly code is out of the question,
-which means I'll need gpio support.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Anyway, I want to keep things simple, not add unnecessary complexity. Having to
-go through the input subsystem just to be able to support debounce on a couple
-of input pins doesn't really sound simple. Guess I'll have to find another
-solution if the patch is not accepted. Maybe I'll add a "debounce" property to
-the gpio driver's of properties.
+The various devm_ functions allocate memory that is released when a driver
+detaches.  This patch uses these functions for data that is allocated in
+the probe function of a platform device and is only freed in the remove
+function.
 
-Thanks,
-Guenter
+The patch makes some other cleanups.  First, the original code used
+devm_kzalloc, but kfree.  This would lead to a double free.  The problem
+was found using the following semantic match (http://coccinelle.lip6.fr/):
+
+// <smpl>
+@@
+expression x,e;
+@@
+x = devm_kzalloc(...)
+... when != x = e
+?-kfree(x,...);
+// </smpl>
+
+The error-handing code of devm_request_and_ioremap does not print any
+warning message, because devm_request_and_ioremap does this.
+
+The call to dma_alloc_coherent is converted to its devm equivalent,
+dmam_alloc_coherent.  This implicitly introduces a call to
+dmam_free_coherent, which was completly missing in the original code.
+
+A semicolon is removed at the end of the error-handling code for the call
+to dma_alloc_coherent.
+
+The block of code calling fb_alloc_cmap is moved below the block of code
+calling wm8505fb_set_par, so that the error-handing code of the call to
+wm8505fb_set_par can just return ret.  This way there is only one block of
+error-handling code that needs to call fb_dealloc_cmap, and so this is
+moved up to the place where it is needed, eliminating the need for all
+gotos and labels in the function.  This was suggested by Tony Prisk.
+
+The initializations of fbi and ret at the beginning of the function are not
+necessary and are removed.  The call platform_set_drvdata(pdev, NULL); at
+the end of the function is also removed.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+Only compiled.  Not tested.
+
+ drivers/video/wm8505fb.c |   78 +++++++++++------------------------------------
+ 1 file changed, 19 insertions(+), 59 deletions(-)
+
+diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+index 77539c1..1c3ce2c 100644
+--- a/drivers/video/wm8505fb.c
++++ b/drivers/video/wm8505fb.c
+@@ -274,15 +274,11 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 	unsigned long fb_mem_len;
+ 	void *fb_mem_virt;
+ 
+-	ret = -ENOMEM;
+-	fbi = NULL;
+-
+ 	fbi = devm_kzalloc(&pdev->dev, sizeof(struct wm8505fb_info) +
+ 			sizeof(u32) * 16, GFP_KERNEL);
+ 	if (!fbi) {
+ 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
+-		ret = -ENOMEM;
+-		goto failed;
++		return -ENOMEM;
+ 	}
+ 
+ 	strcpy(fbi->fb.fix.id, DRIVER_NAME);
+@@ -308,31 +304,15 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 	fbi->fb.pseudo_palette	= addr;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no I/O memory resource defined\n");
+-		ret = -ENODEV;
+-		goto failed_fbi;
+-	}
+-
+-	res = request_mem_region(res->start, resource_size(res), DRIVER_NAME);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "failed to request I/O memory\n");
+-		ret = -EBUSY;
+-		goto failed_fbi;
+-	}
+ 
+-	fbi->regbase = ioremap(res->start, resource_size(res));
+-	if (fbi->regbase == NULL) {
+-		dev_err(&pdev->dev, "failed to map I/O memory\n");
+-		ret = -EBUSY;
+-		goto failed_free_res;
+-	}
++	fbi->regbase = devm_request_and_ioremap(&pdev->dev, res);
++	if (fbi->regbase == NULL)
++		return -EBUSY;
+ 
+ 	np = of_parse_phandle(pdev->dev.of_node, "default-mode", 0);
+ 	if (!np) {
+ 		pr_err("%s: No display description in Device Tree\n", __func__);
+-		ret = -EINVAL;
+-		goto failed_free_res;
++		return -EINVAL;
+ 	}
+ 
+ 	/*
+@@ -351,7 +331,7 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 	ret |= of_property_read_u32(np, "bpp", &bpp);
+ 	if (ret) {
+ 		pr_err("%s: Unable to read display properties\n", __func__);
+-		goto failed_free_res;
++		return ret;
+ 	}
+ 
+ 	of_mode.vmode = FB_VMODE_NONINTERLACED;
+@@ -365,12 +345,12 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 
+ 	/* try allocating the framebuffer */
+ 	fb_mem_len = of_mode.xres * of_mode.yres * 2 * (bpp / 8);
+-	fb_mem_virt = dma_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
++	fb_mem_virt = dmam_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
+ 				GFP_KERNEL);
+ 	if (!fb_mem_virt) {
+ 		pr_err("%s: Failed to allocate framebuffer\n", __func__);
+ 		return -ENOMEM;
+-	};
++	}
+ 
+ 	fbi->fb.var.xres_virtual	= of_mode.xres;
+ 	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
+@@ -381,28 +361,29 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 	fbi->fb.screen_base		= fb_mem_virt;
+ 	fbi->fb.screen_size		= fb_mem_len;
+ 
+-	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
+-		dev_err(&pdev->dev, "Failed to allocate color map\n");
+-		ret = -ENOMEM;
+-		goto failed_free_io;
+-	}
+-
+-	wm8505fb_init_hw(&fbi->fb);
+-
+ 	fbi->contrast = 0x80;
+ 	ret = wm8505fb_set_par(&fbi->fb);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to set parameters\n");
+-		goto failed_free_cmap;
++		return ret;
+ 	}
+ 
++	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
++		dev_err(&pdev->dev, "Failed to allocate color map\n");
++		return -ENOMEM;
++	}
++
++	wm8505fb_init_hw(&fbi->fb);
++
+ 	platform_set_drvdata(pdev, fbi);
+ 
+ 	ret = register_framebuffer(&fbi->fb);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev,
+ 			"Failed to register framebuffer device: %d\n", ret);
+-		goto failed_free_cmap;
++		if (fbi->fb.cmap.len)
++			fb_dealloc_cmap(&fbi->fb.cmap);
++		return ret;
+ 	}
+ 
+ 	ret = device_create_file(&pdev->dev, &dev_attr_contrast);
+@@ -416,25 +397,11 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 	       fbi->fb.fix.smem_start + fbi->fb.fix.smem_len - 1);
+ 
+ 	return 0;
+-
+-failed_free_cmap:
+-	if (fbi->fb.cmap.len)
+-		fb_dealloc_cmap(&fbi->fb.cmap);
+-failed_free_io:
+-	iounmap(fbi->regbase);
+-failed_free_res:
+-	release_mem_region(res->start, resource_size(res));
+-failed_fbi:
+-	platform_set_drvdata(pdev, NULL);
+-	kfree(fbi);
+-failed:
+-	return ret;
+ }
+ 
+ static int __devexit wm8505fb_remove(struct platform_device *pdev)
+ {
+ 	struct wm8505fb_info *fbi = platform_get_drvdata(pdev);
+-	struct resource *res;
+ 
+ 	device_remove_file(&pdev->dev, &dev_attr_contrast);
+ 
+@@ -445,13 +412,6 @@ static int __devexit wm8505fb_remove(struct platform_device *pdev)
+ 	if (fbi->fb.cmap.len)
+ 		fb_dealloc_cmap(&fbi->fb.cmap);
+ 
+-	iounmap(fbi->regbase);
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+-
+-	kfree(fbi);
+-
+ 	return 0;
+ }
+ 
+
