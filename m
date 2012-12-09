@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523Ab2LIUrW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 15:47:22 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59135 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934486Ab2LIUrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 15:47:21 -0500
-Date: Sun, 9 Dec 2012 20:47:19 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Chris Adams <cmadams@hiwaay.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: New system call wanted: fdreopen
-Message-ID: <20121209204719.GG4939@ZenIV.linux.org.uk>
-References: <ka2982$ra3$1@ger.gmane.org>
- <20121209193733.GA15378@hiwaay.net>
+	id S1758979Ab2LIU5e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 15:57:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab2LIU5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 15:57:33 -0500
+Date: Sun, 9 Dec 2012 21:57:33 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, rostedt@goodmis.org
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rjw@sisk.pl,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121209205733.GA7038@redhat.com>
+References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121209193733.GA15378@hiwaay.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 09, 2012 at 01:37:33PM -0600, Chris Adams wrote:
-> Once upon a time, Tristan Wibberley  <tristan.wibberley@gmail.com> said:
-> >A common idiom on Linux is to open a file and keep the fd open so that 
-> >the underlying file can be unlinked from its directory. But if the file 
-> >needs to be read from several different parts of the codebase then due to 
-> >the file descriptor having exactly one read pointer those different parts 
-> >must be synchronised which is a relatively difficult task.
-> 
-> I think you can get similar behavior entirely in user space and in a
-> fashion portable to at least BSD systems.  You could fork() (which would
-> create a separate FD in the child), pass the FD back to the parent over
-> a socket, and then have the child exit.
+On 12/07, Srivatsa S. Bhat wrote:
+>
+> 4. No deadlock possibilities
+>
+>    Per-cpu locking is not the way to go if we want to have relaxed rules
+>    for lock-ordering. Because, we can end up in circular-locking dependencies
+>    as explained in https://lkml.org/lkml/2012/12/6/290
 
-... and here's your well-earned F for UNIX101.  fork() will *NOT* do anything
-of that sort.  Not on anything starting at v1 - the bug you want to rely upon
-had been killed very early, possibly even before the migration from PDP-8 to
-PDP-11.
+OK, but this assumes that, contrary to what Steven said, read-write-read
+deadlock is not possible when it comes to rwlock_t. So far I think this
+is true and we can't deadlock. Steven?
 
-Think how would something like (ls;ls) >/tmp/a work if you didn't have
-current file offset shared across fork(2).  Parent doesn't do any IO
-here; both children inherit stdout from it when they are forked and
-write to said stdout.  We want the output of the second not at the
-offset 0, obviously.
+However. If this is true, then compared to preempt_disable/stop_machine
+livelock is possible. Probably this is fine, we have the same problem with
+get_online_cpus(). But if we can accept this fact I feel we can simmplify
+this somehow... Can't prove, only feel ;)
 
-That's *the* reason why we (every Unix out there) have a distinction between
-file descriptors and opened files.  open() yields a new IO channel (aka
-opened file).  It also creates a new descriptor and associates that channel
-with it.  fork() does *not* create new opened files.  It creates new
-descriptor table, populating it with additional references to opened files
-the parent had descriptors for.
+Oleg.
 
-It's the same difference as between doing open() of the same file twice and
-doing open() + dup().  In fact, what you've described is a very obfuscated
-way to do dup(2) - SCM_RIGHTS descriptor passing will take a descriptor in
-sender, acquire an extra reference to opened file corresponding to it and
-store that reference in datagram.  Recepient will allocate a new descriptor
-and associate it with the reference to opened file it has found in datagram.
-
-Seriously, this is as basic as it gets - understanding how redirects work
-and what file descriptors are really ought to be covered by any introductory
-course on Unix, let alone anything that touches descriptor-passing.  Current
-IO offset is a property of opened file, not of a descriptor.  What the original
-poster has described is clearly a new opened file instance associated with
-the same filesystem object.  dup() or fork() will do nothing of that sort;
-not on Linux, not on *BSD, not on any Unix.
-
-open() on /proc/<pid>/fd/<n> will, but it's Linux-specific.  Whether it's
-a good idea or not, depends on the program in question, obviously.  In any
-case, you don't need a new syscall for that.
