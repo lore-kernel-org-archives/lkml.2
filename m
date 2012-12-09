@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934263Ab2LIQkt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 11:40:49 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34387 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787Ab2LIQkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 11:40:47 -0500
-Message-ID: <50C4BEFF.2010304@ahsoftware.de>
-Date: Sun, 09 Dec 2012 17:40:31 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S934277Ab2LIQya (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 11:54:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44726 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756731Ab2LIQy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 11:54:29 -0500
+Date: Sun, 9 Dec 2012 17:54:25 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: pefoley2@verizon.net, David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/5] kbuild: silence rule for extra_certificates
+Message-ID: <20121209165425.GA29331@pobox.suse.cz>
+References: <1353269117-39917-1-git-send-email-pefoley2@verizon.net> <1353269117-39917-2-git-send-email-pefoley2@verizon.net>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 3/3] iio: add rtc-driver for HID sensors of type time
-References: <1355055699-2965-1-git-send-email-holler@ahsoftware.de> <1355055699-2965-4-git-send-email-holler@ahsoftware.de> <50C48A42.9070806@metafoo.de>
-In-Reply-To: <50C48A42.9070806@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353269117-39917-2-git-send-email-pefoley2@verizon.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.12.2012 13:55, schrieb Lars-Peter Clausen:
-> On 12/09/2012 01:21 PM, Alexander Holler wrote:
->> This driver makes the time from HID sensors (hubs) which are offering
->> such available like any other RTC does.
->>
->> Currently the time can only be read. Setting the time must be done
->> through sending a report, which currently isn't supported by
->> hid-sensor-hub.
->>
->> It is necessary that all values like year, month etc, are send as
->> 8bit values (1 byte each) and all of them in 1 report. Also the
->> spec HUTRR39b doesn't define the range of the year field, we
->> tread it as 0 - 99 because that's what most RTCs I know about are
->> offering.
->
-> I don't think we should register a IIO device for this. Just an RTC device
-> should be fully sufficient.
->
+Added David and Rusty.
 
-You would have to implement all the used services hid-sensor-hub offers 
-in the rtc-driver again.
+On Sun, Nov 18, 2012 at 03:05:14PM -0500, pefoley2@verizon.net wrote:
+> From: Peter Foley <pefoley2@verizon.net>
+> 
+> Silence the touch extra_certificates command
+> 
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
 
-Regards,
+I think we should tell the user that the default empty extra
+certificates list is being used, in case the user used a wrong filename
+or similar. How about this?
 
-Alexander
+Subject: MODSIGN: Fix kbuild output when using default extra_certificates
 
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0dfeca4..8c708e4 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -136,8 +136,12 @@ ifeq ($(CONFIG_MODULE_SIG),y)
+ #
+ # Pull the signing certificate and any extra certificates into the kernel
+ #
++
++quiet_cmd_touch = TOUCH   $@
++      cmd_touch = touch   $@
++
+ extra_certificates:
+-	touch $@
++	$(call cmd,touch)
+ 
+ kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
+ 
+But I don't insist on the above, feel free to hide the command
+completely.
+
+Michal
+
+> ---
+>  kernel/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index 86e3285..18a0b61 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -137,7 +137,7 @@ ifeq ($(CONFIG_MODULE_SIG),y)
+>  # Pull the signing certificate and any extra certificates into the kernel
+>  #
+>  extra_certificates:
+> -	touch $@
+> +	@touch $@
+>  
+>  kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
+>  
+> -- 
+> 1.8.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
