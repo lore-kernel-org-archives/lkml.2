@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2LIQh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 11:37:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44409 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787Ab2LIQh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 11:37:57 -0500
-Message-ID: <50C4BE64.5090808@suse.cz>
-Date: Sun, 09 Dec 2012 17:37:56 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S934263Ab2LIQkt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 11:40:49 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34387 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab2LIQkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 11:40:47 -0500
+Message-ID: <50C4BEFF.2010304@ahsoftware.de>
+Date: Sun, 09 Dec 2012 17:40:31 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: pefoley2@verizon.net, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 5/5] x86: add dummy rules to avoid 'nothing to be done'
- messages
-References: <1353269117-39917-1-git-send-email-pefoley2@verizon.net> <1353269117-39917-5-git-send-email-pefoley2@verizon.net>
-In-Reply-To: <1353269117-39917-5-git-send-email-pefoley2@verizon.net>
-Content-Type: text/plain; charset=ISO-8859-2
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3] iio: add rtc-driver for HID sensors of type time
+References: <1355055699-2965-1-git-send-email-holler@ahsoftware.de> <1355055699-2965-4-git-send-email-holler@ahsoftware.de> <50C48A42.9070806@metafoo.de>
+In-Reply-To: <50C48A42.9070806@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added x86@kernel.org
+Am 09.12.2012 13:55, schrieb Lars-Peter Clausen:
+> On 12/09/2012 01:21 PM, Alexander Holler wrote:
+>> This driver makes the time from HID sensors (hubs) which are offering
+>> such available like any other RTC does.
+>>
+>> Currently the time can only be read. Setting the time must be done
+>> through sending a report, which currently isn't supported by
+>> hid-sensor-hub.
+>>
+>> It is necessary that all values like year, month etc, are send as
+>> 8bit values (1 byte each) and all of them in 1 report. Also the
+>> spec HUTRR39b doesn't define the range of the year field, we
+>> tread it as 0 - 99 because that's what most RTCs I know about are
+>> offering.
+>
+> I don't think we should register a IIO device for this. Just an RTC device
+> should be fully sufficient.
+>
 
-Michal
+You would have to implement all the used services hid-sensor-hub offers 
+in the rtc-driver again.
 
-On 18.11.2012 21:05, pefoley2@verizon.net wrote:
-> From: Peter Foley <pefoley2@verizon.net>
-> 
-> Add do-nothing rules to archheaders and archscripts targets to avoid
-> 'nothing to be done' messages.
-> 
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-> ---
->  arch/x86/syscalls/Makefile | 1 +
->  arch/x86/tools/Makefile    | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
-> index f325af2..b6c923a 100644
-> --- a/arch/x86/syscalls/Makefile
-> +++ b/arch/x86/syscalls/Makefile
-> @@ -56,3 +56,4 @@ targets	+= $(uapisyshdr-y) $(syshdr-y)
->  
->  all: $(addprefix $(uapi)/,$(uapisyshdr-y))
->  all: $(addprefix $(out)/,$(syshdr-y))
-> +	@:
-> diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
-> index bae601f..dce567c 100644
-> --- a/arch/x86/tools/Makefile
-> +++ b/arch/x86/tools/Makefile
-> @@ -40,3 +40,4 @@ $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/ina
->  HOST_EXTRACFLAGS += -I$(srctree)/tools/include
->  hostprogs-y	+= relocs
->  relocs: $(obj)/relocs
-> +	@:
-> 
+Regards,
+
+Alexander
 
