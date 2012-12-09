@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab2LIPEd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 10:04:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41993 "EHLO mx2.suse.de"
+	id S933830Ab2LIPEn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 10:04:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41996 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756194Ab2LIPEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 10:04:31 -0500
-Date: Sun, 9 Dec 2012 16:04:30 +0100
+	id S1756613Ab2LIPEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 10:04:35 -0500
+Date: Sun, 9 Dec 2012 16:04:34 +0100
 From: Michal Marek <mmarek@suse.cz>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr,
+To: Romain Francoise <romain@orebokech.com>
+Cc: Pawel Moll <pawel.moll@arm.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/coccinelle/misc/warn.cocci: use WARN
-Message-ID: <20121209150429.GA29236@pobox.suse.cz>
-References: <1351972929-7448-1-git-send-email-Julia.Lawall@lip6.fr>
+Subject: Re: [PATCH] kbuild: Do not remove vmlinux when cleaning external
+	module
+Message-ID: <20121209150434.GB29236@pobox.suse.cz>
+References: <1351509782-12462-1-git-send-email-pawel.moll@arm.com> <87fw4hzk9i.fsf@silenus.orebokech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351972929-7448-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <87fw4hzk9i.fsf@silenus.orebokech.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 03, 2012 at 09:02:09PM +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Sat, Nov 10, 2012 at 01:59:21PM +0100, Romain Francoise wrote:
+> Pawel Moll <pawel.moll@arm.com> writes:
 > 
-> Use WARN(1,...) rather than printk followed by WARN(1).
+> > Since commit 1f2bfbd00e466ff3489b2ca5cc75b1cccd14c123 "kbuild:
+> > link of vmlinux moved to a script" make clean with M=<dir>
+> > argument (so cleaning external module) removes vmlinux,
+> > System.map and couple of other files from the *main* kernel
+> > build directory! This not what was happening before and almost
+> > certainly not what one would expect.
 > 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> > This patch moves makes the clean target of the script called
+> > only when !KBUILD_EXTMOD.
 > 
-> ---
->  scripts/coccinelle/misc/warn.cocci |  109 +++++++++++++++++++++++++++++++++++++
+> Thanks, I have the same problem and this patch fixes it.
+> 
+> Michal, can you pick it up? It's not yet in kbuild.git, it seems.
 
-Applied to kbuild.git#misc, thanks.
+Sorry for the delay. I applied it to kbuild.git#kbuild now, with
+
+Cc: stable@vger.kernel.org [v3.5+]
 
 Michal
