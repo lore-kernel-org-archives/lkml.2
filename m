@@ -1,170 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934354Ab2LISQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 13:16:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54159 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524Ab2LISQl (ORCPT
+	id S934370Ab2LISRE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 13:17:04 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:51038 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934356Ab2LISRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 13:16:41 -0500
-Message-ID: <50C46568.80405@infradead.org>
-Date: Sun, 09 Dec 2012 02:18:16 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Sun, 9 Dec 2012 13:17:01 -0500
+Message-ID: <50C4D58E.4020702@ahsoftware.de>
+Date: Sun, 09 Dec 2012 19:16:46 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: xtu4 <xiaobing.tu@intel.com>
-CC: linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org,
-        linux-mm@kvack.org, di.zhang@intel.com
-Subject: Re: [PATCH]  improve read ahead in kernel
-References: <50C4B4E7.60601@intel.com>
-In-Reply-To: <50C4B4E7.60601@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3] iio: add rtc-driver for HID sensors of type time
+References: <1355055699-2965-1-git-send-email-holler@ahsoftware.de> <1355055699-2965-4-git-send-email-holler@ahsoftware.de> <50C48A42.9070806@metafoo.de> <50C4BEFF.2010304@ahsoftware.de>
+In-Reply-To: <50C4BEFF.2010304@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/12 07:57, xtu4 wrote:
-> 
-> Subject: [PATCH] when system in low memory scenario, imaging there is a mp3
->  play, or video play, we need to read mp3 or video file
->  from memory to page cache,but when system lack of memory,
->  page cache of mp3 or video file will be reclaimed.once read
->  in memory, then reclaimed, it will cause audio or video
->  glitch,and it will increase the io operation at the same
->  time.
-> 
-> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+Am 09.12.2012 17:40, schrieb Alexander Holler:
+> Am 09.12.2012 13:55, schrieb Lars-Peter Clausen:
+>> On 12/09/2012 01:21 PM, Alexander Holler wrote:
+>>> This driver makes the time from HID sensors (hubs) which are offering
+>>> such available like any other RTC does.
+>>>
+>>> Currently the time can only be read. Setting the time must be done
+>>> through sending a report, which currently isn't supported by
+>>> hid-sensor-hub.
+>>>
+>>> It is necessary that all values like year, month etc, are send as
+>>> 8bit values (1 byte each) and all of them in 1 report. Also the
+>>> spec HUTRR39b doesn't define the range of the year field, we
+>>> tread it as 0 - 99 because that's what most RTCs I know about are
+>>> offering.
+>>
+>> I don't think we should register a IIO device for this. Just an RTC
+>> device
+>> should be fully sufficient.
+>>
+>
+> You would have to implement all the used services hid-sensor-hub offers
+> in the rtc-driver again.
 
-What tree does this patch apply to?
+Besides that, time is part of the spec for HID sensors, which makes 
+sense. Making that available as a RTC to read/set the time is imho the 
+best to way support that. If you want a driver which doesn't use the HID 
+sensor hub framework (or iio), you would either have to define your own 
+standard or make sure it is interoperable with the HID sensor hub 
+framework, which might not be trivial.
 
-It looks like most (or all) of the tabs in the source files have
-been changed to spaces, which is Not Good.
-Maybe some info in Documentation/email-clients.txt could help you.
+Regards,
 
-> ---
->  include/linux/mm_types.h |    4 ++++
->  mm/Kconfig               |    6 ++++++
->  mm/filemap.c             |    4 ++++
->  mm/readahead.c           |   20 +++++++++++++++++---
->  mm/vmscan.c              |   10 ++++++++--
->  5 files changed, 39 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 5b42f1b..541864d 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -149,6 +149,10 @@ struct page {
->       */
->      void *shadow;
->  #endif
-> +#ifdef CONFIG_LOWMEMORY_READAHEAD
-> +    unsigned int ioprio;
-> +#endif
-> +
->  }
->  /*
->   * If another subsystem starts using the double word pairing for atomic
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index e338407..dade8d3 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -140,6 +140,12 @@ config ARCH_DISCARD_MEMBLOCK
->  config NO_BOOTMEM
->      boolean
-> 
-> +# improve readahead in low memory scenario
-> +config LOWMEMORY_READAHEAD
-> +    bool "improve readahead in low memory scenario"
-> +    depends on (IA64 || X86)
-
-Why this depends on?
-I don't see anything that is arch-specific in the patch.
-
-
-> +
-> +
->  # eventually, we can have this option just 'select SPARSEMEM'
->  config MEMORY_HOTPLUG
->      bool "Allow for memory hot-add"
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index a0701e6..e32efed8 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -129,6 +129,10 @@ void __delete_from_page_cache(struct page *page)
->      page->mapping = NULL;
->      /* Leave page->index set: truncation lookup relies upon it */
->      mapping->nrpages--;
-> +    #ifdef CONFIG_LOWMEMORY_READAHEAD
-> +    page->ioprio = 0;
-> +    #endif
-> +
->      __dec_zone_page_state(page, NR_FILE_PAGES);
->      if (PageSwapBacked(page))
->          __dec_zone_page_state(page, NR_SHMEM);
-> diff --git a/mm/readahead.c b/mm/readahead.c
-> index cbcbb02..dd07cfe 100644
-> --- a/mm/readahead.c
-> +++ b/mm/readahead.c
-> @@ -159,6 +159,11 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
->      int page_idx;
->      int ret = 0;
->      loff_t isize = i_size_read(inode);
-> +#ifdef CONFIG_LOWMEMORY_READAHEAD
-> +    int class = 0;
-> +    if (p->io_context)
-> +    class = IOPRIO_PRIO_CLASS(p->io_context->ioprio);
-> +#endif
-> 
->      if (isize == 0)
->          goto out;
-> @@ -177,12 +182,21 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
->          rcu_read_lock();
->          page = radix_tree_lookup(&mapping->page_tree, page_offset);
->          rcu_read_unlock();
-> -        if (page)
-> -            continue;
-> -
-> +        if (page){
-> +#ifdef CONFIG_LOWMEMORY_READAHEAD
-> +            if (class == IOPRIO_CLASS_RT) {
-> +                page->ioprio = 1;
-> +#endif
-> +                continue;
-> +            }
->          page = page_cache_alloc_readahead(mapping);
->          if (!page)
->              break;
-> +#ifdef CONFIG_LOWMEMORY_READAHEAD
-> +        if (class == IOPRIO_CLASS_RT) {
-> +            page->ioprio = 1;
-> +#endif
-> +
->          page->index = page_offset;
->          list_add(&page->lru, &page_pool);
->          if (page_idx == nr_to_read - lookahead_size)
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 753a2dc..86e03aa 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -728,8 +728,14 @@ static enum page_references page_check_references(struct page *page,
->      }
-> 
->      /* Reclaim if clean, defer dirty pages to writeback */
-> -    if (referenced_page && !PageSwapBacked(page))
-> -        return PAGEREF_RECLAIM_CLEAN;
-> +    if (referenced_page && !PageSwapBacked(page)) {
-> +#ifdef CONFIG_LOWMEMORY_READAHEAD
-> +        if (page->ioprio == 1) {
-> +            return PAGEREF_ACTIVATE;
-> +        } else
-> +#endif
-> +            return PAGEREF_RECLAIM_CLEAN;
-> +    }
-> 
->      return PAGEREF_RECLAIM;
->  }
-
-
--- 
-~Randy
+Alexander
