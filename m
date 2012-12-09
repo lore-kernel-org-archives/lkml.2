@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab2LIFi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 00:38:26 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63552 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab2LIFiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 00:38:25 -0500
-Message-ID: <50C423CC.4030705@debian.org>
-Date: Sun, 09 Dec 2012 13:38:20 +0800
-From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.10) Gecko/20121028 Icedove/10.0.10
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFT 2/2] regulator: anatop: Use regulator_[get|set]_voltage_sel_regmap
-References: <1355011545.3283.1.camel@phoenix> <1355011663.3283.3.camel@phoenix>
-In-Reply-To: <1355011663.3283.3.camel@phoenix>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756546Ab2LIGVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 01:21:25 -0500
+Received: from plane.gmane.org ([80.91.229.3]:50354 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756503Ab2LIGVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 01:21:24 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Woody Wu <narkewoody@gmail.com>
+Subject: Re: 8250 UART doesn't work
+Date: Sun, 9 Dec 2012 06:21:09 +0000 (UTC)
+Message-ID: <slrnkc8bco.3do.narkewoody@zuhnb712.local.com>
+References: <slrnkc0jqu.4ir.narkewoody@zuhnb712.local.com>
+ <50C0E737.2000201@zytor.com> <slrnkc2o7b.2ck.narkewoody@zuhnb712.local.com>
+ <20121207100438.136dd968@pyramind.ukuu.org.uk>
+ <slrnkc6si6.3do.narkewoody@zuhnb712.local.com>
+ <20121208225233.169ba5b9@pyramind.ukuu.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 119.142.38.140
+User-Agent: slrn/0.9.9p1 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 2012年12月09日 08:07, Axel Lin 提到:
-> Call regulator_[get|set]_voltage_sel_regmap instead of open code.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Ying-Chun Liu <paulliu@debian.org>
+On 2012-12-08, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Which kind of configuration is right for ARM?  I think the
+>> 8250_exar_st16c554.c is for ISA bus board and hence is not suit to me,
+>> but I am not sure my understanding is right. Please give me some
+>> backgroud information on this field.
+>
+> You are the one who should have the information for your board. If not
+> ask your board vendor how it is all mapped.
+>
+> Alan
 
-Looks good to me and I just test the path and it works.
+I have no more information for the board. For now, I just want to gain
+some knowledge about the UPIO_MEM and UPIO_PORT - what is for what.
+Hope experts on the list can be so kind to help me.  Thanks.
+
 
 -- 
-                                PaulLiu (劉穎駿)
-E-mail: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
+woody
+I can't go back to yesterday - because I was a different person then.
+
