@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759106Ab2LIWQU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 17:16:20 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50723 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab2LIWQS (ORCPT
+	id S934572Ab2LIWgu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 17:36:50 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57333 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759117Ab2LIWgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 17:16:18 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Lars-Peter Clausen" <lars@metafoo.de>
-Subject: Re: [PATCH 1/5] asm-generic/mmu.h: Remove unused vmlist field from mm_context_t
-Date: Sun, 9 Dec 2012 22:15:56 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Mark Salter <msalter@redhat.com>, Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org, linux-arch@vger.kernel.org
-References: <1351765467-29244-1-git-send-email-lars@metafoo.de> <201212032354.10573.arnd@arndb.de> <50BDAD3D.9020209@metafoo.de>
-In-Reply-To: <50BDAD3D.9020209@metafoo.de>
+	Sun, 9 Dec 2012 17:36:48 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212092215.56872.arnd@arndb.de>
-X-Provags-ID: V02:K0:seGo9bi6EZOLeJRNkMmNbb/HKesvPAqnr89CXgf4fjE
- bVYlA5fskiMgdw/X/AMOCYA+biTFDgZMCCKXtlKxGg/FUb58TT
- JSqhOgyHAL0DfL8OvHMaFAC/8COH9Q1z6/qWxsxz4u+IqQvGdN
- a6tRu4APYCp1AX6ucjain9uvNGDx5IywEC/xfJ4j131gEWYEk0
- dM+R4MaREs4XpQdwZse6CMxQCtCzZ3nf8ZgvAYZuWn5F0Iv+Un
- dqwAIeTWhQCk3cMcu8I5PHCXf6E3KgcjIPag4MVZCltw+8L2P0
- MY4/SqPlQuukBOSMGz9U8/9KwCPLLFniKSEYgOsHwGUWL2LLbP
- /c1SDiZrz51TvNXxhnvE=
+In-Reply-To: <20121209170754.GA27468@roeck-us.net>
+References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
+ <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
+ <20121207145955.GA28704@roeck-us.net> <20121207164906.08b65046@pyramind.ukuu.org.uk>
+ <1355047099.1673.5.camel@anish-Inspiron-N5050> <20121209110319.459a762a@pyramind.ukuu.org.uk>
+ <20121209170754.GA27468@roeck-us.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 9 Dec 2012 22:36:27 +0000
+X-Google-Sender-Auth: XCBhtw-jagC9hZZnku0NRM8ljoY
+Message-ID: <CACxGe6sXt6cMeTa=R3n_Lqoy8w9AXoOOA-r5Csn54A=9wMzZaw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
+ gpio chip
+To: Guenter Roeck <groeck-dsl@sbcglobal.net>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        anish kumar <anish198519851985@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 December 2012, Lars-Peter Clausen wrote:
-> On 12/04/2012 12:54 AM, Arnd Bergmann wrote:
-> > On Thursday 01 November 2012, Lars-Peter Clausen wrote:
-> >> Nothing is using the vmlist field in mm_context_t anymore. It has been removed
-> >> from the non-generic versions over 3 years ago 8feae1311 ("NOMMU: Make VMAs per
-> >> MM as for MMU-mode linux").
-> >>
-> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> > 
-> > Whole series:
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > Do you want to include the patches in a patch set of your own, or should I put them
-> > into the asm-generic tree?
-> > 
-> >       Arnd
-> 
-> Hi Arnd,
-> 
-> The plan was to let it go through the asm-generic tree.
+On Sun, Dec 9, 2012 at 5:07 PM, Guenter Roeck <groeck-dsl@sbcglobal.net> wrote:
+> On Sun, Dec 09, 2012 at 11:03:19AM +0000, Alan Cox wrote:
+>> On Sun, 09 Dec 2012 01:58:19 -0800
+>> anish kumar <anish198519851985@gmail.com> wrote:
+>>
+>> > On Fri, 2012-12-07 at 16:49 +0000, Alan Cox wrote:
+>> > > > I could imagine declaring the activity request buttons to be "input", but for
+>> > > > presence detects it is a bit far fetched and would add too much complexity.
+>> > >
+>> > > Android tries to address this with its switch class driver, but I'm not
+>> > > sure its actually got anything over making them input devices.
+>> >
+>> > Sorry for not understanding the context here.How the debounce sysfs
+>> > added by Guenter has anything to do with switch driver in android?
+>>
+>> The other more general option is to make the input layer do the debounce
+>> and make them all inputs rather than just relying on any gpio layer
+>> support.
+>>
+> The gpio pins I am dealing with are provided by an FPGA which is used on various
+> boards. While the gpio access registers are always the same, the actual usage is
+> board specific. This means I either need to write ugly code, or use the gpio
+> subsystem to provide access to the gpio pins. Ugly code is out of the question,
+> which means I'll need gpio support.
+>
+> Anyway, I want to keep things simple, not add unnecessary complexity. Having to
+> go through the input subsystem just to be able to support debounce on a couple
+> of input pins doesn't really sound simple. Guess I'll have to find another
+> solution if the patch is not accepted. Maybe I'll add a "debounce" property to
+> the gpio driver's of properties.
 
-Sorry for all the delay. I've applied it now.
+I haven't looked deeply at the patch to give you an answer yet, but
+I'd recommend you go with the DT property approach anyway. The gpio
+sysfs interface is horribly designed and I'm not keen on adding new
+features to it.
 
-	Arnd
+g.
