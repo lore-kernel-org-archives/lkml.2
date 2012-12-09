@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab2LIAjO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 19:39:14 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42751 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933713Ab2LIAjM (ORCPT
+	id S933751Ab2LIAus (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 19:50:48 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43947 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab2LIAur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 19:39:12 -0500
-Message-ID: <50C3DBF6.2080103@gmail.com>
-Date: Sun, 09 Dec 2012 01:31:50 +0100
-From: Cyril Roelandt <tipecaml@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	Sat, 8 Dec 2012 19:50:47 -0500
+Date: Sat, 8 Dec 2012 16:50:21 -0800 (PST)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+X-X-Sender: torvalds@air.linux-foundation.org
+To: Mel Gorman <mgorman@suse.de>
+cc: Tejun Heo <tj@kernel.org>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.7-rc8 boot failure due to recent workqueue-related patch
+In-Reply-To: <20121208203524.GA1009@suse.de>
+Message-ID: <alpine.LFD.2.02.1212081647500.4593@air.linux-foundation.org>
+References: <20121208203524.GA1009@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
-        kernel-janitors@vger.kernel.org, yongjun_wei@trendmicro.com.cn,
-        marcos.souza.org@gmail.com, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH] staging: rtl8712: avoid a useless call to memset().
-References: <1354670522-27144-1-git-send-email-tipecaml@gmail.com> <20121205071156.GL6568@mwanda>
-In-Reply-To: <20121205071156.GL6568@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 08:11 AM, Dan Carpenter wrote:
-> On Wed, Dec 05, 2012 at 02:22:02AM +0100, Cyril Roelandt wrote:
->> In r8711_wx_get_wap(), make sure we do not call memcpy() on a memory area that
->> has just been zeroed by a call to memset().
->>
+
+
+On Sat, 8 Dec 2012, Mel Gorman wrote:
 >
-> I look at it like the original code is fine.  Your version is also
-> fine but is it worth the churn?  Also the curly braces are not
-> needed.
->
+> Commit 8852aac2 (workqueue: mod_delayed_work_on() shouldn't queue timer on
+> 0 delay) is causing the following boot failure for me. Found by bisection
+> but no further analysis unfortunately until I get back home properly.
+> I've added the relevant maintainers for megasas and SCSI in case it's
+> somehow specific to that driver.
 
-Sorry about the braces.
+This should be fixed by commit c1d390d8e612. The Megaraid SAS driver was 
+doing insane things, using a work-struct for delayed work, and casting 
+pointers around. It had happened to work for all the wrong reasons before, 
+the mod_delayed_work_on() changes just exposed how crazy that crap was.
 
-I just thought the code would be easier to understand this way, but it's 
-probably OK to leave it as it currently is too.
+So please test current -git. If it's still broken, we'll need to know, but 
+I'm assuming this is the already-known-and-fixed bug.
 
-WBR,
-Cyril Roelandt.
+             Linus
