@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab2LIPEn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 10:04:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41996 "EHLO mx2.suse.de"
+	id S934038Ab2LIPHZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 10:07:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42078 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756613Ab2LIPEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 10:04:35 -0500
-Date: Sun, 9 Dec 2012 16:04:34 +0100
+	id S1756305Ab2LIPHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 10:07:23 -0500
+Message-ID: <50C4A928.1010803@suse.cz>
+Date: Sun, 09 Dec 2012 16:07:20 +0100
 From: Michal Marek <mmarek@suse.cz>
-To: Romain Francoise <romain@orebokech.com>
-Cc: Pawel Moll <pawel.moll@arm.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Do not remove vmlinux when cleaning external
-	module
-Message-ID: <20121209150434.GB29236@pobox.suse.cz>
-References: <1351509782-12462-1-git-send-email-pawel.moll@arm.com> <87fw4hzk9i.fsf@silenus.orebokech.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fw4hzk9i.fsf@silenus.orebokech.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Richard Weinberger <richard@nod.at>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kbuild: Unbreak cleaning external module build directory
+References: <50A8F837.7040700@acm.org>
+In-Reply-To: <50A8F837.7040700@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 10, 2012 at 01:59:21PM +0100, Romain Francoise wrote:
-> Pawel Moll <pawel.moll@arm.com> writes:
+On 18.11.2012 16:01, Bart Van Assche wrote:
+> Avoid that "$(MAKE) -C $(KDIR) M=$(PWD) clean" triggers the following
+> error message when invoked from inside the Makefile of an external
+> kernel module:
 > 
-> > Since commit 1f2bfbd00e466ff3489b2ca5cc75b1cccd14c123 "kbuild:
-> > link of vmlinux moved to a script" make clean with M=<dir>
-> > argument (so cleaning external module) removes vmlinux,
-> > System.map and couple of other files from the *main* kernel
-> > build directory! This not what was happening before and almost
-> > certainly not what one would expect.
-> 
-> > This patch moves makes the clean target of the script called
-> > only when !KBUILD_EXTMOD.
-> 
-> Thanks, I have the same problem and this patch fixes it.
-> 
-> Michal, can you pick it up? It's not yet in kbuild.git, it seems.
+> rm: cannot remove 'System.map': Permission denied
+> make[1]: *** [clean] Error 1
 
-Sorry for the delay. I applied it to kbuild.git#kbuild now, with
-
-Cc: stable@vger.kernel.org [v3.5+]
+I just applied an earlier patch to fix this:
+https://patchwork.kernel.org/patch/1663011/
 
 Michal
+
