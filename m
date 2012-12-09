@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab2LIPTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 10:19:15 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63022 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab2LIPTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 10:19:14 -0500
-Date: Sun, 9 Dec 2012 15:19:09 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Steve Underwood <steveu@coppice.org>, David Rowe <david@rowetel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jesper Juhl <jj@chaosbits.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: echo: remove unused variable
-Message-ID: <20121209151909.GC25293@gmail.com>
-References: <1354584111-1513-1-git-send-email-dinggnu@gmail.com>
+	id S1758609Ab2LIPYz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 10:24:55 -0500
+Received: from mga14.intel.com ([143.182.124.37]:19709 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758302Ab2LIPYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 10:24:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,246,1355126400"; 
+   d="scan'208";a="178571825"
+Date: Sun, 9 Dec 2012 16:24:48 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] mfd: arizona: Log if we fail to create the primary IRQ
+ domain
+Message-ID: <20121209152448.GC26699@sortiz-mobl>
+References: <1354675586-24864-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354584111-1513-1-git-send-email-dinggnu@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1354675586-24864-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping!
+Hi Mark,
 
-- cong
-
-On Tue, Dec 04, 2012 at 01:21:44AM +0000, Cong Ding wrote:
-> the variable j isn't used in the loop
+On Wed, Dec 05, 2012 at 11:46:26AM +0900, Mark Brown wrote:
+> This is the only thing in probe for which we don't log an error.
 > 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > ---
->  drivers/staging/echo/echo.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/echo/echo.c b/drivers/staging/echo/echo.c
-> index ca87ce9..14dfd91 100644
-> --- a/drivers/staging/echo/echo.c
-> +++ b/drivers/staging/echo/echo.c
-> @@ -119,7 +119,6 @@
->  static inline void lms_adapt_bg(struct oslec_state *ec, int clean, int shift)
->  {
->  	int i;
-> -	int j;
->  	int offset1;
->  	int offset2;
->  	int factor;
-> @@ -142,7 +141,7 @@ static inline void lms_adapt_bg(struct oslec_state *ec, int clean, int shift)
->  
->  	/* asm("st:"); */
->  	n = ec->taps;
-> -	for (i = 0, j = offset2; i < n; i++, j++) {
-> +	for (i = 0; i < n; i++) {
->  		exp = *phist++ * factor;
->  		ec->fir_taps16[1][i] += (int16_t) ((exp + (1 << 14)) >> 15);
->  	}
-> -- 
-> 1.7.4.5
-> 
+>  drivers/mfd/arizona-irq.c |    1 +
+>  1 file changed, 1 insertion(+)
+Applied, thanks.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
