@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934310Ab2LIRxR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 12:53:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46365 "EHLO mx2.suse.de"
+	id S934336Ab2LISDE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 13:03:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21237 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932528Ab2LIRxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 12:53:16 -0500
-Date: Sun, 9 Dec 2012 18:53:15 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] scripts/tags.sh: Support compiled source
-Message-ID: <20121209175315.GD29331@pobox.suse.cz>
-References: <1354557873-21889-1-git-send-email-js1304@gmail.com> <1354557873-21889-2-git-send-email-js1304@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354557873-21889-2-git-send-email-js1304@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S934297Ab2LISDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 13:03:02 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20121208144944.GF12011@gmail.com>
+References: <20121208144944.GF12011@gmail.com> <26921.1354542035@warthog.procyon.org.uk>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: dhowells@redhat.com, Ingo Molnar <mingo.kernel.org@gmail.com>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] UAPI: Disintegrate arch/x86/include/asm
+Date: Sun, 09 Dec 2012 18:02:50 +0000
+Message-ID: <17310.1355076170@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 03:04:33AM +0900, Joonsoo Kim wrote:
-> We usually have interst in compiled files only,
-> because they are strongly related to individual's work.
-> Current tags.sh can't select compiled files, so support it.
+Ingo Molnar <mingo@kernel.org> wrote:
+
+>  arch/x86/include/asm/Kbuild           |   7 ++
+>  arch/x86/include/asm/perf_regs.h      |  33 ---------
+>  arch/x86/include/asm/svm.h            | 132 +---------------------------------
+>  arch/x86/include/asm/vmx.h            |  89 +----------------------
+>  arch/x86/include/uapi/asm/Kbuild      |   3 +
+>  arch/x86/include/uapi/asm/perf_regs.h |  33 +++++++++
+>  arch/x86/include/uapi/asm/svm.h       | 132 ++++++++++++++++++++++++++++++++++
+>  arch/x86/include/uapi/asm/vmx.h       | 109 ++++++++++++++++++++++++++++
+>  8 files changed, 289 insertions(+), 249 deletions(-)
 > 
-> We can use this functionality like below.
-> "make cscope O=. SRCARCH=xxxx COMPILED_SOURCE=compiled"
-> 
-> It must be executed after building the kernel.
-> 
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> ---
-> v2: change bash specific '[[]]' to 'case in' statement.
->     use COMPILED_SOURCE env var, instead of abusing SUBARCH
+> What are these changes - it seems perf and KVM related.
 
-Looks much better, I have only one minor nitpick:
+Only in passing.  The header files you indicated are marked as being exported
+to userspace in Kbuild - therefore they get disintegrated around __KERNEL__
+conditionals just like all the other UAPI-relevant headers.
 
+> Is the latest version above 100% bug-free, with no known 
+> problems whatsoever?
 
-> +	if [ "$COMPILED_SOURCE" = "compiled" ]; then
-> +		all_compiled_sources
+It builds perf for me.  No idea if perf works, I've never used it.  I waved a
+branch including the patch on top of all my perf patches towards Arnaldo and
+others, but I don't know if they've tried it.
 
-Please change it to -n "$COMPILED_SOURCE", so that COMPILED_SOURCE=1
-works as well.
+I've also checked that x86_64 allyesconfig and i386 allmodconfig build and
+that an x86_64 kernel built with my test machine's usual config builds and
+boots.
 
-Michal
+So, no known problems.
+
+David
