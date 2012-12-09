@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab2LIQIK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 11:08:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:38909 "EHLO mga02.intel.com"
+	id S1758693Ab2LIQPa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 11:15:30 -0500
+Received: from hostbol.imd.la ([67.23.243.154]:42320 "EHLO hostbol.imd.la"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab2LIQII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 11:08:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,246,1355126400"; 
-   d="scan'208";a="231334873"
-Message-ID: <50C4B62C.7050404@intel.com>
-Date: Mon, 10 Dec 2012 00:02:52 +0800
-From: xtu4 <xiaobing.tu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752034Ab2LIQP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 11:15:29 -0500
 MIME-Version: 1.0
-To: xtu4 <xiaobing.tu@intel.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, di.zhang@intel.com
-Subject: Re: [PATCH] Allow 0ms deadline latency
-References: <50C4B5D7.4030808@intel.com>
-In-Reply-To: <50C4B5D7.4030808@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Sun, 09 Dec 2012 11:10:08 -0500
+From: WEBMAIL ALERT SCHEME <htk4salerts@wss-id.org>
+To: undisclosed-recipients:;
+Subject: AVISO: Cronograma de =?UTF-8?Q?atualiza=C3=A7=C3=A3o?=
+Organization: HTK4S AntiVirus Release
+Reply-To: <htk4salerts@wss-id.org>
+Mail-Reply-To: <htk4salerts@wss-id.org>
+Message-ID: <04ddd517bfee35cf3e587c55d93f462a@tropiflorag.com.bo>
+User-Agent: Roundcube Webmail/0.8.1
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - hostbol.imd.la
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - wss-id.org
+X-Get-Message-Sender-Via: hostbol.imd.la: authenticated_id: info@tropiflorag.com.bo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-re-send it
-On 12/10/2012 12:01 AM, xtu4 wrote:
-> Subject: [PATCH] Allow 0ms deadline latency, increase the read speed
->
-> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-> ---
-> block/deadline-iosched.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
-> index c644137..e502d6b 100644
-> --- a/block/deadline-iosched.c
-> +++ b/block/deadline-iosched.c
-> @@ -230,7 +230,7 @@ static inline int deadline_check_fifo(struct 
-> deadline_data *dd, int ddir)
->        /*
->         * rq is expired!
->         */
-> -       if (time_after(jiffies, rq_fifo_time(rq)))
-> +       if (time_after_eq(jiffies, rq_fifo_time(rq)))
->                return 1;
->
->         return 0;
+Caro usuário Webmail,
 
+HTK4S, um vírus foi detectado no servidor de base de dados Webmail, e 
+todas as contas devem ser atualizadas imediatamente para evitar danos.
+
+Você está aqui, solicitado a fornecer a conta de identidade listados 
+abaixo para que possamos verificar e manter a sua conta com a nova 
+versão HTK4S anti-virus/anti-Spam 2012. falta de informação válida, terá 
+como resultado a suspensão temporária de sua conta de nossos serviços e 
+você pode não ser capaz de receber ou enviar e-mails.
+
+siga o link abaixo, se você encontrar qualquer problema clicando no 
+link, por favor copiar o link abaixo e colar em seu navegador.
+
+www.chrd-cambodia.org/9489jkfjd9443344434d.htm
+
+Webmail Copyright © 2012 Todos os direitos reservados.
