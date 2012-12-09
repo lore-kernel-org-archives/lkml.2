@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934162Ab2LIPJy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 10:09:54 -0500
-Received: from plane.gmane.org ([80.91.229.3]:49977 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934066Ab2LIPJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 10:09:53 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Tristan Wibberley <tristan.wibberley@gmail.com>
-Subject: New system call wanted: fdreopen
-Date: Sun, 9 Dec 2012 15:03:30 +0000 (UTC)
-Message-ID: <ka2982$ra3$1@ger.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 87.112.131.179
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
-	git://git.gnome.org/pan2)
+	id S934175Ab2LIPPs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 10:15:48 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59490 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934051Ab2LIPPq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 10:15:46 -0500
+Date: Sun, 9 Dec 2012 15:15:39 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>,
+        Peter Foley <pefoley2@verizon.net>, Adam Lee <adam8157@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] kbuild: solve the DSO link change issue
+Message-ID: <20121209151539.GA25293@gmail.com>
+References: <1354209688-16247-1-git-send-email-dinggnu@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354209688-16247-1-git-send-email-dinggnu@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Ping Michal, did you have any comments on this?
 
-I'd like to propose a system call called "fdreopen":
+- cong
 
-  int fdreopen(int src_fd, int dst_fd, int flags);
-
-
-I am willing to try implementing this system call given some suggestions 
-where to start and what locking to watch out for. I have given a brief of 
-the behaviour below, and a description of the class of problem that it 
-solves at the end.
-
-Does anybody know any reasons why this system call would be impossible/
-impractical or otherwise unacceptable?
-
-Any improvements I should consider before trying to implement it?
-
-
-Behaviour
-=========
-
-This system call would be like dup3 except for these things:
-
- - if dst_fd is -1 then the lowest available file descriptor is allocated
-   rather than returning EBADF as dup3 does.
-
- - the new file descriptor points to a *new* entry in the file table much
-   as if the original file had been opened again via open or openat. This
-   means that two large independent libraries can seek and read without
-   synchronising even when they cannot open a file by its path.
-
- - O_RDWR access can be reduced to O_RDONLY or O_WRONLY:
-    int src_fd = open("/file", O_RDWR | O_CLOEXEC);
-    new_fd = fdreopen(src_fd, -1, O_CLOEXEC | O_RDONLY);
-
- - it would be async signal safe.
-
-
-Why
-===
-
-A common idiom on Linux is to open a file and keep the fd open so that 
-the underlying file can be unlinked from its directory. But if the file 
-needs to be read from several different parts of the codebase then due to 
-the file descriptor having exactly one read pointer those different parts 
-must be synchronised which is a relatively difficult task.
-
-I think that this new system call is required to achieve that neatly and 
-simply:
-
-- dup does not solve this problem because it only allows the new file
-  descriptor to have its own flags (eg O_CLOEXEC).
-
-- /proc/self/fd/* does not solve this problem because the file might no
-  longer be available at the same place in the filesystem. In some
-  otherwise simple message passing or ReSTful IPC a different file will
-  be available at that path.
-
-I suspect that user space has been solving this problem with otherwise 
-unnecessary levels of either synchronisation or difficult to reproduce 
-occasional bugs.
-
--- 
-Tristan Wibberley
-
+On Thu, Nov 29, 2012 at 05:21:28PM +0000, Cong Ding wrote:
+> when make menuconfig, it reports this error:
+> 
+> /usr/bin/ld: scripts/kconfig/lxdialog/checklist.o: undefined reference to symbol 'acs_map'
+> /usr/bin/ld: note: 'acs_map' is defined in DSO /lib64/libtinfo.so.5 so try adding it to the linker command line
+> /lib64/libtinfo.so.5: could not read symbols: Invalid operation
+> collect2: ld returned 1 exit status
+> 
+> due to the DSO link change, we must explicitly link against every library needed.
+> http://fedoraproject.org/wiki/UnderstandingDSOLinkChange
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  scripts/kconfig/Makefile |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> index 3091794..ae339a1 100644
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -215,6 +215,7 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+>                            -Wno-missing-prototypes
+>  
+>  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
+> +HOSTLOADLIBES_mconf += -ltinfo
+>  
+>  HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
+>  $(obj)/qconf.o: $(obj)/.tmp_qtcheck
+> -- 
+> 1.7.4.5
+> 
