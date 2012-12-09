@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055Ab2LIV2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 16:28:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33903 "EHLO mx1.redhat.com"
+	id S1759087Ab2LIVh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 16:37:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23720 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab2LIV2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 16:28:23 -0500
-Date: Sun, 9 Dec 2012 21:40:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 7/9] yield_to(), cpu-hotplug: Prevent offlining
-	of other CPUs properly
-Message-ID: <20121209204053.GA6593@redhat.com>
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173950.27305.39499.stgit@srivatsabhat.in.ibm.com> <20121209194826.GB2816@redhat.com> <50C4ED46.3070100@linux.vnet.ibm.com>
+	id S1753546Ab2LIVh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 16:37:57 -0500
+Message-ID: <50C504A1.1020206@redhat.com>
+Date: Sun, 09 Dec 2012 16:37:37 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C4ED46.3070100@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Theodore Ts'o" <tytso@mit.edu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de> <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com> <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com> <50C22923.90102@redhat.com> <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org> <20121207193019.GA31591@home.goodmis.org> <20121207211440.GD29435@thunk.org>
+In-Reply-To: <20121207211440.GD29435@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10, Srivatsa S. Bhat wrote:
+On 12/07/2012 04:14 PM, Theodore Ts'o wrote:
+> On Fri, Dec 07, 2012 at 02:30:19PM -0500, Steven Rostedt wrote:
+>> How is this similar? By adding this bit, we removed incentive from a
+>> group of developers that have the means to fix the real issue at hand
+>> (the performance problem with ext4). Thus, it means that they have a work
+>> around that's good enough for them, but the rest of us suffer.
+> That assumes that there **is** a way to claw back the performance
+> loss, and Chris Mason has demonstrated the performance hit exists with
+> xfs as well (950 MB/s vs. 400 MB/s; that's more than a factor of two).
+> Sometimes, you have to make the engineering tradeoffs.  That's why
+> we're engineers, for goodness sakes.  Sometimes, it's just not
+> possible to square the circle.
+
+Keep in mind that no one has tried to retune or adjust XFS (or other file 
+systems) for this workload.
+
 >
-> On 12/10/2012 01:18 AM, Oleg Nesterov wrote:
-> >> -		if (preempt && rq != p_rq)
-> >> +		if (preempt && rq != p_rq && cpu_online(task_cpu(p)))
-> >
-> > Why do we need this change?
-> >
-> > Afaics, you could add BUG_ON(!cpu_online(...)) instead?
-> >
-> > I am just curious.
-> >
+> I don't believe that the technique of forcing people who need that
+> performance to suffer in order to induce them to try to engineer a
+> solution which may or may not exist is really the best or fairest way
+> to go about things.
 >
-> Oh, I think that's a remnant of v1 (which needed readers to use
-> cpu_online_stable()). You're right, we don't need it.
 
-Ah OK, thanks.
+The proposed solution will not ship in any enterprise distro. Google, I assume, 
+would require some specific non-normal user access permission.
 
-> Or we could put a
-> BUG_ON instead, like you suggested.
+That means that this solution will not be usable by the vast majority of users, 
+so it is clear that we do need to work on fixing the performance at the root 
+instead of plastering over the behaviour.
 
-IMHO it would be better to simply drop this chunk.
-
-Oleg.
+ric
 
