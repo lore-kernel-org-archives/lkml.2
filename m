@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934675Ab2LIXDx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 18:03:53 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:50222 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209Ab2LIXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 18:03:51 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [BUG -next] cpufreq: cpufreq_governor.
-Date: Mon, 10 Dec 2012 00:08:51 +0100
-Message-ID: <1619333.jM1smpk2m8@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50C4C790.4080206@ilyx.ru>
-References: <50BF9480.20400@ilyx.ru> <50BF9824.7070903@ilyx.ru> <50C4C790.4080206@ilyx.ru>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S934686Ab2LIXEw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 18:04:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47455 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753493Ab2LIXEu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 18:04:50 -0500
+Message-ID: <1355094273.20838.79.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH -stable 1/1] freezer: PF_FREEZER_NOSIG should be cleared
+ along with PF_NOFREEZE
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Sun, 09 Dec 2012 23:04:33 +0000
+In-Reply-To: <20121207144922.GB6478@redhat.com>
+References: <50BF9CC2.7070705@canonical.com>
+	 <1354762294.17107.157.camel@deadeye.wl.decadent.org.uk>
+	 <20121206124201.GA30705@redhat.com> <50C10391.4040903@canonical.com>
+	 <20121207144901.GA6478@redhat.com> <20121207144922.GB6478@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-lwf2eUpRdQD4cvvrAWVw"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 09, 2012 09:17:04 PM Ilya Zykov wrote:
-> On 05.12.2012 22:53, Ilya Zykov wrote:
-> > What do I do wrong?
-> > 
-> > After: modprobe cpufreq_ondemand
-> > I have:
-> > 
-> > WARNING: Error inserting freq_table (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/freq_table.ko): Unknown symbol in module, or unknown parameter (see dmesg)
-> > FATAL: Error inserting cpufreq_ondemand (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/cpufreq_ondemand.ko): Unknown symbol in module, or unknown parameter (see dmesg)
-> > 
-> > dmesg:
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_getavg (err 0)
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_create_group (err 0)
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_remove_group (err 0)
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_target (err 0)
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_idle_time_us (err 0)
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol delayed_work_timer_fn (err 0)
-> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_iowait_time_us (err 0)
-> > 
-> > cat /proc/kallsyms |grep freq_dr
-> > ffffffff814976e0 T __cpufreq_driver_target
-> > ffffffff814987e0 T __cpufreq_driver_getavg
-> > ffffffff81498850 T cpufreq_driver_target
-> > ffffffff81881650 r __ksymtab___cpufreq_driver_getavg
-> > ffffffff81881660 r __ksymtab___cpufreq_driver_target
-> > ffffffff81883b40 r __ksymtab_cpufreq_driver_target
-> > ffffffff81894290 r __kcrctab___cpufreq_driver_getavg
-> > ffffffff81894298 r __kcrctab___cpufreq_driver_target
-> > ffffffff81895508 r __kcrctab_cpufreq_driver_target
-> > ffffffff818b3080 r __kstrtab___cpufreq_driver_getavg
-> > ffffffff818b3098 r __kstrtab_cpufreq_driver_target
-> > ffffffff818b30ae r __kstrtab___cpufreq_driver_target
-> > ffffffff81e240c8 b cpufreq_driver_lock
-> > ffffffff81e240d0 b cpufreq_driver
-> > ffffffffa0c42000 d acpi_cpufreq_driver	[acpi_cpufreq]
-> 
-> I managed to fix:
-> 
-> git checkout 16642a2e7be23bb -- drivers/cpufreq
-> git checkout 250f6715a4112d668 -- include/linux/cpufreq.h
 
-Can you please send your .config?
+--=-lwf2eUpRdQD4cvvrAWVw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Rafael
+On Fri, 2012-12-07 at 15:49 +0100, Oleg Nesterov wrote:
+> This patch is only for pre-v3.3 stable trees which backported
+> b40a7959 "freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD".
+> v3.3+ doesn't need this fix.
+[...]
 
+Thanks very much, I've added this to the queue for 3.2.  However, in 3.2
+PF_FORKNOEXEC is cleared by the binfmt code and not in fs/exec.c, and I
+left that as it is.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Ben.
+
+--=20
+Ben Hutchings
+It is impossible to make anything foolproof because fools are so ingenious.
+
+--=-lwf2eUpRdQD4cvvrAWVw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUMUZAee/yOyVhhEJAQrsxQ/5AQ9hxnttNvtenEJUUEJqFDKBMYJ7NcS6
+C+Cwel9HBmUbQTaIVXPs6XmaOo2+NV+ulGayjKWOiyO9HOAoBdYptOgy5OqhsMAL
+682Vksy6jiz2YBWrqd0c7EFL3nTkHnk0ESx58Y8ejEnEGTwKGBBUzY3+q2zSCLWq
+9rsMYA5+vS8GVQo3S+PevWIIRZTpshHw9SwqMM1+80qu9fLFjzRVhYtFHy7tBaDm
+mcyiGcA7NCMfD7XPEhsQK7i67GMfKm+Ql+pcPW4aV2vRsuk9zWrnbXBS34+/ixxi
+GbR6K5DG+yfpjlX+5GFqdNSt/CaH83lCGtZUgUZge17EdnVJTx7eZOmjzisLJpF0
+i5fxEm+UmvRDGzuGHQoYFyTjXmYjHUGaHZ+wOZPIkaInwKfVMD4v3zxE5A0D8iCD
+8t1MS6ZZEda6hKUf8zIeF2Xg32ELz5xM/uXxcqhFjQzXErdz41aWQrbZc2kJgFJD
+IP/sHdX+3LAQ/RdfqvD6PxCwpoPVlbq1bKKo9Z/qPcE8y4AJx+GJ6rmDLFFYxD+C
+k9w0jGuJrfyFLQBxsF4U/W+nUsKUSUtY+hLDrzhsBc84/8jNQOtl8OEABfLrscRi
+rnfWf9LW3AuRxdfNGbuNGrAAjX5aOqRXst3Q6Fn8m0itygvoYR5CRQvKVcK8b3x6
+6m73jGkeUiY=
+=Y9zV
+-----END PGP SIGNATURE-----
+
+--=-lwf2eUpRdQD4cvvrAWVw--
