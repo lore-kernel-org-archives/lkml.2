@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537Ab2LIL2A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 06:28:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56226 "EHLO
+	id S933385Ab2LIL3P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 06:29:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56242 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758522Ab2LIL16 (ORCPT
+	with ESMTP id S1758522Ab2LIL3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 06:27:58 -0500
-Date: Sun, 9 Dec 2012 03:27:37 -0800
-From: tip-bot for Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Message-ID: <tip-11043d8b125671a32253cddb0b05177be0e976f6@git.kernel.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, fweisbec@gmail.com, yoshihiro.yunomae.ez@hitachi.com,
-        rostedt@goodmis.org, dhsharp@google.com, tglx@linutronix.de
+	Sun, 9 Dec 2012 06:29:13 -0500
+Date: Sun, 9 Dec 2012 03:28:40 -0800
+From: tip-bot for Shan Wei <davidshan@tencent.com>
+Message-ID: <tip-1c7d66732458dc187008e3f5b2f71e019e320fc2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        davidshan@tencent.com, rostedt@goodmis.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, yoshihiro.yunomae.ez@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dhsharp@google.com, tglx@linutronix.de
-In-Reply-To: <1352837903-32191-3-git-send-email-dhsharp@google.com>
-References: <1352837903-32191-3-git-send-email-dhsharp@google.com>
+        davidshan@tencent.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <50949FC9.6050202@gmail.com>
+References: <50949FC9.6050202@gmail.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tracing:
-  Show raw time stamp on stats per cpu using counter or tsc mode for trace_clock
-Git-Commit-ID: 11043d8b125671a32253cddb0b05177be0e976f6
+  Kill unused and puzzled sample code in ftrace.h
+Git-Commit-ID: 1c7d66732458dc187008e3f5b2f71e019e320fc2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,66 +28,123 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 09 Dec 2012 03:27:43 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 09 Dec 2012 03:28:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  11043d8b125671a32253cddb0b05177be0e976f6
-Gitweb:     http://git.kernel.org/tip/11043d8b125671a32253cddb0b05177be0e976f6
-Author:     Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-AuthorDate: Tue, 13 Nov 2012 12:18:23 -0800
+Commit-ID:  1c7d66732458dc187008e3f5b2f71e019e320fc2
+Gitweb:     http://git.kernel.org/tip/1c7d66732458dc187008e3f5b2f71e019e320fc2
+Author:     Shan Wei <davidshan@tencent.com>
+AuthorDate: Sat, 3 Nov 2012 12:38:33 +0800
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 13 Nov 2012 15:49:11 -0500
+CommitDate: Tue, 13 Nov 2012 15:51:21 -0500
 
-tracing: Show raw time stamp on stats per cpu using counter or tsc mode for trace_clock
+tracing: Kill unused and puzzled sample code in ftrace.h
 
-Show raw time stamp values for stats per cpu if you choose counter or tsc mode
-for trace_clock. Although a unit of tracing time stamp is nsec in local or global mode,
-the units in counter and TSC mode are tracing counter and cycles respectively.
-Link: http://lkml.kernel.org/r/1352837903-32191-3-git-send-email-dhsharp@google.com
+When doing per-cpu helper optimizing work, find that this code is so puzzled.
+1. It's mark as comment text, maybe a sample function for guidelines
+   or a todo work.
+2. But, this sample code is odd where struct perf_trace_buf is nonexistent.
+   commit ce71b9 delete struct perf_trace_buf definition.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Signed-off-by: David Sharp <dhsharp@google.com>
+   Author: Frederic Weisbecker <fweisbec@gmail.com>
+   Date:   Sun Nov 22 05:26:55 2009 +0100
+
+   tracing: Use the perf recursion protection from trace event
+
+Is it necessary to keep there?
+just compile test.
+
+Link: http://lkml.kernel.org/r/50949FC9.6050202@gmail.com
+
+Signed-off-by: Shan Wei <davidshan@tencent.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c | 23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ include/trace/ftrace.h | 73 --------------------------------------------------
+ 1 file changed, 73 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d943e69..b69cc38 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4388,13 +4388,24 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
- 	cnt = ring_buffer_bytes_cpu(tr->buffer, cpu);
- 	trace_seq_printf(s, "bytes: %ld\n", cnt);
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 698f2a8..40dc5e8 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -619,79 +619,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
  
--	t = ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
--	usec_rem = do_div(t, USEC_PER_SEC);
--	trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n", t, usec_rem);
-+	if (trace_clocks[trace_clock_id].in_ns) {
-+		/* local or global for trace_clock */
-+		t = ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
-+		usec_rem = do_div(t, USEC_PER_SEC);
-+		trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n",
-+								t, usec_rem);
-+
-+		t = ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
-+		usec_rem = do_div(t, USEC_PER_SEC);
-+		trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
-+	} else {
-+		/* counter or tsc mode for trace_clock */
-+		trace_seq_printf(s, "oldest event ts: %llu\n",
-+				ring_buffer_oldest_event_ts(tr->buffer, cpu));
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
  
--	t = ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
--	usec_rem = do_div(t, USEC_PER_SEC);
--	trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
-+		trace_seq_printf(s, "now ts: %llu\n",
-+				ring_buffer_time_stamp(tr->buffer, cpu));
-+	}
+-/*
+- * Define the insertion callback to perf events
+- *
+- * The job is very similar to ftrace_raw_event_<call> except that we don't
+- * insert in the ring buffer but in a perf counter.
+- *
+- * static void ftrace_perf_<call>(proto)
+- * {
+- *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
+- *	struct ftrace_event_call *event_call = &event_<call>;
+- *	extern void perf_tp_event(int, u64, u64, void *, int);
+- *	struct ftrace_raw_##call *entry;
+- *	struct perf_trace_buf *trace_buf;
+- *	u64 __addr = 0, __count = 1;
+- *	unsigned long irq_flags;
+- *	struct trace_entry *ent;
+- *	int __entry_size;
+- *	int __data_size;
+- *	int __cpu
+- *	int pc;
+- *
+- *	pc = preempt_count();
+- *
+- *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
+- *
+- *	// Below we want to get the aligned size by taking into account
+- *	// the u32 field that will later store the buffer size
+- *	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),
+- *			     sizeof(u64));
+- *	__entry_size -= sizeof(u32);
+- *
+- *	// Protect the non nmi buffer
+- *	// This also protects the rcu read side
+- *	local_irq_save(irq_flags);
+- *	__cpu = smp_processor_id();
+- *
+- *	if (in_nmi())
+- *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
+- *	else
+- *		trace_buf = rcu_dereference_sched(perf_trace_buf);
+- *
+- *	if (!trace_buf)
+- *		goto end;
+- *
+- *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
+- *
+- * 	// Avoid recursion from perf that could mess up the buffer
+- * 	if (trace_buf->recursion++)
+- *		goto end_recursion;
+- *
+- * 	raw_data = trace_buf->buf;
+- *
+- *	// Make recursion update visible before entering perf_tp_event
+- *	// so that we protect from perf recursions.
+- *
+- *	barrier();
+- *
+- *	//zero dead bytes from alignment to avoid stack leak to userspace:
+- *	*(u64 *)(&raw_data[__entry_size - sizeof(u64)]) = 0ULL;
+- *	entry = (struct ftrace_raw_<call> *)raw_data;
+- *	ent = &entry->ent;
+- *	tracing_generic_entry_update(ent, irq_flags, pc);
+- *	ent->type = event_call->id;
+- *
+- *	<tstruct> <- do some jobs with dynamic arrays
+- *
+- *	<assign>  <- affect our values
+- *
+- *	perf_tp_event(event_call->id, __addr, __count, entry,
+- *		     __entry_size);  <- submit them to perf counter
+- *
+- * }
+- */
  
- 	cnt = ring_buffer_dropped_events_cpu(tr->buffer, cpu);
- 	trace_seq_printf(s, "dropped events: %ld\n", cnt);
+ #ifdef CONFIG_PERF_EVENTS
+ 
