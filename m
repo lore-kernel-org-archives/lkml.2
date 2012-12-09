@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934416Ab2LITT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 14:19:27 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:53803 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934391Ab2LITTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 14:19:25 -0500
-Message-ID: <50C4E464.9070509@metafoo.de>
-Date: Sun, 09 Dec 2012 20:20:04 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121027 Icedove/3.0.11
+	id S934428Ab2LITUM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 14:20:12 -0500
+Received: from mail.adtecsa.gov.my ([175.28.13.216]:64818 "HELO adtecsa.gov.my"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S934391Ab2LITUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 14:20:11 -0500
+X-Greylist: delayed 11872 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Dec 2012 14:20:10 EST
+X-Virus-Checked: Checked by ClamAV on adtecsa.gov.my
+Message-ID: <20121209225411.2674657ewt1f3j0g@mail.adtecsa.gov.my>
+Date: Sun,  9 Dec 2012 22:54:11 +0800
+From: "Zea.Technotrade. L.L.C" <manager@zea-sales.uk.pn>
+Reply-to: webdepartment2012@yahoo.co.jp
+To: undisclosed-recipients:;
+Subject: Supply Needed
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 3/3] iio: add rtc-driver for HID sensors of type time
-References: <1355055699-2965-1-git-send-email-holler@ahsoftware.de> <1355055699-2965-4-git-send-email-holler@ahsoftware.de> <50C48A42.9070806@metafoo.de> <50C4BEFF.2010304@ahsoftware.de> <50C4D58E.4020702@ahsoftware.de>
-In-Reply-To: <50C4D58E.4020702@ahsoftware.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2012 07:16 PM, Alexander Holler wrote:
-> Am 09.12.2012 17:40, schrieb Alexander Holler:
->> Am 09.12.2012 13:55, schrieb Lars-Peter Clausen:
->>> On 12/09/2012 01:21 PM, Alexander Holler wrote:
->>>> This driver makes the time from HID sensors (hubs) which are offering
->>>> such available like any other RTC does.
->>>>
->>>> Currently the time can only be read. Setting the time must be done
->>>> through sending a report, which currently isn't supported by
->>>> hid-sensor-hub.
->>>>
->>>> It is necessary that all values like year, month etc, are send as
->>>> 8bit values (1 byte each) and all of them in 1 report. Also the
->>>> spec HUTRR39b doesn't define the range of the year field, we
->>>> tread it as 0 - 99 because that's what most RTCs I know about are
->>>> offering.
->>>
->>> I don't think we should register a IIO device for this. Just an RTC
->>> device
->>> should be fully sufficient.
->>>
->>
->> You would have to implement all the used services hid-sensor-hub offers
->> in the rtc-driver again.
-> 
-> Besides that, time is part of the spec for HID sensors, which makes
-> sense. Making that available as a RTC to read/set the time is imho the
-> best to way support that. If you want a driver which doesn't use the HID
-> sensor hub framework (or iio), you would either have to define your own
-> standard or make sure it is interoperable with the HID sensor hub
-> framework, which might not be trivial.
+Dear
+Sir/Madam
 
-I agree with what you wrote above. It just doesn't make sense to register a IIO
-device for a RTC type device. Just rip out all the IIO related bits from the
-driver and it will be fine.
+Our company is interested in your company product that we saw in  
+trading site, If you are sure it has good quality the same way we saw  
+it in the in site,please
+write back to us,Looking  forward to hear from you soon,
+Thank you
 
-- Lars
+Best Regards
+Mr Jeaiy Santos
+purchase Manager
+zea Trading Groupz,
+12 Field Street
+New Jersey
+Phone +1- 201 71029
+Fax +1- 201 683 7050
+
 
