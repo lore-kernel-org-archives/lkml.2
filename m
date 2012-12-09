@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab2LII2B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 03:28:01 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57616 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab2LII17 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 03:27:59 -0500
-Date: Sun, 9 Dec 2012 08:27:56 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v2] arch/x86/tools/gen-insn-attr-x86.awk: remove
- duplicate const
-Message-ID: <20121209082755.GB9181@gmail.com>
-References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
- <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
- <20121207224949.GA6179@gmail.com>
- <50C27410.7050101@zytor.com>
- <20121207230302.GB6179@gmail.com>
- <50C27665.4090206@zytor.com>
- <20121207231729.GC6179@gmail.com>
- <50C420A7.9090108@hitachi.com>
+	id S1756612Ab2LIIbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 03:31:09 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:52883 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756593Ab2LIIbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 03:31:07 -0500
+Date: Sun, 9 Dec 2012 09:30:46 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
+ timer
+Message-ID: <20121209083046.GA25466@lunn.ch>
+References: <20121207225507.GB29262@obsidianresearch.com>
+ <20121208112624.GD25315@lunn.ch>
+ <20121209025748.GA10405@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50C420A7.9090108@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20121209025748.GA10405@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 09, 2012 at 02:24:55PM +0900, Masami Hiramatsu wrote:
-> (2012/12/08 8:17), Cong Ding wrote:
-> >>>>>> Patch description please?
-> >>>>> there are 2 consts in the definition of one variable
-> >>>>>
-> >>>>
-> >>>> Please put in an actual patch description.  The first line (subject
-> >>>> line) is a title; the patch should make sense without it.
-> >>> sorry for that. so like this is fine?
-> >>>
-> >>
-> >> Well, except that typically you should explain which variable it is.
-> >> Yes, it is obvious if you look at the patch, but you're making the
-> >> reader spend a few more moments than necessary.
-> >>
-> >> Also, you should explain what the harm is -- if it breaks anything
-> >> or is just a cosmetic issue.
-> > sorry again for lacking of experience...
-> > and I missed another same error, so send version 2.
+On Sat, Dec 08, 2012 at 07:57:48PM -0700, Jason Gunthorpe wrote:
+> On Sat, Dec 08, 2012 at 12:26:24PM +0100, Andrew Lunn wrote:
+>  
+> > 1) It should have an IRQ domain, like the other IRQ chips we have.
+> > 2) It should have a DT binding, like the other IRQ chips we have.
 > 
-> Ah, sorry for my mistake. I would like to make both the value
-> pointed by the pointers and the pointers itself read-only.
-> Thus the right way of the patch should be;
+> I was going to look at a DT binding for this as a follow on, since
+> I'll want to bind to these interrupts. 
 > 
-> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
-> +	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX + 1]" \
-> 
-> Cong, could you update your patch? then I can Ack that.
-Hi Masami, Thank you for the note.
+> Are you OK with keeping this patch as is and seeing DT in a follow up,
+> or as a series? It is already pretty big.
 
-Hi Peter, I have updated and sent version 3, could you please help me update
-it?
+Hi Jason
 
-Thanks,
-- cong
+A patch series is great. However, its not so good practice to add
+something on the first patch, and then move it somewhere else in the
+next. So i would suggest initializing the controller in
+kirkwood_irq_init(), etc as its added.
+
+> > 4) We than pass the watchdog interrupt via DT.
+> 
+> Right now the watchdog driver is coded to cause a board reset, so it
+> doesn't use interrupts at all. Adding interrupt support to watchdog
+> seems orthogonal to this?
+
+Yes, its orthogonal, but a logical extension which could be part of a
+patchset.
+ 
+> What would it look like? For my boards I want the watchdog to panic(),
+> because I have another watchdog that takes care of reset, but that
+> won't be universal.
+
+There are examples of watchdogs that allow this. However, none yet
+have DT bindings. I would suggest adding an optional property,
+"panic", which indicates the driver should panic rather than
+reboot. Make sure to run this by the device tree mailing list.
+ 
+> > 3) We then pass the timer interrupt via DT to the timer driver.
+> > 3) is not so simple, because we currently don't have a timer binding
+> > for Orion SoC. However, with this cleanup, we are much closer to being
+> > able to use the 370/XP timer code.
+> 
+> Interesting.. The 370/XP is a more advanced version of the same timer
+> IP, there are several registers that driver is touching that are not
+> HW supported, at least on kirkwood.
+
+Yes, the 25MHz and the divider for example. I'm not 100% sure it will
+actually work, it will need a different compatibility string, and a
+bit of configuration based on that string, but i think it goes. If you
+compare the two different drivers, they are very similar.
+
+> The two DT bindings are straightforward, and my testing on Kirkwood
+> should cover alot - but it would be great if non-kirkwood boards could
+> review/test with this patch..
+> 
+> Do you expect a DT conversion for all orion_time_init users, or just
+> the one I can test or ..?
+
+Please take a stab at converting them all. We have an active set of
+testers. I can test kirkwood and orion5x, Sebastian tests Dove, Thomas
+and Gregory test 370/XP if needed. Nobody seems to care about mv78xx0
+so its slowly bit-rotting in a corner.
+
+Thanks
+	Andrew
