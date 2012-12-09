@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934050Ab2LIM0G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 07:26:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39660 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933962Ab2LIM0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 07:26:05 -0500
-Message-ID: <1355055955.8506.1.camel@phoenix>
-Subject: [PATCH] mfd: tps6507x: Convert to devm_kzalloc
-From: Axel Lin <axel.lin@ingics.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Todd Fischer <todd.fischer@ridgerun.com>, linux-kernel@vger.kernel.org
-Date: Sun, 09 Dec 2012 20:25:55 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S934065Ab2LIM3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 07:29:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43526 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934052Ab2LIM3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 07:29:11 -0500
+Date: Sun, 9 Dec 2012 13:29:07 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: John <da_audiophile@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Expand CPU compiler options
+Message-ID: <20121209122907.GD24106@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	John <da_audiophile@yahoo.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1354745355.79857.YahooMailNeo@web140001.mail.bf1.yahoo.com>
+ <20121205222738.GB6239@liondog.tnic>
+ <1354748412.17691.YahooMailNeo@web140005.mail.bf1.yahoo.com>
+ <20121205230835.GF6222@liondog.tnic>
+ <1354968839.35825.YahooMailNeo@web140006.mail.bf1.yahoo.com>
+ <20121209111857.GC24106@liondog.tnic>
+ <1355054935.13447.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1355054935.13447.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/tps6507x.c |   21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
+On Sun, Dec 09, 2012 at 04:08:55AM -0800, John wrote:
+> While I agree that the differences as small - on the order of
+> ms - they are not insignificant nor are they in the noise of the
+> measurements.
 
-diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
-index 1b20349..409afa2 100644
---- a/drivers/mfd/tps6507x.c
-+++ b/drivers/mfd/tps6507x.c
-@@ -86,9 +86,9 @@ static int tps6507x_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
- 	struct tps6507x_dev *tps6507x;
--	int ret = 0;
- 
--	tps6507x = kzalloc(sizeof(struct tps6507x_dev), GFP_KERNEL);
-+	tps6507x = devm_kzalloc(&i2c->dev, sizeof(struct tps6507x_dev),
-+				GFP_KERNEL);
- 	if (tps6507x == NULL)
- 		return -ENOMEM;
- 
-@@ -98,19 +98,8 @@ static int tps6507x_i2c_probe(struct i2c_client *i2c,
- 	tps6507x->read_dev = tps6507x_i2c_read_device;
- 	tps6507x->write_dev = tps6507x_i2c_write_device;
- 
--	ret = mfd_add_devices(tps6507x->dev, -1,
--			      tps6507x_devs, ARRAY_SIZE(tps6507x_devs),
--			      NULL, 0, NULL);
--
--	if (ret < 0)
--		goto err;
--
--	return ret;
--
--err:
--	mfd_remove_devices(tps6507x->dev);
--	kfree(tps6507x);
--	return ret;
-+	return mfd_add_devices(tps6507x->dev, -1, tps6507x_devs,
-+			       ARRAY_SIZE(tps6507x_devs), NULL, 0, NULL);
- }
- 
- static int tps6507x_i2c_remove(struct i2c_client *i2c)
-@@ -118,8 +107,6 @@ static int tps6507x_i2c_remove(struct i2c_client *i2c)
- 	struct tps6507x_dev *tps6507x = i2c_get_clientdata(i2c);
- 
- 	mfd_remove_devices(tps6507x->dev);
--	kfree(tps6507x);
--
- 	return 0;
- }
- 
+Oh, maybe I wasn't clear - I wasn't talking about statistical
+significance but rather about practical significance.
+
+A minuscule speedup (a lot less than 1%) showing only in a *single*
+workload so far and relevant only for a *very* *small* number of linux
+users - only those who build their own kernels - is simply not worth
+including in the kernel.
+
 -- 
-1.7.9.5
-
-
-
+Regards/Gruss,
+    Boris.
