@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab2LIJ62 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 04:58:28 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57722 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933133Ab2LIJ61 (ORCPT
+	id S933784Ab2LIKVl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 05:21:41 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:64736 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933754Ab2LIKVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 04:58:27 -0500
-Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
- gpio chip
-From: anish kumar <anish198519851985@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Guenter Roeck <groeck-dsl@sbcglobal.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-In-Reply-To: <20121207164906.08b65046@pyramind.ukuu.org.uk>
-References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
-	 <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
-	 <20121207145955.GA28704@roeck-us.net>
-	 <20121207164906.08b65046@pyramind.ukuu.org.uk>
+	Sun, 9 Dec 2012 05:21:40 -0500
+Message-ID: <1355048513.9812.7.camel@gitbox>
+Subject: Re: [PATCH] drivers/video/wm8505fb.c: use devm_ functions
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Sun, 09 Dec 2012 23:21:53 +1300
+In-Reply-To: <alpine.DEB.2.02.1212090820270.2028@localhost6.localdomain6>
+References: <1354984288-773-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1355002958.14981.11.camel@gitbox>
+	 <alpine.DEB.2.02.1212090820270.2028@localhost6.localdomain6>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 09 Dec 2012 01:58:19 -0800
-Message-ID: <1355047099.1673.5.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 16:49 +0000, Alan Cox wrote:
-> > I could imagine declaring the activity request buttons to be "input", but for
-> > presence detects it is a bit far fetched and would add too much complexity.
+On Sun, 2012-12-09 at 08:21 +0100, Julia Lawall wrote:
+> > Rather than the goto, add the fail path code in directly, and return.
+> >
+> >
+> > ret = register_framebuffer(&fbi->fb);
+> > if (ret < 0) {
+> >  dev_err(&pdev->dev,
+> >  "Failed to register framebuffer device: %d\n", ret);
+> >  if (fbi->fb.cmap.len)
+> >    fb_dealloc_cmap(&fbi->fb.cmap);
+> >  return ret;
+> > }
 > 
-> Android tries to address this with its switch class driver, but I'm not
-> sure its actually got anything over making them input devices.
+> So there is no need for the platform_set_drvdata(pdev, NULL); ?
 
-Sorry for not understanding the context here.How the debounce sysfs
-added by Guenter has anything to do with switch driver in android?
+Unless there is some kind of reference counting, I can't see any reason
+for this.
 
-AFAIK android just uses switch driver api to talk to driver to get the
-status of the headset and the status of the keys if headset has any.This
-API in turn updates the sysfs to let userspace know the status change
-using kobject uevent.
- 
-Switch driver is replaced by extcon in the mainline.
 > 
-> Alan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Also, do you know if it is correct that the original code does not include
+> a call to dma_free_coherent?
 
+No, that is not correct - there definitely should be a
+dma_free_coherent, both in the fail path and in the remove(). Appears
+they are both missing.
+
+Regards
+Tony P
 
