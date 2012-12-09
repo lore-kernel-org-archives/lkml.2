@@ -1,157 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab2LIBNQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 20:13:16 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34899 "EHLO
+	id S1756374Ab2LIBN0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 20:13:26 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34920 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2LIBNO (ORCPT
+	with ESMTP id S1756347Ab2LIBNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 20:13:14 -0500
+	Sat, 8 Dec 2012 20:13:22 -0500
 From: Alexander Holler <holler@ahsoftware.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-input@vger.kernel.org, linux-iio@vger.kernel.org,
         Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
         srinivas pandruvada <srinivas.pandruvada@intel.com>,
         Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 1/2] HID: autodetect HID sensor hubs.
-Date: Sun,  9 Dec 2012 02:12:23 +0100
-Message-Id: <1355015544-31579-1-git-send-email-holler@ahsoftware.de>
+Subject: [PATCH 2/2] Revert "HID: sensors: add to special driver list"
+Date: Sun,  9 Dec 2012 02:12:24 +0100
+Message-Id: <1355015544-31579-2-git-send-email-holler@ahsoftware.de>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1355015544-31579-1-git-send-email-holler@ahsoftware.de>
+References: <1355015544-31579-1-git-send-email-holler@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should not be necessary to add IDs for HID sensor hubs to lists
-in hid-core.c and hid-sensor-hub.c. So instead of a whitelist,
-autodetect such sensor hubs, based on a collection of type
-physical inside a useage page of type sensor. If some sensor hubs
-stil must be usable as raw devices, a blacklist might be created.
+Those IDs aren't necessary anymore.
+
+This reverts commit c8147d9ea19bfe7d8e569351bc7239e118dd6997.
 
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- drivers/hid/hid-core.c         |   10 +++++++++-
- drivers/hid/hid-sensor-hub.c   |   32 +-------------------------------
- include/linux/hid-sensor-ids.h |    1 -
- include/linux/hid.h            |    2 ++
- 4 files changed, 12 insertions(+), 33 deletions(-)
+ drivers/hid/hid-core.c |    5 -----
+ drivers/hid/hid-ids.h  |    6 ------
+ 2 files changed, 0 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index f4109fd..2085230 100644
+index 2085230..943a6bc 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -713,7 +713,11 @@ static int hid_scan_report(struct hid_device *hid)
- 					hid_scan_usage(hid, u);
- 				break;
- 			}
--		}
-+		} else if (page == HID_UP_SENSOR &&
-+			item.type == HID_ITEM_TYPE_MAIN &&
-+			item.tag == HID_MAIN_ITEM_TAG_BEGIN_COLLECTION &&
-+			(item_udata(&item) & 0xff) == HID_COLLECTION_PHYSICAL)
-+			hid->group = HID_GROUP_SENSOR_HUB;
- 	}
+@@ -1579,10 +1579,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8086, USB_DEVICE_ID_SENSOR_HUB_1020) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8086, USB_DEVICE_ID_SENSOR_HUB_09FA) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8087, USB_DEVICE_ID_SENSOR_HUB_1020) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8087, USB_DEVICE_ID_SENSOR_HUB_09FA) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+@@ -1680,7 +1676,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_STM, USB_DEVICE_ID_SENSOR_HUB_7014) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb300) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb304) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb323) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 9d7a428..8fd25d3 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -432,11 +432,6 @@
+ #define USB_VENDOR_ID_IMATION		0x0718
+ #define USB_DEVICE_ID_DISC_STAKKA	0xd000
  
- 	return 0;
-@@ -1465,6 +1469,10 @@ EXPORT_SYMBOL_GPL(hid_disconnect);
-  * there is a proper autodetection and autoloading in place (based on presence
-  * of HID_DG_CONTACTID), so those devices don't need to be added to this list,
-  * as we are doing the right thing in hid_scan_usage().
-+ *
-+ * Autodetection for HID sensor hubs exists too. If a collection of type
-+ * physical is found inside a usage page of type sensor, hid-sensor-hub will be
-+ * used as a driver. See hid_scan_report().
-  */
- static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_WCP32PU) },
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index d9d73e9..ca88ddc 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -82,23 +82,6 @@ struct hid_sensor_hub_callbacks_list {
- 	void *priv;
- };
- 
--static int sensor_hub_check_for_sensor_page(struct hid_device *hdev)
--{
--	int i;
--	int ret = -EINVAL;
+-#define USB_VENDOR_ID_INTEL_8086	0x8086
+-#define USB_VENDOR_ID_INTEL_8087	0x8087
+-#define USB_DEVICE_ID_SENSOR_HUB_1020	0x1020
+-#define USB_DEVICE_ID_SENSOR_HUB_09FA	0x09FA
 -
--	for (i = 0; i < hdev->maxcollection; i++) {
--		struct hid_collection *col = &hdev->collection[i];
--		if (col->type == HID_COLLECTION_PHYSICAL &&
--		   (col->usage & HID_USAGE_PAGE) == HID_UP_SENSOR) {
--			ret = 0;
--			break;
--		}
--	}
--
--	return ret;
--}
--
- static struct hid_report *sensor_hub_report(int id, struct hid_device *hdev,
- 						int dir)
- {
-@@ -524,10 +507,6 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 		hid_err(hdev, "parse failed\n");
- 		goto err_free;
- 	}
--	if (sensor_hub_check_for_sensor_page(hdev) < 0) {
--		hid_err(hdev, "sensor page not found\n");
--		goto err_free;
--	}
- 	INIT_LIST_HEAD(&hdev->inputs);
+ #define USB_VENDOR_ID_IRTOUCHSYSTEMS	0x6615
+ #define USB_DEVICE_ID_IRTOUCH_INFRARED_USB	0x0070
  
- 	ret = hid_hw_start(hdev, 0);
-@@ -630,16 +609,7 @@ static void sensor_hub_remove(struct hid_device *hdev)
- }
+@@ -714,7 +709,6 @@
  
- static const struct hid_device_id sensor_hub_devices[] = {
--	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8086,
--			USB_DEVICE_ID_SENSOR_HUB_1020) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8087,
--			USB_DEVICE_ID_SENSOR_HUB_1020) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8086,
--			USB_DEVICE_ID_SENSOR_HUB_09FA) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_INTEL_8087,
--			USB_DEVICE_ID_SENSOR_HUB_09FA) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_STM,
--			USB_DEVICE_ID_SENSOR_HUB_7014) },
-+	{ HID_DEVICE(BUS_USB, HID_GROUP_SENSOR_HUB, HID_ANY_ID, HID_ANY_ID) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, sensor_hub_devices);
-diff --git a/include/linux/hid-sensor-ids.h b/include/linux/hid-sensor-ids.h
-index ca8d7e9..55f2773 100644
---- a/include/linux/hid-sensor-ids.h
-+++ b/include/linux/hid-sensor-ids.h
-@@ -19,7 +19,6 @@
- #ifndef _HID_SENSORS_IDS_H
- #define _HID_SENSORS_IDS_H
+ #define USB_VENDOR_ID_STANTUM_STM		0x0483
+ #define USB_DEVICE_ID_MTP_STM		0x3261
+-#define USB_DEVICE_ID_SENSOR_HUB_7014	0x7014
  
--#define HID_UP_SENSOR						0x00200000
- #define HID_MAX_PHY_DEVICES					0xFF
- 
- /* Accel 3D (200073) */
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index c076041..c5f6ec2 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -167,6 +167,7 @@ struct hid_item {
- #define HID_UP_MSVENDOR		0xff000000
- #define HID_UP_CUSTOM		0x00ff0000
- #define HID_UP_LOGIVENDOR	0xffbc0000
-+#define HID_UP_SENSOR		0x00200000
- 
- #define HID_USAGE		0x0000ffff
- 
-@@ -292,6 +293,7 @@ struct hid_item {
-  */
- #define HID_GROUP_GENERIC			0x0001
- #define HID_GROUP_MULTITOUCH			0x0002
-+#define HID_GROUP_SENSOR_HUB			0x0003
- 
- /*
-  * This is the global environment of the parser. This information is
+ #define USB_VENDOR_ID_STANTUM_SITRONIX		0x1403
+ #define USB_DEVICE_ID_MTP_SITRONIX		0x5001
 -- 
 1.7.8.6
 
