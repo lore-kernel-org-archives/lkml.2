@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab2LIRRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 12:17:12 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:56584 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752904Ab2LIRRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 12:17:11 -0500
-Message-ID: <50C4C790.4080206@ilyx.ru>
-Date: Sun, 09 Dec 2012 21:17:04 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [BUG -next] cpufreq: cpufreq_governor.
-References: <50BF9480.20400@ilyx.ru> <50BF9824.7070903@ilyx.ru>
-In-Reply-To: <50BF9824.7070903@ilyx.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758766Ab2LIRSq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 12:18:46 -0500
+Received: from plane.gmane.org ([80.91.229.3]:36962 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752440Ab2LIRSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 12:18:45 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Tristan Wibberley <tristan.wibberley@gmail.com>
+Subject: Re: New system call wanted: fdreopen
+Date: Sun, 9 Dec 2012 17:18:23 +0000 (UTC)
+Message-ID: <ka2h4v$ra3$2@ger.gmane.org>
+References: <ka2982$ra3$1@ger.gmane.org> <20121209162746.GA23890@thunk.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 87.112.131.179
+User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
+	git://git.gnome.org/pan2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2012 22:53, Ilya Zykov wrote:
-> What do I do wrong?
-> 
-> After: modprobe cpufreq_ondemand
-> I have:
-> 
-> WARNING: Error inserting freq_table (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/freq_table.ko): Unknown symbol in module, or unknown parameter (see dmesg)
-> FATAL: Error inserting cpufreq_ondemand (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/cpufreq_ondemand.ko): Unknown symbol in module, or unknown parameter (see dmesg)
-> 
-> dmesg:
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_getavg (err 0)
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_create_group (err 0)
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_remove_group (err 0)
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_target (err 0)
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_idle_time_us (err 0)
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol delayed_work_timer_fn (err 0)
-> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_iowait_time_us (err 0)
-> 
-> cat /proc/kallsyms |grep freq_dr
-> ffffffff814976e0 T __cpufreq_driver_target
-> ffffffff814987e0 T __cpufreq_driver_getavg
-> ffffffff81498850 T cpufreq_driver_target
-> ffffffff81881650 r __ksymtab___cpufreq_driver_getavg
-> ffffffff81881660 r __ksymtab___cpufreq_driver_target
-> ffffffff81883b40 r __ksymtab_cpufreq_driver_target
-> ffffffff81894290 r __kcrctab___cpufreq_driver_getavg
-> ffffffff81894298 r __kcrctab___cpufreq_driver_target
-> ffffffff81895508 r __kcrctab_cpufreq_driver_target
-> ffffffff818b3080 r __kstrtab___cpufreq_driver_getavg
-> ffffffff818b3098 r __kstrtab_cpufreq_driver_target
-> ffffffff818b30ae r __kstrtab___cpufreq_driver_target
-> ffffffff81e240c8 b cpufreq_driver_lock
-> ffffffff81e240d0 b cpufreq_driver
-> ffffffffa0c42000 d acpi_cpufreq_driver	[acpi_cpufreq]
+On Sun, 09 Dec 2012 11:27:46 -0500, Theodore Ts'o wrote:
 
-I managed to fix:
+> On Sun, Dec 09, 2012 at 03:03:30PM +0000, Tristan Wibberley wrote:
+>> 
+>> - /proc/self/fd/* does not solve this problem because the file might no
 
-git checkout 16642a2e7be23bb -- drivers/cpufreq
-git checkout 250f6715a4112d668 -- include/linux/cpufreq.h
+...
+
+> Actually, /proc/self/fd/* _will_ work.  When you do a ls -l, it looks
+> like a symlink, but the files in /proc/self/fd (and /proc/<pid>/fd more
+> generally) are magic.  If you open files in /proc/<pid>/fd/*, it will do
+> what you want.
+
+Oh! Cool! By reading how to solve this class of problem with google 
+search results I couldn't find any indication that /proc/pid/fd/* worked 
+differently than a symlink.
+
+Thanks for your quick reply.
+
+-- 
+Tristan
 
