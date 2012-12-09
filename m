@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934672Ab2LIXBt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 18:01:49 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:50197 "EHLO hydra.sisk.pl"
+	id S934675Ab2LIXDx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 18:03:53 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50222 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934585Ab2LIW76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 17:59:58 -0500
+	id S1751209Ab2LIXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 18:03:51 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 4/6] ACPI: Reduce the usage of struct acpi_bus_ops
-Date: Mon, 10 Dec 2012 00:02:41 +0100
-Message-ID: <1661490.lfKgYmIiUQ@vostro.rjw.lan>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [BUG -next] cpufreq: cpufreq_governor.
+Date: Mon, 10 Dec 2012 00:08:51 +0100
+Message-ID: <1619333.jM1smpk2m8@vostro.rjw.lan>
 User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <8498184.VilrUmatxI@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
+In-Reply-To: <50C4C790.4080206@ilyx.ru>
+References: <50BF9480.20400@ilyx.ru> <50BF9824.7070903@ilyx.ru> <50C4C790.4080206@ilyx.ru>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,130 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sunday, December 09, 2012 09:17:04 PM Ilya Zykov wrote:
+> On 05.12.2012 22:53, Ilya Zykov wrote:
+> > What do I do wrong?
+> > 
+> > After: modprobe cpufreq_ondemand
+> > I have:
+> > 
+> > WARNING: Error inserting freq_table (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/freq_table.ko): Unknown symbol in module, or unknown parameter (see dmesg)
+> > FATAL: Error inserting cpufreq_ondemand (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/cpufreq_ondemand.ko): Unknown symbol in module, or unknown parameter (see dmesg)
+> > 
+> > dmesg:
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_getavg (err 0)
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_create_group (err 0)
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_remove_group (err 0)
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_target (err 0)
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_idle_time_us (err 0)
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol delayed_work_timer_fn (err 0)
+> > Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_iowait_time_us (err 0)
+> > 
+> > cat /proc/kallsyms |grep freq_dr
+> > ffffffff814976e0 T __cpufreq_driver_target
+> > ffffffff814987e0 T __cpufreq_driver_getavg
+> > ffffffff81498850 T cpufreq_driver_target
+> > ffffffff81881650 r __ksymtab___cpufreq_driver_getavg
+> > ffffffff81881660 r __ksymtab___cpufreq_driver_target
+> > ffffffff81883b40 r __ksymtab_cpufreq_driver_target
+> > ffffffff81894290 r __kcrctab___cpufreq_driver_getavg
+> > ffffffff81894298 r __kcrctab___cpufreq_driver_target
+> > ffffffff81895508 r __kcrctab_cpufreq_driver_target
+> > ffffffff818b3080 r __kstrtab___cpufreq_driver_getavg
+> > ffffffff818b3098 r __kstrtab_cpufreq_driver_target
+> > ffffffff818b30ae r __kstrtab___cpufreq_driver_target
+> > ffffffff81e240c8 b cpufreq_driver_lock
+> > ffffffff81e240d0 b cpufreq_driver
+> > ffffffffa0c42000 d acpi_cpufreq_driver	[acpi_cpufreq]
+> 
+> I managed to fix:
+> 
+> git checkout 16642a2e7be23bb -- drivers/cpufreq
+> git checkout 250f6715a4112d668 -- include/linux/cpufreq.h
 
-Objects of type struct acpi_bus_ops are currently used to pass
-information between different parts of the ACPI namespace scanning
-code, sometimes in quite convoluted ways.  It turns out that that
-is not necessary in some cases, so simplify the code by reducing
-the utilization of struct acpi_bus_ops objects where clearly
-possible.
+Can you please send your .config?
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c |   39 +++++++++++++++------------------------
- 1 file changed, 15 insertions(+), 24 deletions(-)
+Rafael
 
-Index: linux/drivers/acpi/scan.c
-===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -1527,7 +1527,6 @@ end:
- static void acpi_bus_add_power_resource(acpi_handle handle)
- {
- 	struct acpi_bus_ops ops = {
--		.acpi_op_add = 1,
- 		.acpi_op_start = 1,
- 		.acpi_op_match = 1,
- 	};
-@@ -1581,7 +1580,6 @@ static int acpi_bus_type_and_status(acpi
- static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl,
- 				      void *context, void **return_value)
- {
--	struct acpi_bus_ops *ops = context;
- 	struct acpi_device *device = NULL;
- 	int type;
- 	unsigned long long sta;
-@@ -1609,11 +1607,13 @@ static acpi_status acpi_bus_check_add(ac
- 	 * so, we needn't add it again, but we may still have to start it.
- 	 */
- 	acpi_bus_get_device(handle, &device);
--	if (ops->acpi_op_add && !device) {
--		struct acpi_bus_ops add_ops = *ops;
-+	if (!device) {
-+		struct acpi_bus_ops ops = {
-+			.acpi_op_start = !!context,
-+			.acpi_op_match = 0,
-+		};
- 
--		add_ops.acpi_op_match = 0;
--		acpi_add_single_object(&device, handle, type, sta, &add_ops);
-+		acpi_add_single_object(&device, handle, type, sta, &ops);
- 		if (!device)
- 			return AE_CTRL_DEPTH;
- 
-@@ -1647,21 +1647,21 @@ static acpi_status acpi_bus_match_device
- 	return status;
- }
- 
--static int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
-+static int acpi_bus_scan(acpi_handle handle, bool start,
- 			 struct acpi_device **child)
- {
- 	void *device = NULL;
- 	acpi_status status;
- 	int ret = 0;
- 
--	status = acpi_bus_check_add(handle, 0, ops, &device);
-+	status = acpi_bus_check_add(handle, 0, (void *)start, &device);
- 	if (ACPI_FAILURE(status)) {
- 		ret = -ENODEV;
- 		goto out;
- 	}
- 
- 	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
--			    acpi_bus_check_add, NULL, ops, &device);
-+			    acpi_bus_check_add, NULL, (void *)start, &device);
- 	if (device)
- 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
- 				    acpi_bus_match_device, NULL, NULL, NULL);
-@@ -1691,9 +1691,7 @@ int
- acpi_bus_add(struct acpi_device **child,
- 	     struct acpi_device *parent, acpi_handle handle, int type)
- {
--	struct acpi_bus_ops ops = { .acpi_op_add = 1, };
--
--	return acpi_bus_scan(handle, &ops, child);
-+	return acpi_bus_scan(handle, false, child);
- }
- EXPORT_SYMBOL(acpi_bus_add);
- 
-@@ -1781,12 +1779,10 @@ static int acpi_bus_scan_fixed(void)
- {
- 	int result = 0;
- 	struct acpi_device *device = NULL;
--	struct acpi_bus_ops ops;
--
--	memset(&ops, 0, sizeof(ops));
--	ops.acpi_op_add = 1;
--	ops.acpi_op_start = 1;
--	ops.acpi_op_match = 1;
-+	struct acpi_bus_ops ops = {
-+		.acpi_op_start = 1,
-+		.acpi_op_match = 1,
-+	};
- 
- 	/*
- 	 * Enumerate all fixed-feature devices.
-@@ -1812,11 +1808,6 @@ static int acpi_bus_scan_fixed(void)
- int __init acpi_scan_init(void)
- {
- 	int result;
--	struct acpi_bus_ops ops;
--
--	memset(&ops, 0, sizeof(ops));
--	ops.acpi_op_add = 1;
--	ops.acpi_op_start = 1;
- 
- 	result = bus_register(&acpi_bus_type);
- 	if (result) {
-@@ -1830,7 +1821,7 @@ int __init acpi_scan_init(void)
- 	/*
- 	 * Enumerate devices in the ACPI namespace.
- 	 */
--	result = acpi_bus_scan(ACPI_ROOT_OBJECT, &ops, &acpi_root);
-+	result = acpi_bus_scan(ACPI_ROOT_OBJECT, true, &acpi_root);
- 
- 	if (!result)
- 		result = acpi_bus_scan_fixed();
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
