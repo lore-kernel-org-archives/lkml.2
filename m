@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934559Ab2LIV75 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 16:59:57 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59855 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759006Ab2LIV74 (ORCPT
+	id S1759106Ab2LIWQU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 17:16:20 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50723 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab2LIWQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 16:59:56 -0500
-Message-ID: <50C509D3.3070108@gmail.com>
-Date: Sun, 09 Dec 2012 22:59:47 +0100
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sun, 9 Dec 2012 17:16:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 1/5] asm-generic/mmu.h: Remove unused vmlist field from mm_context_t
+Date: Sun, 9 Dec 2012 22:15:56 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Mark Salter <msalter@redhat.com>, Aurelien Jacquiot <a-jacquiot@ti.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org, linux-arch@vger.kernel.org
+References: <1351765467-29244-1-git-send-email-lars@metafoo.de> <201212032354.10573.arnd@arndb.de> <50BDAD3D.9020209@metafoo.de>
+In-Reply-To: <50BDAD3D.9020209@metafoo.de>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Zlatko Calusic <zlatko.calusic@iskon.hr>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-References: <20121128145215.d23aeb1b.akpm@linux-foundation.org> <20121128235412.GW8218@suse.de> <50B77F84.1030907@leemhuis.info> <20121129170512.GI2301@cmpxchg.org> <50B8A8E7.4030108@leemhuis.info> <20121201004520.GK2301@cmpxchg.org> <50BC6314.7060106@leemhuis.info> <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org> <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to> <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com> <50C32D32.6040800@iskon.hr> <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201212092215.56872.arnd@arndb.de>
+X-Provags-ID: V02:K0:seGo9bi6EZOLeJRNkMmNbb/HKesvPAqnr89CXgf4fjE
+ bVYlA5fskiMgdw/X/AMOCYA+biTFDgZMCCKXtlKxGg/FUb58TT
+ JSqhOgyHAL0DfL8OvHMaFAC/8COH9Q1z6/qWxsxz4u+IqQvGdN
+ a6tRu4APYCp1AX6ucjain9uvNGDx5IywEC/xfJ4j131gEWYEk0
+ dM+R4MaREs4XpQdwZse6CMxQCtCzZ3nf8ZgvAYZuWn5F0Iv+Un
+ dqwAIeTWhQCk3cMcu8I5PHCXf6E3KgcjIPag4MVZCltw+8L2P0
+ MY4/SqPlQuukBOSMGz9U8/9KwCPLLFniKSEYgOsHwGUWL2LLbP
+ /c1SDiZrz51TvNXxhnvE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 9.12.2012 02:01, Linus Torvalds napsal(a):
->
->
-> On Sat, 8 Dec 2012, Zlatko Calusic wrote:
->>
->> Or sooner... in short: nothing's changed!
->>
->> On a 4GB RAM system, where applications use close to 2GB, kswapd likes to keep
->> around 1GB free (unused), leaving only 1GB for page/buffer cache. If I force
->> bigger page cache by reading a big file and thus use the unused 1GB of RAM,
->> kswapd will soon (in a matter of minutes) evict those (or other) pages out and
->> once again keep unused memory close to 1GB.
->
-> Ok, guys, what was the reclaim or kswapd patch during the merge window
-> that actually caused all of these insane problems? It seems it was more
-> fundamentally buggered than the fifteen-million fixes for kswapd we have
-> already picked up.
->
-> (Ok, I may be exaggerating the number of patches, but it's starting to
-> feel that way - I thought that 3.7 was going to be a calm and easy
-> release, but the kswapd issues seem to just keep happening. We've been
-> fighting the kswapd changes for a while now.)
->
-> Trying to keep a gigabyte free (presumably because that way we have lots
-> of high-order alloction pages) is ridiculous. Is it one of the compaction
-> changes?
->
-> Mel? Ideas?
->
+On Tuesday 04 December 2012, Lars-Peter Clausen wrote:
+> On 12/04/2012 12:54 AM, Arnd Bergmann wrote:
+> > On Thursday 01 November 2012, Lars-Peter Clausen wrote:
+> >> Nothing is using the vmlist field in mm_context_t anymore. It has been removed
+> >> from the non-generic versions over 3 years ago 8feae1311 ("NOMMU: Make VMAs per
+> >> MM as for MMU-mode linux").
+> >>
+> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> > 
+> > Whole series:
+> > 
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > Do you want to include the patches in a patch set of your own, or should I put them
+> > into the asm-generic tree?
+> > 
+> >       Arnd
+> 
+> Hi Arnd,
+> 
+> The plan was to let it go through the asm-generic tree.
 
-Very true
+Sorry for all the delay. I've applied it now.
 
-It's just as simple a making
-
-dd if=/dev/zero of=/tmp/zero bs=1M count=0 seek=1000000
-
-and now
-
-dd if=/tmp/zero of=/dev/null bs=1M
-
-and kswapd fights with dd  for CPU time....
-
-
-Zdenek
-
-
+	Arnd
