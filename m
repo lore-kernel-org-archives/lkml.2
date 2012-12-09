@@ -1,71 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934572Ab2LIWgu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 17:36:50 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57333 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759117Ab2LIWgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 17:36:48 -0500
+	id S934618Ab2LIXAC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 18:00:02 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50192 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934583Ab2LIW75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 17:59:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+Date: Mon, 10 Dec 2012 00:03:38 +0100
+Message-ID: <2097693.II1PNyeFLY@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <8498184.VilrUmatxI@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20121209170754.GA27468@roeck-us.net>
-References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
- <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
- <20121207145955.GA28704@roeck-us.net> <20121207164906.08b65046@pyramind.ukuu.org.uk>
- <1355047099.1673.5.camel@anish-Inspiron-N5050> <20121209110319.459a762a@pyramind.ukuu.org.uk>
- <20121209170754.GA27468@roeck-us.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 9 Dec 2012 22:36:27 +0000
-X-Google-Sender-Auth: XCBhtw-jagC9hZZnku0NRM8ljoY
-Message-ID: <CACxGe6sXt6cMeTa=R3n_Lqoy8w9AXoOOA-r5Csn54A=9wMzZaw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
- gpio chip
-To: Guenter Roeck <groeck-dsl@sbcglobal.net>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        anish kumar <anish198519851985@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 9, 2012 at 5:07 PM, Guenter Roeck <groeck-dsl@sbcglobal.net> wrote:
-> On Sun, Dec 09, 2012 at 11:03:19AM +0000, Alan Cox wrote:
->> On Sun, 09 Dec 2012 01:58:19 -0800
->> anish kumar <anish198519851985@gmail.com> wrote:
->>
->> > On Fri, 2012-12-07 at 16:49 +0000, Alan Cox wrote:
->> > > > I could imagine declaring the activity request buttons to be "input", but for
->> > > > presence detects it is a bit far fetched and would add too much complexity.
->> > >
->> > > Android tries to address this with its switch class driver, but I'm not
->> > > sure its actually got anything over making them input devices.
->> >
->> > Sorry for not understanding the context here.How the debounce sysfs
->> > added by Guenter has anything to do with switch driver in android?
->>
->> The other more general option is to make the input layer do the debounce
->> and make them all inputs rather than just relying on any gpio layer
->> support.
->>
-> The gpio pins I am dealing with are provided by an FPGA which is used on various
-> boards. While the gpio access registers are always the same, the actual usage is
-> board specific. This means I either need to write ugly code, or use the gpio
-> subsystem to provide access to the gpio pins. Ugly code is out of the question,
-> which means I'll need gpio support.
->
-> Anyway, I want to keep things simple, not add unnecessary complexity. Having to
-> go through the input subsystem just to be able to support debounce on a couple
-> of input pins doesn't really sound simple. Guess I'll have to find another
-> solution if the patch is not accepted. Maybe I'll add a "debounce" property to
-> the gpio driver's of properties.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I haven't looked deeply at the patch to give you an answer yet, but
-I'd recommend you go with the DT property approach anyway. The gpio
-sysfs interface is horribly designed and I'm not keen on adding new
-features to it.
+Notice that one member of struct acpi_bus_ops, acpi_op_add, is not
+used anywhere any more and the relationship between its remaining
+members, acpi_op_match and acpi_op_start, is such that it doesn't
+make sense to set the latter without setting the former at the same
+time.  Therefore, replace struct acpi_bus_ops with new a enum type,
+enum acpi_bus_add_type, with three values, ACPI_BUS_ADD_BASIC,
+ACPI_BUS_ADD_MATCH, ACPI_BUS_ADD_START, corresponding to
+both acpi_op_match and acpi_op_start unset, acpi_op_match set and
+acpi_op_start unset, and both acpi_op_match and acpi_op_start set,
+respectively.
 
-g.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c     |   35 ++++++++++++-----------------------
+ include/acpi/acpi_bus.h |   15 ++++++++-------
+ 2 files changed, 20 insertions(+), 30 deletions(-)
+
+Index: linux/drivers/acpi/scan.c
+===================================================================
+--- linux.orig/drivers/acpi/scan.c
++++ linux/drivers/acpi/scan.c
+@@ -494,7 +494,7 @@ static int acpi_bus_match(struct device
+ 	struct acpi_device *acpi_dev = to_acpi_device(dev);
+ 	struct acpi_driver *acpi_drv = to_acpi_driver(drv);
+ 
+-	return acpi_dev->bus_ops.acpi_op_match
++	return acpi_dev->add_type >= ACPI_BUS_ADD_MATCH
+ 		&& !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
+ }
+ 
+@@ -580,7 +580,7 @@ static int acpi_device_probe(struct devi
+ 
+ 	ret = acpi_bus_driver_init(acpi_dev, acpi_drv);
+ 	if (!ret) {
+-		if (acpi_dev->bus_ops.acpi_op_start)
++		if (acpi_dev->add_type == ACPI_BUS_ADD_START)
+ 			acpi_start_single_object(acpi_dev);
+ 
+ 		if (acpi_drv->ops.notify) {
+@@ -1433,7 +1433,7 @@ static void acpi_hot_add_bind(struct acp
+ static int acpi_add_single_object(struct acpi_device **child,
+ 				  acpi_handle handle, int type,
+ 				  unsigned long long sta,
+-				  struct acpi_bus_ops *ops)
++				  enum acpi_bus_add_type add_type)
+ {
+ 	int result;
+ 	struct acpi_device *device;
+@@ -1449,7 +1449,7 @@ static int acpi_add_single_object(struct
+ 	device->device_type = type;
+ 	device->handle = handle;
+ 	device->parent = acpi_bus_get_parent(handle);
+-	device->bus_ops = *ops; /* workround for not call .start */
++	device->add_type = add_type;
+ 	STRUCT_TO_INT(device->status) = sta;
+ 
+ 	acpi_device_get_busid(device);
+@@ -1502,7 +1502,7 @@ static int acpi_add_single_object(struct
+ 
+ 	result = acpi_device_register(device);
+ 
+-	if (device->bus_ops.acpi_op_match)
++	if (device->add_type >= ACPI_BUS_ADD_MATCH)
+ 		acpi_hot_add_bind(device);
+ 
+ end:
+@@ -1526,16 +1526,12 @@ end:
+ 
+ static void acpi_bus_add_power_resource(acpi_handle handle)
+ {
+-	struct acpi_bus_ops ops = {
+-		.acpi_op_start = 1,
+-		.acpi_op_match = 1,
+-	};
+ 	struct acpi_device *device = NULL;
+ 
+ 	acpi_bus_get_device(handle, &device);
+ 	if (!device)
+ 		acpi_add_single_object(&device, handle, ACPI_BUS_TYPE_POWER,
+-					ACPI_STA_DEFAULT, &ops);
++					ACPI_STA_DEFAULT, ACPI_BUS_ADD_START);
+ }
+ 
+ static int acpi_bus_type_and_status(acpi_handle handle, int *type,
+@@ -1608,16 +1604,13 @@ static acpi_status acpi_bus_check_add(ac
+ 	 */
+ 	acpi_bus_get_device(handle, &device);
+ 	if (!device) {
+-		struct acpi_bus_ops ops = {
+-			.acpi_op_start = !!context,
+-			.acpi_op_match = 0,
+-		};
+-
+-		acpi_add_single_object(&device, handle, type, sta, &ops);
++		acpi_add_single_object(&device, handle, type, sta,
++				       ACPI_BUS_ADD_BASIC);
+ 		if (!device)
+ 			return AE_CTRL_DEPTH;
+ 
+-		device->bus_ops.acpi_op_match = 1;
++		device->add_type = context ?
++					ACPI_BUS_ADD_START : ACPI_BUS_ADD_MATCH;
+ 	}
+ 
+ 	if (!*return_value)
+@@ -1779,10 +1772,6 @@ static int acpi_bus_scan_fixed(void)
+ {
+ 	int result = 0;
+ 	struct acpi_device *device = NULL;
+-	struct acpi_bus_ops ops = {
+-		.acpi_op_start = 1,
+-		.acpi_op_match = 1,
+-	};
+ 
+ 	/*
+ 	 * Enumerate all fixed-feature devices.
+@@ -1791,7 +1780,7 @@ static int acpi_bus_scan_fixed(void)
+ 		result = acpi_add_single_object(&device, NULL,
+ 						ACPI_BUS_TYPE_POWER_BUTTON,
+ 						ACPI_STA_DEFAULT,
+-						&ops);
++						ACPI_BUS_ADD_START);
+ 		device_init_wakeup(&device->dev, true);
+ 	}
+ 
+@@ -1799,7 +1788,7 @@ static int acpi_bus_scan_fixed(void)
+ 		result = acpi_add_single_object(&device, NULL,
+ 						ACPI_BUS_TYPE_SLEEP_BUTTON,
+ 						ACPI_STA_DEFAULT,
+-						&ops);
++						ACPI_BUS_ADD_START);
+ 	}
+ 
+ 	return result;
+Index: linux/include/acpi/acpi_bus.h
+===================================================================
+--- linux.orig/include/acpi/acpi_bus.h
++++ linux/include/acpi/acpi_bus.h
+@@ -63,6 +63,13 @@ acpi_get_physical_device_location(acpi_h
+ #define ACPI_BUS_FILE_ROOT	"acpi"
+ extern struct proc_dir_entry *acpi_root_dir;
+ 
++enum acpi_bus_add_type {
++	ACPI_BUS_ADD_BASIC = 0,
++	ACPI_BUS_ADD_MATCH,
++	ACPI_BUS_ADD_START,
++	ACPI_BUS_ADD_TYPE_COUNT
++};
++
+ enum acpi_bus_removal_type {
+ 	ACPI_BUS_REMOVAL_NORMAL = 0,
+ 	ACPI_BUS_REMOVAL_EJECT,
+@@ -95,12 +102,6 @@ typedef int (*acpi_op_bind) (struct acpi
+ typedef int (*acpi_op_unbind) (struct acpi_device * device);
+ typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
+ 
+-struct acpi_bus_ops {
+-	u32 acpi_op_add:1;
+-	u32 acpi_op_start:1;
+-	u32 acpi_op_match:1;
+-};
+-
+ struct acpi_device_ops {
+ 	acpi_op_add add;
+ 	acpi_op_remove remove;
+@@ -284,7 +285,7 @@ struct acpi_device {
+ 	struct acpi_driver *driver;
+ 	void *driver_data;
+ 	struct device dev;
+-	struct acpi_bus_ops bus_ops;	/* workaround for different code path for hotplug */
++	enum acpi_bus_add_type add_type;	/* how to handle adding */
+ 	enum acpi_bus_removal_type removal_type;	/* indicate for different removal type */
+ 	u8 physical_node_count;
+ 	struct list_head physical_node_list;
+
