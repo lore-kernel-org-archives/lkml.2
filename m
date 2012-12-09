@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934428Ab2LITUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 14:20:12 -0500
-Received: from mail.adtecsa.gov.my ([175.28.13.216]:64818 "HELO adtecsa.gov.my"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S934391Ab2LITUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 14:20:11 -0500
-X-Greylist: delayed 11872 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Dec 2012 14:20:10 EST
-X-Virus-Checked: Checked by ClamAV on adtecsa.gov.my
-Message-ID: <20121209225411.2674657ewt1f3j0g@mail.adtecsa.gov.my>
-Date: Sun,  9 Dec 2012 22:54:11 +0800
-From: "Zea.Technotrade. L.L.C" <manager@zea-sales.uk.pn>
-Reply-to: webdepartment2012@yahoo.co.jp
-To: undisclosed-recipients:;
-Subject: Supply Needed
+	id S1758853Ab2LITjl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 14:39:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40634 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab2LITjk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 14:39:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+Date: Sun, 9 Dec 2012 20:39:38 +0100
+Message-ID: <CAPJ9Yc_rcMVqp17MMAb8aBK_y_tY1D_NjTd_6TJP64LemFZY+A@mail.gmail.com>
+Subject: Hyper-V storvsc errors with large disk image
+From: =?UTF-8?Q?David_Bala=C5=BEic?= <xerces9@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear
-Sir/Madam
+(I'm not subscribed, please CC me)
 
-Our company is interested in your company product that we saw in  
-trading site, If you are sure it has good quality the same way we saw  
-it in the in site,please
-write back to us,Looking  forward to hear from you soon,
-Thank you
+Hi!
 
-Best Regards
-Mr Jeaiy Santos
-purchase Manager
-zea Trading Groupz,
-12 Field Street
-New Jersey
-Phone +1- 201 71029
-Fax +1- 201 683 7050
+When using huge (13TB) disk images (VHDX, dynamically expanding) with
+Hyper-V in Windows 8 Pro and running Linux as guest, I get errors and
+hangups when accessing the emulated HD.
 
+dmesg show the following message block looping:
 
+sd 2:0:0:0: [sda]
+Sense Key : No Sense [current]
+sd 2:0:0:0: [sda]
+Add. Sense: No additional sense information
+hv_storvsc vmbus_0_1: cmd 0x93 scsi status 0x2 srb status 0x6
+
+I am using the System Rescue CD 3.1.2 alternative 64 bit kernel, uname
+-a says: 3.6.9-alt312-amd64
+
+What I do i use parted to create a single partition  and the run
+mkfs.ext4 /dev/sda1 on it. the mkfs.ext4 process goes into D+ state
+and the mentioned messages start appearing in the kernel log.
+
+Running Window 8 as guest on the same virtual machine works fine, HD
+access it without issues.
+
+Bug in the storsvc driver?
+
+Regards,
+David
