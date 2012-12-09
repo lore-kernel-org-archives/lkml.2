@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab2LISS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 13:18:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35895 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab2LISS5 (ORCPT
+	id S1758829Ab2LIS2H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 13:28:07 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42857 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756840Ab2LIS2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 13:18:57 -0500
-Message-ID: <50C4D60D.4090201@kernel.dk>
-Date: Sun, 09 Dec 2012 19:18:53 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Sun, 9 Dec 2012 13:28:06 -0500
 MIME-Version: 1.0
-To: xtu4 <xiaobing.tu@intel.com>
-CC: linux-kernel@vger.kernel.org, di.zhang@intel.com
-Subject: Re: [PATCH] Allow 0ms deadline latency
-References: <50C4B5D7.4030808@intel.com> <50C4B62C.7050404@intel.com>
-In-Reply-To: <50C4B62C.7050404@intel.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <50C25146.9010909@ubuntu.com>
+References: <50C25146.9010909@ubuntu.com>
+Date: Sun, 9 Dec 2012 20:28:04 +0200
+Message-ID: <CAJL_dMs9PJYuiuLLPxFWbrQ2Q5w3FXgAAs1+0UCtUTUiXfp5=g@mail.gmail.com>
+Subject: Re: Upstart 1.6.1 released
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: james.hunt@ubuntu.com
+Cc: "upstart-devel >> Upstart Devel List" 
+	<upstart-devel@lists.ubuntu.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-09 17:02, xtu4 wrote:
-> On 12/10/2012 12:01 AM, xtu4 wrote:
->> Subject: [PATCH] Allow 0ms deadline latency, increase the read speed
->>
->> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
->> ---
->> block/deadline-iosched.c |    2 +-
->> 1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
->> index c644137..e502d6b 100644
->> --- a/block/deadline-iosched.c
->> +++ b/block/deadline-iosched.c
->> @@ -230,7 +230,7 @@ static inline int deadline_check_fifo(struct 
->> deadline_data *dd, int ddir)
->>        /*
->>         * rq is expired!
->>         */
->> -       if (time_after(jiffies, rq_fifo_time(rq)))
->> +       if (time_after_eq(jiffies, rq_fifo_time(rq)))
->>                return 1;
->>
->>         return 0;
+Do will see this in Raring ?
+And when ?
 
-Looks fine, it allows FIFO behaviour for deadline as well. I have
-applied it.
-
--- 
-Jens Axboe
-
+On Fri, Dec 7, 2012 at 10:27 PM, James Hunt <james.hunt@ubuntu.com> wrote:
+> Summary of changes:
+>
+> * Improved re-exec performance.
+> * Minor logger fixes for unflushed data.
+> * Handle re-exec scenario when requested from within a chroot.
+> * Minor serialisation data format change to handle chroots and
+>   user sessions.
+> * Added extra re-exec tests including explicit upgrade tests reading
+>   from pre-prepared JSON data files.
+> * Make jobs running within a chroot log their output within the chroot.
+> * Added "Restart" D-Bus method.
+> * Changed 'telinit u' to use "Restart" D-Bus method rather than
+>   sending SIGTERM to play nicely when busybox(1) is init.
+> * Added "GetState" D-Bus method allowing current serialised internal state
+>   to be queried.
+>
+> Thanks to all the contributors, reviewers, testers and users!
+>
+> Download it from launchpad: https://launchpad.net/upstart
+>
+> Kind regards,
+>
+> James.
+> --
+> James Hunt
+> ____________________________________
+> http://upstart.ubuntu.com/cookbook
+> http://upstart.ubuntu.com/cookbook/upstart_cookbook.pdf
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
