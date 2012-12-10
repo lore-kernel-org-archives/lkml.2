@@ -1,31 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2LJJSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:18:13 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:40401 "EHLO mx3.cyfra.ua"
+	id S1753821Ab2LJJSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:18:34 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:34683 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198Ab2LJJSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:11 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] drivers/uio/uio_pdrv_genirq.c: FIx memory & concurrency issues
-Date: Mon, 10 Dec 2012 11:18:08 +0200
-User-Agent: KMail/1.9.10
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Cong Ding <dinggnu@gmail.com>
+	id S1753740Ab2LJJSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:18:30 -0500
+Subject: [PATCH 0/7] nfsd: cleanup "init_net" references
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 10 Dec 2012 12:18:59 +0300
+Message-ID: <20121210091832.8855.26672.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212101118.08463.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series consists of two patches fixing different issues but in the 
-same file, so the second patch depends on the first:
- 1. Fix memory freeing issues
- 2. Fix concurrency issue on SMP systems.
+Hard-coded "init_net" pointer is widely used in NFSd code.
+This patch replaces "init_net" references by passed struct net pointer where
+requied.
+In future, proper network namespace context will be taken from NFSd file
+system superblock private data or, where it's impossible, from current.
+
+The following series implements...
+
+---
+
+Stanislav Kinsbursky (7):
+      nfsd: use "init_net" for portmapper
+      nfsd: pass net to nfsd_init_socks()
+      nfsd: pass net to nfsd_startup() and nfsd_shutdown()
+      nfsd: pass net to nfsd_create_serv()
+      nfsd: pass net to nfsd_svc()
+      nfsd: pass net to nfsd_set_nrthreads()
+      nfsd: pass net to __write_ports() and down
+
+
+ fs/nfsd/nfsctl.c |   27 +++++++++++++++------------
+ fs/nfsd/nfsd.h   |    6 +++---
+ fs/nfsd/nfssvc.c |   35 ++++++++++++++---------------------
+ 3 files changed, 32 insertions(+), 36 deletions(-)
+
