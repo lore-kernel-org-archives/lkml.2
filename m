@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab2LJRdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 12:33:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26092 "EHLO mx1.redhat.com"
+	id S1752220Ab2LJRcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 12:32:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab2LJRc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 12:32:58 -0500
-Subject: [PATCH v2 03/10] kvm: Fix iommu map/unmap to handle memory slot
- moves
+	id S1752007Ab2LJRcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 12:32:52 -0500
+Subject: [PATCH v2 02/10] kvm: Check userspace_addr when modifying a memory
+ slot
 To: mtosatti@redhat.com, gleb@redhat.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Mon, 10 Dec 2012 10:32:57 -0700
-Message-ID: <20121210173257.10461.53405.stgit@bling.home>
+Date: Mon, 10 Dec 2012 10:32:51 -0700
+Message-ID: <20121210173251.10461.58971.stgit@bling.home>
 In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
 References: <20121210171417.10461.20079.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -23,65 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The iommu integration into memory slots expects memory slots to be
-added or removed and doesn't handle the move case.  We can unmap
-slots from the iommu after we mark them invalid and map them before
-installing the final memslot array.  Also re-order the kmemdup vs
-map so we don't leave iommu mappings if we get ENOMEM.
+The API documents that only flags and guest physical memory space can
+be modified on an existing slot, but we don't enforce that the
+userspace address cannot be modified.  Instead we just ignore it.
+This means that a user may think they've successfully moved both the
+guest and user addresses, when in fact only the guest address changed.
+Check and error instead.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- virt/kvm/kvm_main.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ virt/kvm/kvm_main.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 6e9d3f9..0f66a0e 100644
+index e426704..6e9d3f9 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -817,6 +817,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 		old_memslots = kvm->memslots;
- 		rcu_assign_pointer(kvm->memslots, slots);
- 		synchronize_srcu_expedited(&kvm->srcu);
-+		/* slot was deleted or moved, clear iommu mapping */
-+		kvm_iommu_unmap_pages(kvm, &old);
- 		/* From this point no new shadow pages pointing to a deleted,
- 		 * or moved, memslot will be created.
- 		 *
-@@ -832,20 +834,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	if (r)
- 		goto out_free;
+@@ -779,13 +779,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
  
--	/* map/unmap the pages in iommu page table */
--	if (npages) {
--		r = kvm_iommu_map_pages(kvm, &new);
--		if (r)
--			goto out_free;
--	} else
--		kvm_iommu_unmap_pages(kvm, &old);
--
  	r = -ENOMEM;
- 	slots = kmemdup(kvm->memslots, sizeof(struct kvm_memslots),
- 			GFP_KERNEL);
- 	if (!slots)
- 		goto out_free;
  
-+	/* map new memory slot into the iommu */
-+	if (npages) {
-+		r = kvm_iommu_map_pages(kvm, &new);
-+		if (r)
-+			goto out_slots;
-+	}
-+
- 	/* actual memory is freed via old in kvm_free_physmem_slot below */
- 	if (!npages) {
- 		new.dirty_bitmap = NULL;
-@@ -864,6 +865,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
+-	/* Allocate if a slot is being created */
++	/*
++	 * Allocate if a slot is being created.  If modifying a slot,
++	 * the userspace_addr cannot change.
++	 */
+ 	if (!old.npages) {
+ 		new.user_alloc = user_alloc;
+ 		new.userspace_addr = mem->userspace_addr;
  
- 	return 0;
+ 		if (kvm_arch_create_memslot(&new, npages))
+ 			goto out_free;
++	} else if (npages && mem->userspace_addr != old.userspace_addr) {
++		r = -EINVAL;
++		goto out_free;
+ 	}
  
-+out_slots:
-+	kfree(slots);
- out_free:
- 	kvm_free_physmem_slot(&new, &old);
- out:
+ 	/* Allocate page dirty bitmap if needed */
 
