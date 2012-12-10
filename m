@@ -1,67 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2LJUZi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 15:25:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab2LJUZh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 15:25:37 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Florian Fainelli <florian@openwrt.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: matrix-keymap - provide proper module license
-Date: Mon, 10 Dec 2012 12:25:32 -0800
-Message-Id: <1355171132-14951-1-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1751666Ab2LJU2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 15:28:45 -0500
+Received: from fieldses.org ([174.143.236.118]:37988 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803Ab2LJU2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 15:28:43 -0500
+Date: Mon, 10 Dec 2012 15:28:42 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+Message-ID: <20121210202842.GB17350@fieldses.org>
+References: <20121206153204.30693.11408.stgit@localhost.localdomain>
+ <20121206153447.30693.54128.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121206153447.30693.54128.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Fainelli <florian@openwrt.org>
+On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
+> NFSd does lookup. Lookup is done starting from current->fs->root.
+> NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
+> unshared) root.
+> So we have to swap root to those, which process, started NFSd, has. Because
+> that process can be in a container with it's own root.
 
-The matrix-keymap module is currently lacking a proper module license,
-add one so we don't have this module tainting the entire kernel. This
-issue has been present since commit 1932811f (Input: matrix-keymap -
-uninline and prepare for device tree support)
+This doesn't sound right to me.
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-CC: stable@vger.kernel.org
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
+Which lookups exactly do you see being done relative to
+current->fs->root ?
 
-Hi Linus,
+--b.
 
-Please apply before 3.8 final if possible. Sending directly as my normal
-branch has some extra stuff in it...
-
-Thanks,
-Dmitry
-
-
- drivers/input/matrix-keymap.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-index 443ad64b..d88d9be 100644
---- a/drivers/input/matrix-keymap.c
-+++ b/drivers/input/matrix-keymap.c
-@@ -23,6 +23,7 @@
- #include <linux/input.h>
- #include <linux/of.h>
- #include <linux/export.h>
-+#include <linux/module.h>
- #include <linux/input/matrix_keypad.h>
- 
- static bool matrix_keypad_map_key(struct input_dev *input_dev,
-@@ -161,3 +162,5 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 	return 0;
- }
- EXPORT_SYMBOL(matrix_keypad_build_keymap);
-+
-+MODULE_LICENSE("GPL");
--- 
-1.7.11.7
-
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfsd/netns.h  |    1 +
+>  fs/nfsd/nfssvc.c |   33 ++++++++++++++++++++++++++++++++-
+>  2 files changed, 33 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+> index abfc97c..5c423c6 100644
+> --- a/fs/nfsd/netns.h
+> +++ b/fs/nfsd/netns.h
+> @@ -101,6 +101,7 @@ struct nfsd_net {
+>  	struct timeval nfssvc_boot;
+>  
+>  	struct svc_serv *nfsd_serv;
+> +	struct path	root;
+>  };
+>  
+>  extern int nfsd_net_id;
+> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+> index cee62ab..177bb60 100644
+> --- a/fs/nfsd/nfssvc.c
+> +++ b/fs/nfsd/nfssvc.c
+> @@ -392,6 +392,7 @@ int nfsd_create_serv(struct net *net)
+>  
+>  	set_max_drc();
+>  	do_gettimeofday(&nn->nfssvc_boot);		/* record boot time */
+> +	get_fs_root(current->fs, &nn->root);
+>  	return 0;
+>  }
+>  
+> @@ -426,8 +427,10 @@ void nfsd_destroy(struct net *net)
+>  	if (destroy)
+>  		svc_shutdown_net(nn->nfsd_serv, net);
+>  	svc_destroy(nn->nfsd_serv);
+> -	if (destroy)
+> +	if (destroy) {
+> +		path_put(&nn->root);
+>  		nn->nfsd_serv = NULL;
+> +	}
+>  }
+>  
+>  int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
+> @@ -533,6 +536,25 @@ out:
+>  	return error;
+>  }
+>  
+> +/*
+> + * This function is actually slightly modified set_fs_root()<F9>
+> + */
+> +static void nfsd_swap_root(struct net *net)
+> +{
+> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+> +	struct fs_struct *fs = current->fs;
+> +	struct path old_root;
+> +
+> +	path_get(&nn->root);
+> +	spin_lock(&fs->lock);
+> +	write_seqcount_begin(&fs->seq);
+> +	old_root = fs->root;
+> +	fs->root = nn->root;
+> +	write_seqcount_end(&fs->seq);
+> +	spin_unlock(&fs->lock);
+> +	if (old_root.dentry)
+> +		path_put(&old_root);
+> +}
+>  
+>  /*
+>   * This is the NFS server kernel thread
+> @@ -559,6 +581,15 @@ nfsd(void *vrqstp)
+>  	current->fs->umask = 0;
+>  
+>  	/*
+> +	 * We have to swap NFSd kthread's fs->root.
+> +	 * Why so? Because NFSd can be started in container, which has it's own
+> +	 * root.
+> +	 * And so what? NFSd lookup files, and lookup start from
+> +	 * current->fs->root.
+> +	 */
+> +	nfsd_swap_root(net);
+> +
+> +	/*
+>  	 * thread is spawned with all signals set to SIG_IGN, re-enable
+>  	 * the ones that will bring down the thread
+>  	 */
+> 
