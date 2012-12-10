@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab2LJF6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:58:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50976 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab2LJF6E (ORCPT
+	id S1752080Ab2LJGKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 01:10:30 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:47294 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751980Ab2LJGKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:58:04 -0500
-Date: Sun, 9 Dec 2012 23:57:53 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Rob Landley <rob@landley.net>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
-        mtk.manpages@gmail.com
-Subject: Re: [PATCH] Document how capability bits work
-Message-ID: <20121210055753.GA3689@sergelap>
-References: <CALCETrXOk74kcfqHBwuAZEY3rpZJFc65e0zZszu-34Qk+ui1dA@mail.gmail.com>
- <1354960297.7646.0@driftwood>
+	Mon, 10 Dec 2012 01:10:24 -0500
+X-IronPort-AV: E=Sophos;i="4.84,249,1355094000"; 
+   d="scan'208";a="185340091"
+Date: Mon, 10 Dec 2012 07:10:16 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Liam Girdwood <lrg@ti.com>,
+        matthias@kaehlcke.net, kernel-janitors@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] sound/soc/soc-core.c: drop kfree of devm_kzalloc's
+ data
+In-Reply-To: <20121210052334.GI10927@opensource.wolfsonmicro.com>
+Message-ID: <alpine.DEB.2.02.1212100709450.2213@localhost6.localdomain6>
+References: <1354989680-25794-1-git-send-email-Julia.Lawall@lip6.fr> <20121210052334.GI10927@opensource.wolfsonmicro.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354960297.7646.0@driftwood>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Rob Landley (rob@landley.net):
-> The fact that you need multiple sets of capabilities per process
-> (permitted, inheritable, effective), plus MORE sets (plural) of
-> capabilities attached to executable files, plus the "capability
-> bounding set" which is presumably so selinux can mess with it, plus
+On Mon, 10 Dec 2012, Mark Brown wrote:
 
-The bounding set was in large part a workaround for the absence of the
-user namespace (and, at the time, the devices cgroup).
+> On Sat, Dec 08, 2012 at 07:01:20PM +0100, Julia Lawall wrote:
+>
+>> The kfrees were introduced in b761c0ca.
+>> I sent this a few months ago, and I still think it should be applied...
+>
+> I'm missing patches 1 and 2?
 
-(Now libcap-ng uses it to try and make capabilities generally easier to
-use.)
+Sorry, I just resent the patch as is.  1 and 2 were I guess applied, 
+because I odn't findthe problem any more.
 
--serge
+julia
