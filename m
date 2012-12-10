@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab2LJA3L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 19:29:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48084 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751900Ab2LJA3J (ORCPT
+	id S1752326Ab2LJBAy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 20:00:54 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:48026 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab2LJBAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 19:29:09 -0500
-Message-ID: <1355099334.20838.97.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 266/270] ARM: 7566/1: vfp: fix save and restore when
- running on pre-VFPv3 and CONFIG_VFPv3 set
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans.rullgard@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Date: Mon, 10 Dec 2012 00:28:54 +0000
-In-Reply-To: <1353949160-26803-267-git-send-email-herton.krzesinski@canonical.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1353949160-26803-267-git-send-email-herton.krzesinski@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-OP2okDkNwjEcFaK9dqMa"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 9 Dec 2012 20:00:53 -0500
+X-AuditID: 85900ec0-d727cb900000152f-d0-50c534413973
+Message-ID: <50C53441.7050802@hitachi.com>
+Date: Mon, 10 Dec 2012 10:00:49 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Cong Ding <dinggnu@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [PATCH v2] arch/x86/tools/gen-insn-attr-x86.awk: remove
+ duplicate const
+References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com> <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com> <20121207224949.GA6179@gmail.com> <50C27410.7050101@zytor.com> <20121207230302.GB6179@gmail.com> <50C27665.4090206@zytor.com> <20121207231729.GC6179@gmail.com> <50C420A7.9090108@hitachi.com> <b1251e5e-6193-4da4-abfd-0c753995424a@email.android.com>
+In-Reply-To: <b1251e5e-6193-4da4-abfd-0c753995424a@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/12/10 0:50), H. Peter Anvin wrote:
+> No, that would really be wrong - changing the type.
 
---=-OP2okDkNwjEcFaK9dqMa
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+What would be wrong? IMHO, this is just a fix to add a fool
+proof 'const' to array instance itself.
+...Or, am I missed anything?
 
-On Mon, 2012-11-26 at 14:59 -0200, Herton Ronaldo Krzesinski wrote:
-> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Paul Walmsley <paul@pwsan.com>
->=20
-> commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
->=20
-> After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
-> saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
-> started crashing during boot with omap2plus_defconfig:
-[...]
-> [ herton: no uapi directory on 3.5 ]
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
->
-[...]
+Thank you,
 
-I've also queued this up for 3.2.  Greg, you'll want to add this to the
-other 3.x series since you applied commit 846a136881b8.
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> (2012/12/08 8:17), Cong Ding wrote:
+>>>>>>>> Patch description please?
+>>>>>>> there are 2 consts in the definition of one variable
+>>>>>>>
+>>>>>>
+>>>>>> Please put in an actual patch description.  The first line
+>> (subject
+>>>>>> line) is a title; the patch should make sense without it.
+>>>>> sorry for that. so like this is fine?
+>>>>>
+>>>>
+>>>> Well, except that typically you should explain which variable it is.
+>>>> Yes, it is obvious if you look at the patch, but you're making the
+>>>> reader spend a few more moments than necessary.
+>>>>
+>>>> Also, you should explain what the harm is -- if it breaks anything
+>>>> or is just a cosmetic issue.
+>>> sorry again for lacking of experience...
+>>> and I missed another same error, so send version 2.
+>>
+>> Ah, sorry for my mistake. I would like to make both the value
+>> pointed by the pointers and the pointers itself read-only.
+>> Thus the right way of the patch should be;
+>>
+>> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]"
+>> \
+>> +	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX +
+>> 1]" \
+>>
+>> Cong, could you update your patch? then I can Ack that.
+>>
+>> Thank you,
+>>
+>>>
+>>> - cong
+>>> ---
+>>> From 6cf729b913287a6fc06325ca75ccf0efff9274e8 Mon Sep 17 00:00:00
+>> 2001
+>>> From: Cong Ding <dinggnu@gmail.com>
+>>> Date: Fri, 7 Dec 2012 23:14:32 +0000
+>>> Subject: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove
+>> duplicate const
+>>>
+>>> fix the following sparse warning:
+>>> arch/x86/lib/inat-tables.c:1080:25: warning: duplicate const
+>>> arch/x86/lib/inat-tables.c:1095:25: warning: duplicate const
+>>> arch/x86/lib/inat-tables.c:1118:25: warning: duplicate const
+>>>
+>>> for variable inat_escape_tables, inat_group_tables, and
+>> inat_avx_tables
+>>>
+>>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>>> ---
+>>>  arch/x86/tools/gen-insn-attr-x86.awk |    6 +++---
+>>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/arch/x86/tools/gen-insn-attr-x86.awk
+>> b/arch/x86/tools/gen-insn-attr-x86.awk
+>>> index ddcf39b..987c7b2 100644
+>>> --- a/arch/x86/tools/gen-insn-attr-x86.awk
+>>> +++ b/arch/x86/tools/gen-insn-attr-x86.awk
+>>> @@ -356,7 +356,7 @@ END {
+>>>  		exit 1
+>>>  	# print escape opcode map's array
+>>>  	print "/* Escape opcode map array */"
+>>> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX +
+>> 1]" \
+>>> +	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
+>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>>>  	for (i = 0; i < geid; i++)
+>>>  		for (j = 0; j < max_lprefix; j++)
+>>> @@ -365,7 +365,7 @@ END {
+>>>  	print "};\n"
+>>>  	# print group opcode map's array
+>>>  	print "/* Group opcode map array */"
+>>> -	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX +
+>> 1]"\
+>>> +	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
+>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>>>  	for (i = 0; i < ggid; i++)
+>>>  		for (j = 0; j < max_lprefix; j++)
+>>> @@ -374,7 +374,7 @@ END {
+>>>  	print "};\n"
+>>>  	# print AVX opcode map's array
+>>>  	print "/* AVX opcode map array */"
+>>> -	print "const insn_attr_t const *inat_avx_tables[X86_VEX_M_MAX +
+>> 1]"\
+>>> +	print "const insn_attr_t *inat_avx_tables[X86_VEX_M_MAX + 1]"\
+>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>>>  	for (i = 0; i < gaid; i++)
+>>>  		for (j = 0; j < max_lprefix; j++)
+>>>
+> 
 
-Ben.
 
---=20
-Ben Hutchings
-Kids!  Bringing about Armageddon can be dangerous.  Do not attempt it in
-your own home. - Terry Pratchett and Neil Gaiman, `Good Omens'
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---=-OP2okDkNwjEcFaK9dqMa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUMUsxue/yOyVhhEJAQqoshAAw0lBkHusmPzxJXBhVq+c1MtpwAqUyXOW
-q9grL7fR9QJSGDSRkiQg5BpRcW0hrvnmvHAdvhnfiCCGMrZSgSkNyde7Rc7PdUhq
-sIVKogV5YibB/bKiFQXvBasBm2f/qrhqkMQfZA2nYIJFvKnpOedHtZKl48bt9yjc
-4n9zFfr7oIhOiecsifaozAG+XCQensVGA1qNeHqwr8zdWRxAKW2cjagcQNEW3MBB
-Re9c/t9ciUH6SHjEbMcZluPeVrYfKNKEJWPfrh4s0fskL6uIcyktk5b6p4gWiy7n
-Npt9DYoyR0SUIK5yCpxXCgnGQITcw9bGbk2m2nbtITkLGHd2b4MBckozZ7BG9oJt
-o4O5+tHsTw7hFJ0tDxGFp+eIEV6Oi+zjkmLG37r99XwbYo3ZU3NZC2egiMdJKhuL
-FQFyXpCBSIos30lwwRUvPnRrbnPtqE207W9O+CoWFsqRfEkb8wfAhLdLbYiQNq4k
-MAPZczqGhGg0+Wx9sTbX6IKBQxUAivxHtXTlt+xssQF8zOdeCQej28Qzf6OVO3IH
-D5EbqwWap7yspTmYECcbiIZInNix7f1iVLyjw3zBI+nxr5O0SRQzPstoK/vX1dwE
-2CgV9BJgUBEq5exWjnWosxxgKWe+qMbwiIlKZPJR2LJVaw1PGk/jtqTq3cEDxXxi
-1Oe5ldlgwHQ=
-=y2gw
------END PGP SIGNATURE-----
-
---=-OP2okDkNwjEcFaK9dqMa--
