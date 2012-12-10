@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab2LJLeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 06:34:24 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:40362 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab2LJLeX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 06:34:23 -0500
-Message-ID: <1355139247.22545.6.camel@hal>
-Subject: man page for s390_runtime_instr syscall
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Dec 2012 12:34:07 +0100
-Organization: IBM LTC
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12121011-5024-0000-0000-000004A28B52
+	id S1754633Ab2LJLgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 06:36:49 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18336 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503Ab2LJLgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 06:36:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
+   d="scan'208";a="259906725"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 2/2] dw_dmac: check for mapping errors
+Date: Mon, 10 Dec 2012 13:36:33 +0200
+Message-Id: <1355139393-6718-2-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355139393-6718-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1355139393-6718-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Otherwise we get a warning in case of CONFIG_DMA_API_DEBUG=y
 
-I've written a man page for the s390_runtime_instr syscall which was merged with 3.7 (e4b8b3f). Now the question is if you would like to include it in the man-pages although it is completely s390 specific and wont be available on any other arch? Or should it go into a different package?
+[   45.775943] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
+[   45.782369] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x00000000356efcc0] [size=28 bytes] [mapped as single]
 
-thanks, Jan
---
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- /dev/null	2012-12-04 10:52:46.657720288 +0100
-+++ s390_runtime_instr.2	2012-10-09 13:55:39.000000000 +0200
-@@ -0,0 +1,73 @@
-+.\" Copyright IBM Corp. 2012
-+.\" Author: Jan Glauber <jang@linux.vnet.ibm.com>
-+.\"
-+.TH S390_RUNTIME_INSTR 2 2012-10-09 "Linux Programmer's Manual"
-+.SH NAME
-+s390_runtime_instr \- enable/disable s390 CPU runtime instrumentation
-+.SH SYNOPSIS
-+.nf
-+.B #include <asm/runtime_instr.h>
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index a9e9a07..38eea0c 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1107,6 +1107,7 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+ 	struct dw_desc		*desc;
+ 	int			i;
+ 	unsigned long		flags;
++	int			ret = 0;
+ 
+ 	dev_vdbg(chan2dev(chan), "%s\n", __func__);
+ 
+@@ -1131,8 +1132,7 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+ 
+ 		desc = kzalloc(sizeof(struct dw_desc), GFP_KERNEL);
+ 		if (!desc) {
+-			dev_info(chan2dev(chan),
+-				"only allocated %d descriptors\n", i);
++			ret = -ENOMEM;
+ 			spin_lock_irqsave(&dwc->lock, flags);
+ 			break;
+ 		}
+@@ -1143,6 +1143,13 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+ 		desc->txd.flags = DMA_CTRL_ACK;
+ 		desc->txd.phys = dma_map_single(chan2parent(chan), &desc->lli,
+ 				sizeof(desc->lli), DMA_TO_DEVICE);
++		ret = dma_mapping_error(chan2parent(chan), desc->txd.phys);
++		if (ret) {
++			kfree(desc);
++			spin_lock_irqsave(&dwc->lock, flags);
++			break;
++		}
 +
-+.BI "int s390_runtime_instr(int " command ", int " signum ");
-+.fi
+ 		dwc_desc_put(dwc, desc);
+ 
+ 		spin_lock_irqsave(&dwc->lock, flags);
+@@ -1151,6 +1158,9 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+ 
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
++	if (ret)
++		dev_info(chan2dev(chan), "only allocated %d descriptors\n", i);
 +
-+.SH DESCRIPTION
-+The
-+.BR s390_runtime_instr ()
-+system call starts or stops CPU runtime instrumentation for the current thread.
-+
-+The
-+.IR command
-+argument controls whether runtime instumentation is started
-+( 1 ) or stopped ( 2 ) for the current thread.
-+
-+The
-+.IR signum
-+argument specifies the number of a real-time signal. The
-+real-time signal is sent to the thread if the runtime instrumentation
-+buffer is full or if the runtime-instrumentation-halted interrupt
-+occured.
-+
-+.SH RETURN VALUE
-+On success
-+.BR s390_runtime_instr ()
-+returns 0 and enables the thread for
-+runtime instrumentation by assigning the thread a default runtime
-+instrumentation control block. The caller can then read and modify the
-+control block and start the runtime instrumentation. On error, -1 is
-+returned and
-+.IR errno
-+is set to one of the error codes listed below.
-+
-+.SH ERRORS
-+.TP
-+.B EOPNOTSUPP
-+The runtime instrumentation facility is not available.
-+.TP
-+.B EINVAL
-+The value specified in
-+.IR command
-+is not a valid command or the value specified in
-+.IR signum
-+is not a real-time signal number.
-+.TP
-+.B ENOMEM
-+Allocating memory for the runtime instrumentation control block
-+failed.
-+
-+.SH VERSIONS
-+This system call is available since Linux 3.7.
-+
-+.SH CONFORMING TO
-+This system call
-+is only available on the s390 architecture. The runtime instrumentation facility is available
-+beginning with System z EC12.
-+
-+.SH NOTES
-+Glibc does not provide a wrapper for this system call, use
-+.BR syscall (2)
-+to call it.
-+
-+.SH SEE ALSO
-+.BR signal (7),
-+.BR syscall (2)
+ 	dev_dbg(chan2dev(chan), "%s: allocated %d descriptors\n", __func__, i);
+ 
+ 	return i;
+-- 
+1.7.10.4
 
