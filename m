@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2LJLXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 06:23:43 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:35528 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab2LJLXl (ORCPT
+	id S1753577Ab2LJLY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 06:24:29 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46252 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750754Ab2LJLY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 06:23:41 -0500
-Message-ID: <50C5C62D.8080904@synopsys.com>
-Date: Mon, 10 Dec 2012 16:53:25 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 10 Dec 2012 06:24:28 -0500
+Date: Mon, 10 Dec 2012 11:24:08 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+Message-ID: <20121210112408.GC6988@mudshark.cambridge.arm.com>
+References: <1354892111.13000.50.camel@linaro1.home>
+ <1354894134.17101.44.camel@gandalf.local.home>
+ <20121207162346.GW14363@n2100.arm.linux.org.uk>
+ <1354898200.17101.50.camel@gandalf.local.home>
+ <20121207164530.GX14363@n2100.arm.linux.org.uk>
+ <1354900436.17101.58.camel@gandalf.local.home>
+ <20121207181309.GY14363@n2100.arm.linux.org.uk>
+ <1354905805.17101.86.camel@gandalf.local.home>
+ <20121207190244.GB29618@mudshark.cambridge.arm.com>
+ <1355137445.3386.7.camel@linaro1.home>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kbuild.devel
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Michal Marek <mmarek@suse.cz>, Noam Camus <noamc@ezchip.com>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Makefile race between jobs
-References: <264C179F799EF24AB26D5319053335E80CC3049A10@ezexch.ezchip.com> <50C5B9D9.1080208@suse.cz> <50C5BB4A.9000403@synopsys.com> <201212101059.28161.arnd@arndb.de>
-In-Reply-To: <201212101059.28161.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355137445.3386.7.camel@linaro1.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 December 2012 04:29 PM, Arnd Bergmann wrote:
-> On Monday 10 December 2012, Vineet Gupta wrote:
->>
->> On Monday 10 December 2012 04:00 PM, Michal Marek wrote:
->>> On 10.12.2012 11:11, Vineet Gupta wrote:
->>>> ARC Port caches current task pointer in a register - thus we have a
->>>> global asm register definition in current.h
->>>> In the past, a customer ran into issue when porting some "really
->>>> portable" code to kernel - such that asm/current.h didn't make it into
->>>> the build of their module - via normal header includes - strange but
->>>> true. Thus forcing current.h via way of -include seemed like a
->>>> safe/sensible way.
->>>
->>> To me that sounds like either an arc header is using the define but
->>> lacking an include of asm/current.h, or the code is lacking asm/current.h.
->>>
->>
->> It was latter - customer code was lacking include of asm/current.h
->> At any rate, independent of above, since we are dealing with a global
->> reg definition, IMHO, forcing the -include for each file built ensures
->> the generated code correctness (gcc reg allocator not fiddling with that
->> reg) - w/o "assuming" it would.
+On Mon, Dec 10, 2012 at 11:04:05AM +0000, Jon Medhurst (Tixy) wrote:
+> On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
+> > For ARMv7, there are small subsets of instructions for ARM and Thumb which
+> > are guaranteed to be atomic wrt concurrent modification and execution of
+> > the instruction stream between different processors:
+> > 
+> > Thumb:	The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
+> > ARM:	The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
+> > 
 > 
-> I'm not convinced that adding the -include to the kernel Makefile
-> actually helps here: If a third party module is built outside of
-> the kernel sources, it probably also does not use the kernel Makefile,
-> and it may not have access to the kernel header files at all.
-
-There might be NDA issues otherwise I would have uploaded the customer
-code. It was third party code alright - but built in tree - and
-interestingly not using any kernel headers - even linux/types.h. I was
-dazzled myself when I found the root cause (due to r25 getting clobbered
-mysteriously after some code from that driver had run).
-So seriously it was really portable code.
-
-
-> That aside, can't you just have an arch specific header file that
-> reservers the register but does not rely on asm-generic/types.h?
-> That would eliminate the need to serialize the build process.
-
-The code in asm/current.h is as follows:
-
-#ifdef CONFIG_ARC_CURR_IN_REG
-register struct task_struct *curr_arc asm("r25");
-#define current (curr_arc)
-#else
-#include <asm-generic/current.h>
-#endif
-
-The Makefile snippet in 3.2 (which Noam is using) is
-LINUXINCLUDE	+=  -include ${src}/arch/arc/include/asm/current.h
-
-I'm ready to change it to anything which helps alleviate the need for
-build system change - w/o terribly uglifying this code.
-
-However, in the 3.7 port which I posted to lists, the Makefile fragment
-has already been changed due to other reasons.
-
-ifdef CONFIG_ARC_CURR_IN_REG
-# Can't do unconditionally because of recursive include
-# issues due to <linux/thread_info.h>
-LINUXINCLUDE	+=  -include ${src}/arch/arc/include/asm/current.h
-endif
-
-Does that make the problem report moot already - since the issue only
-seems to happen for !CONFIG_ARC_CURR_IN_REG in which case the header
-won't be -include ed
-
--Vineet
-
+> So this means for things like kprobes which can modify arbitrary kernel
+> code we are going to need to continue to always use some form of
+> stop_the_whole_system() function?
 > 
-> 	Arnd
-> 
+> Also, kprobes currently uses patch_text() which only uses stop_machine
+> for Thumb2 instructions which straddle a word boundary, so this needs
+> changing?
 
+Yes; if you're modifying instructions other than those mentioned above, then
+you'll need to synchronise the CPUs, update the instructions, perform
+cache-maintenance on the writing CPU and then execute an isb on the
+executing core (this last bit isn't needed if you're going to go through an
+exception return to get back to the new code -- depends on how your
+stop/resume code works).
+
+For ftrace we can (hopefully) avoid a lot of this when we have known points
+of modification.
+
+Will
