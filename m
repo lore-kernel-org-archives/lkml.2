@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab2LJJqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:46:11 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:59424 "EHLO mx3.cyfra.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753653Ab2LJJqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:46:10 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Fix concurrency issue
-Date: Mon, 10 Dec 2012 11:46:07 +0200
-User-Agent: KMail/1.9.10
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Cong Ding <dinggnu@gmail.com>
-References: <201212101118.08463.vitas@nppfactor.kiev.ua>
-In-Reply-To: <201212101118.08463.vitas@nppfactor.kiev.ua>
+	id S1754069Ab2LJJqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:46:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49885 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab2LJJqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:46:33 -0500
+Date: Mon, 10 Dec 2012 12:46:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        greg@kroah.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] rtl8712: replace leading spaces with tab
+Message-ID: <20121210094613.GR6568@mwanda>
+References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
+ <1355048110-10859-5-git-send-email-przemo@firszt.eu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201212101146.07235.vitas@nppfactor.kiev.ua>
+In-Reply-To: <1355048110-10859-5-git-send-email-przemo@firszt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a SMP case there was a race condition issue between
-uio_pdrv_genirq_irqcontrol() running on one CPU and irq handler on another
-CPU. Fix it by spin_locking shared resources access inside irq handler.
-Also:
- - Change disable_irq to disable_irq_nosync to avoid deadlock, because
-disable_irq waits for the completion of the irq handler
- - Change atomic bit-manipulation routines to their non-atomic counterparts as
-we already are guarding the code by spinlock.
+On Sun, Dec 09, 2012 at 10:15:10AM +0000, Przemo Firszt wrote:
+> Replace leading spaces with tab
+> 
+> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+> ---
+>  drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index b131b61..b4629c3 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -510,7 +510,7 @@ exit:
+>  }
+>  
+>  static int r871x_set_wpa_ie(struct _adapter *padapter, char *pie,
+> -			    unsigned short ielen)
+> +				unsigned short ielen)
 
-Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
----
- drivers/uio/uio_pdrv_genirq.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+The original version is better because it lines up correctly.
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index cc5233b..8075367 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -68,8 +68,10 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
- 	 * remember the state so we can allow user space to enable it later.
- 	 */
- 
--	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-+	spin_lock(&priv->lock);
-+	if (!__test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
- 		disable_irq_nosync(irq);
-+	spin_unlock(&priv->lock);
- 
- 	return IRQ_HANDLED;
- }
-@@ -83,16 +85,17 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
- 	 * in the interrupt controller, but keep track of the
- 	 * state to prevent per-irq depth damage.
- 	 *
--	 * Serialize this operation to support multiple tasks.
-+	 * Serialize this operation to support multiple tasks and concurrency
-+	 * with irq handler on SMP systems.
- 	 */
- 
- 	spin_lock_irqsave(&priv->lock, flags);
- 	if (irq_on) {
--		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
-+		if (__test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
- 			enable_irq(dev_info->irq);
- 	} else {
--		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
--			disable_irq(dev_info->irq);
-+		if (!__test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-+			disable_irq_nosync(dev_info->irq);
- 	}
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
--- 
-1.7.8.6
+Checkpatch doesn't complain for me so I'm not sure what the story is
+here.
+
+regards,
+dan carpenter
+
