@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab2LJFDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:03:33 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39006 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab2LJFDb (ORCPT
+	id S1751873Ab2LJFVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 00:21:30 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60438 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab2LJFV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:03:31 -0500
-Message-ID: <50C56CC0.4000200@linux.vnet.ibm.com>
-Date: Mon, 10 Dec 2012 10:31:52 +0530
+	Mon, 10 Dec 2012 00:21:28 -0500
+Message-ID: <50C570F9.2020801@linux.vnet.ibm.com>
+Date: Mon, 10 Dec 2012 10:49:53 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
 To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+CC: rostedt@goodmis.org, tglx@linutronix.de, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org,
+        vincent.guittot@linaro.org, tj@kernel.org, sbw@mit.edu,
+        amit.kucheria@linaro.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
         xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
  from atomic context
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209191437.GA2816@redhat.com> <50C4EB79.5050203@linux.vnet.ibm.com> <20121209211338.GA8090@redhat.com>
-In-Reply-To: <20121209211338.GA8090@redhat.com>
+References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209205733.GA7038@redhat.com>
+In-Reply-To: <20121209205733.GA7038@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121005-1396-0000-0000-00000245E24A
+x-cbid: 12121005-7014-0000-0000-00000251C7B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 02:43 AM, Oleg Nesterov wrote:
-> Damn, sorry for noise. I missed this part...
-> 
-> On 12/10, Srivatsa S. Bhat wrote:
+On 12/10/2012 02:27 AM, Oleg Nesterov wrote:
+> On 12/07, Srivatsa S. Bhat wrote:
 >>
->> On 12/10/2012 12:44 AM, Oleg Nesterov wrote:
->>> the latency. And I guess something like kick_all_cpus_sync() is "too heavy".
+>> 4. No deadlock possibilities
 >>
->> I hadn't considered that. Thinking of it, I don't think it would help us..
->> It won't get rid of the currently running preempt_disable() sections no?
+>>    Per-cpu locking is not the way to go if we want to have relaxed rules
+>>    for lock-ordering. Because, we can end up in circular-locking dependencies
+>>    as explained in https://lkml.org/lkml/2012/12/6/290
 > 
-> Sure. But (again, this is only my feeling so far) given that get_online_cpus_atomic()
-> does cli/sti,
+> OK, but this assumes that, contrary to what Steven said, read-write-read
+> deadlock is not possible when it comes to rwlock_t.
 
-Ah, that one! Actually, the only reason I do that cli/sti is because, potentially
-interrupt handlers can be hotplug readers too. So we need to protect the portion
-of the code of get_online_cpus_atomic() which is not re-entrant.
-(Which reminds me to try and reduce the length of cli/sti in that code, if possible).
+What I meant is, with a single (global) rwlock, you can't deadlock like that.
+But if you used per-cpu rwlocks and if we don't implement them properly, then we
+can end up in circular locking dependencies like shown above.
 
-> this can help to implement ensure-the-readers-must-see-the-pending-writer.
-> IOW this might help to implement sync-with-readers.
+That is, if you take the same example and replace the lock with global
+rwlock, you won't deadlock:
+
+
+Readers:
+
+         CPU 0                                CPU 1
+         ------                               ------
+
+1.    spin_lock(&random_lock);             read_lock(&my_rwlock);
+
+
+2.    read_lock(&my_rwlock);               spin_lock(&random_lock);
+
+
+Writer:
+
+         CPU 2:
+         ------
+
+       write_lock(&my_rwlock);
+
+
+Even if the writer does a write_lock() in-between steps 1 and 2 at the reader-
+side, nothing will happen. The writer would spin because CPU 1 already got
+the rwlock for read, and hence both CPU 0 and 1 go ahead. When they finish,
+the writer will get the lock and proceed. So, no deadlocks here.
+So, what I was pointing out here was, if somebody replaced this global
+rwlock with a "straight-forward" implementation of per-cpu rwlocks, he'll
+immediately end up in circular locking dependency deadlock between the 3
+entities as explained in the link above.
+
+Let me know if my assumptions are incorrect!
+
+> So far I think this
+> is true and we can't deadlock. Steven?
+> 
+> However. If this is true, then compared to preempt_disable/stop_machine
+> livelock is possible. Probably this is fine, we have the same problem with
+> get_online_cpus(). But if we can accept this fact I feel we can simmplify
+> this somehow... Can't prove, only feel ;)
 > 
 
-2 problems:
+Not sure I follow..
 
-1. It won't help with cases like this:
+Anyway, my point is that, we _can't_ implement per-cpu rwlocks like lglocks
+and expect it to work in this case. IOW, we can't do:
 
-   preempt_disable()
-	...
-	preempt_disable()
-		...
-			<------- Here
-		...
-	preempt_enable()
-	...
-   preempt_enable()
+Reader-side:
+   -> read_lock() your per-cpu rwlock and proceed.
 
-If the IPI hits at the point marked above, the IPI is useless, because, at
-that point, since we are already in a nested read-side critical section, we can't
-switch the synchronization protocol. We need to wait till we start a fresh
-non-nested read-side critical section, in order to switch to global rwlock.
-The reason is that preempt_enable() or put_online_cpus_atomic() can only undo
-what its predecessor (preempt_disable()/get_online_cpus_atomic()) did.
+Writer-side:
+   -> for_each_online_cpu(cpu)
+          write_lock(per-cpu rwlock of 'cpu');
 
-2. Part of the reason we want to get rid of stop_machine() is to avoid the
-latency it induces on _all_ CPUs just to take *one* CPU offline. If we use
-kick_all_cpus_sync(), we get into that territory again : we unfairly interrupt
-every CPU, _even when_ that CPU's existing preempt_disabled() sections might
-not actually be hotplug readers! (ie., not bothered about CPU Hotplug).
 
-So, I think whatever synchronization scheme we develop, must not induce the very
-same problems that stop_machine() had. Otherwise, we can end up going a full-circle
-and coming back to the same stop_machine() scenario that we intended to get rid of.
-
-(That's part of the reason why I initially tried to provide that _light() variant
-of the reader APIs in the previous version of the patchset, so that light readers
-can remain as undisturbed from cpu hotplug as possible, thereby avoiding indirectly
-inducing the "stop_machine effect", like I mentioned here:
-https://lkml.org/lkml/2012/12/5/369)
+Also, like Tejun said, one of the important measures for per-cpu rwlocks
+should be that, if a user replaces global rwlocks with percpu rwlocks (for
+performance reasons), he shouldn't suddenly end up in numerous deadlock
+possibilities which never existed before. The replacement should continue to
+remain safe, and perhaps improve the performance.
 
 Regards,
 Srivatsa S. Bhat
