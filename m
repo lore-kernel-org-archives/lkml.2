@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2LJXXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:23:50 -0500
-Received: from wren.arvixe.com ([50.97.138.99]:34521 "EHLO wren.arvixe.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab2LJXWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:22:33 -0500
-From: Przemo Firszt <przemo@firszt.eu>
-To: greg@kroah.com, Larry.Finger@lwfinger.net,
-        florian.c.schilhabel@googlemail.com, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH 5/9] rtl8712: remove unused macros
-Date: Mon, 10 Dec 2012 23:21:23 +0000
-Message-Id: <1355181685-4444-5-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1355181685-4444-1-git-send-email-przemo@firszt.eu>
-References: <1355181685-4444-1-git-send-email-przemo@firszt.eu>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - wren.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
-X-Get-Message-Sender-Via: wren.arvixe.com: authenticated_id: przemo@firszt.eu
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1751894Ab2LJXYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:24:05 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49362 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab2LJXXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 18:23:48 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 3/4] pwm: core: Export of_pwm_request() so client drivers can also use it
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-leds@vger.kernel.org
+In-Reply-To: <1355133637-2784-4-git-send-email-peter.ujfalusi@ti.com>
+References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com> <1355133637-2784-4-git-send-email-peter.ujfalusi@ti.com>
+Date: Mon, 10 Dec 2012 23:22:49 +0000
+Message-Id: <20121210232249.7356F3E081F@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
----
- drivers/staging/rtl8712/usb_ops_linux.c | 3 ---
- 1 file changed, 3 deletions(-)
+On Mon, 10 Dec 2012 11:00:36 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> Allow client driver to use of_pwm_request() to get the pwm they need. This
+> is needed for drivers which handle more than one pwm separately, like
+> leds-pwm driver which have:
+> 
+> pwmleds {
+> 	compatible = "pwm-leds";
+> 	kpad {
+> 		label = "omap4::keypad";
+> 		pwms = <&twl_pwm 0 7812500>;
+> 		max-brightness = <127>;
+> 	};
+> 
+> 	charging {
+> 		label = "omap4:green:chrg";
+> 		pwms = <&twl_pwmled 0 7812500>;
+> 		max-brightness = <255>;
+> 	};
+> };
+> 
+> in the dts files.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-diff --git a/drivers/staging/rtl8712/usb_ops_linux.c b/drivers/staging/rtl8712/usb_ops_linux.c
-index 9e28ef0..dca398a 100644
---- a/drivers/staging/rtl8712/usb_ops_linux.c
-+++ b/drivers/staging/rtl8712/usb_ops_linux.c
-@@ -45,9 +45,6 @@ struct zero_bulkout_context {
- 	void *padapter;
- };
- 
--#define usb_write_cmd r8712_usb_write_mem
--#define usb_write_cmd_complete usb_write_mem_complete
--
- uint r8712_usb_init_intf_priv(struct intf_priv *pintfpriv)
- {
- 	pintfpriv->piorw_urb = usb_alloc_urb(0, GFP_ATOMIC);
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+> ---
+>  drivers/pwm/core.c  | 2 +-
+>  include/linux/pwm.h | 7 +++++++
+>  2 files changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> index 903138b..3a7ebcc 100644
+> --- a/drivers/pwm/core.c
+> +++ b/drivers/pwm/core.c
+> @@ -486,7 +486,7 @@ static struct pwm_chip *of_node_to_pwmchip(struct device_node *np)
+>   * becomes mandatory for devices that look up the PWM device via the con_id
+>   * parameter.
+>   */
+> -static struct pwm_device *of_pwm_request(struct device_node *np,
+> +struct pwm_device *of_pwm_request(struct device_node *np,
+>  					 const char *con_id)
+>  {
+>  	struct pwm_device *pwm = NULL;
+> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+> index 6d661f3..d70ffe3 100644
+> --- a/include/linux/pwm.h
+> +++ b/include/linux/pwm.h
+> @@ -175,6 +175,7 @@ struct pwm_device *of_pwm_xlate_with_flags(struct pwm_chip *pc,
+>  		const struct of_phandle_args *args);
+>  
+>  struct pwm_device *pwm_get(struct device *dev, const char *consumer);
+> +struct pwm_device *of_pwm_request(struct device_node *np, const char *con_id);
+>  void pwm_put(struct pwm_device *pwm);
+>  
+>  struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer);
+> @@ -213,6 +214,12 @@ static inline struct pwm_device *pwm_get(struct device *dev,
+>  	return ERR_PTR(-ENODEV);
+>  }
+>  
+> +static inline struct pwm_device *of_pwm_request(struct device_node *np,
+> +						const char *con_id)
+> +{
+> +	return ERR_PTR(-ENODEV);
+> +}
+> +
+>  static inline void pwm_put(struct pwm_device *pwm)
+>  {
+>  }
+> -- 
+> 1.8.0
+> 
+
 -- 
-1.8.0.1
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
