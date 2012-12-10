@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2LJDPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 22:15:40 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38694 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab2LJDPj convert rfc822-to-8bit (ORCPT
+	id S1751786Ab2LJDSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 22:18:06 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:54762 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab2LJDSF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 22:15:39 -0500
+	Sun, 9 Dec 2012 22:18:05 -0500
 MIME-Version: 1.0
-Date: Mon, 10 Dec 2012 11:15:38 +0800
-Message-ID: <CAOZoOZX0RwtsG5DYuCToKs50BWvzBe+Pr=GR-wr9EpkHO1wGwQ@mail.gmail.com>
-Subject: 
+Date: Mon, 10 Dec 2012 11:18:03 +0800
+Message-ID: <CAOZoOZUxcuzww-jywHxLohOWCMRvZ+NOM8BL2aNm_9a2PhbtJQ@mail.gmail.com>
+Subject: How about changing block size to fast huge memory init of sysfs
 From: yanchao wu <1446206@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
