@@ -1,180 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab2LJQbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 11:31:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20090 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab2LJQbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 11:31:33 -0500
-X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=O8pGZApEfOqDBh7hbo4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355157090.17101.222.camel@gandalf.local.home>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 10 Dec 2012 11:31:30 -0500
-In-Reply-To: <20121210152518.GO14363@n2100.arm.linux.org.uk>
-References: <1354898200.17101.50.camel@gandalf.local.home>
-	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
-	 <1354900436.17101.58.camel@gandalf.local.home>
-	 <1354902347.8263.12.camel@linaro1.home>
-	 <20121210100433.GB6624@mudshark.cambridge.arm.com>
-	 <1355144537.17101.155.camel@gandalf.local.home>
-	 <20121210135747.GK14363@n2100.arm.linux.org.uk>
-	 <1355148365.17101.168.camel@gandalf.local.home>
-	 <20121210140749.GM14363@n2100.arm.linux.org.uk>
-	 <1355150801.17101.197.camel@gandalf.local.home>
-	 <20121210152518.GO14363@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751324Ab2LJQj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 11:39:26 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36036 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab2LJQjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 11:39:25 -0500
+Date: Mon, 10 Dec 2012 11:39:04 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Zlatko Calusic <zlatko.calusic@iskon.hr>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121210163904.GA22101@cmpxchg.org>
+References: <50BC6314.7060106@leemhuis.info>
+ <20121203194208.GZ24381@cmpxchg.org>
+ <20121204214210.GB20253@cmpxchg.org>
+ <20121205030133.GA17438@wolff.to>
+ <20121206173742.GA27297@wolff.to>
+ <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
+ <50C32D32.6040800@iskon.hr>
+ <50C3AF80.8040700@iskon.hr>
+ <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
+ <20121210110337.GH1009@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210110337.GH1009@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 15:25 +0000, Russell King - ARM Linux wrote:
-> On Mon, Dec 10, 2012 at 09:46:41AM -0500, Steven Rostedt wrote:
-> > Again, you and I are having a disconnect. I'm not a HW expert. I'm
-> > trying to get a total understanding of what you, Will, Jon and others
-> > are trying to say.
-> 
-> Well, there's people who think that you're intentionally trying to wind
-> me up (I'm not alone in this opinion; believe me, I checked with someone
-> else taking part in this thread and they said as much...)
-
-I'm sorry that you and others feel that way. What benefit would I get to
-do such a thing? That would be counter productive on my part, and
-honestly, that's the last thing I want to do. I think it may just be
-that my general personality and my way of writing may be of issue. Ask
-others that deal with me. I'm not saying anything differently to you
-than I do to anyone else. But that's just me. I'm really not taking any
-of this personal nor am I trying to piss you or anyone else off. I'm
-just trying to talk technical here.
-
-
-> 
-> > > ... which, if it's misaligned to a 32-bit boundary, which can happen with
-> > > Thumb-2 code, will require the replacement to be done atomically; you will
-> > > need to use stop_machine() to ensure that other CPUs don't try to execute
-> > > the instruction mid-way through modification... as I have already
-> > > explained in my previous mails.
+On Mon, Dec 10, 2012 at 11:03:37AM +0000, Mel Gorman wrote:
+> On Sat, Dec 08, 2012 at 05:01:42PM -0800, Linus Torvalds wrote:
+> > On Sat, 8 Dec 2012, Zlatko Calusic wrote:
+> > > Or sooner... in short: nothing's changed!
+> > > 
+> > > On a 4GB RAM system, where applications use close to 2GB, kswapd likes to keep
+> > > around 1GB free (unused), leaving only 1GB for page/buffer cache. If I force
+> > > bigger page cache by reading a big file and thus use the unused 1GB of RAM,
+> > > kswapd will soon (in a matter of minutes) evict those (or other) pages out and
+> > > once again keep unused memory close to 1GB.
 > > 
-> > I'm confused to what is wrong to "misaligned to a 32-bit boundery".
-> > Isn't it best if it is on a 32-bit boundary? Or do you mean that it's
-> > misaligned across a 32-bit boundary? I guess I just read it wrong.
+> > Ok, guys, what was the reclaim or kswapd patch during the merge window 
+> > that actually caused all of these insane problems?
 > 
-> What I mean is a store of 32-bit size to an address which is not
-> numerically an integer multiple of four.
+> I believe commit c6543459 (mm: remove __GFP_NO_KSWAPD) is the primary
+> candidate. __GFP_NO_KSWAPD was originally introduced by THP because kswapd
+> was excessively reclaiming. kswapd would stay awake aggressively reclaiming
+> even if compaction was deferred. The flag was removed in this cycle when it
+> was expected that it was no longer necessary. I'm not foisting the blame
+> on Rik here, I was on the review list for that patch and did not identify
+> that it would cause this many problems either.
+>
+> > It seems it was more 
+> > fundamentally buggered than the fifteen-million fixes for kswapd we have 
+> > already picked up.
 > 
-> To see why this is a problem, take a moment to think about how you'd
-> update a misaligned 32-bit value on a 32-bit bus with byte enables.
-> You need to do it as two transactions.
+> It was already fundamentally buggered up. The difference was it stayed
+> asleep for THP requests in earlier kernels.
 > 
-> If your bus is 64-bits wide, then the problem potentially becomes one
-> where there's an issue if it crosses a 64-bit boundary.  Continue for
-> larger bus widths...
+> There is a big difference between a direct reclaim/compaction for THP
+> and kswapd doing the same work. Direct reclaim/compaction will try once,
+> give up quickly and defer requests in the near future to avoid impacting
+> the system heavily for THP. The same applies for khugepaged.
 > 
-> Now add in the effect of caching with its cache line boundaries, and
-> what the effects are if a write crosses the cache line boundary (which
-> means it ends up with two separate validity bits etc.)
+> kswapd is different. It can keep going until it meets its watermarks for
+> a THP allocation are met. Two reasons why it might keep going for a long
+> time are that compaction is being inefficient which we know it may be due
+> to crap like this
 > 
-> Lastly, remember that ARM CPUs have a Harvard cache architecture; that
-> means that the data paths are entirely separate from the instruction
-> paths - and in some cases that goes all the way to the memory controller,
-> but that's not relevant.  The relevant point here is that the point in
-> the pathways where the instruction and data paths unite can be quite
-> some distance _outside_ of the CPU.
+> end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
 > 
-> What this all means is that a misaligned 32-bit store can ultimately
-> appear as two separate 16-bit stores, which may be interleaved by
-> other bus activity.  Whether that is visible to other CPUs in a SMP
-> system as two separate 16-bit stores or not isn't well defined.
-> 
-> x86 in this regard is beautiful; it's fully coherent with everything.
-> It enforces correctness for almost every situation.  It manages this
-> by using a hell of a lot of logic to do interlocking and ensure
-> correct ordering.  If you want that from an ARM CPU then you'd probably
-> need a comparible amount of logic - and power - to be able to do that.
+> and the second reason is if the highest zone is relatively because
+> compaction_suitable will keep saying that allocations are failing due to
+> insufficient amounts of memory in the highest zone. It'll reclaim a little
+> from this highest zone and then shrink_slab() potentially dumping a large
+> amount of memory. This may be the case for Zlatko as with a 4G machine
+> his ZONE_NORMAL could be small depending on how the 32-bit address space
+> is used by his hardware.
 
-I'm going to be bluntly honest here, and say that I do not fully
-understand all the intrinsic operations that you've explained above.
-This may be part of the frustration that you have with me. Not that I'm
-trying to piss you off, but the fact that I'm not as well versed of all
-the details that goes on inside an ARM processor. Yes, I've been spoiled
-with x86, but I'm trying hard to understand the differences with ARM. 
+Unlike direct reclaim, kswapd also never does sync migration.  Since
+the fragmentation index is a ratio of free pages over free page
+blocks, doing lightweight compaction that reduces the page blocks but
+never really follows through to compact a THP block increases the free
+memory requirement.
 
-I may be asking stupid questions that are very obvious to you, but to
-me, this is a new world. Please have some patience with me.
+I thought about the small Normal zone too.  Direct reclaim/compaction
+is fine with one zone being able to provide a THP, but kswapd requires
+25% of the node.  A small ZONE_NORMAL would not be able to meet this
+and so the bigger DMA32 zone would also be required to be balanced for
+the THP allocation.
 
+> > Mel? Ideas?
 > 
-> > Either way, I said there's probably no guarantee that the 32-bit calls
-> > to mcount that gcc has inserted (or the tracepoints) are going to be
-> > aligned to 32-bit boundaries.
+> Consider reverting the revert of __GFP_NO_KSWAPD again until this can be
+> ironed out at a more reasonable pace. Rik? Johannes?
+
+Yes, I also think we need more time for this.
+
+> Verify if the shrinking slab is the issue with this brutually ugly
+> hack. Zlatko?
 > 
-> Correct; there is no guarantee of that what so ever when building for
-> Thumb-2.
-> 
-> > But I'm wondering if that's still a
-> > problem. Let's look at the ways another CPU could get the 32-bit
-> > instruction if it is misaligned, and across two different cache lines,
-> > or even two different pages:
-> > 
-> > 
-> > 1) the CPU gets the full 32bits as it was on the other CPU, or how it
-> > will be.
-> > 
-> > 2) The CPU gets the first 16bits as it was on the other CPU an the
-> > second 16bits with the update.
-> > 
-> > 3) The CPU gets the first 16bits with the update and the second 16bits
-> > as it use to be.
-> > 
-> > 
-> > The first case isn't interesting, so lets jump to the 2 and 3rd cases.
-> > 
-> > On an update of a 32bit nop to a 16bit breakpoint or branch (jump over
-> > second half).
-> 
-> Err.  Let me remind you what you said in the message which I replied to
-> earlier today:
-> 
->    We are replacing a 32bit call with a nop. That nop must also         
->                       ^^^^^
->    be 32bits, because we could eventually replace the nop(s) with a 32bit
->       ^^^^^^          
->    call.
-> 
-> Maybe that's sloppy language, but I tend to read what's written and
-> interpret it as written... so to now say about 16-bit breakpoint or
-> branch instructions to me sounds like changing the point of discussion.
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index b7ed376..2189d20 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2550,6 +2550,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  	unsigned long balanced;
+>  	int i;
+>  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+> +	bool should_shrink_slab = true;
+>  	unsigned long total_scanned;
+>  	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	unsigned long nr_soft_reclaimed;
+> @@ -2695,7 +2696,8 @@ loop_again:
+>  				shrink_zone(zone, &sc);
+>  
+>  				reclaim_state->reclaimed_slab = 0;
+> -				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+> +				if (should_shrink_slab)
+> +					nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+>  				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+>  				total_scanned += sc.nr_scanned;
+>  
+> @@ -2817,6 +2819,16 @@ out:
+>  	if (order) {
+>  		int zones_need_compaction = 1;
+>  
+> +		/*
+> +		 * Shrinking slab for high-order allocs can cause an excessive
+> +		 * amount of memory to be dumped. Only shrink slab once per
+> +		 * round for high-order allocs.
+> +		 *
+> +		 * This is a very stupid hack. balance_pgdat() is in serious
+> +		 * need of a rework
+> +		 */
+> +		should_shrink_slab = false;
+> +
+>  		for (i = 0; i <= end_zone; i++) {
+>  			struct zone *zone = pgdat->node_zones + i;
 
-
-The grand view is to change a 32bit nop to a 32bit branch and link, and
-vice-versa. But because the 32bit operation may cross cache-lines or
-pages, there's no safe way to to do that directly (I'm assuming from
-everything that I've been told). Thus, the idea is to break the
-conversion up into steps where we only change half of the instruction.
-Changing the first half to be either a breakpoint or a branch that skips
-the second half. Considering that no matter how the processor sees the
-result, it wont be an issue. This is where there's a lot of assumptions
-that I'm trying to understand, and where you may be frustrated with me.
-
-If we can change the first half of the instruction with a 16bit
-operation that skips the second half, then it may be possible to change
-the entire 32bit op with another 32bit op in a series of steps, as I
-explained several times.
-
--- Steve
-
-
+I don't see a shrink_slab() invocation after this point since the
+loop_again jumps in this loop where removed, so this shouldn't change
+anything?
