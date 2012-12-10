@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab2LJUeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 15:34:12 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43536 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab2LJUeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 15:34:10 -0500
-Date: Mon, 10 Dec 2012 12:34:06 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Ben Hutchings <ben@decadent.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH -stable 1/1] freezer: PF_FREEZER_NOSIG should be cleared
- along with PF_NOFREEZE
-Message-ID: <20121210203406.GB21258@kroah.com>
-References: <50BF9CC2.7070705@canonical.com>
- <1354762294.17107.157.camel@deadeye.wl.decadent.org.uk>
- <20121206124201.GA30705@redhat.com>
- <50C10391.4040903@canonical.com>
- <20121207144901.GA6478@redhat.com>
- <20121207144922.GB6478@redhat.com>
+	id S1752066Ab2LJUfP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 15:35:15 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:52304 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803Ab2LJUfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 15:35:13 -0500
+X-Remote-IP: 213.191.128.133
+Date: Mon, 10 Dec 2012 21:35:06 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207144922.GB6478@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org> <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to> <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com> <50C32D32.6040800@iskon.hr> <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org> <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org> <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr> <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com>
+In-Reply-To: <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com>
+Message-ID: <50C6477A.4090005@iskon.hr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+Subject: Re: kswapd craziness in 3.7
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121210 #8684964, check: 20121210 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40116 [Dec 11 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 03:49:22PM +0100, Oleg Nesterov wrote:
-> This patch is only for pre-v3.3 stable trees which backported
-> b40a7959 "freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD".
-> v3.3+ doesn't need this fix.
+On 10.12.2012 20:13, Linus Torvalds wrote:
 > 
-> b40a7959 is the trivial bugfix, but unfortunately I forgot that
-> until 34b087e4 "freezer: kill unused set_freezable_with_signal()"
-> there were another only-for-kernel-threads flag, PF_FREEZER_NOSIG,
-> which should be cleared as well.
+> It's worth giving this as much testing as is at all possible, but at
+> the same time I really don't think I can delay 3.7 any more without
+> messing up the holiday season too much. So unless something obvious
+> pops up, I will do the release tonight. So testing will be minimal -
+> but it's not like we haven't gone back-and-forth on this several times
+> already, and we revert to *mostly* the same old state as 3.6 anyway,
+> so it should be fairly safe.
 > 
-> See https://bugs.launchpad.net/ubuntu/+source/v86d/+bug/1080530
-> The freezer fails because it expects that a PF_FREEZER_NOSIG task
-> doesn't need a signal. Before b40a7959 it wrongly succeeds leaving
-> the PF_NOFREEZE | PF_FREEZER_NOSIG task unfrozen.
-> 
-> Reported-and-tested-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> Cc: stable@vger.kernel.org # pre v3.3 if commit b40a7959 was taken
 
->From what I can tell, 3.0-stable didn't take this patch, so it should be
-fine.  Ben, I don't know about 3.2, you should check this.
+It compiles and boots without a hitch, so it must be perfect. :)
 
-Oleg, thanks for doing this work, much appreciated.
+Seriously, a few more hours need to pass, until I can provide more convincing data. That's how long it takes on this particular machine for memory pressure to build up and memory fragmentation to ensue. Only then I'll be able to tell how it really behaves. I promise to get back as soon as I can.
 
-greg k-h
+And funny thing that you mention i915, because yesterday my daughter managed to lock up our laptop hard (that was a first), and this is what I found in kern.log after restart:
+
+Dec  9 21:29:42 titan vmunix: general protection fault: 0000 [#1] PREEMPT SMP 
+Dec  9 21:29:42 titan vmunix: Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) [last unloaded: microcode]
+Dec  9 21:29:42 titan vmunix: CPU 2 
+Dec  9 21:29:42 titan vmunix: Pid: 2523, comm: Xorg Tainted: G           O 3.7.0-rc8 #1 Hewlett-Packard HP Pavilion dv7 Notebook PC/144B
+Dec  9 21:29:42 titan vmunix: RIP: 0010:[<ffffffff81090b9c>]  [<ffffffff81090b9c>] find_get_page+0x3c/0x90
+Dec  9 21:29:42 titan vmunix: RSP: 0018:ffff88014d9f7928  EFLAGS: 00010246
+Dec  9 21:29:42 titan vmunix: RAX: ffff880052594bc8 RBX: 0200000000000000 RCX: 00000000fffffffa
+Dec  9 21:29:42 titan vmunix: RDX: 0000000000000001 RSI: ffff880052594bc8 RDI: 0000000000000000
+Dec  9 21:29:42 titan vmunix: RBP: ffff88014d9f7948 R08: 0200000000000000 R09: ffff880052594b18
+Dec  9 21:29:42 titan vmunix: R10: 57ffe4cbb74d1280 R11: 0000000000000000 R12: ffff88011c959a90
+Dec  9 21:29:42 titan vmunix: R13: 0000000000000053 R14: 0000000000000000 R15: 0000000000000053
+Dec  9 21:29:42 titan vmunix: FS:  00007fcd8d413880(0000) GS:ffff880157c80000(0000) knlGS:0000000000000000
+Dec  9 21:29:42 titan vmunix: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Dec  9 21:29:42 titan vmunix: CR2: ffffffffff600400 CR3: 000000014d937000 CR4: 00000000000007e0
+Dec  9 21:29:42 titan vmunix: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Dec  9 21:29:42 titan vmunix: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Dec  9 21:29:42 titan vmunix: Process Xorg (pid: 2523, threadinfo ffff88014d9f6000, task ffff88014d9c1260)
+Dec  9 21:29:42 titan vmunix: Stack:
+Dec  9 21:29:42 titan vmunix:  ffff88014d9f7958 ffff88011c959a88 0000000000000053 ffff88011c959a88
+Dec  9 21:29:42 titan vmunix:  ffff88014d9f7978 ffffffff81090e21 0000000000000001 ffffea00014d1280
+Dec  9 21:29:42 titan vmunix:  ffff88011c959960 0000000000000001 ffff88014d9f7a28 ffffffff810a1b60
+Dec  9 21:29:42 titan vmunix: Call Trace:
+Dec  9 21:29:42 titan vmunix:  [<ffffffff81090e21>] find_lock_page+0x21/0x80
+Dec  9 21:29:42 titan vmunix:  [<ffffffff810a1b60>] shmem_getpage_gfp+0xa0/0x620
+Dec  9 21:29:42 titan vmunix:  [<ffffffff810a224c>] shmem_read_mapping_page_gfp+0x2c/0x50
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b3611>] i915_gem_object_get_pages_gtt+0xe1/0x270
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b127f>] i915_gem_object_get_pages+0x4f/0x90
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b1383>] i915_gem_object_bind_to_gtt+0xc3/0x4c0
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b4413>] i915_gem_object_pin+0x123/0x190
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b7d97>] i915_gem_execbuffer_reserve_object.isra.13+0x77/0x190
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b8171>] i915_gem_execbuffer_reserve.isra.14+0x2c1/0x320
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b87b2>] i915_gem_do_execbuffer.isra.17+0x5e2/0x11b0
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b9894>] i915_gem_execbuffer2+0x94/0x280
+Dec  9 21:29:42 titan vmunix:  [<ffffffff81287de3>] drm_ioctl+0x493/0x530
+Dec  9 21:29:42 titan vmunix:  [<ffffffff812b9800>] ? i915_gem_execbuffer+0x480/0x480
+Dec  9 21:29:42 titan vmunix:  [<ffffffff810d9cbf>] do_vfs_ioctl+0x8f/0x530
+Dec  9 21:29:42 titan vmunix:  [<ffffffff810da1ab>] sys_ioctl+0x4b/0x90
+Dec  9 21:29:42 titan vmunix:  [<ffffffff810c9e2d>] ? sys_read+0x4d/0xa0
+Dec  9 21:29:42 titan vmunix:  [<ffffffff8154a4d2>] system_call_fastpath+0x16/0x1b
+Dec  9 21:29:42 titan vmunix: Code: 63 08 48 83 ec 08 e8 84 9c fb ff 4c 89 ee 4c 89 e7 e8 89 b7 15 00 48 85 c0 48 89 c6 74 41 48 8b 18 48 85 db 74 1f f6 c3 03 75 3c <8b> 53 1c 85 d2 74 d9 8d 7a 01 89 d0 f0 0f b1 7b 1c 39 c2 75 23 
+Dec  9 21:29:42 titan vmunix: RIP  [<ffffffff81090b9c>] find_get_page+0x3c/0x90
+Dec  9 21:29:42 titan vmunix:  RSP <ffff88014d9f7928>
+
+It seems that whenever (if ever?) GFP_NO_KSWAPD removal is attempted again, the i915 driver will need to be taken better care of.
+-- 
+Zlatko
