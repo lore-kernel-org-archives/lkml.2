@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab2LJRcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 12:32:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43417 "EHLO mx1.redhat.com"
+	id S1752321Ab2LJRdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 12:33:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab2LJRcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 12:32:46 -0500
-Subject: [PATCH v2 01/10] kvm: Restrict non-existing slot state transitions
+	id S1752240Ab2LJRc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 12:32:58 -0500
+Subject: [PATCH v2 03/10] kvm: Fix iommu map/unmap to handle memory slot
+ moves
 To: mtosatti@redhat.com, gleb@redhat.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Mon, 10 Dec 2012 10:32:45 -0700
-Message-ID: <20121210173245.10461.94547.stgit@bling.home>
+Date: Mon, 10 Dec 2012 10:32:57 -0700
+Message-ID: <20121210173257.10461.53405.stgit@bling.home>
 In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
 References: <20121210171417.10461.20079.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,53 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API documentation states:
-
-	When changing an existing slot, it may be moved in the guest
-	physical memory space, or its flags may be modified.
-
-An "existing slot" requires a non-zero npages (memory_size).  The only
-transition we should therefore allow for a non-existing slot should be
-to create the slot, which includes setting a non-zero memory_size.  We
-currently allow calls to modify non-existing slots, which is pointless,
-confusing, and possibly wrong.
-
-With this we know that the invalidation path of __kvm_set_memory_region
-is always for a delete or move and never for adding a zero size slot.
+The iommu integration into memory slots expects memory slots to be
+added or removed and doesn't handle the move case.  We can unmap
+slots from the iommu after we mark them invalid and map them before
+installing the final memslot array.  Also re-order the kmemdup vs
+map so we don't leave iommu mappings if we get ENOMEM.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- virt/kvm/kvm_main.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ virt/kvm/kvm_main.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 6e8fa7e..e426704 100644
+index 6e9d3f9..0f66a0e 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -753,10 +753,15 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	new.npages = npages;
- 	new.flags = mem->flags;
- 
--	/* Disallow changing a memory slot's size. */
-+	/*
-+	 * Disallow changing a memory slot's size or changing anything about
-+	 * zero sized slots that doesn't involve making them non-zero.
-+	 */
- 	r = -EINVAL;
- 	if (npages && old.npages && npages != old.npages)
+@@ -817,6 +817,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 		old_memslots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+ 		synchronize_srcu_expedited(&kvm->srcu);
++		/* slot was deleted or moved, clear iommu mapping */
++		kvm_iommu_unmap_pages(kvm, &old);
+ 		/* From this point no new shadow pages pointing to a deleted,
+ 		 * or moved, memslot will be created.
+ 		 *
+@@ -832,20 +834,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 	if (r)
  		goto out_free;
-+	if (!npages && !old.npages)
-+		goto out_free;
  
- 	/* Check for overlaps */
- 	r = -EEXIST;
-@@ -775,7 +780,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+-	/* map/unmap the pages in iommu page table */
+-	if (npages) {
+-		r = kvm_iommu_map_pages(kvm, &new);
+-		if (r)
+-			goto out_free;
+-	} else
+-		kvm_iommu_unmap_pages(kvm, &old);
+-
  	r = -ENOMEM;
+ 	slots = kmemdup(kvm->memslots, sizeof(struct kvm_memslots),
+ 			GFP_KERNEL);
+ 	if (!slots)
+ 		goto out_free;
  
- 	/* Allocate if a slot is being created */
--	if (npages && !old.npages) {
-+	if (!old.npages) {
- 		new.user_alloc = user_alloc;
- 		new.userspace_addr = mem->userspace_addr;
++	/* map new memory slot into the iommu */
++	if (npages) {
++		r = kvm_iommu_map_pages(kvm, &new);
++		if (r)
++			goto out_slots;
++	}
++
+ 	/* actual memory is freed via old in kvm_free_physmem_slot below */
+ 	if (!npages) {
+ 		new.dirty_bitmap = NULL;
+@@ -864,6 +865,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
  
+ 	return 0;
+ 
++out_slots:
++	kfree(slots);
+ out_free:
+ 	kvm_free_physmem_slot(&new, &old);
+ out:
 
