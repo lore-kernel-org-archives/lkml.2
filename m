@@ -1,188 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2LJMUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 07:20:39 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:44752 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab2LJMUi (ORCPT
+	id S1752729Ab2LJMV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 07:21:28 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34613 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab2LJMV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 07:20:38 -0500
+	Mon, 10 Dec 2012 07:21:27 -0500
+Date: Mon, 10 Dec 2012 15:21:03 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, florian.c.schilhabel@googlemail.com,
+        Przemo Firszt <przemo@firszt.eu>, linux-kernel@vger.kernel.org,
+        Larry.Finger@lwfinger.net
+Subject: Re: [PATCH 5/5] rtl8712: replace leading spaces with tab
+Message-ID: <20121210122103.GT6568@mwanda>
+References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
+ <1355048110-10859-5-git-send-email-przemo@firszt.eu>
+ <20121210094613.GR6568@mwanda>
+ <1355140186.26815.6.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <20121210110807.GF9362@gmail.com>
-References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
-	<1355129761-8088-12-git-send-email-lee.jones@linaro.org>
-	<20121210110807.GF9362@gmail.com>
-Date: Mon, 10 Dec 2012 13:20:37 +0100
-Message-ID: <CAPDyKFq-A=Nht51F6LNMdOneA=7=V0+V+oGAKBSuq5NhrYK+3w@mail.gmail.com>
-Subject: Re: [PATCH 11/12 v2] ARM: ux500: Use the GPIO regulator framework for
- SDI0's 'en' and 'vsel'
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355140186.26815.6.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 December 2012 12:08, Lee Jones <lee.jones@linaro.org> wrote:
-> To prevent lots of unnecessary call-backs into platform code, we're
-> now using the GPIO regulator framework to control the 'enable' (en)
-> and 'voltage select' (vsel) GPIO pins which in turn control the
-> MMCI's secondary regulator settings. This already works with Device
-> Tree, but when booting with ATAGs we need to register it as a
-> platform device.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/mach-ux500/board-mop500-regulators.c |   14 ++++++++
->  arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
->  arch/arm/mach-ux500/board-mop500.c            |   44 +++++++++++++++++++++++++
->  3 files changed, 59 insertions(+)
->
-> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-> index 2a17bc5..cb75405 100644
-> --- a/arch/arm/mach-ux500/board-mop500-regulators.c
-> +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-> @@ -28,6 +28,20 @@ struct regulator_init_data gpio_en_3v3_regulator = {
->         .consumer_supplies = gpio_en_3v3_consumers,
->  };
->
-> +static struct regulator_consumer_supply sdi0_reg_consumers[] = {
-> +        REGULATOR_SUPPLY("vqmmc", "sdi0"),
-> +};
-> +
-> +struct regulator_init_data sdi0_reg_init_data = {
+On Mon, Dec 10, 2012 at 03:49:46AM -0800, Joe Perches wrote:
+> On Mon, 2012-12-10 at 12:46 +0300, Dan Carpenter wrote:
+> > On Sun, Dec 09, 2012 at 10:15:10AM +0000, Przemo Firszt wrote:
+> > > Replace leading spaces with tab
+> []
+> > > diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> []
+> > >  static int r871x_set_wpa_ie(struct _adapter *padapter, char *pie,
+> > > -			    unsigned short ielen)
+> > > +				unsigned short ielen)
+> > 
+> > The original version is better because it lines up correctly.
+> > 
+> > Checkpatch doesn't complain for me so I'm not sure what the story is
+> > here.
+> 
+> Parenthesis alignment isn't described in CodingStyle.
+> It's maintainer's preference.  Whether or not it should
+> be is a different question.
+> 
+> checkpatch parenthesis alignment of arguments checks are
+> emitted only when adding --strict to the command line.
+> 
 
-You missed this:
+Even with --strict checkpatch.pl is fine with the original code.
 
-The levelshifter uses the ab8500-ext-supply3. Reflect that here.
+I don't know any subsystems where the new version would be prefered
+over the original version.
 
-.supply_regulator = "ab8500-ext-supply3"
+regards,
+dan carpenter
 
-> +        .constraints = {
-> +                .min_uV         = 1800000,
-> +                .max_uV         = 2900000,
-> +                .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|REGULATOR_CHANGE_STATUS,
-> +        },
-> +        .num_consumer_supplies  = ARRAY_SIZE(sdi0_reg_consumers),
-> +        .consumer_supplies      = sdi0_reg_consumers,
-> +};
-> +
->  /*
->   * TPS61052 regulator
->   */
-> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-> index 78a0642..0c79d90 100644
-> --- a/arch/arm/mach-ux500/board-mop500-regulators.h
-> +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-> @@ -19,5 +19,6 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
->  extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
->  extern struct regulator_init_data tps61052_regulator;
->  extern struct regulator_init_data gpio_en_3v3_regulator;
-> +extern struct regulator_init_data sdi0_reg_init_data;
->
->  #endif
-> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> index daa4237..1d721ea 100644
-> --- a/arch/arm/mach-ux500/board-mop500.c
-> +++ b/arch/arm/mach-ux500/board-mop500.c
-> @@ -24,6 +24,8 @@
->  #include <linux/mfd/abx500/ab8500.h>
->  #include <linux/regulator/ab8500.h>
->  #include <linux/regulator/fixed.h>
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/gpio-regulator.h>
->  #include <linux/mfd/tc3589x.h>
->  #include <linux/mfd/tps6105x.h>
->  #include <linux/mfd/abx500/ab8500-gpio.h>
-> @@ -91,6 +93,37 @@ static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
->         },
->  };
->
-> +/* Dynamically populated. */
-> +static struct gpio sdi0_reg_gpios[] = {t
-> +        { 0, GPIOF_OUT_INIT_LOW, "mmci_vsel" },
-> +};
-> +
-> +static struct gpio_regulator_state sdi0_reg_states[] = {
-> +        { .value = 2900000, .gpios = (0 << 0) },
-> +        { .value = 1800000, .gpios = (1 << 0) },
-> +};
-> +
-> +static struct gpio_regulator_config sdi0_reg_info = {
-> +       .supply_name           = "ab8500-ext-supply3",
-
-No, this is not what I think you want. This regulator can be called
-something with sdcard or levelshifter...
-
-> +       .gpios                 = sdi0_reg_gpios,
-> +       .nr_gpios              = ARRAY_SIZE(sdi0_reg_gpios),
-> +       .states                = sdi0_reg_states,
-> +       .nr_states             = ARRAY_SIZE(sdi0_reg_states),
-> +       .type                  = REGULATOR_VOLTAGE,
-> +       .enable_high           = 1,
-> +       .enabled_at_boot       = 0,
-> +       .init_data             = &sdi0_reg_init_data,
-> +       .startup_delay         = 100,
-> +};
-> +
-> +static struct platform_device sdi0_regulator = {
-> +        .name = "gpio-regulator",
-> +        .id   = -1,
-> +        .dev  = {
-> +                .platform_data = &sdi0_reg_info,
-> +        },
-> +};
-> +
->  static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
->         .gpio_base              = MOP500_AB8500_PIN_GPIO(1),
->         .irq_base               = MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-> @@ -440,6 +473,7 @@ static struct hash_platform_data u8500_hash1_platform_data = {
->  /* add any platform devices here - TODO */
->  static struct platform_device *mop500_platform_devs[] __initdata = {
->         &mop500_gpio_keys_device,
-> +       &sdi0_regulator,
->  };
->
->  #ifdef CONFIG_STE_DMA40
-> @@ -581,6 +615,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
->         &snowball_key_dev,
->         &snowball_sbnet_dev,
->         &snowball_gpio_en_3v3_regulator_dev,
-> +       &sdi0_regulator,
->  };
->
->  static void __init mop500_init_machine(void)
-> @@ -591,6 +626,9 @@ static void __init mop500_init_machine(void)
->
->         mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
->
-> +       sdi0_reg_info.enable_gpio = GPIO_SDMMC_EN;
-> +       sdi0_reg_info.gpios[0].gpio = GPIO_SDMMC_1V8_3V_SEL;
-> +
->         mop500_pinmaps_init();
->         parent = u8500_init_devices(&ab8500_platdata);
->
-> @@ -623,6 +661,9 @@ static void __init snowball_init_machine(void)
->         struct device *parent = NULL;
->         int i;
->
-> +       sdi0_reg_info.enable_gpio = SNOWBALL_SDMMC_EN_GPIO;
-> +       sdi0_reg_info.gpios[0].gpio = SNOWBALL_SDMMC_1V8_3V_GPIO;
-> +
->         snowball_pinmaps_init();
->         parent = u8500_init_devices(&ab8500_platdata);
->
-> @@ -655,6 +696,9 @@ static void __init hrefv60_init_machine(void)
->          */
->         mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
->
-> +       sdi0_reg_info.enable_gpio = HREFV60_SDMMC_EN_GPIO;
-> +       sdi0_reg_info.gpios[0].gpio = HREFV60_SDMMC_1V8_3V_GPIO;
-> +
->         hrefv60_pinmaps_init();
->         parent = u8500_init_devices(&ab8500_platdata);
->
-> --
-> 1.7.9.5
