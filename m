@@ -1,127 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab2LJRYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 12:24:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25165 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab2LJRYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 12:24:12 -0500
-Date: Mon, 10 Dec 2012 18:24:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU
-	offline from atomic context
-Message-ID: <20121210172410.GA28479@redhat.com>
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209191437.GA2816@redhat.com> <50C4EB79.5050203@linux.vnet.ibm.com> <20121209202234.GA5793@redhat.com> <50C564ED.9090803@linux.vnet.ibm.com>
+	id S1751996Ab2LJRZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 12:25:17 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:51305 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2LJRZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 12:25:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,252,1355097600"; 
+   d="scan'208";a="40446"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>, Huang Ying <ying.huang@intel.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [PATCH v2 2/3] llist: add a safe version of llist_for_each_entry
+Date: Mon, 10 Dec 2012 18:24:49 +0100
+Message-ID: <1355160290-22180-2-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+In-Reply-To: <1355160290-22180-1-git-send-email-roger.pau@citrix.com>
+References: <1355160290-22180-1-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C564ED.9090803@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10, Srivatsa S. Bhat wrote:
->
-> On 12/10/2012 01:52 AM, Oleg Nesterov wrote:
-> > On 12/10, Srivatsa S. Bhat wrote:
-> >>
-> >> On 12/10/2012 12:44 AM, Oleg Nesterov wrote:
-> >>
-> >>> But yes, it is easy to blame somebody else's code ;) And I can't suggest
-> >>> something better at least right now. If I understand correctly, we can not
-> >>> use, say, synchronize_sched() in _cpu_down() path
-> >>
-> >> We can't sleep in that code.. so that's a no-go.
-> >
-> > But we can?
-> >
-> > Note that I meant _cpu_down(), not get_online_cpus_atomic() or take_cpu_down().
-> >
->
-> Maybe I'm missing something, but how would it help if we did a
-> synchronize_sched() so early (in _cpu_down())? Another bunch of preempt_disable()
-> sections could start immediately after our call to synchronize_sched() no?
-> How would we deal with that?
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Huang Ying <ying.huang@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+---
+ include/linux/llist.h |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-Sorry for confusion. Of course synchronize_sched() alone is not enough.
-But we can use it to synchronize with preempt-disabled section and avoid
-the barriers/atomic in the fast-path.
-
-For example,
-
-	bool writer_pending;
-	DEFINE_RWLOCK(writer_rwlock);
-	DEFINE_PER_CPU(int, reader_ctr);
-
-	void get_online_cpus_atomic(void)
-	{
-		preempt_disable();
-	
-		if (likely(!writer_pending) || __this_cpu_read(reader_ctr)) {
-			__this_cpu_inc(reader_ctr);
-			return;
-		}
-
-		read_lock(&writer_rwlock);
-		__this_cpu_inc(reader_ctr);
-		read_unlock(&writer_rwlock);
-	}
-
-	// lacks release semantics, but we don't care
-	void put_online_cpus_atomic(void)
-	{
-		__this_cpu_dec(reader_ctr);
-		preempt_enable();
-	}
-
-Now, _cpu_down() does
-
-	writer_pending = true;
-	synchronize_sched();
-
-before stop_one_cpu(). When synchronize_sched() returns, we know that
-every get_online_cpus_atomic() must see writer_pending == T. And, if
-any CPU incremented its reader_ctr we must see it is not zero.
-
-take_cpu_down() does
-
-	write_lock(&writer_rwlock);
-
-	for_each_online_cpu(cpu) {
-		while (per_cpu(reader_ctr, cpu))
-			cpu_relax();
-	}
-
-and takes the lock.
-
-However. This can lead to the deadlock we already discussed. So
-take_cpu_down() should do
-
- retry:
-	write_lock(&writer_rwlock);
-
-	for_each_online_cpu(cpu) {
-		if (per_cpu(reader_ctr, cpu)) {
-			write_unlock(&writer_rwlock);
-			goto retry;
-		}
-	}
-
-to take the lock. But this is livelockable. However, I do not think it
-is possible to avoid the livelock.
-
-Just in case, the code above is only for illustration, perhaps it is not
-100% correct and perhaps we can do it better. cpu_hotplug.active_writer
-is ignored for simplicity, get/put should check current == active_writer.
-
-Oleg.
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+index a5199f6..f611cd8 100644
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -125,6 +125,33 @@ static inline void init_llist_head(struct llist_head *list)
+ 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
+ 
+ /**
++ * llist_for_each_entry_safe - safely iterate over some deleted entries of
++ *                             lock-less list of given type
++ * @pos:	the type * to use as a loop cursor.
++ * @n:		the &struct llist_node to use as a temporary loop cursor
++ * @node:	the fist entry of deleted list entries.
++ * @member:	the name of the llist_node with the struct.
++ *
++ * In general, some entries of the lock-less list can be traversed
++ * safely only after being removed from list, so start with an entry
++ * instead of list head.
++ *
++ * If being used on entries deleted from lock-less list directly, the
++ * traverse order is from the newest to the oldest added entry.  If
++ * you want to traverse from the oldest to the newest, you must
++ * reverse the order by yourself before traversing.
++ *
++ * n is used to store a reference to the next item llist_node, so
++ * pos can be freed while iterating.
++ */
++#define llist_for_each_entry_safe(pos, n, node, member)		\
++	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
++	     (n) = (pos)->member.next;					\
++	     &(pos)->member != NULL;					\
++	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
++	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
++
++/**
+  * llist_empty - tests whether a lock-less list is empty
+  * @head:	the list to test
+  *
+-- 
+1.7.7.5 (Apple Git-26)
 
