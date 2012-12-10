@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab2LJNoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 08:44:13 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:35729 "EHLO mail.gnudd.com"
+	id S1753149Ab2LJNpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 08:45:54 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:35730 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab2LJNoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751880Ab2LJNoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Dec 2012 08:44:12 -0500
 From: Davide Ciminaghi <ciminaghi@gnudd.com>
 To: jaswinder.singh@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
@@ -15,9 +15,9 @@ To: jaswinder.singh@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         giancarlo.asnaghi@st.com
-Subject: [PATCH v4 2/7] pl080.h: moved from arm/include/asm/hardware to include/linux/amba/
-Date: Mon, 10 Dec 2012 14:42:31 +0100
-Message-Id: <1355146956-6009-3-git-send-email-ciminaghi@gnudd.com>
+Subject: [PATCH v4 6/7] drivers/amba: add support for a PCI bridge
+Date: Mon, 10 Dec 2012 14:42:35 +0100
+Message-Id: <1355146956-6009-7-git-send-email-ciminaghi@gnudd.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
 References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
@@ -27,96 +27,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alessandro Rubini <rubini@gnudd.com>
 
-The header is used by drivers/dma/amba-pl08x.c, which can be compiled
-under x86, where PL080 exists under a PCI-to-AMBA bridge. This patche
-moves it where it can be accessed by other architectures, and fixes
-all users.
+This is a PCI driver that registers AMBA devices for the range of
+supported devices.  It is currently used by STA2X11, which exports
+AMBA peripherals under PCIe.  The original AMBA drivers work with no
+changes or minimal ones.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
 ---
- arch/arm/mach-s3c64xx/dma.c                                   |    2 +-
- arch/arm/mach-spear3xx/spear3xx.c                             |    2 +-
- arch/arm/mach-spear6xx/spear6xx.c                             |    2 +-
- drivers/dma/amba-pl08x.c                                      |    2 +-
- {arch/arm/include/asm/hardware => include/linux/amba}/pl080.h |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
- rename {arch/arm/include/asm/hardware => include/linux/amba}/pl080.h (99%)
+ drivers/Kconfig         |    2 +
+ drivers/amba/Kconfig    |   10 +++++
+ drivers/amba/Makefile   |    1 +
+ drivers/amba/pci-amba.c |   93 +++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 106 insertions(+)
+ create mode 100644 drivers/amba/Kconfig
+ create mode 100644 drivers/amba/pci-amba.c
 
-diff --git a/arch/arm/mach-s3c64xx/dma.c b/arch/arm/mach-s3c64xx/dma.c
-index f2a7a17..a77f521 100644
---- a/arch/arm/mach-s3c64xx/dma.c
-+++ b/arch/arm/mach-s3c64xx/dma.c
-@@ -23,6 +23,7 @@
- #include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <linux/amba/pl080.h>
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index f5fb072..06838d5 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -158,4 +158,6 @@ source "drivers/irqchip/Kconfig"
  
- #include <mach/dma.h>
- #include <mach/map.h>
-@@ -30,7 +31,6 @@
+ source "drivers/ipack/Kconfig"
  
- #include <mach/regs-sys.h>
- 
--#include <asm/hardware/pl080.h>
- 
- /* dma channel state information */
- 
-diff --git a/arch/arm/mach-spear3xx/spear3xx.c b/arch/arm/mach-spear3xx/spear3xx.c
-index 38fe95d..88be9a3 100644
---- a/arch/arm/mach-spear3xx/spear3xx.c
-+++ b/arch/arm/mach-spear3xx/spear3xx.c
-@@ -16,9 +16,9 @@
- #include <linux/amba/pl022.h>
- #include <linux/amba/pl08x.h>
- #include <linux/irqchip/spear-shirq.h>
-+#include <linux/amba/pl080.h>
- #include <linux/of_irq.h>
- #include <linux/io.h>
--#include <asm/hardware/pl080.h>
- #include <asm/hardware/vic.h>
- #include <plat/pl080.h>
- #include <mach/generic.h>
-diff --git a/arch/arm/mach-spear6xx/spear6xx.c b/arch/arm/mach-spear6xx/spear6xx.c
-index 5a5a52d..8ce65a2 100644
---- a/arch/arm/mach-spear6xx/spear6xx.c
-+++ b/arch/arm/mach-spear6xx/spear6xx.c
-@@ -20,7 +20,7 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
--#include <asm/hardware/pl080.h>
-+#include <linux/amba/pl080.h>
- #include <asm/hardware/vic.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/time.h>
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 6eb6a5c..8bad254 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -83,7 +83,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--#include <asm/hardware/pl080.h>
-+#include <linux/amba/pl080.h>
- 
- #include "dmaengine.h"
- #include "virt-dma.h"
-diff --git a/arch/arm/include/asm/hardware/pl080.h b/include/linux/amba/pl080.h
-similarity index 99%
-rename from arch/arm/include/asm/hardware/pl080.h
-rename to include/linux/amba/pl080.h
-index 4eea210..3e7b62f 100644
---- a/arch/arm/include/asm/hardware/pl080.h
-+++ b/include/linux/amba/pl080.h
-@@ -1,4 +1,4 @@
--/* arch/arm/include/asm/hardware/pl080.h
-+/* include/linux/amba/pl080.h
-  *
-  * Copyright 2008 Openmoko, Inc.
-  * Copyright 2008 Simtec Electronics
++source "drivers/amba/Kconfig"
++
+ endmenu
+diff --git a/drivers/amba/Kconfig b/drivers/amba/Kconfig
+new file mode 100644
+index 0000000..b5b5aca
+--- /dev/null
++++ b/drivers/amba/Kconfig
+@@ -0,0 +1,10 @@
++
++config PCI_AMBA
++	tristate "PCI-to-AMBA bridge"
++	depends on ARM_AMBA && PCI
++	---help---
++	  This compiles a PCI driver that registers AMBA devices, so
++	  the respective AMBA driver can be used unchanged if you have
++	  a PCI to amba bridge. This is required for STA2X11 support.
++
++	  If uncertain, choose N.
+diff --git a/drivers/amba/Makefile b/drivers/amba/Makefile
+index 66e81c2..d30e947 100644
+--- a/drivers/amba/Makefile
++++ b/drivers/amba/Makefile
+@@ -1,2 +1,3 @@
+ obj-$(CONFIG_ARM_AMBA)		+= bus.o
++obj-$(CONFIG_PCI_AMBA)		+= pci-amba.o
+ obj-$(CONFIG_TEGRA_AHB)		+= tegra-ahb.o
+diff --git a/drivers/amba/pci-amba.c b/drivers/amba/pci-amba.c
+new file mode 100644
+index 0000000..0b0a240
+--- /dev/null
++++ b/drivers/amba/pci-amba.c
+@@ -0,0 +1,93 @@
++/*
++ * Support for AMBA devices (both APB and AHB) behind a PCI bridge
++ * Copyright 2012 ST Microelectronics (Alessandro Rubini)
++ * GNU GPL version 2.
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/amba/bus.h>
++#include <linux/pci.h>
++#include <linux/pci_ids.h>
++#include <linux/slab.h>
++#include <linux/irq.h>
++#include <linux/sizes.h>
++
++static int __devinit pci_amba_probe(struct pci_dev *pdev,
++				     const struct pci_device_id *id)
++{
++	struct amba_device *adev;
++	char *name;
++	int ret;
++
++	pci_enable_msi(pdev);
++	ret = pci_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	/* Create a name: each of them must be different */
++	name = devm_kzalloc(&pdev->dev, strlen(dev_name(&pdev->dev)) + 6,
++		GFP_KERNEL);
++	sprintf(name, "amba-%s", dev_name(&pdev->dev));
++
++	/* Simply build an amba device and register it */
++	adev = amba_device_alloc(name,  pdev->resource[0].start, SZ_4K);
++	if (!adev)
++		return -ENOMEM;
++	adev->irq[0] = pdev->irq;
++
++	/* This bridge can host both APB and AHB devices, so set master */
++	pci_set_master(pdev);
++	if (pdev->vendor == PCI_VENDOR_ID_STMICRO) {
++		/* Under sta2x11, DMA is there but limited to 512M */
++		adev->dma_mask = SZ_512M - 1;
++		adev->dev.coherent_dma_mask = SZ_512M - 1;
++	}
++
++	adev->dev.platform_data = pdev->dev.platform_data;
++	pci_set_drvdata(pdev, adev);
++
++	return amba_device_add(adev, &pdev->resource[0]);
++};
++
++static void __devexit pci_amba_remove(struct pci_dev *pdev)
++{
++	struct amba_device *adev = pci_get_drvdata(pdev);
++	amba_device_unregister(adev);
++	pci_disable_msi(pdev);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(pci_amba_table) = {
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_UART_HWFC)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_UART_NO_HWFC)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_SOC_DMA)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_I2C)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_SPI_HS)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_SDIO_EMMC)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_SDIO)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_AUDIO_ROUTER_DMA)},
++	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_AUDIO_ROUTER_MSPS)},
++	{0,}
++};
++
++static struct pci_driver pci_amba_driver = {
++	.name		= "pci-amba",
++	.id_table	= pci_amba_table,
++	.probe		= pci_amba_probe,
++	.remove		= __devexit_p(pci_amba_remove),
++};
++
++static int __init pci_amba_init(void)
++{
++	return pci_register_driver(&pci_amba_driver);
++}
++
++static void __exit pci_amba_exit(void)
++{
++	pci_unregister_driver(&pci_amba_driver);
++}
++
++module_init(pci_amba_init);
++module_exit(pci_amba_exit);
++
++MODULE_LICENSE("GPL");
 -- 
 1.7.10.4
 
