@@ -1,113 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab2LJX1Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:27:24 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54479 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2LJX1W (ORCPT
+	id S1751861Ab2LJXbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:31:34 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:44608 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab2LJXbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:27:22 -0500
-Date: Mon, 10 Dec 2012 15:27:08 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Zlatko Calusic <zlatko.calusic@iskon.hr>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-In-Reply-To: <CA+55aFx9XSjtMZNuveyKrxL0LUjmZpFvJ7vzkjaKgQZLCs9QCg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1212101512040.1482@eggly.anvils>
-References: <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org> <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to> <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com> <50C32D32.6040800@iskon.hr>
- <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org> <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org> <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr> <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com>
- <50C6477A.4090005@iskon.hr> <CA+55aFx9XSjtMZNuveyKrxL0LUjmZpFvJ7vzkjaKgQZLCs9QCg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 10 Dec 2012 18:31:33 -0500
+Date: Tue, 11 Dec 2012 00:31:29 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: Matt Porter <mporter@ti.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Linux 3.7 does not boot on OMAP L137 with CONFIG_TI_EDMA=y
+Message-ID: <20121210233129.GA18190@shrek.podlesie.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Dec 2012, Linus Torvalds wrote:
-> [ Adding High Dickins because of the shmem oops. ]
+Hi,
 
-I had already noticed, and was about to reply; but only then refreshed
-my mbox window, to find that you've already done it all for me: thanks.
+commit c2dde5f8f2095d7c623ff3565c1462e190272273
+(dmaengine: add TI EDMA DMA engine driver)
+with new option CONFIG_TI_EDMA=y causes system hang after
+"Uncompressing Linux... done, booting the kernel."
+on OMAP L137.
 
-> 
-> On Mon, Dec 10, 2012 at 12:35 PM, Zlatko Calusic
-> <zlatko.calusic@iskon.hr> wrote:
-> >
-> > And funny thing that you mention i915, because yesterday my daughter managed to lock up our laptop hard (that was a first), and this is what I found in kern.log after restart:
-> >
-> > Dec  9 21:29:42 titan vmunix: general protection fault: 0000 [#1] PREEMPT SMP
-> > Dec  9 21:29:42 titan vmunix: Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) [last unloaded: microcode]
-> > Dec  9 21:29:42 titan vmunix: CPU 2
-> > Dec  9 21:29:42 titan vmunix: Pid: 2523, comm: Xorg Tainted: G           O 3.7.0-rc8 #1 Hewlett-Packard HP Pavilion dv7 Notebook PC/144B
-> > Dec  9 21:29:42 titan vmunix: RIP: 0010:[<ffffffff81090b9c>]  [<ffffffff81090b9c>] find_get_page+0x3c/0x90
-> 
-> Ho humm..
-> 
-> I'm not convinced this is related.
-> 
-> > Dec  9 21:29:42 titan vmunix: Call Trace:
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff81090e21>] find_lock_page+0x21/0x80
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff810a1b60>] shmem_getpage_gfp+0xa0/0x620
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff810a224c>] shmem_read_mapping_page_gfp+0x2c/0x50
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b3611>] i915_gem_object_get_pages_gtt+0xe1/0x270
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b127f>] i915_gem_object_get_pages+0x4f/0x90
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b1383>] i915_gem_object_bind_to_gtt+0xc3/0x4c0
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b4413>] i915_gem_object_pin+0x123/0x190
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b7d97>] i915_gem_execbuffer_reserve_object.isra.13+0x77/0x190
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b8171>] i915_gem_execbuffer_reserve.isra.14+0x2c1/0x320
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b87b2>] i915_gem_do_execbuffer.isra.17+0x5e2/0x11b0
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff812b9894>] i915_gem_execbuffer2+0x94/0x280
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff81287de3>] drm_ioctl+0x493/0x530
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff810d9cbf>] do_vfs_ioctl+0x8f/0x530
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff810da1ab>] sys_ioctl+0x4b/0x90
-> > Dec  9 21:29:42 titan vmunix:  [<ffffffff8154a4d2>] system_call_fastpath+0x16/0x1b
-> >
-> > It seems that whenever (if ever?) GFP_NO_KSWAPD removal is attempted again, the i915 driver will need to be taken better care of.
-> 
-> That decodes to
-> 
->   11: e8 89 b7 15 00       callq  0x15b79f  # radix_tree_lookup_slot
->   16: 48 85 c0             test   %rax,%rax
->   19: 48 89 c6             mov    %rax,%rsi
->   1c: 74 41                 je     0x5f
->   1e: 48 8b 18             mov    (%rax),%rbx  #
->   21: 48 85 db             test   %rbx,%rbx
->   24: 74 1f                 je     0x45
->   26: f6 c3 03             test   $0x3,%bl
->   29: 75 3c                 jne    0x67
->   2b:* 8b 53 1c             mov    0x1c(%rbx),%edx     <-- trapping instruction
->   2e: 85 d2                 test   %edx,%edx
->   30: 74 d9                 je     0xb
-> 
-> where %rbx is 0x0200000000000000. That looks like it could be a
-> single-bit error, and should have been zero.
-> 
-> It's the "atomic_read(&page->counter)" which is part of
-> "page_cache_get_speculative()" as far as I can tell, and it's the
-> "page" pointer that is that odd (non-pointer) value. The fact that
-> %ecx contains the value "-6" makes me wonder if there was a -ENXIO
-> somewhere, though.
+The same problem still exists in current v3.7-rc8-41-gcaf4919.
 
-Yes, just what I was about to say; except I never considered the -6.
+This causes some regressions, for instance the converted to new DMA engine
+SPI driver does not work without CONFIG_TI_EDMA=y:
 
-I was going to suggest it's a new notebook with not-so-good memory,
-but see that Borislav has since made a better suggestion.
+spi_davinci spi_davinci.0: Runtime PM disabled, clock forced on.
+spi_davinci spi_davinci.0: request RX DMA channel failed
+Trying to free nonexistent resource <0000000001c41000-0000000001c41000>
 
-> 
-> None of it looks all that much related to whether the i915 driver uses
-> GFP_NO_KSWAPD or not, though.
+By the way:
 
-Yes, no evidence here of anything to delay 3.7 further.
+1. It's possible to compile davinci SPI driver with
+CONFIG_DMADEVICES=n (and CONFIG_TI_EMDA=n), but it does work
+in that configuration (see error above).
 
-I'm running on current git, and no problems observed; but then, I never
-did see any of these kswapd problems anyway.  And, in particular, I was
-unable to reproduce Zlatko's 1GB of 4GB kept free (on yesterday's tree,
-with no swap) - I saw about 100MB kept free.
+2. The "Trying to free nonexistent resource" seems to indicate some
+other error in SPI driver cleanup after error code.
 
-Hugh
+
+Krzysiek
