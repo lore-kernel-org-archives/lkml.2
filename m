@@ -1,69 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2LJKSW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:18:22 -0500
-Received: from gmmr2.centrum.cz ([46.255.227.252]:56012 "EHLO gmmr2.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab2LJKSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:18:21 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
-Date: Mon, 10 Dec 2012 11:18:17 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20121130160811.6BB25BDD@pobox.sk>, <20121130153942.GL29317@dhcp22.suse.cz>, <20121130165937.F9564EBE@pobox.sk>, <20121130161923.GN29317@dhcp22.suse.cz>, <20121203151601.GA17093@dhcp22.suse.cz>, <20121205023644.18C3006B@pobox.sk>, <20121205141722.GA9714@dhcp22.suse.cz>, <20121206012924.FE077FD7@pobox.sk>, <20121206095423.GB10931@dhcp22.suse.cz>, <20121210022038.E6570D37@pobox.sk> <20121210094318.GA6777@dhcp22.suse.cz>
-In-Reply-To: <20121210094318.GA6777@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1754399Ab2LJKSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:18:51 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47296 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab2LJKSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:18:49 -0500
 MIME-Version: 1.0
-Message-Id: <20121210111817.F697F53E@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1355129761-8088-12-git-send-email-lee.jones@linaro.org>
+References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
+	<1355129761-8088-12-git-send-email-lee.jones@linaro.org>
+Date: Mon, 10 Dec 2012 11:18:48 +0100
+Message-ID: <CAPDyKFo8NjiYdcyx3pk8byc1N2f7r+erQj74A1zhOaNK_WbkZA@mail.gmail.com>
+Subject: Re: [PATCH 11/12] ARM: ux500: Use the GPIO regulator framework for
+ SDI0's 'en' and 'vsel'
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Hmm, this is _really_ surprising. The latest patch didn't add any new
->logging actually. It just enahanced messages which were already printed
->out previously + changed few functions to be not inlined so they show up
->in the traces. So the only explanation is that the workload has changed
->or the patches got misapplied.
-
-
-This time i installed 3.2.35, maybe some changes between .34 and .35 did this? Should i try .34?
-
-
->> Dec 10 02:03:29 server01 kernel: [  220.366486] grsec: From 141.105.120.152: bruteforce prevention initiated for the next 30 minutes or until service restarted, stalling each fork 30 seconds.  Please investigate the crash report for /usr/lib/apache2/mpm-itk/apache2[apache2:3586] uid/euid:1258/1258 gid/egid:100/100, parent /usr/lib/apache2/mpm-itk/apache2[apache2:2142] uid/euid:0/0 gid/egid:0/0
+On 10 December 2012 09:56, Lee Jones <lee.jones@linaro.org> wrote:
+> To prevent lots of unnecessary call-backs into platform code, we're
+> now using the GPIO regulator framework to control the 'enable' (en)
+> and 'voltage select' (vsel) GPIO pins which in turn control the
+> MMCI's secondary regulator settings. This already works with Device
+> Tree, but when booting with ATAGs we need to register it as a
+> platform device.
 >
->This explains why you have seen your machine hung. I am not familiar
->with grsec but stalling each fork 30s sounds really bad.
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/mach-ux500/board-mop500.c |   61 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 61 insertions(+)
+>
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index daa4237..9f9fe7f 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -24,6 +24,8 @@
+>  #include <linux/mfd/abx500/ab8500.h>
+>  #include <linux/regulator/ab8500.h>
+>  #include <linux/regulator/fixed.h>
+> +#include <linux/regulator/driver.h>
+> +#include <linux/regulator/gpio-regulator.h>
+>  #include <linux/mfd/tc3589x.h>
+>  #include <linux/mfd/tps6105x.h>
+>  #include <linux/mfd/abx500/ab8500-gpio.h>
+> @@ -91,6 +93,54 @@ static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
+>         },
+>  };
+>
+> +static struct regulator_consumer_supply sdi0_reg_consumers[] = {
+> +        REGULATOR_SUPPLY("vqmmc", NULL),
+
+REGULATOR_SUPPLY("vqmmc", "sdi0"),
+
+> +};
+> +
+> +static struct regulator_init_data sdi0_reg_init_data = {
+
+The levelshifter uses the ab8500-ext-supply3. Reflect that here.
+
+.supply_regulator = "ab8500-ext-supply3"
 
 
-Btw, i never ever saw such a message from grsecurity yet. Will write to grsec mailing list about explanation.
+> +        .constraints = {
+> +                .min_uV         = 1800000,
 
+2.9V, not 3.3V
 
->Anyway this will not help me much. Do you happen to still have any of
->those logged traces from the last run?
+> +                .max_uV         = 3300000,
+> +                .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|REGULATOR_CHANGE_STATUS,
+> +        },
+> +        .num_consumer_supplies  = ARRAY_SIZE(sdi0_reg_consumers),
+> +        .consumer_supplies      = sdi0_reg_consumers,
+> +};
+> +
+> +/* Dynamically populated. */
+> +static struct gpio sdi0_reg_gpios[] = {
+> +        { 0, GPIOF_OUT_INIT_LOW, "mmci_vsel" },
+> +};
+> +
+> +static struct gpio_regulator_state sdi0_reg_states[] = {
+> +        { .value = 3300000, .gpios = (0 << 0) },
 
+2.9V, not 3.3V
 
-Unfortunately not, it didn't log anything and tons of messages were printed only to console (i was logged via IP-KVM). It looked that printing is infinite, i rebooted it after few minutes.
+> +        { .value = 1800000, .gpios = (1 << 0) },
+> +};
+> +
+> +static struct gpio_regulator_config sdi0_reg_info = {
+> +        .supply_name = "mmci-reg",
+> +
+> +        .enable_high = 1,
+> +        .enabled_at_boot = 0,
+> +
+> +        .gpios = sdi0_reg_gpios,
+> +        .nr_gpios = ARRAY_SIZE(sdi0_reg_gpios),
+> +
+> +        .states = sdi0_reg_states,
+> +        .nr_states = ARRAY_SIZE(sdi0_reg_states),
+> +
+> +        .type = REGULATOR_VOLTAGE,
+> +        .init_data = &sdi0_reg_init_data,
+> +};
+> +
+> +static struct platform_device sdi0_regulator = {
+> +        .name = "gpio-regulator",
+> +        .id   = -1,
+> +        .dev  = {
+> +                .platform_data = &sdi0_reg_info,
+> +        },
+> +};
+> +
+>  static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
+>         .gpio_base              = MOP500_AB8500_PIN_GPIO(1),
+>         .irq_base               = MOP500_AB8500_VIR_GPIO_IRQ_BASE,
+> @@ -440,6 +490,7 @@ static struct hash_platform_data u8500_hash1_platform_data = {
+>  /* add any platform devices here - TODO */
+>  static struct platform_device *mop500_platform_devs[] __initdata = {
+>         &mop500_gpio_keys_device,
+> +       &sdi0_regulator,
+>  };
+>
+>  #ifdef CONFIG_STE_DMA40
+> @@ -581,6 +632,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
+>         &snowball_key_dev,
+>         &snowball_sbnet_dev,
+>         &snowball_gpio_en_3v3_regulator_dev,
+> +       &sdi0_regulator,
+>  };
+>
+>  static void __init mop500_init_machine(void)
+> @@ -591,6 +643,9 @@ static void __init mop500_init_machine(void)
+>
+>         mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
+>
+> +       sdi0_reg_info.enable_gpio = GPIO_SDMMC_EN;
+> +       sdi0_reg_info.gpios[0].gpio = GPIO_SDMMC_1V8_3V_SEL;
+> +
+>         mop500_pinmaps_init();
+>         parent = u8500_init_devices(&ab8500_platdata);
+>
+> @@ -623,6 +678,9 @@ static void __init snowball_init_machine(void)
+>         struct device *parent = NULL;
+>         int i;
+>
+> +       sdi0_reg_info.enable_gpio = SNOWBALL_SDMMC_EN_GPIO;
+> +       sdi0_reg_info.gpios[0].gpio = SNOWBALL_SDMMC_1V8_3V_GPIO;
+> +
+>         snowball_pinmaps_init();
+>         parent = u8500_init_devices(&ab8500_platdata);
+>
+> @@ -655,6 +713,9 @@ static void __init hrefv60_init_machine(void)
+>          */
+>         mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
+>
+> +       sdi0_reg_info.enable_gpio = HREFV60_SDMMC_EN_GPIO;
+> +       sdi0_reg_info.gpios[0].gpio = HREFV60_SDMMC_1V8_3V_GPIO;
+> +
+>         hrefv60_pinmaps_init();
+>         parent = u8500_init_devices(&ab8500_platdata);
+>
+> --
+> 1.7.9.5
+>
 
+Finally, I suppose regulator inits i located in
+board-mop500-regulators.c, so I would suggest to move most of this
+code in there instead.
 
->Apart from that. If my current understanding is correct then this is
->related to transparent huge pages (and leaking charge to the page fault
->handler). Do you see the same problem if you disable THP before you
->start your workload? (echo never > /sys/kernel/mm/transparent_hugepage/enabled)
-
-# cat /sys/kernel/mm/transparent_hugepage/enabled
-cat: /sys/kernel/mm/transparent_hugepage/enabled: No such file or directory
-
-# ls -la /sys/kernel/mm                             
-total 0
-drwx------ 3 root root 0 Dec 10 11:11 .
-drwx------ 5 root root 0 Dec 10 02:06 ..
-drwx------ 2 root root 0 Dec 10 11:11 cleancache
+Kind regards
+Ulf Hansson
