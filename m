@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab2LJF2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:28:13 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40167 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab2LJF2L convert rfc822-to-8bit (ORCPT
+	id S1752038Ab2LJFep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 00:34:45 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37794 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2LJFeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:28:11 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>, Bryan Wu <cooloney@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 4/4] MAINTAINERS: add LP8788 MFD driver entry
-Thread-Topic: [PATCH 4/4] MAINTAINERS: add LP8788 MFD driver entry
-Thread-Index: Ac3Wlxtu5fUVXpTAT86WxVl080nt+w==
-Date: Mon, 10 Dec 2012 05:27:55 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0581F@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Dec 2012 00:34:44 -0500
 MIME-Version: 1.0
+In-Reply-To: <2097693.II1PNyeFLY@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+	<2097693.II1PNyeFLY@vostro.rjw.lan>
+Date: Sun, 9 Dec 2012 21:34:42 -0800
+X-Google-Sender-Auth: cSmxS72EZyhs1zOghCYzycbMjM0
+Message-ID: <CAE9FiQWxoWubagm4gj81YgMeqyEZgpT47ROAfjmXSmoaTn-Yig@mail.gmail.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Anton Vorontsov <cbou@mail.ru>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- MAINTAINERS |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+On Sun, Dec 9, 2012 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Notice that one member of struct acpi_bus_ops, acpi_op_add, is not
+> used anywhere any more and the relationship between its remaining
+> members, acpi_op_match and acpi_op_start, is such that it doesn't
+> make sense to set the latter without setting the former at the same
+> time.  Therefore, replace struct acpi_bus_ops with new a enum type,
+> enum acpi_bus_add_type, with three values, ACPI_BUS_ADD_BASIC,
+> ACPI_BUS_ADD_MATCH, ACPI_BUS_ADD_START, corresponding to
+> both acpi_op_match and acpi_op_start unset, acpi_op_match set and
+> acpi_op_start unset, and both acpi_op_match and acpi_op_start set,
+> respectively.
+>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ee7e9ee..9339a4b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7570,6 +7570,16 @@ S:	Maintained
- F:	drivers/regulator/lp872x.c
- F:	include/linux/regulator/lp872x.h
- 
-+TI LP8788 MFD DRIVER
-+M:	Milo Kim <milo.kim@ti.com>
-+S:	Maintained
-+F:	drivers/iio/adc/lp8788_adc.c
-+F:	drivers/leds/leds-lp8788.c
-+F:	drivers/mfd/lp8788*.c
-+F:	drivers/power/lp8788-charger.c
-+F:	drivers/regulator/lp8788-*.c
-+F:	include/linux/mfd/lp8788*.h
-+
- TI TWL4030 SERIES SOC CODEC DRIVER
- M:	Peter Ujfalusi <peter.ujfalusi@ti.com>
- L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
--- 
-1.7.9.5
+Can we expand the BUS_ADD_* concept to other devices instead of just
+acpi_device?
 
-
-Best Regards,
-Milo
-
-
+aka we should let struct device has this add_type field.
