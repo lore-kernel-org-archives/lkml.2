@@ -1,177 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2LJHmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 02:42:24 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:50878 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2LJHmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 02:42:22 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-dev@lists.linaro.org, nicolas.pitre@linaro.org,
-        amit.kucheria@linaro.org, mathieu.poirier@linaro.org,
-        vishal.bhoj@linaro.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC] cpufreq: Fix issues with hot-[un]plugging of cpus
-Date: Mon, 10 Dec 2012 13:12:13 +0530
-Message-Id: <a9eb1507f44fb6ff81019cf6ed183ad01f00c107.1355122749.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 10 Dec 2012 07:42:18.0050 (UTC) FILETIME=[E1400A20:01CDD6A9]
-X-MC-Unique: 112121007422001401
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1752513Ab2LJHmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 02:42:35 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:18972 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905Ab2LJHma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 02:42:30 -0500
+Subject: [PATCH 6/6] fuse: optimize short direct reads
+To: miklos@szeredi.hu
+From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 10 Dec 2012 11:42:28 +0400
+Message-ID: <20121210074223.12240.85026.stgit@maximpc.sw.ru>
+In-Reply-To: <20121210073848.12240.88144.stgit@maximpc.sw.ru>
+References: <20121210073848.12240.88144.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qBA7gVq1003721
 
-Hi Rafael and other cpufreq masters,
+If user requested direct read beyond EOF, we can skip sending fuse requests
+for positions beyond EOF because userspace would ACK them with zero bytes read
+anyway. We can trust to i_size in fuse_direct_IO for such cases because it's
+called from fuse_file_aio_read() and the latter updates fuse attributes
+including i_size.
 
-I am really not sure if this patch is a HACK or a valid solution :)
-Please have a look.
-
-Setup:
------
-- ARM big LITTLE Platform with 5 cpus. cpus 2, 3 & 4 share clock and hence are
-  part of policy->cpus. cpus 0 & 1 share clock but they aren't discussed here.
-- Interactive governor: I know its not mainlined and will never be. Problem
-  should be same with all the governors we have. So, problem is not really
-  governor dependent. I have added few prints at start/stop cases of governor,
-  to see what policy->cpus is set to.
-
-Problem Statement:
------------------
-There are many issues :(
-
-1) I couldn't understand what we really want the value of policy->cpus be? Only
-   the online cpus sharing clock? or all the possible cpus sharing clock?
-
-   When we offline a cpu, we remove it from cpus field: cpumask_clear_cpu(cpu, data->cpus);
-   
-   Which shows that it is mask of online cpus only. But there are many places
-   checking if a cpu is online or not (cpu in policy->cpus) in cpufreq.c. Which
-   shows something else.
-
-2) Kernel crashes when hot-unplugging cpus
-
-   When we do: for i in 2 3 4; do echo 0 > /sys/devices/system/cpu/cpu$i/online; done
-   We get:
-
-   cpufreq_governor_interactive: CPUFREQ_GOV_STOP cpu 2 policy->cpus 2-4
-   cpufreq_vexpress: CPUFreq for CPU 3 initialized
-   cpufreq_governor_interactive: CPUFREQ_GOV_START cpu 3 policy->cpus 2-4
-   CPU2: shutdown
-   cpufreq_governor_interactive: CPUFREQ_GOV_STOP cpu 3 policy->cpus 3-4
-   cpufreq_vexpress: CPUFreq for CPU 4 initialized
-   cpufreq_governor_interactive: CPUFREQ_GOV_START cpu 4 policy->cpus 2-4
-
-   And then crash from interactive governor.
-
-   Note the following lines:
-   ------------------------
-   cpufreq_governor_interactive: CPUFREQ_GOV_STOP cpu 2 policy->cpus 2-4
-   cpufreq_governor_interactive: CPUFREQ_GOV_START cpu 3 policy->cpus 2-4
-   cpufreq_governor_interactive: CPUFREQ_GOV_STOP cpu 3 policy->cpus 3-4
-   cpufreq_governor_interactive: CPUFREQ_GOV_START cpu 4 policy->cpus 2-4
-   
-   So the governor is always started for CPUs 2 through 4 despite the fact
-   that CPU 2 is removed. This makes the governor unstable due to wrong info
-   passed.
-
-   FIX: keep only online cpus in policy->cpus
-   ---
-
-3) With above issue solved, i tried to run the same stuff again and look what i
-   got:
-
-   cpufreq_governor_interactive: CPUFREQ_GOV_STOP cpu 2 policy->cpus 2-4
-   cpufreq_vexpress: CPUFreq for CPU 3 initialized
-   cpufreq_governor_interactive: CPUFREQ_GOV_START cpu 3 policy->cpus 2-4
-   CPU2: shutdown
-
-a) Because cpu 2 is still not completely hot unplugged and is still present in
-   cpu_online_mask.
-b) If we try to remove cpu 3, governor wouldn't be notified of it, because cpu 3
-   wasn't policy->cpu.
-
-   FIX: Stop/Start governor on every non policy->cpu removal
-   ---
-
-4) Hot unplug is fine now, but not hotplug :(
-   for i in 2 3 4; do echo 1 > /sys/devices/system/cpu/cpu$i/online; done
-
-   CPU2: Booted secondary processor
-   cpufreq_vexpress: CPUFreq for CPU 2 initialized
-   cpufreq_governor_interactive: CPUFREQ_GOV_START cpu 2 policy->cpus 2
-   CPU3: Booted secondary processor
-   cpufreq_vexpress: CPUFreq for CPU 3 initialized
-   CPU4: Booted secondary processor
-   cpufreq_vexpress: CPUFreq for CPU 4 initialized
-
-   Hmmm, Governor is not informed about 3 and 4. :(
-
-   FIX: Stop/Start governor on every managed_policy cpu, i.e. cpu for which
-   ---  policy struct exists
-
-
-Please share your comments, i know there would be many :)
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
- drivers/cpufreq/cpufreq.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ fs/fuse/file.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 0c3e29a..69bd739 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -749,11 +749,16 @@ static int cpufreq_add_dev_policy(unsigned int cpu,
- 				return -EBUSY;
- 			}
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 3e0fdb7..d2094e1 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1324,7 +1324,7 @@ EXPORT_SYMBOL_GPL(fuse_direct_io);
  
-+			__cpufreq_governor(managed_policy, CPUFREQ_GOV_STOP);
-+
- 			spin_lock_irqsave(&cpufreq_driver_lock, flags);
- 			cpumask_copy(managed_policy->cpus, policy->cpus);
- 			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
- 			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ static ssize_t __fuse_direct_read(struct file *file, const struct iovec *iov,
+ 				  unsigned long nr_segs, loff_t *ppos,
+-				  struct kiocb *async)
++				  struct kiocb *async, size_t count)
+ {
+ 	ssize_t res;
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+@@ -1332,8 +1332,7 @@ static ssize_t __fuse_direct_read(struct file *file, const struct iovec *iov,
+ 	if (is_bad_inode(inode))
+ 		return -EIO;
  
-+			__cpufreq_governor(managed_policy, CPUFREQ_GOV_START);
-+			__cpufreq_governor(managed_policy, CPUFREQ_GOV_LIMITS);
-+
- 			pr_debug("CPU already managed, adding link\n");
- 			ret = sysfs_create_link(&dev->kobj,
- 						&managed_policy->kobj,
-@@ -968,6 +973,13 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		pr_debug("initialization failed\n");
- 		goto err_unlock_policy;
- 	}
-+
-+	/*
-+	 * affected cpus must always be the one, which are online. We aren't
-+	 * managing offline cpus here.
-+	 */
-+	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
-+
- 	policy->user_policy.min = policy->min;
- 	policy->user_policy.max = policy->max;
+-	res = fuse_direct_io(file, iov, nr_segs, iov_length(iov, nr_segs),
+-			     ppos, 0, async);
++	res = fuse_direct_io(file, iov, nr_segs, count, ppos, 0, async);
  
-@@ -1057,8 +1069,13 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
- 	 */
- 	if (unlikely(cpu != data->cpu)) {
- 		pr_debug("removing link\n");
-+		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
- 		cpumask_clear_cpu(cpu, data->cpus);
- 		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 	fuse_invalidate_attr(inode);
+ 
+@@ -1344,7 +1343,7 @@ static ssize_t fuse_direct_read(struct file *file, char __user *buf,
+ 				     size_t count, loff_t *ppos)
+ {
+ 	struct iovec iov = { .iov_base = buf, .iov_len = count };
+-	return __fuse_direct_read(file, &iov, 1, ppos, NULL);
++	return __fuse_direct_read(file, &iov, 1, ppos, NULL, count);
+ }
+ 
+ static ssize_t __fuse_direct_write(struct file *file, const struct iovec *iov,
+@@ -2405,8 +2404,15 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	inode = file->f_mapping->host;
+ 	i_size = i_size_read(inode);
+ 
++	/* optimization for short read */
++	if (rw != WRITE && offset + count > i_size) {
++		if (offset >= i_size)
++			return 0;
++		count = i_size - offset;
++	}
 +
-+		__cpufreq_governor(data, CPUFREQ_GOV_START);
-+		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
-+
- 		kobj = &dev->kobj;
- 		cpufreq_cpu_put(data);
- 		unlock_policy_rwsem_write(cpu);
--- 
-1.7.12.rc2.18.g61b472e
-
+ 	/* cannot write beyond eof asynchronously */
+-	if (is_sync_kiocb(iocb) || (offset + count <= i_size) || rw != WRITE) {
++	if (is_sync_kiocb(iocb) || (offset + count <= i_size)) {
+ 		struct fuse_io_priv *io;
+ 
+ 		io = kmalloc(sizeof(struct fuse_io_priv), GFP_KERNEL);
+@@ -2429,7 +2435,8 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 	if (rw == WRITE)
+ 		ret = __fuse_direct_write(file, iov, nr_segs, &pos, async_cb);
+ 	else
+-		ret = __fuse_direct_read(file, iov, nr_segs, &pos, async_cb);
++		ret = __fuse_direct_read(file, iov, nr_segs, &pos, async_cb,
++					 count);
+ 
+ 	if (async_cb) {
+ 		fuse_aio_complete(async_cb->private, ret == count ? 0 : -EIO,
 
