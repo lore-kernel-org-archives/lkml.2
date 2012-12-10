@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab2LJV3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:29:04 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:37903 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab2LJV3B (ORCPT
+	id S1752500Ab2LJV3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:29:19 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:51442 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab2LJV3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:29:01 -0500
-Date: Tue, 11 Dec 2012 08:28:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Missing tags in my local stable git repo
-Message-Id: <20121211082852.5e89e840a8a79c503dcb0763@canb.auug.org.au>
-In-Reply-To: <CA+55aFzvTrrM_t_K3W5s32p610MS0PuTrUUhFKaB5tGPmsW73g@mail.gmail.com>
-References: <1355160900.17101.229.camel@gandalf.local.home>
-	<1355165264.17101.233.camel@gandalf.local.home>
-	<20121210190247.GA32119@kroah.com>
-	<1355166920.17101.239.camel@gandalf.local.home>
-	<CA+55aFzvTrrM_t_K3W5s32p610MS0PuTrUUhFKaB5tGPmsW73g@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Dec_2012_08_28_52_+1100_hQBN=J9=6VXO1y2i"
+	Mon, 10 Dec 2012 16:29:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <50C6477A.4090005@iskon.hr>
+References: <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org>
+ <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to>
+ <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
+ <50C32D32.6040800@iskon.hr> <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
+ <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org>
+ <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr>
+ <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com> <50C6477A.4090005@iskon.hr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 10 Dec 2012 13:28:54 -0800
+X-Google-Sender-Auth: 8geiB2xDeKHNxstHXxYo6y_NFZ4
+Message-ID: <CA+55aFx9XSjtMZNuveyKrxL0LUjmZpFvJ7vzkjaKgQZLCs9QCg@mail.gmail.com>
+Subject: Re: kswapd craziness in 3.7
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Dec_2012_08_28_52_+1100_hQBN=J9=6VXO1y2i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ Adding High Dickins because of the shmem oops. ]
 
-Hi Linus,
-
-On Mon, 10 Dec 2012 11:30:55 -0800 Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
+On Mon, Dec 10, 2012 at 12:35 PM, Zlatko Calusic
+<zlatko.calusic@iskon.hr> wrote:
 >
-> Moral of the story: be *very* careful when using alternates. Only ever
-> point the alternate file at a *real* repository (not another one with
-> alternates), and only one that never has references removed.
+> And funny thing that you mention i915, because yesterday my daughter managed to lock up our laptop hard (that was a first), and this is what I found in kern.log after restart:
+>
+> Dec  9 21:29:42 titan vmunix: general protection fault: 0000 [#1] PREEMPT SMP
+> Dec  9 21:29:42 titan vmunix: Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) [last unloaded: microcode]
+> Dec  9 21:29:42 titan vmunix: CPU 2
+> Dec  9 21:29:42 titan vmunix: Pid: 2523, comm: Xorg Tainted: G           O 3.7.0-rc8 #1 Hewlett-Packard HP Pavilion dv7 Notebook PC/144B
+> Dec  9 21:29:42 titan vmunix: RIP: 0010:[<ffffffff81090b9c>]  [<ffffffff81090b9c>] find_get_page+0x3c/0x90
 
-Does that mean your tree could now be a problem, since you have recently
-added and then removed a branch (some of whose commits were not eventually
-committed to your master branch, I think)?
+Ho humm..
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'm not convinced this is related.
 
---Signature=_Tue__11_Dec_2012_08_28_52_+1100_hQBN=J9=6VXO1y2i
-Content-Type: application/pgp-signature
+> Dec  9 21:29:42 titan vmunix: Call Trace:
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff81090e21>] find_lock_page+0x21/0x80
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff810a1b60>] shmem_getpage_gfp+0xa0/0x620
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff810a224c>] shmem_read_mapping_page_gfp+0x2c/0x50
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b3611>] i915_gem_object_get_pages_gtt+0xe1/0x270
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b127f>] i915_gem_object_get_pages+0x4f/0x90
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b1383>] i915_gem_object_bind_to_gtt+0xc3/0x4c0
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b4413>] i915_gem_object_pin+0x123/0x190
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b7d97>] i915_gem_execbuffer_reserve_object.isra.13+0x77/0x190
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b8171>] i915_gem_execbuffer_reserve.isra.14+0x2c1/0x320
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b87b2>] i915_gem_do_execbuffer.isra.17+0x5e2/0x11b0
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b9894>] i915_gem_execbuffer2+0x94/0x280
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff81287de3>] drm_ioctl+0x493/0x530
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff810d9cbf>] do_vfs_ioctl+0x8f/0x530
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff810da1ab>] sys_ioctl+0x4b/0x90
+> Dec  9 21:29:42 titan vmunix:  [<ffffffff8154a4d2>] system_call_fastpath+0x16/0x1b
+>
+> It seems that whenever (if ever?) GFP_NO_KSWAPD removal is attempted again, the i915 driver will need to be taken better care of.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+That decodes to
 
-iQIcBAEBCAAGBQJQxlQUAAoJEECxmPOUX5FETIEQAJJ/bvQFgcrEZ0Hrjlhwg8r2
-myWEbM+7+/2caGKMju3NP8rloz6jd/wHfE4iG4cHeXwLo6jE2k4vWVEe4CFgFHOU
-DOEW+DV0s5XMWdc9ZuseZeWo5b+wnDkl3T68kmdieUOoDndE0opSAAdmzXSWRj/x
-tCxbM4i99iMVAxIDz3ykqHVU4Vwwl6DxQ1bjEVvcz9f37DHZPCgIzWg5qQbgYqSa
-gfOQjYUlgm4QZ0c9jtLr8gyDcJdRgQ6I8SIRFp0DfJsSjcoo8lpCmth01jug6H/E
-JCzf+J40N0Iz84CvOT4hMC/0doVgK4mW5IhD4yHkEZhcJJHROaslEfqPjKYjhjER
-vFVlZNP4l72hpNdGt4KJfkEueiUHojVV7hPmD3oI0eK7OMtkCiKUrXx3jzxWshtm
-rsMNSZ5qPoo/pZuNYF3z1AAFv95FqLbA87sO3q+zBPvurHt9D2+TYIsCX9iyzonJ
-vHyzJmeNE6TjSyKmtEZaLDQJm5w4SUMkl7QeYrU2hbt6CyRdHlEPR4ChOxx403qt
-7egsA1foqD6yZm5125xDIp2JiXlEEX+sb8e9dWJANXq71IsFjY1whLUwUyzqmApO
-TXB21ZvUbS5BaaY/lErU7ipT25IIVuc10LrQUkj+m4k/H1C0VBecnxDWuvCOMyqf
-HvBGuNmkS5ThYd3hKo3h
-=WtsN
------END PGP SIGNATURE-----
+  11: e8 89 b7 15 00       callq  0x15b79f  # radix_tree_lookup_slot
+  16: 48 85 c0             test   %rax,%rax
+  19: 48 89 c6             mov    %rax,%rsi
+  1c: 74 41                 je     0x5f
+  1e: 48 8b 18             mov    (%rax),%rbx  #
+  21: 48 85 db             test   %rbx,%rbx
+  24: 74 1f                 je     0x45
+  26: f6 c3 03             test   $0x3,%bl
+  29: 75 3c                 jne    0x67
+  2b:* 8b 53 1c             mov    0x1c(%rbx),%edx     <-- trapping instruction
+  2e: 85 d2                 test   %edx,%edx
+  30: 74 d9                 je     0xb
 
---Signature=_Tue__11_Dec_2012_08_28_52_+1100_hQBN=J9=6VXO1y2i--
+where %rbx is 0x0200000000000000. That looks like it could be a
+single-bit error, and should have been zero.
+
+It's the "atomic_read(&page->counter)" which is part of
+"page_cache_get_speculative()" as far as I can tell, and it's the
+"page" pointer that is that odd (non-pointer) value. The fact that
+%ecx contains the value "-6" makes me wonder if there was a -ENXIO
+somewhere, though.
+
+None of it looks all that much related to whether the i915 driver uses
+GFP_NO_KSWAPD or not, though.
+
+                Linus
