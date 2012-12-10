@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab2LJN1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 08:27:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53094 "EHLO mx2.suse.de"
+	id S1752158Ab2LJN3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 08:29:09 -0500
+Received: from ns.iliad.fr ([212.27.33.1]:60356 "EHLO ns.iliad.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab2LJN1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 08:27:52 -0500
-From: Petr Uzel <petr.uzel@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com> (maintainer:SCSI
-	SUBSYSTEM),
-        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
-Subject: [PATCH] [SCSI] Remove reference to dropped scsi_wait_scan module
-Date: Mon, 10 Dec 2012 14:26:47 +0100
-Message-Id: <1355146007-20138-1-git-send-email-petr.uzel@suse.cz>
-X-Mailer: git-send-email 1.7.7
+	id S1751708Ab2LJN3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 08:29:07 -0500
+X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Dec 2012 08:29:07 EST
+Message-ID: <50C5E143.4070306@freebox.fr>
+Date: Mon, 10 Dec 2012 14:18:59 +0100
+From: Nicolas Schichan <nschichan@freebox.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Mircea Gherzan <mgherzan@gmail.com>
+CC: rmk+kernel@arm.linux.org.uk, Russell King <linux@arm.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: net: bpf_jit_32: fix kzalloc gfp/size mismatch.
+References: <1354804718-1662-1-git-send-email-nschichan@freebox.fr> <50C2760A.9070406@gmail.com>
+In-Reply-To: <50C2760A.9070406@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scsi_wait_scan module has been dropped by commit 6072609d9bb91ff54aee.
-Don't reference it in Kconfig.
+On 12/08/2012 12:04 AM, Mircea Gherzan wrote:
+> Am 06.12.2012 15:38, schrieb Nicolas Schichan:
+[...]
+> Acked-by: Mircea Gherzan<mgherzan@gmail.com>
 
-Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
----
- drivers/scsi/Kconfig |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+Hi,
 
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index 74bf1aa..a392ca4 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -255,10 +255,9 @@ config SCSI_SCAN_ASYNC
- 
- 	  If you have built SCSI as modules, enabling this option can
- 	  be a problem as the devices may not have been found by the
--	  time your system expects them to have been.  You can load the
--	  scsi_wait_scan module to ensure that all scans have completed.
--	  If you build your SCSI drivers into the kernel, then everything
--	  will work fine if you say Y here.
-+	  time your system expects them to have been.  If you build your 
-+	  SCSI drivers into the kernel, then everything will work fine 
-+	  if you say Y here.
- 
- 	  You can override this choice by specifying "scsi_mod.scan=sync"
- 	  or async on the kernel's command line.
+Thanks for acking those two patches.
+
+Shall I send them to the patch system now ?
+
+Regards,
+
 -- 
-1.7.7
-
+Nicolas Schichan
+Freebox SAS
