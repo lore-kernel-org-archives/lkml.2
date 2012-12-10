@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab2LJJS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:18:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38673 "EHLO relay.sw.ru"
+	id S1754099Ab2LJJTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:19:07 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:5218 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753319Ab2LJJSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:55 -0500
-Subject: [PATCH 6/7] nfsd: pass net to nfsd_set_nrthreads()
+	id S1753319Ab2LJJTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:19:02 -0500
+Subject: [PATCH 7/7] nfsd: pass net to __write_ports() and down
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 10 Dec 2012 12:19:30 +0300
-Message-ID: <20121210091930.8855.96738.stgit@localhost.localdomain>
+Date: Mon, 10 Dec 2012 12:19:35 +0300
+Message-ID: <20121210091935.8855.16169.stgit@localhost.localdomain>
 In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
 References: <20121210091832.8855.26672.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -27,61 +27,71 @@ future.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/nfsctl.c |    3 ++-
- fs/nfsd/nfsd.h   |    2 +-
- fs/nfsd/nfssvc.c |    3 +--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ fs/nfsd/nfsctl.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index 68e229c..58f0ae4 100644
+index 58f0ae4..8536100 100644
 --- a/fs/nfsd/nfsctl.c
 +++ b/fs/nfsd/nfsctl.c
-@@ -447,6 +447,7 @@ static ssize_t write_pool_threads(struct file *file, char *buf, size_t size)
- 	int len;
- 	int npools;
- 	int *nthreads;
+@@ -657,11 +657,10 @@ static ssize_t __write_ports_names(char *buf)
+  * a socket of a supported family/protocol, and we use it as an
+  * nfsd listener.
+  */
+-static ssize_t __write_ports_addfd(char *buf)
++static ssize_t __write_ports_addfd(char *buf, struct net *net)
+ {
+ 	char *mesg = buf;
+ 	int fd, err;
+-	struct net *net = &init_net;
+ 
+ 	err = get_int(&mesg, &fd);
+ 	if (err != 0 || fd < 0)
+@@ -686,12 +685,11 @@ static ssize_t __write_ports_addfd(char *buf)
+  * A transport listener is added by writing it's transport name and
+  * a port number.
+  */
+-static ssize_t __write_ports_addxprt(char *buf)
++static ssize_t __write_ports_addxprt(char *buf, struct net *net)
+ {
+ 	char transport[16];
+ 	struct svc_xprt *xprt;
+ 	int port, err;
+-	struct net *net = &init_net;
+ 
+ 	if (sscanf(buf, "%15s %5u", transport, &port) != 2)
+ 		return -EINVAL;
+@@ -727,16 +725,17 @@ out_err:
+ 	return err;
+ }
+ 
+-static ssize_t __write_ports(struct file *file, char *buf, size_t size)
++static ssize_t __write_ports(struct file *file, char *buf, size_t size,
++			     struct net *net)
+ {
+ 	if (size == 0)
+ 		return __write_ports_names(buf);
+ 
+ 	if (isdigit(buf[0]))
+-		return __write_ports_addfd(buf);
++		return __write_ports_addfd(buf, net);
+ 
+ 	if (isalpha(buf[0]))
+-		return __write_ports_addxprt(buf);
++		return __write_ports_addxprt(buf, net);
+ 
+ 	return -EINVAL;
+ }
+@@ -787,9 +786,10 @@ static ssize_t __write_ports(struct file *file, char *buf, size_t size)
+ static ssize_t write_ports(struct file *file, char *buf, size_t size)
+ {
+ 	ssize_t rv;
 +	struct net *net = &init_net;
  
  	mutex_lock(&nfsd_mutex);
- 	npools = nfsd_nrpools();
-@@ -477,7 +478,7 @@ static ssize_t write_pool_threads(struct file *file, char *buf, size_t size)
- 			if (nthreads[i] < 0)
- 				goto out_free;
- 		}
--		rv = nfsd_set_nrthreads(i, nthreads);
-+		rv = nfsd_set_nrthreads(i, nthreads, net);
- 		if (rv)
- 			goto out_free;
- 	}
-diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-index 8226c1b..18f9996 100644
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -71,7 +71,7 @@ int		nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp);
- int		nfsd_nrthreads(void);
- int		nfsd_nrpools(void);
- int		nfsd_get_nrthreads(int n, int *);
--int		nfsd_set_nrthreads(int n, int *);
-+int		nfsd_set_nrthreads(int n, int *, struct net *);
- int		nfsd_pool_stats_open(struct inode *, struct file *);
- int		nfsd_pool_stats_release(struct inode *, struct file *);
- 
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index f199b53..b144658 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -382,12 +382,11 @@ int nfsd_get_nrthreads(int n, int *nthreads)
- 	return 0;
+-	rv = __write_ports(file, buf, size);
++	rv = __write_ports(file, buf, size, net);
+ 	mutex_unlock(&nfsd_mutex);
+ 	return rv;
  }
- 
--int nfsd_set_nrthreads(int n, int *nthreads)
-+int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
- {
- 	int i = 0;
- 	int tot = 0;
- 	int err = 0;
--	struct net *net = &init_net;
- 
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 
 
