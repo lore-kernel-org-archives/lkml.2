@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2LJARY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 19:17:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49691 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab2LJARX (ORCPT
+	id S1752424Ab2LJA3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 19:29:11 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48084 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751900Ab2LJA3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 19:17:23 -0500
-MIME-Version: 1.0
-Date: Mon, 10 Dec 2012 01:17:21 +0100
-Message-ID: <CAGDELX7f-Ee-V_M8kbDONRFCTBbZM2H_Q17Bk_12r4xw85Wq4Q@mail.gmail.com>
-Subject: "attempt to access beyond end of device" on DVD
-From: Jacek Poplawski <jacekpoplawski@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 9 Dec 2012 19:29:09 -0500
+Message-ID: <1355099334.20838.97.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 266/270] ARM: 7566/1: vfp: fix save and restore when
+ running on pre-VFPv3 and CONFIG_VFPv3 set
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Paul Walmsley <paul@pwsan.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans.rullgard@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Date: Mon, 10 Dec 2012 00:28:54 +0000
+In-Reply-To: <1353949160-26803-267-git-send-email-herton.krzesinski@canonical.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+	 <1353949160-26803-267-git-send-email-herton.krzesinski@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-OP2okDkNwjEcFaK9dqMa"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello,
 
-few years ago I noticed annoying bug on Linux, when I was copying
-photos from old DVDs I realized that not all files were copied
-correctly, there were errors on last files on DVD, you could say "well
-that happens, DVD are faulty", but that's not the real issue
+--=-OP2okDkNwjEcFaK9dqMa
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-when the problem appears it happens on each DVD I am trying to copy,
-last files on each disk have errors....
+On Mon, 2012-11-26 at 14:59 -0200, Herton Ronaldo Krzesinski wrote:
+> 3.5.7u1 -stable review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: Paul Walmsley <paul@pwsan.com>
+>=20
+> commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
+>=20
+> After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
+> saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
+> started crashing during boot with omap2plus_defconfig:
+[...]
+> [ herton: no uapi directory on 3.5 ]
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
+>
+[...]
 
-...until I reboot Linux, then there are no errors at all and full DVD
-is copied correctly.
+I've also queued this up for 3.2.  Greg, you'll want to add this to the
+other 3.x series since you applied commit 846a136881b8.
 
-Now I needed some files from DVDs and I realized the problem still
-exists. After at least three years. I verified that reboot helps and I
-also noticed the problem doesn't exist on Windows 7.
+Ben.
 
-And looks like I wasn't only one who found this:
+--=20
+Ben Hutchings
+Kids!  Bringing about Armageddon can be dangerous.  Do not attempt it in
+your own home. - Terry Pratchett and Neil Gaiman, `Good Omens'
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/404472
+--=-OP2okDkNwjEcFaK9dqMa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Problem was reported in 2009 on 2.6.28 and closed in 2012. But I
-noticed it in last days.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-my system is:
+iQIVAwUAUMUsxue/yOyVhhEJAQqoshAAw0lBkHusmPzxJXBhVq+c1MtpwAqUyXOW
+q9grL7fR9QJSGDSRkiQg5BpRcW0hrvnmvHAdvhnfiCCGMrZSgSkNyde7Rc7PdUhq
+sIVKogV5YibB/bKiFQXvBasBm2f/qrhqkMQfZA2nYIJFvKnpOedHtZKl48bt9yjc
+4n9zFfr7oIhOiecsifaozAG+XCQensVGA1qNeHqwr8zdWRxAKW2cjagcQNEW3MBB
+Re9c/t9ciUH6SHjEbMcZluPeVrYfKNKEJWPfrh4s0fskL6uIcyktk5b6p4gWiy7n
+Npt9DYoyR0SUIK5yCpxXCgnGQITcw9bGbk2m2nbtITkLGHd2b4MBckozZ7BG9oJt
+o4O5+tHsTw7hFJ0tDxGFp+eIEV6Oi+zjkmLG37r99XwbYo3ZU3NZC2egiMdJKhuL
+FQFyXpCBSIos30lwwRUvPnRrbnPtqE207W9O+CoWFsqRfEkb8wfAhLdLbYiQNq4k
+MAPZczqGhGg0+Wx9sTbX6IKBQxUAivxHtXTlt+xssQF8zOdeCQej28Qzf6OVO3IH
+D5EbqwWap7yspTmYECcbiIZInNix7f1iVLyjw3zBI+nxr5O0SRQzPstoK/vX1dwE
+2CgV9BJgUBEq5exWjnWosxxgKWe+qMbwiIlKZPJR2LJVaw1PGk/jtqTq3cEDxXxi
+1Oe5ldlgwHQ=
+=y2gw
+-----END PGP SIGNATURE-----
 
-Linux version 3.6.8-1-ARCH (tobias@T-POWA-LX) (gcc version 4.7.2 (GCC)
-) #1 SMP PREEMPT Mon Nov 26 22:10:40 CET 2012
-
-dmesg:
-
-[ 4017.384169] attempt to access beyond end of device
-[ 4017.384171] sr0: rw=0, want=8511124, limit=8433216
-[ 4017.384174] attempt to access beyond end of device
-[ 4017.384175] sr0: rw=0, want=8510876, limit=8433216
-
-I suspect that people just stopped using CDs and DVDs and that's why
-nobody was looking on this problem, or maybe the first though was
-always "that DVD is broken, trash it".
-
-Is there more information I could give you about this issue? Or could
-you point me to any ways I could debug it? It's fully reproducible on
-my system.
+--=-OP2okDkNwjEcFaK9dqMa--
