@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab2LJTov (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:44:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:17132 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab2LJTmP (ORCPT
+	id S1752328Ab2LJTpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:45:21 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:52206 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab2LJTpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:42:15 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-28-50c63b167e3b
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        thomas.abraham@linaro.org, t.figa@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH RFC 05/13] of: Add empty for_each_available_child_of_node()
- macro definition
-Date: Mon, 10 Dec 2012 20:41:31 +0100
-Message-id: <1355168499-5847-6-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1355168499-5847-1-git-send-email-s.nawrocki@samsung.com>
-References: <1355168499-5847-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t9jQV0x62MBBhdnWllc3jWHzaJnw1ZW
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ+rNvGWLCHreLWi2/sDYzrWbsYOTkkBEwk3rWcYoGw
-	xSQu3FvP1sXIxSEkMJ1RovfsEWYIp4NJ4lbXMzaQKjYBQ4neo32MILaIgJnEu87HLCBFzAJ9
-	TBIn7/wCGyssECdxfE4/mM0ioCpx8vMEsBW8Aq4Si2dsYu9i5ABapyAxZ5INSJhTwE3i9aFW
-	sJlCQCU/Zq5jnsDIu4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGsPefSe9gXNVgcYhR
-	gINRiYdXQ+tYgBBrYllxZe4hRgkOZiUR3ggJoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeZo+U
-	ACGB9MSS1OzU1ILUIpgsEwenVAOj0zV5Vjte9pd//nc/E/zrf8oj9JL0z00rfun/UhX6+fj/
-	KRfTJ2eNjBq2H//NpXzm6Yyb2Xzt7Qxvn/275uho82OtVGtjOFsZS8STy69uqM/7GDbxBNcH
-	5/0K0qt/dRacnH/p/QEjWbNILb9fKcvco/7kubyOZNiwqvXGhhVlojkqnEZtyq+VlFiKMxIN
-	tZiLihMBiTY7wPoBAAA=
+	Mon, 10 Dec 2012 14:45:16 -0500
+Message-ID: <50C63BBD.3080202@ahsoftware.de>
+Date: Mon, 10 Dec 2012 20:45:01 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121002 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
+References: <50C5DFCC.60203@ahsoftware.de> <1355151119-2489-1-git-send-email-holler@ahsoftware.de> <50C61675.2000407@metafoo.de>
+In-Reply-To: <50C61675.2000407@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add this empty macro definition so users can be compiled without
-excluding this macro call with preprocessor directives when CONFIG_OF
-is disabled.
+Am 10.12.2012 18:05, schrieb Lars-Peter Clausen:
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/of.h |    3 +++
- 1 file changed, 3 insertions(+)
+> Looks pretty good now. But there are still some IIO remnants which should be
+> removed as well. Also the driver should move to drivers/rtc/ since, well,
+> it's a rtc driver not a IIO driver.
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 2fb0dbe..7df42cc 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -332,6 +332,9 @@ static inline bool of_have_populated_dt(void)
- #define for_each_child_of_node(parent, child) \
- 	while (0)
- 
-+#define for_each_available_child_of_node(parent, child) \
-+	while (0)
-+
- static inline struct device_node *of_get_child_by_name(
- 					const struct device_node *node,
- 					const char *name)
--- 
-1.7.9.5
+I think it still should be stick to iio, because that is where all HID
+sensors currently are found and where the user would expect to find such
+a driver.
 
+>> +/* Channel definitions */
+>> +static const struct iio_chan_spec hid_time_channels[TIME_RTC_CHANNEL_MAX] = {
+
+And that is imho the last remaining iio-stuff. If necessary I can remove
+it too.
+
+Regards,
+
+Alexander
