@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338Ab2LJSjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 13:39:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7430 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab2LJSjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 13:39:51 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=F1vn84g2v5IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=GbT8ctTW91IA:10 a=FHRDXCEtKMcRHx8gK9oA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355164789.17101.231.camel@gandalf.local.home>
-Subject: Re: Missing tags in my local stable git repo
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Dec 2012 13:39:49 -0500
-In-Reply-To: <20121210181250.GC30847@kroah.com>
-References: <1355160900.17101.229.camel@gandalf.local.home>
-	 <20121210181250.GC30847@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1751456Ab2LJSmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 13:42:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14490 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803Ab2LJSmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 13:42:44 -0500
+Message-ID: <50C62CE7.2000306@redhat.com>
+Date: Mon, 10 Dec 2012 13:41:43 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
+References: <1354839566-15697-1-git-send-email-mingo@kernel.org> <alpine.LFD.2.02.1212101902050.4422@ionos>
+In-Reply-To: <alpine.LFD.2.02.1212101902050.4422@ionos>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 10:12 -0800, Greg Kroah-Hartman wrote:
+On 12/10/2012 01:22 PM, Thomas Gleixner wrote:
 
-> Can you see the tags here in your local copy of the linux-stable.git
-> tree?
+> So autonuma and numacore are basically on the same page, with a slight
+> advantage for numacore in the THP enabled case. balancenuma is closer
+> to mainline than to autonuma/numacore.
 
-No I couldn't.
+Indeed, when the system is fully loaded, numacore does very well.
 
+The main issues that have been observed with numacore are when
+the system is only partially loaded. Something strange seems to
+be going on that causes performance regressions in that situation.
 
-> Try cloning the linux-stable.git tree from scratch to see if you still
-> have this issue.  Odds are, something with all of the alternates is
-> getting confused somewhere.
-> 
-
-Yep, that did the trick. I just deleted my local copy and recreated it,
-and all the tags are back. Sorry for the noise. Must have been a glitch
-in the way alternates work and the git gc's that I do.
-
--- Steve
-
-
+-- 
+All rights reversed
