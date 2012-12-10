@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2LJXWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:22:36 -0500
-Received: from wren.arvixe.com ([50.97.138.99]:39900 "EHLO wren.arvixe.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402Ab2LJXWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:22:31 -0500
-From: Przemo Firszt <przemo@firszt.eu>
-To: greg@kroah.com, Larry.Finger@lwfinger.net,
-        florian.c.schilhabel@googlemail.com, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH 4/9] rtl8712: replace min with min_t
-Date: Mon, 10 Dec 2012 23:21:22 +0000
-Message-Id: <1355181685-4444-4-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1355181685-4444-1-git-send-email-przemo@firszt.eu>
-References: <1355181685-4444-1-git-send-email-przemo@firszt.eu>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - wren.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
-X-Get-Message-Sender-Via: wren.arvixe.com: authenticated_id: przemo@firszt.eu
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752672Ab2LJXWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:22:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55162 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab2LJXWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 18:22:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <3585743.RAy43NB8MZ@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+	<2637774.lmuX5P2qQX@vostro.rjw.lan>
+	<CAE9FiQXsBC-CY4KqKkaAXx3sYLVWJOaaKGkg_kChb7ry_7Sq8Q@mail.gmail.com>
+	<3585743.RAy43NB8MZ@vostro.rjw.lan>
+Date: Mon, 10 Dec 2012 15:22:48 -0800
+X-Google-Sender-Auth: v0iJ2lecxTN8Z2V0eRgym9H2yWA
+Message-ID: <CAE9FiQVgJUzDYRWzW5gCK9WwwAzQthXs++JnfOuxVzo-0KSqxQ@mail.gmail.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've changed the ugly casting here and used min_t() instead.  I
-also changed the u16 to a u32 because ->network.Ssid.SsidLength
-is 32 bits.  It doesn't make a difference, but truncating the
-upper bits away is sloppy.
+On Mon, Dec 10, 2012 at 2:47 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, December 10, 2012 09:07:06 AM Yinghai Lu wrote:
+>> On Mon, Dec 10, 2012 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Sunday, December 09, 2012 09:34:42 PM Yinghai Lu wrote:
+>> >>
+>> >> Can we expand the BUS_ADD_* concept to other devices instead of just
+>> >> acpi_device?
+>> >>
+>> >> aka we should let struct device has this add_type field.
+>> >
+>> > Having done that in ACPI to cover our use case here, we can try to move it
+>> > into struct device if there are use cases beyond ACPI that can't be covered
+>> > by using deferred driver probing.
+>>
+>> pci device for hotplug have same problem. need to delay driver attach
+>> for them too.
+>
+> OK, I'll take a look.  Any pointers to speed that up?
+>
+>> also BUS_ADD_MATCH and BUS_ADD_START are duplicated.
+>
+> Not at the moment, they do different things as code goes.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
----
- drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+I do think that is same problem which is in the driver/base core.
 
-diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-index 74652b5..d152207 100644
---- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-+++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-@@ -188,8 +188,7 @@ static inline char *translate_scan(struct _adapter *padapter,
- 	/* Add the ESSID */
- 	iwe.cmd = SIOCGIWESSID;
- 	iwe.u.data.flags = 1;
--	iwe.u.data.length = (u16)min((u16)pnetwork->network.Ssid.SsidLength,
--			    (u16)32);
-+	iwe.u.data.length = min_t(u32, pnetwork->network.Ssid.SsidLength, 32);
- 	start = iwe_stream_add_point(info, start, stop, &iwe,
- 				     pnetwork->network.Ssid.Ssid);
- 	/* parsing HT_CAP_IE */
-@@ -1194,8 +1193,7 @@ static int r8711_wx_set_scan(struct net_device *dev,
- 		if (wrqu->data.flags & IW_SCAN_THIS_ESSID) {
- 			struct ndis_802_11_ssid ssid;
- 			unsigned long irqL;
--			u32 len = (u32) min((u8)req->essid_len,
--				  (u8)IW_ESSID_MAX_SIZE);
-+			u32 len = min_t(u8, req->essid_len, IW_ESSID_MAX_SIZE);
- 			memset((unsigned char *)&ssid, 0,
- 				 sizeof(struct ndis_802_11_ssid));
- 			memcpy(ssid.Ssid, req->essid, len);
--- 
-1.8.0.1
+it should support delay loading driver for the hotplug case at the first point.
+that is reason that .start is introduced for acpi driver..to workround
+the problem
+in driver core.
 
+>
+>> old add are separated to adding all devices to tree and then matching
+>> work to load the drivers.
+>>
+>> so _START is not needed anymore, only user.start in pci_root driver
+>> should be removed.
+>> code in .start could be moved .add without problem.
+>
+> Yes, I'm going to do that as the next step.  I didn't want this particular
+
+after you remove that .start, that will the same as my two patches.
+except that you patches toggle that per-device add_type for every device.
+
+and my patches is only toggle that per device drivers_autoprobe for
+hot-add devices.
+
+> patchset to grow too big.  I'll post another one on top of it if people
+> don't have problems with this one.
+
+yesterday, I replace my two acpi driver delay loading patches with your patches.
+
+during pci root bus hot remove/add test, got the panic...
+
+did not have time to look at it yet.
+
+Yinghai
