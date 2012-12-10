@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab2LJHeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 02:34:20 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:42693 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab2LJHeQ (ORCPT
+	id S1752608Ab2LJHgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 02:36:43 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39822 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab2LJHgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 02:34:16 -0500
+	Mon, 10 Dec 2012 02:36:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121207141115.EFC903E0B87@localhost>
+In-Reply-To: <201212071907.38366.arnd@arndb.de>
 References: <CAHTX3dLxbVxn+D+AV7L0VsGYFOjas3AJ_3M_xncVfxp02FCy=Q@mail.gmail.com>
 	<CAErSpo6xRdwzTuPPqnmvmHSp7awnV7=Z85eWFfktb_hm9Aad_A@mail.gmail.com>
 	<50C1BA9D.5010406@monstr.eu>
-	<20121207141115.EFC903E0B87@localhost>
-Date: Mon, 10 Dec 2012 08:34:15 +0100
-Message-ID: <CAHTX3dJLa3e_za-wx8VY9FWqc-GMe_hB-hwzOZqyP-u3hD=3Mw@mail.gmail.com>
+	<201212071907.38366.arnd@arndb.de>
+Date: Mon, 10 Dec 2012 08:36:40 +0100
+Message-ID: <CAHTX3dJ-x2ewDWjbSp0kOwJ5N0XtKa98gFOAKD_AiYeyJp4RYA@mail.gmail.com>
 Subject: Re: Sharing PCIE driver between Microblaze and Arm zynq
 From: Michal Simek <monstr@monstr.eu>
-To: Grant Likely <grant.likely@secretlab.ca>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arch@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Olof Johansson <olof@lixom.net>, linux-arch@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
         John Linn <John.Linn@xilinx.com>, John Williams <jwilliams@xilinx.com>,
         linux-pci@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -29,8 +30,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/7 Grant Likely <grant.likely@secretlab.ca>:
-> On Fri, 07 Dec 2012 10:45:01 +0100, Michal Simek <monstr@monstr.eu> wrote:
+2012/12/7 Arnd Bergmann <arnd@arndb.de>:
+> On Friday 07 December 2012, Michal Simek wrote:
 >> On 12/06/2012 10:27 PM, Bjorn Helgaas wrote:
 >> > [+cc linux-pci]
 >> >
@@ -49,8 +50,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >> > put it in drivers/pci/pcie.
 >>
 >> Not a PCI expert, just trying to find out the proper location for this shared driver.
->>
->>
+>
+> I'd suggest creating a drivers/pci/host directory. We will have more of
+> these in the future. AFAIK, there is no fully generic (architecture
+> independent) way to interface a PCI host driver to the PCI subsystem,
+> but I think we are getting closer to that. You are probably fairly
+> free to modify the microblaze architecture specific code though if needed.
+
+yep.
+
+
 >> >> Is using readl/writel IO functions in this driver the best option
 >> >> which we can have?
 >> >> Or is there any other recommendation?
@@ -63,27 +72,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >> add it to proper location with correct io functions.
 >> The question is if ioread/iowrite functions are correct one.
 >> PowerPC io-defs.h suggests that readl/writel should be used for PCI.
->>
->>
->> >> Also just want to check if it is correct to use pcie device_type.
->> >
->> > I don't know what you're asking here.  Can you elaborate or give a
->> > specific example?
->>
->> If node property device_type pcie should be used.
->> device_type = "pcie";
->>
->> For pci it is device_type = "pci";
->> For network it is device_type = "network"
->> the same for serial, watchdogs.
->>
->> Do we have any list of device_types which we should use?
 >
-> Don't use them unless a binding requires it. PCI address lookup code
-> uses it, so we put it in those nodes. Otherwise device_type is
-> deprecated and has been for a long time now. You should not be using it
-> in .dts files.
+> ioread32/iowrite32 are defined to behave the same way readl/writel regarding
+> addressing modes and barriers, but also allow operating on __iomem pointers
+> that were returned from ioport_map(). You probably don't need that.
+>
+> Some architectures like powerpc have their own accessors for on-chip MMIO
+> areas, but ARM does not. The PowerPC rule is that you must use either
+> readl/writel or ioread32/iowrite32 to access devices connected to a PCI
+> bus, but you would not necessarily do that for the PCI host controller
+> itself on PowerPC.
 
+ok.
 
 Thanks,
 Michal
