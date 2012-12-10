@@ -1,62 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab2LJF1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:27:31 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50227 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800Ab2LJF11 convert rfc822-to-8bit (ORCPT
+	id S1751773Ab2LJF1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 00:27:45 -0500
+Received: from mail.agroideas.gob.pe ([190.12.70.83]:51178 "EHLO
+	mail.agroideas.gob.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2LJF1o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:27:27 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: [PATCH 3/4] MAINTAINERS: add LP872x regulator driver entry
-Thread-Topic: [PATCH 3/4] MAINTAINERS: add LP872x regulator driver entry
-Thread-Index: Ac3WlwZ09WKxKtUBR1Cg9qzd0m57HQ==
-Date: Mon, 10 Dec 2012 05:27:21 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E05805@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Dec 2012 00:27:44 -0500
+X-Greylist: delayed 2198 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Dec 2012 00:27:43 EST
+Date: Sun, 9 Dec 2012 23:29:36 -0500 (PET)
+From: CORREO <mrada@agroideas.gob.pe>
+Reply-To: CORREO <accountuserhelp@admin.in.th>
+Message-ID: <552579974.89987.1355113776817.JavaMail.root@mail.agroideas.gob.pe>
+Subject: Advertencia Final.
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.71.173.191]
+X-Mailer: Zimbra 6.0.14_GA_2928 (zclient/6.0.14_GA_2928)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- MAINTAINERS |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a5aedda..ee7e9ee 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7564,6 +7564,12 @@ S:	Maintained
- F:	drivers/power/lp8727_charger.c
- F:	include/linux/platform_data/lp8727.h
- 
-+TI LP872X REGULATOR DRIVER
-+M:	Milo Kim <milo.kim@ti.com>
-+S:	Maintained
-+F:	drivers/regulator/lp872x.c
-+F:	include/linux/regulator/lp872x.h
-+
- TI TWL4030 SERIES SOC CODEC DRIVER
- M:	Peter Ujfalusi <peter.ujfalusi@ti.com>
- L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
--- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
-
+Su buzón se ha superado el límite de almacenamiento según lo establecido por el administrador, 
+Y Usted no será capaz de recibir correos nuevos hasta que se volverá a validar. 
+De revalidar - por favor HAGA CLICK AQUÍ 
+http://workers.wufoo.com/forms/untitled-form/
+Administrador del sistema.
