@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab2LJVDh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:03:37 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54846 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab2LJVDg (ORCPT
+	id S1751745Ab2LJVJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:09:17 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33687 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab2LJVJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:03:36 -0500
-Date: Mon, 10 Dec 2012 22:03:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
-Message-ID: <20121210210330.GA16207@gmail.com>
-References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
- <alpine.LFD.2.02.1212101902050.4422@ionos>
- <50C62CE7.2000306@redhat.com>
- <20121210191545.GA14412@gmail.com>
- <20121210192828.GL1009@suse.de>
- <20121210200755.GA15097@gmail.com>
+	Mon, 10 Dec 2012 16:09:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210200755.GA15097@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1355172274.17101.250.camel@gandalf.local.home>
+References: <1355160900.17101.229.camel@gandalf.local.home>
+ <1355165264.17101.233.camel@gandalf.local.home> <20121210190247.GA32119@kroah.com>
+ <1355166920.17101.239.camel@gandalf.local.home> <CA+55aFzvTrrM_t_K3W5s32p610MS0PuTrUUhFKaB5tGPmsW73g@mail.gmail.com>
+ <1355172274.17101.250.camel@gandalf.local.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 10 Dec 2012 13:08:54 -0800
+X-Google-Sender-Auth: 3f8Hn7Kk-uGszqRsISemK9eW-tM
+Message-ID: <CA+55aFx=x9OzUvD+x+tUBxNN8EWRHEo7UuMx8OYBdyG3W+AcUw@mail.gmail.com>
+Subject: Re: Missing tags in my local stable git repo
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 10, 2012 at 12:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> OK, this may be my issue, as my stable.git has my copy of your tree as
+> an alternate. Maybe I can merge the two trees.
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+That should work. Of course, it would depend on there not being any
+clashes in the tag namespace, but we don't do that anyway (since it
+would confuse everybody), so it should all be ok.
 
-> > If you had read that report, you would know that I didn't 
-> > have results for specjbb with THP enabled due to the JVM 
-> > crashing with null pointer exceptions.
-> 
-> Hm, it's the unified tree where most of the mm/ bits are the 
-> AutoNUMA bits from your tree. (It does not match 100%, because 
-> your tree has an ancient version of key memory usage 
-> statistics that the scheduler needs for its convergence model. 
-> I'll take a look at the differences.)
+I would almost suggest you make both my base tree and the stable tree
+be remotes, instead of necessarily mirroring my tree and then putting
+the stable tree on top of that. I think it's confusing to have a
+mirror but than in that same tree have an extra (non-mirror) remote,
+it sounds more logical to me to have two separate remotes.
 
-Beyond the difference in page frame statistics and the 
-difference in the handling of "4K-EMU", the bits below are the 
-difference I found (on the THP side) between numa/base-v3 and 
-your -v10 tree - but I'm not sure it should have effect on your 
-JVM segfault under THP ...
+But yeah, you should always just be able to recreate things since
+whatever you do your alternates will never have any extra work in
+them, so you could just continue with your existing setup even though
+it sounds a bit iffy.
 
-I tried with preemption on/off, debugging on/off, tried your 
-.config - none triggers JVM segfaults with 4x JVM or 1x JVM 
-SPECjbb tests.
-
-Thanks,
-
-	Ingo
-
-------------------------->
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index c25e37c..409b2f3 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -711,8 +711,7 @@ out:
- 	 * run pte_offset_map on the pmd, if an huge pmd could
- 	 * materialize from under us from a different thread.
- 	 */
--	if (unlikely(pmd_none(*pmd)) &&
--	    unlikely(__pte_alloc(mm, vma, pmd, address)))
-+	if (unlikely(__pte_alloc(mm, vma, pmd, address)))
- 		return VM_FAULT_OOM;
- 	/* if an huge pmd materialized from under us just retry later */
- 	if (unlikely(pmd_trans_huge(*pmd)))
-diff --git a/mm/memory.c b/mm/memory.c
-index 8022526..30e1335 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3845,8 +3750,7 @@ retry:
- 	 * run pte_offset_map on the pmd, if an huge pmd could
- 	 * materialize from under us from a different thread.
- 	 */
--	if (unlikely(pmd_none(*pmd)) &&
--	    unlikely(__pte_alloc(mm, vma, pmd, address)))
-+	if (unlikely(pmd_none(*pmd)) && __pte_alloc(mm, vma, pmd, address))
- 		return VM_FAULT_OOM;
- 	/* if an huge pmd materialized from under us just retry later */
- 	if (unlikely(pmd_trans_huge(*pmd)))
-
+                Linus
