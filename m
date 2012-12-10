@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2LJJHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:07:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41733 "EHLO mx2.suse.de"
+	id S1753036Ab2LJJHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:07:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:35781 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab2LJJHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:07:34 -0500
-Date: Mon, 10 Dec 2012 09:07:30 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/45] Automatic NUMA Balancing V7
-Message-ID: <20121210090730.GF1009@suse.de>
-References: <1353612353-1576-1-git-send-email-mgorman@suse.de>
- <20121126145800.GK8218@suse.de>
- <20121128134930.GB20087@suse.de>
- <20121207104539.GB22164@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121207104539.GB22164@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750920Ab2LJJHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:07:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
+   d="scan'208";a="229269903"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] mmc: sdhci-acpi: enable runtime-pm for device HID INT33C6
+Date: Mon, 10 Dec 2012 11:10:43 +0200
+Message-Id: <1355130644-26065-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 04:15:39PM +0530, Srikar Dronamraju wrote:
-> 
-> Got a chance to run autonuma-benchmark on a 8 node, 64 core machine. 
-> the results are as below. (for each kernel I ran 5 iterations of
-> autonuma-benchmark)
-> 
+Hi
 
-Thanks, a test of v10 would also be appreciated. The differences between
-V7 and V10 are small but do include a change in how migrate rate-limiting
-is handled. It is unlikely it'll make a difference to this test but I'd
-like to rule it out.
+Here is a minor hardware ID addition to sdhci-acpi.
 
-> KernelVersion: 3.7.0-rc3-mainline_v37rc7()
+Please consider this for Linux 3.8, in which case it must go via
+Rafael's linux-pm tree because that is where the new driver is.
 
-What kernel is this? The name begins with 3.7-rc3 but then says
-v37rc7. v37rc7 of what? I thought it might be v3.7-rc7 but it already said
-it's 3.7-rc3 so I'm confused. Would it be possible to base the tests on
-a similar baseline kernel such as 3.7.0-rc7 or 3.7.0-rc8? The
-balancenuma patches should apply and the autonuma patches can be taken
-from the mm-autonuma-v28fastr4-mels-rebase branch in
-git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git
 
-Either way, the figures look bad. I'm trying to find a similar machine
-but initially at least I have not had much luck. Can you post the .config
-you used for balancenuma in case I can reproduce the problem on a 4-node
-machine please? Are all the nodes the same size?
+Adrian Hunter (1):
+      mmc: sdhci-acpi: enable runtime-pm for device HID INT33C6
 
-Thanks!
+ drivers/mmc/host/sdhci-acpi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
--- 
-Mel Gorman
-SUSE Labs
+
+Regards
+Adrian Hunter
