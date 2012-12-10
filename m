@@ -1,274 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab2LJTsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:48:31 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62493 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab2LJTs1 (ORCPT
+	id S1751624Ab2LJTve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:51:34 -0500
+Received: from smtp109.biz.mail.ne1.yahoo.com ([98.138.206.46]:29299 "HELO
+	smtp109.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750968Ab2LJTva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:48:27 -0500
-Date: Mon, 10 Dec 2012 11:47:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.56
-Message-ID: <20121210194755.GB19817@kroah.com>
-References: <20121210194749.GA19817@kroah.com>
+	Mon, 10 Dec 2012 14:51:30 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: SaVRNhcVM1n3Cpje7JdTPEsN9t7ZaVyp.qYRu4EEy0vU_wL
+ 5Donh3ZSx8ynOcINpSY0uvNxmJSCFlOwokNElpcNHSIfV7.VRMkevZV2pP3M
+ yJbCVaIhY0sstHquK341xZsaa4RheNUQtNZb7KDIxzHkk3VP7gvYiQPHD9fb
+ qHyxQYn_fA_yVl66S4JTyJoAM4xsjiXwylVXYYbXFNLLTdAa1fCokLz7AYvF
+ 0et0fYfCtxVjwFvF7_PCE2FGtErBJ845_5M4qwTCQ4Ij3B.NjkPJGlzWgpAx
+ .soOfcAQLsEZ.lSeqMnE5ImR7pVIeCQ8kp9XojcFzaJ5euT3kt.fR3gmh_JK
+ _YR96YKA0RgSYXoVLe9i04LvCFH7HKID.BWhcyQVWqf51mykpWK1jvLBC67K
+ x4cgMtmsk5zg1i7BN6s6EbS_tCwDbQqB9c6LkzOHOp.5A9HDHmd3H7TrFflh
+ mwX3eIha7eStP9fdBo2rC7wy.ez65vm3lkVlvxO2ncvmxt208o3NcYwQRtUu
+ NSdISBl6uEj3ywbkaIH1Jf.Ox6T9Mk8QPdrp_cY_CaFmeqS1im.lBy0u7DQ9
+ rHcFaxKbjGS1PX4HNpmuOE5KyuaA-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50C63D4C.9060703@schaufler-ca.com>
+Date: Mon, 10 Dec 2012 11:51:40 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210194749.GA19817@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Serge Hallyn <serge.hallyn@canonical.com>,
+        "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+References: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com> <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com> <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com> <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com> <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com> <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com> <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com> <20121210145950.GC8137@sergelap> <50C603F8.6070401@schaufler-ca.com> <CALCETrWNboHVRm_aZ-Fvqri6PW3C4FPfuLLe3-8q7+-vgEP2nw@mail.gmail.com> <50C6345C.8040804@schaufler-ca.com> <CALCETrUctrxm5Vy2WYXaQy3CyyJOGAQ78LYHbLzv+ua_rGxMDA@mail.gmail.com>
+In-Reply-To: <CALCETrUctrxm5Vy2WYXaQy3CyyJOGAQ78LYHbLzv+ua_rGxMDA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/10/2012 11:31 AM, Andy Lutomirski wrote:
+> On Mon, Dec 10, 2012 at 11:13 AM, Casey Schaufler
+> <casey@schaufler-ca.com> wrote:
+>> On 12/10/2012 10:12 AM, Andy Lutomirski wrote:
+>>> I think that the Windows approach is worth looking at.  See here:
+>>>
+>>> http://msdn.microsoft.com/en-us/library/windows/desktop/aa375202%28v=vs.85%29.aspx
+>>>
+>>> In the Windows model, each capability ("privilege") can be in one of
+>>> three states: enabled (i.e working right now),
+>> Effective
+>>
+>>>  permitted (i.e.
+>>> available upon request but not currently enabled),
+>> Permitted
+>>
+>>> or removed
+>>> (disallowed to this process and all of its children).
+>> ~Inherited
+> No.  It's ~Inherited in a world where every binary has fI = everything.
+>
+>>> Permitted
+>>> privileges are always inherited when a child process is created.
+>>>
+>>> This is *way* simpler than Linux's model, and it works just fine*.
+>> I see a different set of complications, and Windows never had
+>> a setuid bit to contend with. God created the universe in seven
+>> days, but then, He didn't have an installed base.
+>>
+> What are those complications?
 
-diff --git a/Makefile b/Makefile
-index 06df950..b639af3 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 55
-+SUBLEVEL = 56
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/arm/mach-dove/include/mach/pm.h b/arch/arm/mach-dove/include/mach/pm.h
-index 3ad9f94..11799c3 100644
---- a/arch/arm/mach-dove/include/mach/pm.h
-+++ b/arch/arm/mach-dove/include/mach/pm.h
-@@ -45,7 +45,7 @@ static inline int pmu_to_irq(int pin)
- 
- static inline int irq_to_pmu(int irq)
- {
--	if (IRQ_DOVE_PMU_START < irq && irq < NR_IRQS)
-+	if (IRQ_DOVE_PMU_START <= irq && irq < NR_IRQS)
- 		return irq - IRQ_DOVE_PMU_START;
- 
- 	return -EINVAL;
-diff --git a/arch/arm/mach-dove/irq.c b/arch/arm/mach-dove/irq.c
-index f07fd16..9f2fd10 100644
---- a/arch/arm/mach-dove/irq.c
-+++ b/arch/arm/mach-dove/irq.c
-@@ -61,8 +61,20 @@ static void pmu_irq_ack(struct irq_data *d)
- 	int pin = irq_to_pmu(d->irq);
- 	u32 u;
- 
-+	/*
-+	 * The PMU mask register is not RW0C: it is RW.  This means that
-+	 * the bits take whatever value is written to them; if you write
-+	 * a '1', you will set the interrupt.
-+	 *
-+	 * Unfortunately this means there is NO race free way to clear
-+	 * these interrupts.
-+	 *
-+	 * So, let's structure the code so that the window is as small as
-+	 * possible.
-+	 */
- 	u = ~(1 << (pin & 31));
--	writel(u, PMU_INTERRUPT_CAUSE);
-+	u &= readl_relaxed(PMU_INTERRUPT_CAUSE);
-+	writel_relaxed(u, PMU_INTERRUPT_CAUSE);
- }
- 
- static struct irq_chip pmu_irq_chip = {
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 5ef1f4c..055952e 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -722,11 +722,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 		break;
- 	}
- 
-+	if (capable(CAP_SYS_RAWIO))
-+		return 0;
-+
- 	/* In particular, rule out all resets and host-specific ioctls.  */
- 	printk_ratelimited(KERN_WARNING
- 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
- 
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
-+	return -ENOTTY;
- }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
- 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index a4e0f1b..6da4f07 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -409,6 +409,7 @@ static void acpi_processor_notify(struct acpi_device *device, u32 event)
- 		acpi_bus_generate_proc_event(device, event, 0);
- 		acpi_bus_generate_netlink_event(device->pnp.device_class,
- 						  dev_name(&device->dev), event, 0);
-+		break;
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "Unsupported event [0x%x]\n", event));
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 7adba11..645f8aa 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -759,6 +759,22 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Gigabyte GA-D525TUD",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
-+		},
-+	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Supermicro X7SPA-H",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
-+		},
-+	},
- 
- 	{ }	/* terminating entry */
- };
-diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
-index 429242f..f280df1 100644
---- a/kernel/sched_autogroup.c
-+++ b/kernel/sched_autogroup.c
-@@ -160,15 +160,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
- 
- 	p->signal->autogroup = autogroup_kref_get(ag);
- 
--	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
--		goto out;
--
- 	t = p;
- 	do {
- 		sched_move_task(t);
- 	} while_each_thread(p, t);
- 
--out:
- 	unlock_task_sighand(p, &flags);
- 	autogroup_kref_put(prev);
- }
-diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
-index 0557705..7b859ff 100644
---- a/kernel/sched_autogroup.h
-+++ b/kernel/sched_autogroup.h
-@@ -1,11 +1,6 @@
- #ifdef CONFIG_SCHED_AUTOGROUP
- 
- struct autogroup {
--	/*
--	 * reference doesn't mean how many thread attach to this
--	 * autogroup now. It just stands for the number of task
--	 * could use this autogroup.
--	 */
- 	struct kref		kref;
- 	struct task_group	*tg;
- 	struct rw_semaphore	lock;
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index aef9452..472cfe3 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2044,8 +2044,10 @@ static int rescuer_thread(void *__wq)
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
--	if (kthread_should_stop())
-+	if (kthread_should_stop()) {
-+		__set_current_state(TASK_RUNNING);
- 		return 0;
-+	}
- 
- 	/*
- 	 * See whether any cpu is asking for help.  Unbounded
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 2f49dcf..eace560 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1382,9 +1382,17 @@ int soft_offline_page(struct page *page, int flags)
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
-+	struct page *hpage = compound_trans_head(page);
- 
- 	if (PageHuge(page))
- 		return soft_offline_huge_page(page, flags);
-+	if (PageTransHuge(hpage)) {
-+		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-+			pr_info("soft offline: %#lx: failed to split THP\n",
-+				pfn);
-+			return -EBUSY;
-+		}
-+	}
- 
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
-diff --git a/mm/sparse.c b/mm/sparse.c
-index 4cd05e5..9054f83 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -619,7 +619,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
- {
- 	return; /* XXX: Not implemented yet */
- }
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- }
- #else
-@@ -660,10 +660,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
- 			   get_order(sizeof(struct page) * nr_pages));
- }
- 
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long maps_section_nr, removing_section_nr, i;
- 	unsigned long magic;
-+	struct page *page = virt_to_page(memmap);
- 
- 	for (i = 0; i < nr_pages; i++, page++) {
- 		magic = (unsigned long) page->lru.next;
-@@ -712,13 +713,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
- 	 */
- 
- 	if (memmap) {
--		struct page *memmap_page;
--		memmap_page = virt_to_page(memmap);
--
- 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
- 			>> PAGE_SHIFT;
- 
--		free_map_bootmem(memmap_page, nr_pages);
-+		free_map_bootmem(memmap, nr_pages);
- 	}
- }
- 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 6b95f74..5ff2614 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1374,6 +1374,7 @@ static int check_peer_redir(struct dst_entry *dst, struct inet_peer *peer)
- 	struct rtable *rt = (struct rtable *) dst;
- 	__be32 orig_gw = rt->rt_gateway;
- 	struct neighbour *n, *old_n;
-+	struct hh_cache *old_hh;
- 
- 	dst_confirm(&rt->dst);
- 
-@@ -1381,6 +1382,9 @@ static int check_peer_redir(struct dst_entry *dst, struct inet_peer *peer)
- 	n = __arp_bind_neighbour(&rt->dst, rt->rt_gateway);
- 	if (IS_ERR(n))
- 		return PTR_ERR(n);
-+	old_hh = xchg(&rt->dst.hh, NULL);
-+	if (old_hh)
-+		hh_cache_put(old_hh);
- 	old_n = xchg(&rt->dst._neighbour, n);
- 	if (old_n)
- 		neigh_release(old_n);
+I wish I had the time to go into the details, but I just can't.
+
+> Also, I think we really could get rid of setuid without breaking
+> anything with a bit of extra (non-capability-related) plumbing work.
+
+If RedHat or Ubuntu wanted to take a year off from everything else
+they could create a setuid-root free system. It would probably be
+easier for Android or ChromiumOS, as they provide more limited
+environments.
+
+It's not "a bit of extra plumbing". I did it for a Unix system and
+you'll have to change bunches of existing programs to make it work.
+I'm not saying that the changes would be bad, but the sendmail
+fiasco arose from just such an effort. You'll also have to train
+the users that sudo no longer does them any good. In fact, you'll
+be barraged with one question:
+	"How do I get to be Real root"?
+
+
+> --Andy
+>
+
