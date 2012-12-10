@@ -1,113 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2LJIBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:01:52 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51352 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab2LJIBu (ORCPT
+	id S1752418Ab2LJIKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:10:22 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45442 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab2LJIKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:01:50 -0500
-Date: Mon, 10 Dec 2012 19:01:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Mel Gorman <mgorman@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20121210190139.4ae77c7b70fa24daacf2c9cb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Dec_2012_19_01_39_+1100_lRryH29crv/r9B+h"
+	Mon, 10 Dec 2012 03:10:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <50C1DB05.7090500@linaro.org>
+References: <1354354961-28833-1-git-send-email-giridhar.maruthy@linaro.org>
+	<CAHuqX+EQ0pZnm27yAVqC=NRX8huQ5EvbC8PGn2G3xYw4D71gQA@mail.gmail.com>
+	<50C1DB05.7090500@linaro.org>
+Date: Mon, 10 Dec 2012 13:40:18 +0530
+Message-ID: <CAHuqX+GqMCFSYszrQEb6ouD3ebgDEVdLwh_bnsJemOpm45T-ag@mail.gmail.com>
+Subject: Re: [PATCH] I2C: EXYNOS: Add slave support to i2c
+From: Giridhar Maruthy <giridhar.maruthy@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: ben-linux@fluff.org, kgene.kim@samsung.com, khali@linux-fr.org,
+        w.sang@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Dec_2012_19_01_39_+1100_lRryH29crv/r9B+h
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks Tushar,
 
-Hi Andrew,
+On 7 December 2012 17:33, Tushar Behera <tushar.behera@linaro.org> wrote:
+> On 12/03/2012 05:46 PM, Giridhar Maruthy wrote:
+>> This patch adds slave support to i2c. The dt entry i2c-mode
+>> decides at probe time if the controller needs to work in
+>> slave mode and the controller is accordingly programmed.
+>>
+>> Signed-off-by: Giridhar Maruthy <giridhar.maruthy@linaro.org>
+>> ---
+>>  drivers/i2c/busses/i2c-s3c2410.c |  100
+>> ++++++++++++++++++++++++++------------
+>>  1 file changed, 68 insertions(+), 32 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-s3c2410.c
+>> b/drivers/i2c/busses/i2c-s3c2410.c
+>> index e93e7d6..d83a6d7 100644
+>> --- a/drivers/i2c/busses/i2c-s3c2410.c
+>> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+>> @@ -53,6 +53,9 @@
+>>  /* Max time to wait for bus to become idle after a xfer (in us) */
+>>  #define S3C2410_IDLE_TIMEOUT   5000
+>>
+>> +/* To find the master/slave mode of current controller */
+>> +#define is_master(i2c) (!i2c->i2c_mode)
+>> +
+>>  /* i2c controller state */
+>>  enum s3c24xx_i2c_state {
+>>         STATE_IDLE,
+>> @@ -89,6 +92,8 @@ struct s3c24xx_i2c {
+>>  #ifdef CONFIG_CPU_FREQ
+>>         struct notifier_block   freq_transition;
+>>  #endif
+>> +       /* i2c_mode: 0 is for master; and 1 is for slave */
+>> +       unsigned int            i2c_mode;
+>>  };
+>>
+>>  static struct platform_device_id s3c24xx_driver_ids[] = {
+>> @@ -202,11 +207,21 @@ static void s3c24xx_i2c_message_start(struct
+>> s3c24xx_i2c *i2c,
+>>         stat = 0;
+>>         stat |=  S3C2410_IICSTAT_TXRXEN;
+>>
+>> -       if (msg->flags & I2C_M_RD) {
+>> -               stat |= S3C2410_IICSTAT_MASTER_RX;
+>> -               addr |= 1;
+>> -       } else
+>> -               stat |= S3C2410_IICSTAT_MASTER_TX;
+>> +       if (is_master(i2c)) {
+>> +               /* Master mode */
+>> +               if (msg->flags & I2C_M_RD) {
+>> +                       stat |= S3C2410_IICSTAT_MASTER_RX;
+>> +                       addr |= 1;
+>> +               } else
+>> +                       stat |= S3C2410_IICSTAT_MASTER_TX;
+>> +       } else {
+>> +               /* Slave mode */
+>> +               if (msg->flags & I2C_M_RD) {
+>> +                       stat |= S3C2410_IICSTAT_SLAVE_RX;
+>> +                       addr |= 1;
+>> +               } else
+>> +                       stat |= S3C2410_IICSTAT_SLAVE_TX;
+>> +       }
+>>
+>>         if (msg->flags & I2C_M_REV_DIR_ADDR)
+>>                 addr ^= 1;
+>> @@ -228,8 +243,10 @@ static void s3c24xx_i2c_message_start(struct
+>> s3c24xx_i2c *i2c,
+>>         dev_dbg(i2c->dev, "iiccon, %08lx\n", iiccon);
+>>         writel(iiccon, i2c->regs + S3C2410_IICCON);
+>>
+>> -       stat |= S3C2410_IICSTAT_START;
+>> -       writel(stat, i2c->regs + S3C2410_IICSTAT);
+>> +       if (is_master(i2c)) {
+>> +               stat |= S3C2410_IICSTAT_START;
+>> +               writel(stat, i2c->regs + S3C2410_IICSTAT);
+>> +       }
+>>  }
+>>
+>>  static inline void s3c24xx_i2c_stop(struct s3c24xx_i2c *i2c, int ret)
+>> @@ -272,14 +289,19 @@ static inline void s3c24xx_i2c_stop(struct
+>> s3c24xx_i2c *i2c, int ret)
+>>          * devices, the host as Master and the HDMIPHY device as the slave.
+>>          * Skipping the STOP condition has been tested on this bus and
+>> works.
+>>          */
+>> -       if (i2c->quirks & QUIRK_HDMIPHY) {
+>> -               /* Stop driving the I2C pins */
+>> -               iicstat &= ~S3C2410_IICSTAT_TXRXEN;
+>> -       } else {
+>> -               /* stop the transfer */
+>> -               iicstat &= ~S3C2410_IICSTAT_START;
+>> +       if (is_master(i2c)) {
+>> +               if (i2c->quirks & QUIRK_HDMIPHY) {
+>> +                       /* Stop driving the I2C pins */
+>> +                       iicstat &= ~S3C2410_IICSTAT_TXRXEN;
+>> +               } else {
+>> +                       /* stop the transfer */
+>> +                       if (is_master(i2c)) {
+>
+> This is executed only if is_master(i2c) is true, so there seems no need
+> to checking it again.
+>
 
-Today's linux-next merge of the akpm tree got a conflict in mm/memory.c
-between changes in commits from the tip tree and commit "mm: thp: set the
-accessed flag for old pages on access fault" from the akpm tree.
-
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc mm/memory.c
-index 8022526,60201d5..0000000
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@@ -3812,15 -3620,18 +3812,17 @@@ retry
-  							  pmd, flags);
-  	} else {
-  		pmd_t orig_pmd =3D *pmd;
- -		int ret =3D 0;
- +		int ret;
- =20
-  		barrier();
- -		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
- +		if (pmd_trans_huge(orig_pmd)) {
-+ 			unsigned int dirty =3D flags & FAULT_FLAG_WRITE;
-+=20
- -			if (pmd_numa(vma, orig_pmd)) {
- -				do_huge_pmd_numa_page(mm, vma, address, pmd,
- -						      flags, orig_pmd);
- -			}
- +			if (pmd_numa(*pmd))
- +				return do_huge_pmd_numa_page(mm, vma, address,
- +							     orig_pmd, pmd);
- =20
-- 			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
-+ 			if (dirty && !pmd_write(orig_pmd)) {
-  				ret =3D do_huge_pmd_wp_page(mm, vma, address, pmd,
-  							  orig_pmd);
-  				/*
-@@@ -3830,10 -3641,12 +3832,13 @@@
-  				 */
-  				if (unlikely(ret & VM_FAULT_OOM))
-  					goto retry;
- +				return ret;
-+ 			} else {
-+ 				huge_pmd_set_accessed(mm, vma, address, pmd,
-+ 						      orig_pmd, dirty);
-  			}
- =20
- -			return ret;
- +			return 0;
-  		}
-  	}
- =20
-
---Signature=_Mon__10_Dec_2012_19_01_39_+1100_lRryH29crv/r9B+h
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQxZbjAAoJEECxmPOUX5FE3O8QAJa1KnQX2S8X6/TGy3pv8Od/
-0eLCaI6GFXboDa4KPCo6cjn7XpEd578GBBDv6KAHfMt5G65SqDul6v4WkQmIoUP1
-BNzZYyy67ucpKaoGA9Nc0rs76TT+rcBZLDoO1ItTt3MGkY/twSumucN7IlZs3Y5i
-8eFH4YOYvRt6M7iKSeWVCEb5cvZtro89ofmXdrfC6Iuoks0FNzHFwslH0LIzPU8t
-yQahWB/0UD4L2EuQ/o8EIU8xP79qb/nnRQl1EVkXHm510WequEpdi16cOs+YyNDc
-f9+VxvBH8vLaj3CbFPhXIN0zP1AlA8kXRlseaSURhEZBSj09bScHptbfU8KZeXLl
-GCQsxextfpx/EwLlCgHvpu2yayfH1EKPJDjxjsZ+VHqVEasoDjV0zXllITtZzTYY
-woSNujpREZ9pNwv/lDw7oAzVP6fnFRR1D2aRsML5zClegUkuqNf5aelgtzrOxh1T
-RCxG/Be7Bhrwc3+ajrISC5I+mvKujJMDXrbn9cBEF1sHlidKrfvyPjGW0U+iSDLu
-wdSg4WsP6Mj+BT4tKvqQX8UG2JTuvqAEZyLcX2O+NyE9W4KaVbOkfNsCzBNvS7zl
-eNBXs5TAHbjAKpzgMyuKSLeEocjKuptEiF7q23JFRZ6dNfYeMna11Rl9y+vBE3rP
-/sZEHe5ItbaZQCzJSAtN
-=qoTp
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Dec_2012_19_01_39_+1100_lRryH29crv/r9B+h--
+Agreed, I will correct this.
+>> +                               /* Start/Stop required only for master */
+>> +                               iicstat &= ~S3C2410_IICSTAT_START;
+>> +                       }
+>> +               }
+>> +               writel(iicstat, i2c->regs + S3C2410_IICSTAT);
+>>         }
+>> -       writel(iicstat, i2c->regs + S3C2410_IICSTAT);
+>>
+>>         i2c->state = STATE_STOP;
+>>
+>> @@ -348,7 +370,8 @@ static int i2c_s3c_irq_nextbyte(struct s3c24xx_i2c
+>> *i2c, unsigned long iicstat)
+>>                  */
+>>
+>>                 if (iicstat & S3C2410_IICSTAT_LASTBIT &&
+>> -                   !(i2c->msg->flags & I2C_M_IGNORE_NAK)) {
+>> +                   !(i2c->msg->flags & I2C_M_IGNORE_NAK) &&
+>> +                   is_master(i2c)) {
+>>                         /* ack was not received... */
+>>
+>>                         dev_dbg(i2c->dev, "ack was not received\n");
+>> @@ -380,7 +403,7 @@ static int i2c_s3c_irq_nextbyte(struct s3c24xx_i2c
+>> *i2c, unsigned long iicstat)
+>>                  * end of the message, and if so, work out what to do
+>>                  */
+>>
+>> -               if (!(i2c->msg->flags & I2C_M_IGNORE_NAK)) {
+>> +               if (!(i2c->msg->flags & I2C_M_IGNORE_NAK) &&
+>> is_master(i2c)) {
+>>                         if (iicstat & S3C2410_IICSTAT_LASTBIT) {
+>>                                 dev_dbg(i2c->dev, "WRITE: No Ack\n");
+>>
+>> @@ -432,7 +455,6 @@ static int i2c_s3c_irq_nextbyte(struct s3c24xx_i2c
+>> *i2c, unsigned long iicstat)
+>>
+>>                 } else {
+>>                         /* send stop */
+>> -
+>>                         s3c24xx_i2c_stop(i2c, 0);
+>>                 }
+>>                 break;
+>> @@ -447,7 +469,7 @@ static int i2c_s3c_irq_nextbyte(struct s3c24xx_i2c
+>> *i2c, unsigned long iicstat)
+>>                 i2c->msg->buf[i2c->msg_ptr++] = byte;
+>>
+>>   prepare_read:
+>> -               if (is_msglast(i2c)) {
+>> +               if (is_msglast(i2c) && is_master(i2c)) {
+>>                         /* last byte of buffer */
+>>
+>>                         if (is_lastmsg(i2c))
+>> @@ -612,11 +634,13 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
+>>         if (i2c->suspended)
+>>                 return -EIO;
+>>
+>> -       ret = s3c24xx_i2c_set_master(i2c);
+>> -       if (ret != 0) {
+>> -               dev_err(i2c->dev, "cannot get bus (error %d)\n", ret);
+>> -               ret = -EAGAIN;
+>> -               goto out;
+>> +       if (is_master(i2c)) {
+>> +               ret = s3c24xx_i2c_set_master(i2c);
+>> +               if (ret != 0) {
+>> +                       dev_err(i2c->dev, "cannot get bus (error %d)\n",
+>> ret);
+>> +                       ret = -EAGAIN;
+>> +                       goto out;
+>> +               }
+>>         }
+>>
+>>         i2c->msg     = msgs;
+>> @@ -628,23 +652,29 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
+>>         s3c24xx_i2c_enable_irq(i2c);
+>>         s3c24xx_i2c_message_start(i2c, msgs);
+>>
+>> -       timeout = wait_event_timeout(i2c->wait, i2c->msg_num == 0, HZ * 5);
+>> +       if (is_master(i2c))
+>> +               timeout = wait_event_timeout(i2c->wait,\
+>> +                               i2c->msg_num == 0, HZ * 5);
+>> +       else
+>> +               wait_event_interruptible(i2c->wait, i2c->msg_num == 0);
+>>
+>>         ret = i2c->msg_idx;
+>>
+>>         /* having these next two as dev_err() makes life very
+>>          * noisy when doing an i2cdetect */
+>>
+>> -       if (timeout == 0)
+>> -               dev_dbg(i2c->dev, "timeout\n");
+>> -       else if (ret != num)
+>> -               dev_dbg(i2c->dev, "incomplete xfer (%d)\n", ret);
+>> +       if (is_master(i2c)) {
+>> +               if (timeout == 0)
+>> +                       dev_dbg(i2c->dev, "timeout\n");
+>> +               else if (ret != num)
+>> +                       dev_dbg(i2c->dev, "incomplete xfer (%d)\n", ret);
+>>
+>> -       /* For QUIRK_HDMIPHY, bus is already disabled */
+>> -       if (i2c->quirks & QUIRK_HDMIPHY)
+>> -               goto out;
+>> +               /* For QUIRK_HDMIPHY, bus is already disabled */
+>> +               if (i2c->quirks & QUIRK_HDMIPHY)
+>> +                       goto out;
+>>
+>> -       s3c24xx_i2c_wait_idle(i2c);
+>> +               s3c24xx_i2c_wait_idle(i2c);
+>> +       }
+>>
+>>   out:
+>>         return ret;
+>> @@ -963,6 +993,7 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct
+>> s3c24xx_i2c *i2c)
+>>         of_property_read_u32(np, "samsung,i2c-slave-addr",
+>> &pdata->slave_addr);
+>>         of_property_read_u32(np, "samsung,i2c-max-bus-freq",
+>>                                 (u32 *)&pdata->frequency);
+>> +       of_property_read_u32(np, "samsung,i2c-mode", &i2c->i2c_mode);
+>>  }
+>>  #else
+>>  static void
+>> @@ -1004,6 +1035,10 @@ static int s3c24xx_i2c_probe(struct platform_device
+>> *pdev)
+>>                 goto err_noclk;
+>>         }
+>>
+>> +       /* By default, i2c works in master mode */
+>> +       /* This currently will be updated using DT */
+>> +       i2c->i2c_mode   = 0;
+>> +
+>>         i2c->quirks = s3c24xx_get_device_quirks(pdev);
+>>         if (pdata)
+>>                 memcpy(i2c->pdata, pdata, sizeof(*pdata));
+>> @@ -1017,6 +1052,7 @@ static int s3c24xx_i2c_probe(struct platform_device
+>> *pdev)
+>>         i2c->adap.class   = I2C_CLASS_HWMON | I2C_CLASS_SPD;
+>>         i2c->tx_setup     = 50;
+>>
+>> +
+>>         init_waitqueue_head(&i2c->wait);
+>>
+>>         /* find the clock and enable it */
+>> --
+>> 1.7.9.5
+>>
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+>
+>
+> --
+> Tushar Behera
