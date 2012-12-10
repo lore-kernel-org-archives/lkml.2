@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab2LJGpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 01:45:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2739 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab2LJGpE convert rfc822-to-8bit (ORCPT
+	id S1752341Ab2LJGp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 01:45:27 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49031 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab2LJGpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 01:45:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,249,1355126400"; 
-   d="scan'208";a="231534382"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	Mon, 10 Dec 2012 01:45:24 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "Mohammed, Afzal" <afzal@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>
-Subject: RE: linux-next: manual merge of the net-next tree with the pci tree
-Thread-Topic: linux-next: manual merge of the net-next tree with the pci tree
-Thread-Index: AQHN1nLoE9Sru5aRzkGhg/YY1+lMhZgRlqrg
-Date: Mon, 10 Dec 2012 06:44:45 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB3018FADD5@HASMSX103.ger.corp.intel.com>
-References: <20121210120825.49096bafd378139e98becb8d@canb.auug.org.au>
-In-Reply-To: <20121210120825.49096bafd378139e98becb8d@canb.auug.org.au>
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>
+Subject: RE: [PATCH v3 1/3] mtd: nand: omap2: Update nerrors using
+ ecc.strength
+Thread-Topic: [PATCH v3 1/3] mtd: nand: omap2: Update nerrors using
+ ecc.strength
+Thread-Index: AQHNzic/oyygUlc/tEivdk+KDbZRxpgJyJuAgABfSOCAAq4JAIAExGZw
+Date: Mon, 10 Dec 2012 06:44:02 +0000
+Deferred-Delivery: Mon, 10 Dec 2012 06:44:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA1FA1B@DBDE01.ent.ti.com>
+References: <1354189595-12784-1-git-send-email-avinashphilip@ti.com>
+ <1354189595-12784-2-git-send-email-avinashphilip@ti.com>
+ <50BF3819.9010200@ti.com>
+ <518397C60809E147AF5323E0420B992E3EA1139B@DBDE01.ent.ti.com>
+ <50C1C784.4040209@ti.com>
+In-Reply-To: <50C1C784.4040209@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBA6jXTA003570
 
-> Today's linux-next merge of the net-next tree got a conflict in
-> drivers/net/wireless/iwlwifi/pcie/trans.c between commit b9d146e30a2d
-> ("iwlwifi: collapse wrapper for pcie_capability_read_word()") from the pci
-> tree and commit 7afe3705cd4e ("iwlwifi: continue clean up -
-> pcie/trans.c") from the net-next tree.
+On Fri, Dec 07, 2012 at 16:10:04, Nori, Sekhar wrote:
+> On 12/5/2012 6:13 PM, Philip, Avinash wrote:
+> > On Wed, Dec 05, 2012 at 17:33:37, Nori, Sekhar wrote:
+> >> Hi Avinash,
+> >>
+> >> On 11/29/2012 5:16 PM, Philip, Avinash wrote:
+> >>> Update number of errors using nand ecc strength.
+> >>> Also add macro definitions BCH8_ERROR_MAX & BCH4_ERROR_MAX
+> >>
+> >> Can you please describe why the original method of setting nerrors was
+> >> incorrect? Was it causing any issues in any particular configuration?
+> > 
+> > It affects the reusability of the code. For example BCH8 with AM335x RBL 
+> > compatibility requires  14 bytes instead of 13 byte. So setting nerrors
+> > with
+> > 	nerrors = (info->nand.ecc.bytes == 13) ? 8 : 4;
+> > will break am335x RBL compatibility.
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action is
-> required).
+> This should be summarized in the patch description so the motivation is
+> clear to those who read the history later.
+
+Ok I will add the details in patch description in next version.
+
+Thanks
+Avinash
+
 > 
-Looks right - thanks Stephen!
----------------------------------------------------------------------
-Intel Israel (74) Limited
+> Thanks,
+> Sekhar
+> 
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
