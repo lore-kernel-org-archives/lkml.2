@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab2LJBIj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 20:08:39 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33538 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab2LJBIh (ORCPT
+	id S1751341Ab2LJBTH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 20:19:07 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:10059 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab2LJBTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 20:08:37 -0500
-Date: Mon, 10 Dec 2012 12:08:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: linux-next: manual merge of the net-next tree with the pci tree
-Message-Id: <20121210120825.49096bafd378139e98becb8d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Dec_2012_12_08_25_+1100_Cx6Ts+n/e3Yl1a4D"
+	Sun, 9 Dec 2012 20:19:05 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-5f-50c538870585
+From: Boojin Kim <boojin.kim@samsung.com>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Cc: "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Will Deacon'" <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <001701cdd669$19e8cdd0$4dba6970$%kim@samsung.com>
+ <20121210000825.GH14363@n2100.arm.linux.org.uk>
+In-reply-to: <20121210000825.GH14363@n2100.arm.linux.org.uk>
+Subject: RE: [PATCH 1/3] ARM: MM: Add the workaround of Errata 774769
+Date: Mon, 10 Dec 2012 10:19:03 +0900
+Message-id: <002101cdd674$57884070$0698c150$%kim@samsung.com>
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3WaqLPe5gFYt7kQTefpYQAoRl/YAABxSPA
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t8zfd12i6MBBu+7rCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG3J+7mAv2clccWXSKuYHxOUcXIyeHhICJxJ03p5ghbDGJC/fW
+	s4HYQgLLGCVWTyyDqdn1eSYTRHw6o8TlhsguRi4gex6TRFtXKyNIgk1AU2LG9+nsILaIgLnE
+	vJmTmECKmAUOMUo8n3uHFaI7X+L6gxVgGzgFbCQ2b30NtllYwFXi7+GlYDUsAqoScyZOAhvE
+	K2Ar0fa7ASjOAXSFusSjv7oQ840kvpxbBzaGWUBEYt+Ld4wQrQIS3yYfYoEol5XYdIAZ5AQJ
+	gc9sEjdPd7JDPCMpcXDFDZYJjKKzkLQvYGRcxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRES
+	yFI7GFc2WBxiFOBgVOLhDVA8GiDEmlhWXJkL9CAHs5IIL9exIwFCvCmJlVWpRfnxRaU5qcWH
+	GH2ArprILCWanA+MsrySeENjYxMzE1MTc0tTc1McwkrivM0eKQFCAumJJanZqakFqUUw45g4
+	OKUaGFctuVRUm9Cu82XvDqZjEaGm67kvvs7vPmb+6dRx/omXTJeYbP/4cEVQeqjS2rmre7wa
+	Xl24pGe26+i2oOC6Gb69nnvNpZ09nimk7G9acPie4cVV8r86nn2Vvhw1Q0RrjVLyXqauP9fv
+	67MyqthNPzp/6rvkFy6XHab+cL3BXNtyxPeeXvQV/vlKLMUZiYZazEXFiQA3sjG6kQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t9jQd12i6MBBrMPmFlc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjLk/dzEX7OWuOLLoFHMD
+	43OOLkZODgkBE4ldn2cyQdhiEhfurWcDsYUEpjNKXG6I7GLkArLnMUm0dbUygiTYBDQlZnyf
+	zg5iiwiYS8ybOYkJpIhZ4BCjxPO5d1ghuvMlrj9YATaJU8BGYvPW18wgtrCAq8Tfw0vBalgE
+	VCXmTJwENohXwFai7XcDUJwD6Ap1iUd/dSHmG0l8ObcObAyzgIjEvhfvGCcw8s9C4i5gZFzF
+	KJpakFxQnJSea6hXnJhbXJqXrpecn7uJERwpz6R2MK5ssDjEKMDBqMTDG6B4NECINbGsuDIX
+	6GAOZiURXq5jRwKEeFMSK6tSi/Lji0pzUosPMfoAHTiRWUo0OR8YxXkl8YbGJmZGlkZmFkYm
+	5uY4hJXEeZs9UgKEBNITS1KzU1MLUotgxjFxcEo1MGaz2B90/u2wumjG8ZOzRLQNRPk4N+dm
+	eusq55w/d1js3qkJrRFe+rv17VZ9fXRToGKqbeqO9d42Tj8ONKQd+q66a9sBldLl/9yd9s3p
+	FbycuO25lGmS3Bst/4MvZr9YMOl9esaPPj+1k19nFZzUDFfxX5R5Y8LtXyWL5nOlZHgr2kyw
+	+qd1R1+JpTgj0VCLuag4EQB55sxcwQIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Dec_2012_12_08_25_+1100_Cx6Ts+n/e3Yl1a4D
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Russell King - ARM Linux wrote:
 
-Hi all,
+> > -3:	mov	r10, #0
+> > +	/* Cortex-A15 Errata */
+> > +3:	ldr	r10, =0x00000c0f		@ Cortex-A15 primary part number
+> > +	teq	r0, r10
+> > +	bne	4f
+> > +#ifdef CONFIG_ARM_ERRATA_774769
+>
+> There's not much point testing for the part number of the work-around isn't
+> enabled.
+The errata 773022 on second patch series is also required to checking the part number.
+In my opinion, the testing for Cortex-A15 primary part number is required
+before working the work-around to support several A15 errata.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/iwlwifi/pcie/trans.c between commit b9d146e30a2d
-("iwlwifi: collapse wrapper for pcie_capability_read_word()") from the
-pci tree and commit 7afe3705cd4e ("iwlwifi: continue clean up -
-pcie/trans.c") from the net-next tree.
+>
+> > +	teq	r6, #0x4			@ present in r0p4
+> > +	mrceq	p15, 0, r10, c1, c0, 1		@ read aux control register
+>
+> 	tsteq	r10, #1 << 15
+>
+> to avoid writing to the aux control register if the errata has already been
+> applied.
+Do you mean "tsteq	r10, #1 << 25" ?
+If yes, it needs to branch and will make a little complicated
+And, I think maybe this function could be the first step to configure this erratum.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks for your review
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> > +	orreq	r10, r10, #1 << 25		@ set bit #25
+> > +	mcreq	p15, 0, r10, c1, c0, 1		@ write aux control register
+> > +#endif
+> > +
+> > +4:	mov	r10, #0
+> >  	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
+> >  	dsb
+> >  #ifdef CONFIG_MMU
+> > --
+> > 1.7.5.4
+> >
+> >
+> >
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-diff --cc drivers/net/wireless/iwlwifi/pcie/trans.c
-index 1dfa6be,f6c21e7..0000000
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@@ -670,8 -94,10 +94,8 @@@ static void iwl_pcie_set_pwr_vmain(stru
- =20
-  /* PCI registers */
-  #define PCI_CFG_RETRY_TIMEOUT	0x041
- -#define PCI_CFG_LINK_CTRL_VAL_L0S_EN	0x01
- -#define PCI_CFG_LINK_CTRL_VAL_L1_EN	0x02
- =20
-- static void iwl_apm_config(struct iwl_trans *trans)
-+ static void iwl_pcie_apm_config(struct iwl_trans *trans)
-  {
-  	struct iwl_trans_pcie *trans_pcie =3D IWL_TRANS_GET_PCIE_TRANS(trans);
-  	u16 lctl;
-@@@ -684,20 -110,19 +108,17 @@@
-  	 * If not (unlikely), enable L0S, so there is at least some
-  	 *    power savings, even without L1.
-  	 */
--=20
-  	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
- -
- -	if ((lctl & PCI_CFG_LINK_CTRL_VAL_L1_EN) =3D=3D
- -				PCI_CFG_LINK_CTRL_VAL_L1_EN) {
- +	if (lctl & PCI_EXP_LNKCTL_ASPM_L1) {
-  		/* L1-ASPM enabled; disable(!) L0S */
-  		iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
-- 		dev_printk(KERN_INFO, trans->dev,
-- 			   "L1 Enabled; Disabling L0S\n");
-+ 		dev_info(trans->dev, "L1 Enabled; Disabling L0S\n");
-  	} else {
-  		/* L1-ASPM disabled; enable(!) L0S */
-  		iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
-- 		dev_printk(KERN_INFO, trans->dev,
-- 			   "L1 Disabled; Enabling L0S\n");
-+ 		dev_info(trans->dev, "L1 Disabled; Enabling L0S\n");
-  	}
- -	trans->pm_support =3D !(lctl & PCI_CFG_LINK_CTRL_VAL_L0S_EN);
- +	trans->pm_support =3D !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
-  }
- =20
-  /*
 
---Signature=_Mon__10_Dec_2012_12_08_25_+1100_Cx6Ts+n/e3Yl1a4D
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQxTYJAAoJEECxmPOUX5FEIeIQAI8AMC5WD9l0yDtjm7PkyqXK
-8XG2Bg0kf2qvxpeJXyx3zeBohKUf5+Bn+TUZRuan+MmE1IeuZzFnt6CRgFSOyv5m
-jcM0XjwXPy1peRJo+LMbijh0wYXF5b7/CyqR83TEMLGKXWKM3r8Y8dEDUh1tt3zI
-1rqthHdxzZUaw/1XF9hdT3elIHcLdb2t/0clKfhbigENimHHQWyHWCP/BizzFRl1
-wCLy9wEGoKehwkB6ao3TAB4nL2NF6psArbhX8gH0SF9AMl1pvJkh1SkqByRCurkf
-UvNWWbCA450AhyEi+tuFkzYZ77fBRtx74/2oVkBCWiHc8oXSs1XMTToZ1KyjcZcX
-rVm5rCW/pE17iLhHDi++wfEfNWZjtlxCHcdKOsyRiNUznmTJdLeQerN3O4Wfytue
-JkfIOjab5molZ7eiq4g4A0vFzYlW0Obs2IWk7JLcKDcpIIQ3t4BlUQzLjQ7pxe2i
-+hWzEUMkvv+WhL1hwOifzNRk/Blb10JHOmURughMSpHddJerLtv8OVQSuyljO4Ru
-kYvrHORdGFq/xC1w4x3UFNvdhadIlK+FS/MM4gjqNL8G+Xu5T1trcNK3kuKiDAJS
-zfvD8+UegFQb72O1fkxp+y2O2ZwTd3mx61jUeZCTM94kk7mPCnUB/kfu7M90RF/v
-VCSQfAF3y9E3tZDo0srw
-=3Nsx
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Dec_2012_12_08_25_+1100_Cx6Ts+n/e3Yl1a4D--
