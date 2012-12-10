@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2LJIbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:31:13 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55008 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab2LJIaB (ORCPT
+	id S1753011Ab2LJI37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:29:59 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59981 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab2LJI35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:30:01 -0500
-X-AuditID: 9c930197-b7bd3ae000003f1c-29-50c59d87deee
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        namhyung.kim@lge.com
-Subject: [PATCH 1/4] perf hists: Exchange order of comparing items when collapsing hists
-Date: Mon, 10 Dec 2012 17:29:54 +0900
-Message-Id: <1355128197-18193-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1355128197-18193-1-git-send-email-namhyung@kernel.org>
-References: <1355128197-18193-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 10 Dec 2012 03:29:57 -0500
+Date: Mon, 10 Dec 2012 19:29:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20121210192954.8f7f590fd44009ab6ee96947@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Dec_2012_19_29_54_+1100_C/F5Tk2FRzjeIJHQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+--Signature=_Mon__10_Dec_2012_19_29_54_+1100_C/F5Tk2FRzjeIJHQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-When comparing entries for collapsing put the given entry first, and
-then the iterated entry.  This is not the case of hist_entry__cmp()
-when called if given sort keys don't require collapsing.  So change
-the order for the sake of consistency.  It will be required for
-matching and/or linking multiple hist entries.
+Hi Andrew,
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-diff.c |  2 +-
- tools/perf/util/hist.c    | 12 +++++++++---
- 2 files changed, 10 insertions(+), 4 deletions(-)
+Today's linux-next merge of the akpm tree got a conflict in mm/mprotect.c
+between commit  ("2083d67027ad") from the tip tree and commit "thp:
+change split_huge_page_pmd() interface" from the akpm tree.
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index b2e7d39f099b..4dda6f4dc618 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -285,7 +285,7 @@ static void insert_hist_entry_by_name(struct rb_root *root,
- 	while (*p != NULL) {
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
--		if (hist_entry__cmp(he, iter) < 0)
-+		if (hist_entry__cmp(iter, he) < 0)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 82df1b26f0d4..3a9ccd09835d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -285,7 +285,13 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 		parent = *p;
- 		he = rb_entry(parent, struct hist_entry, rb_node_in);
- 
--		cmp = hist_entry__cmp(entry, he);
-+		/*
-+		 * Make sure that it receives arguments in a same order as
-+		 * hist_entry__collapse() so that we can use an appropriate
-+		 * function when searching an entry regardless which sort
-+		 * keys were used.
-+		 */
-+		cmp = hist_entry__cmp(he, entry);
- 
- 		if (!cmp) {
- 			he_stat__add_period(&he->stat, period);
-@@ -729,7 +735,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
- 		parent = *p;
- 		he = rb_entry(parent, struct hist_entry, rb_node);
- 
--		cmp = hist_entry__cmp(pair, he);
-+		cmp = hist_entry__cmp(he, pair);
- 
- 		if (!cmp)
- 			goto out;
-@@ -759,7 +765,7 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
- 
- 	while (n) {
- 		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node);
--		int64_t cmp = hist_entry__cmp(he, iter);
-+		int64_t cmp = hist_entry__cmp(iter, he);
- 
- 		if (cmp < 0)
- 			n = n->rb_left;
--- 
-1.7.11.7
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc mm/mprotect.c
+index b5be3f1,d74a6fb..0000000
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@@ -126,8 -89,8 +126,8 @@@ static inline unsigned long change_pmd_
+  		next =3D pmd_addr_end(addr, end);
+  		if (pmd_trans_huge(*pmd)) {
+  			if (next - addr !=3D HPAGE_PMD_SIZE)
+- 				split_huge_page_pmd(vma->vm_mm, pmd);
++ 				split_huge_page_pmd(vma, addr, pmd);
+ -			else if (change_huge_pmd(vma, pmd, addr, newprot)) {
+ +			else if (change_huge_pmd(vma, pmd, addr, newprot, prot_numa)) {
+  				pages +=3D HPAGE_PMD_NR;
+  				continue;
+  			}
+
+--Signature=_Mon__10_Dec_2012_19_29_54_+1100_C/F5Tk2FRzjeIJHQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQxZ2CAAoJEECxmPOUX5FEIKYP/isJKTlKNY1rHG4zAcPVtyl/
+FCXlnWonsr8uOGcgL97mLi1iY7pEXe+2pusorllH+8OC/piUK2cQvuRimorPVNHS
+cbELeahnVpuMagYBkdlmEEAar0xuVuEh9m457k8KEUNBu7OsyJ7faPjzusRM98zB
+UiC1Ca92vTI7FOJY6SApTSL6Ds++IH4qTS3IGs/jxQWj1yLreqMwBM0uZbTydw3M
+BzQzI7qGrxUw5CpDY3ssCSb4YjhCFGpXUgVsYKgrhMkTfFgkZIMmsH59EloaiQnX
+qAlKUmLWV8p0yEibJcel8lQdJmQPIzNuYBE1KVSXQR0gxn07o8tdA3B08SoGMqLu
+hcO86Xn9xMyRhBxY0K0vWl1B8kP2Wcf2KlNRrtupuUfBgqv1tsCcWUzNdsF2zIK2
+SkWd+2YqPWPYEuko9i2LfAufasoQGIuNk1lEsC3AoP+T8F1IUe9bq8W3GG6DQNRw
+G9DVlpfLVqbiaG7AjH8NKl2t76DF1vQi5KFaZTwJaRMRSQIpLkniAYc6KLtHJtJ/
+HSWWPX/Z9S03uVQmIryg1Qh1pqq1vrTnLZ0xa4HPqoeWzteSzheqjY+YfassltIt
+8YOFGXMoMOg+v7gk9swH6cNVQFYL5OJhpxP193WlXbzcSe6bez+pG0ZyVpVbF+Dl
+VJuLWLk3vsxSjppz8bPJ
+=93eZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_Dec_2012_19_29_54_+1100_C/F5Tk2FRzjeIJHQ--
