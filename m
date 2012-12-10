@@ -1,210 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab2LJQEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 11:04:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136Ab2LJQEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 11:04:20 -0500
-From: Adam Jackson <ajax@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arthur Taylor <art@ified.ca>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] vt: Add VC_MUTE (v2)
-Date: Mon, 10 Dec 2012 11:04:16 -0500
-Message-Id: <1355155456-21577-1-git-send-email-ajax@redhat.com>
+	id S1754300Ab2LJQXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 11:23:32 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64884 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab2LJQXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 11:23:30 -0500
+Message-ID: <50C60C47.70102@gmail.com>
+Date: Mon, 10 Dec 2012 08:22:31 -0800
+From: Alexander Duyck <alexander.duyck@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: saeed bishara <saeed.bishara@gmail.com>
+CC: Joseph Gasparakis <joseph.gasparakis@intel.com>, davem@davemloft.net,
+        shemminger@vyatta.com, chrisw@sous-sol.org, gospo@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry@broadcom.com, bhutchings@solarflare.com,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: Re: [PATCH v4 1/5] net: Add support for hardware-offloaded encapsulation
+References: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com> <1354925658-24115-2-git-send-email-joseph.gasparakis@intel.com> <CAMAG_ee6xW4EnzPFt=_5+NL2+LuyUjxd52Xc242inYm2+Yhg7g@mail.gmail.com>
+In-Reply-To: <CAMAG_ee6xW4EnzPFt=_5+NL2+LuyUjxd52Xc242inYm2+Yhg7g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
-the keyboard map state; we should be able to switch among cooked/raw/
-unicode without changing whether events are delivered.  Otherwise - if
-changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
-Gnome will switch VT instead of summoning the "run command" dialog.
+On 12/10/2012 02:04 AM, saeed bishara wrote:
+>> +static inline struct iphdr *inner_ip_hdr(const struct sk_buff *skb)
+>> +{
+>> +       return (struct iphdr *)skb_inner_network_header(skb);
+>> +}
+> Hi,
+> I'm a little bit bothered because of those inner_ functions, what
+> about the following approach:
+> 1. the skb will have a new state, that state can be outer (normal
+> mode) and inner.
+> 2. when you change the state to inner, all the helper functions such
+> as ip_hdr will return the innter header.
+>
+> that's ofcourse the API side. the implementation may still use the
+> fields you added to the skb.
+>
+> what you think?
+> saeed
 
-Add a new KD[GS]KBMUTE ioctl pair that allows events to be muted
-independently of map state.
+What you describe isn't too far off from what we are doing.  However we
+need to store both the inner and the outer headers.  All these inner_
+functions are meant to do is assist drivers to access the inner headers
+in the case that skb->encapsulation is set.  We wanted to avoid
+abstracting it too much since it is possible in the future that both
+inner and outer network headers may be needed if for instance you were
+to place a tunnelled frame inside of a VLAN with hardware tag insertion.
 
-v2: Leave K_OFF in place at Alan's suggestion.
+Thanks,
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=859485
-Cc: Arthur Taylor <art@ified.ca>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Adam Jackson <ajax@redhat.com>
----
- drivers/tty/vt/keyboard.c | 42 ++++++++++++++++++++++++++++++++++++++----
- drivers/tty/vt/vt_ioctl.c | 13 +++++++++++++
- include/linux/kbd_kern.h  |  3 ++-
- include/linux/vt_kern.h   |  2 ++
- include/uapi/linux/kd.h   |  4 ++++
- 5 files changed, 59 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index 681765b..20ebdad 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -642,6 +642,11 @@ static void fn_null(struct vc_data *vc)
- 	do_compute_shiftstate();
- }
- 
-+static bool kbd_is_muted(void)
-+{
-+    return (kbd->kbdmode == VC_OFF) || vc_kbd_mode(kbd, VC_MUTE);
-+}
-+
- /*
-  * Special key handlers
-  */
-@@ -657,7 +662,7 @@ static void k_spec(struct vc_data *vc, unsigned char value, char up_flag)
- 		return;
- 	if ((kbd->kbdmode == VC_RAW ||
- 	     kbd->kbdmode == VC_MEDIUMRAW ||
--	     kbd->kbdmode == VC_OFF) &&
-+	     kbd_is_muted())
- 	     value != KVAL(K_SAK))
- 		return;		/* SAK is allowed even in raw mode */
- 	fn_handler[value](vc);
-@@ -1381,7 +1386,7 @@ static void kbd_keycode(unsigned int keycode, int down, int hw_raw)
- 	if (rc == NOTIFY_STOP)
- 		return;
- 
--	if ((raw_mode || kbd->kbdmode == VC_OFF) && type != KT_SPEC && type != KT_SHIFT)
-+	if ((raw_mode || kbd_is_muted()) && type != KT_SPEC && type != KT_SHIFT)
- 		return;
- 
- 	(*k_handler[type])(vc, keysym & 0xff, !down);
-@@ -1742,6 +1747,30 @@ int vt_do_kdskbmode(int console, unsigned int arg)
- }
- 
- /**
-+ *	vt_do_kdskbmute		-	set keyboard event mute
-+ *	@console: the console to use
-+ *	@arg: the requested mode
-+ *
-+ *	Update the keyboard mute state while holding the correct locks.
-+ *	Return 0 for success or an error code.
-+ */
-+int vt_do_kdskbmute(int console, unsigned int arg)
-+{
-+	struct kbd_struct * kbd = kbd_table + console;
-+	int ret = 0;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&kbd_event_lock, flags);
-+	if (arg)
-+		set_vc_kbd_mode(kbd, VC_MUTE);
-+	else
-+		clr_vc_kbd_mode(kbd, VC_MUTE);
-+	spin_unlock_irqrestore(&kbd_event_lock, flags);
-+	return ret;
-+}
-+
-+
-+/**
-  *	vt_do_kdskbmeta		-	set keyboard meta state
-  *	@console: the console to use
-  *	@arg: the requested meta state
-@@ -2068,13 +2097,18 @@ int vt_do_kdgkbmode(int console)
- 		return K_MEDIUMRAW;
- 	case VC_UNICODE:
- 		return K_UNICODE;
--	case VC_OFF:
--		return K_OFF;
- 	default:
- 		return K_XLATE;
- 	}
- }
- 
-+int vt_do_kdgkbmute(int console)
-+{
-+	struct kbd_struct * kbd = kbd_table + console;
-+	/* This is a spot read so needs no locking */
-+	return vc_kbd_mode(kbd, VC_MUTE);
-+}
-+
- /**
-  *	vt_do_kdgkbmeta		-	report meta status
-  *	@console: console to report
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index b841f56..f0951e2 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -477,6 +477,19 @@ int vt_ioctl(struct tty_struct *tty,
- 		ret = put_user(uival, (int __user *)arg);
- 		break;
- 
-+	case KDSKBMUTE:
-+		if (!perm)
-+			return -EPERM;
-+		ret = vt_do_kdskbmute(console, arg);
-+		if (ret == 0)
-+			tty_ldisc_flush(tty);
-+		break;
-+
-+	case KDGKBMUTE:
-+		uival = vt_do_kdgkbmute(console);
-+		ret = put_user(uival, (int __user *)arg);
-+		break;
-+
- 	/* this could be folded into KDSKBMODE, but for compatibility
- 	   reasons it is not so easy to fold KDGKBMETA into KDGKBMODE */
- 	case KDSKBMETA:
-diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
-index b7c8cdc..18c0a45 100644
---- a/include/linux/kbd_kern.h
-+++ b/include/linux/kbd_kern.h
-@@ -55,12 +55,13 @@ struct kbd_struct {
- #define VC_UNICODE	3	/* Unicode mode */
- #define VC_OFF		4	/* disabled mode */
- 
--	unsigned char modeflags:5;
-+	unsigned char modeflags:6;
- #define VC_APPLIC	0	/* application key mode */
- #define VC_CKMODE	1	/* cursor key mode */
- #define VC_REPEAT	2	/* keyboard repeat */
- #define VC_CRLF		3	/* 0 - enter sends CR, 1 - enter sends CRLF */
- #define VC_META		4	/* 0 - meta, 1 - meta=prefix with ESC */
-+#define VC_MUTE		5	/* don't generate events */
- };
- 
- extern int kbd_init(void);
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 50ae7d0..a886915 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -168,6 +168,7 @@ extern void hide_boot_cursor(bool hide);
- 
- /* keyboard  provided interfaces */
- extern int vt_do_diacrit(unsigned int cmd, void __user *up, int eperm);
-+extern int vt_do_kdskbmute(int console, unsigned int arg);
- extern int vt_do_kdskbmode(int console, unsigned int arg);
- extern int vt_do_kdskbmeta(int console, unsigned int arg);
- extern int vt_do_kbkeycode_ioctl(int cmd, struct kbkeycode __user *user_kbkc,
-@@ -177,6 +178,7 @@ extern int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe,
- extern int vt_do_kdgkb_ioctl(int cmd, struct kbsentry __user *user_kdgkb,
-                                         int perm);
- extern int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm);
-+extern int vt_do_kdgkbmute(int console);
- extern int vt_do_kdgkbmode(int console);
- extern int vt_do_kdgkbmeta(int console);
- extern void vt_reset_unicode(int console);
-diff --git a/include/uapi/linux/kd.h b/include/uapi/linux/kd.h
-index 87b7cc4..ce08f6a 100644
---- a/include/uapi/linux/kd.h
-+++ b/include/uapi/linux/kd.h
-@@ -150,6 +150,10 @@ struct kbd_repeat {
- 			/* earlier this field was misnamed "rate" */
- };
- 
-+/* get/set event mute */
-+#define KDGKBMUTE	0x4B50
-+#define KDSKBMUTE	0x4B51
-+
- #define KDKBDREP        0x4B52  /* set keyboard delay/repeat rate;
- 				 * actually used values are returned */
- 
--- 
-1.7.11.7
-
+Alex
