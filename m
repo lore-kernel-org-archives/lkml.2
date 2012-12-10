@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab2LJCh3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 21:37:29 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49981 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2LJCh1 (ORCPT
+	id S1751472Ab2LJCoO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 21:44:14 -0500
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:50442 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab2LJCoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 21:37:27 -0500
-Date: Mon, 10 Dec 2012 13:37:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Subject: linux-next: build failure after merge of the virtio tree
-Message-Id: <20121210133725.cb4a76545691b099c73c40ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sun, 9 Dec 2012 21:44:13 -0500
+X-Greylist: delayed 3807 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Dec 2012 21:44:13 EST
+Date: Mon, 10 Dec 2012 11:42:32 +0900
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH] Add the values related to buddy system for filtering
+ free pages
+Message-Id: <20121210114232.625dd1acd7d0f88b58d85619@mxc.nes.nec.co.jp>
+In-Reply-To: <20121207150805.GC4928@redhat.com>
+References: <20121121170247.6b57465f2fc1d7f91cd1cddf@mxc.nes.nec.co.jp>
+	<20121207150805.GC4928@redhat.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Dec_2012_13_37_25_+1100_sLYgq6CDm6GwUtGc"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Dec_2012_13_37_25_+1100_sLYgq6CDm6GwUtGc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Vivek,
 
-Hi Rusty,
+On Fri, 7 Dec 2012 10:08:05 -0500
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-After merging the virtio tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> On Wed, Nov 21, 2012 at 05:02:47PM +0900, Atsushi Kumagai wrote:
+> > This patch adds the values related to buddy system to vmcoreinfo data
+> > so that makedumpfile (dump filtering command) can filter out all free
+> > pages with the new logic.
+> > It's faster than the current logic because it can distinguish free page
+> > by analyzing page structure at the same time as filtering for other
+> > unnecessary pages (e.g. anonymous page).
+> > OTOH, the current logic has to trace free_list to distinguish free 
+> > pages while analyzing page structure to filter out other unnecessary
+> > pages.
+> > 
+> > The new logic uses the fact that buddy page is marked by _mapcount == 
+> > PAGE_BUDDY_MAPCOUNT_VALUE. The values below are required to distinguish
+> > it.
+> > 
+> > Required values:
+> >   - OFFSET(page._mapcount)
+> >   - OFFSET(page.private)
+> >   - SIZE(pageflags)
+> >   - NUMBER(PG_slab)
+> >   - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
+> >   
+> 
+> As per your explanation, you should just need to export page._mapcount
+> offset and PAGE_BUDDY_MAPCOUNT_VALUE value so that you can figure out
+> if a page is free or not.
+> 
+> Why do we need rest of the three fields.
+> 
+> - OFFSET(page.private)
+> - SIZE(pageflags)
+> - NUMBER(PG_slab)
 
-drivers/net/virtio_net.c: In function 'vq2txq':
-drivers/net/virtio_net.c:150:2: error: implicit declaration of function 'vi=
-rtqueue_get_queue_index' [-Werror=3Dimplicit-function-declaration]
+Thanks for your comment.
 
-Caused by commit 986a4f4d452d ("virtio_net: multiqueue support") from the
-net-next tree interacting with commit 105e892960e1 ("virtio: move
-queue_index and num_free fields into core struct virtqueue") from the
-virtio tree.
+SIZE(pageflags) is unnecessary as you said, but the other two are
+certainly necessary.
+I modified the description in v2 to make it clear, please see below:
 
-I applied the patch below and can carry it as necessary.
+  https://lkml.org/lkml/2012/12/9/138
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 10 Dec 2012 13:33:57 +1100
-Subject: [PATCH] virtnet: for up for virtqueue_get_queue_index removal
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/virtio_net.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 33d6f6f..8afe32d 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -147,7 +147,7 @@ struct padded_vnet_hdr {
-  */
- static int vq2txq(struct virtqueue *vq)
- {
--	return (virtqueue_get_queue_index(vq) - 1) / 2;
-+	return (vq->index - 1) / 2;
- }
-=20
- static int txq2vq(int txq)
-@@ -157,7 +157,7 @@ static int txq2vq(int txq)
-=20
- static int vq2rxq(struct virtqueue *vq)
- {
--	return virtqueue_get_queue_index(vq) / 2;
-+	return vq->index / 2;
- }
-=20
- static int rxq2vq(int rxq)
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__10_Dec_2012_13_37_25_+1100_sLYgq6CDm6GwUtGc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQxUrlAAoJEECxmPOUX5FE0NcP/jam3FNQUg5eP16QfLtGxSjt
-wndm7PKtGMM0dpXx64tfJXQ1Ms45UdGmZyk9l5K80CvepsXtwTEdLbAbgu+m0dVD
-0DRhF8E30Wm1yvqO83/rG3fl4xFoP8W3sNwABzLZdNgIABOBKwxA/zfvSigg22xb
-R3iouvQ6t+3NvN76GeVW8w/sTqzTkItPnwDdtCRrlPXEpGtdRdbl1UFbY+adBcoc
-AmzaqkX0LEJ6RYuFEApc1zX4sNTVg/szbAvndNfheExVMVID79Qq9H5T6in+5LOx
-ZB7QPM35V4Pg0R/NYCsVdnH0OeSBt+fOfHZOarir8Z8JEOf4sJiTg9+3LI/A4iyX
-iPXsoB5kmM+tBVHdZLdSeD4Rax6BltG1F251t7hodgB43+ZOr6mbGy+BWsatydbw
-8sagLKN2WrahzzztPY5euBvVJfslw6wtPFJgChZR5fSNXRbYV+XErBuiB5zdENUv
-ZhygEk1q6pnav3Kxv6iqIsIgH2J59z2qk/GnaZoYtVZ27KpKAEFgda4PRqsJUspg
-Wy1MNhiRgt8ebDiuIOLIKXBZEAhbl0ATWWtFDC8toYUSM4noeidUt0QllDOxnxia
-dlYkJzSkjPzeXzN0UL3AFSkU75g53qvItPIMj2POxJYXfTZPokn8fe3se6gdJgtz
-1D+T88/ZfGabRfrbiXAJ
-=NJHK
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Dec_2012_13_37_25_+1100_sLYgq6CDm6GwUtGc--
+Thanks
+Atsushi Kumagai
