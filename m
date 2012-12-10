@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2LJKmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:42:24 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:48682 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2LJKmW (ORCPT
+	id S1754214Ab2LJKnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:43:35 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37271 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2LJKnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:42:22 -0500
+	Mon, 10 Dec 2012 05:43:33 -0500
+Date: Mon, 10 Dec 2012 11:43:27 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-ID: <20121210104327.GA7264@gmail.com>
+References: <20121210195402.1042a8ea5bfb57bb758007ac@canb.auug.org.au>
 MIME-Version: 1.0
-Date: Mon, 10 Dec 2012 11:42:22 +0100
-Message-ID: <CADhePA2UTjvTmJOVnW_gNXmQ_T=Rk28HAf2pHqKj4akyp7+V9A@mail.gmail.com>
-Subject: [3.7-rc8 regression] Buffer I/O error on device sda during boot
- (attempt to access beyond end of device)
-From: M Z <magez.magez@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210195402.1042a8ea5bfb57bb758007ac@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-booting vanilla  3.7-rc8 kernel on Acer Aspire 1810TZ yields these
-errors (I was using 3.6.9-1 and 3.5.5-1 from Debian experimental
-before without these errors)
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
- [    9.265058] attempt to access beyond end of device
- [    9.265063] sda1: rw=0, want=968382504, limit=968382503
- [    9.265066] Buffer I/O error on device sda1, logical block 121047812
- [    9.265069] attempt to access beyond end of device
- [    9.265071] sda1: rw=0, want=968382504, limit=968382503
- [    9.265073] Buffer I/O error on device sda1, logical block 121047812
- [    9.265383] attempt to access beyond end of device
- [    9.265387] sda1: rw=0, want=968382504, limit=968382503
- [    9.265389] Buffer I/O error on device sda1, logical block 121047812
-...
- [    9.265058] attempt to access beyond end of device
- [    9.265063] sda1: rw=0, want=968382504, limit=968382503
- [    9.265066] Buffer I/O error on device sda1, logical block 121047812
- [    9.265069] attempt to access beyond end of device
- [    9.265071] sda1: rw=0, want=968382504, limit=968382503
- [    9.265073] Buffer I/O error on device sda1, logical block 121047812
- [    9.265383] attempt to access beyond end of device
- [    9.265387] sda1: rw=0, want=968382504, limit=968382503
- [    9.265389] Buffer I/O error on device sda1, logical block 121047812
+> Hi Andrew,
+> 
+> After merging the akpm tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> mm/migrate.c: In function 'migrate_misplaced_transhuge_page_put':
+> mm/migrate.c:1666:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
+> arch/x86/include/asm/pgtable.h:792:20: note: expected 'struct pmd_t *' but argument is of type 'pmd_t'
+> 
+> Caused by commit 7f7f03ce3820 ("mm, numa: Implement migrate-on-fault lazy
+> NUMA strategy for regular and THP pages") from the tip tree and expose by
+> commit "x86: convert update_mmu_cache() and update_mmu_cache_pmd() to
+> functions" from the akpm tree.
+> 
+> I applied the following patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 10 Dec 2012 19:50:57 +1100
+> Subject: [PATCH] mm,numa: fix update_mmu_cache_pmd call
+> 
+> Fixes this build error:
+> 
+> mm/migrate.c: In function 'migrate_misplaced_transhuge_page_put':
+> mm/migrate.c:1666:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
+> arch/x86/include/asm/pgtable.h:792:20: note: expected 'struct pmd_t *' but argument is of type 'pmd_t'
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  mm/migrate.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 5be98e5..964a8c1 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1663,7 +1663,7 @@ int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
+>  	page_add_new_anon_rmap(new_page, vma, haddr);
+>  
+>  	set_pmd_at(mm, haddr, pmd, entry);
+> -	update_mmu_cache_pmd(vma, address, entry);
+> +	update_mmu_cache_pmd(vma, address, &entry);
+>  	page_remove_rmap(page);
+>  	/*
+>  	 * Finish the charge transaction under the page table lock to
 
+I think the real bug is not in the akpm but in the -tip tree: we 
+copy & pasted a pre-existing buggy upstream place that also 
+called update_mmu_cache_pmd() with a pmd value, not by address. 
+akpm's patch fixed the original buggy place, but not our copy of 
+it.
 
-Any idea before I hit the bisect route? (should I worry about these errors? :) )
+Practically this does not truly matter at the moment as only 
+Sparc64 appears to be a real user of that function, and Sparc64 
+does not turn on the NUMA feature (yet) - but nevertheless the 
+change in akpm's tree which introduces correct typing for this 
+method exposed the latent bug.
 
+I'll pick up your fix.
 
-Thanks
+Thanks,
 
-
-Matej Zary
-
--------
-fdisk -l
-
-Disk /dev/sda: 500.1 GB, 500107862016 bytes
-255 heads, 63 sectors/track, 60801 cylinders, total 976773168 sectors
-Units = sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disk identifier: 0x000486a3
-
-   Device Boot      Start         End      Blocks   Id  System
-/dev/sda1   *        2048   968384550   484191251+  83  Linux
-/dev/sda2       968384551   976773167     4194308+  82  Linux swap / Solaris
-
-
-lspci
-00:00.0 Host bridge: Intel Corporation Mobile 4 Series Chipset Memory
-Controller Hub (rev 07)
-00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
-Chipset Integrated Graphics Controller (rev 07)
-00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset
-Integrated Graphics Controller (rev 07)
-00:1a.0 USB controller: Intel Corporation 82801I (ICH9 Family) USB
-UHCI Controller #4 (rev 03)
-00:1a.7 USB controller: Intel Corporation 82801I (ICH9 Family) USB2
-EHCI Controller #2 (rev 03)
-00:1b.0 Audio device: Intel Corporation 82801I (ICH9 Family) HD Audio
-Controller (rev 03)
-00:1c.0 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express
-Port 1 (rev 03)
-00:1c.3 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express
-Port 4 (rev 03)
-00:1d.0 USB controller: Intel Corporation 82801I (ICH9 Family) USB
-UHCI Controller #1 (rev 03)
-00:1d.1 USB controller: Intel Corporation 82801I (ICH9 Family) USB
-UHCI Controller #2 (rev 03)
-00:1d.2 USB controller: Intel Corporation 82801I (ICH9 Family) USB
-UHCI Controller #3 (rev 03)
-00:1d.7 USB controller: Intel Corporation 82801I (ICH9 Family) USB2
-EHCI Controller #1 (rev 03)
-00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev 93)
-00:1f.0 ISA bridge: Intel Corporation ICH9M-E LPC Interface Controller (rev 03)
-00:1f.2 SATA controller: Intel Corporation 82801IBM/IEM
-(ICH9M/ICH9M-E) 4 port SATA Controller [AHCI mode] (rev 03)
-00:1f.3 SMBus: Intel Corporation 82801I (ICH9 Family) SMBus Controller (rev 03)
-01:00.0 Ethernet controller: Atheros Communications Inc. AR8131
-Gigabit Ethernet (rev c0)
-02:00.0 Network controller: Intel Corporation Centrino Wireless-N 1000
+	Ingo
