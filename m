@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab2LJTmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:42:53 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:17172 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab2LJTmo (ORCPT
+	id S1752482Ab2LJTmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:42:51 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:20597 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2LJTms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:42:44 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-8a-50c63b332db3
+	Mon, 10 Dec 2012 14:42:48 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-e5-50c63b371be4
 From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org
 Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
@@ -15,55 +15,64 @@ Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
         kyungmin.park@samsung.com, devicetree-discuss@lists.ozlabs.org,
         linux-kernel@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH RFC 12/13] v4l2-of: Corrected v4l2_of_parse_link() function
- declaration
-Date: Mon, 10 Dec 2012 20:41:38 +0100
-Message-id: <1355168499-5847-13-git-send-email-s.nawrocki@samsung.com>
+Subject: [PATCH RFC 13/13] v4l2-of: Replace "remote" property with
+ "remote-endpoint"
+Date: Mon, 10 Dec 2012 20:41:39 +0100
+Message-id: <1355168499-5847-14-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1355168499-5847-1-git-send-email-s.nawrocki@samsung.com>
 References: <1355168499-5847-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t9jQV1j62MBBvPuq1hc3jWHzaJnw1ZW
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJuvFnBVDCDo2LVi8PMDYyf2boYOTkkBEwkfjZcZoSw
-	xSQu3FsPFOfiEBKYzihxZPMFZging0li2p0JYFVsAoYSvUf7wGwRATOJd52PWUCKmAX6mCRO
-	3vnFCpIQFoiUaH70H6yIRUBVYs+OPWBxXgE3iSNfzwE1cACtU5CYM8kGJMwJFH59qBWsXEjA
-	VeLHzHXMExh5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQI9v4z6R2MqxosDjEKcDAq
-	8fBqaB0LEGJNLCuuzD3EKMHBrCTCGyEBFOJNSaysSi3Kjy8qzUktPsQozcGiJM7b7JESICSQ
-	nliSmp2aWpBaBJNl4uCUamCs2RrqfPdpvc/nqnze0iWf1pef+GhYLSr8NEoi/eAqm2j7zAlN
-	DFf17t9952Nk3rtZd4V6VZ/xqtK85yvTna9N/5bKbLTJnm3Xey9BybT9/4PM1WaeC7noVWhl
-	GH/q+xSmDRLNW+ryTlzRsrsXkMA7r7rId7tJzIKNN3TmzRN303yy1fy96n0lluKMREMt5qLi
-	RAAmhqSQ+gEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t9jQV1z62MBBt9PqVlc3jWHzaJnw1ZW
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKu7f/NVPCLq+L8Oc4Gxj7OLkZODgkBE4l//XdZIGwx
+	iQv31rN1MXJxCAlMZ5Q4d/khE4TTwSTxsvccM0gVm4ChRO/RPkYQW0TATOJd52MWkCJmgT4m
+	iZN3frGCJIQFwiSWdfwHs1kEVCX+NR4Gs3kF3CTWnH8C1MwBtE5BYs4kG5AwJ1D49aFWsJlC
+	Aq4SP2auY57AyLuAkWEVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRrDvn0ntYFzZYHGIUYCD
+	UYmHV0PrWIAQa2JZcWXuIUYJDmYlEd4ICaAQb0piZVVqUX58UWlOavEhRmkOFiVx3maPlAAh
+	gfTEktTs1NSC1CKYLBMHp1QDY6nQyRfWorN/Ov/1Wxjx9N6keQ2lmwMlt91z6nHorWRr7Ev9
+	IHBZ+caLis18Sc9vT3vC8OP38mpZS93uF/PDN3rWRDCv9zu6k/unVYCYXVnF48Lmym179x54
+	rdzTtsrm4KTFM94/f3ZyfdAV1vNWfs/Vg5xEj0d/kGD31HLeJrFTSl/YSOV8lRJLcUaioRZz
+	UXEiAO8THRL5AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v4l2_of_parse_link() return value type is int, not void.
+As agreed (I hope I'm not wrong) on the LMML use "remote-endpoint"
+property instead of "remote". Also add kerneldoc description for
+the function.
 
 Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- include/media/v4l2-of.h |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/media/v4l2-core/v4l2-of.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-index 9b036e6..686d04b 100644
---- a/include/media/v4l2-of.h
-+++ b/include/media/v4l2-of.h
-@@ -49,10 +49,13 @@ int v4l2_of_parse_data_lanes(const struct device_node *node,
- struct device_node *v4l2_of_get_next_link(const struct device_node *parent,
- 					struct device_node *previous);
- struct device_node *v4l2_of_get_remote(const struct device_node *node);
--#else
--static inline void v4l2_of_parse_link(const struct device_node *node,
-+
-+#else /* CONFIG_OF */
-+
-+static inline int v4l2_of_parse_link(const struct device_node *node,
- 				      struct v4l2_of_link *link)
- {
-+	return -ENOSYS;
+diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+index 032ee67..10a06e4 100644
+--- a/drivers/media/v4l2-core/v4l2-of.c
++++ b/drivers/media/v4l2-core/v4l2-of.c
+@@ -186,13 +186,19 @@ struct device_node *v4l2_of_get_next_link(const struct device_node *parent,
  }
+ EXPORT_SYMBOL(v4l2_of_get_next_link);
  
- static inline int v4l2_of_parse_data_lanes(const struct device_node *node,
+-/* Return a refcounted DT node, owning the link, referenced by "remote" */
++/**
++ * v4l2_of_get_remote() - get device node corresponding to remote enpoint
++ * @node: local endpoint node
++ *
++ * Return: Remote device node associated with remote endpoint node linked
++ *	   to @node. Use of_node_put() on it when done.
++ */
+ struct device_node *v4l2_of_get_remote(const struct device_node *node)
+ {
+ 	struct device_node *remote, *tmp;
+ 
+-	/* Get remote link DT node */
+-	remote = of_parse_phandle(node, "remote", 0);
++	/* Get remote endpoint DT node */
++	remote = of_parse_phandle(node, "remote-endpoint", 0);
+ 	if (!remote)
+ 		return NULL;
+ 
 -- 
 1.7.9.5
 
