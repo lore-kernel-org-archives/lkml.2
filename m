@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab2LJXUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:20:33 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:54768 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab2LJXUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:20:31 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: IRQ subsystem menu
-To: Paul Thompson <set48035@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20121206021620.GB8989@squish.home.loc>
-References: <20121021074016.GA2604@squish.home.loc> <20121029140308.GA19316@sepie.suse.cz> <20121129203242.6D6CD3E09C2@localhost> <20121206021620.GB8989@squish.home.loc>
-Date: Mon, 10 Dec 2012 23:18:50 +0000
-Message-Id: <20121210231850.367713E081F@localhost>
+	id S1752554Ab2LJXUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:20:48 -0500
+Received: from wren.arvixe.com ([50.97.138.99]:45624 "EHLO wren.arvixe.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab2LJXUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 18:20:47 -0500
+Message-ID: <1355181642.2897.27.camel@localhost>
+Subject: Re: [PATCH 4/5] rtl8712: replace min with min_t
+From: Przemo Firszt <przemo@firszt.eu>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        greg@kroah.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Dec 2012 23:20:42 +0000
+In-Reply-To: <20121210224943.GT22569@mwanda>
+References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
+	 <1355048110-10859-4-git-send-email-przemo@firszt.eu>
+	 <20121210094108.GQ6568@mwanda> <1355178112.2897.22.camel@localhost>
+	 <20121210224943.GT22569@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2 (3.6.2-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - wren.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
+X-Get-Message-Sender-Via: wren.arvixe.com: authenticated_id: przemo@firszt.eu
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Dec 2012 21:16:20 -0500, Paul Thompson <set48035@gmail.com> wrote:
-> Grant Likely <grant.likely@secretlab.ca>, on Thu  2012.11.29 said:
-> > On Mon, 29 Oct 2012 15:03:08 +0100, Michal Marek <mmarek@suse.cz> wrote:
-> > > (Adding lkml and Thomas as IRQ subsystem maintainer to CC)
-> > > 
-> > > On Sun, Oct 21, 2012 at 03:40:16AM -0400, Paul Thompson wrote:
-> > > > 	Hi;
-> > > > 
-> > > > 	In menuconfig, General setup -> IRQ subsystem, there are two
-> > > > possible menu-items. One depends partly on IRQ_DOMAIN, and the other
-> > > > on MAY_HAVE_SPARSE_IRQ.
-> > > > 
-> [...]
-> > > > 
-> > > > 	Ideally, the "IRQ subsystem" menu would not even show up
-> > > > if it would contain no menu-items, but I do not know enough to
-> > > > formulate that constraint.
-> > 
-> > First, move the 'menu "IRQ subsystem"' line does to right before the
-> > IRQ_DOMAIN_DEBUG line so that it wraps the options that matter, then you
-> > can add a "depends on MAY_HAVE_SPARSE_IRQ || IRQ_DOMAIN" line right
-> > below the menu item.
-> > 
-> > You'll also need to move the IRQ_FORCED_THREADING line out from inside
-> > the menu block.
-> > 
-> > Try it out and let me know how it goes.
-> > 
-> > g.
+Dnia 2012-12-11, wto o godzinie 01:49 +0300, Dan Carpenter pisze:
+[..]
+> At the end iwe.u.data.length is going to be a number between 0 and
+> 32.  That can easily fit in 16 bits no problem.
 > 
-> 	Hi;
+> The difference is that, imagine ->network.Ssid.SsidLength is larger
+> than u16 like 0x10001.  The cast to u16 changes it to 0x0001 which
+> is less than 32 so we would say the minimum is 1 when actually we
+> want to say 32 is the min.
 > 
-> 	The logic makes sense to me, and makes the menus appearance
-> dependent on if either option setting can exist. So, on my system,
-> the IRQ subsystem menu does not appear.
-> 
-> Paul
+Dan,
+Thank you! That was the thing that I missed...
+New set of patches on the way.
+-- 
+Kind regards,
+Przemo Firszt
 
-Looks right to me. Please repost with a proper commit log and
-"Signed-off-by" line and I'll apply this patch.
-(See Documentation/SubmittingPatches)
-
-g.
 
