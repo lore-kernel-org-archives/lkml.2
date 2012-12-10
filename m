@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab2LJRHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 12:07:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35048 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab2LJRHI (ORCPT
+	id S1751826Ab2LJRLa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 12:11:30 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:44366 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2LJRL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 12:07:08 -0500
+	Mon, 10 Dec 2012 12:11:28 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjVTAEkXxlBV5qjOPGdsb2JhbABEhXGFALQOFwMBAQEBODSCHwEFOhwVDhAIA0YUJQoaiCi3PBSQDWEDlgWFe41C
+X-IronPort-AV: E=Sophos;i="4.84,253,1355094000"; 
+   d="scan'208";a="245632361"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 10 Dec 2012 18:13:59 +0100
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dudley Du <dudl@cypress.com>, David Solda <dso@cypress.com>,
+        Troy Abercrombia <ta@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [PATCH v6] Cypress PS/2 Trackpad driver
+Message-ID: <20121210171359.GA881@polaris.bitmath.org>
+References: <1354846216-19707-1-git-send-email-kamal@canonical.com>
+ <20121208125405.GA3183@polaris.bitmath.org>
+ <1354986225.2795.107.camel@fourier>
 MIME-Version: 1.0
-In-Reply-To: <2637774.lmuX5P2qQX@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
-	<2097693.II1PNyeFLY@vostro.rjw.lan>
-	<CAE9FiQWxoWubagm4gj81YgMeqyEZgpT47ROAfjmXSmoaTn-Yig@mail.gmail.com>
-	<2637774.lmuX5P2qQX@vostro.rjw.lan>
-Date: Mon, 10 Dec 2012 09:07:06 -0800
-X-Google-Sender-Auth: N0mGLbYil4p4TabwWnHnXSXYcCc
-Message-ID: <CAE9FiQXsBC-CY4KqKkaAXx3sYLVWJOaaKGkg_kChb7ry_7Sq8Q@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354986225.2795.107.camel@fourier>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, December 09, 2012 09:34:42 PM Yinghai Lu wrote:
->>
->> Can we expand the BUS_ADD_* concept to other devices instead of just
->> acpi_device?
->>
->> aka we should let struct device has this add_type field.
->
-> Having done that in ACPI to cover our use case here, we can try to move it
-> into struct device if there are use cases beyond ACPI that can't be covered
-> by using deferred driver probing.
+> > > +config MOUSE_PS2_CYPRESS
+> > > +       bool "Cypress PS/2 mouse protocol extension" if EXPERT
+> > 
+> > Why EXPERT here?
+> > 
+> > > +       default y
+> > 
+> > Should it really be default y here?
+> 
+> 
+> This config entry (with phrases "if EXPERT" and "default y") was simply
+> cloned from similar devices (e.g. SYNAPTICS, ALPS, LIFEBOOK).
+> 
+> If your preference is that CYPRESS should be disabled by default, I'll
+> omit those phrases.  Please advise.
 
-pci device for hotplug have same problem. need to delay driver attach
-for them too.
+Dmitry, which default do you prefer here?
 
-also BUS_ADD_MATCH and BUS_ADD_START are duplicated.
-
-old add are separated to adding all devices to tree and then matching
-work to load the drivers.
-
-so _START is not needed anymore, only user.start in pci_root driver
-should be removed.
-code in .start could be moved .add without problem.
+Henrik
