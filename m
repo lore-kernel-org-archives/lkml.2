@@ -1,135 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2LJJNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:13:24 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41296 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab2LJJNS (ORCPT
+	id S1753697Ab2LJJOK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:14:10 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42530 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab2LJJOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:13:18 -0500
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        Abhijit Pawar <abhi.c.pawar@gmail.com>
-Subject: [PATCH RESEND] net: remove obsolete simple_strto<foo>
-Date: Mon, 10 Dec 2012 14:42:28 +0530
-Message-Id: <1355130748-7828-1-git-send-email-abhi.c.pawar@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 10 Dec 2012 04:14:05 -0500
+Message-ID: <50C5A7C1.7090308@linux.vnet.ibm.com>
+Date: Mon, 10 Dec 2012 17:13:37 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 3/5] KVM: x86: clean up reexecute_instruction
+References: <50C5A747.1020105@linux.vnet.ibm.com>
+In-Reply-To: <50C5A747.1020105@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121009-1618-0000-0000-000002FFC08D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replace the obsolete simple_strto<foo> with kstrto<foo>
+Little cleanup for reexecute_instruction, also use gpa_to_gfn in
+retry_instruction
 
-Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- net/core/netpoll.c                 |    5 ++++-
- net/ipv4/netfilter/ipt_CLUSTERIP.c |    9 +++++++--
- net/mac80211/debugfs_sta.c         |    3 +++
- net/netfilter/nf_conntrack_core.c  |    5 ++++-
- 4 files changed, 18 insertions(+), 4 deletions(-)
+ arch/x86/kvm/x86.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 77a0388..12c129f 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -674,7 +674,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 		if ((delim = strchr(cur, '@')) == NULL)
- 			goto parse_failed;
- 		*delim = 0;
--		np->local_port = simple_strtol(cur, NULL, 10);
-+		if (kstrtou16(cur, 10, &np->local_port))
-+			goto parse_failed;
- 		cur = delim;
- 	}
- 	cur++;
-@@ -706,6 +707,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 		if (*cur == ' ' || *cur == '\t')
- 			np_info(np, "warning: whitespace is not allowed\n");
- 		np->remote_port = simple_strtol(cur, NULL, 10);
-+		if (kstrtou16(cur, 10, &np->remote_port))
-+			goto parse_failed;
- 		cur = delim;
- 	}
- 	cur++;
-diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-index fe5daea..75e33a7 100644
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -661,6 +661,7 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
- #define PROC_WRITELEN	10
- 	char buffer[PROC_WRITELEN+1];
- 	unsigned long nodenum;
-+	int rc;
- 
- 	if (size > PROC_WRITELEN)
- 		return -EIO;
-@@ -669,11 +670,15 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
- 	buffer[size] = 0;
- 
- 	if (*buffer == '+') {
--		nodenum = simple_strtoul(buffer+1, NULL, 10);
-+		rc = kstrtoul(buffer+1, 10, &nodenum);
-+		if (rc)
-+			return rc;
- 		if (clusterip_add_node(c, nodenum))
- 			return -ENOMEM;
- 	} else if (*buffer == '-') {
--		nodenum = simple_strtoul(buffer+1, NULL,10);
-+		rc = kstrtoul(buffer+1, 10, &nodenum);
-+		if (rc)
-+			return rc;
- 		if (clusterip_del_node(c, nodenum))
- 			return -ENOENT;
- 	} else
-diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
-index 49a1c70..0dedb4b 100644
---- a/net/mac80211/debugfs_sta.c
-+++ b/net/mac80211/debugfs_sta.c
-@@ -221,6 +221,9 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
- 		return -EINVAL;
- 
- 	tid = simple_strtoul(buf, NULL, 0);
-+	ret = kstrtoul(buf, 0, &tid);
-+	if (ret)
-+		return ret;
- 
- 	if (tid >= IEEE80211_NUM_TIDS)
- 		return -EINVAL;
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index af17516..37d9e62 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1409,7 +1409,7 @@ EXPORT_SYMBOL_GPL(nf_ct_alloc_hashtable);
- 
- int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
- {
--	int i, bucket;
-+	int i, bucket, rc;
- 	unsigned int hashsize, old_size;
- 	struct hlist_nulls_head *hash, *old_hash;
- 	struct nf_conntrack_tuple_hash *h;
-@@ -1423,6 +1423,9 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
- 		return param_set_uint(val, kp);
- 
- 	hashsize = simple_strtoul(val, NULL, 0);
-+	rc = kstrtouint(val, 0, &hashsize);
-+	if (rc)
-+		return rc;
- 	if (!hashsize)
- 		return -EINVAL;
- 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index e87be93b..1c67873 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4761,19 +4761,18 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
+ 	if (tdp_enabled)
+ 		return false;
+
++	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
++	if (gpa == UNMAPPED_GVA)
++		return true; /* let cpu generate fault */
++
+ 	/*
+ 	 * if emulation was due to access to shadowed page table
+ 	 * and it failed try to unshadow page and re-enter the
+ 	 * guest to let CPU execute the instruction.
+ 	 */
+-	if (kvm_mmu_unprotect_page_virt(vcpu, gva))
++	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
+ 		return true;
+
+-	gpa = kvm_mmu_gva_to_gpa_system(vcpu, gva, NULL);
+-
+-	if (gpa == UNMAPPED_GVA)
+-		return true; /* let cpu generate fault */
+-
+ 	/*
+ 	 * Do not retry the unhandleable instruction if it faults on the
+ 	 * readonly host memory, otherwise it will goto a infinite loop:
+@@ -4828,7 +4827,7 @@ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+ 	if (!vcpu->arch.mmu.direct_map)
+ 		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+
+-	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
++	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+
+ 	return true;
+ }
 -- 
 1.7.7.6
 
