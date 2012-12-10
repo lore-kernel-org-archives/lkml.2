@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2LJJSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:18:48 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:23460 "EHLO relay.sw.ru"
+	id S1753965Ab2LJJSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:18:42 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:41616 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab2LJJSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:45 -0500
-Subject: [PATCH 4/7] nfsd: pass net to nfsd_create_serv()
+	id S1753820Ab2LJJSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:18:39 -0500
+Subject: [PATCH 3/7] nfsd: pass net to nfsd_startup() and nfsd_shutdown()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 10 Dec 2012 12:19:20 +0300
-Message-ID: <20121210091920.8855.8081.stgit@localhost.localdomain>
+Date: Mon, 10 Dec 2012 12:19:14 +0300
+Message-ID: <20121210091914.8855.60002.stgit@localhost.localdomain>
 In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
 References: <20121210091832.8855.26672.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -27,69 +27,69 @@ future.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/nfsctl.c |    4 ++--
- fs/nfsd/nfsd.h   |    2 +-
- fs/nfsd/nfssvc.c |    5 ++---
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ fs/nfsd/nfssvc.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index e13cbdd..ae1d143 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -664,7 +664,7 @@ static ssize_t __write_ports_addfd(char *buf)
- 	if (err != 0 || fd < 0)
- 		return -EINVAL;
- 
--	err = nfsd_create_serv();
-+	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
- 
-@@ -696,7 +696,7 @@ static ssize_t __write_ports_addxprt(char *buf)
- 	if (port < 1 || port > USHRT_MAX)
- 		return -EINVAL;
- 
--	err = nfsd_create_serv();
-+	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
- 
-diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-index 5eea0f5..acddf71 100644
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -103,7 +103,7 @@ enum vers_op {NFSD_SET, NFSD_CLEAR, NFSD_TEST, NFSD_AVAIL };
- int nfsd_vers(int vers, enum vers_op change);
- int nfsd_minorversion(u32 minorversion, enum vers_op change);
- void nfsd_reset_versions(void);
--int nfsd_create_serv(void);
-+int nfsd_create_serv(struct net *net);
- 
- extern int nfsd_max_blksize;
- 
 diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 21cba3d..6448391 100644
+index 9fd8496..21cba3d 100644
 --- a/fs/nfsd/nfssvc.c
 +++ b/fs/nfsd/nfssvc.c
-@@ -334,10 +334,9 @@ static int nfsd_get_default_max_blksize(void)
+@@ -203,10 +203,9 @@ static int nfsd_init_socks(struct net *net)
+ 
+ static bool nfsd_up = false;
+ 
+-static int nfsd_startup(int nrservs)
++static int nfsd_startup(int nrservs, struct net *net)
+ {
+ 	int ret;
+-	struct net *net = &init_net;
+ 
+ 	if (nfsd_up)
+ 		return 0;
+@@ -237,16 +236,14 @@ static int nfsd_startup(int nrservs)
+ out_net_state:
+ 	nfs4_state_shutdown();
+ out_lockd:
+-	lockd_down(&init_net);
++	lockd_down(net);
+ out_racache:
+ 	nfsd_racache_shutdown();
  	return ret;
  }
  
--int nfsd_create_serv(void)
-+int nfsd_create_serv(struct net *net)
+-static void nfsd_shutdown(void)
++static void nfsd_shutdown(struct net *net)
  {
- 	int error;
 -	struct net *net = &init_net;
+-
+ 	/*
+ 	 * write_ports can create the server without actually starting
+ 	 * any threads--if we get shut down before any threads are
+@@ -264,7 +261,7 @@ static void nfsd_shutdown(void)
  
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 	if (nfsd_serv) {
-@@ -459,7 +458,7 @@ nfsd_svc(int nrservs)
- 	if (nrservs == 0 && nfsd_serv == NULL)
- 		goto out;
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+ {
+-	nfsd_shutdown();
++	nfsd_shutdown(net);
  
--	error = nfsd_create_serv();
-+	error = nfsd_create_serv(net);
+ 	svc_rpcb_cleanup(serv, net);
+ 
+@@ -468,7 +465,7 @@ nfsd_svc(int nrservs)
+ 
+ 	nfsd_up_before = nfsd_up;
+ 
+-	error = nfsd_startup(nrservs);
++	error = nfsd_startup(nrservs, net);
  	if (error)
- 		goto out;
- 
+ 		goto out_destroy;
+ 	error = svc_set_num_threads(nfsd_serv, NULL, nrservs);
+@@ -481,7 +478,7 @@ nfsd_svc(int nrservs)
+ 	error = nfsd_serv->sv_nrthreads - 1;
+ out_shutdown:
+ 	if (error < 0 && !nfsd_up_before)
+-		nfsd_shutdown();
++		nfsd_shutdown(net);
+ out_destroy:
+ 	nfsd_destroy(net);		/* Release server */
+ out:
 
