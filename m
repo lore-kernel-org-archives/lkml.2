@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab2LJJIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:08:25 -0500
-Received: from mga14.intel.com ([143.182.124.37]:35781 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab2LJJHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:07:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
-   d="scan'208";a="229269925"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] mmc: sdhci-acpi: enable runtime-pm for device HID INT33C6
-Date: Mon, 10 Dec 2012 11:10:44 +0200
-Message-Id: <1355130644-26065-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1355130644-26065-1-git-send-email-adrian.hunter@intel.com>
-References: <1355130644-26065-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1752244Ab2LJJLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:11:50 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37695 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab2LJJLr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:11:47 -0500
+Message-ID: <50C5A747.1020105@linux.vnet.ibm.com>
+Date: Mon, 10 Dec 2012 17:11:35 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 0/5] KVM: x86: improve reexecute_instruction
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121009-0260-0000-0000-000002461885
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sdhci-acpi supports ACPI devices which have compatibility ID
-PNP0D40, however it is not possible to know if those devices
-will all work correctly with runtime-pm, so that must be configured
-per hardware ID.
+Changelog:
+There are some changes from Marcelo and Gleb's review, thank you all!
+- access indirect_shadow_pages in the protection of mmu-lock
+- fix the issue when unhandleable instruction access on large page
+- add a new test case for large page
 
-For INT33C6, several related quirks, capabilities and flags are set:
+The current reexecute_instruction can not well detect the failed instruction
+emulation. It allows guest to retry all the instructions except it accesses
+on error pfn.
 
-	MMC_CAP_NONREMOVABLE
-		The SDIO card will never be removable
+For example, these cases can not be detected:
+- for tdp used
+  currently, it refused to retry all instructions. If nested npt is used, the
+  emulation may be caused by shadow page, it can be fixed by unshadow the
+  shadow page.
 
-	SDHCI_ACPI_RUNTIME_PM
-		Enable runtime-pm of the host controller
+- for shadow mmu
+  some cases are nested-write-protect, for example, if the page we want to
+  write is used as PDE but it chains to itself. Under this case, we should
+  stop the emulation and report the case to userspace.
 
-	MMC_CAP_POWER_OFF_CARD
-		Enable runtime-pm of the SDIO card
+There are two test cases based on kvm-unit-test can trigger a infinite loop on
+current code (ept = 0), after this patchset, it can report the error to Qemu.
 
-	MMC_PM_KEEP_POWER
-		SDIO card has the capability to remain powered up
-		during system suspend
+Subject: [PATCH] access test: test unhandleable instruction
 
-	SDHCI_QUIRK2_HOST_OFF_CARD_ON
-		Always do a full reset during system resume
-		because the card may be already initialized having
-		not been powered off.
+Test the instruction which can not be handled by kvm
 
-Wake-ups from the INT33C6 host controller are not supported, so the
-following capability must *not* be set:
-
-	MMC_PM_WAKE_SDIO_IRQ
-		Enable wake on card interrupt
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- drivers/mmc/host/sdhci-acpi.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ x86/access.c |   54 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 53 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-index 6ac3617..12b0a78 100644
---- a/drivers/mmc/host/sdhci-acpi.c
-+++ b/drivers/mmc/host/sdhci-acpi.c
-@@ -87,7 +87,15 @@ static const struct sdhci_ops sdhci_acpi_ops_dflt = {
- 	.enable_dma = sdhci_acpi_enable_dma,
- };
- 
-+static const struct sdhci_acpi_slot sdhci_acpi_slot_int_sdio = {
-+	.quirks2 = SDHCI_QUIRK2_HOST_OFF_CARD_ON,
-+	.caps    = MMC_CAP_NONREMOVABLE | MMC_CAP_POWER_OFF_CARD,
-+	.flags   = SDHCI_ACPI_RUNTIME_PM,
-+	.pm_caps = MMC_PM_KEEP_POWER,
-+};
+diff --git a/x86/access.c b/x86/access.c
+index 23a5995..9141c70 100644
+--- a/x86/access.c
++++ b/x86/access.c
+@@ -2,6 +2,7 @@
+ #include "libcflat.h"
+ #include "desc.h"
+ #include "processor.h"
++#include "vm.h"
+
+ #define smp_id() 0
+
+@@ -739,6 +740,54 @@ err:
+ 	return 0;
+ }
+
++static int check_retry_unhandleable_ins(ac_pool_t *pool)
++{
++	unsigned long mem = 30 * 1024 * 1024;
++	unsigned long esp;
++	ac_test_t at;
 +
- static const struct acpi_device_id sdhci_acpi_ids[] = {
-+	{ "INT33C6", (kernel_ulong_t)&sdhci_acpi_slot_int_sdio },
- 	{ "PNP0D40" },
- 	{ },
++	ac_test_init(&at, (void *)(0x123406003000));
++	at.flags[AC_PDE_PRESENT] = at.flags[AC_PDE_WRITABLE] = 1;
++	at.flags[AC_PTE_PRESENT] = at.flags[AC_PTE_WRITABLE] = 1;
++	at.flags[AC_CPU_CR0_WP] = 1;
++
++	at.phys = mem;
++	ac_setup_specific_pages(&at, pool, mem, 0);
++
++	asm volatile("mov %%rsp, %%rax  \n\t" : "=a"(esp));
++	asm volatile("mov %%rax, %%rsp  \n\t" : : "a"(0x123406003000 + 0xf0));
++	asm volatile ("int $0x3 \n\t");
++	asm volatile("mov %%rax, %%rsp  \n\t" : : "a"(esp));
++
++	return 1;
++}
++
++static int check_large_mapping_write_page_table(ac_pool_t *pool)
++{
++	unsigned long mem = 0x1000000;
++	unsigned long esp;
++	ac_test_t at;
++	ulong cr3;
++
++	ac_test_init(&at, (void *)(0x123400000000));
++	at.flags[AC_PDE_PRESENT] = at.flags[AC_PDE_WRITABLE] = 1;
++	at.flags[AC_PDE_PSE] = 1;
++	at.flags[AC_CPU_CR0_WP] = 1;
++
++	at.phys = mem;
++	ac_setup_specific_pages(&at, pool, mem, 0);
++
++	cr3 = read_cr3();
++	write_cr3(cr3);
++
++	asm volatile("mov %%rsp, %%rax  \n\t" : "=a"(esp));
++	asm volatile("mov %%rax, %%rsp  \n\t" : : "a"(0x123400000000 + 0x6f0));
++	asm volatile ("int $0x3 \n\t");
++	asm volatile("mov %%rax, %%rsp  \n\t" : : "a"(esp));
++
++	return 1;
++}
++
+ int ac_test_exec(ac_test_t *at, ac_pool_t *pool)
+ {
+     int r;
+@@ -756,7 +805,9 @@ const ac_test_fn ac_test_cases[] =
+ {
+ 	corrupt_hugepage_triger,
+ 	check_pfec_on_prefetch_pte,
+-	check_smep_andnot_wp
++	check_smep_andnot_wp,
++	check_retry_unhandleable_ins,
++	check_large_mapping_write_page_table
  };
+
+ int ac_test_run(void)
+@@ -770,6 +821,7 @@ int ac_test_run(void)
+     tests = successes = 0;
+     ac_env_int(&pool);
+     ac_test_init(&at, (void *)(0x123400000000 + 16 * smp_id()));
++
+     do {
+ 	if (at.flags[AC_CPU_CR4_SMEP] && (ptl2[2] & 0x4))
+ 		ptl2[2] -= 0x4;
 -- 
-1.7.11.7
+1.7.7.6
 
