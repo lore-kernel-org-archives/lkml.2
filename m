@@ -1,125 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab2LJRh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 12:37:57 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:37777 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab2LJRh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 12:37:56 -0500
-Date: Mon, 10 Dec 2012 12:37:39 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121210173739.GA1359@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>,
-	Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <20121126025520.GC22858@thunk.org>
- <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121208001705.GO27172@dastard>
+	id S1751691Ab2LJR7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 12:59:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310Ab2LJR7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 12:59:37 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: JBottomley@parallels.com, linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        Bart Van Assche <bvanassche@acm.org>
+Subject: Re: [patch,v3,repost 00/10] make I/O path allocations more numa-friendly
+References: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 10 Dec 2012 12:59:30 -0500
+In-Reply-To: <1354034799-8460-1-git-send-email-jmoyer@redhat.com> (Jeff
+	Moyer's message of "Tue, 27 Nov 2012 11:46:28 -0500")
+Message-ID: <x49zk1l6b5p.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121208001705.GO27172@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 08, 2012 at 11:17:05AM +1100, Dave Chinner wrote:
-> I wouldn't recommend XFS_IOC_ALLOCSP as a user-friendly interface.
-> The concept, however, implemented by a new fallocate()
-> flag (say FALLOC_FL_WRITE_ZEROS) so that the filesystem knows that
-> the application considers unwritten extents undesirable is exactly
-> the sort of thing that we should be considering implementing.
+Jeff Moyer <jmoyer@redhat.com> writes:
 
-What's the point of using a new flag like this (or XFS's
-XFS_IOC_ALLOCSP) for writing zeros during preallocation as oppoised to
-simply doing a fallocate() followed by zeroing the data via a O_DIRECT
-write system call?
+> Hi,
+>
+> This patch set makes memory allocations for data structures used in
+> the I/O path more numa friendly by allocating them from the same numa
+> node as the storage device.  I've only converted a handful of drivers
+> at this point.  My testing is limited by the hardware I have on hand.
+> Using these patches, I was able to max out the bandwidth of the storage
+> controller when issuing I/O from any node on my 4 node system.  Without
+> the patch, I/O from nodes remote to the storage device would suffer a
+> penalty ranging from 6-12%.  Given my relatively low-end setup[1], I
+> wouldn't be surprised if others could show a more significant performance
+> advantage.
+>
+> This is a repost of the last posting.  The only changes are additional
+> reviewed-by/acked-by tags.  I think this version is ready for inclusion.
+> James, would you mind taking a look?
 
-> Indeed, if the filesystem is on something with WRITE_SAME or
-> discards to zero, no data would need to be written, you wouldn't
-> have any unwritten extent overhead, and no stale data exposure.
+James?  Do you have any objections to including this for 3.8?
 
-And if you have a storage device which supports WRITE_SAME or
-persistent discards, you can do this automatically at preallocation
-time without needing a new fallocate(2) flag.  I certainly don't
-oppose adding such optimizations to ext4 or any other file system (I'm
-not entirely convinced that it's worth it to do this optimization at
-the VFS level), but it doesn't help for storage devices that don't
-support this feature.
-
-> This is exactly why Ted should have posted the patch for review. He
-> may not have got the flag through, but the discussion might just end
-> up in a place that is *better for everyone*. 
-
-Both of these suggestions have been made multiple times before when we
-submitted the original patch to support NO_HIDE_STALE, and they aren't
-sufficient for our purposes, so it's not like submitting a patch to
-reserve the bit would have given us any new information.  We've had
-this discussion **ALREADY**, multiple times before, with no one
-beliving that the alternate solutions were sufficient for our needs.
-
-This is why this discussion reminds me so much of the wakelocks
-discussion, and why I've made the same decision the Android folks
-made, except they wasted far more time and got far more frustrated ---
-I'll just keep the dammned thing as a out-of-tree patch, until there
-are enough other people willing to say that they need and are using
-this patch because their workloads and use cases need it.  It will
-save me a whole lot of time.
-
-(BTW, on a similar subject, we have folks at Tao Bao, Oracle, and
-Google saying that disabling stable page writes does improve their
-workloads, despite everyone else claiming it doesn't matter, and both
-Tao Bao and Google have out-of-tree patches that spike out stable page
-writes.  Maybe this will be enough so we don't have to waste more time
-convincing people that it's not an insane workload such benefits from
-a way to disable stable page writes.  But if not, I'm not going to
-waste time trying to convincing everyone else on fs-devel.  Keeping
-the out of tree patch is just way less effort, and requires much less
-resources.)
-
-> And further - what happens if we add changes like I've mentioned
-> above and Google moves to using them instead? We'll have a bit in
-> the interface that nobody uses, nobody will ever implement, and we
-> can't remove. There's many, many good reasons why a revert is the
-> only sane thing to do at this point....
-
-It's one bit, where we have plenty and plenty of bits.  The only other
-possible uses for the fallocate flags (such as hot vs cold storage,
-etc., have all been bike-sheeded to death on fs-devel already), so I'm
-quite confident that we will never get to the point where even close
-to running out of fallocate flag bits.
-
-The only other bit I'm aware of that might happen soon is the volatile
-ranges patch, and that's just one more bit.  So at this point we'll
-still have 28 bits (out of 32 bits).  So when you talk about an
-interface that we'll never remove, I think you're engaging in
-hyperbole.
-
-						- Ted
+-Jeff
