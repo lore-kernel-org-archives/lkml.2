@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab2LJKKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:10:14 -0500
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:30835
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751677Ab2LJKKL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:10:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -10
-X-BigFish: VS-10(zzbb2dI98dI9371I542I1432I179dNzz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: Joerg Roedel <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-Subject: RE: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Thread-Topic: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Thread-Index: AQHN0kxereXJamSE4kOq4mmamJ54mJgR0yZA
-Date: Mon, 10 Dec 2012 10:10:06 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D2C09A4@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <C5ECD7A89D1DC44195F34B25E172658D2B70EE@039-SN2MPN1-013.039d.mgd.msft.net>
-	(from B16395@freescale.com on Tue Dec  4 05:53:33 2012)
- <1354645371.16710.15@snotra>
-In-Reply-To: <1354645371.16710.15@snotra>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.77]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754199Ab2LJKLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:11:38 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:33848 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2LJKLg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:11:36 -0500
+Message-ID: <50C5B54B.5080806@synopsys.com>
+Date: Mon, 10 Dec 2012 15:41:23 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Michal Marek <mmarek@suse.cz>
+CC: Noam Camus <noamc@ezchip.com>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: Makefile race between jobs
+References: <264C179F799EF24AB26D5319053335E80CC3049A10@ezexch.ezchip.com> <50C4B8F3.6030704@suse.cz> <264C179F799EF24AB26D5319053335E80CC31B9D41@ezexch.ezchip.com> <20121210094515.GA31121@sepie.suse.cz>
+In-Reply-To: <20121210094515.GA31121@sepie.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Tuesday, December 04, 2012 11:53 PM
-> To: Sethi Varun-B16395
-> Cc: Wood Scott-B07421; Joerg Roedel; linux-kernel@vger.kernel.org;
-> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; Tabi
-> Timur-B04825
-> Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> required by fsl PAMU driver.
+On Monday 10 December 2012 03:15 PM, Michal Marek wrote:
+> On Mon, Dec 10, 2012 at 11:02:25AM +0200, Noam Camus wrote:
+>> Target "scripts_basic" by itself is indeed not creating the dependency issue.
+>> The relevant target is "scripts".
+>> Sorry for the confusion, thanks for the example.
+>> So I call target "defconfig" and then I call target "vmlinux" which by dependency calls target "scripts", e.g.:
+>> $ make ARCH=arc O=/dev/shm/_build/ defconfig scripts
+>>   HOSTCC  scripts/basic/fixdep
+>>   GEN     /dev/shm/_build/Makefile
+>>   HOSTCC  scripts/kconfig/conf.o
+>>   SHIPPED scripts/kconfig/zconf.tab.c
+>>   SHIPPED scripts/kconfig/zconf.lex.c
+>>   SHIPPED scripts/kconfig/zconf.hash.c
+>>   HOSTCC  scripts/kconfig/zconf.tab.o
+>>   HOSTLD  scripts/kconfig/conf
+>> #
+>> # configuration written to .config
+>> #
+>>   GEN     /dev/shm/_build/Makefile
+>> scripts/kconfig/conf --silentoldconfig Kconfig
+>>   CC      scripts/mod/empty.o
+>> In file included from /tmp/linux/include/linux/thread_info.h:10,
+>>                  from /tmp/linux/arch/arc/include/asm/current.h:24,
+>>                  from <command-line>:0:
+>> /tmp/linux/include/linux/types.h:4:23: error: asm/types.h: No such file or directory
+>>
+>> The inclusion of asm/current.h comes from use of LINUXINCLUDE in my
+>> architecture Makefile.
+>> And asm/types.h is missing since it suppose to be created by target
+>> "asm-generic".
 > 
-> On 12/04/2012 05:53:33 AM, Sethi Varun-B16395 wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Monday, December 03, 2012 10:34 PM
-> > > To: Sethi Varun-B16395
-> > > Cc: Joerg Roedel; linux-kernel@vger.kernel.org; iommu@lists.linux-
-> > > foundation.org; Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org;
-> > Tabi
-> > > Timur-B04825
-> > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> > > required by fsl PAMU driver.
-> > >
-> > > On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > > > > bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
-> > > > > Sent: Sunday, December 02, 2012 7:33 PM
-> > > > > To: Sethi Varun-B16395
-> > > > > Cc: linux-kernel@vger.kernel.org;
-> > iommu@lists.linux-foundation.org;
-> > > > Wood
-> > > > > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi Timur-B04825
-> > > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain
-> > attributes
-> > > > > required by fsl PAMU driver.
-> > > > >
-> > > > > Hmm, we need to work out a good abstraction for this.
-> > > > >
-> > > > > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
-> > > > > > Added the following domain attributes required by FSL PAMU
-> > driver:
-> > > > > > 1. Subwindows field added to the iommu domain geometry
-> > attribute.
-> > > > >
-> > > > > Are the Subwindows mapped with full size or do you map only
-> > parts
-> > > > of the
-> > > > > subwindows?
-> > > > >
-> > > > [Sethi Varun-B16395] It's possible to map a part of the subwindow
-> > i.e.
-> > > > size of the mapping can be less than the sub window size.
-> > > >
-> > > > > > +	 * This attribute indicates number of DMA subwindows
-> > > supported
-> > > > by
-> > > > > > +	 * the geometry. If there is a single window that maps
-> > the
-> > > > entire
-> > > > > > +	 * geometry, attribute must be set to "1". A value of
-> > "0"
-> > > > implies
-> > > > > > +	 * that this mechanism is not used at all(normal paging
-> > is
-> > > > used).
-> > > > > > +	 * Value other than* "0" or "1" indicates the actual
-> > number
-> > > of
-> > > > > > +	 * subwindows.
-> > > > > > +	 */
-> > > > >
-> > > > > This semantic is ugly, how about a feature detection mechanism?
-> > > > >
-> > > > [Sethi Varun-B16395] A feature mechanism to query the type of
-> > IOMMU?
-> > >
-> > > A feature mechanism to determine whether this subwindow mechanism is
-> > > available, and what the limits are.
-> > >
-> > So, we use the IOMMU capability interface to find out if IOMMU
-> > supports sub windows or not, right? But still number of sub windows
-> > would be specified as a part of the geometry and the valid value for
-> > sub windows would  0,1 or actual number of sub windows.
+> OK, so there is a new architecture 'arc' that adds '-include asm/current.h'
+> to global cflags in arch/arc/Makefile. Added Arnd to CC.
 > 
-> How does a user of the interface find out what values are possible for
-> the "actual number of subwindows"?  How does a user of the interface find
-> out whether there are any limitations on specifying a value of zero (in
-> the case of PAMU, that would be a maximum 1 MiB naturally-aligned
-> aperture to support arbitrary 4KiB mappings)?
-How about if we say that the default value for subwindows is zero and this what you get when you read the geometry (iommu_get_attr) after initializing the domain? In that case the user would know that implication of setting subwindows to zero with respect to the aperture size. Also, should we introduce an additional API like "iommu_check_attr", which the user can use to validate the attribute value. For example in case of geometry, the user can fill up the structure and pass it to the iommu driver in order to verify the aperture and subwindows field.
+> 
+>> I think the point here that I try to emphasize is that target
+>> "asm-generic" should be completed before any non-host source is
+>> compiled.
+>> In our case scripts/mod/empty.c is the first non-host source to be
+>> compiled and by bad coincidence it depends upon auto generated
+>> headers.
+> 
+> I see the problem now. However, so far, no other architecture has been
+> doing this. 'grep -e -include arch/*/Makefile' shows only one instance
+> in arch/arm, but that include is a static file with no dependencies. Is
+> it really necessary to include asm/current.h when compiling _every_
+> file?
 
--Varun
+ARC Port caches current task pointer in a register - thus we have a
+global asm register definition in current.h
+In the past, a customer ran into issue when porting some "really
+portable" code to kernel - such that asm/current.h didn't make it into
+the build of their module - via normal header includes - strange but
+true. Thus forcing current.h via way of -include seemed like a
+safe/sensible way.
+
+
+ Sure, you get it via many common headers, but then you don't need
+> to add it explicitly :). But if Arnd thinks this is OK, I will merge a
+> patch that serializes scripts/mod/empty.o and asm-generic.
+> 
+> Michal
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
