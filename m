@@ -1,68 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab2LJJD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:03:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:54588 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2LJJDZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:03:25 -0500
-Date: Mon, 10 Dec 2012 20:03:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: linux-next: build warning after merge of the pci tree
-Message-Id: <20121210200321.1343445856179c58d0d0cb16@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Dec_2012_20_03_21_+1100_5+yGN7sv+yv87Nhr"
+	id S1752796Ab2LJJEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:04:14 -0500
+Received: from mx3.cyfra.ua ([62.80.160.182]:46495 "EHLO mx3.cyfra.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176Ab2LJJEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:04:10 -0500
+From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Organization: Factor-SPE
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
+Date: Mon, 10 Dec 2012 11:03:59 +0200
+User-Agent: KMail/1.9.10
+Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201212071700.54367.vitas@nppfactor.kiev.ua> <20121207234720.GB3786@local>
+In-Reply-To: <20121207234720.GB3786@local>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201212101103.59917.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Dec_2012_20_03_21_+1100_5+yGN7sv+yv87Nhr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Saturday 08 December 2012 01:47:21 Hans J. Koch wrote:
+> On Fri, Dec 07, 2012 at 05:00:54PM +0200, Vitalii Demianets wrote:
+> > > On second thought, we can't call enable_irq()/disable_irq()
+> > > unconditionally because of the potential disable counter
+> > > (irq_desc->depth) disbalance. That's why we need UIO_IRQ_DISABLED flag,
+> > > and that's why we should check it in uio_pdrv_genirq_irqcontrol().
+> > > On the other hand, you are right in that we don't need to check it
+> > > inside irq handler. Inside irq handler we can disable irq and set the
+> > > flag unconditionally, because:
+> > > a) We know for sure that irqs are enabled, because we are inside
+> > > (not-shared) irq handler;
+> > >  and
+> > > b) We are guarded from potential race conditions by spin_lock_irqsave()
+> > > call in uio_pdrv_genirq_irqcontrol().
+> > >
+> > > So,yes, we can get rid of costly atomic call to
+> > > test_and_set_bit(UIO_IRQ_DISABLED,..) inside irq handler. But I still
+> > > don't like the idea of mixing this optimization with bug fixes in a
+> > > single patch.
+> >
+> > On the third thought, we can't ;)
+> > Imagine the SMP system where uio_pdrv_genirq_irqcontrol() is being
+> > executed on CPU0 and irq handler is running concurrently on CPU1. To
+> > protect from disable_irq counter disbalance we must first check current
+> > irq status, and in atomic manner. Thus we prevent  double-disable, one
+> > from
+> > uio_pdrv_genirq_irqcontrol() running on CPU0 and another form irq handler
+> > running on CPU1.
+> > Above consideration justifies current code.
+> >
+> > But it seems we have potential concurrency problem here anyway. Here is
+> > theoretical scenario:
+> > 1) Initial state: irq is enabled, uio_pdrv_genirq_irqcontrol() starts
+> > being executed on CPU0 with irq_on=1 and at the same time, concurrently,
+> > irq handler starts being executed on CPU1;
+> > 2) irq handler executes line
+> >    if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+> > as irq was enabled, the condition holds. And now UIO_IRQ_DISABLED is set.
+> > 3) uio_pdrv_genirq_irqcontrol() executes line
+> >    if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+> > as UIO_IRQ_DISABLED was set by CPU1, the condition holds. And now
+> > UIO_IRQ_DISABLED is cleared.
+> > 4) CPU0 executes enable_irq() . IRQ is enabled. "Unbalanced enable for
+> > IRQ %d\n" warning is issued.
+> > 5) irq handler on CPU1 executes disable_irq_nosync(). IRQ is disabled.
+> >
+> > And now we are in situation where IRQ is disabled, but UIO_IRQ_DISABLED
+> > is cleared. Bad.
+> >
+> > The above scenario is purely theoretical, I have no means to check it in
+> > hardware.
+> > The (theoretical) solution is to guard UIO_IRQ_DISABLED test and actual
+> > irq disabling inside irq handler by priv->lock.
+> >
+> > What do you think about it? Is it worth worrying about?
+>
+> Hi Vitalii,
+> thanks a lot for analyzing the problem so thoroughly. It made me review
+> uio_pdrv_genirq.c again, and I noticed several issues and came to the
+> following conclusions:
+>
+> 1.) priv->lock is completely unnecessary. It is only used in one function,
+> so there's nothing it could possibly protect.
+>
+> 2.) All these "test_and_clear_bit" and "test_and_set_bit" calls are also
+> unnecessary. We can simply use enable_irq and disable_irq in both the
+> irq handler and in uio_pdrv_genirq_irqcontrol.
+>
+> We should go "back to the roots" and have a look at how UIO works.
+> The workflow it is intended for is like this:
+>
+> 1.) Hardware is in Reset State (e.g. after boot). Any decent hardware
+> has its interrupt disabled at that time.
+>
+> 2.) uio_pdrv_genirq is loaded. Kernel enables the irq.
+>
+> 3.) Userspace part of the driver comes up. It will initialize the hardware
+> (including setting the bits that enable the interrupt).
+>
+> 4.) Userspace will then issue a blocking read() on /dev/uioX. Typically,
+> there'll be a loop or a thread with this blocking read() at the beginning
+> (usually using the select() call).
+>
+> 5.) At some time, a hardware interrupt will occur. The irq handler in
+> kernel space will be called, only to disable the irq. This will also cause
+> the UIO core to make /dev/uioX readable.
+>
+> 6.) Userspace's blocking read returns. Userspace does its work by
+> reading/writing device memory.
+>
+> 7.) As the last thing, Userspace writes a "1" to /dev/uioX, which causes
+> uio_pdrv_genirq_irqcontrol to be called, re-enabling the interrupt.
+>
+> 8.) Goto 4.)
+>
+> We should also remember that uio_pdrv_genirq_handler() is NOT a real
+> hardware irq handler. The real handler is in the UIO core, which will
+> increment the event number and wake up userspace.
+>
+> So, although your scenario clearly shows a subtle race condition, there is
+> none. If userspace does stupid things, no harm will be done to the kernel.
 
-Hi Bjorn,
+With all due respect, I disagree here. If userspace does stupid things, 
+unintentionally because of poorly written code or intentionally because of a 
+malicious purpose, we could have irq depth counter disbalanced which, in 
+turn, could lead to the interrupt not enabled when it should be. In which 
+case the whole system would stop doing useful things which it was designed to 
+do.
 
-After merging the pci tree, today's linux-next build (powerpc
-ppc44x_defconfig) produced this warning:
+> If userspace is designed the way described above (and in the
+> documentation), it will always wake up with its interrupt disabled, do its
+> work, and then re-enable the interrupt. You can probably think of a few
+> things userspace could do to screw things up. But that's not our problem.
+>
 
-drivers/pci/rom.c: In function 'pci_map_rom':
-drivers/pci/rom.c:125:23: warning: cast from pointer to integer of differen=
-t size [-Wpointer-to-int-cast]
+Disagree again. I think we can not leave a hole in kernel which opens DOS 
+possibilities and hope userspace will behave well. There are always errors in 
+the code. And security issues, too.
 
-Introduced by commit 84c1b80e3263 ("PCI: Add support for non-BAR ROMs").
+> Could you hack up a patch for that? I think it should start with removing
+> uio_pdrv_genirq_platdata->lock and uio_pdrv_genirq_platdata->flags...
+>
+> Thanks again for your work. What do you think about my theory?
+>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I think that we should fix the bug, not ignore it.
 
---Signature=_Mon__10_Dec_2012_20_03_21_+1100_5+yGN7sv+yv87Nhr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQxaVZAAoJEECxmPOUX5FECnUP/RhAlR94yz/bQlzHLizRwnhh
-kRKWZ0DxsYmEtt7RKJ28XhqngisaUKqjP9edv84FC1enxDtY1249zibvDpVwXQHH
-iLMYdcKOGLxjdymC2txgpL6AHKMC/t2flLtm/8iuGzoc/FplgU+UEqmTjlOWASR4
-AGjMo42Vjj+Fl1hHQSVs8dl+wOSJiihfCWnwILolUB1x61mVVdNxKhsmooDoowwP
-53COEVO2erPpsi90mkO+z9HWn7omNaRwFv6zF+I1SHbz4e7+oDdq3wLxDbbDNWCR
-KyVWQIJ6kLla62Y/WHCq6lhxdnSxdesoLK/KmlrClDR94Fy1tfmrgoTK1K+3viyF
-uxSlNb6x+2jWzBl+HaEPKb9drsOc4wTkEcZJ2zPgssMuTaOHyWLRmR5iGxGPtllx
-WrC58tJUZBzt7NG56+QhKSfnMB+lxRIHZr68vaCfr6AL8LbOvxnM6RTUrKK4olc6
-Mx+sYOsIU6DVeb+QrkPoBB45/IKPGad4tnS6pRWw/kV9ky1nOydkAsUjAUpgyU73
-F1SnTdLL3YOnpcFrBQF35mZkd/MBa1qTXaE3Cvc+pGBxkdvW92l26bO/zji3CiNm
-YSShWPQR+uxobmd0PGQ0YKxl8kn66SQgk8tECANt9E4ZBV2gaq+qWuIKbWNyykE9
-GEeG4utOCoV8ywO7bY3M
-=FYN5
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Dec_2012_20_03_21_+1100_5+yGN7sv+yv87Nhr--
+Ok, less words, more code. I am posting a new series of two patches. First 
+is "Fix memory freeing issues" (with improved wording in the comment which 
+you found unclear) and the second is about fixing SMP race condition.
