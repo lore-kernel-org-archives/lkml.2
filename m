@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab2LJJSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:18:34 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:34683 "EHLO relay.sw.ru"
+	id S1753920Ab2LJJSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:18:38 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:33986 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753740Ab2LJJSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:30 -0500
-Subject: [PATCH 0/7] nfsd: cleanup "init_net" references
+	id S1753820Ab2LJJSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:18:34 -0500
+Subject: [PATCH 1/7] nfsd: use "init_net" for portmapper
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 10 Dec 2012 12:18:59 +0300
-Message-ID: <20121210091832.8855.26672.stgit@localhost.localdomain>
+Date: Mon, 10 Dec 2012 12:19:04 +0300
+Message-ID: <20121210091904.8855.89077.stgit@localhost.localdomain>
+In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
+References: <20121210091832.8855.26672.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,28 +22,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hard-coded "init_net" pointer is widely used in NFSd code.
-This patch replaces "init_net" references by passed struct net pointer where
-requied.
-In future, proper network namespace context will be taken from NFSd file
-system superblock private data or, where it's impossible, from current.
+There could be a situation, when NFSd was started in one network namespace, but
+stopped in another one.
+This will trigger kernel panic, because RPCBIND client is stored on per-net
+NFSd data, and will be NULL on NFSd shutdown.
 
-The following series implements...
-
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
+ fs/nfsd/nfssvc.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Stanislav Kinsbursky (7):
-      nfsd: use "init_net" for portmapper
-      nfsd: pass net to nfsd_init_socks()
-      nfsd: pass net to nfsd_startup() and nfsd_shutdown()
-      nfsd: pass net to nfsd_create_serv()
-      nfsd: pass net to nfsd_svc()
-      nfsd: pass net to nfsd_set_nrthreads()
-      nfsd: pass net to __write_ports() and down
-
-
- fs/nfsd/nfsctl.c |   27 +++++++++++++++------------
- fs/nfsd/nfsd.h   |    6 +++---
- fs/nfsd/nfssvc.c |   35 ++++++++++++++---------------------
- 3 files changed, 32 insertions(+), 36 deletions(-)
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index b34a67d..9beace6 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -11,7 +11,6 @@
+ #include <linux/module.h>
+ #include <linux/fs_struct.h>
+ #include <linux/swap.h>
+-#include <linux/nsproxy.h>
+ 
+ #include <linux/sunrpc/stats.h>
+ #include <linux/sunrpc/svcsock.h>
+@@ -341,7 +340,7 @@ static int nfsd_get_default_max_blksize(void)
+ int nfsd_create_serv(void)
+ {
+ 	int error;
+-	struct net *net = current->nsproxy->net_ns;
++	struct net *net = &init_net;
+ 
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
 
