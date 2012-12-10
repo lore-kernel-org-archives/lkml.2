@@ -1,69 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab2LJWP7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:15:59 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:54995 "EHLO mxout2.iskon.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab2LJWP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:15:57 -0500
-X-Remote-IP: 213.191.128.133
-Date: Mon, 10 Dec 2012 23:15:50 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1751976Ab2LJWRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:17:35 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:44358 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab2LJWRd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:17:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=BfMM4MNaL1g0DDIFC/j
+	9MWfR5sMxZ2I50Ncsyq0KpedbYf2nXr+6WP73P1HmfYZbqfAZgtORHy5NVAJ+qte
+	kaYcg+zMM14x/PX17MxS2TohalK8MKYNapbrgvNTdf8TrkYGI0SdKdSB0Zq94XB7
+	XrrtuxgYP+9xwh1EByvNovT8=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.0.2
+Date: Mon, 10 Dec 2012 14:17:30 -0800
+Message-ID: <7vzk1l8scl.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-References: <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org> <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org> <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr> <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com> <50C6477A.4090005@iskon.hr> <CA+55aFx9XSjtMZNuveyKrxL0LUjmZpFvJ7vzkjaKgQZLCs9QCg@mail.gmail.com> <20121210214256.GB23484@liondog.tnic> <CA+55aFzPa1tk_uWs_1cyYD0XpjWg_Fn+o431hUk3AnabOeUXSQ@mail.gmail.com> <20121210215436.GA31536@liondog.tnic>
-In-Reply-To: <20121210215436.GA31536@liondog.tnic>
-Message-ID: <50C65F16.1060809@iskon.hr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-Subject: Re: kswapd craziness in 3.7
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121210 #8685622, check: 20121210 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40118 [Dec 11 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 644C3AB8-4317-11E2-9691-995F2E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.12.2012 22:54, Borislav Petkov wrote:
-> On Mon, Dec 10, 2012 at 01:47:23PM -0800, Linus Torvalds wrote:
->> On Mon, Dec 10, 2012 at 1:42 PM, Borislav Petkov <bp@alien8.de> wrote:
->>>
->>> Aren't we gonna consider the out-of-tree vbox modules being loaded and
->>> causing some corruptions like maybe the single-bit error above?
->>>
->>> I'm also thinking of this here: https://lkml.org/lkml/2011/10/6/317
->>
->> Yup, that looks more likely, I agree.
->
-> @Zlatko: can your daughter try to retrigger the freeze without the vbox
-> modules loaded?
->
+The latest maintenance release Git v1.8.0.2 is now available at
+the usual places.
 
-Sure thing! :)
+The release tarballs are found at:
 
-Although, the vbox modules were only loaded, no VM was running at the 
-time lockup happened. But, I've just read the whole thread you mention 
-above and I understand the concern. I'll make sure the vbox modules are 
-unloaded when not really needed (most of the time on that machine), in 
-case lockup happens again.
+    http://code.google.com/p/git-core/downloads/list
 
-Next time my daughter plays online games, I'll tell her she's actually 
-serving a greater purpose, and let her take her time. :)
--- 
-Zlatko
+and their SHA-1 checksums are:
+
+1e1640794596da40f35194c29a8cc4e41c6b4f6d  git-1.8.0.2.tar.gz
+6b9e14c5b19b2e27605014252febd61a700012a3  git-htmldocs-1.8.0.2.tar.gz
+ce0673256ce90451269a82a2464eab060adbfec6  git-manpages-1.8.0.2.tar.gz
+
+Also the following public repositories all have a copy of the v1.8.0.2
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git v1.8.0.2 Release Notes
+==========================
+
+Fixes since v1.8.0.1
+--------------------
+
+ * Various codepaths have workaround for a common misconfiguration to
+   spell "UTF-8" as "utf8", but it was not used uniformly.  Most
+   notably, mailinfo (which is used by "git am") lacked this support.
+
+ * We failed to mention a file without any content change but whose
+   permission bit was modified, or (worse yet) a new file without any
+   content in the "git diff --stat" output.
+
+ * When "--stat-count" hides a diffstat for binary contents, the total
+   number of added and removed lines at the bottom was computed
+   incorrectly.
+
+ * When "--stat-count" hides a diffstat for unmerged paths, the total
+   number of affected files at the bottom of the "diff --stat" output
+   was computed incorrectly.
+
+ * "diff --shortstat" miscounted the total number of affected files
+   when there were unmerged paths.
+
+ * "git p4" used to try expanding malformed "$keyword$" that spans
+   across multiple lines.
+
+ * "git update-ref -d --deref SYM" to delete a ref through a symbolic
+   ref that points to it did not remove it correctly.
+
+ * Syntax highlighting in "gitweb" was not quite working.
+
+Also contains other minor fixes and documentation updates.
+
+----------------------------------------------------------------
+
+Changes since v1.8.0.1 are as follows:
+
+Antoine Pelisse (1):
+      Fix typo in remote set-head usage
+
+Eric S. Raymond (1):
+      doc/fast-import: clarify how content states are built
+
+Johan Herland (2):
+      t1400-update-ref: Add test verifying bug with symrefs in delete_ref()
+      Fix failure to delete a packed ref through a symref
+
+Junio C Hamano (13):
+      reencode_string(): introduce and use same_encoding()
+      test: add failing tests for "diff --stat" to t4049
+      diff --stat: status of unmodified pair in diff-q is not zero
+      diff --stat: use "file" temporary variable to refer to data->files[i]
+      diff --stat: move the "total count" logic to the last loop
+      diff --stat: do not count "unmerged" entries
+      diff --shortstat: do not count "unmerged" entries
+      Documentation/git-push.txt: clarify the "push from satellite" workflow
+      Start preparing for 1.8.0.2
+      t4049: refocus tests
+      Update draft release notes to 1.8.0.2
+      git(1): remove a defunct link to "list of authors"
+      Git 1.8.0.2
+
+Linus Torvalds (1):
+      Fix "git diff --stat" for interesting - but empty - file changes
+
+Mark Szepieniec (1):
+      Documentation: improve phrasing in git-push.txt
+
+Matthieu Moy (2):
+      git-remote-mediawiki: escape ", \, and LF in file names
+      git-fast-import.txt: improve documentation for quoted paths
+
+Nguyễn Thái Ngọc Duy (1):
+      compat/fnmatch: fix off-by-one character class's length check
+
+Paul Gortmaker (1):
+      Makefile: hide stderr of curl-config test
+
+Pete Wyckoff (1):
+      git p4: RCS expansion should not span newlines
+
+Ralf Thielow (1):
+      completion: add options --single-branch and --branch to "git clone"
+
+Richard Hubbell (1):
+      gitweb.perl: fix %highlight_ext mappings
+
+Sébastien Loriot (1):
+      Documentation/git-stash.txt: add a missing verb
+
+W. Trevor King (1):
+      git-submodule: wrap branch option with "<>" in usage strings.
+
