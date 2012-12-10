@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab2LJJcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:32:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65404 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab2LJJca (ORCPT
+	id S1753843Ab2LJJlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:41:32 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25177 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab2LJJla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:32:30 -0500
+	Mon, 10 Dec 2012 04:41:30 -0500
+Date: Mon, 10 Dec 2012 12:41:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        greg@kroah.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] rtl8712: replace min with min_t
+Message-ID: <20121210094108.GQ6568@mwanda>
+References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
+ <1355048110-10859-4-git-send-email-przemo@firszt.eu>
 MIME-Version: 1.0
-In-Reply-To: <20121207123343.GU14363@n2100.arm.linux.org.uk>
-References: <1354354961-28833-1-git-send-email-giridhar.maruthy@linaro.org>
-	<CAHuqX+EQ0pZnm27yAVqC=NRX8huQ5EvbC8PGn2G3xYw4D71gQA@mail.gmail.com>
-	<50C1DB05.7090500@linaro.org>
-	<20121207123343.GU14363@n2100.arm.linux.org.uk>
-Date: Mon, 10 Dec 2012 15:02:28 +0530
-Message-ID: <CAHuqX+G7e4bR_xK2BAEdm4dedaBHE=CG3sHmzHamgCiOtivNwQ@mail.gmail.com>
-Subject: Re: [PATCH] I2C: EXYNOS: Add slave support to i2c
-From: Giridhar Maruthy <giridhar.maruthy@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        linux-i2c@vger.kernel.org, ben-linux@fluff.org, khali@linux-fr.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355048110-10859-4-git-send-email-przemo@firszt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russel,
+On Sun, Dec 09, 2012 at 10:15:09AM +0000, Przemo Firszt wrote:
+> A clean up change suggested by checkpatch.pl
+> 
+> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+> ---
+>  drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index cdb51d7..b131b61 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -188,8 +188,7 @@ static inline char *translate_scan(struct _adapter *padapter,
+>  	/* Add the ESSID */
+>  	iwe.cmd = SIOCGIWESSID;
+>  	iwe.u.data.flags = 1;
+> -	iwe.u.data.length = (u16)min((u16)pnetwork->network.Ssid.SsidLength,
+> -			    (u16)32);
+> +	iwe.u.data.length = min_t(u16, pnetwork->network.Ssid.SsidLength, 32);
 
-Thanks for review and please find my replies below.
+pnetwork->network.Ssid.SsidLength is a u32 so it would be better to
+not truncate the upper bits away.  It's not going to cause a
+problem, but its slightly messy.
 
-On 7 December 2012 18:03, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Dec 07, 2012 at 05:33:17PM +0530, Tushar Behera wrote:
->> On 12/03/2012 05:46 PM, Giridhar Maruthy wrote:
->> > This patch adds slave support to i2c. The dt entry i2c-mode
->> > decides at probe time if the controller needs to work in
->> > slave mode and the controller is accordingly programmed.
->
-> (I don't have the original patches.)
->
-> Hmm.  How has slave-mode support been tested?
+This is a common problem where people take the type of
+iwe.u.data.length and cast to that instead of considering the types
+for the data they are comparing.
 
-I have taken two I2C controllers in exynos5250.
-I configured one as slave and the other as master port.
-Then physically connected the pins of the two ports.
->
-> Remembering that I2C slave devices do not initiate bus accesses, all
-> accesses will be started by some other master.  How are you dealing
-> with the bytes received from the master,
+regards,
+dan carpenter
 
-I run the slave read application in background.
-The resulting slave read will sleep till all bytes are received
-(wait_event_interruptible)
-
-once the master sends the data, an ack is given out by the slave controller
-in the ISR and the data is cached in the buffer(
-buffer sent by slave receive application).
-After all data is received, the read wakes up and the
-slave receive program gets the data.
-
-> and how are you returning a response to the master in reply to a read request?
-
-Similarl logic works in slave transmit mode (read request). Slave
-sleeps till the master initiates the transfer.
->
-> We had support for this on PXA I2C through a callback from the driver
-> into PXA code (used for the Psion Teklogix Netbook device) and it worked
-> really well, but what you can't do is use the standard I2C interfaces
-> for slave mode.
-
-I have a question here. Since the same framework can work for both
-master and slave, is there any technical limitations I have overseen
-which prevents the slave mode to work?
