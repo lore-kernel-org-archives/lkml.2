@@ -1,143 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab2LJWVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:21:51 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59254 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2LJWVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:21:48 -0500
-Date: Mon, 10 Dec 2012 23:21:25 +0100
-From: Mathieu Chouquet-Stringer <mathieu@csetco.com>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: sami.liedes@iki.fi, chris.mason@fusionio.com, sensille@gmx.net
-Subject: Re: GPF in read_extent_buffer while scrubbing on
- 3.7.0-rc8-00014-g27d7c2a
-Message-ID: <20121210222125.GA20072@kashmir>
-Mail-Followup-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-	sami.liedes@iki.fi, chris.mason@fusionio.com, sensille@gmx.net
-References: <20121206143458.GA24396@kashmir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206143458.GA24396@kashmir>
-X-Face: %JOeya=Dg!}[/#Go&*&cQ+)){p1c8}u\Fg2Q3&)kothIq|JnWoVzJtCFo~4X<uJ\9cHK'.w3:{EoxBR
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752078Ab2LJWV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:21:59 -0500
+Received: from wren.arvixe.com ([50.97.138.99]:57598 "EHLO wren.arvixe.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab2LJWV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:21:57 -0500
+Message-ID: <1355178112.2897.22.camel@localhost>
+Subject: Re: [PATCH 4/5] rtl8712: replace min with min_t
+From: Przemo Firszt <przemo@firszt.eu>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        greg@kroah.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Dec 2012 22:21:52 +0000
+In-Reply-To: <20121210094108.GQ6568@mwanda>
+References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
+	 <1355048110-10859-4-git-send-email-przemo@firszt.eu>
+	 <20121210094108.GQ6568@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2 (3.6.2-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - wren.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
+X-Get-Message-Sender-Via: wren.arvixe.com: authenticated_id: przemo@firszt.eu
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi again,
+Dnia 2012-12-10, pon o godzinie 12:41 +0300, Dan Carpenter pisze:
+> On Sun, Dec 09, 2012 at 10:15:09AM +0000, Przemo Firszt wrote:
+> > A clean up change suggested by checkpatch.pl
+> > 
+> > Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+> > ---
+> >  drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 6 ++----
+> >  1 file changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> > index cdb51d7..b131b61 100644
+> > --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> > +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> > @@ -188,8 +188,7 @@ static inline char *translate_scan(struct _adapter *padapter,
+> >  	/* Add the ESSID */
+> >  	iwe.cmd = SIOCGIWESSID;
+> >  	iwe.u.data.flags = 1;
+> > -	iwe.u.data.length = (u16)min((u16)pnetwork->network.Ssid.SsidLength,
+> > -			    (u16)32);
+> > +	iwe.u.data.length = min_t(u16, pnetwork->network.Ssid.SsidLength, 32);
+> 
+> pnetwork->network.Ssid.SsidLength is a u32 so it would be better to
+> not truncate the upper bits away.  It's not going to cause a
+> problem, but its slightly messy.
+> 
+> This is a common problem where people take the type of
+> iwe.u.data.length and cast to that instead of considering the types
+> for the data they are comparing.
+> 
+Dan,
+Thanks for the comment!
 
-after enabling page alloc and slub debug, I was able to capture an error
-followed by the "usual" GPF.  More below.
+iew.u.data.length is __u16
 
-On Thu, Dec 06, 2012 at 03:34:58PM +0100, Mathieu Chouquet-Stringer wrote:
-> Using the last couple of kernels (3.6 or 3.7), scrubbing my btrfs fs (which is
-> on a luks based lvm device) will always end up crashing my pc.
-> [...]
+min_t is defined as:
+#define min_t(type, x, y) ({                    \
+        type __min1 = (x);                      \
+        type __min2 = (y);                      \
+        __min1 < __min2 ? __min1: __min2; })
 
-The warning:
-WARNING: at fs/btrfs/extent_io.c:4680 read_extent_buffer+0xee/0x120()
-Hardware name: 2392CTO
-Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT lockd sunrpc nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack rfcomm bnep arc4 iwldvm mac80211 iTCO_wdt iTCO_vendor_support snd_hda_codec_realtek coretemp kvm_intel kvm microcode uvcvideo videobuf2_vmalloc videobuf2_memops pcspkr videobuf2_core videodev btusb media i2c_i801 bluetooth snd_hda_intel snd_hda_codec cdc_ncm usbnet mii cdc_wdm cdc_acm snd_hwdep snd_seq snd_seq_device snd_pcm lpc_ich mfd_core iwlwifi cfg80211 e1000e snd_page_alloc mei snd_timer thinkpad_acpi snd soundcore rfkill uinput dm_crypt crc32c_intel nouveau ghash_clmulni_intel mxm_wmi ttm i915 i2c_algo_bit drm_kms_helper firewire_ohci drm sdhci_pci firewire_core sdhci mmc_core crc_itu_t i2c_core wmi video
-Pid: 536, comm: btrfs-endio-met Not tainted 3.7.0-rc8-00039-ged23ec4 #4
-Call Trace:
- [<ffffffff8104bebf>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff8104bf1a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff812aae9e>] read_extent_buffer+0xee/0x120
- [<ffffffff812a1bb2>] btrfs_node_key+0x22/0x30
- [<ffffffff812dd720>] __readahead_hook.isra.5+0x3a0/0x3f0
- [<ffffffff812ddb14>] btree_readahead_hook+0x24/0x40
- [<ffffffff81286069>] btree_readpage_end_io_hook+0x139/0x290
- [<ffffffff812a6ff3>] end_bio_extent_readpage+0xd3/0xa40
- [<ffffffff812853a6>] ? end_workqueue_fn+0x36/0x50
- [<ffffffff811b27ed>] bio_endio+0x1d/0x30
- [<ffffffff812853b1>] end_workqueue_fn+0x41/0x50
- [<ffffffff812b5916>] worker_loop+0x136/0x580
- [<ffffffff812b57e0>] ? btrfs_queue_worker+0x300/0x300
- [<ffffffff8106f480>] kthread+0xc0/0xd0
- [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
- [<ffffffff8168e8ec>] ret_from_fork+0x7c/0xb0
- [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
+If I understand you correctly I should use this:
 
-gdb says it's this WARN ON:
-(gdb) l *(read_extent_buffer + 0xee)
-0x726e is in read_extent_buffer (fs/btrfs/extent_io.c:4680).
-4675            char *kaddr;
-4676            char *dst = (char *)dstv;
-4677            size_t start_offset = eb->start & ((u64)PAGE_CACHE_SIZE - 1);
-4678            unsigned long i = (start_offset + start) >> PAGE_CACHE_SHIFT;
-4679
+iwe.u.data.length = min_t(u32, pnetwork->network.Ssid.SsidLength, 32);
 
-4680            WARN_ON(start > eb->len);
+the result of min_t is u32, but iwe.u.data.lenght is __u16
 
-4681            WARN_ON(start + len > eb->start + eb->len);
-4682
-4683            offset = (start_offset + start) & ((unsigned long)PAGE_CACHE_SIZE - 1);
-4684
-
-The GPF which follows right after is:
-general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT lockd sunrpc nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack rfcomm bnep arc4 iwldvm mac80211 iTCO_wdt iTCO_vendor_support snd_hda_codec_realtek coretemp kvm_intel kvm microcode uvcvideo videobuf2_vmalloc videobuf2_memops pcspkr videobuf2_core videodev btusb media i2c_i801 bluetooth snd_hda_intel snd_hda_codec cdc_ncm usbnet mii cdc_wdm cdc_acm snd_hwdep snd_seq snd_seq_device snd_pcm lpc_ich mfd_core iwlwifi cfg80211 e1000e snd_page_alloc mei snd_timer thinkpad_acpi snd soundcore rfkill uinput dm_crypt crc32c_intel nouveau ghash_clmulni_intel mxm_wmi ttm i915 i2c_algo_bit drm_kms_helper firewire_ohci drm sdhci_pci firewire_core sdhci mmc_core crc_itu_t i2c_core wmi video
-CPU 1 
-Pid: 536, comm: btrfs-endio-met Tainted: G        W    3.7.0-rc8-00039-ged23ec4 #4 LENOVO 2392CTO/2392CTO
-RIP: 0010:[<ffffffff8136c756>]  [<ffffffff8136c756>] memcpy+0x6/0x110
-RSP: 0018:ffff8804215a9b70  EFLAGS: 00010207
-RAX: ffff8804215a9c57 RBX: 0000000000000011 RCX: 0000000000000011
-RDX: 0000000000000011 RSI: 0005080000000003 RDI: ffff8804215a9c57
-RBP: ffff8804215a9bb8 R08: 0000000000000000 R09: 0000000000000486
-R10: 0000000000000001 R11: 0000000000aaaaaa R12: ffff8804215a9c68
-R13: ffff8803f4c5cfc0 R14: 0000000000000048 R15: 0000000000000011
-FS:  0000000000000000(0000) GS:ffff88043e240000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007fe992197000 CR3: 0000000001c0b000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process btrfs-endio-met (pid: 536, threadinfo ffff8804215a8000, task ffff8804224eb0e0)
-Stack:
- ffffffff812aae73 ffff8804105ea000 0000000000008003 0000000000001000
- ffff8804215a9c20 00000000000003dd ffff88041232a7c0 ffff8804215a9c20
- aeb3f3fe4e814d8e ffff8804215a9bc8 ffffffff812a1bb2 ffff8804215a9c98
-Call Trace:
- [<ffffffff812aae73>] ? read_extent_buffer+0xc3/0x120
- [<ffffffff812a1bb2>] btrfs_node_key+0x22/0x30
- [<ffffffff812dd720>] __readahead_hook.isra.5+0x3a0/0x3f0
- [<ffffffff812ddb14>] btree_readahead_hook+0x24/0x40
- [<ffffffff81286069>] btree_readpage_end_io_hook+0x139/0x290
- [<ffffffff812a6ff3>] end_bio_extent_readpage+0xd3/0xa40
- [<ffffffff812853a6>] ? end_workqueue_fn+0x36/0x50
- [<ffffffff811b27ed>] bio_endio+0x1d/0x30
- [<ffffffff812853b1>] end_workqueue_fn+0x41/0x50
- [<ffffffff812b5916>] worker_loop+0x136/0x580
- [<ffffffff812b57e0>] ? btrfs_queue_worker+0x300/0x300
- [<ffffffff8106f480>] kthread+0xc0/0xd0
- [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
- [<ffffffff8168e8ec>] ret_from_fork+0x7c/0xb0
- [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
-Code: 74 13 48 8b 43 58 48 2b 43 50 88 43 4e 48 83 c4 08 5b 5d c3 90 e8 eb fb ff ff eb e6 90 90 90 90 90 90 90 90 90 48 89 f8 48 89 d1 <f3> a4 c3 03 83 e2 07 f3 48 a5 89 d1 f3 a4 c3 20 4c 8b 06 4c 8b 
-RIP  [<ffffffff8136c756>] memcpy+0x6/0x110
- RSP <ffff8804215a9b70>
-
-memcpy is called from here:
-(gdb) l *(read_extent_buffer + 0xc3)
-0x7243 is in read_extent_buffer (fs/btrfs/extent_io.c:4694).
-4689                    kaddr = page_address(page);
-4690                    memcpy(dst, kaddr + offset, cur);
-4691
-4692                    dst += cur;
-4693                    len -= cur;
-4694                    offset = 0;
-4695                    i++;
-4696            }
-4697    }
-4698
-
-Any idea what to do next?  If you think I should be adding debug printk
-statements, feel free to send them my way.
-
+Is that correct?
 -- 
-Mathieu Chouquet-Stringer                         mathieu@csetco.com
-            The sun itself sees not till heaven clears.
-	             -- William Shakespeare --
+Kind regards,
+Przemo Firszt
+
+
