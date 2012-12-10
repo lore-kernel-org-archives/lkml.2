@@ -1,155 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2LJLDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 06:03:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47154 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754440Ab2LJLDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 06:03:41 -0500
-Date: Mon, 10 Dec 2012 11:03:37 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Zlatko Calusic <zlatko.calusic@iskon.hr>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121210110337.GH1009@suse.de>
-References: <20121201004520.GK2301@cmpxchg.org>
- <50BC6314.7060106@leemhuis.info>
- <20121203194208.GZ24381@cmpxchg.org>
- <20121204214210.GB20253@cmpxchg.org>
- <20121205030133.GA17438@wolff.to>
- <20121206173742.GA27297@wolff.to>
- <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
- <50C32D32.6040800@iskon.hr>
- <50C3AF80.8040700@iskon.hr>
- <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754754Ab2LJLEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 06:04:12 -0500
+Received: from smarthost01.mail.zen.net.uk ([212.23.1.1]:54452 "EHLO
+	smarthost01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753925Ab2LJLEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 06:04:10 -0500
+Message-ID: <1355137445.3386.7.camel@linaro1.home>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 10 Dec 2012 11:04:05 +0000
+In-Reply-To: <20121207190244.GB29618@mudshark.cambridge.arm.com>
+References: <1354872138.3176.15.camel@computer5.home>
+	 <1354888985.17101.41.camel@gandalf.local.home>
+	 <1354892111.13000.50.camel@linaro1.home>
+	 <1354894134.17101.44.camel@gandalf.local.home>
+	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
+	 <1354898200.17101.50.camel@gandalf.local.home>
+	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
+	 <1354900436.17101.58.camel@gandalf.local.home>
+	 <20121207181309.GY14363@n2100.arm.linux.org.uk>
+	 <1354905805.17101.86.camel@gandalf.local.home>
+	 <20121207190244.GB29618@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost01-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 08, 2012 at 05:01:42PM -0800, Linus Torvalds wrote:
+On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
+> For ARMv7, there are small subsets of instructions for ARM and Thumb which
+> are guaranteed to be atomic wrt concurrent modification and execution of
+> the instruction stream between different processors:
 > 
-> 
-> On Sat, 8 Dec 2012, Zlatko Calusic wrote:
-> > 
-> > Or sooner... in short: nothing's changed!
-> > 
-> > On a 4GB RAM system, where applications use close to 2GB, kswapd likes to keep
-> > around 1GB free (unused), leaving only 1GB for page/buffer cache. If I force
-> > bigger page cache by reading a big file and thus use the unused 1GB of RAM,
-> > kswapd will soon (in a matter of minutes) evict those (or other) pages out and
-> > once again keep unused memory close to 1GB.
-> 
-> Ok, guys, what was the reclaim or kswapd patch during the merge window 
-> that actually caused all of these insane problems?
-
-I believe commit c6543459 (mm: remove __GFP_NO_KSWAPD) is the primary
-candidate. __GFP_NO_KSWAPD was originally introduced by THP because kswapd
-was excessively reclaiming. kswapd would stay awake aggressively reclaiming
-even if compaction was deferred. The flag was removed in this cycle when it
-was expected that it was no longer necessary. I'm not foisting the blame
-on Rik here, I was on the review list for that patch and did not identify
-that it would cause this many problems either.
-
-> It seems it was more 
-> fundamentally buggered than the fifteen-million fixes for kswapd we have 
-> already picked up.
+> Thumb:	The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
+> ARM:	The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
 > 
 
-It was already fundamentally buggered up. The difference was it stayed
-asleep for THP requests in earlier kernels.
+So this means for things like kprobes which can modify arbitrary kernel
+code we are going to need to continue to always use some form of
+stop_the_whole_system() function?
 
-There is a big difference between a direct reclaim/compaction for THP
-and kswapd doing the same work. Direct reclaim/compaction will try once,
-give up quickly and defer requests in the near future to avoid impacting
-the system heavily for THP. The same applies for khugepaged.
+Also, kprobes currently uses patch_text() which only uses stop_machine
+for Thumb2 instructions which straddle a word boundary, so this needs
+changing?
 
-kswapd is different. It can keep going until it meets its watermarks for
-a THP allocation are met. Two reasons why it might keep going for a long
-time are that compaction is being inefficient which we know it may be due
-to crap like this
+-- 
+Tixy
 
-end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
-
-and the second reason is if the highest zone is relatively because
-compaction_suitable will keep saying that allocations are failing due to
-insufficient amounts of memory in the highest zone. It'll reclaim a little
-from this highest zone and then shrink_slab() potentially dumping a large
-amount of memory. This may be the case for Zlatko as with a 4G machine
-his ZONE_NORMAL could be small depending on how the 32-bit address space
-is used by his hardware.
-
-> (Ok, I may be exaggerating the number of patches, but it's starting to 
-> feel that way - I thought that 3.7 was going to be a calm and easy 
-> release, but the kswapd issues seem to just keep happening. We've been 
-> fighting the kswapd changes for a while now.)
-> 
-
-Yes.
-
-> Trying to keep a gigabyte free (presumably because that way we have lots 
-> of high-order alloction pages) is ridiculous. Is it one of the compaction 
-> changes? 
-> 
-
-Not directly. Compaction has been a bigger factor after 3.5 due to the
-removal of lumpy reclaim but it's not directly responsible for excessive
-amounts of memory being kept free. The closest patch I'm aware of that
-would cause problems of that nature would be commit 83fde0f2 (mm: vmscan:
-scale number of pages reclaimed by reclaim/compaction based on failures)
-and it has already been reverted by 96710098.
-
-> Mel? Ideas?
-> 
-
-Consider reverting the revert of __GFP_NO_KSWAPD again until this can be
-ironed out at a more reasonable pace. Rik? Johannes?
-
-Verify if the shrinking slab is the issue with this brutually ugly
-hack. Zlatko?
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b7ed376..2189d20 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2550,6 +2550,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 	unsigned long balanced;
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-+	bool should_shrink_slab = true;
- 	unsigned long total_scanned;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	unsigned long nr_soft_reclaimed;
-@@ -2695,7 +2696,8 @@ loop_again:
- 				shrink_zone(zone, &sc);
- 
- 				reclaim_state->reclaimed_slab = 0;
--				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
-+				if (should_shrink_slab)
-+					nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
- 				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
- 				total_scanned += sc.nr_scanned;
- 
-@@ -2817,6 +2819,16 @@ out:
- 	if (order) {
- 		int zones_need_compaction = 1;
- 
-+		/*
-+		 * Shrinking slab for high-order allocs can cause an excessive
-+		 * amount of memory to be dumped. Only shrink slab once per
-+		 * round for high-order allocs.
-+		 *
-+		 * This is a very stupid hack. balance_pgdat() is in serious
-+		 * need of a rework
-+		 */
-+		should_shrink_slab = false;
-+
- 		for (i = 0; i <= end_zone; i++) {
- 			struct zone *zone = pgdat->node_zones + i;
- 
