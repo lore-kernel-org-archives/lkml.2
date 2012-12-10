@@ -1,57 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab2LJKMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:12:02 -0500
-Received: from ezexch.ezchip.com ([212.179.42.101]:35244 "EHLO
-	ezexch.ezchip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825Ab2LJKL7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:11:59 -0500
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Dec 2012 05:11:59 EST
-From: Noam Camus <noamc@ezchip.com>
-To: Michal Marek <mmarek@suse.cz>
-CC: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 10 Dec 2012 12:06:02 +0200
-Subject: RE: Makefile race between jobs
-Thread-Topic: Makefile race between jobs
-Thread-Index: Ac3WuwVWK+Txmhl2TW+6Ht6w5z2qcQAARKQA
-Message-ID: <264C179F799EF24AB26D5319053335E80CC31B9D5B@ezexch.ezchip.com>
-References: <264C179F799EF24AB26D5319053335E80CC3049A10@ezexch.ezchip.com>
-	<50C4B8F3.6030704@suse.cz>
-	<264C179F799EF24AB26D5319053335E80CC31B9D41@ezexch.ezchip.com>
- <20121210094515.GA31121@sepie.suse.cz>
-In-Reply-To: <20121210094515.GA31121@sepie.suse.cz>
-Accept-Language: en-US, he-IL
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, he-IL
-x-tm-as-product-ver: SMEX-10.2.0.2087-7.000.1014-19436.006
-x-tm-as-result: No--25.744500-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754259Ab2LJKNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:13:05 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56885 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753825Ab2LJKND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:13:03 -0500
+Message-ID: <50C5B5A1.3040801@imgtec.com>
+Date: Mon, 10 Dec 2012 10:12:49 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: Rusty Russell <rusty@ozlabs.org>
+CC: Michal Marek <mmarek@suse.cz>, Takashi Iwai <tiwai@suse.de>,
+        David Howells <dhowells@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] MODSIGN: Avoid using .incbin in C source
+References: <1354616321-13520-2-git-send-email-mmarek@suse.cz> <1354616321-13520-1-git-send-email-mmarek@suse.cz> <22396.1354645048@warthog.procyon.org.uk> <87hao1gyiv.fsf@rustcorp.com.au> <s5hobi9aqxs.wl%tiwai@suse.de> <20121205095057.GA26543@sepie.suse.cz> <87zk1qeap3.fsf@rustcorp.com.au>
+In-Reply-To: <87zk1qeap3.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_12_10_10_12_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-> From: Michal Marek [mailto:mmarek@suse.cz] 
-> Sent: Monday, December 10, 2012 11:45 AM
-> To: Noam Camus
-> Cc: linux-kbuild@vger.kernel.org; linux-kernel@vger.kernel.org; Arnd Bergmann
-> Subject: Re: Makefile race between jobs
+On 07/12/12 04:40, Rusty Russell wrote:
+> Michal Marek <mmarek@suse.cz> writes:
+>> It looks good, but looking at your patch, I just noticed that we have two
+>> versions of the SYMBOL_PREFIX macro in the kernel now:
+>>
+>> scripts/Makefile.lib has had since some time
+>>
+>> ifdef CONFIG_SYMBOL_PREFIX
+>> _sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
+>> _cpp_flags += $(_sym_flags)
+>> _a_flags += $(_sym_flags)
+>> endif
+>>
+>> while include/linux/kernel.h now has
+>>
+>> /* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+>> #ifdef CONFIG_SYMBOL_PREFIX
+>> #define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+>> #else
+>> #define SYMBOL_PREFIX ""
+>> #endif
+> 
+> What a mess!  AFAICT there's one place which a non-string SYMBOL_PREFIX:
+>         include/asm-generic/vmlinux.lds.h
+> 
+> So we do need it, and the only sane way seems to be via the cmdline and
+> the shell usefully stripping quotes as we do.
+> 
+> So I just took Takashi's do-it-all-in-asm fix, and removed this
+> re-definition (we have the same thing, BTW, called
+> MODULE_SYMBOL_PREFIX).
+> 
+> I added a comment about the cmdline SYMBOL_PREFIX, too.
+> 
+> Thanks,
+> Rusty.
+> 
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: MODSIGN: Avoid using .incbin in C source
+> 
+> Using the asm .incbin statement in C sources breaks any gcc wrapper which
+> assumes that preprocessed C source is self-contained. Use a separate .S
+> file to include the siging key and certificate.
+> 
+> [ This means we no longer need SYMBOL_PREFIX which is defined in kernel.h
+>   from cbdbf2abb7844548a7d7a6a2ae7af6b6fbcea401, so I removed it -- RR ]
+> 
+> Tested-by: Michal Marek <mmarek@suse.cz>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-> I see the problem now. However, so far, no other architecture has been doing this. 'grep -e -include arch/*/Makefile' shows only one instance in arch/arm, but that include is a static file with no dependencies. Is it really necessary to include asm/current.h when compiling _every_ file? Sure, you get it via many common headers, but then you don't need to add it explicitly :). But if Arnd thinks this is OK, I will merge a patch that serializes scripts/mod/empty.o and asm-generic.
+Looks good to me.
+Acked-by: James Hogan <james.hogan@imgtec.com>
 
-> Michal
+Thanks
+James
 
-
-According to my architecture maintainer it is mandatory.
-
-
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 7d8dfc7..a123b13 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -701,13 +701,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+>  #define COMPACTION_BUILD 0
+>  #endif
+>  
+> -/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+> -#ifdef CONFIG_SYMBOL_PREFIX
+> -#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+> -#else
+> -#define SYMBOL_PREFIX ""
+> -#endif
+> -
+>  /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
+>  #ifdef CONFIG_FTRACE_MCOUNT_RECORD
+>  # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index 86e3285..0bd9d43 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -54,7 +54,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
+>  obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
+>  obj-$(CONFIG_UID16) += uid16.o
+>  obj-$(CONFIG_MODULES) += module.o
+> -obj-$(CONFIG_MODULE_SIG) += module_signing.o modsign_pubkey.o
+> +obj-$(CONFIG_MODULE_SIG) += module_signing.o modsign_pubkey.o modsign_certificate.o
+>  obj-$(CONFIG_KALLSYMS) += kallsyms.o
+>  obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
+>  obj-$(CONFIG_KEXEC) += kexec.o
+> @@ -139,7 +139,7 @@ ifeq ($(CONFIG_MODULE_SIG),y)
+>  extra_certificates:
+>  	touch $@
+>  
+> -kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
+> +kernel/modsign_certificate.o: signing_key.x509 extra_certificates
+>  
+>  ###############################################################################
+>  #
+> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+> new file mode 100644
+> index 0000000..246b4c6
+> --- /dev/null
+> +++ b/kernel/modsign_certificate.S
+> @@ -0,0 +1,19 @@
+> +/* SYMBOL_PREFIX defined on commandline from CONFIG_SYMBOL_PREFIX */
+> +#ifndef SYMBOL_PREFIX
+> +#define ASM_SYMBOL(sym) sym
+> +#else
+> +#define PASTE2(x,y) x##y
+> +#define PASTE(x,y) PASTE2(x,y)
+> +#define ASM_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
+> +#endif
+> +
+> +#define GLOBAL(name)	\
+> +	.globl ASM_SYMBOL(name);	\
+> +	ASM_SYMBOL(name):
+> +
+> +	.section ".init.data","aw"
+> +
+> +GLOBAL(modsign_certificate_list)
+> +	.incbin "signing_key.x509"
+> +	.incbin "extra_certificates"
+> +GLOBAL(modsign_certificate_list_end)
+> diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
+> index 767e559..045504f 100644
+> --- a/kernel/modsign_pubkey.c
+> +++ b/kernel/modsign_pubkey.c
+> @@ -20,12 +20,6 @@ struct key *modsign_keyring;
+>  
+>  extern __initdata const u8 modsign_certificate_list[];
+>  extern __initdata const u8 modsign_certificate_list_end[];
+> -asm(".section .init.data,\"aw\"\n"
+> -    SYMBOL_PREFIX "modsign_certificate_list:\n"
+> -    ".incbin \"signing_key.x509\"\n"
+> -    ".incbin \"extra_certificates\"\n"
+> -    SYMBOL_PREFIX "modsign_certificate_list_end:"
+> -    );
+>  
+>  /*
+>   * We need to make sure ccache doesn't cache the .o file as it doesn't notice
+> 
 
