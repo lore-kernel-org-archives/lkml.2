@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab2LJG7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 01:59:21 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47025 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab2LJG7U (ORCPT
+	id S1752506Ab2LJG71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 01:59:27 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:56695 "EHLO
+	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752412Ab2LJG7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 01:59:20 -0500
-Date: Mon, 10 Dec 2012 11:58:57 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
-Message-ID: <20121210062857.GA6348@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
- <20121207110113.GB21482@gmail.com>
- <20121209203630.GC1009@suse.de>
- <20121210050710.GC22164@linux.vnet.ibm.com>
+	Mon, 10 Dec 2012 01:59:24 -0500
+Message-ID: <50C58846.7000408@ilyx.ru>
+Date: Mon, 10 Dec 2012 10:59:18 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121210050710.GC22164@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121006-7408-0000-0000-00000AE47D31
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [BUG -next] cpufreq: cpufreq_governor.
+References: <50BF9480.20400@ilyx.ru> <50BF9824.7070903@ilyx.ru> <50C4C790.4080206@ilyx.ru> <1619333.jM1smpk2m8@vostro.rjw.lan>
+In-Reply-To: <1619333.jM1smpk2m8@vostro.rjw.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> [2012-12-10 10:37:10]:
+On 10.12.2012 3:08, Rafael J. Wysocki wrote:
+> On Sunday, December 09, 2012 09:17:04 PM Ilya Zykov wrote:
+>> On 05.12.2012 22:53, Ilya Zykov wrote:
+>>> What do I do wrong?
+>>>
+>>> After: modprobe cpufreq_ondemand
+>>> I have:
+>>>
+>>> WARNING: Error inserting freq_table (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/freq_table.ko): Unknown symbol in module, or unknown parameter (see dmesg)
+>>> FATAL: Error inserting cpufreq_ondemand (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/cpufreq_ondemand.ko): Unknown symbol in module, or unknown parameter (see dmesg)
+>>>
+>>> dmesg:
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_getavg (err 0)
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_create_group (err 0)
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_remove_group (err 0)
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_target (err 0)
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_idle_time_us (err 0)
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol delayed_work_timer_fn (err 0)
+>>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_iowait_time_us (err 0)
+>>>
+>>> cat /proc/kallsyms |grep freq_dr
+>>> ffffffff814976e0 T __cpufreq_driver_target
+>>> ffffffff814987e0 T __cpufreq_driver_getavg
+>>> ffffffff81498850 T cpufreq_driver_target
+>>> ffffffff81881650 r __ksymtab___cpufreq_driver_getavg
+>>> ffffffff81881660 r __ksymtab___cpufreq_driver_target
+>>> ffffffff81883b40 r __ksymtab_cpufreq_driver_target
+>>> ffffffff81894290 r __kcrctab___cpufreq_driver_getavg
+>>> ffffffff81894298 r __kcrctab___cpufreq_driver_target
+>>> ffffffff81895508 r __kcrctab_cpufreq_driver_target
+>>> ffffffff818b3080 r __kstrtab___cpufreq_driver_getavg
+>>> ffffffff818b3098 r __kstrtab_cpufreq_driver_target
+>>> ffffffff818b30ae r __kstrtab___cpufreq_driver_target
+>>> ffffffff81e240c8 b cpufreq_driver_lock
+>>> ffffffff81e240d0 b cpufreq_driver
+>>> ffffffffa0c42000 d acpi_cpufreq_driver	[acpi_cpufreq]
+>>
+>> I managed to fix:
+>>
+>> git checkout 16642a2e7be23bb -- drivers/cpufreq
+>> git checkout 250f6715a4112d668 -- include/linux/cpufreq.h
+> 
+> Can you please send your .config?
+> 
+> Rafael
+> 
+> 
 
-> > 
-> > Either way, last night I applied a patch on top of latest tip/master to
-> > remove the nr_cpus_allowed check so that numacore would be enabled again
-> > and tested that. In some places it has indeed much improved. In others
-> > it is still regressing badly and in two case, it's corrupting memory --
-> > specjbb when THP is enabled crashes when running for single or multiple
-> > JVMs. It is likely that a zero page is being inserted due to a race with
-> > migration and causes the JVM to throw a null pointer exception. Here is
-> > the comparison on the rough off-chance you actually read it this time.
-> 
-> I see this failure when running with THP and KSM enabled on 
-> Friday's Tip master. Not sure if Mel was talking about the same issue.
-> 
- 
-Even occurs with !THP but KSM enabled.
+gcc --version
+gcc (GCC) 4.4.6 20120305 (Red Hat 4.4.6-4)
+Copyright (C) 2010 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-> ------------[ cut here ]------------
-> kernel BUG at ../kernel/sched/fair.c:2371!
-> invalid opcode: 0000 [#1] SMP
-> Modules linked in: ebtable_nat ebtables autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bridge stp llc iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vhost_net macvtap macvlan tun iTCO_wdt iTCO_vendor_support kvm_intel kvm microcode cdc_ether usbnet mii serio_raw i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma i7core_edac edac_core bnx2 sg ixgbe dca mdio ext4 mbcache jbd2 sd_mod crc_t10dif mptsas mptscsih mptbase scsi_transport_sas dm_mirror dm_region_hash dm_log dm_mod
-> CPU 4
-> Pid: 116, comm: ksmd Not tainted 3.7.0-rc8-tip_master+ #5 IBM BladeCenter HS22V -[7871AC1]-/81Y5995
-> RIP: 0010:[<ffffffff8108c139>]  [<ffffffff8108c139>] task_numa_fault+0x1a9/0x1e0
-> RSP: 0018:ffff880372237ba8  EFLAGS: 00010246
-> RAX: 0000000000000074 RBX: 0000000000000001 RCX: 0000000000000001
-> RDX: 00000000000012ae RSI: 0000000000000004 RDI: 00007faf4fc01000
-> RBP: ffff880372237be8 R08: 0000000000000000 R09: ffff8803657463f0
-> R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000012
-> R13: ffff880372210d00 R14: 0000000000010088 R15: 0000000000000000
-> FS:  0000000000000000(0000) GS:ffff88037fc80000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000001d26fec CR3: 000000000169f000 CR4: 00000000000027e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process ksmd (pid: 116, threadinfo ffff880372236000, task ffff880372210d00)
-> Stack:
->  ffffea0016026c58 00007faf4fc00000 ffff880372237c48 0000000000000001
->  00007faf4fc01000 ffffea000d6df928 0000000000000001 ffffea00166e9268
->  ffff880372237c48 ffffffff8113cd0e ffff880300000001 0000000000000002
-> Call Trace:
->  [<ffffffff8113cd0e>] __do_numa_page+0xde/0x160
->  [<ffffffff8113de9e>] handle_pte_fault+0x32e/0xcd0
->  [<ffffffffa01c22c0>] ? drop_large_spte+0x30/0x30 [kvm]
->  [<ffffffffa01bf215>] ? kvm_set_spte_hva+0x25/0x30 [kvm]
->  [<ffffffff8113eab9>] handle_mm_fault+0x279/0x760
->  [<ffffffff8115c024>] break_ksm+0x74/0xa0
->  [<ffffffff8115c222>] break_cow+0xa2/0xb0
->  [<ffffffff8115e38c>] ksm_scan_thread+0xb5c/0xd50
->  [<ffffffff810771c0>] ? wake_up_bit+0x40/0x40
->  [<ffffffff8115d830>] ? run_store+0x340/0x340
->  [<ffffffff8107692e>] kthread+0xce/0xe0
->  [<ffffffff81076860>] ? kthread_freezable_should_stop+0x70/0x70
->  [<ffffffff814fa7ac>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81076860>] ? kthread_freezable_should_stop+0x70/0x70
-> Code: 89 f0 41 bf 01 00 00 00 8b 1c 10 e9 d7 fe ff ff 8d 14 09 48 63 d2 eb bd 66 2e 0f 1f 84 00 00 00 00 00 49 8b 85 98 07 00 00 eb 91 <0f> 0b eb fe 80 3d 9c 3b 6b 00 01 0f 84 be fe ff ff be 42 09 00
-> RIP  [<ffffffff8108c139>] task_numa_fault+0x1a9/0x1e0
->  RSP <ffff880372237ba8>
-> ---[ end trace 9584c9b03fc0dbc0 ]---
-> 
 
