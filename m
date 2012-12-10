@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab2LJXwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:52:41 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:41389 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab2LJXwk convert rfc822-to-8bit (ORCPT
+	id S1752002Ab2LJXxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:53:05 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:39754 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab2LJXxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:52:40 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
-Thread-Topic: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
-Thread-Index: Ac3UwvCZixvXisXmRfC/Xc8ha8nnHACXEeSAAAKIfEA=
-Date: Mon, 10 Dec 2012 23:52:21 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1DFC8@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B7B2@USINDEM103.corp.hds.com>
- <20121210164215.GZ53431@redhat.com>
-In-Reply-To: <20121210164215.GZ53431@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Dec 2012 18:53:03 -0500
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-10_07:2012-12-10,2012-12-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1212100244
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E0581F@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E0581F@DQHE02.ent.ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 10 Dec 2012 15:52:40 -0800
+Message-ID: <CAK5ve-+JNPgYVkTKxa=sNt0aK3Yf73YHVqa12pZLHSo5Up_i3g@mail.gmail.com>
+Subject: Re: [PATCH 4/4] MAINTAINERS: add LP8788 MFD driver entry
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now my first reaction would be, if that is the scenario, why couldn't cpuA release the lock within one second.  Because if cpuA is stuck
-> talking with firmware, then your patch to force the unlock is probably going to trip over the same problems.
-> (those problems include dealing with resetting a firmware state machine)
-> 
-> IOW, your patch is just one of many minefields you will have to cross in order to be successful.
+On Sun, Dec 9, 2012 at 9:27 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> Cc: Anton Vorontsov <cbou@mail.ru>
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Jonathan Cameron <jic23@cam.ac.uk>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 
-I agree that I need to fix the platform driver's deadlocking as well to make an overall system workable. 
-(I just wanted to fix the deadlocking problems step by step.)
+Acked-by: Bryan Wu <cooloney@gmail.com>
 
+Thanks,
+-Bryan
 
-> 
-> Without any testing to show that you have cleared all those minefields, I am leaning against your patch for now.  I would rather have a
-> complete patchset that fixes all the problems in this path.
-
-Thanks. I will try to make the complete patchset.
-
-> 
-> If you did have to go this route, why not take the 'reason' variable and pass it to some function 'in_panic_path(reason)' that tells you if
-> you are panicing or not.  Then you can change the 'if in_nmi()' to 'if in_nmi() || in_panic'.
-> 
-> The panic path already disables irqs for you, not sure you need to do it again.  Unless you have some other path you are trying to
-> protect in mind.
-
-Thank you for the suggestion.
-I will update my patch in accordance with your comment if anyone else disagree that.
-
-> 
-> Cheers,
-> Don
+> ---
+>  MAINTAINERS |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index ee7e9ee..9339a4b 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7570,6 +7570,16 @@ S:       Maintained
+>  F:     drivers/regulator/lp872x.c
+>  F:     include/linux/regulator/lp872x.h
+>
+> +TI LP8788 MFD DRIVER
+> +M:     Milo Kim <milo.kim@ti.com>
+> +S:     Maintained
+> +F:     drivers/iio/adc/lp8788_adc.c
+> +F:     drivers/leds/leds-lp8788.c
+> +F:     drivers/mfd/lp8788*.c
+> +F:     drivers/power/lp8788-charger.c
+> +F:     drivers/regulator/lp8788-*.c
+> +F:     include/linux/mfd/lp8788*.h
+> +
+>  TI TWL4030 SERIES SOC CODEC DRIVER
+>  M:     Peter Ujfalusi <peter.ujfalusi@ti.com>
+>  L:     alsa-devel@alsa-project.org (moderated for non-subscribers)
+> --
+> 1.7.9.5
+>
+>
+> Best Regards,
+> Milo
+>
+>
