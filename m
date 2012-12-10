@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab2LJLh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 06:37:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55421 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab2LJLh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 06:37:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
-   d="scan'208";a="255107178"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 1/2] dmatest: implement two helpers to unmap dma memory
-Date: Mon, 10 Dec 2012 13:37:43 +0200
-Message-Id: <1355139464-6855-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752110Ab2LJLie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 06:38:34 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12735 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2LJLic convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 06:38:32 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 10 Dec 2012 03:37:04 -0800
+Message-ID: <50C5CAB5.3040000@nvidia.com>
+Date: Mon, 10 Dec 2012 13:42:45 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unmap_src() and unmap_dst() will be used later as well.
+On 05.12.2012 14:04, Thierry Reding wrote:
+> On Wed, Dec 05, 2012 at 01:47:38PM +0200, Terje Bergström wrote:
+>> You're right in that binding to a sub-device is not a nice way. DRM
+>> framework just needs a "struct device" to bind to. exynos seems to solve
+>> this by introducing a virtual device and bind to that. I'm not sure if
+>> this is the best way, but worth considering?
+> 
+> That was discussed a few months back already and nobody seemed to like
+> the idea. In fact it was as a result of that discussion that Stephen
+> brought up the idea to register the DRM driver from a central host1x
+> driver (it may also have been part of a discussion on IRC, I don't
+> remember exactly).
+> 
+> At the time I spent some time on a patch that introduced drm_soc_init()
+> to solve this by creating a dummy struct device and registering the
+> driver on top of that. But I abandoned it in favour of fixing the DRM
+> platform support code. The approach also didn't provide for the proper
+> encapsulation.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dmatest.c |   27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+I've managed to go through all the other feedback and implement a
+solution to most of them, so now I have some slack to actually think
+about the initialization. Sorry about this, but you (meaning all the
+reviewers) did give us a _lot_ to do. :-) Fortunately, the driver
+actually became a lot better, too.
 
-diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index 3e777d2..b515343 100644
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@ -236,6 +236,20 @@ static unsigned int min_odd(unsigned int x, unsigned int y)
- 	return val % 2 ? val : val - 1;
- }
- 
-+static inline void unmap_src(struct device *dev, dma_addr_t *addr, size_t len,
-+			     unsigned int count)
-+{
-+	while (count--)
-+		dma_unmap_single(dev, addr[count], len, DMA_TO_DEVICE);
-+}
-+
-+static inline void unmap_dst(struct device *dev, dma_addr_t *addr, size_t len,
-+			     unsigned int count)
-+{
-+	while (count--)
-+		dma_unmap_single(dev, addr[count], len, DMA_BIDIRECTIONAL);
-+}
-+
- /*
-  * This function repeatedly tests DMA transfers of various lengths and
-  * offsets for a given operation type until it is told to exit by
-@@ -394,13 +408,8 @@ static int dmatest_func(void *data)
- 		}
- 
- 		if (!tx) {
--			for (i = 0; i < src_cnt; i++)
--				dma_unmap_single(dev->dev, dma_srcs[i], len,
--						 DMA_TO_DEVICE);
--			for (i = 0; i < dst_cnt; i++)
--				dma_unmap_single(dev->dev, dma_dsts[i],
--						 test_buf_size,
--						 DMA_BIDIRECTIONAL);
-+			unmap_src(dev->dev, dma_srcs, len, src_cnt);
-+			unmap_dst(dev->dev, dma_dsts, test_buf_size, dst_cnt);
- 			pr_warning("%s: #%u: prep error with src_off=0x%x "
- 					"dst_off=0x%x len=0x%x\n",
- 					thread_name, total_tests - 1,
-@@ -454,9 +463,7 @@ static int dmatest_func(void *data)
- 		}
- 
- 		/* Unmap by myself (see DMA_COMPL_SKIP_DEST_UNMAP above) */
--		for (i = 0; i < dst_cnt; i++)
--			dma_unmap_single(dev->dev, dma_dsts[i], test_buf_size,
--					 DMA_BIDIRECTIONAL);
-+		unmap_dst(dev->dev, dma_dsts, test_buf_size, dst_cnt);
- 
- 		error_count = 0;
- 
--- 
-1.7.10.4
+Back to the topic of tegradrm init. The root cause of the problem is
+that DRM framework needs some device to assign itself to. The problem is
+that this device doesn't have any physical counterpart, as it's only for
+storing a pointer in DRM framework. Please correct me if this is wrong.
 
+Moving the client registration to ping pong between DRM and host1x has
+its problems. host1x driver itself has no use for a list of client
+devices. It can just iterate its children in case it needs them. In
+tegradrm, you need a list of devices under tegradrm control, which might
+or might not be the same as list of devices under host1x hardware.
+
+The solutions that many other DRM drivers seem to employ are the virtual
+devices. Exynos and OMAP drivers do this, as does SH Mobile DRM driver.
+So I think I'd still go this way, as it's the path of minimum
+resistance, least amount of code and most localized change. I know it's
+not ideal, but I'd also not like to get stuck in this.
+
+Terje
