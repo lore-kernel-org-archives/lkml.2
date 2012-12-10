@@ -1,30 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab2LJF1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:27:45 -0500
-Received: from mail.agroideas.gob.pe ([190.12.70.83]:51178 "EHLO
-	mail.agroideas.gob.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab2LJF1o convert rfc822-to-8bit (ORCPT
+	id S1752114Ab2LJF2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 00:28:13 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:40167 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab2LJF2L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:27:44 -0500
-X-Greylist: delayed 2198 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Dec 2012 00:27:43 EST
-Date: Sun, 9 Dec 2012 23:29:36 -0500 (PET)
-From: CORREO <mrada@agroideas.gob.pe>
-Reply-To: CORREO <accountuserhelp@admin.in.th>
-Message-ID: <552579974.89987.1355113776817.JavaMail.root@mail.agroideas.gob.pe>
-Subject: Advertencia Final.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 10 Dec 2012 00:28:11 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 4/4] MAINTAINERS: add LP8788 MFD driver entry
+Thread-Topic: [PATCH 4/4] MAINTAINERS: add LP8788 MFD driver entry
+Thread-Index: Ac3Wlxtu5fUVXpTAT86WxVl080nt+w==
+Date: Mon, 10 Dec 2012 05:27:55 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0581F@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.71.173.191]
-X-Mailer: Zimbra 6.0.14_GA_2928 (zclient/6.0.14_GA_2928)
-To: undisclosed-recipients:;
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su buzón se ha superado el límite de almacenamiento según lo establecido por el administrador, 
-Y Usted no será capaz de recibir correos nuevos hasta que se volverá a validar. 
-De revalidar - por favor HAGA CLICK AQUÍ 
-http://workers.wufoo.com/forms/untitled-form/
-Administrador del sistema.
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ MAINTAINERS |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ee7e9ee..9339a4b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7570,6 +7570,16 @@ S:	Maintained
+ F:	drivers/regulator/lp872x.c
+ F:	include/linux/regulator/lp872x.h
+ 
++TI LP8788 MFD DRIVER
++M:	Milo Kim <milo.kim@ti.com>
++S:	Maintained
++F:	drivers/iio/adc/lp8788_adc.c
++F:	drivers/leds/leds-lp8788.c
++F:	drivers/mfd/lp8788*.c
++F:	drivers/power/lp8788-charger.c
++F:	drivers/regulator/lp8788-*.c
++F:	include/linux/mfd/lp8788*.h
++
+ TI TWL4030 SERIES SOC CODEC DRIVER
+ M:	Peter Ujfalusi <peter.ujfalusi@ti.com>
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+-- 
+1.7.9.5
+
+
+Best Regards,
+Milo
+
+
