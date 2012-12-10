@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2LJK0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:26:21 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40839 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab2LJK0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:26:17 -0500
-Date: Mon, 10 Dec 2012 10:26:12 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, viresh.kumar@linaro.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/1 v2] gpio: Provide the STMPE GPIO driver with its own
- IRQ Domain
-Message-ID: <20121210102612.GD9362@gmail.com>
-References: <1353683949-9275-1-git-send-email-lee.jones@linaro.org>
- <20121210100754.GB9362@gmail.com>
- <CACRpkdYe1YbeyxC0OWqAY_MFq6oXVLzr0+s50O7X0LZducL4rg@mail.gmail.com>
+	id S1754546Ab2LJKVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:21:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48778 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab2LJKVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:21:13 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
+CC: <paul@pwsan.com>, <keshava_mgowda@ti.com>, <sshtylyov@mvista.com>,
+        <bjorn@mork.no>, <rogerq@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 07/23] mfd: omap-usb-tll: Check for missing platform data in probe
+Date: Mon, 10 Dec 2012 12:20:17 +0200
+Message-ID: <1355134833-5199-8-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1355134833-5199-1-git-send-email-rogerq@ti.com>
+References: <1355134833-5199-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYe1YbeyxC0OWqAY_MFq6oXVLzr0+s50O7X0LZducL4rg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Dec 2012, Linus Walleij wrote:
+No need to check for missing platform data in runtime_suspend/resume
+as it makes more sense to do it in the probe function.
 
-> On Mon, Dec 10, 2012 at 11:07 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > Author: Lee Jones <lee.jones@linaro.org>
-> > Date:   Fri Nov 23 12:36:23 2012 +0000
-> >
-> >     gpio: Provide the STMPE GPIO driver with its own IRQ Domain
-> >
-> >     The STMPE GPIO driver can be used as an IRQ controller by some
-> 
-> What is this funny citing and indentation business here... I stripped
-> all the whitespace by hand, no big deal, just curious.
-> 
-> Looks like you e.g. copy/pasted from a "git log" command log rather
-> than from an actual patch.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/mfd/omap-usb-tll.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-Yeah, for v2 review, I usually use `git show` and copy from "Author:".
-
-> >     related devices. Here we provide it with its very own IRQ Domain
-> >     so that IRQs can be issued dynamically. This will stand the
-> >     driver in good stead when it is enabled for Device Tree, as this
-> >     it a prerequisite.
-> >
-> >     Cc: Grant Likely <grant.likely@secretlab.ca>
-> >     Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >     Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Applied.
-
-Thanks dude.
-
-> I apply this late because not using an irqdomain when we can is
-> an abomination so I'm taking the risk.
-
-NP.
-
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 07370a3..8b596e0 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -225,6 +225,11 @@ static int __devinit usbtll_omap_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	if (!pdata) {
++		dev_err(dev, "Platform data missing\n");
++		return -ENODEV;
++	}
++
+ 	spin_lock_init(&tll->lock);
+ 
+ 	tll->pdata = pdata;
+@@ -367,11 +372,6 @@ static int usbtll_runtime_resume(struct device *dev)
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+-	if (!pdata) {
+-		dev_dbg(dev, "missing platform_data\n");
+-		return  -ENODEV;
+-	}
+-
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+ 	for (i = 0; i < tll->nch; i++) {
+@@ -403,11 +403,6 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 
+-	if (!pdata) {
+-		dev_dbg(dev, "missing platform_data\n");
+-		return  -ENODEV;
+-	}
+-
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+ 	for (i = 0; i < tll->nch; i++) {
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.4.1
+
