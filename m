@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab2LJWJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:09:11 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:51434 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2LJWJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:09:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 2/3] dmaengine: dw_dmac: Enhance device tree support
-Date: Mon, 10 Dec 2012 22:08:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, vinod.koul@intel.com,
-        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, andriy.shevchenko@linux.intel.com
-References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org> <169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
-In-Reply-To: <169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
+	id S1752457Ab2LJWM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:12:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47107 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751955Ab2LJWMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:12:24 -0500
+Date: Mon, 10 Dec 2012 23:12:22 +0100
+From: Jan Kara <jack@suse.cz>
+To: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Subject: Read starvation by sync writes
+Message-ID: <20121210221222.GA25700@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212102208.52347.arnd@arndb.de>
-X-Provags-ID: V02:K0:6PK0nzM3Y+fNCeSlmXQj2oF+8lSN9EWUiJTem/FiWCt
- S9+myFpWEob3YQqeOW7+EvWTusQ2/a8mf8hPJkTvfL/UYZE5FO
- fBHkkS8FyCeJSOPvepwKi6kjSAyXufSeYoMGYPB2KxGlLAekDG
- l7YzwiXXqWG7jMMViAbJAT9zu+yoDWBUgdYbKFw63h2gOq54uZ
- /F6Bu8MT+HRnO3/z2s2b+JOXIjQbN414Aebe5OVMNbduK1L3a4
- A1brCkhm+44owqDFfmdhBxP3CR2FKlLLPHVeZsokKwu4YA6DJN
- udUsuhKJgD0bsRFnf/g+4B3pCJ9ioLTi4YhwMvjSsSIlFwkWRG
- G1f6fBQmW1ScOtAdcP8E=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 October 2012, Viresh Kumar wrote:
-> dw_dmac driver already supports device tree but it used to have its platform
-> data passed the non-DT way.
-> 
-> This patch does following changes:
-> - pass platform data via DT, non-DT way still takes precedence if both are used.
-> - create generic filter routine
-> - Earlier slave information was made available by slave specific filter routines
->   in chan->private field. Now, this information would be passed from within dmac
->   DT node. Slave drivers would now be required to pass bus_id (a string) as
->   parameter to this generic filter(), which would be compared against the slave
->   data passed from DT, by the generic filter routine.
-> - Update binding document
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+  Hi,
 
-I'm deeply sorry for the very late complaint on this, but I only now
-noticed this patch as I was seeing build breakage in linux-next
-because of it.
+  I was looking into IO starvation problems where streaming sync writes (in
+my case from kjournald but DIO would look the same) starve reads. This is
+because reads happen in small chunks and until a request completes we don't
+start reading further (reader reads lots of small files) while writers have
+plenty of big requests to submit. Both processes end up fighting for IO
+requests and writer writes nr_batching 512 KB requests while reader reads
+just one 4 KB request or so. Here the effect is magnified by the fact that
+the drive has relatively big queue depth so it usually takes longer than
+BLK_BATCH_TIME to complete the read request. The net result is it takes
+close to two minutes to read files that can be read under a second without
+writer load. Without the big drive's queue depth, results are not ideal but
+they are bearable - it takes about 20 seconds to do the reading. And for
+comparison, when writer and reader are not competing for IO requests (as it
+happens when writes are submitted as async), it takes about 2 seconds to
+complete reading.
 
-The build bug is not the problem however, but the abuse of the
-API is. Andy, are you sure you understood what this does when
-you gave you Reviewed-by comment?
+Simple reproducer is:
 
-Viresh, there are multiple problems with your approach unfortunately:
+echo 3 >/proc/sys/vm/drop_caches
+dd if=/dev/zero of=/tmp/f bs=1M count=10000 &
+sleep 30
+time cat /etc/* 2>&1 >/dev/null
+killall dd
+rm /tmp/f
 
-* It does not follow the binding from
-  Documentation/devicetree/bindings/dma/dma.txt
+  The question is how can we fix this? Two quick hacks that come to my mind
+are remove timeout from the batching logic (is it that important?) or
+further separate request allocation logic so that reads have their own
+request pool. More systematic fix would be to change request allocation
+logic to always allow at least a fixed number of requests per IOC. What do
+people think about this?
 
-* It requires slave drivers to know that they are using the dw_dmac
-  driver and pass a pointer to dw_generic_filter, which is not
-  generic at all
-
-* It requires the dmac node to have information about all slaves
-
-There are also some minor issues, such as the naming of DT
-properties, but the above need to be resolved first.
-
-	Arnd
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
