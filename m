@@ -1,127 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab2LJJNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:13:16 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38820 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab2LJJNN (ORCPT
+	id S1753570Ab2LJJNY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:13:24 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41296 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2LJJNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:13:13 -0500
-Message-ID: <50C5A79F.3020805@linux.vnet.ibm.com>
-Date: Mon, 10 Dec 2012 17:13:03 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 2/5] KVM: MMU: adjust page size early if gfn used as page
- table
-References: <50C5A747.1020105@linux.vnet.ibm.com>
-In-Reply-To: <50C5A747.1020105@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121009-1396-0000-0000-000002471502
+	Mon, 10 Dec 2012 04:13:18 -0500
+From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
+        Abhijit Pawar <abhi.c.pawar@gmail.com>
+Subject: [PATCH RESEND] net: remove obsolete simple_strto<foo>
+Date: Mon, 10 Dec 2012 14:42:28 +0530
+Message-Id: <1355130748-7828-1-git-send-email-abhi.c.pawar@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have two issues in current code:
-- if target gfn is used as its page table, guest will refault then kvm will use
-  small page size to map it. We need two #PF to fix its shadow page table
+This patch replace the obsolete simple_strto<foo> with kstrto<foo>
 
-- sometimes, say a exception is triggered during vm-exit caused by #PF
-  (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
-  by the target gfn before go into page fault path, it will cause infinite
-  loop:
-  delete shadow pages shadowed by the gfn -> try to use large page size to map
-  the gfn -> retry the access ->...
-
-To fix these, We can adjust page size early if the target gfn is used as page
-table
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
 ---
- arch/x86/kvm/mmu.c         |   13 ++++---------
- arch/x86/kvm/paging_tmpl.h |   33 ++++++++++++++++++++++++++++++++-
- 2 files changed, 36 insertions(+), 10 deletions(-)
+ net/core/netpoll.c                 |    5 ++++-
+ net/ipv4/netfilter/ipt_CLUSTERIP.c |    9 +++++++--
+ net/mac80211/debugfs_sta.c         |    3 +++
+ net/netfilter/nf_conntrack_core.c  |    5 ++++-
+ 4 files changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 2a3c890..54fc61e 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2380,15 +2380,10 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 	if (pte_access & ACC_WRITE_MASK) {
-
- 		/*
--		 * There are two cases:
--		 * - the one is other vcpu creates new sp in the window
--		 *   between mapping_level() and acquiring mmu-lock.
--		 * - the another case is the new sp is created by itself
--		 *   (page-fault path) when guest uses the target gfn as
--		 *   its page table.
--		 * Both of these cases can be fixed by allowing guest to
--		 * retry the access, it will refault, then we can establish
--		 * the mapping by using small page.
-+		 * Other vcpu creates new sp in the window between
-+		 * mapping_level() and acquiring mmu-lock. We can
-+		 * allow guest to retry the access, the mapping can
-+		 * be fixed if guest refault.
- 		 */
- 		if (level > PT_PAGE_TABLE_LEVEL &&
- 		    has_wrprotected_page(vcpu->kvm, gfn, level))
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index ec481e9..32d77ff 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -491,6 +491,36 @@ out_gpte_changed:
- 	return 0;
- }
-
-+ /*
-+ * To see whether the mapped gfn can write its page table in the current
-+ * mapping.
-+ *
-+ * It is the helper function of FNAME(page_fault). When guest uses large page
-+ * size to map the writable gfn which is used as current page table, we should
-+ * force kvm to use small page size to map it because new shadow page will be
-+ * created when kvm establishes shadow page table that stop kvm using large
-+ * page size. Do it early can avoid unnecessary #PF and emulation.
-+ *
-+ * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
-+ * since the PDPT is always shadowed, that means, we can not use large page
-+ * size to map the gfn which is used as PDPT.
-+ */
-+static bool
-+FNAME(mapped_gfn_can_write_current_pagetable)(struct guest_walker *walker)
-+{
-+	int level;
-+	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
-+
-+	if (!(walker->pte_access & ACC_WRITE_MASK))
-+		return false;
-+
-+	for (level = walker->level; level <= walker->max_level; level++)
-+		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
-+			return true;
-+
-+	return false;
-+}
-+
- /*
-  * Page fault handler.  There are several causes for a page fault:
-  *   - there is no shadow pte for the guest pte
-@@ -560,7 +590,8 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 77a0388..12c129f 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -674,7 +674,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 		if ((delim = strchr(cur, '@')) == NULL)
+ 			goto parse_failed;
+ 		*delim = 0;
+-		np->local_port = simple_strtol(cur, NULL, 10);
++		if (kstrtou16(cur, 10, &np->local_port))
++			goto parse_failed;
+ 		cur = delim;
  	}
-
- 	if (walker.level >= PT_DIRECTORY_LEVEL)
--		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn);
-+		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
-+		      || FNAME(mapped_gfn_can_write_current_pagetable)(&walker);
- 	else
- 		force_pt_level = 1;
- 	if (!force_pt_level) {
+ 	cur++;
+@@ -706,6 +707,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 		if (*cur == ' ' || *cur == '\t')
+ 			np_info(np, "warning: whitespace is not allowed\n");
+ 		np->remote_port = simple_strtol(cur, NULL, 10);
++		if (kstrtou16(cur, 10, &np->remote_port))
++			goto parse_failed;
+ 		cur = delim;
+ 	}
+ 	cur++;
+diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+index fe5daea..75e33a7 100644
+--- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
++++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+@@ -661,6 +661,7 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
+ #define PROC_WRITELEN	10
+ 	char buffer[PROC_WRITELEN+1];
+ 	unsigned long nodenum;
++	int rc;
+ 
+ 	if (size > PROC_WRITELEN)
+ 		return -EIO;
+@@ -669,11 +670,15 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
+ 	buffer[size] = 0;
+ 
+ 	if (*buffer == '+') {
+-		nodenum = simple_strtoul(buffer+1, NULL, 10);
++		rc = kstrtoul(buffer+1, 10, &nodenum);
++		if (rc)
++			return rc;
+ 		if (clusterip_add_node(c, nodenum))
+ 			return -ENOMEM;
+ 	} else if (*buffer == '-') {
+-		nodenum = simple_strtoul(buffer+1, NULL,10);
++		rc = kstrtoul(buffer+1, 10, &nodenum);
++		if (rc)
++			return rc;
+ 		if (clusterip_del_node(c, nodenum))
+ 			return -ENOENT;
+ 	} else
+diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
+index 49a1c70..0dedb4b 100644
+--- a/net/mac80211/debugfs_sta.c
++++ b/net/mac80211/debugfs_sta.c
+@@ -221,6 +221,9 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
+ 		return -EINVAL;
+ 
+ 	tid = simple_strtoul(buf, NULL, 0);
++	ret = kstrtoul(buf, 0, &tid);
++	if (ret)
++		return ret;
+ 
+ 	if (tid >= IEEE80211_NUM_TIDS)
+ 		return -EINVAL;
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index af17516..37d9e62 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1409,7 +1409,7 @@ EXPORT_SYMBOL_GPL(nf_ct_alloc_hashtable);
+ 
+ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
+ {
+-	int i, bucket;
++	int i, bucket, rc;
+ 	unsigned int hashsize, old_size;
+ 	struct hlist_nulls_head *hash, *old_hash;
+ 	struct nf_conntrack_tuple_hash *h;
+@@ -1423,6 +1423,9 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
+ 		return param_set_uint(val, kp);
+ 
+ 	hashsize = simple_strtoul(val, NULL, 0);
++	rc = kstrtouint(val, 0, &hashsize);
++	if (rc)
++		return rc;
+ 	if (!hashsize)
+ 		return -EINVAL;
+ 
 -- 
 1.7.7.6
 
