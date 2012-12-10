@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab2LJIgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:36:53 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:39203 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab2LJIgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:36:52 -0500
+	id S1752099Ab2LJIoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:44:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40756 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab2LJIoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 03:44:13 -0500
+Date: Mon, 10 Dec 2012 08:44:06 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121210084406.GD1009@suse.de>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <20121207110113.GB21482@gmail.com>
+ <20121209203630.GC1009@suse.de>
+ <20121209211708.GA29607@shutemov.name>
 MIME-Version: 1.0
-In-Reply-To: <loom.20121210T091624-754@post.gmane.org>
-References: <1355120784-31118-1-git-send-email-a.kesavan@samsung.com>
-	<1355120784-31118-2-git-send-email-a.kesavan@samsung.com>
-	<1355120784-31118-3-git-send-email-a.kesavan@samsung.com>
-	<20121210064650.GJ10927@opensource.wolfsonmicro.com>
-	<loom.20121210T091624-754@post.gmane.org>
-Date: Mon, 10 Dec 2012 14:06:49 +0530
-Message-ID: <CAM4voanevLVXW5_WFts2cjDi-5aAbj1_2=EN1amfp14KnKXNug@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] regulator: max77686: Add support for various
- operating modes
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com
-Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, sameo@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121209211708.GA29607@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding missed Cc's
+On Sun, Dec 09, 2012 at 11:17:09PM +0200, Kirill A. Shutemov wrote:
+> On Sun, Dec 09, 2012 at 08:36:31PM +0000, Mel Gorman wrote:
+> > Either way, last night I applied a patch on top of latest tip/master to
+> > remove the nr_cpus_allowed check so that numacore would be enabled again
+> > and tested that. In some places it has indeed much improved. In others
+> > it is still regressing badly and in two case, it's corrupting memory --
+> > specjbb when THP is enabled crashes when running for single or multiple
+> > JVMs. It is likely that a zero page is being inserted due to a race with
+> > migration and causes the JVM to throw a null pointer exception. Here is
+> > the comparison on the rough off-chance you actually read it this time.
+> 
+> Are you talking about huge zero page, right?
+> 
 
-On Mon, Dec 10, 2012 at 1:49 PM, Abhilash Kesavan
-<kesavan.abhilash@gmail.com> wrote:
-> Mark Brown <broonie <at> opensource.wolfsonmicro.com> writes:
->
-> [...]
->> Binding documenation is mandatory for any new OF properties, please add
->> this.
-> Patch 3/3 of this series adds documentation for the max77686-opmode property.
->>
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+No, this is happening in tip/master which does not include the huge zero
+page work yet. AFAIK, that's still queued in Andrew's tree for the next
+merge window. It is possible that there will be collisions between numa
+balancing and the huge zero page work but it hasn't happened yet.
+
+> I've fixed a race in huge zero page implementation recently[1]. Symptoms
+> were similar -- SIGSEGV in JVM. The patch is in mmotm-2012-12-05-16-56 and
+> later.
+> 
+
+It might be a similar class of bug.
+
+-- 
+Mel Gorman
+SUSE Labs
