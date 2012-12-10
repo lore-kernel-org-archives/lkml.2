@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab2LJCV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 21:21:57 -0500
-Received: from ares07.inai.de ([5.9.24.206]:43869 "EHLO ares07.inai.de"
+	id S1751365Ab2LJC1W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 21:27:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52805 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833Ab2LJCV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 21:21:56 -0500
-Date: Mon, 10 Dec 2012 03:21:53 +0100 (CET)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org, oleg@redhat.com,
-        rientjes@google.com, tvrtko.ursulin@onelan.co.uk,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [patch 7/7] fs, notify: Add procfs fdinfo helper v6
-In-Reply-To: <20121116155603.2118394c.akpm@linux-foundation.org>
-Message-ID: <alpine.LNX.2.01.1212100320180.25777@nerf07.vanv.qr>
-References: <20121114151937.344922058@openvz.org> <20121114152239.936025193@openvz.org> <20121116155603.2118394c.akpm@linux-foundation.org>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1750999Ab2LJC1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 21:27:21 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] regulator: lp8788-buck: Remove val array in
+ lp8788_init_dvs
+Thread-Topic: [PATCH 1/2] regulator: lp8788-buck: Remove val array in
+ lp8788_init_dvs
+Thread-Index: AQHN1Fx7h6YX3SDIO0e/AJrjM0LiqZgRUXtg
+Date: Mon, 10 Dec 2012 02:27:13 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0574C@DQHE02.ent.ti.com>
+References: <1354872181.15243.1.camel@phoenix>
+In-Reply-To: <1354872181.15243.1.camel@phoenix>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.123]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBA2RV4Z002818
 
-
-On Saturday 2012-11-17 00:56, Andrew Morton wrote:
->>  | pos:	0
->>  | flags:	02000000
->>  | inotify wd:        3 ino:             9e7e
->>  | inotify wd:        2 ino:             a111
->>  | inotify wd:        1 ino:            6b149[...]
->
->This is a lousy output format.  It's sort-of like a sensible set of
->name-value tuples: "name:value name:value name:value" but
->
->c) inotify-wd is secretly printed in decimal while everything else
->   is in hex.
->
->What happens if we do something like the below (which will require a
->changelog update)?
->
->@@ -59,7 +59,7 @@ static int show_mark_fhandle(struct seq_
-> 	f.handle.handle_type = ret;
-> 	f.handle.handle_bytes = size * sizeof(u32);
+> All elements of val array are zero.
+> Simply set data argument to be 0 in lp8788_update_bits call and remove
+> the val
+> array.
 > 
->-	ret = seq_printf(m, "fhandle-bytes: %8x fhandle-type: %8x f_handle: ",
->+	ret = seq_printf(m, "fhandle-bytes:%x fhandle-type:%x f_handle:",
-> 			 f.handle.handle_bytes, f.handle.handle_type);
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Why don't we actually make sure to print a 0x prefix when it's hex
-and 0 on octal? Then it should be clear what base these lines are in.
-(That would also be a good idea for the rest of procfs files, but I
-reckon they cannot be easily changed.)
+Axel, sorry I disagree with this patch because DVS_PIN is meaningful.
+In this case, explicit bit description is more important than code simplicity.
+So I would keep it.
+
+Thanks,
+Milo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
