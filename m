@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab2LJI0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:26:06 -0500
+	id S1752726Ab2LJI0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:26:11 -0500
 Received: from mga14.intel.com ([143.182.124.37]:14834 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab2LJI0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:26:04 -0500
+	id S1752024Ab2LJI0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 03:26:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
-   d="scan'208";a="178808684"
+   d="scan'208";a="178808697"
 From: Alex Shi <alex.shi@intel.com>
 To: rob@landley.net, mingo@redhat.com, peterz@infradead.org
 Cc: gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
         paul.gortmaker@windriver.com, akpm@linux-foundation.org,
         paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         pjt@google.com, vincent.guittot@linaro.org
-Subject: [PATCH 0/18] sched: simplified fork, enable load average into LB and power awareness scheduling 
-Date: Mon, 10 Dec 2012 16:22:16 +0800
-Message-Id: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+Subject: [PATCH 02/18] sched: fix find_idlest_group mess logical
+Date: Mon, 10 Dec 2012 16:22:18 +0800
+Message-Id: <1355127754-8444-3-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset base on tip/sched/core tree temporary, since it is more 
-steady than tip/master. and it's easy to rebase on tip/master.
+There is 4 situations in the function:
+1, no task allowed group;
+	so min_load = ULONG_MAX, this_load = 0, idlest = NULL
+2, only local group task allowed;
+	so min_load = ULONG_MAX, this_load assigned, idlest = NULL
+3, only non-local task group allowed;
+	so min_load assigned, this_load = 0, idlest != NULL
+4, local group + another group are task allowed.
+	so min_load assigned, this_load assigned, idlest != NULL
 
-It includes 3 parts changes.
+Current logical will return NULL in first 3 kinds of scenarios.
+And still return NULL, if idlest group is heavier then the
+local group in the 4th situation.
 
-1, simplified fork, patch 1~4, that simplified the fork/exec/wake log in
-find_idlest_group and select_task_rq_fair. it can increase 10+%
-hackbench process and thread performance on our 4 sockets SNB EP machine.
+Actually, I thought groups in situation 2,3 are also eligible to host
+the task. And in 4th situation, agree to bias toward local group.
+So, has this patch.
 
-2, enable load average into LB, patch 5~9, that using load average in
-load balancing, with a runnable load value industrialization bug fix and
-new fork task load contrib enhancement.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-3, power awareness scheduling, patch 10~18, 
-Defined 2 new power aware policy balance and
-powersaving, and then try to spread or shrink tasks on CPU unit
-according the different scheduler policy. That can save much power when
-task number in system is no more then cpu number.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index df99456..b40bc2b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2953,6 +2953,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+ 		  int this_cpu, int load_idx)
+ {
+ 	struct sched_group *idlest = NULL, *group = sd->groups;
++	struct sched_group *this_group = NULL;
+ 	unsigned long min_load = ULONG_MAX, this_load = 0;
+ 	int imbalance = 100 + (sd->imbalance_pct-100)/2;
+ 
+@@ -2987,14 +2988,19 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+ 
+ 		if (local_group) {
+ 			this_load = avg_load;
+-		} else if (avg_load < min_load) {
++			this_group = group;
++		}
++		if (avg_load < min_load) {
+ 			min_load = avg_load;
+ 			idlest = group;
+ 		}
+ 	} while (group = group->next, group != sd->groups);
+ 
+-	if (!idlest || 100*this_load < imbalance*min_load)
+-		return NULL;
++	if (this_group && idlest != this_group)
++		/* Bias toward our group again */
++		if (100*this_load < imbalance*min_load)
++			idlest = this_group;
++
+ 	return idlest;
+ }
+ 
+-- 
+1.7.5.1
 
-Any comments are appreciated!
-
-Best regards!
-Alex
-
-[PATCH 01/18] sched: select_task_rq_fair clean up
-[PATCH 02/18] sched: fix find_idlest_group mess logical
-[PATCH 03/18] sched: don't need go to smaller sched domain
-[PATCH 04/18] sched: remove domain iterations in fork/exec/wake
-[PATCH 05/18] sched: load tracking bug fix
-[PATCH 06/18] sched: set initial load avg of new forked task as its
-[PATCH 07/18] sched: compute runnable load avg in cpu_load and
-[PATCH 08/18] sched: consider runnable load average in move_tasks
-[PATCH 09/18] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
-[PATCH 10/18] sched: add sched_policy in kernel
-[PATCH 11/18] sched: add sched_policy and it's sysfs interface
-[PATCH 12/18] sched: log the cpu utilization at rq
-[PATCH 13/18] sched: add power aware scheduling in fork/exec/wake
-[PATCH 14/18] sched: add power/performance balance allowed flag
-[PATCH 15/18] sched: don't care if the local group has capacity
-[PATCH 16/18] sched: pull all tasks from source group
-[PATCH 17/18] sched: power aware load balance,
-[PATCH 18/18] sched: lazy powersaving balance
