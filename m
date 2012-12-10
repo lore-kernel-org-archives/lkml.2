@@ -1,479 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab2LJP1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 10:27:15 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:39455 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab2LJP1N (ORCPT
+	id S1754173Ab2LJP3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 10:29:35 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49888 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab2LJP3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 10:27:13 -0500
-X-AuditID: cbfec7f5-b7fd76d000007247-dc-50c5ff4f3b5e
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: balbi@ti.com
-Cc: "'Joel Becker'" <jlbec@evilplan.org>,
-        "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
-References: <50B39921.6090308@linutronix.de>
- <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com>
- <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com>
- <50B5C821.4000406@linutronix.de> <xa1ta9u1naik.fsf@mina86.com>
- <50B61695.50207@linutronix.de> <20121207231828.GM22789@localhost>
- <001401cdd6cd$788defa0$69a9cee0$%p@samsung.com>
- <000001cdd6e1$1ac24f60$5046ee20$%p@samsung.com>
- <20121210143416.GF11038@arwen.pp.htv.fi>
-In-reply-to: <20121210143416.GF11038@arwen.pp.htv.fi>
-Subject: RE: [RFC][PATCH] fs: configfs: programmatically create config groups
-Date: Mon, 10 Dec 2012 16:27:05 +0100
-Message-id: <002701cdd6ea$d0cdec20$7269c460$%p@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3W5Hu1qzi49yAtTUu02iqdOBty8gAAx+Fw
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t/xy7r+/48GGMxq5LW4vGsOm8WiZa3M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGU0PakomNTLWHGndzJjA2N/dhcjJ4eEgIlE06WTbBC2
-	mMSFe+uBbC4OIYGljBKL/x9kAUkICTQwSWx/KAFiswkYS+w92MEIYosICEisf3GJHaSBWeAa
-	k8TakxtZILo3M0u0P57ADFLFKWAq8aHzJSuILSzgKzFl6TqwqSwCqhLPl30EW80rYC1x5dMi
-	KFtQ4sfke2A1zAJaEut3HmeCsOUlNq95CzSTA+hUdYlHf3UhjjCSuHH9PVSJiMTdhuesExiF
-	ZiGZNAvJpFlIJs1C0rKAkWUVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhQf93BuPSY1SFG
-	AQ5GJR7eAMWjAUKsiWXFlbmHGCU4mJVEeMVOAoV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwamq/
-	Fe10zfKJFPhw94zu1bKTa2MXpBe0u1urXH/maC/Rv/Bdmax5aoGnxOry8/bXu/YbeywQibjK
-	vtC+YP9NUaeIe8Xak5dNrfP68E922pw/u/crqH26v0Bg9cqvXhuvmQl/Co+ruhP/92/NGZ74
-	nY0s7yf4qqWdTN644HV9uYr2d1nJozcPKbEUZyQaajEXFScCAEjCHzdIAgAA
+	Mon, 10 Dec 2012 10:29:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121210151934.GS2516@linux.vnet.ibm.com>
+References: <20121204130503.GA13878@linux.vnet.ibm.com>
+	<20121208143757.GB12011@gmail.com>
+	<20121210151934.GS2516@linux.vnet.ibm.com>
+Date: Mon, 10 Dec 2012 17:29:33 +0200
+Message-ID: <CAFTL4hxv0pd5xQh8oXM7dSKUAOHEYf1EugV=dnN++yYczV4ZWw@mail.gmail.com>
+Subject: Re: [context tracking subsystem] Re: [GIT PULL rcu/next] One more RCU
+ commit for 3.8
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 10, 2012 3:34 PM Felipe Balbi wrote:
-> Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config
-> groups
-> 
-> Hi,
-> 
-> On Mon, Dec 10, 2012 at 03:17:34PM +0100, Andrzej Pietrasiewicz wrote:
-> > @Joel in particular: please see my comment in the bottom.
-> >
-> > On Monday, December 10, 2012 12:57 PM I wrote:
-> > > Subject: RE: [RFC][PATCH] fs: configfs: programmatically create
-> > > config groups
-> > >
-> > > Hello Joel,
-> > >
-> > > So you are alive, I'm glad to hear from you ;) Thank you for your
-> > response.
-> > >
-> > > On Saturday, December 08, 2012 12:18 AM Joel Becker wrote:
-> > > > Subject: Re: [RFC][PATCH] fs: configfs: programmatically create
-> > > > config groups
-> > > >
-> > > > Hey Guys,
-> > > > 	Sorry I missed this for a while.  I'll make a couple of
-inline
-> > > > comments, and then I'll summarize my (incomplete) thoughts at the
-> > bottom.
-> > > >
-> > > > On Wed, Nov 28, 2012 at 02:50:13PM +0100, Sebastian Andrzej
-> > > > Siewior
-> > > wrote:
-> > > > > On 11/28/2012 02:05 PM, Michal Nazarewicz wrote:
-> > > > > >>On 11/27/2012 05:23 PM, Michal Nazarewicz wrote:
-> > > > > >>>How should a generic tool know what kind of actions are
-> > > > > >>>needed for given function to be removed?  If you ask me,
-> > > > > >>>there should be a way to unbind gadget and unload all modules
-> > > > > >>>without any specific knowledge of the functions.  If there is
-> > > > > >>>no such mechanism, then it's a bad user interface.
-> > > >
-> > > > 	Please remember that configfs is not a "user" interface,
-it's
-> a
-> > > > userspace<->kernelspace interface.  Like sysfs, it's not required
-> > > > to be convenient for someone at a bash prompt.  My goal is that it
-> > > > is *usable* from a bash prompt.  So it must be that you can
-> > > > create/destroy/configure objects via mkdir/rmkdir/cat/echo, but
-> > > > you might have a lot of those mkdir/echo combos to configure
-> something.
-> > > > When it comes to the "user" interface, a wrapper script or library
-> > > should
-> > > > be converting a user intention into all that boilerplate.
-> > > >
-> > >
-> > > If you say so there is little we can do, is there? :O
-> > >
-> > > <snip>
-> > >
-> > > >
-> > > > 	Yeah, user tools are expected (and should be).
-> > > >
-> > >
-> > > ditto
-> > >
-> > > > > Anyway, for this to work we have to go through Joel.
-> > > > >
-> > > > > >	rmdir udcs/*		# unload all UDCs
-> > > > >
-> > > > > No, for this you still have to rmmod :)
-> > > > >
-> > > > >
-> > > > > >>>I think the question is of information flow direction.  If
-> > > > > >>>user gives some information to the kernel, she should be the
-> > > > > >>>one creating any necessary directories.  But if the
-> > > > > >>>information comes from kernel to the user, the kernel should
-> create the structure.
-> > > >
-> > > > 	This last paragraph actually describes the distinction
-between
-> > > > configfs and sysfs.  More specifically, if userspace wants to
-> > > > create an object in the kernel, it should use configfs.  If the
-> > > > kernel has created an object on its own, it exposes it via sysfs.
-> > > > It is a deliberate non- goal for configfs to replicate sysfs
-> behavior.
-> > >
-> > > So if the lifetime of some object is controlled by the user, it
-> > > belongs to configfs. If, on the other hand, the lifetime is
-> > > controlled by the kernel, it belongs to sysfs. I think that the
-> > > trouble with e.g. luns is that they might want to behave like both
-> > > (at least in the "more automated"
-> > > approach where they are programmatically created): they are created
-> > > by the kernel (=> sysfs) but their lifetime is controlled by the
-> > > user (=>configfs).
-> > >
-> > > >
-> > > > [General Thoughts]
-> > > >
-> > > > 	First let me restate your problem to see if I understand it.
-> > > > 	You want to expose e.g. five LUNs.  They should eventually
-> appear
-> > > > in configfs as five items to configure (.../{lun0,lun1,...lun4}/.
-> > > > The current configfs way to do this is to have your setup script do:
-> > > >
-> > > > 	cd /cfg/.../mass_storage
-> > > > 	mkdir lun0
-> > > > 	echo blah >lun0/attr1
-> > > > 	echo blahh >lun0/attr2
-> > > > 	mkdir lun1
-> > > > 	echo blag >lun1/attr1
-> > > > 	echo blagg >lun1/attr1
-> > > > 	...
-> > > >
-> > > > I think the primary concern expressed by Andrzej is that a random
-> > > > user could come along and say "mkdir lun8", even though the gadget
-> > > > cannot support it.  A secondary concern from Michal is that
-> > > > userspace has to
-> > > run
-> > > > all of those mkdirs.  The thread has described varying solutions.
-> > > > 	If these original directories were default_groups, you could
-> > > > disallow any child creation and not require the setup script to
-> > > > create directories.  Here I will point out that you *can* create
-> > > > default_groups programmatically.  The default_groups pointer on
-> > > > each configfs_group can be different.  ->make_group() can attach
-> whatever groups it wants.
-> > > > If this would work, it would fit both of your concerns, but you do
-> > > > not have a priori knowledge of the LUN count.
-> > > > 	Your original email proposed that the max lun be set like
-so:
-> > > >
-> > > > 	cd /cfg/.../mass_storage
-> > > > 	echo 5 >luns_allowed
-> > > >
-> > > > There are then a couple of proposed ways to enforce the limit.
-> > > > Your
-> > > > ->create_group() idea wants luns_allowed to be able to create
-> > > > ->subdirs in
-> > > > the ->store() function.  No ->mkdir() is provided, so a lunN
-> > > > cannot be created by hand.
-> > > > 	The ->create_group() idea has three challenges.  First, it
-> > > > creates "default" groups *after* the object is created.  This
-> > > > makes no sense if they are attributes of the toplevel object.
-> > > > Second, it volates the configfs mantra that user-generated objects
-> are explicitly created.
-> > > > The kicker, however, is the technical problem.  configfs
-> > > > explicitly forbids tree changes inside attribute operations for
-> deadlock reasons.
-> > > > Trying to create new tree parts in luns_allowed->store() is
-> > > > exactly
-> > that.
-> > > > 	Another suggestion (I think I read this in the thread) would
-> be
-> > > > to have ->mkdir() function parse the name and check that it is
-> > > > lunN, where
-> > > N
-> > > > is less than the limit.  I think that this was shot down because
-> > > > of parsing the LUN name.  I don't think that's too terrible, but
-> > > > there's certainly room for argument.
-> > > >
-> > > > [Possible Solutions]
-> > > >
-> > > > 	Before coming back to the proposed patch, let's look at what
-I
-> > > > might do if I were fitting this into configfs.
-> > > > 	I would actually do what I described at first:
-> > > >
-> > > > 	cd /cfg/.../mass_storage
-> > > > 	mkdir lun0
-> > > > 	echo blah >lun0/attr1
-> > > > 	...
-> > > >
-> > > > This is idiomatic configfs usage.  Sebastian noted this earlier in
-> > > > the thread.  Michal thought the repeated mkdirs were a problem ("I
-> > > > think that's suboptimal, and we can do better").  This is Michal's
-> > > > objection
-> > > to
-> > > > making the user do work.  This is where I point out we are not
-> > > > designing configfs interfaces for ease of end-user use.  We're
-> > > > defining them for transparent and discoverable interfaces for
-> > > > tools to create things in
-> > > the
-> > > > kernel.  So the repeated mkdir()s are actually a good thing from
-> > > > my perspective; userspace is telling the kernel to create LUN
-> objects.
-> > > > 	But this doesn't alleviate Andrzej's primary concern, nor
-does
-> it
-> > > > answer Michal's concerns about corner cases.  Let's see if we can
-> > > > solve those.
-> > > > 	First, what about preventing extraneous LUNs?  There are two
-> > > > approaches: the prevent approach, and the ignore approach.  In the
-> > > Target
-> > > > module, they take the ignore approach.  If you create a LUN that
-> > > > is outside the scope, they just ignore it.  So a user can make 10
-> > > > LUNs, but if only five are allowed, the other five are ignored.
-> > > > In the prevent approach, we try to fail the mkdir() when we go over
-> the limit.
-> > >
-> > > I think I like the prevent approach better, because I don't know
-> > > what to do with the unused luns in the ignore approach. I also think
-> > > that it would be nice if configfs described the actual state of the
-> > > system instead of presenting all the possible user-created garbage
-> > > (i.e. something which is ignored).
-> > >
-> > > > 	So you've set a limit with "echo 5 >luns_allowed".  How do
-you
-> > > > restrict?  If you don't care about contiguous LUN numbering, you
-> > > > could literally do this in your make_group():
-> > > >
-> > > > 	if (count_luns(parent) >= parent->luns_allowed)
-> > > > 		return -ENOSPC;
-> > > >
-> > > > Note that we don't check the LUN number; SCSI does not require
-> > > contiguous
-> > > > numbering.  It does require LUN 0, which should probably be a
-> > > > default group.  So your lun count starts at 1.
-> > > > 	What if you decide you really want contiguous LUN numbers,
-> which
-> > > > is considered nice to have?  Then we get to Michal's concern about
-> > > > parsing the name.  If you "mkdir lun1", the code has to confirm
-> > > > that it
-> > > > a) starts with "lun", b) finishes with a parsable number, c) that
-> > > > number is < luns_allowed.
-> > > > 	But you need to do the parsing anyway!  If the LUN is
-created
-> via
-> > > > mkdir(), somehow the gadget system needs to know what LUN number
-> > > > to advertise.  I would actually decouple it from the name.  The
-> > > > name should be free-form; if it happens to be comprehensible,
-> > > > that's good.  Imagine
-> > > > this:
-> > > > 	cd /cfg/.../mass_storage
-> > > > 	echo 4 >max_lun_id
-> > > > 	mkdir lun100
-> > > > 	echo 1 >lun100/lun_id
-> > > >
-> > > > The LUN actually has the ID of 1.  The fact that the directory
-> > > > name is wrong is irrelevant to the gadget processing; non-hackers
-> > > > use the
-> > > tooling,
-> > > > and the tooling should  make sane names.  Then your
-> > > > ->make_group() function can choose either approach to avoiding LUN
-> > > > ->IDs
-> > > > that are too large.  It can prevent:
-> > > >
-> > > > 	lun_id->store() {
-> > > > 		if (lun_id_exists(parent, value))
-> > > > 			return ERR_PTR(-EINVAL);
-> > > > 		if (value > parent->max_lun_id)
-> > > > 			return ERR_PTR(-ENOSPC) /* or EINVAL */
-> > > > 		setup_lun();
-> > > > 		make_live();
-> > > > 	}
-> > > >
-> > > > Or it can ignore:
-> > > >
-> > > > 	lun_id->store() {
-> > > > 		if (lun_id_exists(parent, value))
-> > > > 			return ERR_PTR(-EINVAL);
-> > > > 		if (value <= parent->max_lun_id) {
-> > > > 			setup_lun();
-> > > > 			make_live();
-> > > > 		}
-> > > > 		/* Do nothing for the ignored sucker */
-> > > > 	}
-> > > >
-> > > > 	I think that I, personally, would go with this <name>/lun_id
-> scheme.
-> > > > Given a requirement for contiguous LUNs and the max_lun_id
-> > > > restriction, I'd go with the "prevent" option myself.
-> > >
-> > > Taking into account what you say about the expected userspace
-> > > tooling using a free-form name plus the lun_id attribute could be
-> > > attractive, because the lun_id attribute's value can be analyzed at
-> > > ->store() and, if it doesn't fit, an appropriate error can be easily
-> > > returned using just what we already have in configfs. Prevent seems
-> better to me, too.
-> > >
-> > > > 	But is max LUNs a requirement?  Why not just have the LUN
-> count
-> > > > be the number of LUNs created?  In that case, you can allow or
-> > > > disallow discontiguous LUN IDs without worrying about a max ID.
-> > > >
-> > >
-> > > I am not sure, but I think that Michal would say that he wouldn't
-> > > like things to change once the gadget is up and running, so the
-> > > number of luns should be fixed up front. On the other hand, after
-> > > the gadget is set up, we can fail in ->make_group() to prevent the
-> > > user from creating additional luns with which we don't know what to
-> > > do. So what you suggest seems fine, but I would ask Michal to be on a
-> safe side.
-> > >
-> > > > [Really Hate Mkdir]
-> > > >
-> > > > 	If you considered it appropriate for the LUN objects to be
-> > > > created by the kernel, the standard way would to have "echo 5
-> >luns_allowed"
-> > > > create LUN objects in sysfs.  Yes, sysfs.
-> > > > There's no reason you can't have things in configfs *and* sysfs.
-> > > > My understanding of your code says to me that the mkdir approach
-> > > > is the way to go, but if you hate it, this works.
-> > > >
-> > >
-> > > I guess you are right, but see my point about luns' lifetime being
-> > > controlled by the user and their creation being performed by the
-> kernel.
-> > >
-> > > > [What About the Patch?]
-> > > >
-> > > > 	In general, attribute setting that turns into created
-configfs
-> > > > objects is against the theory of configfs.
-> > >
-> > > This looks like an authoritative answer.
-> > >
-> > > > In practice, it's a nightmare
-> > > > locking change.  Coming into this discussion, I though you were
-> > > > doing dymanic things at ->make_group() time, but that is already
-> supported.
-> > > > 	But I want to hear your thoughts.  I've dumped a bunch of
-> > > > alternate approaches here.  Do any seem to fit?  What other
-> challenges do you see?
-> > > >
-> > > > Joel
-> > > >
-> > >
-> > > Once upon a time, Felipe expressed interest in having the
-> > > information about endpoints and interfaces (mostly read-only stuff,
-> > > but not all of it) accessible in the gadget subsystem in configfs.
-> > > This kind of information is fully available only after the gadget
-> > > has been bound, that is, after the user created all the groups/items
-> > > and filled all the attributes and told the gadget to start (with
-> > > e.g. filling some attribute or creating a symlink). So this looks
-> > > like a programmatic creation of configfs directories. On the other
-> > > hand, Felipe wanted it for debugging purposes, so the user could
-> > > just as well create the required directories by hand when they need
-> > > to, as Sebastian once suggested. Again, this requires
-> > > ->make_group() to fail if all the information is not available yet.
-> > > But isn't it kind of similar to the luns' case? It is a bunch of
-> > > objects whose lifetime is controlled by the user (bind the gadget,
-> > > unbind the gadget), but which are created by the kernel.
-> > > Another problem with this is that the user must at some point
-> > > _guess_ what name to use in mkdir. Example:
-> > >
-> > > For each interface there should be a folder. So the user must know
-> > > how many interfaces' folders to create and how to name them, like:
-> > >
-> > > $ mkdir ...../some_usb_function/interface00
-> > > $ mkdir ...../some_usb_function/interface01
-> > > ...
-> > > ...
-> > > ...
-> > >
-> > > In each interface folder, there should be some endpoint folders and
-> > > the user must know how many endpoints there are and how to name
-> > > them:
-> > >
-> > > $ mkdir ...../some_usb_function/interface00/endpoint02
-> > > $ mkdir ...../some_usb_function/interface00/endpoint81
-> > >
-> > > So probably there should be some attribute in some_usb_function,
-> > > which contains a list of available interface names, and some
-> > > attribute in interface#, which contains a list of available endpoint
-> names.
-> > > Workable, but not so convenient. And there could be a problem, too,
-> > > if the gadget is unbound: there is no way to remove the user-created
-> > > directories other than by the user themselves, so there will be
-> > > times (i.e. between gadget unbind and manual rmdir) when these
-> > > interface/endpoint directories will not correspond to anything
-> > > present in the system.
-> > >
-> > > So maybe this kind of information should live in sysfs? But I don't
-> > > know now if it would be any easier. Joel? Felipe?
-> > >
-> >
-> > I forgot to mention, representing udcs (USB Device Controllers) in
-> > configfs is similar to interfaces/endpoints: the user needs to guess
-> > what name to use in mkdir, e.g. in:
-> >
-> > $ mkdir ....../udcs/s3c-hsotg
-> 
-> why would you even require a UDC directory to be created ? You
-> *register* the UDC with the udc-class and that should be enough to expose
-> all UDCs under /sys/kernel/config/..../udcs/*
+2012/12/10 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Sat, Dec 08, 2012 at 03:37:57PM +0100, Ingo Molnar wrote:
+>>
+>> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+>>
+>> > Hello, Ingo,
+>> >
+>> > Could you please pull one more commit?  This is an update to Frederic
+>> > Weisbecker's context-tracking subsystem that is another stepping stone
+>> > towards adaptive-idle and tickless userspace execution.  This has been
+>> > subjected to -next testing.  It does give two checkpatch.pl errors,
+>> > but these are on cpp macro definitions used within assembly code -- and
+>> > following checkpatch.pl's suggestions would result in assembler errors.
+>> > (I have reported this to Andy Whitcroft, checkpatch.pl's maintainer.)
+>> >
+>> > These changes are available in the git repository at:
+>> >   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+>> >
+>> >                                                     Thanx, Paul
+>> >
+>> > ---------------->
+>> > Frederic Weisbecker (1):
+>> >       context_tracking: New context tracking susbsystem
+>> >
+>> >  arch/Kconfig                                       |   15 ++--
+>> >  arch/x86/Kconfig                                   |    2 +-
+>> >  arch/x86/include/asm/{rcu.h => context_tracking.h} |   15 ++--
+>> >  arch/x86/kernel/entry_64.S                         |    2 +-
+>> >  arch/x86/kernel/ptrace.c                           |    8 +-
+>> >  arch/x86/kernel/signal.c                           |    5 +-
+>> >  arch/x86/kernel/traps.c                            |    2 +-
+>> >  arch/x86/mm/fault.c                                |    2 +-
+>> >  include/linux/context_tracking.h                   |   18 ++++
+>> >  include/linux/rcupdate.h                           |    2 -
+>> >  init/Kconfig                                       |   28 ++++----
+>> >  kernel/Makefile                                    |    1 +
+>> >  kernel/context_tracking.c                          |   83 ++++++++++++++++++++
+>> >  kernel/rcutree.c                                   |   64 +---------------
+>> >  kernel/sched/core.c                                |   11 ++-
+>> >  15 files changed, 150 insertions(+), 108 deletions(-)
+>> >  rename arch/x86/include/asm/{rcu.h => context_tracking.h} (63%)
+>> >  create mode 100644 include/linux/context_tracking.h
+>> >  create mode 100644 kernel/context_tracking.c
+>>
+>> Pulled it and pushed it out earlier this week.
+>>
+>> One issue I wanted to raise on a bit wider forum was the
+>> introduction of the (small) kernel/context_tracking.c subsystem.
+>>
+>> It makes sense to me, but I've Cc:-ed Linus and Andrew, in case
+>> they have a different opinion.
+>
+> And it does appear that Frederic and I have a bit more explaining to do.  ;-)
 
-Because in configfs the only way for something to appear under e.g.
-/...../config/udcs is to create a directory with mkdir. This is
-what Joel says.
+Right :-)
 
-Except perhaps for default groups which *must* be known at the
-moment of creation of their parent directory. So, when the
-/....../config/udcs wants to appear, its default groups,
-if any, must be known at this point. I'm not sure if it can be
-guaranteed that when the /...../config/udcs is created all
-the UDCs are known (*registered*, if you will). Plus, UDCs
-can be compiled as modules. If a UDC driver module is inserted, e.g.:
-
-$ modprobe s3c-hsotg
-
-but the /...../config/udcs directory already exists, then
-there is no way for the new udc to appear there if there is no
-programmatic directory creation. And it seems there will not
-be. Ergo, mkdir must be used and the user *needs* to know
-what name to use.
-
-> 
-> The fact is that in most cases you will have multiple instances of the
-> *same IP* not different UDCs with different names as you seem to think.
-> While that's possible, it'll be a rare situation.
-> 
-
-It doesn't matter if their directories need to be manually created with
-mkdir.
-
-> So what we will have in 95% of the cases will be:
-> 
-> /...../udcs/dwc3.0
-> /...../udcs/dwc3.1
-> ...
-> /...../udcs/dwc3.N
-> 
-> The only thing the poor user needs to know is that *.0 is the first
-> controller, *.1 is the second controller and so on.
-
-But only once the directories are already there. But they need
-to be created before.
-
-AP
-
-
+Andrew strongly suggested us to give some more description of that
+thing and the role and semantics of the new APIs. I indeed overlooked
+that part. I'll send a patch soon.
