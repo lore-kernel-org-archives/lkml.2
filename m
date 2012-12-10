@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab2LJO51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 09:57:27 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50495 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490Ab2LJO50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 09:57:26 -0500
-Date: Mon, 10 Dec 2012 14:56:58 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-Message-ID: <20121210145658.GE7869@mudshark.cambridge.arm.com>
-References: <1354892111.13000.50.camel@linaro1.home>
- <1354894134.17101.44.camel@gandalf.local.home>
- <20121207162346.GW14363@n2100.arm.linux.org.uk>
- <1354898200.17101.50.camel@gandalf.local.home>
- <20121207164530.GX14363@n2100.arm.linux.org.uk>
- <1354900436.17101.58.camel@gandalf.local.home>
- <1354902347.8263.12.camel@linaro1.home>
- <20121210100433.GB6624@mudshark.cambridge.arm.com>
- <1355144537.17101.155.camel@gandalf.local.home>
- <20121210134000.GQ26936@jl-vm1.vm.bytemark.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210134000.GQ26936@jl-vm1.vm.bytemark.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754093Ab2LJPAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 10:00:00 -0500
+Received: from mga02.intel.com ([134.134.136.20]:47111 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751869Ab2LJO77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 09:59:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,252,1355126400"; 
+   d="scan'208";a="255189280"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3] dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
+Date: Mon, 10 Dec 2012 16:59:46 +0200
+Message-Id: <1355151586-5207-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jamie,
+The same information could be exctracted from the struct dma_chan.
+The patch introduces helper function dwc_get_data_width() as well.
 
-Thanks for summarising the thread so far.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c      |   27 ++++++++++++++++++++-------
+ drivers/dma/dw_dmac_regs.h |    3 ---
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
-On Mon, Dec 10, 2012 at 01:40:01PM +0000, Jamie Lokier wrote:
-> On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
-> > For ARMv7, there are small subsets of instructions for ARM and Thumb which
-> > are guaranteed to be atomic wrt concurrent modification and execution of
-> > the instruction stream between different processors:
-> >
-> > Thumb:      The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
-> > ARM:        The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
-> 
-> Thumb 32-bit ftrace call isn't in the above list.
-> 
-> Questions: does the above concurrent modification guarantee require
-> both the old instruction _and_ the new one to be among those listed,
-> or is it enough to be just the new one (for example when setting a
-> normal software breakpoint, that would be useful)?  Can it be the old
-> one and not the new (for example when removing a software breakpoint,
-> that would be useful)?  Does that subset mean replacing any of the
-> listed instructions by any of the others is ok, or any of the listed
-> with another of the same type?
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index fdae96f..b7cc7d8 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -73,6 +73,22 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
+  */
+ #define NR_DESCS_PER_CHANNEL	64
+ 
++#define SRC_MASTER	0
++#define DST_MASTER	1
++
++static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
++{
++	struct dw_dma *dw = to_dw_dma(chan->device);
++	struct dw_dma_slave *dws = chan->private;
++
++	if (master == SRC_MASTER)
++		return dw->data_width[dwc_get_sms(dws)];
++	else if (master == DST_MASTER)
++		return dw->data_width[dwc_get_dms(dws)];
++
++	return 0;
++}
++
+ /*----------------------------------------------------------------------*/
+ 
+ /*
+@@ -703,7 +719,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 		size_t len, unsigned long flags)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+-	struct dw_dma_slave	*dws = chan->private;
+ 	struct dw_desc		*desc;
+ 	struct dw_desc		*first;
+ 	struct dw_desc		*prev;
+@@ -726,8 +741,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 
+ 	dwc->direction = DMA_MEM_TO_MEM;
+ 
+-	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
+-					 dwc->dw->data_width[dwc_get_dms(dws)]);
++	data_width = min_t(unsigned int, dwc_get_data_width(chan, SRC_MASTER),
++			   dwc_get_data_width(chan, DST_MASTER));
+ 
+ 	src_width = dst_width = min_t(unsigned int, data_width,
+ 				      dwc_fast_fls(src | dest | len));
+@@ -792,7 +807,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		unsigned long flags, void *context)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+-	struct dw_dma_slave	*dws = chan->private;
+ 	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
+ 	struct dw_desc		*prev;
+ 	struct dw_desc		*first;
+@@ -826,7 +840,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
+ 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
+ 
+-		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
++		data_width = dwc_get_data_width(chan, SRC_MASTER);
+ 
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+@@ -889,7 +903,7 @@ slave_sg_todev_fill_desc:
+ 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
+ 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
+ 
+-		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
++		data_width = dwc_get_data_width(chan, DST_MASTER);
+ 
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+@@ -1720,7 +1734,6 @@ static int dw_probe(struct platform_device *pdev)
+ 
+ 		channel_clear_bit(dw, CH_EN, dwc->mask);
+ 
+-		dwc->dw = dw;
+ 		dwc->direction = DMA_TRANS_NONE;
+ 
+ 		/* hardware configuration */
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index f9532c2..577f2dd 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -214,9 +214,6 @@ struct dw_dma_chan {
+ 
+ 	/* configuration passed via DMA_SLAVE_CONFIG */
+ 	struct dma_slave_config dma_sconfig;
+-
+-	/* backlink to dw_dma */
+-	struct dw_dma		*dw;
+ };
+ 
+ static inline struct dw_dma_chan_regs __iomem *
+-- 
+1.7.10.4
 
-Yes, the target instruction also has to be listed. However,  I only described
-the simple cases above... there are a number of exceptions when it comes to
-32-bit Thumb-2 encodings of BL (I hinted at one of them before):
-
-	- The two halfwords of a 32-bit BL instruction can each be replaced
-	  with the relevant halfword from another BL instruction. This
-	  basically means you can change the immediate fields, as I
-	  mentioned earlier.
-
-	- The most-significant halfword of a 32-bit BL instruction can be
-	  replaced with B, BKPT or SVC (i.e. not NOP).
-
-	- A 16-bit B, BKPT, or SVC instruction can be replaced with the
-	  most-significant halfword of a BL instruction.
-
-The latter points mean we can effectively nop out bl instructions, and put
-them back again.
-
-> This is what makes me wonder, if it's safe to replace the 32-bit
-> mcount call with a 16-bit short jump:
-> 
-> > On Mon, Dec 10, 2012 at 11:04:05AM +0000, Jon Medhurst (Tixy) wrote:
-> > > So this means for things like kprobes which can modify arbitrary kernel
-> > > code we are going to need to continue to always use some form of
-> > > stop_the_whole_system() function?
-> > >
-> > > Also, kprobes currently uses patch_text() which only uses stop_machine
-> > > for Thumb2 instructions which straddle a word boundary, so this needs
-> > > changing?
-> 
-> Will Deacon replied:
-> > Yes; if you're modifying instructions other than those mentioned above, then
-> > you'll need to synchronise the CPUs, update the instructions, perform
-> > cache-maintenance on the writing CPU and then execute an isb on the
-> > executing core (this last bit isn't needed if you're going to go through an
-> > exception return to get back to the new code -- depends on how your
-> > stop/resume code works).
-> 
-> If I've understood that exchange, it implies that using patch_text()
-> to replace an instruction not in the list of special ones, with a trap
-> or jump, isn't ok?  And so it's ok to replace the NOP with a short
-> branch (since 16-bit "B" is in the list), but it's not ok to replace
-> 16-bit "B" with the 32-bit ftrace call; and the same going the other way?
-
-Well, these restrictions only apply if you want to avoid synchronising the
-CPUs. Hopefully my explanation above answers your questions!
-
-Will
