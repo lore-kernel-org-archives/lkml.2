@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab2LJMe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 07:34:56 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:41549 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab2LJMex (ORCPT
+	id S1753500Ab2LJMfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 07:35:13 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46067 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab2LJMfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 07:34:53 -0500
-Date: Mon, 10 Dec 2012 17:34:32 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] uprobes: Introduce filter_chain()
-Message-ID: <20121210120432.GH22164@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121123202741.GA18858@redhat.com>
- <20121123202812.GA18897@redhat.com>
+	Mon, 10 Dec 2012 07:35:07 -0500
+Date: Mon, 10 Dec 2012 13:35:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121210123501.GA8968@gmail.com>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <20121207110113.GB21482@gmail.com>
+ <20121209203630.GC1009@suse.de>
+ <20121210050710.GC22164@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121123202812.GA18897@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121012-7408-0000-0000-00000AE5A1E6
+In-Reply-To: <20121210050710.GC22164@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-11-23 21:28:12]:
 
-> Add the new helper filter_chain(). Currently it is only placeholder,
-> the comment explains what is should do. We will change it later to
-> consult every consumer to decide whether we need to install the swbp.
-> Until then it works as if any consumer returns true, this matches the
-> current behavior.
-> 
-> Change install_breakpoint() to call filter_chain() instead of checking
-> uprobe->consumers != NULL. We obviously need this, and this equally
-> closes the race with _unregister().
-> 
-> Change remove_breakpoint() to call this helper too. Currently this is
-> pointless because remove_breakpoint() is only called when the last
-> consumer goes away, but we will change this.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+hi Srikar,
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-> ---
->  kernel/events/uprobes.c |   24 +++++++++++++++++++-----
->  1 files changed, 19 insertions(+), 5 deletions(-)
+> > 
+> > Either way, last night I applied a patch on top of latest tip/master to
+> > remove the nr_cpus_allowed check so that numacore would be enabled again
+> > and tested that. In some places it has indeed much improved. In others
+> > it is still regressing badly and in two case, it's corrupting memory --
+> > specjbb when THP is enabled crashes when running for single or multiple
+> > JVMs. It is likely that a zero page is being inserted due to a race with
+> > migration and causes the JVM to throw a null pointer exception. Here is
+> > the comparison on the rough off-chance you actually read it this time.
 > 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index e761974..edc47ae 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -614,6 +614,18 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
->  	return ret;
->  }
+> I see this failure when running with THP and KSM enabled on 
+> Friday's Tip master. Not sure if Mel was talking about the same issue.
 > 
-> +static bool filter_chain(struct uprobe *uprobe)
-> +{
-> +	/*
-> +	 * TODO:
-> +	 *	for_each_consumer(uc)
-> +	 *		if (uc->filter(...))
-> +	 *			return true;
-> +	 *	return false;
-> +	 */
-> +	return uprobe->consumers != NULL;
-> +}
-> +
->  static int
->  install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
->  			struct vm_area_struct *vma, unsigned long vaddr)
-> @@ -624,11 +636,10 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
->  	/*
->  	 * If probe is being deleted, unregister thread could be done with
->  	 * the vma-rmap-walk through. Adding a probe now can be fatal since
-> -	 * nobody will be able to cleanup. Also we could be from fork or
-> -	 * mremap path, where the probe might have already been inserted.
-> -	 * Hence behave as if probe already existed.
-> +	 * nobody will be able to cleanup. But in this case filter_chain()
-> +	 * must return false, all consumers have gone away.
->  	 */
-> -	if (!uprobe->consumers)
-> +	if (!filter_chain(uprobe))
->  		return 0;
-> 
->  	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
-> @@ -655,10 +666,12 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
->  static int
->  remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
->  {
-> -	/* can happen if uprobe_register() fails */
->  	if (!test_bit(MMF_HAS_UPROBES, &mm->flags))
->  		return 0;
-> 
-> +	if (filter_chain(uprobe))
-> +		return 0;
-> +
->  	set_bit(MMF_RECALC_UPROBES, &mm->flags);
->  	return set_orig_insn(&uprobe->arch, mm, vaddr);
->  }
-> @@ -1382,6 +1395,7 @@ static void mmf_recalc_uprobes(struct mm_struct *mm)
->  		 * This is not strictly accurate, we can race with
->  		 * uprobe_unregister() and see the already removed
->  		 * uprobe if delete_uprobe() was not yet called.
-> +		 * Or this uprobe can be filtered out.
->  		 */
->  		if (vma_has_uprobes(vma, vma->vm_start, vma->vm_end))
->  			return;
-> -- 
-> 1.5.5.1
-> 
+> ------------[ cut here ]------------
+> kernel BUG at ../kernel/sched/fair.c:2371!
 
+Could you check whether today's -tip (7ea8701a1a51 or later), 
+plus the patch below, addresses the crash - while still giving 
+good NUMA performance?
+
+Thanks,
+
+	Ingo
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9d11a8a..6a89787 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2351,6 +2351,9 @@ void task_numa_fault(unsigned long addr, int node, int last_cpupid, int pages, b
+ 	int priv;
+ 	int idx;
+ 
++	if (!p->numa_faults)
++		return;
++
+ 	if (last_cpupid != cpu_pid_to_cpupid(-1, -1)) {
+ 		/* Did we access it last time around? */
+ 		if (last_pid == this_pid) {
