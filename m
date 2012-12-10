@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab2LJG71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 01:59:27 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:56695 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab2LJG7Y (ORCPT
+	id S1752490Ab2LJHJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 02:09:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56684 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752412Ab2LJHJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 01:59:24 -0500
-Message-ID: <50C58846.7000408@ilyx.ru>
-Date: Mon, 10 Dec 2012 10:59:18 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 10 Dec 2012 02:09:36 -0500
+Date: Mon, 10 Dec 2012 16:09:28 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Liam Girdwood <lrg@ti.com>, matthias@kaehlcke.net,
+        kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] sound/soc/soc-core.c: drop kfree of devm_kzalloc's
+ data
+Message-ID: <20121210070927.GK10927@opensource.wolfsonmicro.com>
+References: <1354989680-25794-1-git-send-email-Julia.Lawall@lip6.fr>
+ <20121210052334.GI10927@opensource.wolfsonmicro.com>
+ <alpine.DEB.2.02.1212100709450.2213@localhost6.localdomain6>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [BUG -next] cpufreq: cpufreq_governor.
-References: <50BF9480.20400@ilyx.ru> <50BF9824.7070903@ilyx.ru> <50C4C790.4080206@ilyx.ru> <1619333.jM1smpk2m8@vostro.rjw.lan>
-In-Reply-To: <1619333.jM1smpk2m8@vostro.rjw.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1212100709450.2213@localhost6.localdomain6>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.12.2012 3:08, Rafael J. Wysocki wrote:
-> On Sunday, December 09, 2012 09:17:04 PM Ilya Zykov wrote:
->> On 05.12.2012 22:53, Ilya Zykov wrote:
->>> What do I do wrong?
->>>
->>> After: modprobe cpufreq_ondemand
->>> I have:
->>>
->>> WARNING: Error inserting freq_table (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/freq_table.ko): Unknown symbol in module, or unknown parameter (see dmesg)
->>> FATAL: Error inserting cpufreq_ondemand (/lib/modules/3.7.0-rc8-next-20121205-ttybuf.1+/kernel/drivers/cpufreq/cpufreq_ondemand.ko): Unknown symbol in module, or unknown parameter (see dmesg)
->>>
->>> dmesg:
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_getavg (err 0)
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_create_group (err 0)
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol sysfs_remove_group (err 0)
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol __cpufreq_driver_target (err 0)
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_idle_time_us (err 0)
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol delayed_work_timer_fn (err 0)
->>> Dec  5 22:26:11 bm kernel: cpufreq_governor: Unknown symbol get_cpu_iowait_time_us (err 0)
->>>
->>> cat /proc/kallsyms |grep freq_dr
->>> ffffffff814976e0 T __cpufreq_driver_target
->>> ffffffff814987e0 T __cpufreq_driver_getavg
->>> ffffffff81498850 T cpufreq_driver_target
->>> ffffffff81881650 r __ksymtab___cpufreq_driver_getavg
->>> ffffffff81881660 r __ksymtab___cpufreq_driver_target
->>> ffffffff81883b40 r __ksymtab_cpufreq_driver_target
->>> ffffffff81894290 r __kcrctab___cpufreq_driver_getavg
->>> ffffffff81894298 r __kcrctab___cpufreq_driver_target
->>> ffffffff81895508 r __kcrctab_cpufreq_driver_target
->>> ffffffff818b3080 r __kstrtab___cpufreq_driver_getavg
->>> ffffffff818b3098 r __kstrtab_cpufreq_driver_target
->>> ffffffff818b30ae r __kstrtab___cpufreq_driver_target
->>> ffffffff81e240c8 b cpufreq_driver_lock
->>> ffffffff81e240d0 b cpufreq_driver
->>> ffffffffa0c42000 d acpi_cpufreq_driver	[acpi_cpufreq]
->>
->> I managed to fix:
->>
->> git checkout 16642a2e7be23bb -- drivers/cpufreq
->> git checkout 250f6715a4112d668 -- include/linux/cpufreq.h
-> 
-> Can you please send your .config?
-> 
-> Rafael
-> 
-> 
+On Mon, Dec 10, 2012 at 07:10:16AM +0100, Julia Lawall wrote:
 
-gcc --version
-gcc (GCC) 4.4.6 20120305 (Red Hat 4.4.6-4)
-Copyright (C) 2010 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+> Sorry, I just resent the patch as is.  1 and 2 were I guess applied,
+> because I odn't findthe problem any more.
 
-
+It looks like this is what happened the first time round as well - I
+only got patch 3 but it was flagged as part of a three patch series.
+Please don't do things like this, it makes the patch look like part of a
+series which has already been applied but didn't get deleted when it's
+sitting in an inbox.
