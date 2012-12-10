@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab2LJVcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:32:13 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58923 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab2LJVcM (ORCPT
+	id S1752369Ab2LJVib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:38:31 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:64200 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750823Ab2LJVia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:32:12 -0500
-Message-ID: <50C654C7.1050200@linux.vnet.ibm.com>
-Date: Mon, 10 Dec 2012 15:31:51 -0600
-From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 10 Dec 2012 16:38:30 -0500
+Message-ID: <50C6567D.7080303@metafoo.de>
+Date: Mon, 10 Dec 2012 22:39:09 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121027 Icedove/3.0.11
 MIME-Version: 1.0
-To: KVM list <kvm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jlarrew@linux.vnet.ibm.com
-Subject: [PATCH][TRIVIAL] kvm_para: fix typo in hypercall comments
+To: Alexander Holler <holler@ahsoftware.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
+References: <50C5DFCC.60203@ahsoftware.de> <1355151119-2489-1-git-send-email-holler@ahsoftware.de> <50C61675.2000407@metafoo.de> <50C63BBD.3080202@ahsoftware.de> <50C64484.4060306@metafoo.de> <50C65381.8010609@ahsoftware.de>
+In-Reply-To: <50C65381.8010609@ahsoftware.de>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121021-5406-0000-0000-000002FA763A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/10/2012 10:26 PM, Alexander Holler wrote:
+> Am 10.12.2012 21:22, schrieb Lars-Peter Clausen:
+>> On 12/10/2012 08:45 PM, Alexander Holler wrote:
+>>> Am 10.12.2012 18:05, schrieb Lars-Peter Clausen:
+>>>
+>>>> Looks pretty good now. But there are still some IIO remnants which should be
+>>>> removed as well. Also the driver should move to drivers/rtc/ since, well,
+>>>> it's a rtc driver not a IIO driver.
+>>>
+>>> I think it still should be stick to iio, because that is where all HID
+>>> sensors currently are found and where the user would expect to find such
+>>> a driver.
+>>
+>> That's because all the current IIO sensor drivers fall in the IIO domain. This
+>> one clearly is a RTC driver, so it belongs in drivers/rtc/
+> 
+> Where nobody will find it if he searches for drivers for his HID sensor.
+> I still see it as HID sensor driver and not a rtc-driver.
+> But ...
 
-Correct a typo in the comment explaining hypercalls.
+I can understand your position, but drivers are usually grouped by function not
+by topology. If there is a proper Kconfig help text people should hopefully be
+find it.
 
-Signed-off-by: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
----
- arch/x86/include/asm/kvm_para.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+>>
+>>>
+>>>>> +/* Channel definitions */
+>>>>> +static const struct iio_chan_spec hid_time_channels[TIME_RTC_CHANNEL_MAX] = {
+>>>
+>>> And that is imho the last remaining iio-stuff. If necessary I can remove
+>>> it too.
+>>
+>> That and the remaining bits of the read_raw callback.
+> 
+> Ok. I will make a v3.
+> 
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index eb3e9d8..f49c16d 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -122,7 +122,7 @@ static inline bool kvm_check_and_clear_guest_paused(void)
-  *
-  * Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
-  * The hypercall number should be placed in rax and the return value will be
-- * placed in rax.  No other registers will be clobbered unless explicited
-+ * placed in rax.  No other registers will be clobbered unless explicitly
-  * noted by the particular hypercall.
-  */
- 
--- 
-1.7.11.7
-
-Jesse Larrew
-Software Engineer, KVM Team
-IBM Linux Technology Center
-Phone: (512) 973-2052 (T/L: 363-2052)
-jlarrew@linux.vnet.ibm.com
-
+Btw. have you seen the other comments I had inline in my response to your v2?
