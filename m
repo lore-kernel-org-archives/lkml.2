@@ -1,147 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab2LJWRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:17:35 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:44358 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab2LJWRd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:17:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=BfMM4MNaL1g0DDIFC/j
-	9MWfR5sMxZ2I50Ncsyq0KpedbYf2nXr+6WP73P1HmfYZbqfAZgtORHy5NVAJ+qte
-	kaYcg+zMM14x/PX17MxS2TohalK8MKYNapbrgvNTdf8TrkYGI0SdKdSB0Zq94XB7
-	XrrtuxgYP+9xwh1EByvNovT8=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.0.2
-Date: Mon, 10 Dec 2012 14:17:30 -0800
-Message-ID: <7vzk1l8scl.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751520Ab2LJWTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:19:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47266 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab2LJWTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:19:41 -0500
+Date: Mon, 10 Dec 2012 22:19:36 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
+Message-ID: <20121210221936.GO1009@suse.de>
+References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
+ <alpine.LFD.2.02.1212101902050.4422@ionos>
+ <50C62CE7.2000306@redhat.com>
+ <20121210191545.GA14412@gmail.com>
+ <20121210192828.GL1009@suse.de>
+ <20121210200755.GA15097@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 644C3AB8-4317-11E2-9691-995F2E706CDE-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121210200755.GA15097@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.0.2 is now available at
-the usual places.
+On Mon, Dec 10, 2012 at 09:07:55PM +0100, Ingo Molnar wrote:
+> > > 
+> > 
+> > Yes, I have. The drop I took and the results I posted to you 
+> > were based on a tip/master pull from December 9th. v3 was 
+> > released on December 7th and your release said to test based 
+> > on tip/master. The results are here 
+> > https://lkml.org/lkml/2012/12/9/108 . Look at the columns 
+> > marked numafix-20121209 which is tip/master with a bodge on 
+> > top to remove the "if (p->nr_cpus_allowed != 
+> > num_online_cpus())" check.
+> 
+> Ah, indeed - I saw those results but the 'numafix' tag threw me 
+> off.
+> 
+> Looks like at least in terms of AutoNUMA-benchmark numbers you 
+> measured the best-ever results with the -v3 tree? That aspect is 
+> obviously good news.
+> 
 
-The release tarballs are found at:
+It's still regressing specjbb for lower numbers of warehouses and single
+JVM with THP disabled performed very poorly. The system CPU usage is
+still through the roof for a number of tests. The rate of migration looks
+excessive at parts. Maybe that rate of migration is really necessary but
+it seems doubtful that so much bandwidth should be consumed moving data
+around by the kernel.
 
-    http://code.google.com/p/git-core/downloads/list
+> This part isn't:
+> 
+> > > If there are any such instances left then I'll investigate, 
+> > > but right now it's looking pretty good.
+> > 
+> > If you had read that report, you would know that I didn't have 
+> > results for specjbb with THP enabled due to the JVM crashing 
+> > with null pointer exceptions.
+> 
+> Hm, it's the unified tree where most of the mm/ bits are the 
+> AutoNUMA bits from your tree.
 
-and their SHA-1 checksums are:
+The handling of PTEs as an effective hugepage is a major difference.
+Holding PTL across task_numa_fault() is a major difference and could be a
+significant contributer to the ptl-related bottlenecks you are complaining
+about. The fault stats are busted but that's a minor issue. All this is
+already in another mail http://www.spinics.net/lists/linux-mm/msg47888.html.
 
-1e1640794596da40f35194c29a8cc4e41c6b4f6d  git-1.8.0.2.tar.gz
-6b9e14c5b19b2e27605014252febd61a700012a3  git-htmldocs-1.8.0.2.tar.gz
-ce0673256ce90451269a82a2464eab060adbfec6  git-manpages-1.8.0.2.tar.gz
+> (It does not match 100%, because 
+> your tree has an ancient version of key memory usage statistics 
+> that the scheduler needs for its convergence model. I'll take a 
+> look at the differences.)
+> 
 
-Also the following public repositories all have a copy of the v1.8.0.2
-tag and the maint branch that the tag points at:
+I'm assuming you are referring to the last_cpuid versus last_nid
+information that is fed in. That should have been a fairly minor delta
+between balancenuma and numacore. It would also affect what mpol_misplaced()
+returned.
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+> Given how well the unified kernel performs,
 
-Git v1.8.0.2 Release Notes
-==========================
+Except for the places where it doesn't such as single JVM with THP disabled.
+Maybe I have a spectacularly unlucky machine.
 
-Fixes since v1.8.0.1
---------------------
+> and given that the 
+> segfaults occur on your box, would you be willing to debug this 
+> a bit and help me out fixing the bug? Thanks!
+> 
 
- * Various codepaths have workaround for a common misconfiguration to
-   spell "UTF-8" as "utf8", but it was not used uniformly.  Most
-   notably, mailinfo (which is used by "git am") lacked this support.
+The machine is currently occupied running current tip/master. When it
+frees up, I'll try find the time to debug it. My strong suspicion is
+that the bug is in the patch that treats 4K as effect hugepage faults,
+particularly as an earlier version of that patch had serious problems.
 
- * We failed to mention a file without any content change but whose
-   permission bit was modified, or (worse yet) a new file without any
-   content in the "git diff --stat" output.
-
- * When "--stat-count" hides a diffstat for binary contents, the total
-   number of added and removed lines at the bottom was computed
-   incorrectly.
-
- * When "--stat-count" hides a diffstat for unmerged paths, the total
-   number of affected files at the bottom of the "diff --stat" output
-   was computed incorrectly.
-
- * "diff --shortstat" miscounted the total number of affected files
-   when there were unmerged paths.
-
- * "git p4" used to try expanding malformed "$keyword$" that spans
-   across multiple lines.
-
- * "git update-ref -d --deref SYM" to delete a ref through a symbolic
-   ref that points to it did not remove it correctly.
-
- * Syntax highlighting in "gitweb" was not quite working.
-
-Also contains other minor fixes and documentation updates.
-
-----------------------------------------------------------------
-
-Changes since v1.8.0.1 are as follows:
-
-Antoine Pelisse (1):
-      Fix typo in remote set-head usage
-
-Eric S. Raymond (1):
-      doc/fast-import: clarify how content states are built
-
-Johan Herland (2):
-      t1400-update-ref: Add test verifying bug with symrefs in delete_ref()
-      Fix failure to delete a packed ref through a symref
-
-Junio C Hamano (13):
-      reencode_string(): introduce and use same_encoding()
-      test: add failing tests for "diff --stat" to t4049
-      diff --stat: status of unmodified pair in diff-q is not zero
-      diff --stat: use "file" temporary variable to refer to data->files[i]
-      diff --stat: move the "total count" logic to the last loop
-      diff --stat: do not count "unmerged" entries
-      diff --shortstat: do not count "unmerged" entries
-      Documentation/git-push.txt: clarify the "push from satellite" workflow
-      Start preparing for 1.8.0.2
-      t4049: refocus tests
-      Update draft release notes to 1.8.0.2
-      git(1): remove a defunct link to "list of authors"
-      Git 1.8.0.2
-
-Linus Torvalds (1):
-      Fix "git diff --stat" for interesting - but empty - file changes
-
-Mark Szepieniec (1):
-      Documentation: improve phrasing in git-push.txt
-
-Matthieu Moy (2):
-      git-remote-mediawiki: escape ", \, and LF in file names
-      git-fast-import.txt: improve documentation for quoted paths
-
-Nguyễn Thái Ngọc Duy (1):
-      compat/fnmatch: fix off-by-one character class's length check
-
-Paul Gortmaker (1):
-      Makefile: hide stderr of curl-config test
-
-Pete Wyckoff (1):
-      git p4: RCS expansion should not span newlines
-
-Ralf Thielow (1):
-      completion: add options --single-branch and --branch to "git clone"
-
-Richard Hubbell (1):
-      gitweb.perl: fix %highlight_ext mappings
-
-Sébastien Loriot (1):
-      Documentation/git-stash.txt: add a missing verb
-
-W. Trevor King (1):
-      git-submodule: wrap branch option with "<>" in usage strings.
-
+-- 
+Mel Gorman
+SUSE Labs
