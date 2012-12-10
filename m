@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2LJJSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:18:52 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32959 "EHLO relay.sw.ru"
+	id S1754082Ab2LJJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:18:59 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:38673 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab2LJJSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:50 -0500
-Subject: [PATCH 5/7] nfsd: pass net to nfsd_svc()
+	id S1753319Ab2LJJSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:18:55 -0500
+Subject: [PATCH 6/7] nfsd: pass net to nfsd_set_nrthreads()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 10 Dec 2012 12:19:25 +0300
-Message-ID: <20121210091925.8855.12510.stgit@localhost.localdomain>
+Date: Mon, 10 Dec 2012 12:19:30 +0300
+Message-ID: <20121210091930.8855.96738.stgit@localhost.localdomain>
 In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
 References: <20121210091832.8855.26672.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -27,61 +27,61 @@ future.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/nfsctl.c |    4 +++-
+ fs/nfsd/nfsctl.c |    3 ++-
  fs/nfsd/nfsd.h   |    2 +-
  fs/nfsd/nfssvc.c |    3 +--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index ae1d143..68e229c 100644
+index 68e229c..58f0ae4 100644
 --- a/fs/nfsd/nfsctl.c
 +++ b/fs/nfsd/nfsctl.c
-@@ -396,6 +396,8 @@ static ssize_t write_threads(struct file *file, char *buf, size_t size)
- {
- 	char *mesg = buf;
- 	int rv;
+@@ -447,6 +447,7 @@ static ssize_t write_pool_threads(struct file *file, char *buf, size_t size)
+ 	int len;
+ 	int npools;
+ 	int *nthreads;
 +	struct net *net = &init_net;
-+
- 	if (size > 0) {
- 		int newthreads;
- 		rv = get_int(&mesg, &newthreads);
-@@ -403,7 +405,7 @@ static ssize_t write_threads(struct file *file, char *buf, size_t size)
- 			return rv;
- 		if (newthreads < 0)
- 			return -EINVAL;
--		rv = nfsd_svc(newthreads);
-+		rv = nfsd_svc(newthreads, net);
- 		if (rv < 0)
- 			return rv;
- 	} else
-diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-index acddf71..8226c1b 100644
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -65,7 +65,7 @@ extern const struct seq_operations nfs_exports_op;
- /*
-  * Function prototypes.
-  */
--int		nfsd_svc(int nrservs);
-+int		nfsd_svc(int nrservs, struct net *net);
- int		nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp);
- 
- int		nfsd_nrthreads(void);
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 6448391..f199b53 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -442,11 +442,10 @@ int nfsd_set_nrthreads(int n, int *nthreads)
-  * this is the first time nrservs is nonzero.
-  */
- int
--nfsd_svc(int nrservs)
-+nfsd_svc(int nrservs, struct net *net)
- {
- 	int	error;
- 	bool	nfsd_up_before;
--	struct net *net = &init_net;
  
  	mutex_lock(&nfsd_mutex);
- 	dprintk("nfsd: creating service\n");
+ 	npools = nfsd_nrpools();
+@@ -477,7 +478,7 @@ static ssize_t write_pool_threads(struct file *file, char *buf, size_t size)
+ 			if (nthreads[i] < 0)
+ 				goto out_free;
+ 		}
+-		rv = nfsd_set_nrthreads(i, nthreads);
++		rv = nfsd_set_nrthreads(i, nthreads, net);
+ 		if (rv)
+ 			goto out_free;
+ 	}
+diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+index 8226c1b..18f9996 100644
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -71,7 +71,7 @@ int		nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp);
+ int		nfsd_nrthreads(void);
+ int		nfsd_nrpools(void);
+ int		nfsd_get_nrthreads(int n, int *);
+-int		nfsd_set_nrthreads(int n, int *);
++int		nfsd_set_nrthreads(int n, int *, struct net *);
+ int		nfsd_pool_stats_open(struct inode *, struct file *);
+ int		nfsd_pool_stats_release(struct inode *, struct file *);
+ 
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index f199b53..b144658 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -382,12 +382,11 @@ int nfsd_get_nrthreads(int n, int *nthreads)
+ 	return 0;
+ }
+ 
+-int nfsd_set_nrthreads(int n, int *nthreads)
++int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
+ {
+ 	int i = 0;
+ 	int tot = 0;
+ 	int err = 0;
+-	struct net *net = &init_net;
+ 
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 
 
