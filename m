@@ -1,115 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab2LJTsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:48:02 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:52923 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab2LJTr7 (ORCPT
+	id S1752358Ab2LJTsb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:48:31 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62493 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab2LJTs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:47:59 -0500
-Date: Mon, 10 Dec 2012 11:47:49 -0800
+	Mon, 10 Dec 2012 14:48:27 -0500
+Date: Mon, 10 Dec 2012 11:47:55 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.56
-Message-ID: <20121210194749.GA19817@kroah.com>
+Subject: Re: Linux 3.0.56
+Message-ID: <20121210194755.GB19817@kroah.com>
+References: <20121210194749.GA19817@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121210194749.GA19817@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.0.56 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                             |    2 +-
- arch/arm/mach-dove/include/mach/pm.h |    2 +-
- arch/arm/mach-dove/irq.c             |   14 +++++++++++++-
- block/scsi_ioctl.c                   |    5 ++++-
- drivers/acpi/processor_driver.c      |    1 +
- drivers/gpu/drm/i915/intel_lvds.c    |   16 ++++++++++++++++
- kernel/sched_autogroup.c             |    4 ----
- kernel/sched_autogroup.h             |    5 -----
- kernel/workqueue.c                   |    4 +++-
- mm/memory-failure.c                  |    8 ++++++++
- mm/sparse.c                          |   10 ++++------
- net/ipv4/route.c                     |    4 ++++
- 12 files changed, 55 insertions(+), 20 deletions(-)
-
-Alan Cox (1):
-      ACPI: missing break
-
-Calvin Walton (1):
-      i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
-
-Chris Wilson (1):
-      drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.56
-
-Jan Kara (1):
-      scsi: Silence unnecessary warnings about ioctl to partition
-
-Jianguo Wu (1):
-      mm/vmemmap: fix wrong use of virt_to_page
-
-Michal Kubecek (1):
-      route: release dst_entry.hh_cache when handling redirects
-
-Mike Galbraith (2):
-      workqueue: exit rescuer_thread() as TASK_RUNNING
-      Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
-
-Naoya Horiguchi (1):
-      mm: soft offline: split thp at the beginning of soft_offline_page()
-
-Russell King - ARM Linux (2):
-      Dove: Attempt to fix PMU/RTC interrupts
-      Dove: Fix irq_to_pmu()
-
-
---J/dobhs11T7y2rNN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQxjxkAAoJEDjbvchgkmk+n8IP/3vFEsD+P1HHF9s/kUKhLbrW
-jlpqWeAMQo0rMhQxIOT0vPDTJcPIXgjqN76Tm620/rYfMg0k0kxTwRqQUyA2NZn7
-5u2GvLbjGp1acZ4925Z04QiFzYWV7H4/AGbWO2WjYaPBmln5Kqji5suEkdLKRWT6
-mY15ElIhgPbcaM+Br++PTj8cKvTs2+EI8j9jRUQGq/frYTO0ddVoWvnM90euMD2Z
-axjIjqliec3Ouh7KPrIuVJ6EssFrodDew1qK3vsRIxdZVOLKxjC01ootdH1th2Qr
-olFpJj5DXuhSfsmEfGsk6p9vsDyYW90kfJvL1OjzOLXTbHqDpqksF8tJg6LAnki6
-/Daw60HLaFmfYke5w48zww/4E8e/Ttu9dgl+urcfxTgff57CmVC8deCSWTrOGeZe
-uUfYlcuioikWPD7nLZA/R0GYngEcJBK76n3K2AlM3PziIOL2/YP6htnG1+RzOPU9
-6fXFpdQhAg5rChZAN6o54r6gQGVmBbUDYlfz58OkS/wf7I2Wj6ZcrfXu5aAwHF2F
-J7m4TLOZ10B0NY6v1D0stWbpE4gpM8Sqa+TN1Ku0bw2cvVOrUnUCL9vU/eXhWWud
-X3KZYQczHa7SL8g9KV8BEDAGBC2RftgFWgGDrZckzCGw6RLK1f+yJ0QXkfXASCs1
-4UxzPD4n+mw3KIbhX0OD
-=mZSy
------END PGP SIGNATURE-----
-
---J/dobhs11T7y2rNN--
+diff --git a/Makefile b/Makefile
+index 06df950..b639af3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 55
++SUBLEVEL = 56
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/arch/arm/mach-dove/include/mach/pm.h b/arch/arm/mach-dove/include/mach/pm.h
+index 3ad9f94..11799c3 100644
+--- a/arch/arm/mach-dove/include/mach/pm.h
++++ b/arch/arm/mach-dove/include/mach/pm.h
+@@ -45,7 +45,7 @@ static inline int pmu_to_irq(int pin)
+ 
+ static inline int irq_to_pmu(int irq)
+ {
+-	if (IRQ_DOVE_PMU_START < irq && irq < NR_IRQS)
++	if (IRQ_DOVE_PMU_START <= irq && irq < NR_IRQS)
+ 		return irq - IRQ_DOVE_PMU_START;
+ 
+ 	return -EINVAL;
+diff --git a/arch/arm/mach-dove/irq.c b/arch/arm/mach-dove/irq.c
+index f07fd16..9f2fd10 100644
+--- a/arch/arm/mach-dove/irq.c
++++ b/arch/arm/mach-dove/irq.c
+@@ -61,8 +61,20 @@ static void pmu_irq_ack(struct irq_data *d)
+ 	int pin = irq_to_pmu(d->irq);
+ 	u32 u;
+ 
++	/*
++	 * The PMU mask register is not RW0C: it is RW.  This means that
++	 * the bits take whatever value is written to them; if you write
++	 * a '1', you will set the interrupt.
++	 *
++	 * Unfortunately this means there is NO race free way to clear
++	 * these interrupts.
++	 *
++	 * So, let's structure the code so that the window is as small as
++	 * possible.
++	 */
+ 	u = ~(1 << (pin & 31));
+-	writel(u, PMU_INTERRUPT_CAUSE);
++	u &= readl_relaxed(PMU_INTERRUPT_CAUSE);
++	writel_relaxed(u, PMU_INTERRUPT_CAUSE);
+ }
+ 
+ static struct irq_chip pmu_irq_chip = {
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 5ef1f4c..055952e 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -722,11 +722,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+ 		break;
+ 	}
+ 
++	if (capable(CAP_SYS_RAWIO))
++		return 0;
++
+ 	/* In particular, rule out all resets and host-specific ioctls.  */
+ 	printk_ratelimited(KERN_WARNING
+ 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+ 
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
++	return -ENOTTY;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index a4e0f1b..6da4f07 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -409,6 +409,7 @@ static void acpi_processor_notify(struct acpi_device *device, u32 event)
+ 		acpi_bus_generate_proc_event(device, event, 0);
+ 		acpi_bus_generate_netlink_event(device->pnp.device_class,
+ 						  dev_name(&device->dev), event, 0);
++		break;
+ 	default:
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 				  "Unsupported event [0x%x]\n", event));
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 7adba11..645f8aa 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -759,6 +759,22 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Gigabyte GA-D525TUD",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Supermicro X7SPA-H",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
++		},
++	},
+ 
+ 	{ }	/* terminating entry */
+ };
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index 429242f..f280df1 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -160,15 +160,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
+ 
+ 	p->signal->autogroup = autogroup_kref_get(ag);
+ 
+-	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+-		goto out;
+-
+ 	t = p;
+ 	do {
+ 		sched_move_task(t);
+ 	} while_each_thread(p, t);
+ 
+-out:
+ 	unlock_task_sighand(p, &flags);
+ 	autogroup_kref_put(prev);
+ }
+diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
+index 0557705..7b859ff 100644
+--- a/kernel/sched_autogroup.h
++++ b/kernel/sched_autogroup.h
+@@ -1,11 +1,6 @@
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ 
+ struct autogroup {
+-	/*
+-	 * reference doesn't mean how many thread attach to this
+-	 * autogroup now. It just stands for the number of task
+-	 * could use this autogroup.
+-	 */
+ 	struct kref		kref;
+ 	struct task_group	*tg;
+ 	struct rw_semaphore	lock;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index aef9452..472cfe3 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2044,8 +2044,10 @@ static int rescuer_thread(void *__wq)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop())
++	if (kthread_should_stop()) {
++		__set_current_state(TASK_RUNNING);
+ 		return 0;
++	}
+ 
+ 	/*
+ 	 * See whether any cpu is asking for help.  Unbounded
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2f49dcf..eace560 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1382,9 +1382,17 @@ int soft_offline_page(struct page *page, int flags)
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
++	struct page *hpage = compound_trans_head(page);
+ 
+ 	if (PageHuge(page))
+ 		return soft_offline_huge_page(page, flags);
++	if (PageTransHuge(hpage)) {
++		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
++			pr_info("soft offline: %#lx: failed to split THP\n",
++				pfn);
++			return -EBUSY;
++		}
++	}
+ 
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+diff --git a/mm/sparse.c b/mm/sparse.c
+index 4cd05e5..9054f83 100644
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -619,7 +619,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+ {
+ 	return; /* XXX: Not implemented yet */
+ }
+-static void free_map_bootmem(struct page *page, unsigned long nr_pages)
++static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ #else
+@@ -660,10 +660,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+ 			   get_order(sizeof(struct page) * nr_pages));
+ }
+ 
+-static void free_map_bootmem(struct page *page, unsigned long nr_pages)
++static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+ {
+ 	unsigned long maps_section_nr, removing_section_nr, i;
+ 	unsigned long magic;
++	struct page *page = virt_to_page(memmap);
+ 
+ 	for (i = 0; i < nr_pages; i++, page++) {
+ 		magic = (unsigned long) page->lru.next;
+@@ -712,13 +713,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+ 	 */
+ 
+ 	if (memmap) {
+-		struct page *memmap_page;
+-		memmap_page = virt_to_page(memmap);
+-
+ 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+ 			>> PAGE_SHIFT;
+ 
+-		free_map_bootmem(memmap_page, nr_pages);
++		free_map_bootmem(memmap, nr_pages);
+ 	}
+ }
+ 
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 6b95f74..5ff2614 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1374,6 +1374,7 @@ static int check_peer_redir(struct dst_entry *dst, struct inet_peer *peer)
+ 	struct rtable *rt = (struct rtable *) dst;
+ 	__be32 orig_gw = rt->rt_gateway;
+ 	struct neighbour *n, *old_n;
++	struct hh_cache *old_hh;
+ 
+ 	dst_confirm(&rt->dst);
+ 
+@@ -1381,6 +1382,9 @@ static int check_peer_redir(struct dst_entry *dst, struct inet_peer *peer)
+ 	n = __arp_bind_neighbour(&rt->dst, rt->rt_gateway);
+ 	if (IS_ERR(n))
+ 		return PTR_ERR(n);
++	old_hh = xchg(&rt->dst.hh, NULL);
++	if (old_hh)
++		hh_cache_put(old_hh);
+ 	old_n = xchg(&rt->dst._neighbour, n);
+ 	if (old_n)
+ 		neigh_release(old_n);
