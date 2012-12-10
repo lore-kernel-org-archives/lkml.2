@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2LJJzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:55:08 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34133 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab2LJJzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:55:06 -0500
+	id S1753937Ab2LJKA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:00:57 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34537 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab2LJKAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:00:55 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
+Subject: [PATCH v3 1/4] leds: leds-pwm: Convert to use devm_get_pwm
+Date: Mon, 10 Dec 2012 11:00:34 +0100
+Message-ID: <1355133637-2784-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1354934194-28213-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1354934194-28213-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-Date: Mon, 10 Dec 2012 10:55:04 +0100
-Message-ID: <CACRpkdbjWz99SEV1gZKiNhiCS2k_CT+oznorNDpw=hvyF49Gkg@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: add TS-5500 DIO blocks support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 8, 2012 at 3:36 AM, Vivien Didelot
-<vivien.didelot@savoirfairelinux.com> wrote:
+Update the driver to use the new API for requesting pwm so we can take
+advantage of the pwm_lookup table to find the correct pwm to be used for the
+LED functionality.
+If the devm_get_pwm fails we fall back to legacy mode to try to get the pwm.
 
-> Technologic Systems TS-5500 provides digital I/O lines exposed through
-> pin blocks. On this platform, there are three of them, named DIO1, DIO2
-> and LCD port, that may be used as a DIO block.
->
-> The TS-5500 pin blocks are described in the product's wiki:
-> http://wiki.embeddedarm.com/wiki/TS-5500#Digital_I.2FO
->
-> This driver is not limited to the TS-5500 blocks. It can be extended to
-> support similar boards pin blocks, such as on the TS-5600.
->
-> This patch is the V2 of the previous https://lkml.org/lkml/2012/9/25/671
-> with corrections suggested by Linus Walleij.
->
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> Signed-off-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/leds/leds-pwm.c  | 19 ++++++-------------
+ include/linux/leds_pwm.h |  2 +-
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
-Thanks Vivien, it's looking *very* nice and clean now, so patch applied!
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index 2157524..351257c 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -67,12 +67,11 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 		cur_led = &pdata->leds[i];
+ 		led_dat = &leds_data[i];
+ 
+-		led_dat->pwm = pwm_request(cur_led->pwm_id,
+-				cur_led->name);
++		led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
+ 		if (IS_ERR(led_dat->pwm)) {
+ 			ret = PTR_ERR(led_dat->pwm);
+-			dev_err(&pdev->dev, "unable to request PWM %d\n",
+-					cur_led->pwm_id);
++			dev_err(&pdev->dev, "unable to request PWM for %s\n",
++				cur_led->name);
+ 			goto err;
+ 		}
+ 
+@@ -86,10 +85,8 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+ 
+ 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
+-		if (ret < 0) {
+-			pwm_free(led_dat->pwm);
++		if (ret < 0)
+ 			goto err;
+-		}
+ 	}
+ 
+ 	platform_set_drvdata(pdev, leds_data);
+@@ -98,10 +95,8 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 
+ err:
+ 	if (i > 0) {
+-		for (i = i - 1; i >= 0; i--) {
++		for (i = i - 1; i >= 0; i--)
+ 			led_classdev_unregister(&leds_data[i].cdev);
+-			pwm_free(leds_data[i].pwm);
+-		}
+ 	}
+ 
+ 	return ret;
+@@ -115,10 +110,8 @@ static int led_pwm_remove(struct platform_device *pdev)
+ 
+ 	leds_data = platform_get_drvdata(pdev);
+ 
+-	for (i = 0; i < pdata->num_leds; i++) {
++	for (i = 0; i < pdata->num_leds; i++)
+ 		led_classdev_unregister(&leds_data[i].cdev);
+-		pwm_free(leds_data[i].pwm);
+-	}
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/leds_pwm.h b/include/linux/leds_pwm.h
+index 33a0711..a65e964 100644
+--- a/include/linux/leds_pwm.h
++++ b/include/linux/leds_pwm.h
+@@ -7,7 +7,7 @@
+ struct led_pwm {
+ 	const char	*name;
+ 	const char	*default_trigger;
+-	unsigned	pwm_id;
++	unsigned	pwm_id __deprecated;
+ 	u8 		active_low;
+ 	unsigned 	max_brightness;
+ 	unsigned	pwm_period_ns;
+-- 
+1.8.0
 
-It's perfectly OK this late before the merge window since it's a new driver.
-
-Yours,
-Linus Walleij
