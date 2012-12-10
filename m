@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab2LJRfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 12:35:05 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14287 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab2LJRfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 12:35:03 -0500
-X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=d1PCtoQzn7UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=L9Opr7swBlwA:10 a=VwQbUJbxAAAA:8 a=btZuAMl-AAAA:8 a=JJkU0fd-YsQOP7eFUUIA:9 a=PUjeQqilurYA:10 a=HEdnscJc8mAA:10 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355160900.17101.229.camel@gandalf.local.home>
-Subject: Missing tags in my local stable git repo
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Dec 2012 12:35:00 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751942Ab2LJRh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 12:37:57 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:37777 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab2LJRh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 12:37:56 -0500
+Date: Mon, 10 Dec 2012 12:37:39 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121210173739.GA1359@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Chinner <david@fromorbit.com>,
+	Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+	Christoph Hellwig <hch@infradead.org>,
+	Martin Steigerwald <Martin@lichtvoll.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <20121126025520.GC22858@thunk.org>
+ <20121126091202.GO32450@dastard>
+ <201212051148.28039.Martin@lichtvoll.de>
+ <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+ <20121206120532.GA14100@infradead.org>
+ <20121207011628.GB16373@gmail.com>
+ <50C22923.90102@redhat.com>
+ <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
+ <20121207190306.GB14972@shiny>
+ <20121208001705.GO27172@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121208001705.GO27172@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Sat, Dec 08, 2012 at 11:17:05AM +1100, Dave Chinner wrote:
+> I wouldn't recommend XFS_IOC_ALLOCSP as a user-friendly interface.
+> The concept, however, implemented by a new fallocate()
+> flag (say FALLOC_FL_WRITE_ZEROS) so that the filesystem knows that
+> the application considers unwritten extents undesirable is exactly
+> the sort of thing that we should be considering implementing.
 
-I'm curious if you are removing tags from your git repo on kernel.org.
-I've been getting the following errors on my own repos. I have a
-linus.git repo that mirrors, Linus's tree, and a stable.git repo based
-off of my linus.git and it clones your stable.git tree on kernel.org.
-But recently after daily updates and garbage collections, my work repo
-that is based off of my stable.git repo gave me this:
+What's the point of using a new flag like this (or XFS's
+XFS_IOC_ALLOCSP) for writing zeros during preallocation as oppoised to
+simply doing a fallocate() followed by zeroing the data via a O_DIRECT
+write system call?
 
-error: refs/tags/v2.6.31.1 does not point to a valid object!
-error: refs/tags/v2.6.31.10 does not point to a valid object!
-error: refs/tags/v2.6.31.11 does not point to a valid object!
-error: refs/tags/v2.6.31.12 does not point to a valid object!
-error: refs/tags/v2.6.31.2 does not point to a valid object!
-error: refs/tags/v2.6.31.3 does not point to a valid object!
-error: refs/tags/v2.6.31.4 does not point to a valid object!
-error: refs/tags/v2.6.31.5 does not point to a valid object!
-error: refs/tags/v2.6.31.6 does not point to a valid object!
-error: refs/tags/v2.6.31.7 does not point to a valid object!
-error: refs/tags/v2.6.31.8 does not point to a valid object!
-error: refs/tags/v2.6.31.9 does not point to a valid object!
-error: refs/tags/v2.6.33.1 does not point to a valid object!
-error: refs/tags/v2.6.33.2 does not point to a valid object!
-error: refs/tags/v2.6.33.3 does not point to a valid object!
-error: refs/tags/v2.6.33.4 does not point to a valid object!
-error: refs/tags/v2.6.33.5 does not point to a valid object!
-error: refs/tags/v2.6.33.6 does not point to a valid object!
-error: refs/tags/v2.6.33.7 does not point to a valid object!
+> Indeed, if the filesystem is on something with WRITE_SAME or
+> discards to zero, no data would need to be written, you wouldn't
+> have any unwritten extent overhead, and no stale data exposure.
 
-This repo has the following alternates:
+And if you have a storage device which supports WRITE_SAME or
+persistent discards, you can do this automatically at preallocation
+time without needing a new fallocate(2) flag.  I certainly don't
+oppose adding such optimizations to ext4 or any other file system (I'm
+not entirely convinced that it's worth it to do this optimization at
+the VFS level), but it doesn't help for storage devices that don't
+support this feature.
 
-$ cat .git/objects/info/alternates
-/home/rostedt/work/git/nobackup/linus.git/objects
-/home/rostedt/work/git/nobackup/stable.git/objects
+> This is exactly why Ted should have posted the patch for review. He
+> may not have got the flag through, but the discussion might just end
+> up in a place that is *better for everyone*. 
 
+Both of these suggestions have been made multiple times before when we
+submitted the original patch to support NO_HIDE_STALE, and they aren't
+sufficient for our purposes, so it's not like submitting a patch to
+reserve the bit would have given us any new information.  We've had
+this discussion **ALREADY**, multiple times before, with no one
+beliving that the alternate solutions were sufficient for our needs.
 
-$ cat ~/work/git/nobackup/stable.git/objects/info/alternates 
-/home/rostedt/work/git/nobackup/linus.git//objects
+This is why this discussion reminds me so much of the wakelocks
+discussion, and why I've made the same decision the Android folks
+made, except they wasted far more time and got far more frustrated ---
+I'll just keep the dammned thing as a out-of-tree patch, until there
+are enough other people willing to say that they need and are using
+this patch because their workloads and use cases need it.  It will
+save me a whole lot of time.
 
-And the stable.git remotes look like:
+(BTW, on a similar subject, we have folks at Tao Bao, Oracle, and
+Google saying that disabling stable page writes does improve their
+workloads, despite everyone else claiming it doesn't matter, and both
+Tao Bao and Google have out-of-tree patches that spike out stable page
+writes.  Maybe this will be enough so we don't have to waste more time
+convincing people that it's not an insane workload such benefits from
+a way to disable stable page writes.  But if not, I'm not going to
+waste time trying to convincing everyone else on fs-devel.  Keeping
+the out of tree patch is just way less effort, and requires much less
+resources.)
 
-origin  /home/rostedt/work/git/nobackup/linus.git/ (fetch)
-origin  /home/rostedt/work/git/nobackup/linus.git/ (push)
-stable  git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git (fetch)
-stable  git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git (push)
+> And further - what happens if we add changes like I've mentioned
+> above and Google moves to using them instead? We'll have a bit in
+> the interface that nobody uses, nobody will ever implement, and we
+> can't remove. There's many, many good reasons why a revert is the
+> only sane thing to do at this point....
 
-My linus.git tree is simply a bare tree that mirrors Linus's tree:
+It's one bit, where we have plenty and plenty of bits.  The only other
+possible uses for the fallocate flags (such as hot vs cold storage,
+etc., have all been bike-sheeded to death on fs-devel already), so I'm
+quite confident that we will never get to the point where even close
+to running out of fallocate flag bits.
 
-origin  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git (fetch)
-origin  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git (push)
+The only other bit I'm aware of that might happen soon is the volatile
+ranges patch, and that's just one more bit.  So at this point we'll
+still have 28 bits (out of 32 bits).  So when you talk about an
+interface that we'll never remove, I think you're engaging in
+hyperbole.
 
-I have a crontab that updates these every night with a 'git remote
-update' and once a week they do a 'git gc' on these repos. I notice the
-above issues after the git gc.
-
-I'm not sure where the problem arised, but did you do any cleanups of
-tags on the stable git repo?
-
-$ git fetch stable v2.6.33.4 
-error: Could not read 15b059e0f9e31f0e7f6b5397368054c005949fea
-error: Could not read 5e20b95750867086fff98e5c3eaa00c3bc01d8ee
-remote: Counting objects: 1, done.
-remote: Total 1 (delta 0), reused 1 (delta 0)
-Unpacking objects: 100% (1/1), done.
-fatal: bad object 4640b4e7d9919e9629fe8456df94f71658431ef9
-error: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git did not send all necessary objects
-
-
-Again, I'm not sure if this is something with me, or something with the
-kernel.org stable tree.
-
-Thanks,
-
--- Steve
-
-
+						- Ted
