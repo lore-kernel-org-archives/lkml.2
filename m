@@ -1,142 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab2LJJHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:07:50 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:64006 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab2LJJHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:07:46 -0500
-Message-ID: <50C5A62A.6030401@huawei.com>
-Date: Mon, 10 Dec 2012 17:06:50 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
-        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
-        <andi@firstfloor.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <wency@cn.fujitsu.com>
-Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-References: <50C1AD6D.7010709@huawei.com> <20121207141102.4fda582d.akpm@linux-foundation.org> <20121210083342.GA31670@hacker.(null)>
-In-Reply-To: <20121210083342.GA31670@hacker.(null)>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+	id S1753258Ab2LJJIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:08:25 -0500
+Received: from mga14.intel.com ([143.182.124.37]:35781 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191Ab2LJJHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:07:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
+   d="scan'208";a="229269925"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] mmc: sdhci-acpi: enable runtime-pm for device HID INT33C6
+Date: Mon, 10 Dec 2012 11:10:44 +0200
+Message-Id: <1355130644-26065-2-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1355130644-26065-1-git-send-email-adrian.hunter@intel.com>
+References: <1355130644-26065-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/10 16:33, Wanpeng Li wrote:
+sdhci-acpi supports ACPI devices which have compatibility ID
+PNP0D40, however it is not possible to know if those devices
+will all work correctly with runtime-pm, so that must be configured
+per hardware ID.
 
-> On Fri, Dec 07, 2012 at 02:11:02PM -0800, Andrew Morton wrote:
->> On Fri, 7 Dec 2012 16:48:45 +0800
->> Xishi Qiu <qiuxishi@huawei.com> wrote:
->>
->>> On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
->>> free page twice, the value of mce_bad_pages will be added twice. So this is an error,
->>> since the page was already marked HWPoison, we should skip the page and don't add the
->>> value of mce_bad_pages.
->>>
->>> $ cat /proc/meminfo | grep HardwareCorrupted
->>>
->>> soft_offline_page()
->>> 	get_any_page()
->>> 		atomic_long_add(1, &mce_bad_pages)
->>>
->>> ...
->>>
->>> --- a/mm/memory-failure.c
->>> +++ b/mm/memory-failure.c
->>> @@ -1582,8 +1582,11 @@ int soft_offline_page(struct page *page, int flags)
->>>  		return ret;
->>>
->>>  done:
->>> -	atomic_long_add(1, &mce_bad_pages);
->>> -	SetPageHWPoison(page);
->>>  	/* keep elevated page count for bad page */
->>> +	if (!PageHWPoison(page)) {
->>> +		atomic_long_add(1, &mce_bad_pages);
->>> +		SetPageHWPoison(page);
->>> +	}
->>> +
->>>  	return ret;
->>>  }
->>
->> A few things:
->>
->> - soft_offline_page() already checks for this case:
->>
->> 	if (PageHWPoison(page)) {
->> 		unlock_page(page);
->> 		put_page(page);
->> 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
->> 		return -EBUSY;
->> 	}
->>
->>  so why didn't this check work for you?
->>
->>  Presumably because one of the earlier "goto done" branches was
->>  taken.  Which one, any why?
->>
->>  This function is an utter mess.  It contains six return points
->>  randomly intermingled with three "goto done" return points.
->>
->>  This mess is probably the cause of the bug you have observed.  Can
->>  we please fix it up somehow?  It *seems* that the design (lol) of
->>  this function is "for errors, return immediately.  For success, goto
->>  done".  In which case "done" should have been called "success".  But
->>  if you just look at the function you'll see that this approach didn't
->>  work.  I suggest it be converted to have two return points - one for
->>  the success path, one for the failure path.  Or something.
->>
->> - soft_offline_huge_page() is a miniature copy of soft_offline_page()
->>  and might suffer the same bug.
->>
->> - A cleaner, shorter and possibly faster implementation is
->>
->> 	if (!TestSetPageHWPoison(page))
->> 		atomic_long_add(1, &mce_bad_pages);
->>
-> 
-> Hi Andrew,
-> 
-> Since hwpoison bit for free buddy page has already be set in get_any_page, 
-> !TestSetPageHWPoison(page) will not increase mce_bad_pages count even for 
-> the first time.
-> 
-> Regards,
-> Wanpeng Li
-> 
+For INT33C6, several related quirks, capabilities and flags are set:
 
-The poisoned page is isolated in bad_page(), I wonder whether it could be isolated
-immediately in soft_offline_page() and memory_failure()?
+	MMC_CAP_NONREMOVABLE
+		The SDIO card will never be removable
 
-buffered_rmqueue()
-	prep_new_page()
-		check_new_page()
-			bad_page()
+	SDHCI_ACPI_RUNTIME_PM
+		Enable runtime-pm of the host controller
 
-Thanks
-Xishi Qiu
+	MMC_CAP_POWER_OFF_CARD
+		Enable runtime-pm of the SDIO card
 
->> - We have atomic_long_inc().  Use it?
->>
->> - Why do we have a variable called "mce_bad_pages"?  MCE is an x86
->>  concept, and this code is in mm/.  Lights are flashing, bells are
->>  ringing and a loudspeaker is blaring "layering violation" at us!
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
-> .
-> 
+	MMC_PM_KEEP_POWER
+		SDIO card has the capability to remain powered up
+		during system suspend
 
+	SDHCI_QUIRK2_HOST_OFF_CARD_ON
+		Always do a full reset during system resume
+		because the card may be already initialized having
+		not been powered off.
 
+Wake-ups from the INT33C6 host controller are not supported, so the
+following capability must *not* be set:
+
+	MMC_PM_WAKE_SDIO_IRQ
+		Enable wake on card interrupt
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ drivers/mmc/host/sdhci-acpi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
+index 6ac3617..12b0a78 100644
+--- a/drivers/mmc/host/sdhci-acpi.c
++++ b/drivers/mmc/host/sdhci-acpi.c
+@@ -87,7 +87,15 @@ static const struct sdhci_ops sdhci_acpi_ops_dflt = {
+ 	.enable_dma = sdhci_acpi_enable_dma,
+ };
+ 
++static const struct sdhci_acpi_slot sdhci_acpi_slot_int_sdio = {
++	.quirks2 = SDHCI_QUIRK2_HOST_OFF_CARD_ON,
++	.caps    = MMC_CAP_NONREMOVABLE | MMC_CAP_POWER_OFF_CARD,
++	.flags   = SDHCI_ACPI_RUNTIME_PM,
++	.pm_caps = MMC_PM_KEEP_POWER,
++};
++
+ static const struct acpi_device_id sdhci_acpi_ids[] = {
++	{ "INT33C6", (kernel_ulong_t)&sdhci_acpi_slot_int_sdio },
+ 	{ "PNP0D40" },
+ 	{ },
+ };
+-- 
+1.7.11.7
 
