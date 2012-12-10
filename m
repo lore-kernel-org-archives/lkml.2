@@ -1,90 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab2LJOkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 09:40:19 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42075 "EHLO mga01.intel.com"
+	id S1754060Ab2LJOkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 09:40:21 -0500
+Received: from mga03.intel.com ([143.182.124.21]:18379 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab2LJOkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 09:40:17 -0500
+	id S1753414Ab2LJOkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 09:40:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,252,1355126400"; 
-   d="scan'208";a="261880343"
+   d="scan'208";a="229381382"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 2/2] dw_dmac: check for mapping errors
-Date: Mon, 10 Dec 2012 16:40:04 +0200
-Message-Id: <1355150404-6732-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 1/2] dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
+Date: Mon, 10 Dec 2012 16:40:03 +0200
+Message-Id: <1355150404-6732-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1355150404-6732-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1355150404-6732-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we get a warning in case of CONFIG_DMA_API_DEBUG=y
-
-[   45.775943] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
-[   45.782369] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x00000000356efcc0] [size=28 bytes] [mapped as single]
+The same information could be exctracted from the struct dma_chan.
+The patch introduces helper function dwc_get_data_width() as well.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/dma/dw_dmac.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ drivers/dma/dw_dmac.c      |   19 ++++++++++++-------
+ drivers/dma/dw_dmac_regs.h |    3 ---
+ 2 files changed, 12 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 427d35b..f8937cb 100644
+index fdae96f..427d35b 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -1099,6 +1099,7 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+@@ -73,6 +73,14 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
+  */
+ #define NR_DESCS_PER_CHANNEL	64
+ 
++static inline unsigned int dwc_get_data_width(struct dma_chan *chan, bool d)
++{
++	struct dw_dma *dw = to_dw_dma(chan->device);
++	struct dw_dma_slave *dws = chan->private;
++
++	return dw->data_width[d ? dwc_get_dms(dws) : dwc_get_sms(dws)];
++}
++
+ /*----------------------------------------------------------------------*/
+ 
+ /*
+@@ -703,7 +711,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 		size_t len, unsigned long flags)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+-	struct dw_dma_slave	*dws = chan->private;
  	struct dw_desc		*desc;
- 	int			i;
- 	unsigned long		flags;
-+	int			ret;
+ 	struct dw_desc		*first;
+ 	struct dw_desc		*prev;
+@@ -726,8 +733,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
  
- 	dev_vdbg(chan2dev(chan), "%s\n", __func__);
+ 	dwc->direction = DMA_MEM_TO_MEM;
  
-@@ -1122,12 +1123,8 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 		spin_unlock_irqrestore(&dwc->lock, flags);
+-	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
+-					 dwc->dw->data_width[dwc_get_dms(dws)]);
++	data_width = min_t(unsigned int, dwc_get_data_width(chan, true),
++			   dwc_get_data_width(chan, false));
  
- 		desc = kzalloc(sizeof(struct dw_desc), GFP_KERNEL);
--		if (!desc) {
--			dev_info(chan2dev(chan),
--				"only allocated %d descriptors\n", i);
--			spin_lock_irqsave(&dwc->lock, flags);
--			break;
--		}
-+		if (!desc)
-+			goto err_desc_alloc;
+ 	src_width = dst_width = min_t(unsigned int, data_width,
+ 				      dwc_fast_fls(src | dest | len));
+@@ -792,7 +799,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		unsigned long flags, void *context)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+-	struct dw_dma_slave	*dws = chan->private;
+ 	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
+ 	struct dw_desc		*prev;
+ 	struct dw_desc		*first;
+@@ -826,7 +832,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
+ 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
  
- 		INIT_LIST_HEAD(&desc->tx_list);
- 		dma_async_tx_descriptor_init(&desc->txd, chan);
-@@ -1135,6 +1132,10 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 		desc->txd.flags = DMA_CTRL_ACK;
- 		desc->txd.phys = dma_map_single(chan2parent(chan), &desc->lli,
- 				sizeof(desc->lli), DMA_TO_DEVICE);
-+		ret = dma_mapping_error(chan2parent(chan), desc->txd.phys);
-+		if (ret)
-+			goto err_desc_alloc;
-+
- 		dwc_desc_put(dwc, desc);
+-		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
++		data_width = dwc_get_data_width(chan, false);
  
- 		spin_lock_irqsave(&dwc->lock, flags);
-@@ -1146,6 +1147,13 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 	dev_dbg(chan2dev(chan), "%s: allocated %d descriptors\n", __func__, i);
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+@@ -889,7 +895,7 @@ slave_sg_todev_fill_desc:
+ 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
+ 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
  
- 	return i;
-+
-+err_desc_alloc:
-+	kfree(desc);
-+
-+	dev_info(chan2dev(chan), "only allocated %d descriptors\n", i);
-+
-+	return i;
- }
+-		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
++		data_width = dwc_get_data_width(chan, true);
  
- static void dwc_free_chan_resources(struct dma_chan *chan)
+ 		for_each_sg(sgl, sg, sg_len, i) {
+ 			struct dw_desc	*desc;
+@@ -1720,7 +1726,6 @@ static int dw_probe(struct platform_device *pdev)
+ 
+ 		channel_clear_bit(dw, CH_EN, dwc->mask);
+ 
+-		dwc->dw = dw;
+ 		dwc->direction = DMA_TRANS_NONE;
+ 
+ 		/* hardware configuration */
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index f9532c2..577f2dd 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -214,9 +214,6 @@ struct dw_dma_chan {
+ 
+ 	/* configuration passed via DMA_SLAVE_CONFIG */
+ 	struct dma_slave_config dma_sconfig;
+-
+-	/* backlink to dw_dma */
+-	struct dw_dma		*dw;
+ };
+ 
+ static inline struct dw_dma_chan_regs __iomem *
 -- 
 1.7.10.4
 
