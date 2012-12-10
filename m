@@ -1,110 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2LJVuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:50:44 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:62367 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425Ab2LJVuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:50:40 -0500
+	id S1752473Ab2LJVvY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:51:24 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:49021 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab2LJVvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 16:51:22 -0500
+Date: Mon, 10 Dec 2012 14:51:19 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH] of: Support a PCI device that is compatible with 'simple-bus'
+Message-ID: <20121210215119.GA32011@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqdtvq7WQf_1EoGjBo9Rjd1YHS4eSqQX2o-nnYNoMuCzzg@mail.gmail.com>
-References: <CANN689EzEDuYFdcM3=ir=UZgOhiNeKNpc_ydP8vH00f0nM6PXw@mail.gmail.com>
-	<CA+1xoqfu=hw--46Ae+VrP8Xt7Rdozv5TtPvGvhcJr94VVmJQ_A@mail.gmail.com>
-	<CA+1xoqdtvq7WQf_1EoGjBo9Rjd1YHS4eSqQX2o-nnYNoMuCzzg@mail.gmail.com>
-Date: Mon, 10 Dec 2012 13:50:39 -0800
-Message-ID: <CANN689Gy3nLBasBea-nqkK7zTC4XuhUKH=FmOTcq_pKWPi_xmw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] remove kvm's use of augmented rbtree
-From: Michel Lespinasse <walken@google.com>
-To: Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Pekka Enberg <penberg@kernel.org>,
-        Asias He <asias.hejun@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 8:22 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> Ping?
+The intended use for this feature is to let a PCI device declare
+itself a 'simple-bus' and then describe additional devices
+(such as GPIOs, I2C, etc) nested below itself.
 
-Hey Sasha,
+The devices nested below the PCI device will use 'reg' addressing
+with the 5 dw format used by PCI.
 
-There seems to have been some confusion here. After your last message,
-I expected *you* to take the patches and push them towards kvm tree.
-But, I guess you were waiting for Pekka's reply first ? Or did you
-expect me to go push the patches ?
+This is for embedded cases where the PCI device may be a complex
+SOC with no PCI based partitioning of sub-functionality.
 
-If it helps, I could push this through Andrew's -mm tree; however I
-think it would make the most sense if these could reach linus's tree
-through a kvm merge rather than through Andrew's -mm...
+Tested on an ARM kirkwood system
 
-> On Sun, Nov 25, 2012 at 5:14 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
->> On Sat, Nov 24, 2012 at 9:40 PM, Michel Lespinasse <walken@google.com> wrote:
->>> On Thu, Nov 22, 2012 at 9:49 PM, Michel Lespinasse <walken@google.com> wrote:
->>>> On Thu, Nov 22, 2012 at 9:14 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>>>> The following patch fixed the problem for me:
->>>>>
->>>>> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
->>>>> index 214caa3..5cfdca6 100644
->>>>> --- a/include/linux/rbtree_augmented.h
->>>>> +++ b/include/linux/rbtree_augmented.h
->>>>> @@ -47,6 +47,7 @@ rb_insert_augmented(struct rb_node *node, struct rb_root *root,
->>>>>                     const struct rb_augment_callbacks *augment)
->>>>>  {
->>>>>         __rb_insert_augmented(node, root, augment->rotate);
->>>>> +       augment->propagate(node, NULL);
->>>>>  }
->>>>
->>>> This would work, but would slow down all sites which already take care
->>>> of updating the augmented information before calling
->>>> rb_insert_augmented, so please don't do that.
->>>>
->>>> The simplest fix would be to add the propagate call where your
->>>> rb_insert_augmented() call site is; the better fix would be to do the
->>>> update incrementally as you search down the tree for the insertion
->>>> point; and the best fix may be to just avoid duplicating that code and
->>>> use interval_tree.h (if your keys are longs) or
->>>> interval_tree_generic.h to generate the proper insert / remove
->>>> functions.
->>>
->>> So I had a quick look at linux-next, and my understanding is that the
->>> rbtree-interval API in kvm always stores non-overlapping intervals.
->>> Based on this, the use of augmented rbtrees isn't really justified; it
->>> is just as easy to use a simple rbtree of intervals sorted by the
->>> addresses they cover.
->>>
->>> This patchset was generated against the current linux-next. I only
->>> verified that kvm still compiled; obviously this would need more
->>> testing. On the other hand, there are currently some correctness
->>> issues in kvm's implementatin of rbtree intervals, so I think this
->>> simplification should be beneficial.
->>>
->>> Michel Lespinasse (3):
->>>   kvm: ensure non-overlapping intervals in rb_int_insert()
->>>   kvm: rb_int_search_single simplification
->>>   kvm: remove max_high field in rb_int_node structure
->>>
->>>  tools/kvm/include/kvm/rbtree-interval.h |   13 +++--
->>>  tools/kvm/util/rbtree-interval.c        |   86 ++++---------------------------
->>>  2 files changed, 18 insertions(+), 81 deletions(-)
->>>
->>> Sasha, could you please check my logic and apply this to the kvm tree ?
->>
->> When I've initially added the interval tree I figured we might need to
->> allow overlapping for future arches which might need it. Since we now
->> have extra 2 arches I guess we don't really need it. So I guess we're
->> fine with removing it.
->>
->> Pekka?
->>
->>
->> Thanks,
->> Sasha
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/of/address.c |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
 
+Grant:
 
+> If the soc_devices are getting triggered on that and they shouldn't be,
+> then we need a mechanism in the soc_bridge node to kick out of that
+> behavoir for its children.
 
+Is this what you were thinking?
+
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 0125524..cf9dac5 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -110,6 +110,25 @@ static int of_bus_pci_match(struct device_node *np)
+ 	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci");
+ }
+ 
++/*
++ * When simple-bus is nested below a PCI bus then we treat the simple-bus
++ * as having the same 3 address/2 size semantics as the PCI bus, but create
++ * platform devices like normal.
++ */
++static int of_bus_platform_pci_match(struct device_node *np)
++{
++	struct device_node *parent;
++	int parent_is_pci;
++
++	parent = of_get_parent(np);
++	if (parent == NULL)
++		return 0;
++	parent_is_pci = of_bus_pci_match(parent);
++	of_node_put(parent);
++
++	return parent_is_pci && of_device_is_compatible(np, "simple-bus");
++}
++
+ static void of_bus_pci_count_cells(struct device_node *np,
+ 				   int *addrc, int *sizec)
+ {
+@@ -293,6 +312,16 @@ static unsigned int of_bus_isa_get_flags(const __be32 *addr)
+ 
+ static struct of_bus of_busses[] = {
+ #ifdef CONFIG_PCI
++	/* Platform devices beneath a PCI device */
++	{
++		.name = "platform_pci",
++		.addresses = "reg",
++		.match = of_bus_platform_pci_match,
++		.count_cells = of_bus_pci_count_cells,
++		.map = of_bus_pci_map,
++		.translate = of_bus_pci_translate,
++		.get_flags = of_bus_pci_get_flags,
++	},
+ 	/* PCI */
+ 	{
+ 		.name = "pci",
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.5.4
+
