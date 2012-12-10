@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2LJGOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 01:14:21 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:61917 "EHLO
+	id S1752093Ab2LJGUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 01:20:17 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:63095 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab2LJGOT (ORCPT
+	with ESMTP id S1751792Ab2LJGUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 01:14:19 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7f616d00000319b-7d-50c57dba8864
-Message-id: <50C57DB9.8070100@samsung.com>
-Date: Mon, 10 Dec 2012 15:14:17 +0900
-From: =?UTF-8?B?6rmA7Iq57Jqw?= <sw0312.kim@samsung.com>
-Reply-to: sw0312.kim@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
- Thunderbird/16.0.1
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: inki.dae@samsung.com, jy0922.shim@samsung.com, kyungmin.park@samsung.com,
-        airlied@linux.ie, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        sw0312.kim@samsung.com
-Subject: Re: [PATCH -next] drm/exynos/iommu: fix return value check in
- drm_create_iommu_mapping()
-References: <CAPgLHd-65GoO=4D++ir2tq5hv=PtgYzEk4AB6_tyi-SRtsENYg@mail.gmail.com>
-In-reply-to: <CAPgLHd-65GoO=4D++ir2tq5hv=PtgYzEk4AB6_tyi-SRtsENYg@mail.gmail.com>
+	Mon, 10 Dec 2012 01:20:15 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-5c-50c57f1e44ff
+From: Abhilash Kesavan <a.kesavan@samsung.com>
+To: lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Cc: dianders@chromium.org, olof@lixom.net, grant.likely@secretlab.ca,
+        thomas.abraham@linaro.org, kgene.kim@samsung.com,
+        sameo@linux.intel.com, Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: [RFC PATCH 0/3] Add MAX77686 Operating mode support
+Date: Mon, 10 Dec 2012 11:56:21 +0530
+Message-id: <1355120784-31118-1-git-send-email-a.kesavan@samsung.com>
+X-Mailer: git-send-email 1.6.6.1
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zbd1dtUcDDG7+4bO4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZH982Mxc846r41PWZuYGxkbOLkZNDQsBE4u/ntWwQtpjEhXvr
-	gWwuDiGBZYwSxy9vZ4Upuvz/DCtEYhGjxOpdn8A6eAUEJX5MvsfSxcjBwSwgL3HkUjZImFlA
-	XWLSvEXMEPVdTBKPVjxhh6jXkmiZcYERxGYRUJVYcmo6C4jNJmAu0fnxEthMIQEFiSsTj7GD
-	zBQVCJPYuTkdxBQRUJF4d70eYvwNRomXn6RBbGGBZIlHlzYwgZQICQRIPO2vAAlzCgRLHNn3
-	D2qRgMS3yYfAjpQQkJXYdADsMAmBeewSnVtXsEN8KClxcMUNlgmM4rOQ/DUL4a9ZSP5awMi8
-	ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyMkRqR3MK5qsDjEKMDBqMTDG6B4NECINbGsuDL3
-	EKMEB7OSCC/XsSMBQrwpiZVVqUX58UWlOanFhxh9gI6dyCwlmpwPjN+8knhDYwNjQ0NLQzNT
-	S1MDHMJK4rzNHikBQgLpiSWp2ampBalFMOOYODilGhhlVz7z4Lj9ZPK8trWWU1pXqoimbihi
-	XPuayyfe5YtK1tmqtB9z41+s8E268+qM5er+fcu3u/xhT1fsfSOa4/+yQzm3dEOE/80ZT/WL
-	V0gXf/9yNkv9w8P7K3qORsmf/n7BQ/inRIZeB3/gooRvOgtMKy4m+PtPEhKbOSMuuC8m99HD
-	2xxSuq5KLMUZiYZazEXFiQCsLXS7vgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAd1dtUcDDFqXcFlc3jWHzYHR4/Mm
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsWyRsSkSleu/miAwYIPIhaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvj5tmNrAWvOCr2n/rO1MDYyd7FyMkhIWAi0fxmKzOELSZx4d56
+	ti5GLg4hgaWMErfXXmOGKeqZ94EJIrGIUWL13T52CGc5k8SFSfvYQKrYBPQkFvz7CtYhIhAs
+	MftnA9goZoHdjBIP3iwBSwgL2Egcnf6UCcRmEVCVWL/gOguIzSvgKnHw9F6odQoSpz+sZYeo
+	EZD4NvkQUA0HUFxWYtMBqJI9bBJHF0tD2JISB1fcYJnAKLiAkWEVo2hqQXJBcVJ6rqFecWJu
+	cWleul5yfu4mRmBQnf73TGoH48oGi0OMAhyMSjy8AYpHA4RYE8uKK3MPMUpwMCuJ8HIdOxIg
+	xJuSWFmVWpQfX1Sak1p8iNEH6JCJzFKiyfnAgM8riTc0NjE3NTa1NDIyMzXFIawkztvskRIg
+	JJCeWJKanZpakFoEM46Jg1OqgXHyhPf+z26YXFr+RvOiRFPztO2PN+hYZb/yv2NhPOsy873g
+	NS1eGbdnZEUxm6S2mGzj339NTvX3PPe1JdMD7Opu7p3zfPrGunupNoYWytumJi3kcIisfejX
+	x7bsD0fcfecX7hFGu/tzCt/6hzz26Prz9cg7gSdshmFWWZXdF1Mnv5tVYHDqwSwlluKMREMt
+	5qLiRACks3rVVwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t9jAV25+qMBBusXsVhc3jWHzYHR4/Mm
 	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjI9vm5kLnnFVfOr6zNzA
-	2MjZxcjJISFgInH5/xlWCFtM4sK99WxdjFwcQgKLGCVW7/rEBpLgFRCU+DH5HksXIwcHs4C8
-	xJFL2SBhZgF1iUnzFjFD1HcxSTxa8YQdol5LomXGBUYQm0VAVWLJqeksIDabgLlE58dLYDOF
-	BBQkrkw8xg4yU1QgTGLn5nQQU0RAReLd9XqI8TcYJV5+kgaxhQWSJR5d2sAEUiIkECDxtL8C
-	JMwpECxxZN8/xgmMgrOQ3DkL4c5ZSO5cwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4
-	Ap9J72Bc1WBxiFGAg1GJhzdA8WiAEGtiWXFl7iFGCQ5mJRFermNHAoR4UxIrq1KL8uOLSnNS
-	iw8x+gB9OZFZSjQ5H5gc8kriDY1NzIwsjcyMTcyNjXEIK4nzNnukBAgJpCeWpGanphakFsGM
-	Y+LglGpgzDjn9t1+1f8rW/4YLHA5zX2E8ekm1VmblVn+LbK//bhndWnSw+w9Xb1enMuzDMOY
-	Pu3YoXq4w51pp6hjQu7FrWnrMqVUP6jWS5vNOyH/Wu7O0VVJDfd+PuYOE3uz4nTVqyefas/v
-	DZz61qLNpanWb3bRHd8bhv/0Nt19/JTT5svTTVcEha5OnKHEUpyRaKjFXFScCADhe/5a7QIA	AA==
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjJtnN7IWvOKo2H/qO1MD
+	Yyd7FyMnh4SAiUTPvA9MELaYxIV769m6GLk4hAQWMUqsvtvHDuEsZ5K4MGkfG0gVm4CexIJ/
+	X5lBbBGBYInZPxvAOpgFdjNKPHizBCwhLGAjcXT6U7CxLAKqEusXXGcBsXkFXCUOnt7LDLFO
+	QeL0h7XsExi5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIDtpnUjsYVzZYHGIU4GBU
+	4uENUDwaIMSaWFZcmXuIUYKDWUmEl+vYkQAh3pTEyqrUovz4otKc1OJDjD5A2ycyS4km5wMj
+	Kq8k3tDYxNzU2NTSxMLEzBKHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGRp1jv64c2dF5
+	9V3CbyaR5Q0/cnVmX/IpPPL7oJFl1BU56euKtUZLxHe6TT2x87FWYbj8nP8Vk2zM3oV+nvn4
+	toSritqKGYKrEz8eTjvJ3fDf41G+1g3Ohz4LHVivpaXd982Z0+3x+prH1k3O7RoHvdtXvJDu
+	rgvJqq/+fGbLr02TlLxnrJ/ypkCJpTgj0VCLuag4EQCJdAnqhwIAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently, we cannot specify the regulator suspend state via device
+tree. Rather than adding suspend state/mode/enable/disable properties
+add an optional MAX77686 operating mode property which can be used to
+set the regulator mode initially.
+
+We are currently bypassing the set_suspend_disable and set_suspend_mode
+call-backs. Please review and suggest improvements.
+
+This is based on
+git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git : for-next
+merged with
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git : for-next
 
 
-On 2012년 12월 07일 21:50, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> In case of error, function arm_iommu_create_mapping() returns
-> ERR_PTR() and never returns NULL. The NULL test in the return
-> value check should be replaced with IS_ERR().
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/gpu/drm/exynos/exynos_drm_iommu.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_iommu.c b/drivers/gpu/drm/exynos/exynos_drm_iommu.c
-> index 09db198..3b3d3a6 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_iommu.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_iommu.c
-> @@ -56,7 +56,7 @@ int drm_create_iommu_mapping(struct drm_device *drm_dev)
->  	mapping = arm_iommu_create_mapping(&platform_bus_type, priv->da_start,
->  						priv->da_space_size,
->  						priv->da_space_order);
-> -	if (!mapping)
-> +	if (IS_ERR(mapping))
->  		return -ENOMEM;
+Abhilash Kesavan (3):
+  ARM: DTS: CROS5250: Add regulator operating mode bindings
+  regulator: max77686: Add support for various operating modes
+  dt: Document: Add optional MAX77686 operating mode bindings
 
-One more fix is needed here.
--		return -ENOMEM;
-+ 		return PTR_ERR(mapping);
-
->  
->  	dev->dma_parms = devm_kzalloc(dev, sizeof(*dev->dma_parms),
-> 
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-> 
+ Documentation/devicetree/bindings/mfd/max77686.txt |    6 +++
+ arch/arm/boot/dts/cros5250-common.dtsi             |   36 ++++++++++++++++++++
+ drivers/regulator/max77686.c                       |   11 +++++-
+ include/linux/mfd/max77686.h                       |    1 +
+ 4 files changed, 53 insertions(+), 1 deletions(-)
 
 -- 
-Seung-Woo Kim
-Samsung Software R&D Center
---
+1.7.8.6
 
