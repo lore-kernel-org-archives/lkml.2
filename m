@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2LJVbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:31:35 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33034 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab2LJVbe (ORCPT
+	id S1752294Ab2LJVcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:32:13 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58923 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2LJVcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:31:34 -0500
+	Mon, 10 Dec 2012 16:32:12 -0500
+Message-ID: <50C654C7.1050200@linux.vnet.ibm.com>
+Date: Mon, 10 Dec 2012 15:31:51 -0600
+From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121211082852.5e89e840a8a79c503dcb0763@canb.auug.org.au>
-References: <1355160900.17101.229.camel@gandalf.local.home>
- <1355165264.17101.233.camel@gandalf.local.home> <20121210190247.GA32119@kroah.com>
- <1355166920.17101.239.camel@gandalf.local.home> <CA+55aFzvTrrM_t_K3W5s32p610MS0PuTrUUhFKaB5tGPmsW73g@mail.gmail.com>
- <20121211082852.5e89e840a8a79c503dcb0763@canb.auug.org.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 10 Dec 2012 13:31:13 -0800
-X-Google-Sender-Auth: g082074akr7U87F34fpXC-uQSho
-Message-ID: <CA+55aFxTgMR5e29Mf4i0=N0QgMhLLJ-OR_xBnazLzFOmE8JpGQ@mail.gmail.com>
-Subject: Re: Missing tags in my local stable git repo
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: KVM list <kvm@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jlarrew@linux.vnet.ibm.com
+Subject: [PATCH][TRIVIAL] kvm_para: fix typo in hypercall comments
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121021-5406-0000-0000-000002FA763A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 1:28 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> Does that mean your tree could now be a problem, since you have recently
-> added and then removed a branch (some of whose commits were not eventually
-> committed to your master branch, I think)?
 
-All of them were committed before that branch was removed, but yes, at
-one point I did rebase that branch.
+Correct a typo in the comment explaining hypercalls.
 
-That said, as an alternate that should still be safe, assuming you
-didn't then do any work on top of that rebased branch (ie your repo
-doesn't have any references to any of those objects).
+Signed-off-by: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+---
+ arch/x86/include/asm/kvm_para.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-                   Linus
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index eb3e9d8..f49c16d 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -122,7 +122,7 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+  *
+  * Up to four arguments may be passed in rbx, rcx, rdx, and rsi respectively.
+  * The hypercall number should be placed in rax and the return value will be
+- * placed in rax.  No other registers will be clobbered unless explicited
++ * placed in rax.  No other registers will be clobbered unless explicitly
+  * noted by the particular hypercall.
+  */
+ 
+-- 
+1.7.11.7
+
+Jesse Larrew
+Software Engineer, KVM Team
+IBM Linux Technology Center
+Phone: (512) 973-2052 (T/L: 363-2052)
+jlarrew@linux.vnet.ibm.com
+
