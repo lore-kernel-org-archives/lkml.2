@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab2LJI5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:57:49 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49158 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab2LJI43 (ORCPT
+	id S1753690Ab2LJI6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:58:10 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47313 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2LJI6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:56:29 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com, ulf.hansson@linaro.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 07/12] ARM: ux500: Specify the ux5x0 MMCI regulator's on/off GPIO as high-enable
-Date: Mon, 10 Dec 2012 08:55:56 +0000
-Message-Id: <1355129761-8088-8-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
-References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
+	Mon, 10 Dec 2012 03:58:07 -0500
+Date: Mon, 10 Dec 2012 19:58:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20121210195805.0dbb562b5e890cb8e35f3116@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Dec_2012_19_58_05_+1100_0LGLlZv9nlrCO29="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If not specified, the GPIO control bit is inverted by default i.e.
-low-enable and high-disable. This is not the case with the MMCI
-regulator, hence it will turn on during a disable and off when
-regulator_enable() is invoked.
+--Signature=_Mon__10_Dec_2012_19_58_05_+1100_0LGLlZv9nlrCO29=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi |    2 ++
- 1 file changed, 2 insertions(+)
+Hi Andrew,
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index bbea89a..0523681 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -638,6 +638,8 @@
- 			regulator-name = "mmci-reg";
- 			regulator-type = "voltage";
- 
-+			enable-active-high;
-+
- 			states = <1800000 0x1
- 				  3300000 0x0>;
- 
--- 
-1.7.9.5
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+ERROR: "do_take_over_console" [drivers/video/console/fbcon.ko] undefined!
+
+Caused by commit "fb: rework locking to fix lock ordering on takeover".
+
+I have reverted that commit (and the following fix patch) for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__10_Dec_2012_19_58_05_+1100_0LGLlZv9nlrCO29=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQxaQdAAoJEECxmPOUX5FElMQP/RD63wGeyRwVnDnf7De2qQtx
+xA8Yd57f/mBpKC3x5TUhTzf5NdjeJBvGlVtNn8qIiBWjsGyWpvKovumYzrEsXxYp
+OryZZYooSRhKE/8vK/wWZJV7HDi79tnf7IjdAKchF8HjvkBmxpUFMZxMVMYfSc64
+BJOIx03HCAVGpYYVgdS07gem7CUAgHoWy4xlnigoZerU/W3rOM/u2hcqUDZYqq4/
+Cq2UsHBZLcPrAyBCYLdYDDRCCBLQmGA7E8qxpCcamvt7NejJbfbt8ntGpu6aAAVL
+dZu2eNL8fGldR6+g3F9Krc06NDL4zo/ldhbA27x3xFv3ce1RhBFzyLc9RWSx+Zqi
+x5Y5pgkl7hkaF0tKIAQjZZ6teTLyUzojl/hZJNUOkzXir7aKqq3h6FyOiKnPvK4X
+MY73EXSL96uW9vuvk6/W7zyotEfe7aWnhHoLUV3ame4dy5kWXA1WnqkdpDWKIrKe
+9M+5D0b09/QTJ9kv2fnZWPa6l1bTvAEg5fRunJiJGJS0UvX8tWwJoxGl7qNAb8Gx
+XVkGQMddi4v2uJVxOoA7IyYuY/7KzwDQvu0T2iINdpHHb7iRTWl+6bqkXvJ5QkFz
+EuJopID3YiqIsTxEkZ8ZRoIax6Za2ork+lgCn2D8loGAofV5+I7Kr79oo3AxDRvE
+/slD3ZD3aXW6RVhUwIfs
+=9yK/
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_Dec_2012_19_58_05_+1100_0LGLlZv9nlrCO29=--
