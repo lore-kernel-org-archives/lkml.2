@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab2LJW7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:59:44 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:35126 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab2LJW7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:59:43 -0500
-Date: Mon, 10 Dec 2012 16:59:28 -0600
-From: Clark Williams <clark.williams@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC][PATCH RT 0/4] sched/rt: Lower rq lock contention
- latencies on many CPU boxes
-Message-ID: <20121210165928.7ffd9a21@gmail.com>
-In-Reply-To: <20121207235615.206108556@goodmis.org>
-References: <20121207235615.206108556@goodmis.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/YKRM+6.+zIgUYSZJAOMZUKf"; protocol="application/pgp-signature"
+	id S1752333Ab2LJXEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:04:24 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:53409 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751550Ab2LJXEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 18:04:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+Date: Tue, 11 Dec 2012 00:09:22 +0100
+Message-ID: <54207850.t6nmM83CdM@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <3585743.RAy43NB8MZ@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <CAE9FiQXsBC-CY4KqKkaAXx3sYLVWJOaaKGkg_kChb7ry_7Sq8Q@mail.gmail.com> <3585743.RAy43NB8MZ@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/YKRM+6.+zIgUYSZJAOMZUKf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Monday, December 10, 2012 11:47:27 PM Rafael J. Wysocki wrote:
+> On Monday, December 10, 2012 09:07:06 AM Yinghai Lu wrote:
+> > On Mon, Dec 10, 2012 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Sunday, December 09, 2012 09:34:42 PM Yinghai Lu wrote:
+> > >>
+> > >> Can we expand the BUS_ADD_* concept to other devices instead of just
+> > >> acpi_device?
+> > >>
+> > >> aka we should let struct device has this add_type field.
+> > >
+> > > Having done that in ACPI to cover our use case here, we can try to move it
+> > > into struct device if there are use cases beyond ACPI that can't be covered
+> > > by using deferred driver probing.
+> > 
+> > pci device for hotplug have same problem. need to delay driver attach
+> > for them too.
+> 
+> OK, I'll take a look.  Any pointers to speed that up?
+> 
+> > also BUS_ADD_MATCH and BUS_ADD_START are duplicated.
+> 
+> Not at the moment, they do different things as code goes.
+> 
+> > old add are separated to adding all devices to tree and then matching
+> > work to load the drivers.
+> > 
+> > so _START is not needed anymore, only user.start in pci_root driver
+> > should be removed.
+> > code in .start could be moved .add without problem.
+> 
+> Yes, I'm going to do that as the next step.  I didn't want this particular
+> patchset to grow too big.  I'll post another one on top of it if people
+> don't have problems with this one.
 
-On Fri, 07 Dec 2012 18:56:15 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+By the way, can you please remind me where you wanted to put the
+pci_bus_add_devices() and why?
 
-> I've been debugging large latencies on a 40 core box and found a major
-> cause due to the thundering herd like grab of the rq lock due to the
-> pull_rt_task() logic.
->=20
-> Basically, if a large number of CPUs were to lower its priority roughly
-> the same time, they would all trigger a pull. If there happens to be
-> only one CPU available to get a task, all CPUs doing the pull will try
-> to grab it. In doing so, they will all contend on the rq lock of
-> the overloaded CPU. Only one CPU will succeed in pulling the task
-> and unfortunately, there's no quick way to know which, as it's dependent
-> on the affinitiy of the task that needs to be pulled, and to look at that,
-> we need to grab its rq lock!
->=20
-> Instead of having the pull logic grab the rq locks and do the work to
-> switch the task over to the pulling CPU, this patch series (well patch
-> #3) has the pulling CPU send an IPI to the overloaded CPU and that
-> CPU will do the push instead. The push logic uses the cpupri.c code
-> to quickly find the best CPU to offload the overloaded RT task to, so
-> it makes it quite efficient to do this.
->=20
-> Retrieving multiple IPIs has a much lower overhead than all the CPUs
-> grabbing the rq lock.
->=20
-> The other three patches are fixes/enhancements to the push/pull code
-> that I found while doing the debugging of the latencies.
->=20
-> Note, although this patch series is made for the -rt patch, the issues
-> apply to mainline as well. But because -rt has the migrate_disable() code,
-> this patch series is tailored to that. But if we can vet this out in
-> -rt, all this code should make its way quickly to mainline.
->=20
-> I tested this code out, but it probably needs some clean up and definitely
-> more comments. I'm only posting this as an RFC for now to get feedback
-> on the idea.
->=20
-> Thanks!
->=20
+Rafael
 
-Steve,
 
-I've been running this set of patches on my laptop+RT kernel since
-Friday with no ill-effects. I just applied it to v3.6.10+rt21 and it
-seems to be fine.
-
-I've got rteval runs going on a 40-core and a 24-core box which will be
-done early Tuesday morning so I'll let you know results then.=20
-
-Clark
-
---Sig_/YKRM+6.+zIgUYSZJAOMZUKf
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQxmlUAAoJEOIu7msziWiGGdYH/0CPHr5GeaFpSzpHvRwOntiE
-5l2/QwC0j5xgYUJGdVWwxVSKhYYIkEog9F0nq+8wE63gu0fLBux/G3DDf+Nj/LX9
-MTXppMwy2aMRVqLwiMqIOd24IWPZgZtUT31W1KpcxMLyryDySlPaViAs7Iz1EgnD
-K5O3bFzdorFfLybMrQ+CFR4oh2hG6tz7Ua05oYWhPXNkvgyD60JDMmVqmWQ3ksYk
-7TfIL5oWXVgaUY8zhQ9mnWkHElIcV0ee/QZpXlaCAHnJ61XdOyG7YL8jq9quusJs
-0gNI6AkFWHepkUIt0t9lzRjlYTBozDcjqnuay9nVVY2H9aOThW2NMeogd/DUz7Q=
-=gw7a
------END PGP SIGNATURE-----
-
---Sig_/YKRM+6.+zIgUYSZJAOMZUKf--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
