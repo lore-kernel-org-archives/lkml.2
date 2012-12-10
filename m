@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2LJLEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 06:04:12 -0500
-Received: from smarthost01.mail.zen.net.uk ([212.23.1.1]:54452 "EHLO
-	smarthost01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753925Ab2LJLEK (ORCPT
+	id S1754441Ab2LJLG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 06:06:28 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34948 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab2LJLG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 06:04:10 -0500
-Message-ID: <1355137445.3386.7.camel@linaro1.home>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 10 Dec 2012 11:04:05 +0000
-In-Reply-To: <20121207190244.GB29618@mudshark.cambridge.arm.com>
-References: <1354872138.3176.15.camel@computer5.home>
-	 <1354888985.17101.41.camel@gandalf.local.home>
-	 <1354892111.13000.50.camel@linaro1.home>
-	 <1354894134.17101.44.camel@gandalf.local.home>
-	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
-	 <1354898200.17101.50.camel@gandalf.local.home>
-	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
-	 <1354900436.17101.58.camel@gandalf.local.home>
-	 <20121207181309.GY14363@n2100.arm.linux.org.uk>
-	 <1354905805.17101.86.camel@gandalf.local.home>
-	 <20121207190244.GB29618@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost01-IP: [82.69.122.217]
+	Mon, 10 Dec 2012 06:06:27 -0500
+From: Lekensteyn <lekensteyn@gmail.com>
+To: M Z <magez.magez@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [3.7-rc8 regression] Buffer I/O error on device sda during boot (attempt to access beyond end of device)
+Date: Mon, 10 Dec 2012 12:06:08 +0100
+Message-ID: <20226716.3fCgHS08dt@al>
+User-Agent: KMail/4.9.4 (Linux/3.7.0-1-custom; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <CADhePA2UTjvTmJOVnW_gNXmQ_T=Rk28HAf2pHqKj4akyp7+V9A@mail.gmail.com>
+References: <CADhePA2UTjvTmJOVnW_gNXmQ_T=Rk28HAf2pHqKj4akyp7+V9A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
-> For ARMv7, there are small subsets of instructions for ARM and Thumb which
-> are guaranteed to be atomic wrt concurrent modification and execution of
-> the instruction stream between different processors:
+Hi,
+
+On Monday 10 December 2012 11:42:22 M Z wrote:
+> booting vanilla  3.7-rc8 kernel on Acer Aspire 1810TZ yields these
+> errors (I was using 3.6.9-1 and 3.5.5-1 from Debian experimental
+> before without these errors)
 > 
-> Thumb:	The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
-> ARM:	The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
+>  [    9.265058] attempt to access beyond end of device
+<snip>
+>  [    9.265389] Buffer I/O error on device sda1, logical block 121047812
 > 
+> 
+> Any idea before I hit the bisect route? (should I worry about these errors? 
+> )
 
-So this means for things like kprobes which can modify arbitrary kernel
-code we are going to need to continue to always use some form of
-stop_the_whole_system() function?
+This error immediately showed up when testing 3.7-rc8 and is discussed/patched 
+already on https://lkml.org/lkml/2012/12/3/497. 
 
-Also, kprobes currently uses patch_text() which only uses stop_machine
-for Thumb2 instructions which straddle a word boundary, so this needs
-changing?
+To cite from https://lkml.org/lkml/2012/12/3/510:
+> Anyway, to clarify: the printk's are harmless, since the IO past the
+> end of the device is just error'ed out, and always has been.  Which is
+> why I was considering just removing them.
 
--- 
-Tixy
-
+Regards,
+Peter
