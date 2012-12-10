@@ -1,129 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2LJPAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 10:00:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47111 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab2LJO77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754257Ab2LJPAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 10:00:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53511 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab2LJO77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Dec 2012 09:59:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,252,1355126400"; 
-   d="scan'208";a="255189280"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3] dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-Date: Mon, 10 Dec 2012 16:59:46 +0200
-Message-Id: <1355151586-5207-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+Date: Mon, 10 Dec 2012 08:59:50 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+Message-ID: <20121210145950.GC8137@sergelap>
+References: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+ <20121205210528.GA9047@sergelap>
+ <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+ <20121205222040.GB14884@sergelap>
+ <50C13F0E.5010401@schaufler-ca.com>
+ <20121207144233.GA6681@mail.hallyn.com>
+ <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+ <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
+ <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com>
+ <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same information could be exctracted from the struct dma_chan.
-The patch introduces helper function dwc_get_data_width() as well.
+Quoting Andy Lutomirski (luto@amacapital.net):
+> It's especially bad because granting CAP_DAC_READ_SEARCH to user "foo"
+> doesn't mean anything.  Is he authorized to back things up to
+> encrypted storage?
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c      |   27 ++++++++++++++++++++-------
- drivers/dma/dw_dmac_regs.h |    3 ---
- 2 files changed, 20 insertions(+), 10 deletions(-)
+We're talking about privileges at the kernel level here, and there is
+no way this could be expressed at that level.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index fdae96f..b7cc7d8 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -73,6 +73,22 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
-  */
- #define NR_DESCS_PER_CHANNEL	64
- 
-+#define SRC_MASTER	0
-+#define DST_MASTER	1
-+
-+static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
-+{
-+	struct dw_dma *dw = to_dw_dma(chan->device);
-+	struct dw_dma_slave *dws = chan->private;
-+
-+	if (master == SRC_MASTER)
-+		return dw->data_width[dwc_get_sms(dws)];
-+	else if (master == DST_MASTER)
-+		return dw->data_width[dwc_get_dms(dws)];
-+
-+	return 0;
-+}
-+
- /*----------------------------------------------------------------------*/
- 
- /*
-@@ -703,7 +719,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		size_t len, unsigned long flags)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma_slave	*dws = chan->private;
- 	struct dw_desc		*desc;
- 	struct dw_desc		*first;
- 	struct dw_desc		*prev;
-@@ -726,8 +741,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 
- 	dwc->direction = DMA_MEM_TO_MEM;
- 
--	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
--					 dwc->dw->data_width[dwc_get_dms(dws)]);
-+	data_width = min_t(unsigned int, dwc_get_data_width(chan, SRC_MASTER),
-+			   dwc_get_data_width(chan, DST_MASTER));
- 
- 	src_width = dst_width = min_t(unsigned int, data_width,
- 				      dwc_fast_fls(src | dest | len));
-@@ -792,7 +807,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		unsigned long flags, void *context)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma_slave	*dws = chan->private;
- 	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
- 	struct dw_desc		*prev;
- 	struct dw_desc		*first;
-@@ -826,7 +840,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
- 
--		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
-+		data_width = dwc_get_data_width(chan, SRC_MASTER);
- 
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
-@@ -889,7 +903,7 @@ slave_sg_todev_fill_desc:
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
- 
--		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
-+		data_width = dwc_get_data_width(chan, DST_MASTER);
- 
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
-@@ -1720,7 +1734,6 @@ static int dw_probe(struct platform_device *pdev)
- 
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
- 
--		dwc->dw = dw;
- 		dwc->direction = DMA_TRANS_NONE;
- 
- 		/* hardware configuration */
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index f9532c2..577f2dd 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -214,9 +214,6 @@ struct dw_dma_chan {
- 
- 	/* configuration passed via DMA_SLAVE_CONFIG */
- 	struct dma_slave_config dma_sconfig;
--
--	/* backlink to dw_dma */
--	struct dw_dma		*dw;
- };
- 
- static inline struct dw_dma_chan_regs __iomem *
--- 
-1.7.10.4
+Higher level tools could/should certainly be exposing things at this
+level.
 
+BUT
+
+You *are* doing a good job of making me feel that we should have
+per-user fI xattrs or acls.  Sudo is popular because people like to say
+"user joe can run foo with privilege".  Most people will never want to
+be bothered to say "user joe can run foo with CAP_XYZ" (versus "as
+root"), but I do think we could get programs/packages to do that.
+
+Note that another difficulty here likes in the age-old, as yet
+unanswered imo, question of "how do I easily figure out what caps I need
+to run my program."  A few years ago I pointed to this (perhaps in
+mostly private emails, don't recall) as something to be solved, but
+the solution escapes me.
+
+-serge
