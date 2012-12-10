@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab2LJEGq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 23:06:46 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38487 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab2LJEGo (ORCPT
+	id S1751924Ab2LJE32 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 23:29:28 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37150 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab2LJE31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 23:06:44 -0500
-Message-ID: <50C55F6A.4040909@linux.vnet.ibm.com>
-Date: Mon, 10 Dec 2012 09:34:58 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 7/9] yield_to(), cpu-hotplug: Prevent offlining
- of other CPUs properly
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173950.27305.39499.stgit@srivatsabhat.in.ibm.com> <20121209194826.GB2816@redhat.com> <50C4ED46.3070100@linux.vnet.ibm.com> <20121209204053.GA6593@redhat.com>
-In-Reply-To: <20121209204053.GA6593@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121004-5816-0000-0000-000005C47470
+	Sun, 9 Dec 2012 23:29:27 -0500
+Date: Mon, 10 Dec 2012 15:29:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>, Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: manual merge of the trivial tree with the regulator
+ tree
+Message-Id: <20121210152914.62b84949534e6d68a709e1d5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Dec_2012_15_29_14_+1100_ZbBWSl3kALdp1E8E"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 02:10 AM, Oleg Nesterov wrote:
-> On 12/10, Srivatsa S. Bhat wrote:
->>
->> On 12/10/2012 01:18 AM, Oleg Nesterov wrote:
->>>> -		if (preempt && rq != p_rq)
->>>> +		if (preempt && rq != p_rq && cpu_online(task_cpu(p)))
->>>
->>> Why do we need this change?
->>>
->>> Afaics, you could add BUG_ON(!cpu_online(...)) instead?
->>>
->>> I am just curious.
->>>
->>
->> Oh, I think that's a remnant of v1 (which needed readers to use
->> cpu_online_stable()). You're right, we don't need it.
-> 
-> Ah OK, thanks.
-> 
->> Or we could put a
->> BUG_ON instead, like you suggested.
-> 
-> IMHO it would be better to simply drop this chunk.
-> 
+--Signature=_Mon__10_Dec_2012_15_29_14_+1100_ZbBWSl3kALdp1E8E
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sure, will drop it. Its distracting, if nothing else ;-)
+Hi Jiri,
 
-Regards,
-Srivatsa S. Bhat
+Today's linux-next merge of the trivial tree got a conflict in
+drivers/regulator/palmas-regulator.c between commit bdc4baacebda
+("regulator: palmas: Convert palmas_ops_smps to regulator_[get|
+set]_voltage_sel_regmap") from the regulator tree and commit 02582e9bcc36
+("treewide: fix typo of "suport" in various comments and Kconfig") from
+the trivial tree.
 
+I fixed it up (I used the former as it also fixed the typo) and can carry
+the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__10_Dec_2012_15_29_14_+1100_ZbBWSl3kALdp1E8E
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQxWUaAAoJEECxmPOUX5FE85MP/ig5dNn/Adr2gMOawWzZP63p
+rN+K4zMFyWz0pF7SYJ3Yc6MrJRF3yF0i7QH1+J8jvBBwYPNQp7Jb/4B4FenNlg6Q
+mWkJv1hrOVXHqBVkm99SL036+Q9+qtOb3nx+yAcYbiBlMeS8TQQEvDu2GeHfVwcR
+U930Z1jOO88yQNeljc+QWQ74J6VlIrG55wls4s45LeQmxNClAhXRZeNP+LbuiryQ
+xmARk2n3ReKVg5LQL4jZz4NoyqAq/pocCA9SdZquTCs7c7UzRNGlJkmKSdENlS+h
+hSy2kLeh7dp6aWo3F6v8V/fKxJVylNJvsiLSa0cASJIGqPx+pdMsGaPgW5R0QnCI
+jBc7nljFIdxfOGs9+ULWd7cCCoLQz9Tzk9tQDbIQPtBet29w/6bj1pSszJEL4cN4
+d6uQ/epo2RXy8vSe3T+mXG8uYI4H9PP26skwN+F3kj5jJfFgci1Cyt9X7X91DbOa
+SMkALJZgLpZRkefDaU4zUhHhS13OHG49BCG3r7uiN4kOtSGZElJrVyoQiD356Bmv
+bxbI9g4wGGj4gg/BCWph5RdGPgWhXk8koYqvbMN1TqiznXHOO4EYvbLH/Xt862S8
+Spk1g3EdMVpizyvmW6gFfwtoTvyiErn3J+Se+3khEHywCeWLpLgp3tTG/Hp+JQXx
+JYG0qtTw1QLEca3qAAlS
+=r+TT
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_Dec_2012_15_29_14_+1100_ZbBWSl3kALdp1E8E--
