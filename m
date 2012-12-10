@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab2LJXxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:53:05 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39754 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2LJXxD (ORCPT
+	id S1751902Ab2LJX4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:56:09 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:57811 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab2LJX4H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:53:03 -0500
+	Mon, 10 Dec 2012 18:56:07 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
+Thread-Topic: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
+Thread-Index: Ac3UwvCZixvXisXmRfC/Xc8ha8nnHAABPNzwAABk6xAAlaV2gAAEWL8Q
+Date: Mon, 10 Dec 2012 23:55:48 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1DFE3@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B7B2@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1C9658B1@ORSMSX108.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B936@USINDEM103.corp.hds.com>
+ <20121210164813.GA53431@redhat.com>
+In-Reply-To: <20121210164813.GA53431@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E0581F@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E0581F@DQHE02.ent.ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 10 Dec 2012 15:52:40 -0800
-Message-ID: <CAK5ve-+JNPgYVkTKxa=sNt0aK3Yf73YHVqa12pZLHSo5Up_i3g@mail.gmail.com>
-Subject: Re: [PATCH 4/4] MAINTAINERS: add LP8788 MFD driver entry
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-10_07:2012-12-10,2012-12-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1212100245
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 9, 2012 at 9:27 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> Cc: Anton Vorontsov <cbou@mail.ru>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Jonathan Cameron <jic23@cam.ac.uk>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> > If we can fix it with a small patch in adance, it is really helpful for us.
+> 
+> As I said in my email I just sent, it may not help you without testing it.
+> As there are probably other problems in that un-tested theoretical scenario.
 
-Acked-by: Bryan Wu <cooloney@gmail.com>
+OK. I understood.
 
-Thanks,
--Bryan
+ 
+> >
+> > 2)
+> > In the long term, I plan to add a kmsg_dump to a kexec path because kdump may fail in the real world.
+> > In that case, we need another troubleshooting material like pstore to detect a root cause of failure.
+> 
+> But you are assuming that kmsg_dump is perfect and it isn't, in which case by putting kmsg_dump in the kdump path, you actually may
+> be blocking kdump from working.
 
-> ---
->  MAINTAINERS |   10 ++++++++++
->  1 file changed, 10 insertions(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ee7e9ee..9339a4b 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -7570,6 +7570,16 @@ S:       Maintained
->  F:     drivers/regulator/lp872x.c
->  F:     include/linux/regulator/lp872x.h
->
-> +TI LP8788 MFD DRIVER
-> +M:     Milo Kim <milo.kim@ti.com>
-> +S:     Maintained
-> +F:     drivers/iio/adc/lp8788_adc.c
-> +F:     drivers/leds/leds-lp8788.c
-> +F:     drivers/mfd/lp8788*.c
-> +F:     drivers/power/lp8788-charger.c
-> +F:     drivers/regulator/lp8788-*.c
-> +F:     include/linux/mfd/lp8788*.h
-> +
->  TI TWL4030 SERIES SOC CODEC DRIVER
->  M:     Peter Ujfalusi <peter.ujfalusi@ti.com>
->  L:     alsa-devel@alsa-project.org (moderated for non-subscribers)
-> --
-> 1.7.9.5
->
->
-> Best Regards,
-> Milo
->
->
+That is why I'm trying to fix problems of pstore in panic path right now.
+If kmsg_dump/pstore/platform drivers work well in panic path, they work in kdump path as well.
+
+Seiji
