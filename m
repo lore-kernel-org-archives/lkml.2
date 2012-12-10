@@ -1,89 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab2LJBYa (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 9 Dec 2012 20:24:30 -0500
-Received: from smtp-iron1.puc.cl ([146.155.1.36]:24481 "EHLO smtp1.puc.cl"
+	id S1754087Ab2LJKEY (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 10 Dec 2012 05:04:24 -0500
+Received: from mail.tsu.ge ([217.147.230.9]:54348 "EHLO mail.tsu.ge"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab2LJBY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 20:24:28 -0500
-X-Greylist: delayed 648 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Dec 2012 20:24:28 EST
-X-IronPort-AV: E=Sophos;i="4.84,248,1355108400"; 
-   d="rtf'212?scan'212,208,212";a="347888190"
-Content-Type: multipart/mixed; boundary="===============1404424360=="
+	id S1753863Ab2LJKEW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:04:22 -0500
+X-Greylist: delayed 989 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Dec 2012 05:04:22 EST
+X-Qmail-Scanner-Diagnostics: from 199-255-212-200.anchorfree.com (teimuraz.lezhava@tsu.ge@199-255-212-200.anchorfree.com) by mail (envelope-from <teimuraz.lezhava@tsu.ge>, uid 89) with qmail-scanner-2.10st 
+ (clamdscan: 0.97.3/15707. mhr: 1.0. spamassassin: 3.3.1. perlscan: 2.10st.  
+ Clear:RC:0(199.255.212.200):SA:1(6.3/5.0):. 
+ Processed in 7.737346 secs); 10 Dec 2012 11:44:54 -0000
+X-Qmail-Scanner-Mail-From: teimuraz.lezhava@tsu.ge via mail
+X-Qmail-Scanner: 2.10st (Clear:RC:0(199.255.212.200):SA:1(6.3/5.0):. Processed in 7.737346 secs Process 19373)
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Subject: we offer long and short term loan  
-To: Recipients <lortegam@uc.cl>
-From: <lortegam@uc.cl>
-Date: Mon, 10 Dec 2012 06:43:05 +0530
-Reply-To: <in-muthoothfinance@hush.ai>
-Message-ID: <41e76753-daf8-4411-b133-de365d7911c4@HELIOS.ad.uc.cl>
-X-Originating-IP: [180.215.27.95]
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: **Notification email quota limit of 450MB
+To: Recipients <teimuraz.lezhava@tsu.ge>
+From: "Webmail Account Upgrade" <teimuraz.lezhava@tsu.ge>
+Date: Mon, 10 Dec 2012 10:59:30 +0100
+Reply-To: teimuraz.lezhava@tsu.ge
+Message-ID: <1355139886103919373@mail>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============1404424360==
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Description: Mail message body
+You have exceeded your email limit quota of 450MB. You need to upgrade your email limit quota to 2GB within the next 48 hours. Use the below web link to upgrade your email account: click link below:
 
-OPEN THE ATTACH AND APPLY FOR YOUR LOAN
---===============1404424360==
-Content-Type: application/octet-stream
-MIME-Version: 1.0
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="MUTHOOTH.rtf"
+https://docs.google.com/a/my.liu.edu/spreadsheet/viewform?formkey=dEc0YmR6YjNvQ3Q4V2NJNS11d1JsOGc6MQ
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYwXGZz
-d2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVkaXQgNS40MS4yMS4y
-NTA5O31cdmlld2tpbmQ0XHVjMVxwYXJkXHNhMjAwXHNsMjc2XHNsbXVsdDFcYlxmMFxmczIwIE11
-dGhvb3QgRmluYW5jZSBJbmRpYVxwYXINCjM0My8xMCwgU2FtcGlnZSBQbGF6YSxccGFyDQpTYW1w
-aWdlIFJvYWQsIDExY3Jvc3MsXHBhcg0KTWFsbGVzaHdhcmFtLCBNYWxsZXNod2FyYW0sXHBhcg0K
-QmVuZ2FsdXJ1IEluZGlhXHBhcg0KIFxwYXINCkdldCBBIExvYW4gRm9yIFlvdXIgSW52ZXN0bWVu
-dCBQcm9qZWN0IG9yIENvbXBhbnkuR3JlZXRpbmdzIGZyb20gTXV0aG9vdGggRmluYW5jZSBJbmRp
-YSBSb290cyBpbiBidXNpbmVzcyBzaW5jZSAxODg3LCBNdXRob290aCBQYXBwYWNoYW4gR3JvdXAg
-KE1QRylccGFyDQphY3Rpdml0aWVzIGluY2x1ZGUgR29sZCBGaW5hbmNlLCBQcml2YXRlIEZpbmFu
-Y2UsIENvbnN1bWVyIExvYW5zLCBIb3NwaXRhbGl0eVxwYXINCk11dGhvb3RoIEZpbmFuY2UgSG9s
-ZGluZ3MnaXMgb2ZmZXJpbmcgYSBmbG9hdGluZyBsb2FuIHNjaGVtZSBhdCAzJVxwYXINCkludGVy
-ZXN0IHJhdGUgd2l0aCB2YWxpZCAkIHByb3BlciBpZGVudGlmaWNhdGlvbi5ccGFyDQpccGFyDQpZ
-b3UgY2FuIHNlbmQgeW91ciBhcHBsaWNhdGlvbiBmb3IgYW55IGFtb3VudCBvZiBsb2FuIHlvdSBt
-aWdodCBiZSBsb29raW5nIGZvci5ccGFyDQpXZSBPZmZlciBMT0FOUyByYW5naW5nIGZyb20gJDUs
-MDAwLjAwIFVTRCBNaW4uIHRvICQxMC4wMDAsMDAwLjAwIFVTRFxwYXINCk1heC4gYXQgMyUgaW50
-ZXJlc3QgcmF0ZSBwZXIgYW5udW0uIFdlIGdpdmUgb3V0IGxvbmcgdGVybSBsb2FuIGZvciBmaXZl
-IHRvXHBhcg0KZmlmdHkgeWVhcnMgbWF4aW11bS4gV2Ugb2ZmZXIgdGhlIGZvbGxvd2luZyBraW5k
-cyBvZiBsb2FucyBhbmQgbWFueSBtb3JlO1xwYXINClxwYXINCiogUGVyc29uYWwgTG9hbnMgKFVu
-c2VjdXJlZCBMb2FuKVxwYXINCiogQnVzaW5lc3MgTG9hbnMgKFVuc2VjdXJlZCBMb2FuKVxwYXIN
-CiogQ29uc29saWRhdGlvbiBMb2FuXHBhcg0KKiBDb21iaW5hdGlvbiBMb2FuXHBhcg0KKiBIb21l
-IEltcHJvdmVtZW50XHBhcg0KXHBhcg0KV2UgZ2l2ZSBvdXQgbG9hbiBvbiBhIGNsZWFyIGFuZCB1
-bmRlcnN0YW5kYWJsZSB0ZXJtcyBhbmQgY29uZGl0aW9ucy5ccGFyDQpUaGlzIG9mZmVyIGlzIHN0
-cmljdGx5IGZvciBzZXJpb3VzIG1pbmRlZCBpbmRpdmlkdWFsLCBmaXJtcyBvciBjb21wYW5pZXMu
-XHBhcg0KQXBwbGljYW50cyBiZWxvdyB0aGUgYWdlIG9mIDE4IGFyZSBub3QgZWxpZ2libGUgdG8g
-YXBwbHkuIEFwcGx5IG5vdyBmb3IgYVxwYXINCmxvYW4gYW5kIGJlIHN1cmUgeW91IHdpbGwgZ2V0
-IHRoZSBiZXN0IG9mIHNlcnZpY2VzIGFuZCB3ZSBhbHNvIGRvbid0IG9mZmVyIGxvYW5zIHRvIHVu
-c2VyaW91cyBwZXJzb25ccGFyDQpccGFyDQpJZiB5b3UgYXJlIGludGVyZXN0ZWQgaW4gb3VyIGZp
-bmFuY2lhbCBvZmZlciBhbmQgeW91IHdpc2ggdG8gYWNxdWlyZSBhIGxvYW5ccGFyDQpmcm9tIHVz
-LCBkbyBjb250YWN0IHVzIGFuZCBmdXJuaXNoIHVzIHdpdGggdGhlIGRldGFpbHMgYmVsb3dccGFy
-DQpccGFyDQpGaXJzdCBOYW1lOiBfX19fX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpMYXN0
-IE5hbWU6IF9fX19fX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpHZW5kZXI6IF9fX19fX19f
-X19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpNYXJpdGFsIHN0YXR1czogX19fX19fX19fX19f
-X19fX19fX19fX19ccGFyDQpDb250YWN0IEFkZHJlc3M6IF9fX19fX19fX19fX19fX19fX19fX19c
-cGFyDQpDaXR5L1ppcCBjb2RlOiBfX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpDb3VudHJ5
-OiBfX19fX19fX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpEYXRlIG9mIEJpcnRoOiBfX19f
-X19fX19fX19fX19fX19fX19fX19ccGFyDQpBbW91bnQgTmVlZGVkIGFzIExvYW46IF9fX19fX19f
-X19fX19fX19ccGFyDQpMb2FuIER1cmF0aW9uOiBfX19fX19fX19fX19fX19fX19fX19fX19ccGFy
-DQpNb250aGx5IEluY29tZS9ZZWFybHkgSW5jb21lOiBfX19fX19fX19ccGFyDQpPY2N1cGF0aW9u
-OiBfX19fX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpFbWFpbCBJRDpfX19fX19fX19fX19f
-X19fX19fX19fX19fX19ccGFyDQpQdXJwb3NlIGZvciBMb2FuOiBfX19fX19fX19fX19fX19fX19f
-X19ccGFyDQpQaG9uZTogX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQpGYXg6
-IF9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19ccGFyDQogYXMgaXQgd2lsbCBiZSBu
-ZWVkZWQgdG8gY29tbWVuY2UgdGhlIHByb2Nlc3Mgb2YgeW91ciBsb2FuIHN1bSBhY2NvcmRpbmds
-eS5ccGFyDQpJbiBhY2tub3dsZWRnbWVudCB0byB0aGVzZSBkZXRhaWxzLCB3ZSB3aWxsIHNlbmQg
-eW91IGEgd2VsbCBjYWxjdWxhdGVkIFRlcm1zXHBhcg0KYW5kIENvbmRpdGlvbnMgd2hpY2ggd2ls
-bCBpbmNsdWRlIHRoZSBhZ3JlZW1lbnQuXHBhcg0KRnVydGhlcm1vcmUgYmUgaW5mb3JtZWQgdGhh
-dCB5b3Ugd2lsbCBhbHNvIG5lZWQgYSBmb3JtIG9mIElkZW50aWZpY2F0aW9uIHdoaWNoXHBhcg0K
-Y2FuIGJlIGVpdGhlciBhIERyaXZlcidzIExpY2Vuc2Ugb3IgeW91ciB3b3JraW5nIElkZW50aXR5
-IGNhcmQuXHBhcg0KXHBhcg0KVGhhbmtzIGZvciBZb3VyIFBhdHJvbmFnZSFccGFyDQpZb3VycyBp
-biBzZXJ2aWNlXHBhcg0KUmV2Lk0uRy5HZW9yZ2UgTXV0aG9vdGhccGFyDQpNdXRob290aCBMb2Fu
-IENvcnBvcmF0aW9uXHBhcg0KRW1haWw6IG1nLWdmY2lAbGl2ZS5jb21ccGFyDQpQaG9uZTorOTEg
-NzgzOCAyODA4IDI0XHBhcg0KfQ0KAA==
---===============1404424360==--
+Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
+
+Thank you for using our email.
+Copyright ©2012 Webmail Account Upgrade
