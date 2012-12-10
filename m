@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab2LJJSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:18:38 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:33986 "EHLO relay.sw.ru"
+	id S1754015Ab2LJJSs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:18:48 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:23460 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753820Ab2LJJSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:34 -0500
-Subject: [PATCH 1/7] nfsd: use "init_net" for portmapper
+	id S1753496Ab2LJJSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:18:45 -0500
+Subject: [PATCH 4/7] nfsd: pass net to nfsd_create_serv()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 10 Dec 2012 12:19:04 +0300
-Message-ID: <20121210091904.8855.89077.stgit@localhost.localdomain>
+Date: Mon, 10 Dec 2012 12:19:20 +0300
+Message-ID: <20121210091920.8855.8081.stgit@localhost.localdomain>
 In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
 References: <20121210091832.8855.26672.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -22,35 +22,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There could be a situation, when NFSd was started in one network namespace, but
-stopped in another one.
-This will trigger kernel panic, because RPCBIND client is stored on per-net
-NFSd data, and will be NULL on NFSd shutdown.
+Precursor patch. Hard-coded "init_net" will be replaced by proper one in
+future.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/nfssvc.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ fs/nfsd/nfsctl.c |    4 ++--
+ fs/nfsd/nfsd.h   |    2 +-
+ fs/nfsd/nfssvc.c |    5 ++---
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index e13cbdd..ae1d143 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -664,7 +664,7 @@ static ssize_t __write_ports_addfd(char *buf)
+ 	if (err != 0 || fd < 0)
+ 		return -EINVAL;
+ 
+-	err = nfsd_create_serv();
++	err = nfsd_create_serv(net);
+ 	if (err != 0)
+ 		return err;
+ 
+@@ -696,7 +696,7 @@ static ssize_t __write_ports_addxprt(char *buf)
+ 	if (port < 1 || port > USHRT_MAX)
+ 		return -EINVAL;
+ 
+-	err = nfsd_create_serv();
++	err = nfsd_create_serv(net);
+ 	if (err != 0)
+ 		return err;
+ 
+diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+index 5eea0f5..acddf71 100644
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -103,7 +103,7 @@ enum vers_op {NFSD_SET, NFSD_CLEAR, NFSD_TEST, NFSD_AVAIL };
+ int nfsd_vers(int vers, enum vers_op change);
+ int nfsd_minorversion(u32 minorversion, enum vers_op change);
+ void nfsd_reset_versions(void);
+-int nfsd_create_serv(void);
++int nfsd_create_serv(struct net *net);
+ 
+ extern int nfsd_max_blksize;
+ 
 diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index b34a67d..9beace6 100644
+index 21cba3d..6448391 100644
 --- a/fs/nfsd/nfssvc.c
 +++ b/fs/nfsd/nfssvc.c
-@@ -11,7 +11,6 @@
- #include <linux/module.h>
- #include <linux/fs_struct.h>
- #include <linux/swap.h>
--#include <linux/nsproxy.h>
+@@ -334,10 +334,9 @@ static int nfsd_get_default_max_blksize(void)
+ 	return ret;
+ }
  
- #include <linux/sunrpc/stats.h>
- #include <linux/sunrpc/svcsock.h>
-@@ -341,7 +340,7 @@ static int nfsd_get_default_max_blksize(void)
- int nfsd_create_serv(void)
+-int nfsd_create_serv(void)
++int nfsd_create_serv(struct net *net)
  {
  	int error;
--	struct net *net = current->nsproxy->net_ns;
-+	struct net *net = &init_net;
+-	struct net *net = &init_net;
  
  	WARN_ON(!mutex_is_locked(&nfsd_mutex));
  	if (nfsd_serv) {
+@@ -459,7 +458,7 @@ nfsd_svc(int nrservs)
+ 	if (nrservs == 0 && nfsd_serv == NULL)
+ 		goto out;
+ 
+-	error = nfsd_create_serv();
++	error = nfsd_create_serv(net);
+ 	if (error)
+ 		goto out;
+ 
 
