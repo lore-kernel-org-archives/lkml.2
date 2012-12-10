@@ -1,73 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab2LJLie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 06:38:34 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12735 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab2LJLic convert rfc822-to-8bit (ORCPT
+	id S1751730Ab2LJLjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 06:39:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56646 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2LJLjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 06:38:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 10 Dec 2012 03:37:04 -0800
-Message-ID: <50C5CAB5.3040000@nvidia.com>
-Date: Mon, 10 Dec 2012 13:42:45 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 10 Dec 2012 06:39:52 -0500
+Date: Mon, 10 Dec 2012 12:39:45 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121210113945.GA7550@gmail.com>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <20121207110113.GB21482@gmail.com>
+ <20121209203630.GC1009@suse.de>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121209203630.GC1009@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2012 14:04, Thierry Reding wrote:
-> On Wed, Dec 05, 2012 at 01:47:38PM +0200, Terje Bergström wrote:
->> You're right in that binding to a sub-device is not a nice way. DRM
->> framework just needs a "struct device" to bind to. exynos seems to solve
->> this by introducing a virtual device and bind to that. I'm not sure if
->> this is the best way, but worth considering?
+
+* Mel Gorman <mgorman@suse.de> wrote:
+
+> On Fri, Dec 07, 2012 at 12:01:13PM +0100, Ingo Molnar wrote:
+> > 
+> > * Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> > > This is a full release of all the patches so apologies for the 
+> > > flood. [...]
+> > 
+> > I have yet to process all your mails, but assuming I address all 
+> > your review feedback and the latest unified tree in tip:master 
+> > shows no regression in your testing, would you be willing to 
+> > start using it for ongoing work?
+> > 
 > 
-> That was discussed a few months back already and nobody seemed to like
-> the idea. In fact it was as a result of that discussion that Stephen
-> brought up the idea to register the DRM driver from a central host1x
-> driver (it may also have been part of a discussion on IRC, I don't
-> remember exactly).
+> Ingo,
 > 
-> At the time I spent some time on a patch that introduced drm_soc_init()
-> to solve this by creating a dummy struct device and registering the
-> driver on top of that. But I abandoned it in favour of fixing the DRM
-> platform support code. The approach also didn't provide for the proper
-> encapsulation.
+> If you had read the second paragraph of the mail you just responded to or
+> the results at the end then you would have seen that I had problems with
+> the performance. [...]
 
-I've managed to go through all the other feedback and implement a
-solution to most of them, so now I have some slack to actually think
-about the initialization. Sorry about this, but you (meaning all the
-reviewers) did give us a _lot_ to do. :-) Fortunately, the driver
-actually became a lot better, too.
+I've posted a (NUMA-placement sensitive workload centric) 
+performance comparisons between "balancenuma", AutoNUMA and 
+numa/core unified-v3 to:
 
-Back to the topic of tegradrm init. The root cause of the problem is
-that DRM framework needs some device to assign itself to. The problem is
-that this device doesn't have any physical counterpart, as it's only for
-storing a pointer in DRM framework. Please correct me if this is wrong.
+   https://lkml.org/lkml/2012/12/7/331
 
-Moving the client registration to ping pong between DRM and host1x has
-its problems. host1x driver itself has no use for a list of client
-devices. It can just iterate its children in case it needs them. In
-tegradrm, you need a list of devices under tegradrm control, which might
-or might not be the same as list of devices under host1x hardware.
+I tried to address all performance regressions you and others 
+have reported.
 
-The solutions that many other DRM drivers seem to employ are the virtual
-devices. Exynos and OMAP drivers do this, as does SH Mobile DRM driver.
-So I think I'd still go this way, as it's the path of minimum
-resistance, least amount of code and most localized change. I know it's
-not ideal, but I'd also not like to get stuck in this.
+Here's the direct [bandwidth] comparison of 'balancenuma v10' to 
+my -v3 tree:
 
-Terje
+                            balancenuma  | NUMA-tip
+ [test unit]            :          -v10  |    -v3
+------------------------------------------------------------
+ 2x1-bw-process         :         6.136  |  9.647:  57.2%
+ 3x1-bw-process         :         7.250  | 14.528: 100.4%
+ 4x1-bw-process         :         6.867  | 18.903: 175.3%
+ 8x1-bw-process         :         7.974  | 26.829: 236.5%
+ 8x1-bw-process-NOTHP   :         5.937  | 22.237: 274.5%
+ 16x1-bw-process        :         5.592  | 29.294: 423.9%
+ 4x1-bw-thread          :        13.598  | 19.290:  41.9%
+ 8x1-bw-thread          :        16.356  | 26.391:  61.4%
+ 16x1-bw-thread         :        24.608  | 29.557:  20.1%
+ 32x1-bw-thread         :        25.477  | 30.232:  18.7%
+ 2x3-bw-thread          :         8.785  | 15.327:  74.5%
+ 4x4-bw-thread          :         6.366  | 27.957: 339.2%
+ 4x6-bw-thread          :         6.287  | 27.877: 343.4%
+ 4x8-bw-thread          :         5.860  | 28.439: 385.3%
+ 4x8-bw-thread-NOTHP    :         6.167  | 25.067: 306.5%
+ 3x3-bw-thread          :         8.235  | 21.560: 161.8%
+ 5x5-bw-thread          :         5.762  | 26.081: 352.6%
+ 2x16-bw-thread         :         5.920  | 23.269: 293.1%
+ 1x32-bw-thread         :         5.828  | 18.985: 225.8%
+ numa02-bw              :        29.054  | 31.431:   8.2%
+ numa02-bw-NOTHP        :        27.064  | 29.104:   7.5%
+ numa01-bw-thread       :        20.338  | 28.607:  40.7%
+ numa01-bw-thread-NOTHP :        18.528  | 21.119:  14.0%
+------------------------------------------------------------
+
+I also tried to reproduce and fix as many bugs you reported as 
+possible - but my point is that it would be _much_ better if we 
+actually joined forces.
+
+> [...] You would also know that tip/master testing for the last 
+> week was failing due to a boot problem (issue was in mainline 
+> not tip and has been already fixed) and would have known that 
+> since the -v18 release that numacore was effectively disabled 
+> on my test machine.
+
+I'm glad it's fixed.
+
+> Clearly you are not reading the bug reports you are receiving 
+> and you're not seeing the small bit of review feedback or 
+> answering the review questions you have received either. Why 
+> would I be more forthcoming when I feel that it'll simply be 
+> ignored? [...]
+
+I am reading the bug reports and addressing bugs as I can.
+
+> [...]  You simply assume that each batch of patches you place 
+> on top must be fixing all known regressions and ignoring any 
+> evidence to the contrary.
+>
+> If you had read my mail from last Tuesday you would even know 
+> which patch was causing the problem that effectively disabled 
+> numacore although not why. The comment about p->numa_faults 
+> was completely off the mark (long journey, was tired, assumed 
+> numa_faults was a counter and not a pointer which was 
+> careless).  If you had called me on it then I would have 
+> spotted the actual problem sooner. The problem was indeed with 
+> the nr_cpus_allowed == num_online_cpus()s check which I had 
+> pointed out was a suspicious check although for different 
+> reasons. As it turns out, a printk() bodge showed that 
+> nr_cpus_allowed == 80 set in sched_init_smp() while 
+> num_online_cpus() == 48. This effectively disabling numacore. 
+> If you had responded to the bug report, this would likely have 
+> been found last Wednesday.
+
+Does changing it from num_online_cpus() to num_possible_cpus() 
+help? (Can send a patch if you want.)
+
+> > It would make it much easier for me to pick up your 
+> > enhancements, fixes, etc.
+> > 
+> > > Changelog since V9
+> > >   o Migration scalability                                             (mingo)
+> > 
+> > To *really* see migration scalability bottlenecks you need to 
+> > remove the migration-bandwidth throttling kludge from your tree 
+> > (or configure it up very high if you want to do it simple).
+> > 
+> 
+> Why is it a kludge? I already explained what the rational 
+> behind the rate limiting was. It's not about scalability, it's 
+> about mitigating worse-case behaviour and the amount of time 
+> the kernel spends moving data around which a deliberately 
+> adverse workload can trigger.  It is unacceptable if during a 
+> phase change that a process would stall potentially for 
+> milliseconds (seconds if the node is large enough I guess) 
+> while the data is being migrated. Here is it again -- 
+> http://www.spinics.net/lists/linux-mm/msg47440.html . You 
+> either ignored the mail or simply could not be bothered 
+> explaining why you thought this was the incorrect decision or 
+> why the concerns about an adverse workload were unimportant.
+
+I think the stalls could have been at least in part due to the 
+scalability bottlenecks that the rate-limiting code has hidden.
+
+If you think of the NUMA migration as a natural part of the 
+workload, as a sort of extended cache-miss, and if you assume 
+that the scheduler is intelligent about not flip-flopping tasks 
+between nodes (which the latest code certainly is), then I don't 
+see why the rate of migration should be rate-limited in the VM.
+
+Note that I tried to quantify this effect: the perf bench numa 
+testcases start from a practical 'worst-case adverse' workload 
+in essence: all pages concentrated on the wrong node, and the 
+workload having to migrate all of them over.
+
+We could add a new 'absolutely worst case' testcase, to make it 
+behaves sanely?
+
+> I have a vague suspicion actually that when you are modelling 
+> the task->data relationship that you make an implicit 
+> assumption that moving data has zero or near-zero cost. In 
+> such a model it would always make sense to move quickly and 
+> immediately but in practice the cost of moving can exceed the 
+> performance benefit of accessing local data and lead to 
+> regressions. It becomes more pronounced if the nodes are not 
+> fully connected.
+
+I make no such assumption - convergence costs were part of my 
+measurements.
+
+> > Some (certainly not all) of the performance regressions you 
+> > reported were certainly due to numa/core code hitting the 
+> > migration codepaths as aggressively as the workload demanded 
+> > - and hitting scalability bottlenecks.
+> 
+> How are you so certain? [...]
+
+Hm, I don't think my "some (certainly not all)" statement 
+reflected any sort of certainty. So we violently agree about:
+
+> [...] How do you not know it's because your code is migrating 
+> excessively for no good reason because the algorithm has a 
+> flaw in it? [...]
+
+That's another source - but again not something we should fix by 
+hiding it under the carpet via migration bandwidth rate limits, 
+right?
+
+> [...] Or that the cost of excessive migration is not being 
+> offset by local data accesses? [...]
+
+That's another possibility.
+
+The _real_ fix is to avoid excessive migration on the CPU and 
+memory placement side, not to throttle the basic mechanism 
+itself!
+
+I don't exclude the possibility that bandwidth limits might be 
+needed - but only if everything else fails. Meanwhile, the 
+bandwidth limits were actively hiding scalability bottlenecks, 
+which bottlenecks only trigger at higher migration rates.
+
+> [...] The critical point to note is that if it really was only 
+> scalability problems then autonuma would suffer the same 
+> problems and would be impossible to autonumas performance to 
+> exceed numacores. This isn't the case making it unlikely the 
+> scalability is your only problem.
+
+The scheduling patterns are different - so they can hit 
+different bottlenecks.
+
+> Either way, last night I applied a patch on top of latest 
+> tip/master to remove the nr_cpus_allowed check so that 
+> numacore would be enabled again and tested that. In some 
+> places it has indeed much improved. In others it is still 
+> regressing badly and in two case, it's corrupting memory -- 
+> specjbb when THP is enabled crashes when running for single or 
+> multiple JVMs. It is likely that a zero page is being inserted 
+> due to a race with migration and causes the JVM to throw a 
+> null pointer exception. Here is the comparison on the rough 
+> off-chance you actually read it this time.
+
+Can you still see the JVM crash with the unified -v3 tree?
+
+Thanks,
+
+	Ingo
