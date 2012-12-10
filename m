@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab2LJMLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 07:11:21 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39016 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab2LJMLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 07:11:19 -0500
-Date: Mon, 10 Dec 2012 13:11:15 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
-        Vyacheslav.Dubeyko@huawei.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, wency@cn.fujitsu.com
-Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-Message-ID: <20121210121114.GA13631@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Xishi Qiu <qiuxishi@huawei.com>,
-	Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-	Simon Jeons <simon.jeons@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
-	Vyacheslav.Dubeyko@huawei.com, andi@firstfloor.org,
-	linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	wency@cn.fujitsu.com
-References: <50C1AD6D.7010709@huawei.com>
- <20121207141102.4fda582d.akpm@linux-foundation.org>
- <20121210083342.GA31670@hacker.(null)>
- <50C5A62A.6030401@huawei.com>
- <1355136423.1700.2.camel@kernel.cn.ibm.com>
- <50C5C4A2.2070002@huawei.com>
- <20121210113923.GA5579@hacker.(null)>
- <50C5CD8D.8060505@huawei.com>
+	id S1752346Ab2LJMPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 07:15:53 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:30245 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab2LJMPw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 07:15:52 -0500
+X-IronPort-AV: E=Sophos;i="4.84,250,1355097600"; 
+   d="scan'208";a="32008"
+Message-ID: <50C5D276.6090009@citrix.com>
+Date: Mon, 10 Dec 2012 13:15:50 +0100
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50C5CD8D.8060505@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] xen-blkfront: implement safe version
+ of llist_for_each_entry
+References: <1354630913-17287-1-git-send-email-roger.pau@citrix.com> <1354630913-17287-2-git-send-email-roger.pau@citrix.com> <20121207202003.GA9462@phenom.dumpdata.com>
+In-Reply-To: <20121207202003.GA9462@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 07:54:53PM +0800, Xishi Qiu wrote:
-> One more question, can we add a list_head to manager the poisoned pages?
+On 07/12/12 21:20, Konrad Rzeszutek Wilk wrote:
+> On Tue, Dec 04, 2012 at 03:21:53PM +0100, Roger Pau Monne wrote:
+>> Implement a safe version of llist_for_each_entry, and use it in
+>> blkif_free. Previously grants where freed while iterating the list,
+>> which lead to dereferences when trying to fetch the next item.
+> 
+> Looks like xen-blkfront is the only user of this llist_for_each_entry.
+> 
+> Would it be more prudent to put the macro in the llist.h file?
 
-What would you need that list for? Also, a list is not the most optimal
-data structure for when you need to traverse it often.
+I'm not able to find out who is the maintainer of llist, should I just
+CC it's author?
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
