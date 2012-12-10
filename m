@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab2LJVRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:17:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab2LJVRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:17:16 -0500
-Date: Mon, 10 Dec 2012 18:30:14 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH] x86/kexec: crash_vmclear_local_vmcss needs __rcu
-Message-ID: <20121210203014.GB2402@amt.cnet>
-References: <50C18168.305@cn.fujitsu.com>
+	id S1752316Ab2LJVR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:17:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45113 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab2LJVRY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 16:17:24 -0500
+Date: Mon, 10 Dec 2012 13:17:03 -0800
+From: tip-bot for Cong Ding <dinggnu@gmail.com>
+Message-ID: <tip-28a793892296ca3367193c7a7de1714f80049fd0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, dinggnu@gmail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dinggnu@gmail.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20121209082103.GA9181@gmail.com>
+References: <20121209082103.GA9181@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86: Fix the error of using "const"
+  in gen-insn-attr-x86.awk
+Git-Commit-ID: 28a793892296ca3367193c7a7de1714f80049fd0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <50C18168.305@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 10 Dec 2012 13:17:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 01:40:56PM +0800, Zhang Yanfei wrote:
-> This removes the sparse warning:
-> arch/x86/kernel/crash.c:49:32: sparse: incompatible types in comparison expression (different address spaces)
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kexec.h |    4 +++-
->  arch/x86/kernel/crash.c      |    4 ++--
->  2 files changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-> index 28feeba..16882cd 100644
-> --- a/arch/x86/include/asm/kexec.h
-> +++ b/arch/x86/include/asm/kexec.h
-> @@ -163,7 +163,9 @@ struct kimage_arch {
->  };
->  #endif
->  
-> -extern void (*crash_vmclear_loaded_vmcss)(void);
-> +extern void __rcu (*crash_vmclear_loaded_vmcss)(void);
-> +#define vmclear_func_rcu(vmclear_func) \
-> +	((void (*)(void)) rcu_dereference(vmclear_func))
->  
->  #endif /* __ASSEMBLY__ */
->  
-> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-> index 2f6b8e8..50ce1d6 100644
-> --- a/arch/x86/kernel/crash.c
-> +++ b/arch/x86/kernel/crash.c
-> @@ -38,7 +38,7 @@ int in_crash_kexec;
->   *
->   * protected by rcu.
->   */
-> -void (*crash_vmclear_loaded_vmcss)(void) = NULL;
-> +void __rcu (*crash_vmclear_loaded_vmcss)(void) = NULL;
+Commit-ID:  28a793892296ca3367193c7a7de1714f80049fd0
+Gitweb:     http://git.kernel.org/tip/28a793892296ca3367193c7a7de1714f80049fd0
+Author:     Cong Ding <dinggnu@gmail.com>
+AuthorDate: Sun, 9 Dec 2012 08:21:04 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 10 Dec 2012 10:31:24 -0800
 
-Isnt this (__rcu AS tag) sufficient? After all, sparse is complaining
-about namespaces.
+x86: Fix the error of using "const" in gen-insn-attr-x86.awk
 
-Creating a #define to cast seems excessive.
+The original version code causes following sparse warnings:
+arch/x86/lib/inat-tables.c:1080:25: warning: duplicate const
+arch/x86/lib/inat-tables.c:1095:25: warning: duplicate const
+arch/x86/lib/inat-tables.c:1118:25: warning: duplicate const
 
+for the variables inat_escape_tables, inat_group_tables, and inat_avx_tables
+in the code generated by gen-insn-attr-x86.awk.
+
+The author Masami Hiramutsu says here is to make both the value pointed by the
+pointers and the pointers itself read-only, so we move the "const" to be after
+the "*".
+
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Link: http://lkml.kernel.org/r/20121209082103.GA9181@gmail.com
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/tools/gen-insn-attr-x86.awk | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
+index ddcf39b..e6773dc 100644
+--- a/arch/x86/tools/gen-insn-attr-x86.awk
++++ b/arch/x86/tools/gen-insn-attr-x86.awk
+@@ -356,7 +356,7 @@ END {
+ 		exit 1
+ 	# print escape opcode map's array
+ 	print "/* Escape opcode map array */"
+-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
++	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX + 1]" \
+ 	      "[INAT_LSTPFX_MAX + 1] = {"
+ 	for (i = 0; i < geid; i++)
+ 		for (j = 0; j < max_lprefix; j++)
+@@ -365,7 +365,7 @@ END {
+ 	print "};\n"
+ 	# print group opcode map's array
+ 	print "/* Group opcode map array */"
+-	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
++	print "const insn_attr_t * const inat_group_tables[INAT_GRP_MAX + 1]"\
+ 	      "[INAT_LSTPFX_MAX + 1] = {"
+ 	for (i = 0; i < ggid; i++)
+ 		for (j = 0; j < max_lprefix; j++)
+@@ -374,7 +374,7 @@ END {
+ 	print "};\n"
+ 	# print AVX opcode map's array
+ 	print "/* AVX opcode map array */"
+-	print "const insn_attr_t const *inat_avx_tables[X86_VEX_M_MAX + 1]"\
++	print "const insn_attr_t * const inat_avx_tables[X86_VEX_M_MAX + 1]"\
+ 	      "[INAT_LSTPFX_MAX + 1] = {"
+ 	for (i = 0; i < gaid; i++)
+ 		for (j = 0; j < max_lprefix; j++)
