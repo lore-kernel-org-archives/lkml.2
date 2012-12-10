@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab2LJNdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 08:33:39 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48914 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751708Ab2LJNdi (ORCPT
+	id S1752007Ab2LJNkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 08:40:11 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:52421 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab2LJNkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 08:33:38 -0500
-Date: Mon, 10 Dec 2012 13:33:13 +0000
-From: Will Deacon <will.deacon@arm.com>
+	Mon, 10 Dec 2012 08:40:10 -0500
+Date: Mon, 10 Dec 2012 13:40:01 +0000
+From: Jamie Lokier <jamie@shareable.org>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+Cc: Will Deacon <will.deacon@arm.com>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -19,7 +19,7 @@ Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
 	<linux-arm-kernel@lists.infradead.org>
 Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
  across all cpus
-Message-ID: <20121210133313.GB7869@mudshark.cambridge.arm.com>
+Message-ID: <20121210134000.GQ26936@jl-vm1.vm.bytemark.co.uk>
 References: <1354888985.17101.41.camel@gandalf.local.home>
  <1354892111.13000.50.camel@linaro1.home>
  <1354894134.17101.44.camel@gandalf.local.home>
@@ -39,40 +39,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 01:02:17PM +0000, Steven Rostedt wrote:
-> On Mon, 2012-12-10 at 10:04 +0000, Will Deacon wrote:
-> > Hi Jon,
-> > 
-> > Back-pedalling a bit here, but I'm confused by one of your points below:
-> > 
-> > On Fri, Dec 07, 2012 at 05:45:47PM +0000, Jon Medhurst (Tixy) wrote:
-> > > On Fri, 2012-12-07 at 12:13 -0500, Steven Rostedt wrote:
-> > > > I'll make my question more general:
-> > > > 
-> > > > If I have a nop, that is a size of a call (branch and link), which is
-> > > > near the beginning of a function and not part of any conditional, and I
-> > > > want to convert it into a call (branch and link), would adding a
-> > > > breakpoint to it, modifying it to the call, and then removing the
-> > > > breakpoint be possible? Of course it would require syncing in between
-> > > > steps, but my question is, if the above is possible on a thumb2 ARM
-> > > > processor?
-> > > 
-> > > I believe so. The details are (repeating your earlier explanation) ...
-> > > 
-> > > 1. Replace first half of nop with 16bit 'breakpoint' instruction.
-> > 
-> > Sort of -- you'd actually need 2x16-bit nops to make this work.
-> 
-> Why?
-
-Because the architecture doesn't provide any guarantees about concurrent
-modification of 32-bit nop instructions. If you stop the world every time,
-fine, but that's what we're trying to avoid, right?
-
-> > > However, wouldn't we need any of this breakpoint malarkey, why not just
-> > > just use a 16-bit branch instruction which branches over the second half
-> > > of the nop? :-)
-> > 
+Steven Rostedt wrote:
 > > Yes, and I think if you do use two 16-bit nops, you can even get rid of all
 > > the intermediate `sync' operations (I guess you might want one at the end if
 > > you want the call to become visible at a particular point).
@@ -84,16 +51,63 @@ fine, but that's what we're trying to avoid, right?
 > gets preempted. The nops get converted to a 32bit call. The task gets
 > scheduled again and now is executing the second 16bits of the 32bit call
 > and we get unexpected (probably crashing) results.
-
-Damn, I didn't realise you wanted to put the 32-bit call back on
-pre-emption. Still, the `sync' is not needed when patching in a b for a nop.
-
+> 
 > By having either a 16bit breakpoint whose handler returns after the
 > second 16bit part, or a 16bit jump that simply jumps over the second
 > half, then all this should work. When the CPU processes a 32bit
 > instruction, it either processes all or non of it, correct?
 
-If you have two 16-bit nops, patching the first to branch over the second
-will work.
+Sounds good, except what Will wrote a few days ago:
 
-Will
+On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
+> For ARMv7, there are small subsets of instructions for ARM and Thumb which
+> are guaranteed to be atomic wrt concurrent modification and execution of
+> the instruction stream between different processors:
+>
+> Thumb:      The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
+> ARM:        The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
+
+Thumb 32-bit ftrace call isn't in the above list.
+
+Questions: does the above concurrent modification guarantee require
+both the old instruction _and_ the new one to be among those listed,
+or is it enough to be just the new one (for example when setting a
+normal software breakpoint, that would be useful)?  Can it be the old
+one and not the new (for example when removing a software breakpoint,
+that would be useful)?  Does that subset mean replacing any of the
+listed instructions by any of the others is ok, or any of the listed
+with another of the same type?
+
+(I guess as a matter of architecture design, it makes sense to
+guarantee only a short list, because of occasions when the hardware,
+or a software emulation through traps, or a simulation, might read the
+instruction memory more than once.)
+
+This is what makes me wonder, if it's safe to replace the 32-bit
+mcount call with a 16-bit short jump:
+
+> On Mon, Dec 10, 2012 at 11:04:05AM +0000, Jon Medhurst (Tixy) wrote:
+> > So this means for things like kprobes which can modify arbitrary kernel
+> > code we are going to need to continue to always use some form of
+> > stop_the_whole_system() function?
+> >
+> > Also, kprobes currently uses patch_text() which only uses stop_machine
+> > for Thumb2 instructions which straddle a word boundary, so this needs
+> > changing?
+
+Will Deacon replied:
+> Yes; if you're modifying instructions other than those mentioned above, then
+> you'll need to synchronise the CPUs, update the instructions, perform
+> cache-maintenance on the writing CPU and then execute an isb on the
+> executing core (this last bit isn't needed if you're going to go through an
+> exception return to get back to the new code -- depends on how your
+> stop/resume code works).
+
+If I've understood that exchange, it implies that using patch_text()
+to replace an instruction not in the list of special ones, with a trap
+or jump, isn't ok?  And so it's ok to replace the NOP with a short
+branch (since 16-bit "B" is in the list), but it's not ok to replace
+16-bit "B" with the 32-bit ftrace call; and the same going the other way?
+
+Best,
+-- Jamie
