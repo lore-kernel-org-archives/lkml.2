@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab2LJFep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:34:45 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37794 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab2LJFeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:34:44 -0500
+	id S1751521Ab2LJFhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 00:37:37 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38646 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab2LJFhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 00:37:35 -0500
+Date: Mon, 10 Dec 2012 10:37:10 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121210050710.GC22164@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <20121207110113.GB21482@gmail.com>
+ <20121209203630.GC1009@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <2097693.II1PNyeFLY@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
-	<2097693.II1PNyeFLY@vostro.rjw.lan>
-Date: Sun, 9 Dec 2012 21:34:42 -0800
-X-Google-Sender-Auth: cSmxS72EZyhs1zOghCYzycbMjM0
-Message-ID: <CAE9FiQWxoWubagm4gj81YgMeqyEZgpT47ROAfjmXSmoaTn-Yig@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121209203630.GC1009@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121005-5806-0000-0000-00001CC3F8AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 9, 2012 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Notice that one member of struct acpi_bus_ops, acpi_op_add, is not
-> used anywhere any more and the relationship between its remaining
-> members, acpi_op_match and acpi_op_start, is such that it doesn't
-> make sense to set the latter without setting the former at the same
-> time.  Therefore, replace struct acpi_bus_ops with new a enum type,
-> enum acpi_bus_add_type, with three values, ACPI_BUS_ADD_BASIC,
-> ACPI_BUS_ADD_MATCH, ACPI_BUS_ADD_START, corresponding to
-> both acpi_op_match and acpi_op_start unset, acpi_op_match set and
-> acpi_op_start unset, and both acpi_op_match and acpi_op_start set,
-> respectively.
->
+> 
+> Either way, last night I applied a patch on top of latest tip/master to
+> remove the nr_cpus_allowed check so that numacore would be enabled again
+> and tested that. In some places it has indeed much improved. In others
+> it is still regressing badly and in two case, it's corrupting memory --
+> specjbb when THP is enabled crashes when running for single or multiple
+> JVMs. It is likely that a zero page is being inserted due to a race with
+> migration and causes the JVM to throw a null pointer exception. Here is
+> the comparison on the rough off-chance you actually read it this time.
 
-Can we expand the BUS_ADD_* concept to other devices instead of just
-acpi_device?
+I see this failure when running with THP and KSM enabled on 
+Friday's Tip master. Not sure if Mel was talking about the same issue.
 
-aka we should let struct device has this add_type field.
+------------[ cut here ]------------
+kernel BUG at ../kernel/sched/fair.c:2371!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: ebtable_nat ebtables autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bridge stp llc iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vhost_net macvtap macvlan tun iTCO_wdt iTCO_vendor_support kvm_intel kvm microcode cdc_ether usbnet mii serio_raw i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma i7core_edac edac_core bnx2 sg ixgbe dca mdio ext4 mbcache jbd2 sd_mod crc_t10dif mptsas mptscsih mptbase scsi_transport_sas dm_mirror dm_region_hash dm_log dm_mod
+CPU 4
+Pid: 116, comm: ksmd Not tainted 3.7.0-rc8-tip_master+ #5 IBM BladeCenter HS22V -[7871AC1]-/81Y5995
+RIP: 0010:[<ffffffff8108c139>]  [<ffffffff8108c139>] task_numa_fault+0x1a9/0x1e0
+RSP: 0018:ffff880372237ba8  EFLAGS: 00010246
+RAX: 0000000000000074 RBX: 0000000000000001 RCX: 0000000000000001
+RDX: 00000000000012ae RSI: 0000000000000004 RDI: 00007faf4fc01000
+RBP: ffff880372237be8 R08: 0000000000000000 R09: ffff8803657463f0
+R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000012
+R13: ffff880372210d00 R14: 0000000000010088 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff88037fc80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000001d26fec CR3: 000000000169f000 CR4: 00000000000027e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process ksmd (pid: 116, threadinfo ffff880372236000, task ffff880372210d00)
+Stack:
+ ffffea0016026c58 00007faf4fc00000 ffff880372237c48 0000000000000001
+ 00007faf4fc01000 ffffea000d6df928 0000000000000001 ffffea00166e9268
+ ffff880372237c48 ffffffff8113cd0e ffff880300000001 0000000000000002
+Call Trace:
+ [<ffffffff8113cd0e>] __do_numa_page+0xde/0x160
+ [<ffffffff8113de9e>] handle_pte_fault+0x32e/0xcd0
+ [<ffffffffa01c22c0>] ? drop_large_spte+0x30/0x30 [kvm]
+ [<ffffffffa01bf215>] ? kvm_set_spte_hva+0x25/0x30 [kvm]
+ [<ffffffff8113eab9>] handle_mm_fault+0x279/0x760
+ [<ffffffff8115c024>] break_ksm+0x74/0xa0
+ [<ffffffff8115c222>] break_cow+0xa2/0xb0
+ [<ffffffff8115e38c>] ksm_scan_thread+0xb5c/0xd50
+ [<ffffffff810771c0>] ? wake_up_bit+0x40/0x40
+ [<ffffffff8115d830>] ? run_store+0x340/0x340
+ [<ffffffff8107692e>] kthread+0xce/0xe0
+ [<ffffffff81076860>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff814fa7ac>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81076860>] ? kthread_freezable_should_stop+0x70/0x70
+Code: 89 f0 41 bf 01 00 00 00 8b 1c 10 e9 d7 fe ff ff 8d 14 09 48 63 d2 eb bd 66 2e 0f 1f 84 00 00 00 00 00 49 8b 85 98 07 00 00 eb 91 <0f> 0b eb fe 80 3d 9c 3b 6b 00 01 0f 84 be fe ff ff be 42 09 00
+RIP  [<ffffffff8108c139>] task_numa_fault+0x1a9/0x1e0
+ RSP <ffff880372237ba8>
+---[ end trace 9584c9b03fc0dbc0 ]---
+
