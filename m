@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab2LJP3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 10:29:35 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49888 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2LJP3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 10:29:34 -0500
+	id S1753986Ab2LJPad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 10:30:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40538 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758Ab2LJPac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 10:30:32 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20121210105449.GC7264@gmail.com>
+References: <50C56A13.9040604@linux.vnet.ibm.com> <50C591B0.10408@linux.vnet.ibm.com> <20121210105449.GC7264@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121210151934.GS2516@linux.vnet.ibm.com>
-References: <20121204130503.GA13878@linux.vnet.ibm.com>
-	<20121208143757.GB12011@gmail.com>
-	<20121210151934.GS2516@linux.vnet.ibm.com>
-Date: Mon, 10 Dec 2012 17:29:33 +0200
-Message-ID: <CAFTL4hxv0pd5xQh8oXM7dSKUAOHEYf1EugV=dnN++yYczV4ZWw@mail.gmail.com>
-Subject: Re: [context tracking subsystem] Re: [GIT PULL rcu/next] One more RCU
- commit for 3.8
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: TIP tree's master branch failed to boot up
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 10 Dec 2012 07:28:12 -0800
+To: Ingo Molnar <mingo@kernel.org>, Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <227554ec-58bc-4c8d-aaf7-b0c9073b6e18@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/10 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> On Sat, Dec 08, 2012 at 03:37:57PM +0100, Ingo Molnar wrote:
->>
->> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
->>
->> > Hello, Ingo,
->> >
->> > Could you please pull one more commit?  This is an update to Frederic
->> > Weisbecker's context-tracking subsystem that is another stepping stone
->> > towards adaptive-idle and tickless userspace execution.  This has been
->> > subjected to -next testing.  It does give two checkpatch.pl errors,
->> > but these are on cpp macro definitions used within assembly code -- and
->> > following checkpatch.pl's suggestions would result in assembler errors.
->> > (I have reported this to Andy Whitcroft, checkpatch.pl's maintainer.)
->> >
->> > These changes are available in the git repository at:
->> >   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
->> >
->> >                                                     Thanx, Paul
->> >
->> > ---------------->
->> > Frederic Weisbecker (1):
->> >       context_tracking: New context tracking susbsystem
->> >
->> >  arch/Kconfig                                       |   15 ++--
->> >  arch/x86/Kconfig                                   |    2 +-
->> >  arch/x86/include/asm/{rcu.h => context_tracking.h} |   15 ++--
->> >  arch/x86/kernel/entry_64.S                         |    2 +-
->> >  arch/x86/kernel/ptrace.c                           |    8 +-
->> >  arch/x86/kernel/signal.c                           |    5 +-
->> >  arch/x86/kernel/traps.c                            |    2 +-
->> >  arch/x86/mm/fault.c                                |    2 +-
->> >  include/linux/context_tracking.h                   |   18 ++++
->> >  include/linux/rcupdate.h                           |    2 -
->> >  init/Kconfig                                       |   28 ++++----
->> >  kernel/Makefile                                    |    1 +
->> >  kernel/context_tracking.c                          |   83 ++++++++++++++++++++
->> >  kernel/rcutree.c                                   |   64 +---------------
->> >  kernel/sched/core.c                                |   11 ++-
->> >  15 files changed, 150 insertions(+), 108 deletions(-)
->> >  rename arch/x86/include/asm/{rcu.h => context_tracking.h} (63%)
->> >  create mode 100644 include/linux/context_tracking.h
->> >  create mode 100644 kernel/context_tracking.c
->>
->> Pulled it and pushed it out earlier this week.
->>
->> One issue I wanted to raise on a bit wider forum was the
->> introduction of the (small) kernel/context_tracking.c subsystem.
->>
->> It makes sense to me, but I've Cc:-ed Linus and Andrew, in case
->> they have a different opinion.
+Yes, the current x86/microcode is broken, I have been trying to work with Fenghua on a fix but didn't get one before the weekend.
+
+Ingo Molnar <mingo@kernel.org> wrote:
+
 >
-> And it does appear that Frederic and I have a bit more explaining to do.  ;-)
+>I've Cc:-ed hpa, he merged the x86/microcode bits.
+>
+>Michael Wang, I've excluded x86/microcode from the latest 
+>version of the -tip tree which I just pushed out:
+>
+>  4e00fd4c93e0 Merge branch 'x86/cleanups'
+>
+>Can you confirm that your server boots now?
+>
+>Thanks,
+>
+>	Ingo
+>
+>* Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+>
+>> On 12/10/2012 12:50 PM, Michael Wang wrote:
+>> > Hi, Folks
+>> > 
+>> > I'm testing with the latest tip tree's master branch 3.7.0-rc8 and
+>> > failed to boot up my server, it's hung at very beginning and I
+>could not
+>> > catch any useful log, is there any one else got this problem or I'm
+>the
+>> > only one?.
+>> 
+>> And bisect catch below commit:
+>> 
+>> commit 56e7dba100a50f674627a3764fd4da4a6ec93295
+>> Merge: ea8432f 16544f8
+>> Author: Ingo Molnar <mingo@kernel.org>
+>> Date:   Fri Dec 7 12:13:11 2012 +0100
+>> 
+>>     Merge branch 'x86/microcode'
+>> 
+>> Regards,
+>> Michael Wang
+>> 
+>> 
+>> > 
+>> > Regards,
+>> > Michael Wang
+>> > 
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe
+>linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-Right :-)
-
-Andrew strongly suggested us to give some more description of that
-thing and the role and semantics of the new APIs. I indeed overlooked
-that part. I'll send a patch soon.
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
