@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850Ab2LJTcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:32:10 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47715 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab2LJTcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:32:07 -0500
+	id S1751983Ab2LJTcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:32:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41325 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab2LJTcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 14:32:23 -0500
+Date: Mon, 10 Dec 2012 19:32:19 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
+Message-ID: <20121210193219.GM1009@suse.de>
+References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
+ <alpine.LFD.2.02.1212101902050.4422@ionos>
 MIME-Version: 1.0
-In-Reply-To: <50C6345C.8040804@schaufler-ca.com>
-References: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
- <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
- <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com>
- <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
- <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
- <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com>
- <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com>
- <20121210145950.GC8137@sergelap> <50C603F8.6070401@schaufler-ca.com>
- <CALCETrWNboHVRm_aZ-Fvqri6PW3C4FPfuLLe3-8q7+-vgEP2nw@mail.gmail.com> <50C6345C.8040804@schaufler-ca.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Dec 2012 11:31:45 -0800
-Message-ID: <CALCETrUctrxm5Vy2WYXaQy3CyyJOGAQ78LYHbLzv+ua_rGxMDA@mail.gmail.com>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Markku Savela <msa@moth.iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1212101902050.4422@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 11:13 AM, Casey Schaufler
-<casey@schaufler-ca.com> wrote:
-> On 12/10/2012 10:12 AM, Andy Lutomirski wrote:
->> I think that the Windows approach is worth looking at.  See here:
->>
->> http://msdn.microsoft.com/en-us/library/windows/desktop/aa375202%28v=vs.85%29.aspx
->>
->> In the Windows model, each capability ("privilege") can be in one of
->> three states: enabled (i.e working right now),
->
-> Effective
->
->>  permitted (i.e.
->> available upon request but not currently enabled),
->
-> Permitted
->
->> or removed
->> (disallowed to this process and all of its children).
->
-> ~Inherited
+On Mon, Dec 10, 2012 at 07:22:37PM +0100, Thomas Gleixner wrote:
+> On Fri, 7 Dec 2012, Ingo Molnar wrote:
+> > The SPECjbb 4x JVM numbers are still very close to the
+> > hard-binding results:
+> > 
+> >   Fri Dec  7 02:08:42 CET 2012
+> >   spec1.txt:           throughput =     188667.94 SPECjbb2005 bops
+> >   spec2.txt:           throughput =     190109.31 SPECjbb2005 bops
+> >   spec3.txt:           throughput =     191438.13 SPECjbb2005 bops
+> >   spec4.txt:           throughput =     192508.34 SPECjbb2005 bops
+> >                                       --------------------------
+> >         SUM:           throughput =     762723.72 SPECjbb2005 bops
+> > 
+> > And the same is true for !THP as well.
+> 
+> I could not resist to throw all relevant trees on my own 4node machine
+> and run a SPECjbb 4x JVM comparison. All results have been averaged
+> over 10 runs.
+> 
+> mainline:	v3.7-rc8
+> autonuma:	mm-autonuma-v28fastr4-mels-rebase
+> balancenuma:	mm-balancenuma-v10r3
+> numacore:	Unified NUMA balancing tree, v3
+> 
+> The config is based on a F16 config with CONFIG_PREEMPT_NONE=y and the
+> relevant NUMA options enabled for the 4 trees.
+> 
 
-No.  It's ~Inherited in a world where every binary has fI = everything.
+Ok, I had PREEMPT enabled so we differ on that at least. I don't know if
+it would be enough to hide the problems that led to the JVM crashing on
+me for the latest version of numacore or not.
 
->
->> Permitted
->> privileges are always inherited when a child process is created.
->>
->> This is *way* simpler than Linux's model, and it works just fine*.
->
-> I see a different set of complications, and Windows never had
-> a setuid bit to contend with. God created the universe in seven
-> days, but then, He didn't have an installed base.
->
+> THP off: manual placement result:     125239
+> 
+> 		Auto result	Man/Auto	Mainline/Auto	Variance
+> mainline    :	     93945	0.750		1.000		 5.91%
+> autonuma    :	    123651	0.987		1.316		 5.15%
+> balancenuma :	     97327	0.777		1.036		 5.19%
+> numacore    :	    123009	0.982		1.309		 5.73%
+> 
+> 
+> THP on: manual placement result:     143170
+> 
+> 		Auto result	Auto/Manual	Auto/Mainline	Variance
+> mainline    :	    104462	0.730		1.000		 8.47%
+> autonuma    :	    137363	0.959		1.315		 5.81%
+> balancenuma :	    112183	0.784		1.074		11.58%
+> numacore    :	    142728	0.997		1.366		 2.94%
+> 
+> So autonuma and numacore are basically on the same page, with a slight
+> advantage for numacore in the THP enabled case. balancenuma is closer
+> to mainline than to autonuma/numacore.
+> 
 
-What are those complications?
-
-Also, I think we really could get rid of setuid without breaking
-anything with a bit of extra (non-capability-related) plumbing work.
-
---Andy
+I would expect balancenuma to be closer to mainline than autonuma, whatever
+about numacore which I get mixed results for. balancenumas objective was
+not to be the best, it was meant to be a baseline that either autonuma
+or numacore could compete based on scheduler policies for while the MM
+portions would be common to either. If I thought otherwise I would have
+spent the last 2 weeks working on the scheduler aspects which would have
+been generally unhelpful.
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Mel Gorman
+SUSE Labs
