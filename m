@@ -1,138 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab2LJSBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 13:01:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37412 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab2LJSBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 13:01:46 -0500
-Date: Mon, 10 Dec 2012 18:01:41 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Zlatko Calusic <zlatko.calusic@iskon.hr>,
-        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121210180141.GK1009@suse.de>
-References: <20121203194208.GZ24381@cmpxchg.org>
- <20121204214210.GB20253@cmpxchg.org>
- <20121205030133.GA17438@wolff.to>
- <20121206173742.GA27297@wolff.to>
- <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
- <50C32D32.6040800@iskon.hr>
- <50C3AF80.8040700@iskon.hr>
- <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
- <20121210110337.GH1009@suse.de>
- <20121210163904.GA22101@cmpxchg.org>
+	id S1751834Ab2LJSGM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 13:06:12 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44392 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2LJSGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 13:06:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121210163904.GA22101@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121210145950.GC8137@sergelap>
+References: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+ <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+ <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com>
+ <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+ <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
+ <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com>
+ <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com> <20121210145950.GC8137@sergelap>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Dec 2012 10:05:49 -0800
+Message-ID: <CALCETrWSE+smyTOwvx5wnWudcpZBTqGu2FV+svhAHR4GwAHHKw@mail.gmail.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 11:39:04AM -0500, Johannes Weiner wrote:
-> On Mon, Dec 10, 2012 at 11:03:37AM +0000, Mel Gorman wrote:
-> > On Sat, Dec 08, 2012 at 05:01:42PM -0800, Linus Torvalds wrote:
-> > > On Sat, 8 Dec 2012, Zlatko Calusic wrote:
-> > > > Or sooner... in short: nothing's changed!
-> > > > 
-> > > > On a 4GB RAM system, where applications use close to 2GB, kswapd likes to keep
-> > > > around 1GB free (unused), leaving only 1GB for page/buffer cache. If I force
-> > > > bigger page cache by reading a big file and thus use the unused 1GB of RAM,
-> > > > kswapd will soon (in a matter of minutes) evict those (or other) pages out and
-> > > > once again keep unused memory close to 1GB.
-> > > 
-> > > Ok, guys, what was the reclaim or kswapd patch during the merge window 
-> > > that actually caused all of these insane problems?
-> > 
-> > I believe commit c6543459 (mm: remove __GFP_NO_KSWAPD) is the primary
-> > candidate. __GFP_NO_KSWAPD was originally introduced by THP because kswapd
-> > was excessively reclaiming. kswapd would stay awake aggressively reclaiming
-> > even if compaction was deferred. The flag was removed in this cycle when it
-> > was expected that it was no longer necessary. I'm not foisting the blame
-> > on Rik here, I was on the review list for that patch and did not identify
-> > that it would cause this many problems either.
-> >
-> > > It seems it was more 
-> > > fundamentally buggered than the fifteen-million fixes for kswapd we have 
-> > > already picked up.
-> > 
-> > It was already fundamentally buggered up. The difference was it stayed
-> > asleep for THP requests in earlier kernels.
-> > 
-> > There is a big difference between a direct reclaim/compaction for THP
-> > and kswapd doing the same work. Direct reclaim/compaction will try once,
-> > give up quickly and defer requests in the near future to avoid impacting
-> > the system heavily for THP. The same applies for khugepaged.
-> > 
-> > kswapd is different. It can keep going until it meets its watermarks for
-> > a THP allocation are met. Two reasons why it might keep going for a long
-> > time are that compaction is being inefficient which we know it may be due
-> > to crap like this
-> > 
-> > end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
-> > 
-> > and the second reason is if the highest zone is relatively because
-> > compaction_suitable will keep saying that allocations are failing due to
-> > insufficient amounts of memory in the highest zone. It'll reclaim a little
-> > from this highest zone and then shrink_slab() potentially dumping a large
-> > amount of memory. This may be the case for Zlatko as with a 4G machine
-> > his ZONE_NORMAL could be small depending on how the 32-bit address space
-> > is used by his hardware.
-> 
-> Unlike direct reclaim, kswapd also never does sync migration.  Since
-> the fragmentation index is a ratio of free pages over free page
-> blocks, doing lightweight compaction that reduces the page blocks but
-> never really follows through to compact a THP block increases the free
-> memory requirement.
-> 
+On Mon, Dec 10, 2012 at 6:59 AM, Serge Hallyn
+<serge.hallyn@canonical.com> wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> It's especially bad because granting CAP_DAC_READ_SEARCH to user "foo"
+>> doesn't mean anything.  Is he authorized to back things up to
+>> encrypted storage?
+>
+> We're talking about privileges at the kernel level here, and there is
+> no way this could be expressed at that level.
+>
+> Higher level tools could/should certainly be exposing things at this
+> level.
 
-True.
+Agreed, although selinux tries to allow this kind of detail in the
+kernel.  I don't think capabilities should move in that direction.
 
-> I thought about the small Normal zone too.  Direct reclaim/compaction
-> is fine with one zone being able to provide a THP, but kswapd requires
-> 25% of the node.  A small ZONE_NORMAL would not be able to meet this
-> and so the bigger DMA32 zone would also be required to be balanced for
-> the THP allocation.
-> 
+>
+> BUT
+>
+> You *are* doing a good job of making me feel that we should have
+> per-user fI xattrs or acls.  Sudo is popular because people like to say
+> "user joe can run foo with privilege".  Most people will never want to
+> be bothered to say "user joe can run foo with CAP_XYZ" (versus "as
+> root"), but I do think we could get programs/packages to do that.
 
-Also true.
+Hmm.  I wish I was doing as good a job convincing myself that I know a
+good solution.
 
-> > > Mel? Ideas?
-> > 
-> > Consider reverting the revert of __GFP_NO_KSWAPD again until this can be
-> > ironed out at a more reasonable pace. Rik? Johannes?
-> 
-> Yes, I also think we need more time for this.
-> 
+I don't actually consider the fact that pI has insufficient
+granularity to be a problem in need of fixing.  I think userspace can
+take care of detailed authorization questions on its own.  I think the
+problem is that pI is failing to allow users who aren't root (or at
+least aren't uid=0) to have elevated, but not completely elevated,
+privilege.  (If you don't like "users" in that sentence, feel free to
+replace it with "trusted programs that use execve as part of their
+operation".)
 
-Yes, the last minute band-aids are just getting worse and the result is
-more mess.
+Part of my struggle in proposing a solution is that there are two
+things I'd rather not add:
 
-> <SNIP>
-> 
-> I don't see a shrink_slab() invocation after this point since the
-> loop_again jumps in this loop where removed, so this shouldn't change
-> anything?
+1. More modes.  securebits, etc are hard to understand and can break
+assumptions that are currently true.
 
-/me slaps self
+2. execve granting new privilege, even in the pI -> pP sense.  There
+have been countless bugs relating to this in the past.  This is why I
+proposed no_new_privs.
 
-In this last-minute disaster, I'm not thinking properly at all any more. The
-shrink slab disabling should have happened before the loop_again but even
-then it's wrong because it's just covering over the problem.
+A new mode that is only allowed when no_new_privs is set is
+considerably less dangerous, but still not wonderful.
 
-The way order and testorder interact with how balanced is calculated means
-that we potentially call shrink_slab() multiple times and that thing is
-global in nature and basically uncontrolled. You could argue that we should
-only call shrink_slab() if order-0 watermarks are not met but that will
-not necessarily prevent kswapd reclaiming too much. It keeps going back
-to balance_pgdat needing its list of requirements drawn up and receive
-some major surgery and we're not going to do that as a quick hack.
 
--- 
-Mel Gorman
-SUSE Labs
+I could write a patch to add a new securebit SECURE_CAP_INHERITANCE
+that changes execve to act as though fI always contained all bits and
+to change capset to prevent pI from ever exceeding pP & pB.  To make
+it usable without CAP_SETPCAP, maybe setting it to true should be
+legal without privilege if no_new_privs.
+
+(Actually, maybe all of the securebits should be freely tweakable if
+no_new_privs.)
+
+
+Some use cases:
+
+1. Write a pam module that sets SECURE_CAP_INHERITANCE and assigns
+inheritable caps.  Obviously it would grant users full use of those
+caps.  The question is: what else would break?  I.e. could users abuse
+it to exploit other setuid or fP!=0 binaries?
+
+2. Write little fP != 0 helpers that check authorization, set
+no_new_privs and SECURE_CAP_INHERITANCE, and invoke something else.
+
+3. (Pipe dream?)  Eventually convince everyone to run in
+SECURE_CAP_INHERITANCE mode.
+
+
+I'll admit I'm not really thrilled by this suggestion.
+
+I'd like to do a survey and find out if anyone uses fI.  If the answer
+is "no", fI support could be dropped in some kind of controlled
+manner, perhaps using the vfs cap version number.  The setcap tool IMO
+wants some reworking anyway.
+
+--Andy
