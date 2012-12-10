@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab2LJJlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 04:41:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25177 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab2LJJla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:41:30 -0500
-Date: Mon, 10 Dec 2012 12:41:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        greg@kroah.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] rtl8712: replace min with min_t
-Message-ID: <20121210094108.GQ6568@mwanda>
-References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
- <1355048110-10859-4-git-send-email-przemo@firszt.eu>
+	id S1753845Ab2LJJnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:43:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43150 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab2LJJnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 04:43:40 -0500
+Date: Mon, 10 Dec 2012 10:43:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121210094318.GA6777@dhcp22.suse.cz>
+References: <20121130160811.6BB25BDD@pobox.sk>
+ <20121130153942.GL29317@dhcp22.suse.cz>
+ <20121130165937.F9564EBE@pobox.sk>
+ <20121130161923.GN29317@dhcp22.suse.cz>
+ <20121203151601.GA17093@dhcp22.suse.cz>
+ <20121205023644.18C3006B@pobox.sk>
+ <20121205141722.GA9714@dhcp22.suse.cz>
+ <20121206012924.FE077FD7@pobox.sk>
+ <20121206095423.GB10931@dhcp22.suse.cz>
+ <20121210022038.E6570D37@pobox.sk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355048110-10859-4-git-send-email-przemo@firszt.eu>
+In-Reply-To: <20121210022038.E6570D37@pobox.sk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 09, 2012 at 10:15:09AM +0000, Przemo Firszt wrote:
-> A clean up change suggested by checkpatch.pl
+On Mon 10-12-12 02:20:38, azurIt wrote:
+[...]
+> Michal,
+
+Hi,
+ 
+> this was printing so many debug messages to console that the whole
+> server hangs
+
+Hmm, this is _really_ surprising. The latest patch didn't add any new
+logging actually. It just enahanced messages which were already printed
+out previously + changed few functions to be not inlined so they show up
+in the traces. So the only explanation is that the workload has changed
+or the patches got misapplied.
+
+> and i had to hard reset it after several minutes :( Sorry
+> but i cannot test such a things in production. There's no problem with
+> one soft reset which takes 4 minutes but this hard reset creates about
+> 20 minutes outage (mainly cos of disk quotas checking).
+
+Understood.
+
+> Last logged message:
 > 
-> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-> ---
->  drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> index cdb51d7..b131b61 100644
-> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> @@ -188,8 +188,7 @@ static inline char *translate_scan(struct _adapter *padapter,
->  	/* Add the ESSID */
->  	iwe.cmd = SIOCGIWESSID;
->  	iwe.u.data.flags = 1;
-> -	iwe.u.data.length = (u16)min((u16)pnetwork->network.Ssid.SsidLength,
-> -			    (u16)32);
-> +	iwe.u.data.length = min_t(u16, pnetwork->network.Ssid.SsidLength, 32);
+> Dec 10 02:03:29 server01 kernel: [  220.366486] grsec: From 141.105.120.152: bruteforce prevention initiated for the next 30 minutes or until service restarted, stalling each fork 30 seconds.  Please investigate the crash report for /usr/lib/apache2/mpm-itk/apache2[apache2:3586] uid/euid:1258/1258 gid/egid:100/100, parent /usr/lib/apache2/mpm-itk/apache2[apache2:2142] uid/euid:0/0 gid/egid:0/0
 
-pnetwork->network.Ssid.SsidLength is a u32 so it would be better to
-not truncate the upper bits away.  It's not going to cause a
-problem, but its slightly messy.
+This explains why you have seen your machine hung. I am not familiar
+with grsec but stalling each fork 30s sounds really bad.
 
-This is a common problem where people take the type of
-iwe.u.data.length and cast to that instead of considering the types
-for the data they are comparing.
+Anyway this will not help me much. Do you happen to still have any of
+those logged traces from the last run?
 
-regards,
-dan carpenter
-
+Apart from that. If my current understanding is correct then this is
+related to transparent huge pages (and leaking charge to the page fault
+handler). Do you see the same problem if you disable THP before you
+start your workload? (echo never > /sys/kernel/mm/transparent_hugepage/enabled)
+-- 
+Michal Hocko
+SUSE Labs
