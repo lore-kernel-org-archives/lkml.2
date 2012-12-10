@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab2LJFot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 00:44:49 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:9578 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750815Ab2LJFos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 00:44:48 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371I936eI1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758hbe9i1155h)
-Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
-        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        shubhro <omaplinuxkernel@gmail.com>
-In-Reply-To: <1354094680.10949.1.camel@dhruva>
-References: <1349952025.9228.3.camel@dhruva>
-	 <1350986593.23353.3.camel@dhruva> <1353665463.1760.3000.camel@dhruva>
-	 <20121127142358.9a4bc20d.akpm@linux-foundation.org>
-	 <1354094680.10949.1.camel@dhruva>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Dec 2012 11:12:29 +0530
-Message-ID: <1355118149.4272.1.camel@dhruva>
+	id S1751996Ab2LJFy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 00:54:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab2LJFyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 00:54:25 -0500
+Date: Mon, 10 Dec 2012 11:24:01 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: sjur@brendeland.net, "Michael S. Tsirkin" <mst@redhat.com>,
+        linus.walleij@linaro.org, masami.hiramatsu.pt@hitachi.com,
+        ohad@wizery.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Sjur =?iso-8859-1?Q?Br=E6ndeland?= 
+	<sjur.brandeland@stericsson.com>
+Subject: Re: [[PATCH v9 3/3] 1/1] virtio_console: Remove buffers from out_vq
+ at port removal
+Message-ID: <20121210055401.GA17187@amit.redhat.com>
+References: <029d7029bc1186fbd2ec74123dc88922b9600660.1352366215.git.amit.shah@redhat.com>
+ <87ip96id3a.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87ip96id3a.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 14:54 +0530, Ashish Jangam wrote:
-> On Tue, 2012-11-27 at 14:23 -0800, Andrew Morton wrote:
-> > On Fri, 23 Nov 2012 15:41:03 +0530
-> > Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
-> > 
-> > > On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
-> > > > Does this patch looks good?
-> > > > On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
-> > > > > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
-> > > > > the DA9055 MFD core.
-> > > > > 
-> > > > > This patch is functionally tested on Samsung SMDKV6410.
-> > 
-> > "shubhro <omaplinuxkernel@gmail.com>" made a comment, but it was ignored:
-> > 
-> > : On Thu, 11 Oct 2012 16:53:34 +0530
-> > : shubhro <omaplinuxkernel@gmail.com> wrote:
-> > : 
-> > : > On Thursday 11 October 2012 04:10 PM, Ashish Jangam wrote:
-> > : > > +#define da9055_rtc_freeze NULL
-> > : > > +#endif
-> > : > > +
-> > : > > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
-> > : > > +	.suspend = da9055_rtc_suspend,
-> > : > > +	.resume = da9055_rtc_resume,
-> > : > > +
-> > : > > +	.freeze = da9055_rtc_freeze,
-> > : > > +	.thaw = da9055_rtc_resume,
-> > : > > +	.restore = da9055_rtc_resume,
-> > : > > +
-> > : > > +	.poweroff = da9055_rtc_suspend,
-> > : > > +};
-> > : > You may want to use simple dev pm ops
-> To support generic PM ops these additional ops were supported.
-Are there any further comments on this patch.
+On (Fri) 16 Nov 2012 [11:22:09], Rusty Russell wrote:
+> Amit Shah <amit.shah@redhat.com> writes:
+> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> >
+> > Remove buffers from the out-queue when a port is removed. Rproc_serial
+> > communicates with remote processors that may crash and leave buffers in
+> > the out-queue. The virtio serial ports may have buffers in the out-queue
+> > as well, e.g. for non-blocking ports and the host didn't consume them
+> > yet.
+> >
+> > [Amit: Remove WARN_ON for generic ports case.]
+> >
+> > Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> 
+> I already have this in my pending queue; I've promoted it to my
+> virtio-next branch now.
 
+Rusty, I still see this series in your pending queue, not in
+virtio-next.  Did anything change in the meantime?
 
+		Amit
