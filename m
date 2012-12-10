@@ -1,148 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab2LJV40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:56:26 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:42535 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2LJV4Z (ORCPT
+	id S1752415Ab2LJV5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:57:53 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48554 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab2LJV5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:56:25 -0500
-Message-ID: <1355176582.27758.3.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH] Documentation: ABI: /sys/devices/system/node/
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>, Mel Gorman <mel@csn.ul.ie>
-Date: Mon, 10 Dec 2012 13:56:22 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Mon, 10 Dec 2012 16:57:52 -0500
+Message-ID: <50C65AC6.9050904@oracle.com>
+Date: Mon, 10 Dec 2012 16:57:26 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Sasha Levin <levinsasha928@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Asias He <asias.hejun@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] remove kvm's use of augmented rbtree
+References: <CANN689EzEDuYFdcM3=ir=UZgOhiNeKNpc_ydP8vH00f0nM6PXw@mail.gmail.com> <CA+1xoqfu=hw--46Ae+VrP8Xt7Rdozv5TtPvGvhcJr94VVmJQ_A@mail.gmail.com> <CA+1xoqdtvq7WQf_1EoGjBo9Rjd1YHS4eSqQX2o-nnYNoMuCzzg@mail.gmail.com> <CANN689Gy3nLBasBea-nqkK7zTC4XuhUKH=FmOTcq_pKWPi_xmw@mail.gmail.com>
+In-Reply-To: <CANN689Gy3nLBasBea-nqkK7zTC4XuhUKH=FmOTcq_pKWPi_xmw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe NUMA node sysfs files/attributes.
+On 12/10/2012 04:50 PM, Michel Lespinasse wrote:
+> On Mon, Dec 10, 2012 at 8:22 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> Ping?
+> 
+> Hey Sasha,
+> 
+> There seems to have been some confusion here. After your last message,
+> I expected *you* to take the patches and push them towards kvm tree.
+> But, I guess you were waiting for Pekka's reply first ? Or did you
+> expect me to go push the patches ?
+> 
+> If it helps, I could push this through Andrew's -mm tree; however I
+> think it would make the most sense if these could reach linus's tree
+> through a kvm merge rather than through Andrew's -mm...
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
-Note that for the specific dates and contacts I couldn't find,
-I left it as default for Oct 2002 and linux-mm.
-
- Documentation/ABI/stable/sysfs-devices-node | 96 ++++++++++++++++++++++++++++-
- 1 file changed, 95 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/ABI/stable/sysfs-devices-node b/Documentation/ABI/stable/sysfs-devices-node
-index 49b82ca..ce259c1 100644
---- a/Documentation/ABI/stable/sysfs-devices-node
-+++ b/Documentation/ABI/stable/sysfs-devices-node
-@@ -1,7 +1,101 @@
-+What:		/sys/devices/system/node/possible
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Nodes that could be possibly become online at some point.
-+
-+What:		/sys/devices/system/node/online
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Nodes that are online.
-+
-+What:		/sys/devices/system/node/has_normal_memory
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Nodes that have regular memory.
-+
-+What:		/sys/devices/system/node/has_cpu
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Nodes that have one or more CPUs.
-+
-+What:		/sys/devices/system/node/has_high_memory
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Nodes that have regular or high memory.
-+		Depends on CONFIG_HIGHMEM.
-+
- What:		/sys/devices/system/node/nodeX
- Date:		October 2002
- Contact:	Linux Memory Management list <linux-mm@kvack.org>
- Description:
- 		When CONFIG_NUMA is enabled, this is a directory containing
- 		information on node X such as what CPUs are local to the
--		node.
-+		node. Each file is detailed next.
-+
-+What:		/sys/devices/system/node/nodeX/cpumap
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		The node's cpumap.
-+
-+What:		/sys/devices/system/node/nodeX/cpulist
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		The CPUs associated to the node.
-+
-+What:		/sys/devices/system/node/nodeX/meminfo
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Provides information about the node's distribution and memory
-+		utilization. Similar to /proc/meminfo, see Documentation/filesystems/proc.txt
-+
-+What:		/sys/devices/system/node/nodeX/numastat
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		The node's hit/miss statistics, in units of pages.
-+		See Documentation/numastat.txt
-+
-+What:		/sys/devices/system/node/nodeX/distance
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		Distance between the node and all the other nodes
-+		in the system.
-+
-+What:		/sys/devices/system/node/nodeX/vmstat
-+Date:		October 2002
-+Contact:	Linux Memory Management list <linux-mm@kvack.org>
-+Description:
-+		The node's zoned virtual memory statistics.
-+		This is a superset of numastat.
-+
-+What:		/sys/devices/system/node/nodeX/compact
-+Date:		February 2010
-+Contact:	Mel Gorman <mel@csn.ul.ie>
-+Description:
-+		When this file is written to, all memory within that node
-+		will be compacted. When it completes, memory will be freed
-+		into blocks which have as many contiguous pages as possible
-+
-+What:		/sys/devices/system/node/nodeX/scan_unevictable_pages
-+Date:		October 2008
-+Contact:	Lee Schermerhorn <lee.schermerhorn@hp.com>
-+Description:
-+		When set, it triggers scanning the node's unevictable lists
-+		and move any pages that have become evictable onto the respective
-+		zone's inactive list. See mm/vmscan.c
-+
-+What:		/sys/devices/system/node/nodeX/hugepages/hugepages-<size>/
-+Date:		December 2009
-+Contact:	Lee Schermerhorn <lee.schermerhorn@hp.com>
-+Description:
-+		The node's huge page size control/query attributes.
-+		See Documentation/vm/hugetlbpage.txt
-\ No newline at end of file
--- 
-1.7.11.7
+Ah, no, Pekka is the one taking care of the KVM tools tree, so I'm we're waiting
+for him to take a look at the patches and take them if they look fine to him :)
 
 
+Thanks,
+Sasha
 
