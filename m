@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab2LJTM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:12:58 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55666 "EHLO
+	id S1752382Ab2LJTOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:14:17 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55677 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751926Ab2LJTMw (ORCPT
+	by vger.kernel.org with ESMTP id S1752081Ab2LJTM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:12:52 -0500
+	Mon, 10 Dec 2012 14:12:58 -0500
 From: Will Deacon <will.deacon@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, benh@kernel.crashing.org, arnd@arndb.de,
-        james.hogan@imgtec.com, Matthew Leach <matthew@mattleach.net>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 08/10] musb: tusb6010: use io{read,write}*_rep accessors
-Date: Mon, 10 Dec 2012 19:12:40 +0000
-Message-Id: <1355166762-15133-9-git-send-email-will.deacon@arm.com>
+        james.hogan@imgtec.com, Will Deacon <will.deacon@arm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: [PATCH v2 10/10] asm-generic: io: remove {read,write} string functions
+Date: Mon, 10 Dec 2012 19:12:42 +0000
+Message-Id: <1355166762-15133-11-git-send-email-will.deacon@arm.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
 References: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
@@ -23,55 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Leach <matthew@mattleach.net>
+The {read,write}s{b,w,l} functions are not defined across all
+architectures and therefore shouldn't be used by portable drivers. We
+should encourage driver writers to use the io{read,write}{8,16,32}_rep
+functions instead.
 
-The {read,write}s{b,w,l} operations are not defined by all
-architectures and are being removed from the asm-generic/io.h
-interface.
+This patch removes the {read,write} string functions for the generic IO
+header as they have no place in a new architecture port.
 
-This patch replaces the usage of these string functions in the
-tusb6010 accessors with io{read,write}{8,16,32}_rep calls instead.
-
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
 Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-usb@vger.kernel.org
-Signed-off-by: Matthew Leach <matthew@mattleach.net>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
- drivers/usb/musb/tusb6010.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/asm-generic/io.h | 30 ------------------------------
+ 1 file changed, 30 deletions(-)
 
-diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
-index dc4d75e..0cc2f50 100644
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -22,6 +22,7 @@
- #include <linux/prefetch.h>
- #include <linux/usb.h>
- #include <linux/irq.h>
-+#include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
- #include <linux/usb/nop-usb-xceiv.h>
-@@ -198,7 +199,7 @@ void musb_write_fifo(struct musb_hw_ep *hw_ep, u16 len, const u8 *buf)
- 		/* Best case is 32bit-aligned destination address */
- 		if ((0x02 & (unsigned long) buf) == 0) {
- 			if (len >= 4) {
--				writesl(fifo, buf, len >> 2);
-+				iowrite32_rep(fifo, buf, len >> 2);
- 				buf += (len & ~0x03);
- 				len &= 0x03;
- 			}
-@@ -245,7 +246,7 @@ void musb_read_fifo(struct musb_hw_ep *hw_ep, u16 len, u8 *buf)
- 		/* Best case is 32bit-aligned destination address */
- 		if ((0x02 & (unsigned long) buf) == 0) {
- 			if (len >= 4) {
--				readsl(fifo, buf, len >> 2);
-+				ioread32_rep(fifo, buf, len >> 2);
- 				buf += (len & ~0x03);
- 				len &= 0x03;
- 			}
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index b2600f3..403b861 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -217,36 +217,6 @@ static inline void outsl(unsigned long addr, const void *buffer, int count)
+ }
+ #endif
+ 
+-static inline void readsl(const void __iomem *addr, void *buf, int len)
+-{
+-	insl(addr - PCI_IOBASE, buf, len);
+-}
+-
+-static inline void readsw(const void __iomem *addr, void *buf, int len)
+-{
+-	insw(addr - PCI_IOBASE, buf, len);
+-}
+-
+-static inline void readsb(const void __iomem *addr, void *buf, int len)
+-{
+-	insb(addr - PCI_IOBASE, buf, len);
+-}
+-
+-static inline void writesl(const void __iomem *addr, const void *buf, int len)
+-{
+-	outsl(addr - PCI_IOBASE, buf, len);
+-}
+-
+-static inline void writesw(const void __iomem *addr, const void *buf, int len)
+-{
+-	outsw(addr - PCI_IOBASE, buf, len);
+-}
+-
+-static inline void writesb(const void __iomem *addr, const void *buf, int len)
+-{
+-	outsb(addr - PCI_IOBASE, buf, len);
+-}
+-
+ #ifndef CONFIG_GENERIC_IOMAP
+ #define ioread8(addr)		readb(addr)
+ #define ioread16(addr)		readw(addr)
 -- 
 1.8.0
 
