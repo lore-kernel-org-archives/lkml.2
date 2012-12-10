@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab2LJSHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 13:07:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab2LJSHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 13:07:08 -0500
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to
- fallocate UAPI
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <20121210173739.GA1359@thunk.org>
-References: <20121126025520.GC22858@thunk.org>
-	 <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de>
-	 <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
-	 <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com>
-	 <50C22923.90102@redhat.com>
-	 <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
-	 <20121207190306.GB14972@shiny> <20121208001705.GO27172@dastard>
-	 <20121210173739.GA1359@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 10 Dec 2012 18:05:59 +0000
-Message-ID: <1355162759.2704.50.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751990Ab2LJSIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 13:08:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33360 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2LJSID convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 13:08:03 -0500
+MIME-Version: 1.0
+X-Originating-IP: [109.186.115.201]
+In-Reply-To: <CAJK669ZcH-GTrkCZRMjDnr2pBjODifCHcSXCvceFPQtqZyZftg@mail.gmail.com>
+References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com>
+ <CAJK669adq29ipOCTOyXNoqW=gF4pOJZZgZ_0tnjm75JY22Gvag@mail.gmail.com>
+ <CAK=WgbbK+p3BGcohzgoY9Y57xD1kYHyGDu-FXFXaLFoA9xz7ow@mail.gmail.com>
+ <CAJK669bpog-nNCZ5F5dGWqrS8p5ibob_5eq51r8+6NNimYgpGQ@mail.gmail.com>
+ <CAK=WgbYxr66xUA0SsGO5b5PowRpH+mHeOSOuW+6V_S90tu=Ntg@mail.gmail.com>
+ <CAK=WgbYF1RWoH-QxOAuO89h3P1BE84Oqs2fsUXF5eLDPPuLsAA@mail.gmail.com> <CAJK669ZcH-GTrkCZRMjDnr2pBjODifCHcSXCvceFPQtqZyZftg@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 10 Dec 2012 20:07:41 +0200
+Message-ID: <CAK=WgbbK6hJF-cWr92pExRJap4K-Hij3J55qozSbFciGk1tnMw@mail.gmail.com>
+Subject: Re: [RFC 1/4] remoteproc: Bugfix assign device address to carveout (noiommu)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Suman Anna <s-anna@ti.com>, Bhavin Shah <bshah@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Sjur,
 
-On Mon, 2012-12-10 at 12:37 -0500, Theodore Ts'o wrote:
-> On Sat, Dec 08, 2012 at 11:17:05AM +1100, Dave Chinner wrote:
-> > I wouldn't recommend XFS_IOC_ALLOCSP as a user-friendly interface.
-> > The concept, however, implemented by a new fallocate()
-> > flag (say FALLOC_FL_WRITE_ZEROS) so that the filesystem knows that
-> > the application considers unwritten extents undesirable is exactly
-> > the sort of thing that we should be considering implementing.
-> 
-> What's the point of using a new flag like this (or XFS's
-> XFS_IOC_ALLOCSP) for writing zeros during preallocation as oppoised to
-> simply doing a fallocate() followed by zeroing the data via a O_DIRECT
-> write system call?
-> 
+On Thu, Dec 6, 2012 at 9:45 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
+> I just posted a RFC patch-set on this to linux-kernel@vger.kernel.org.
+> Review comments is welcomed :-)
 
-If the block device can zero out blocks more efficiently than just
-writing zeros (i.e. via sb_issue_zeroout()) then this could be faster.
-In fact GFS2 already zeros out fallocate()d extents in this way because
-it has no way to mark unwritten extents in its metadata, and we did not
-want to leave them uninitialised,
+Great, will take a look, thanks a lot!
 
-Steve.
+> I have run into one issue with the dynamically allocated notifyids. When
+> allocating multiple virtio devices, only ids for the first virtio
+> device is allocated
+> when the remote device is started.  This is fails for me, because I need to know
+> all of the kick-ids before starting the remote device.
+>
+> Do you have any preference on how to solve this, Ohad?
+>
+> One idea could be to call rproc->start from a work-queue and wait for completion
+> of firmware loading before actually starting. In this way we will not
+> trigger start-up
+> of the remote device before all virtio devices and their kick-ids are allocated.
 
+Yes, it would work, but I'm not sure it would be very intuitive for
+others to understand why we spawn a new context upon powering on the
+processor.
 
+Seems to me we may want instead to fix the problem directly by
+splitting rproc_handle_vdev() to two stages, where the second stage
+will only include the rproc_add_virtio_dev() part, and will be invoked
+after all vdev have been processed.
+
+Will that work for you ?
+
+Thanks,
+Ohad.
