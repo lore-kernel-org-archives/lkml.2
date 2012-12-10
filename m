@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2LJTMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:12:52 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55652 "EHLO
+	id S1752221Ab2LJTNG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:13:06 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55680 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751845Ab2LJTMu (ORCPT
+	by vger.kernel.org with ESMTP id S1751916Ab2LJTNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:12:50 -0500
+	Mon, 10 Dec 2012 14:13:00 -0500
 From: Will Deacon <will.deacon@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, benh@kernel.crashing.org, arnd@arndb.de,
-        james.hogan@imgtec.com, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 00/10] Fix endianness of generic I/O accessors
-Date: Mon, 10 Dec 2012 19:12:32 +0000
-Message-Id: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
+        james.hogan@imgtec.com, Will Deacon <will.deacon@arm.com>,
+        Chris Ball <cjb@laptop.org>, Davide Ciminaghi <ciminaghi@gnudd.com>
+Subject: [PATCH v2 02/10] mmc: mmci: use io{read,write}*_rep accessors instead of string functions
+Date: Mon, 10 Dec 2012 19:12:34 +0000
+Message-Id: <1355166762-15133-3-git-send-email-will.deacon@arm.com>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
+References: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again,
+The {read,write}s{b,w,l} operations are not defined by all architectures
+and are being removed from the asm-generic/io.h interface.
 
-This is version 2 of the patches originally posted here:
+This patch replaces the usage of these string functions with
+io{read,write}{8,16,32}_rep calls instead, which are defined for all
+architectures.
 
-  http://lkml.indiana.edu/hypermail/linux/kernel/1210.2/00952.html
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
 
-Changes since then:
-	- Reordered the series to put the string function removal at the
-	  end.
-	- Matthew's had a crack at fixing up all the other drivers which
-	  rely on the generic I/O accessors after a request from James
-	  Hogan.
+I believe Davide is pushing an identical patch to this one via rmk, but
+I'm including it here for completeness.
 
-Note that the mmc and smc changes are required in order to build their
-respective drivers for arm64, regardless of endianness and/or the rest
-of this series.
+ drivers/mmc/host/mmci.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Comments welcome, particularly regarding how on Earth this gets merged
-in a sane manner.
-
-Will
-
-
-Matthew Leach (6):
-  net: smc911x: use io{read,write}*_rep accessors
-  net: dm9000: use io{read,write}*_rep accessors
-  net: 8390: use io{read,write}*_rep accessors
-  mtd: nand/gpio: use io{read,write}*_rep accessors
-  musb: tusb6010: use io{read,write}*_rep accessors
-  usb: musb: use io{read,write}*_rep accessors
-
-Will Deacon (4):
-  asm-generic: io: don't perform swab during {in,out} string functions
-  mmc: mmci: use io{read,write}*_rep accessors instead of string
-    functions
-  net: smc91x: use io{read,write}*_rep accessors instead of string
-    functions
-  asm-generic: io: remove {read,write} string functions
-
- drivers/mmc/host/mmci.c               |  8 +++----
- drivers/mtd/nand/gpio.c               |  8 +++----
- drivers/net/ethernet/8390/ax88796.c   | 16 ++++++-------
- drivers/net/ethernet/davicom/dm9000.c | 12 +++++-----
- drivers/net/ethernet/smsc/smc911x.h   | 16 ++++++-------
- drivers/net/ethernet/smsc/smc91x.h    | 20 ++++++++---------
- drivers/usb/musb/musb_core.c          | 12 +++++-----
- drivers/usb/musb/musb_io.h            | 21 ------------------
- drivers/usb/musb/tusb6010.c           |  5 +++--
- include/asm-generic/io.h              | 42 +++++------------------------------
- 10 files changed, 55 insertions(+), 105 deletions(-)
-
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index edc3e9b..4f125b4 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -840,14 +840,14 @@ static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int rema
+ 		if (unlikely(count & 0x3)) {
+ 			if (count < 4) {
+ 				unsigned char buf[4];
+-				readsl(base + MMCIFIFO, buf, 1);
++				ioread32_rep(base + MMCIFIFO, buf, 1);
+ 				memcpy(ptr, buf, count);
+ 			} else {
+-				readsl(base + MMCIFIFO, ptr, count >> 2);
++				ioread32_rep(base + MMCIFIFO, ptr, count >> 2);
+ 				count &= ~0x3;
+ 			}
+ 		} else {
+-			readsl(base + MMCIFIFO, ptr, count >> 2);
++			ioread32_rep(base + MMCIFIFO, ptr, count >> 2);
+ 		}
+ 
+ 		ptr += count;
+@@ -900,7 +900,7 @@ static int mmci_pio_write(struct mmci_host *host, char *buffer, unsigned int rem
+ 		 * byte become a 32bit write, 7 bytes will be two
+ 		 * 32bit writes etc.
+ 		 */
+-		writesl(base + MMCIFIFO, ptr, (count + 3) >> 2);
++		iowrite32_rep(base + MMCIFIFO, ptr, (count + 3) >> 2);
+ 
+ 		ptr += count;
+ 		remain -= count;
 -- 
 1.8.0
 
