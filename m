@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2LJWuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:50:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21386 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab2LJWuE (ORCPT
+	id S1752102Ab2LJWvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:51:53 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:48625 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2LJWvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:50:04 -0500
-Date: Tue, 11 Dec 2012 01:49:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        greg@kroah.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] rtl8712: replace min with min_t
-Message-ID: <20121210224943.GT22569@mwanda>
-References: <1355048110-10859-1-git-send-email-przemo@firszt.eu>
- <1355048110-10859-4-git-send-email-przemo@firszt.eu>
- <20121210094108.GQ6568@mwanda>
- <1355178112.2897.22.camel@localhost>
+	Mon, 10 Dec 2012 17:51:51 -0500
+Message-ID: <50C6674D.1000901@ahsoftware.de>
+Date: Mon, 10 Dec 2012 23:50:53 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355178112.2897.22.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
+References: <50C5DFCC.60203@ahsoftware.de> <1355151119-2489-1-git-send-email-holler@ahsoftware.de> <50C61675.2000407@metafoo.de> <50C63BBD.3080202@ahsoftware.de> <50C64484.4060306@metafoo.de> <50C65381.8010609@ahsoftware.de> <50C6567D.7080303@metafoo.de> <50C65746.8030609@kernel.org>
+In-Reply-To: <50C65746.8030609@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 10:21:52PM +0000, Przemo Firszt wrote:
-> Dnia 2012-12-10, pon o godzinie 12:41 +0300, Dan Carpenter pisze:
-> > On Sun, Dec 09, 2012 at 10:15:09AM +0000, Przemo Firszt wrote:
-> > > A clean up change suggested by checkpatch.pl
-> > > 
-> > > Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-> > > ---
-> > >  drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 6 ++----
-> > >  1 file changed, 2 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> > > index cdb51d7..b131b61 100644
-> > > --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> > > +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> > > @@ -188,8 +188,7 @@ static inline char *translate_scan(struct _adapter *padapter,
-> > >  	/* Add the ESSID */
-> > >  	iwe.cmd = SIOCGIWESSID;
-> > >  	iwe.u.data.flags = 1;
-> > > -	iwe.u.data.length = (u16)min((u16)pnetwork->network.Ssid.SsidLength,
-> > > -			    (u16)32);
-> > > +	iwe.u.data.length = min_t(u16, pnetwork->network.Ssid.SsidLength, 32);
-> > 
-> > pnetwork->network.Ssid.SsidLength is a u32 so it would be better to
-> > not truncate the upper bits away.  It's not going to cause a
-> > problem, but its slightly messy.
-> > 
-> > This is a common problem where people take the type of
-> > iwe.u.data.length and cast to that instead of considering the types
-> > for the data they are comparing.
-> > 
-> Dan,
-> Thanks for the comment!
-> 
-> iew.u.data.length is __u16
-> 
-> min_t is defined as:
-> #define min_t(type, x, y) ({                    \
->         type __min1 = (x);                      \
->         type __min2 = (y);                      \
->         __min1 < __min2 ? __min1: __min2; })
-> 
-> If I understand you correctly I should use this:
-> 
-> iwe.u.data.length = min_t(u32, pnetwork->network.Ssid.SsidLength, 32);
-> 
-> the result of min_t is u32, but iwe.u.data.lenght is __u16
-> 
+Am 10.12.2012 22:42, schrieb Jonathan Cameron:
+> On 12/10/2012 09:39 PM, Lars-Peter Clausen wrote:
+>> On 12/10/2012 10:26 PM, Alexander Holler wrote:
+>>> Am 10.12.2012 21:22, schrieb Lars-Peter Clausen:
+>>>> On 12/10/2012 08:45 PM, Alexander Holler wrote:
+>>>>> Am 10.12.2012 18:05, schrieb Lars-Peter Clausen:
+>>>>>
+>>>>>> Looks pretty good now. But there are still some IIO remnants which should be
+>>>>>> removed as well. Also the driver should move to drivers/rtc/ since, well,
+>>>>>> it's a rtc driver not a IIO driver.
+>>>>>
+>>>>> I think it still should be stick to iio, because that is where all HID
+>>>>> sensors currently are found and where the user would expect to find such
+>>>>> a driver.
+>>>>
+>>>> That's because all the current IIO sensor drivers fall in the IIO domain. This
+>>>> one clearly is a RTC driver, so it belongs in drivers/rtc/
+>>>
+>>> Where nobody will find it if he searches for drivers for his HID sensor.
+>>> I still see it as HID sensor driver and not a rtc-driver.
+>>> But ...
+>>
+>> I can understand your position, but drivers are usually grouped by function not
+>> by topology. If there is a proper Kconfig help text people should hopefully be
+>> find it.
+> Seconded on this. If it is a pure rtc driver then it definitely belongs in
+> drivers/rtc.  Now there might have been ways of doing this as a consumer / provider
+> with the provider being in IIO and the consumer in rtc, but that sounds like
+> it is over compicating things, at least for now.
 
-At the end iwe.u.data.length is going to be a number between 0 and
-32.  That can easily fit in 16 bits no problem.
+Personally I just want to use it to have HID-USB_RTCs. ;)
 
-The difference is that, imagine ->network.Ssid.SsidLength is larger
-than u16 like 0x10001.  The cast to u16 changes it to 0x0001 which
-is less than 32 so we would say the minimum is 1 when actually we
-want to say 32 is the min.
+But in case of HID sensor hubs, the main usage of that driver will be to 
+set the time of such hubs (something I still have to make patches for), 
+and not to read it. So if you think as an HID sensor user, it should 
+belong to iio or wherever those sensor will finally end up (I think they 
+should end up in HID and should be usable by bluetooth devices too), but 
+if you creatively misuse the standard to get a driver for USB-RTCs, as I 
+want, then rtc is the correct place. ;)
 
-regards,
-dan carpenter
+Because I don't want to do a v4:
 
+the driver has an
+
+#include "../common/hid-sensors/hid-sensor-attributes.h"
+
+so moving it to drivers/rtc/ will make that even more ugly.
+
+Suggestions? I don't really care and as I'm currently at the order 
+receiving end ;) I would change it to whatever the maintainers are 
+wanting. Maybe moving that header to include/linux or even integrating 
+it into include/linux/hid-sensor-hubs.h makes sense.
+
+Regards,
+
+Alexander
