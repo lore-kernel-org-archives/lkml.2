@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab2LJSNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 13:13:39 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:37807 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab2LJSNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 13:13:36 -0500
-Date: Mon, 10 Dec 2012 13:13:28 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121210181328.GB7516@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Steven Whitehouse <swhiteho@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121208001705.GO27172@dastard>
- <20121210173739.GA1359@thunk.org>
- <1355162759.2704.50.camel@menhir>
+	id S1752469Ab2LJSNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 13:13:47 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47865 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab2LJSNo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 13:13:44 -0500
+Date: Mon, 10 Dec 2012 10:13:38 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Kamal Mostafa <kamal@canonical.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dudley Du <dudl@cypress.com>,
+        David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [PATCH v6] Cypress PS/2 Trackpad driver
+Message-ID: <20121210181338.GA11233@core.coreip.homeip.net>
+References: <1354846216-19707-1-git-send-email-kamal@canonical.com>
+ <20121208125405.GA3183@polaris.bitmath.org>
+ <1354986225.2795.107.camel@fourier>
+ <20121210171359.GA881@polaris.bitmath.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355162759.2704.50.camel@menhir>
+In-Reply-To: <20121210171359.GA881@polaris.bitmath.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 06:05:59PM +0000, Steven Whitehouse wrote:
+On Mon, Dec 10, 2012 at 06:13:59PM +0100, Henrik Rydberg wrote:
+> > > > +config MOUSE_PS2_CYPRESS
+> > > > +       bool "Cypress PS/2 mouse protocol extension" if EXPERT
+> > > 
+> > > Why EXPERT here?
+> > > 
+> > > > +       default y
+> > > 
+> > > Should it really be default y here?
+> > 
+> > 
+> > This config entry (with phrases "if EXPERT" and "default y") was simply
+> > cloned from similar devices (e.g. SYNAPTICS, ALPS, LIFEBOOK).
+> > 
+> > If your preference is that CYPRESS should be disabled by default, I'll
+> > omit those phrases.  Please advise.
 > 
-> If the block device can zero out blocks more efficiently than just
-> writing zeros (i.e. via sb_issue_zeroout()) then this could be faster.
-> In fact GFS2 already zeros out fallocate()d extents in this way because
-> it has no way to mark unwritten extents in its metadata, and we did not
-> want to leave them uninitialised,
+> Dmitry, which default do you prefer here?
 
-Sure, but if the block device supports WRITE_SAME or persistent
-discard, then rpesumably fallocate() should do this automatically all
-the time, and not require a flag to request this behavior.  That is, a
-seek plus writing 1MB does take more time than the amount of disk time
-fraction that it consumes if you compare it to a seek plus writing 4k
-or 32k.  It may be that 32k is too low, and there may be some
-disagreement about whether people want to the system to automatically
-tune for average throughput vs 99.9 percentile latency.
+Given that psmouse is monolithic and can't be [easily] split into
+separate drivers (because they each protocol has to be actively probed),
+I believe that allprotocols should be enabled by default. People who
+really know what they are doing can reduce the size by compiling parts
+of it out.
 
-Regardless, this is actually something which I think the file system
-should try to do automatically if at all possible, via some kind of
-auto-tuning hueristic, instead of using an explicit fallocate(2) flag.
-(See, I don't propose using a new fallocate flag for everything.  :-)
+So copying what other protocols did was right ;)
 
-      	      	      	  	    	     - Ted
+Thanks.
+
+-- 
+Dmitry
