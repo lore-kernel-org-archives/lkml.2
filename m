@@ -1,202 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab2LJBuS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 20:50:18 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60496 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787Ab2LJBuR (ORCPT
+	id S1751324Ab2LJBxT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 20:53:19 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:14884 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2LJBxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 20:50:17 -0500
-X-AuditID: 85900ec0-d4077b900000152f-e8-50c53fd6e890
-Message-ID: <50C53FD6.3000306@hitachi.com>
-Date: Mon, 10 Dec 2012 10:50:14 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Cong Ding <dinggnu@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v2] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate
- const
-References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com> <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com> <20121207224949.GA6179@gmail.com> <50C27410.7050101@zytor.com> <20121207230302.GB6179@gmail.com> <50C27665.4090206@zytor.com> <20121207231729.GC6179@gmail.com> <50C420A7.9090108@hitachi.com> <b1251e5e-6193-4da4-abfd-0c753995424a@email.android.com> <50C53441.7050802@hitachi.com> <6335450a-8ba4-4e88-a996-49225f0ec890@email.android.com> <50C53A97.4010409@hitachi.com> <51c3944e-5570-4e76-a7ac-c89b30c4c989@email.android.com>
-In-Reply-To: <51c3944e-5570-4e76-a7ac-c89b30c4c989@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 9 Dec 2012 20:53:17 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-e1-50c54085b099
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Michael Spang'" <spang@chromium.org>, linux-kernel@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+References: <1354749432-6028-1-git-send-email-spang@chromium.org>
+In-reply-to: <1354749432-6028-1-git-send-email-spang@chromium.org>
+Subject: RE: [PATCH] samsung: Add missing include guard to gpio-core.h
+Date: Mon, 10 Dec 2012 10:53:09 +0900
+Message-id: <032201cdd679$1afe4230$50fac690$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3TPsKbCzwsiV2lQzOxqpQunhE0zQDOkpkw
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zI91Wh6MBBvfn61tc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGUcfHObreABZ8WWX8vZGhincXQxcnJICJhIbNzzlg3C
+	FpO4cG89kM3FISSwjFHi4tz5TDBFM3esYIVITGeUeHvhBBOE85dRYvX7RlaQKjYBDYnD75+x
+	g9giAm4SMxa0MIIUMQvMZJSYumQjC0hCSMBRYvKdP8wgNqeAk8Ta83/AVggDNXw72QM2iEVA
+	VWLy+w9gcV4BW4kdi05D2YISPybfA5vDLKAlsXlbEyuELS+xec1boJkcQKeqSzz6qwtxg5HE
+	ue0P2SFKRCT2vXjHCDFeQOLb5EMsEOWyEpsOMIOcKSGwjl3i2eZbrBAfS0ocXHGDZQKjxCwk
+	m2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRESZ1I7GFc2WBxiFOBg
+	VOLhDVA8GiDEmlhWXJl7iFGCg1lJhJfr2JEAId6UxMqq1KL8+KLSnNTiQ4w+QJdPZJYSTc4H
+	poC8knhDY2MTMxNTE3NLU3NTHMJK4rzNHikBQgLpiSWp2ampBalFMOOYODilGhjVdm5om/Uy
+	o83n47att9V+3Zy7OPHv8iPrns58cVwrpTHv6fyuQpv4X2ff7HJpu35oWfqhZKOaaJEO/0fV
+	fvPbZp/XPnAon+0wd5nGDBmxDH3rp5USbQ/+y9qbvd1x4fi6tfYFovsbK/OqX7fveHE9UE8i
+	MD/mlLnwy39CgVKFJn+8J/E7OMUpsRRnJBpqMRcVJwIAVawiMeACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jQd1Wh6MBBi/6tC0u75rDZjHj/D4m
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzDr65zVbwgLNi
+	y6/lbA2M0zi6GDk5JARMJGbuWMEKYYtJXLi3nq2LkYtDSGA6o8TbCyeYIJy/jBKr3zeCVbEJ
+	aEgcfv+MHcQWEXCTmLGghRGkiFlgJqPE1CUbWUASQgKOEpPv/GEGsTkFnCTWnv/DBGILAzV8
+	O9kDNohFQFVi8vsPYHFeAVuJHYtOQ9mCEj8m3wObwyygJbF5WxMrhC0vsXnNW6CZHECnqks8
+	+qsLcYORxLntD9khSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn
+	5haX5qXrJefnbmIER/EzqR2MKxssDjEKcDAq8fAGKB4NEGJNLCuuzD3EKMHBrCTCy3XsSIAQ
+	b0piZVVqUX58UWlOavEhRh+gRycyS4km5wMTTF5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAh
+	gfTEktTs1NSC1CKYcUwcnFINjH5PFFtmZSVmzHlx/sfXqzvdxG0efb7IEH4zjWX2kgfxRl/+
+	Ffb3PLq0aYdUauvp8KlyfpuWr+P98denL1rq88qbL14EnM022laTvV3kvcLbewVTsuQt/7sc
+	9D3/zJE9c6V0t1rs/Xnlh1WDVq9RZNc326ixozFlF7eNdssMpZnL7btOPmD8c1CJpTgj0VCL
+	uag4EQAp+bDPDwMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/12/10 10:34), H. Peter Anvin wrote:
-> You're changing the array from an array of insn_attr_t to pointers to insn_attr_t?
-
-No, please look at the code carefully,
-
--	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
-                                      ^^
-+	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX + 1]" \
-                                ^^
-Both are pointers of array.
-
-I'd just change the position of const.
-
-const insn_attr_t const * -> const insn_attr_t * const
-
-Thank you,
-
+Michael Spang wrote:
 > 
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> Signed-off-by: Michael Spang <spang@chromium.org>
+> ---
+>  arch/arm/plat-samsung/include/plat/gpio-core.h |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
->> (2012/12/10 10:03), H. Peter Anvin wrote:
->>> Yes, if you add a * it becomes an array of pointers.
->>
->> Right, I would like to make each pointer in the array read-only.
->>
->> And, of course, the data itself which pointed by the pointer
->> is already protected.
->> You can see this in (builddir)/arch/x86/lib/inat_table.c
->> ----
->> /* Table: 2-byte opcode (0x0f) */
->> const insn_attr_t inat_escape_table_1[INAT_OPCODE_TABLE_SIZE] = {
->> [...]
->> /* Escape opcode map array */
->> const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX +
->> 1][INAT_LSTPFX_MAX +
->> 1] = {
->>        [1][0] = inat_escape_table_1,
->> ----
->>
->> So I think Cong's v3 is good :)
->>
->> Thank you,
->>
->>>
->>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>> (2012/12/10 0:50), H. Peter Anvin wrote:
->>>>> No, that would really be wrong - changing the type.
->>>>
->>>> What would be wrong? IMHO, this is just a fix to add a fool
->>>> proof 'const' to array instance itself.
->>>> ...Or, am I missed anything?
->>>>
->>>> Thank you,
->>>>
->>>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>>
->>>>>> (2012/12/08 8:17), Cong Ding wrote:
->>>>>>>>>>>> Patch description please?
->>>>>>>>>>> there are 2 consts in the definition of one variable
->>>>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> Please put in an actual patch description.  The first line
->>>>>> (subject
->>>>>>>>>> line) is a title; the patch should make sense without it.
->>>>>>>>> sorry for that. so like this is fine?
->>>>>>>>>
->>>>>>>>
->>>>>>>> Well, except that typically you should explain which variable it
->>>> is.
->>>>>>>> Yes, it is obvious if you look at the patch, but you're making
->> the
->>>>>>>> reader spend a few more moments than necessary.
->>>>>>>>
->>>>>>>> Also, you should explain what the harm is -- if it breaks
->> anything
->>>>>>>> or is just a cosmetic issue.
->>>>>>> sorry again for lacking of experience...
->>>>>>> and I missed another same error, so send version 2.
->>>>>>
->>>>>> Ah, sorry for my mistake. I would like to make both the value
->>>>>> pointed by the pointers and the pointers itself read-only.
->>>>>> Thus the right way of the patch should be;
->>>>>>
->>>>>> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX
->> +
->>>> 1]"
->>>>>> \
->>>>>> +	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX
->> +
->>>>>> 1]" \
->>>>>>
->>>>>> Cong, could you update your patch? then I can Ack that.
->>>>>>
->>>>>> Thank you,
->>>>>>
->>>>>>>
->>>>>>> - cong
->>>>>>> ---
->>>>>>> From 6cf729b913287a6fc06325ca75ccf0efff9274e8 Mon Sep 17 00:00:00
->>>>>> 2001
->>>>>>> From: Cong Ding <dinggnu@gmail.com>
->>>>>>> Date: Fri, 7 Dec 2012 23:14:32 +0000
->>>>>>> Subject: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove
->>>>>> duplicate const
->>>>>>>
->>>>>>> fix the following sparse warning:
->>>>>>> arch/x86/lib/inat-tables.c:1080:25: warning: duplicate const
->>>>>>> arch/x86/lib/inat-tables.c:1095:25: warning: duplicate const
->>>>>>> arch/x86/lib/inat-tables.c:1118:25: warning: duplicate const
->>>>>>>
->>>>>>> for variable inat_escape_tables, inat_group_tables, and
->>>>>> inat_avx_tables
->>>>>>>
->>>>>>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
->>>>>>> ---
->>>>>>>  arch/x86/tools/gen-insn-attr-x86.awk |    6 +++---
->>>>>>>  1 files changed, 3 insertions(+), 3 deletions(-)
->>>>>>>
->>>>>>> diff --git a/arch/x86/tools/gen-insn-attr-x86.awk
->>>>>> b/arch/x86/tools/gen-insn-attr-x86.awk
->>>>>>> index ddcf39b..987c7b2 100644
->>>>>>> --- a/arch/x86/tools/gen-insn-attr-x86.awk
->>>>>>> +++ b/arch/x86/tools/gen-insn-attr-x86.awk
->>>>>>> @@ -356,7 +356,7 @@ END {
->>>>>>>  		exit 1
->>>>>>>  	# print escape opcode map's array
->>>>>>>  	print "/* Escape opcode map array */"
->>>>>>> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX
->> +
->>>>>> 1]" \
->>>>>>> +	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]"
->> \
->>>>>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
->>>>>>>  	for (i = 0; i < geid; i++)
->>>>>>>  		for (j = 0; j < max_lprefix; j++)
->>>>>>> @@ -365,7 +365,7 @@ END {
->>>>>>>  	print "};\n"
->>>>>>>  	# print group opcode map's array
->>>>>>>  	print "/* Group opcode map array */"
->>>>>>> -	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX
->> +
->>>>>> 1]"\
->>>>>>> +	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
->>>>>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
->>>>>>>  	for (i = 0; i < ggid; i++)
->>>>>>>  		for (j = 0; j < max_lprefix; j++)
->>>>>>> @@ -374,7 +374,7 @@ END {
->>>>>>>  	print "};\n"
->>>>>>>  	# print AVX opcode map's array
->>>>>>>  	print "/* AVX opcode map array */"
->>>>>>> -	print "const insn_attr_t const *inat_avx_tables[X86_VEX_M_MAX +
->>>>>> 1]"\
->>>>>>> +	print "const insn_attr_t *inat_avx_tables[X86_VEX_M_MAX + 1]"\
->>>>>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
->>>>>>>  	for (i = 0; i < gaid; i++)
->>>>>>>  		for (j = 0; j < max_lprefix; j++)
->>>>>>>
->>>>>
->>>
+> diff --git a/arch/arm/plat-samsung/include/plat/gpio-core.h
+> b/arch/arm/plat-samsung/include/plat/gpio-core.h
+> index 1fe6917..8622c9a 100644
+> --- a/arch/arm/plat-samsung/include/plat/gpio-core.h
+> +++ b/arch/arm/plat-samsung/include/plat/gpio-core.h
+> @@ -11,6 +11,9 @@
+>   * published by the Free Software Foundation.
+>  */
 > 
+> +#ifndef __PLAT_SAMSUNG_GPIO_CORE_H
+> +#define __PLAT_SAMSUNG_GPIO_CORE_H
+> +
+>  #define GPIOCON_OFF	(0x00)
+>  #define GPIODAT_OFF	(0x04)
+> 
+> @@ -122,3 +125,5 @@ extern struct samsung_gpio_pm samsung_gpio_pm_4bit;
+>  /* locking wrappers to deal with multiple access to the same gpio bank */
+>  #define samsung_gpio_lock(_oc, _fl) spin_lock_irqsave(&(_oc)->lock, _fl)
+>  #define samsung_gpio_unlock(_oc, _fl)
+spin_unlock_irqrestore(&(_oc)->lock,
+> _fl)
+> +
+> +#endif /* __PLAT_SAMSUNG_GPIO_CORE_H */
+> --
+> 1.7.7.3
 
+Applied, thanks.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
