@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab2LJTQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:16:41 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55659 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751849Ab2LJTMu (ORCPT
+	id S1751623Ab2LJTXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:23:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42908 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2LJTXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:12:50 -0500
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, benh@kernel.crashing.org, arnd@arndb.de,
-        james.hogan@imgtec.com, Matthew Leach <matthew@mattleach.net>,
-        netdev@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 04/10] net: smc911x: use io{read,write}*_rep accessors
-Date: Mon, 10 Dec 2012 19:12:36 +0000
-Message-Id: <1355166762-15133-5-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
-References: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
+	Mon, 10 Dec 2012 14:23:41 -0500
+Date: Mon, 10 Dec 2012 20:23:32 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121210192332.GC14412@gmail.com>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <20121210164225.GC6348@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210164225.GC6348@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Leach <matthew@mattleach.net>
 
-The {read,write}s{b,w,l} operations are not defined by all
-architectures and are being removed from the asm-generic/io.h
-interface.
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-This patch replaces the usage of these string functions in the smc911x
-accessors with io{read,write}{8,16,32}_rep calls instead.
+> KernelVersion: 3.7.0-rc8-tip_master+(December 7th Snapshot)
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Matthew Leach <matthew@mattleach.net>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- drivers/net/ethernet/smsc/smc911x.h | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+> Please do let me know if you have questions/suggestions.
 
-diff --git a/drivers/net/ethernet/smsc/smc911x.h b/drivers/net/ethernet/smsc/smc911x.h
-index 3269292..d51261b 100644
---- a/drivers/net/ethernet/smsc/smc911x.h
-+++ b/drivers/net/ethernet/smsc/smc911x.h
-@@ -159,12 +159,12 @@ static inline void SMC_insl(struct smc911x_local *lp, int reg,
- 	void __iomem *ioaddr = lp->base + reg;
- 
- 	if (lp->cfg.flags & SMC911X_USE_32BIT) {
--		readsl(ioaddr, addr, count);
-+		ioread32_rep(ioaddr, addr, count);
- 		return;
- 	}
- 
- 	if (lp->cfg.flags & SMC911X_USE_16BIT) {
--		readsw(ioaddr, addr, count * 2);
-+		ioread16_rep(ioaddr, addr, count * 2);
- 		return;
- 	}
- 
-@@ -177,12 +177,12 @@ static inline void SMC_outsl(struct smc911x_local *lp, int reg,
- 	void __iomem *ioaddr = lp->base + reg;
- 
- 	if (lp->cfg.flags & SMC911X_USE_32BIT) {
--		writesl(ioaddr, addr, count);
-+		iowrite32_rep(ioaddr, addr, count);
- 		return;
- 	}
- 
- 	if (lp->cfg.flags & SMC911X_USE_16BIT) {
--		writesw(ioaddr, addr, count * 2);
-+		iowrite16_rep(ioaddr, addr, count * 2);
- 		return;
- 	}
- 
-@@ -196,14 +196,14 @@ static inline void SMC_outsl(struct smc911x_local *lp, int reg,
- 		 writew(v & 0xFFFF, (lp)->base + (r));	 \
- 		 writew(v >> 16, (lp)->base + (r) + 2); \
- 	 } while (0)
--#define SMC_insl(lp, r, p, l)	 readsw((short*)((lp)->base + (r)), p, l*2)
--#define SMC_outsl(lp, r, p, l)	 writesw((short*)((lp)->base + (r)), p, l*2)
-+#define SMC_insl(lp, r, p, l)	 ioread16_rep((short*)((lp)->base + (r)), p, l*2)
-+#define SMC_outsl(lp, r, p, l)	 iowrite16_rep((short*)((lp)->base + (r)), p, l*2)
- 
- #elif	SMC_USE_32BIT
- #define SMC_inl(lp, r)		 readl((lp)->base + (r))
- #define SMC_outl(v, lp, r)	 writel(v, (lp)->base + (r))
--#define SMC_insl(lp, r, p, l)	 readsl((int*)((lp)->base + (r)), p, l)
--#define SMC_outsl(lp, r, p, l)	 writesl((int*)((lp)->base + (r)), p, l)
-+#define SMC_insl(lp, r, p, l)	 ioread32_rep((int*)((lp)->base + (r)), p, l)
-+#define SMC_outsl(lp, r, p, l)	 iowrite32_rep((int*)((lp)->base + (r)), p, l)
- 
- #endif /* SMC_USE_16BIT */
- #endif /* SMC_DYNAMIC_BUS_CONFIG */
--- 
-1.8.0
+Do you still have the exact sha1 by any chance?
 
+By the date of the snapshot I'd say that this fix:
+
+  f0c77b62ba9d sched: Fix NUMA_EXCLUDE_AFFINE check
+
+could improve performance on your box.
+
+Thanks,
+
+	Ingo
