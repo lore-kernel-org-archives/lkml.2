@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab2LJQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 11:43:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34023 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab2LJQnI convert rfc822-to-8bit (ORCPT
+	id S1751548Ab2LJQpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 11:45:39 -0500
+Received: from smarthost01.mail.zen.net.uk ([212.23.1.1]:60508 "EHLO
+	smarthost01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750995Ab2LJQpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 11:43:08 -0500
-References: <20121210145134.GA2097@hedwig.ini.cmu.edu>
-In-Reply-To: <20121210145134.GA2097@hedwig.ini.cmu.edu>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <34BBB83D-9531-4C44-99C8-02E04DF55D18@suse.de>
-Cc: "rydberg@euromail.se" <rydberg@euromail.se>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+	Mon, 10 Dec 2012 11:45:38 -0500
+Message-ID: <1355157933.3386.55.camel@linaro1.home>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rene@exactcode.com" <rene@exactcode.com>
-X-Mailer: iPhone Mail (9B206)
-From: Alexander Graf <agraf@suse.de>
-Subject: Re: [PATCH] applesmc: add sysfs file to report OSK
-Date: Mon, 10 Dec 2012 17:44:20 +0100
-To: "Gabriel L. Somlo" <somlo@cmu.edu>
+        Steven Rostedt <rostedt@goodmis.org>, Rabin Vincent <rabin@rab.in>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 10 Dec 2012 16:45:33 +0000
+In-Reply-To: <20121210100433.GB6624@mudshark.cambridge.arm.com>
+References: <1354821581.17101.17.camel@gandalf.local.home>
+	 <1354872138.3176.15.camel@computer5.home>
+	 <1354888985.17101.41.camel@gandalf.local.home>
+	 <1354892111.13000.50.camel@linaro1.home>
+	 <1354894134.17101.44.camel@gandalf.local.home>
+	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
+	 <1354898200.17101.50.camel@gandalf.local.home>
+	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
+	 <1354900436.17101.58.camel@gandalf.local.home>
+	 <1354902347.8263.12.camel@linaro1.home>
+	 <20121210100433.GB6624@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost01-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-12-10 at 10:04 +0000, Will Deacon wrote:
+> Hi Jon,
+> 
+> Back-pedalling a bit here, but I'm confused by one of your points below:
+> 
+> On Fri, Dec 07, 2012 at 05:45:47PM +0000, Jon Medhurst (Tixy) wrote:
+> > On Fri, 2012-12-07 at 12:13 -0500, Steven Rostedt wrote:
+> > > I'll make my question more general:
+> > > 
+> > > If I have a nop, that is a size of a call (branch and link), which is
+> > > near the beginning of a function and not part of any conditional, and I
+> > > want to convert it into a call (branch and link), would adding a
+> > > breakpoint to it, modifying it to the call, and then removing the
+> > > breakpoint be possible? Of course it would require syncing in between
+> > > steps, but my question is, if the above is possible on a thumb2 ARM
+> > > processor?
+> > 
+> > I believe so. The details are (repeating your earlier explanation) ...
+> > 
+> > 1. Replace first half of nop with 16bit 'breakpoint' instruction.
+> 
+> Sort of -- you'd actually need 2x16-bit nops to make this work.
+> 
+> > 2. Sync.(cache flush to PoU + IPIs to make other cores invalidate the
+> > icache for changed part of the nop instruction).
+> 
+> Why do you need to use IPIs for I-cache invalidation on other cores? For
+> ARMv7 SMP (i.e. the multi-processing extensions) doing I-cache invalidation
+> by MVA to PoU will be broadcast to the applicable domain for the
+> shareability attributes of the address. So if you do icimvau with an
+> inner-shareable virtual address, it will be broadcast by the hardware.
 
+That was a clue I was missing, and it means that my patch which spawned
+this thread is flawed. The original problem I was trying to cure was
+random crashes whilst ftrace_modify_all_code() was going round modifying
+kernel functions, and I fixed this by getting all cores to
+__flush_icache_all() after the modifications had been made. But if cache
+flushes are broadcast across all cores then my reasoning for the fix is
+wrong.
 
-On 10.12.2012, at 15:51, "Gabriel L. Somlo" <somlo@cmu.edu> wrote:
+As this only seems to surface on TC2 perhaps CCI doesn't do the magic we
+want, or we have it misconfigured, or were been hit by cache differences
+between A7 and A15? (I've seen comments somewhere which says A7 has VIPT
+aliasing I-cache, and A15 is PIPT non-aliasing).
 
-> The AppleSMC contains two char[32] keys, OSK0 and OSK1, which are not
-> reported in the key count and index by default. These keys are used by
-> the OS X boot sequence, and normally don't matter when running Linux.
-> 
-> This patch creates a sysfs entry which reports the value of these keys
-> as an ASCII string, to help emulators (such as QEMU) load OS X when
-> running on genuine Apple hardware.
-> 
-> Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
+Will need to some more detailed investigation when I get time.
 
-Acked-by: Alexander Graf <agraf@suse.de>
+-- 
+Tixy
 
-Alex
-
-> ---
-> 
-> For extra context: To boot OS X as a guest, QEMU must (among others)
-> emulate the AppleSMC. To boot successfully, OS X insists on querying
-> the (emulated) SMC for the value of OSK0 and OSK1. Currently, these
-> values must be supplied on the QEMU command line as
-> 
->  -device applesmc,osk="...concatenated values of OSK0 and OSK1..."
-> 
-> With the availability of /sys/devices/platform/applesmc.768/osk, the
-> emulated QEMU AppleSMC could acquire this string directly from the
-> (Apple-manufactured) host machine.
-> 
-> Thanks,
->  Gabriel
-> 
-> drivers/hwmon/applesmc.c |   18 ++++++++++++++++++
-> 1 files changed, 18 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index b41baff..0c7cc71 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> @@ -1013,6 +1013,23 @@ static ssize_t applesmc_key_at_index_store(struct device *dev,
->    return count;
-> }
-> 
-> +static ssize_t applesmc_osk_show(struct device *dev,
-> +                struct device_attribute *attr, char *sysfsbuf)
-> +{
-> +    int fail;
-> +
-> +    mutex_lock(&smcreg.mutex);
-> +    fail = read_smc(APPLESMC_READ_CMD, "OSK0", sysfsbuf, 32) ||
-> +           read_smc(APPLESMC_READ_CMD, "OSK1", sysfsbuf + 32, 32);
-> +    mutex_unlock(&smcreg.mutex);
-> +    if (fail)
-> +        return -1;
-> +
-> +    sysfsbuf[64] = '\n';
-> +    sysfsbuf[65] = '\0';
-> +    return 65;
-> +}
-> +
-> static struct led_classdev applesmc_backlight = {
->    .name            = "smc::kbd_backlight",
->    .default_trigger    = "nand-disk",
-> @@ -1027,6 +1044,7 @@ static struct applesmc_node_group info_group[] = {
->    { "key_at_index_type", applesmc_key_at_index_type_show },
->    { "key_at_index_data_length", applesmc_key_at_index_data_length_show },
->    { "key_at_index_data", applesmc_key_at_index_read_show },
-> +    { "osk", applesmc_osk_show },
->    { }
-> };
-> 
-> -- 
-> 1.7.7.6
-> 
