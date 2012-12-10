@@ -1,98 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab2LJV3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:29:19 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:51442 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab2LJV3Q (ORCPT
+	id S1752115Ab2LJVay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:30:54 -0500
+Received: from mx.exactcode.de ([85.10.202.90]:36463 "EHLO mx.exactcode.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab2LJVaw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:29:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <50C6477A.4090005@iskon.hr>
-References: <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org>
- <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to>
- <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
- <50C32D32.6040800@iskon.hr> <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
- <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org>
- <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr>
- <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com> <50C6477A.4090005@iskon.hr>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 10 Dec 2012 13:28:54 -0800
-X-Google-Sender-Auth: 8geiB2xDeKHNxstHXxYo6y_NFZ4
-Message-ID: <CA+55aFx9XSjtMZNuveyKrxL0LUjmZpFvJ7vzkjaKgQZLCs9QCg@mail.gmail.com>
-Subject: Re: kswapd craziness in 3.7
-To: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Dec 2012 16:30:52 -0500
+Subject: Re: [PATCH] applesmc: add sysfs file to report OSK
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=iso-8859-1
+From: Rene Rebe <rene@exactcode.com>
+In-Reply-To: <28FE8A08-131B-4E20-BBC0-EEDDA129C1C8@suse.de>
+Date: Mon, 10 Dec 2012 22:30:08 +0100
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <groeck-dsl@sbcglobal.net>,
+        "Gabriel L. Somlo" <somlo@cmu.edu>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F7D71BD5-59D8-4DDA-9537-606DF222DBA5@exactcode.com>
+References: <20121210145134.GA2097@hedwig.ini.cmu.edu> <20121210190905.GA24927@roeck-us.net> <20121210195414.GA642@polaris.bitmath.org> <4BC00520-E08A-43D0-AA2B-EA8154F3D160@suse.de> <4017A6C6-3074-44A5-AAAC-F4246946F151@exactcode.com> <28FE8A08-131B-4E20-BBC0-EEDDA129C1C8@suse.de>
+To: Alexander Graf <agraf@suse.de>
+X-Mailer: Apple Mail (2.1085)
+X-Spam-Score: -1.7 (-)
+X-Spam-Report: Spam detection software, running on the system "exactcode.de", has
+	identified this incoming email as possible spam.  The original message
+	has been attached to this so you can view it (if it isn't spam) or label
+	similar future email.  If you have any questions, see
+	the administrator of that system for details.
+	Content preview:  On 10.12.2012, at 22:24, Alexander Graf wrote: > On 10.12.2012,
+	at 21:43, Rene Rebe <rene@exactcode.com> wrote: > >> On 10.12.2012, at 21:19,
+	Alexander Graf <agraf@suse.de> wrote: >>> >>> On 10.12.2012, at 20:54, Henrik
+	Rydberg wrote: >>> >>>> Hi Guenter, >>>> >>>>> On Mon, Dec 10, 2012 at 09:51:35AM
+	-0500, Gabriel L. Somlo wrote: >>>>>> The AppleSMC contains two char[32]
+	keys, OSK0 and OSK1, which are not >>>>>> reported in the key count and index
+	by default. These keys are used by >>>>>> the OS X boot sequence, and normally
+	don't matter when running Linux. >>>>>> >>>>>> This patch creates a sysfs
+	entry which reports the value of these keys >>>>>> as an ASCII string, to
+	help emulators (such as QEMU) load OS X when >>>>>> running on genuine Apple
+	hardware. >>>>>> >>>>>> Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu> >>>>>>
+	--- >>>>>> >>>>>> For extra context: To boot OS X as a guest, QEMU must (among
+	others) >>>>>> emulate the AppleSMC. To boot successfully, OS X insists on
+	querying >>>>>> the (emulated) SMC for the value of OSK0 and OSK1. Currently,
+	these >>>>>> values must be supplied on the QEMU command line as >>>>>> >>>>>>
+	-device applesmc,osk="...concatenated values of OSK0 and OSK1..." >>>>>>
+	>>>>>> With the availability of /sys/devices/platform/applesmc.768/osk, the
+	>>>>>> emulated QEMU AppleSMC could acquire this string directly from the
+	>>>>>> (Apple-manufactured) host machine. >>>>> Hmm ... this is a non-hwmon
+	attribute which doesn't really belong into hwmon >>>>> in the first place
+	... like several other attributes in the same driver. >>>>> >>>>> So I'll
+	leave it up to the maintainer to decide if we should accept it. Henrik ?
+	>>>> >>>> Indeed, the reaons against this patch are too many. I was just about
+	>>>> to reply with the below: >>>> >>>> Gabriel, >>>> >>>> The OSK string
+	seems constant accross machines, which renders the >>>> patch rather pointless,
+	no? And even if the OSK differs between a >>>> couple of machines, the emulator
+	could easily handle it gracefully. >>> >>> The point is that the return value
+	of the OSK is a copyrighted string, [...] 
+	Content analysis details:   (-1.7 points, 5.0 required)
+	pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-1.5 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+	-0.2 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2042]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Adding High Dickins because of the shmem oops. ]
 
-On Mon, Dec 10, 2012 at 12:35 PM, Zlatko Calusic
-<zlatko.calusic@iskon.hr> wrote:
->
-> And funny thing that you mention i915, because yesterday my daughter managed to lock up our laptop hard (that was a first), and this is what I found in kern.log after restart:
->
-> Dec  9 21:29:42 titan vmunix: general protection fault: 0000 [#1] PREEMPT SMP
-> Dec  9 21:29:42 titan vmunix: Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) [last unloaded: microcode]
-> Dec  9 21:29:42 titan vmunix: CPU 2
-> Dec  9 21:29:42 titan vmunix: Pid: 2523, comm: Xorg Tainted: G           O 3.7.0-rc8 #1 Hewlett-Packard HP Pavilion dv7 Notebook PC/144B
-> Dec  9 21:29:42 titan vmunix: RIP: 0010:[<ffffffff81090b9c>]  [<ffffffff81090b9c>] find_get_page+0x3c/0x90
+On 10.12.2012, at 22:24, Alexander Graf wrote:
 
-Ho humm..
+> On 10.12.2012, at 21:43, Rene Rebe <rene@exactcode.com> wrote:
+> 
+>> On 10.12.2012, at 21:19, Alexander Graf <agraf@suse.de> wrote:
+>>> 
+>>> On 10.12.2012, at 20:54, Henrik Rydberg wrote:
+>>> 
+>>>> Hi Guenter,
+>>>> 
+>>>>> On Mon, Dec 10, 2012 at 09:51:35AM -0500, Gabriel L. Somlo wrote:
+>>>>>> The AppleSMC contains two char[32] keys, OSK0 and OSK1, which are not
+>>>>>> reported in the key count and index by default. These keys are used by
+>>>>>> the OS X boot sequence, and normally don't matter when running Linux.
+>>>>>> 
+>>>>>> This patch creates a sysfs entry which reports the value of these keys
+>>>>>> as an ASCII string, to help emulators (such as QEMU) load OS X when
+>>>>>> running on genuine Apple hardware.
+>>>>>> 
+>>>>>> Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
+>>>>>> ---
+>>>>>> 
+>>>>>> For extra context: To boot OS X as a guest, QEMU must (among others)
+>>>>>> emulate the AppleSMC. To boot successfully, OS X insists on querying
+>>>>>> the (emulated) SMC for the value of OSK0 and OSK1. Currently, these
+>>>>>> values must be supplied on the QEMU command line as
+>>>>>> 
+>>>>>> -device applesmc,osk="...concatenated values of OSK0 and OSK1..."
+>>>>>> 
+>>>>>> With the availability of /sys/devices/platform/applesmc.768/osk, the
+>>>>>> emulated QEMU AppleSMC could acquire this string directly from the
+>>>>>> (Apple-manufactured) host machine.
+>>>>> Hmm ... this is a non-hwmon attribute which doesn't really belong into hwmon
+>>>>> in the first place ... like several other attributes in the same driver.
+>>>>> 
+>>>>> So I'll leave it up to the maintainer to decide if we should accept it. Henrik ?
+>>>> 
+>>>> Indeed, the reaons against this patch are too many. I was just about
+>>>> to reply with the below:
+>>>> 
+>>>> Gabriel,
+>>>> 
+>>>> The OSK string seems constant accross machines, which renders the
+>>>> patch rather pointless, no? And even if the OSK differs between a
+>>>> couple of machines, the emulator could easily handle it gracefully.
+>>> 
+>>> The point is that the return value of the OSK is a copyrighted string, we can not include in any other layer. The only way to make this legally savvy is to read the key from the host.
+>>> 
+>>>> 
+>>>> There are also some technical issues with the patch below, to keep in
+>>>> mind for future submissions.
+>>> 
+>>> Sigh - most of the comments below go back to earlier review from me. He basically had a version almost exactly like what you're asking him to do :). Funny how code style taste differs.
+>> 
+>> And this is exactly the reason why I'm less and less motivated to waste my lifetime with upstream work ...
+> 
+> It's nit that bad really. Gabriel can just send his earlier version again with the ret variable name changed and then it shouldn't be an issue to get it in.
+> 
+> Reading the key really is an important bit in creating a legally safe and easy method to virtualize Mac OS X on Linux. Just believe us on this one :).
 
-I'm not convinced this is related.
+Sure, you do not need to convince me about that ;-)
 
-> Dec  9 21:29:42 titan vmunix: Call Trace:
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff81090e21>] find_lock_page+0x21/0x80
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff810a1b60>] shmem_getpage_gfp+0xa0/0x620
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff810a224c>] shmem_read_mapping_page_gfp+0x2c/0x50
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b3611>] i915_gem_object_get_pages_gtt+0xe1/0x270
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b127f>] i915_gem_object_get_pages+0x4f/0x90
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b1383>] i915_gem_object_bind_to_gtt+0xc3/0x4c0
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b4413>] i915_gem_object_pin+0x123/0x190
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b7d97>] i915_gem_execbuffer_reserve_object.isra.13+0x77/0x190
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b8171>] i915_gem_execbuffer_reserve.isra.14+0x2c1/0x320
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b87b2>] i915_gem_do_execbuffer.isra.17+0x5e2/0x11b0
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff812b9894>] i915_gem_execbuffer2+0x94/0x280
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff81287de3>] drm_ioctl+0x493/0x530
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff810d9cbf>] do_vfs_ioctl+0x8f/0x530
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff810da1ab>] sys_ioctl+0x4b/0x90
-> Dec  9 21:29:42 titan vmunix:  [<ffffffff8154a4d2>] system_call_fastpath+0x16/0x1b
->
-> It seems that whenever (if ever?) GFP_NO_KSWAPD removal is attempted again, the i915 driver will need to be taken better care of.
+-- 
+  René Rebe, ExactCODE GmbH, Jaegerstr. 67, DE-10117 Berlin
+  http://exactcode.com | http://t2-project.org | http://rene.rebe.de
 
-That decodes to
-
-  11: e8 89 b7 15 00       callq  0x15b79f  # radix_tree_lookup_slot
-  16: 48 85 c0             test   %rax,%rax
-  19: 48 89 c6             mov    %rax,%rsi
-  1c: 74 41                 je     0x5f
-  1e: 48 8b 18             mov    (%rax),%rbx  #
-  21: 48 85 db             test   %rbx,%rbx
-  24: 74 1f                 je     0x45
-  26: f6 c3 03             test   $0x3,%bl
-  29: 75 3c                 jne    0x67
-  2b:* 8b 53 1c             mov    0x1c(%rbx),%edx     <-- trapping instruction
-  2e: 85 d2                 test   %edx,%edx
-  30: 74 d9                 je     0xb
-
-where %rbx is 0x0200000000000000. That looks like it could be a
-single-bit error, and should have been zero.
-
-It's the "atomic_read(&page->counter)" which is part of
-"page_cache_get_speculative()" as far as I can tell, and it's the
-"page" pointer that is that odd (non-pointer) value. The fact that
-%ecx contains the value "-6" makes me wonder if there was a -ENXIO
-somewhere, though.
-
-None of it looks all that much related to whether the i915 driver uses
-GFP_NO_KSWAPD or not, though.
-
-                Linus
