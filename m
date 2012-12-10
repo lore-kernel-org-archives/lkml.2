@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab2LJSV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 13:21:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab2LJSVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 13:21:24 -0500
-Date: Mon, 10 Dec 2012 19:21:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tj@kernel.org,
-        tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, sbw@mit.edu,
-        amit.kucheria@linaro.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"
-	atomic readers to prevent CPU offline
-Message-ID: <20121210182115.GA30892@redhat.com>
-References: <50BF96DF.3000500@linux.vnet.ibm.com> <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com> <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com> <50BFAB17.3090603@linux.vnet.ibm.com> <20121206161850.GA6710@redhat.com> <50C0E88E.9050909@linux.vnet.ibm.com> <1354822103.17101.24.camel@gandalf.local.home> <20121207200014.GB13238@redhat.com>
+	id S1751094Ab2LJSWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 13:22:46 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39991 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2LJSWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 13:22:43 -0500
+Date: Mon, 10 Dec 2012 19:22:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
+In-Reply-To: <1354839566-15697-1-git-send-email-mingo@kernel.org>
+Message-ID: <alpine.LFD.2.02.1212101902050.4422@ionos>
+References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207200014.GB13238@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07, Oleg Nesterov wrote:
->
-> On 12/06, Steven Rostedt wrote:
-> >
-> > You know reader locks can deadlock with each other, right? And this
-> > isn't caught be lockdep yet. This is because rwlocks have been made to
-> > be fair with writers. Before writers could be starved if a CPU always
-> > let a reader in. Now if a writer is waiting, a reader will block behind
-> > the writer. But this has introduced new issues with the kernel as
-> > follows:
-> >
-> >
-> >    CPU0			   CPU1	 	   CPU2		   CPU3
-> >    ----			   ----		   ----		   ----
-> > read_lock(A);
-> > 			read_lock(B)
-> > 					write_lock(A) <- block
-> > 							write_lock(B) <- block
-> > read_lock(B) <-block
-> >
-> > 			read_lock(A) <- block
-> >
-> > DEADLOCK!
->
-> Really??? Oh I didn't know...
->
-> Yes this was always true for rwsem, but rwlock_t?
+On Fri, 7 Dec 2012, Ingo Molnar wrote:
+> The SPECjbb 4x JVM numbers are still very close to the
+> hard-binding results:
+> 
+>   Fri Dec  7 02:08:42 CET 2012
+>   spec1.txt:           throughput =     188667.94 SPECjbb2005 bops
+>   spec2.txt:           throughput =     190109.31 SPECjbb2005 bops
+>   spec3.txt:           throughput =     191438.13 SPECjbb2005 bops
+>   spec4.txt:           throughput =     192508.34 SPECjbb2005 bops
+>                                       --------------------------
+>         SUM:           throughput =     762723.72 SPECjbb2005 bops
+> 
+> And the same is true for !THP as well.
 
-Sorry, please ignore my email. I misread your email.
+I could not resist to throw all relevant trees on my own 4node machine
+and run a SPECjbb 4x JVM comparison. All results have been averaged
+over 10 runs.
 
-Oleg.
+mainline:	v3.7-rc8
+autonuma:	mm-autonuma-v28fastr4-mels-rebase
+balancenuma:	mm-balancenuma-v10r3
+numacore:	Unified NUMA balancing tree, v3
+
+The config is based on a F16 config with CONFIG_PREEMPT_NONE=y and the
+relevant NUMA options enabled for the 4 trees.
+
+THP off: manual placement result:     125239
+
+		Auto result	Man/Auto	Mainline/Auto	Variance
+mainline    :	     93945	0.750		1.000		 5.91%
+autonuma    :	    123651	0.987		1.316		 5.15%
+balancenuma :	     97327	0.777		1.036		 5.19%
+numacore    :	    123009	0.982		1.309		 5.73%
+
+
+THP on: manual placement result:     143170
+
+		Auto result	Auto/Manual	Auto/Mainline	Variance
+mainline    :	    104462	0.730		1.000		 8.47%
+autonuma    :	    137363	0.959		1.315		 5.81%
+balancenuma :	    112183	0.784		1.074		11.58%
+numacore    :	    142728	0.997		1.366		 2.94%
+
+So autonuma and numacore are basically on the same page, with a slight
+advantage for numacore in the THP enabled case. balancenuma is closer
+to mainline than to autonuma/numacore.
+
+Thanks,
+
+	tglx
+
 
