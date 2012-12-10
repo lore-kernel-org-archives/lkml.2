@@ -1,151 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab2LJNBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 08:01:10 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60405 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab2LJNBI (ORCPT
+	id S1751279Ab2LJNCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 08:02:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28090 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab2LJNCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 08:01:08 -0500
-MIME-Version: 1.0
-Date: Mon, 10 Dec 2012 21:01:07 +0800
-Message-ID: <CAKWKT+b_bjQ8mB1OsBpbUym0VK52pYT-SH8p+A+=e1vS-SBcRw@mail.gmail.com>
-Subject: kernel panic when doing do_exit
-From: Qiang Gao <gaoqiangscut@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Dec 2012 08:02:21 -0500
+X-Authority-Analysis: v=2.0 cv=EshQXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=Mcv_8NHxT8gbKlWm0JQA:9 a=PUjeQqilurYA:10 a=k6txnzOdrmpDs54j:21 a=kARhebiyD940aEpH:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355144537.17101.155.camel@gandalf.local.home>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 10 Dec 2012 08:02:17 -0500
+In-Reply-To: <20121210100433.GB6624@mudshark.cambridge.arm.com>
+References: <1354821581.17101.17.camel@gandalf.local.home>
+	 <1354872138.3176.15.camel@computer5.home>
+	 <1354888985.17101.41.camel@gandalf.local.home>
+	 <1354892111.13000.50.camel@linaro1.home>
+	 <1354894134.17101.44.camel@gandalf.local.home>
+	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
+	 <1354898200.17101.50.camel@gandalf.local.home>
+	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
+	 <1354900436.17101.58.camel@gandalf.local.home>
+	 <1354902347.8263.12.camel@linaro1.home>
+	 <20121210100433.GB6624@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OS version: centos 6.2   kernel: 2.6.32-220.7.1
+On Mon, 2012-12-10 at 10:04 +0000, Will Deacon wrote:
+> Hi Jon,
+> 
+> Back-pedalling a bit here, but I'm confused by one of your points below:
+> 
+> On Fri, Dec 07, 2012 at 05:45:47PM +0000, Jon Medhurst (Tixy) wrote:
+> > On Fri, 2012-12-07 at 12:13 -0500, Steven Rostedt wrote:
+> > > I'll make my question more general:
+> > > 
+> > > If I have a nop, that is a size of a call (branch and link), which is
+> > > near the beginning of a function and not part of any conditional, and I
+> > > want to convert it into a call (branch and link), would adding a
+> > > breakpoint to it, modifying it to the call, and then removing the
+> > > breakpoint be possible? Of course it would require syncing in between
+> > > steps, but my question is, if the above is possible on a thumb2 ARM
+> > > processor?
+> > 
+> > I believe so. The details are (repeating your earlier explanation) ...
+> > 
+> > 1. Replace first half of nop with 16bit 'breakpoint' instruction.
+> 
+> Sort of -- you'd actually need 2x16-bit nops to make this work.
 
-call trace from the vmcore:
+Why?
 
-crash> bt
-PID: 31437  TASK: ffff880832e260c0  CPU: 13  COMMAND: "tt"
- #0 [ffff88082b751b30] die at ffffffff8100ef7f
- #1 [ffff88082b751b60] do_general_protection at ffffffff814a5492
- #2 [ffff88082b751b90] general_protection at ffffffff814a4f05
-    [exception RIP: update_cfs_shares+50]
-    RIP: ffffffff81052202  RSP: ffff88082b751c48  RFLAGS: 00010086
-    RAX: dead000000000000  RBX: ffff88082ee7d880  RCX: ffff880434af4cc0
-    RDX: 000000000000000d  RSI: 0000000091771fba  RDI: ffff88082ee7d880
-    RBP: ffff88082b751c68   R8: ffff880434af4cc0   R9: 0000000000989680
-    R10: 0000000000000400  R11: 0000000000000000  R12: ffff880832e26100
-    R13: 0000000000000001  R14: 0000000000000001  R15: ffff88044e4b4840
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0000
- #3 [ffff88082b751c70] dequeue_task_fair at ffffffff8105243f
- #4 [ffff88082b751cb0] dequeue_task at ffffffff8104dc73
- #5 [ffff88082b751ce0] deactivate_task at ffffffff8104dcc4
- #6 [ffff88082b751cf0] thread_return at ffffffff814a22ef
- #7 [ffff88082b751e30] do_exit at ffffffff810625ea
- #8 [ffff88082b751f40] do_group_exit at ffffffff81062951
- #9 [ffff88082b751f70] sys_exit_group at ffffffff810629d7
-#10 [ffff88082b751f80] system_call_fastpath at ffffffff8100afb2
-    RIP: 00000038e849a3cf  RSP: 00007fff8febc268  RFLAGS: 00010246
-    RAX: 00000000000000e7  RBX: ffffffff8100afb2  RCX: 0000000000000000
-    RDX: 0000000000000000  RSI: 000000000000003c  RDI: 0000000000000000
-    RBP: 0000000000000000   R8: 00000000000000e7   R9: ffffffffffffffb0
-    R10: 0000000000000000  R11: 0000000000000246  R12: ffffffff810629d7
-    R13: ffff88082b751f78  R14: 0000000000000000  R15: 00007fff8febc360
-    ORIG_RAX: 00000000000000e7  CS: 0033  SS: 002b
+> 
+> > 2. Sync.(cache flush to PoU + IPIs to make other cores invalidate the
+> > icache for changed part of the nop instruction).
+> 
+> Why do you need to use IPIs for I-cache invalidation on other cores? For
+> ARMv7 SMP (i.e. the multi-processing extensions) doing I-cache invalidation
+> by MVA to PoU will be broadcast to the applicable domain for the
+> shareability attributes of the address. So if you do icimvau with an
+> inner-shareable virtual address, it will be broadcast by the hardware.
+> 
+> > However, wouldn't we need any of this breakpoint malarkey, why not just
+> > just use a 16-bit branch instruction which branches over the second half
+> > of the nop? :-)
+> 
+> Yes, and I think if you do use two 16-bit nops, you can even get rid of all
+> the intermediate `sync' operations (I guess you might want one at the end if
+> you want the call to become visible at a particular point).
 
+Wont work. We are replacing a 32bit call with a nop. That nop must also
+be 32bits, because we could eventually replace the nop(s) with a 32bit
+call. Basically, we can never allow the second 16bit part ever be the
+next instruction. If the first 16bit nop is executed, and then the task
+gets preempted. The nops get converted to a 32bit call. The task gets
+scheduled again and now is executing the second 16bits of the 32bit call
+and we get unexpected (probably crashing) results.
 
-static void update_cfs_shares(struct cfs_rq *cfs_rq)
-{
-    struct task_group *tg;
-    struct sched_entity *se;
-    long load_weight, load, shares;
+By having either a 16bit breakpoint whose handler returns after the
+second 16bit part, or a 16bit jump that simply jumps over the second
+half, then all this should work. When the CPU processes a 32bit
+instruction, it either processes all or non of it, correct?
 
-    tg = cfs_rq->tg;
-    se = tg->se[cpu_of(rq_of(cfs_rq))];  <------dies  here
-...........
-}
-
-    tg->se=0xdead000000000000  because I set it when it was freed.
+-- Steve
 
 
-command "tt" does nothing bug loop for many times and then exit  and I put "tt"
-in a cpu-cgroup.
-
-it seems that  if a context switch happens between  cgroup_exit and
-the last schedule() ,
- the cgroup-releated structures will be freed and later dereference
-will result in a kernel panic
-
-I'm not quite familar with this code and anyone has any idea ?
-
-
-    exit_thread();
-    cgroup_exit(tsk, 1);    <-------------here
-
-    if (group_dead && tsk->signal->leader)
-        disassociate_ctty(1);
-
-    module_put(task_thread_info(tsk)->exec_domain->module);
-
-    proc_exit_connector(tsk);
-
-    /*
-     * Flush inherited counters to the parent - before the parent
-     * gets woken up by child-exit notifications.
-     */
-    perf_event_exit_task(tsk);
-
-    exit_notify(tsk, group_dead);
-#ifdef CONFIG_NUMA
-    task_lock(tsk);
-    mpol_put(tsk->mempolicy);
-    tsk->mempolicy = NULL;
-    task_unlock(tsk);
-#endif
-#ifdef CONFIG_FUTEX
-    if (unlikely(current->pi_state_cache))
-        kfree(current->pi_state_cache);
-#endif
-    /*
-     * Make sure we are holding no locks:
-     */
-    debug_check_no_locks_held(tsk);
-    /*
-     * We can do this unlocked here. The futex code uses this flag
-     * just to verify whether the pi state cleanup has been done
-     * or not. In the worst case it loops once more.
-     */
-    tsk->flags |= PF_EXITPIDONE;
-
-    if (tsk->io_context)
-        exit_io_context();
-
-    if (tsk->splice_pipe)
-        __free_pipe_info(tsk->splice_pipe);
-
-    validate_creds_for_do_exit(tsk);
-   /* actually,I insert some code here to make it easy to
-reproduce.
-{
-    volatile int i=0;
-    volatile int j=0;
-    volatile int k=0;
-    for(j=0;j<3;j++)
-    {
-        i=0;
-        while(i++<100000000)
-        {
-            k++;
-        }
-        //schedule();
-    }
-    return k;
-}
-*/
-    preempt_disable();
-    exit_rcu();
-    /* causes final put_task_struct in finish_task_switch(). */
-    tsk->state = TASK_DEAD;
-    schedule();   <------------------------------------here
-    BUG();
-    /* Avoid "noreturn function does return".  */
-    for (;;)
-        cpu_relax();    /* For when BUG is null */
