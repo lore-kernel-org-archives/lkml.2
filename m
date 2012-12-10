@@ -1,68 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2LJJSg (ORCPT <rfc822;w@1wt.eu>);
+	id S1754076Ab2LJJVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 04:21:32 -0500
+Received: from relay.parallels.com ([195.214.232.42]:37119 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2LJJSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Dec 2012 04:18:36 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38542 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753740Ab2LJJSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 04:18:34 -0500
-Subject: [PATCH 2/7] nfsd: pass net to nfsd_init_socks()
-To: bfields@fieldses.org
+Message-ID: <50C5A8CD.20109@parallels.com>
+Date: Mon, 10 Dec 2012 13:18:05 +0400
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 10 Dec 2012 12:19:09 +0300
-Message-ID: <20121210091909.8855.89719.stgit@localhost.localdomain>
-In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
-References: <20121210091832.8855.26672.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH 0/6] nfsd: cleanup "init_net" references
+References: <20121204134920.24504.95261.stgit@localhost.localdomain>
+In-Reply-To: <20121204134920.24504.95261.stgit@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.20.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Precursor patch. Hard-coded "init_net" will be replaced by proper one in
-future.
+Drop this series, please.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfssvc.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 9beace6..9fd8496 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -182,18 +182,18 @@ int nfsd_nrthreads(void)
- 	return rv;
- }
- 
--static int nfsd_init_socks(void)
-+static int nfsd_init_socks(struct net *net)
- {
- 	int error;
- 	if (!list_empty(&nfsd_serv->sv_permsocks))
- 		return 0;
- 
--	error = svc_create_xprt(nfsd_serv, "udp", &init_net, PF_INET, NFS_PORT,
-+	error = svc_create_xprt(nfsd_serv, "udp", net, PF_INET, NFS_PORT,
- 					SVC_SOCK_DEFAULTS);
- 	if (error < 0)
- 		return error;
- 
--	error = svc_create_xprt(nfsd_serv, "tcp", &init_net, PF_INET, NFS_PORT,
-+	error = svc_create_xprt(nfsd_serv, "tcp", net, PF_INET, NFS_PORT,
- 					SVC_SOCK_DEFAULTS);
- 	if (error < 0)
- 		return error;
-@@ -218,7 +218,7 @@ static int nfsd_startup(int nrservs)
- 	ret = nfsd_racache_init(2*nrservs);
- 	if (ret)
- 		return ret;
--	ret = nfsd_init_socks();
-+	ret = nfsd_init_socks(net);
- 	if (ret)
- 		goto out_racache;
- 	ret = lockd_up(net);
-
+-- 
+Best regards,
+Stanislav Kinsbursky
