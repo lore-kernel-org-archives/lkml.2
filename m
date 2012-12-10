@@ -1,142 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab2LJQDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 11:03:06 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:52230 "EHLO mx2.fusionio.com"
+	id S1754407Ab2LJQEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 11:04:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57990 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab2LJQDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 11:03:03 -0500
-X-ASG-Debug-ID: 1355155381-0421b549eb79820001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Mon, 10 Dec 2012 11:02:59 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Chris Mason <clmason@fusionio.com>
-CC: Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121210160259.GA20541@shiny>
-X-ASG-Orig-Subj: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Chris Mason <clmason@fusionio.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Theodore Ts'o <tytso@mit.edu>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121208001705.GO27172@dastard>
- <20121208013949.GD25713@shiny>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20121208013949.GD25713@shiny>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1355155381
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.73
-X-Barracuda-Spam-Status: No, SCORE=0.73 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_SA_TO_FROM_DOMAIN_MATCH, CN_BODY_332, COMMA_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116623
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 COMMA_SUBJECT          Subject is like 'Re: FDSDS, this is a subject'
-	0.12 CN_BODY_332            BODY: CN_BODY_332
-	0.01 BSF_SC0_SA_TO_FROM_DOMAIN_MATCH Sender Domain Matches Recipient
-	                           Domain
+	id S1752136Ab2LJQEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 11:04:20 -0500
+From: Adam Jackson <ajax@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arthur Taylor <art@ified.ca>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] vt: Add VC_MUTE (v2)
+Date: Mon, 10 Dec 2012 11:04:16 -0500
+Message-Id: <1355155456-21577-1-git-send-email-ajax@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 06:39:49PM -0700, Chris Mason wrote:
-> On Fri, Dec 07, 2012 at 05:17:05PM -0700, Dave Chinner wrote:
-> > On Fri, Dec 07, 2012 at 02:03:06PM -0500, Chris Mason wrote:
-> > > On a single flash drive doing random 4K writes, xfs does 950MB/s into
-> > > regular extents but only 400MB/s into preallocated extents.
-> > > 
-> > > http://masoncoding.com/presentation/perf-linuxcon12/fallocate.png
-> > 
-> > This is bordering on irrelevancy, but can you provide the workload
-> > you were running to generate this graph?  Random 4k writes could be
-> > anything, really.
-> 
-> This one was fio aio/dio, I'll dig out the job file and rerun it on
-> 3.7-rc on Monday.  Any real random write is going to show this with
-> enough load.
+The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
+the keyboard map state; we should be able to switch among cooked/raw/
+unicode without changing whether events are delivered.  Otherwise - if
+changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
+Gnome will switch VT instead of summoning the "run command" dialog.
 
-Ok, I ran this against 3.6.  Since my box has two iodrives in it now, I
-tossed them into lvm and ran striped over both.  A single drive is iop
-bound at 1GB/s, and we're able to push 2GB/s over both.  LVM slows it
-down slightly, and if you let the runs go long enough, you can see the
-little log structured squirrels jumping in from time to time.
+Add a new KD[GS]KBMUTE ioctl pair that allows events to be muted
+independently of map state.
 
-Long story short, on the lvm block device we average about 1.7GB/s over
-the two drives.  This is iop bound, the two cards can push about 2.6GB/s
-doing streaming writes.
+v2: Leave K_OFF in place at Alan's suggestion.
 
-XFS without preallocation comes very close to the iops bound number.
-This is really impressive, but it also means every additional IO to track
-the preallocation is going to hurt the bottom line.
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=859485
+Cc: Arthur Taylor <art@ified.ca>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ drivers/tty/vt/keyboard.c | 42 ++++++++++++++++++++++++++++++++++++++----
+ drivers/tty/vt/vt_ioctl.c | 13 +++++++++++++
+ include/linux/kbd_kern.h  |  3 ++-
+ include/linux/vt_kern.h   |  2 ++
+ include/uapi/linux/kd.h   |  4 ++++
+ 5 files changed, 59 insertions(+), 5 deletions(-)
 
-With preallocation on, the speed is the same with one drive as with two.
-Eric had asked me to do a run with holes, and they come out a little
-worse than preallocated.
-
-Graphs:
-
-http://masoncoding.com/mason/benchmark/xfs-fallocate/xfs-random-write-compare.png
-
-The fio job is in that xfs-fallocate directory, and included below.
-
--chris
-
-[global]
-bs=4k
-direct=1
-ioengine=aio
-size=12g
-rw=randwrite
-norandommap
-runtime=30
-iodepth=1024
-
-# set overwrite=1 to force us to fully overwrite
-# the preallocated files before the random IO starts
-#
-#overwrite=1
-
-# set fallocate=none to ues sparse files
-#fallocate=none
-
-# run 4 jobs where each job is operating on
-# only one file.  This way there's no lock contention
-# on the file itself.
-#
-[f1]
-filename=/mnt/f1
-[f1]
-filename=/mnt/f2
-[f1]
-filename=/mnt/f3
-[f1]
-filename=/mnt/f4
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index 681765b..20ebdad 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -642,6 +642,11 @@ static void fn_null(struct vc_data *vc)
+ 	do_compute_shiftstate();
+ }
+ 
++static bool kbd_is_muted(void)
++{
++    return (kbd->kbdmode == VC_OFF) || vc_kbd_mode(kbd, VC_MUTE);
++}
++
+ /*
+  * Special key handlers
+  */
+@@ -657,7 +662,7 @@ static void k_spec(struct vc_data *vc, unsigned char value, char up_flag)
+ 		return;
+ 	if ((kbd->kbdmode == VC_RAW ||
+ 	     kbd->kbdmode == VC_MEDIUMRAW ||
+-	     kbd->kbdmode == VC_OFF) &&
++	     kbd_is_muted())
+ 	     value != KVAL(K_SAK))
+ 		return;		/* SAK is allowed even in raw mode */
+ 	fn_handler[value](vc);
+@@ -1381,7 +1386,7 @@ static void kbd_keycode(unsigned int keycode, int down, int hw_raw)
+ 	if (rc == NOTIFY_STOP)
+ 		return;
+ 
+-	if ((raw_mode || kbd->kbdmode == VC_OFF) && type != KT_SPEC && type != KT_SHIFT)
++	if ((raw_mode || kbd_is_muted()) && type != KT_SPEC && type != KT_SHIFT)
+ 		return;
+ 
+ 	(*k_handler[type])(vc, keysym & 0xff, !down);
+@@ -1742,6 +1747,30 @@ int vt_do_kdskbmode(int console, unsigned int arg)
+ }
+ 
+ /**
++ *	vt_do_kdskbmute		-	set keyboard event mute
++ *	@console: the console to use
++ *	@arg: the requested mode
++ *
++ *	Update the keyboard mute state while holding the correct locks.
++ *	Return 0 for success or an error code.
++ */
++int vt_do_kdskbmute(int console, unsigned int arg)
++{
++	struct kbd_struct * kbd = kbd_table + console;
++	int ret = 0;
++	unsigned long flags;
++
++	spin_lock_irqsave(&kbd_event_lock, flags);
++	if (arg)
++		set_vc_kbd_mode(kbd, VC_MUTE);
++	else
++		clr_vc_kbd_mode(kbd, VC_MUTE);
++	spin_unlock_irqrestore(&kbd_event_lock, flags);
++	return ret;
++}
++
++
++/**
+  *	vt_do_kdskbmeta		-	set keyboard meta state
+  *	@console: the console to use
+  *	@arg: the requested meta state
+@@ -2068,13 +2097,18 @@ int vt_do_kdgkbmode(int console)
+ 		return K_MEDIUMRAW;
+ 	case VC_UNICODE:
+ 		return K_UNICODE;
+-	case VC_OFF:
+-		return K_OFF;
+ 	default:
+ 		return K_XLATE;
+ 	}
+ }
+ 
++int vt_do_kdgkbmute(int console)
++{
++	struct kbd_struct * kbd = kbd_table + console;
++	/* This is a spot read so needs no locking */
++	return vc_kbd_mode(kbd, VC_MUTE);
++}
++
+ /**
+  *	vt_do_kdgkbmeta		-	report meta status
+  *	@console: console to report
+diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+index b841f56..f0951e2 100644
+--- a/drivers/tty/vt/vt_ioctl.c
++++ b/drivers/tty/vt/vt_ioctl.c
+@@ -477,6 +477,19 @@ int vt_ioctl(struct tty_struct *tty,
+ 		ret = put_user(uival, (int __user *)arg);
+ 		break;
+ 
++	case KDSKBMUTE:
++		if (!perm)
++			return -EPERM;
++		ret = vt_do_kdskbmute(console, arg);
++		if (ret == 0)
++			tty_ldisc_flush(tty);
++		break;
++
++	case KDGKBMUTE:
++		uival = vt_do_kdgkbmute(console);
++		ret = put_user(uival, (int __user *)arg);
++		break;
++
+ 	/* this could be folded into KDSKBMODE, but for compatibility
+ 	   reasons it is not so easy to fold KDGKBMETA into KDGKBMODE */
+ 	case KDSKBMETA:
+diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
+index b7c8cdc..18c0a45 100644
+--- a/include/linux/kbd_kern.h
++++ b/include/linux/kbd_kern.h
+@@ -55,12 +55,13 @@ struct kbd_struct {
+ #define VC_UNICODE	3	/* Unicode mode */
+ #define VC_OFF		4	/* disabled mode */
+ 
+-	unsigned char modeflags:5;
++	unsigned char modeflags:6;
+ #define VC_APPLIC	0	/* application key mode */
+ #define VC_CKMODE	1	/* cursor key mode */
+ #define VC_REPEAT	2	/* keyboard repeat */
+ #define VC_CRLF		3	/* 0 - enter sends CR, 1 - enter sends CRLF */
+ #define VC_META		4	/* 0 - meta, 1 - meta=prefix with ESC */
++#define VC_MUTE		5	/* don't generate events */
+ };
+ 
+ extern int kbd_init(void);
+diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
+index 50ae7d0..a886915 100644
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -168,6 +168,7 @@ extern void hide_boot_cursor(bool hide);
+ 
+ /* keyboard  provided interfaces */
+ extern int vt_do_diacrit(unsigned int cmd, void __user *up, int eperm);
++extern int vt_do_kdskbmute(int console, unsigned int arg);
+ extern int vt_do_kdskbmode(int console, unsigned int arg);
+ extern int vt_do_kdskbmeta(int console, unsigned int arg);
+ extern int vt_do_kbkeycode_ioctl(int cmd, struct kbkeycode __user *user_kbkc,
+@@ -177,6 +178,7 @@ extern int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe,
+ extern int vt_do_kdgkb_ioctl(int cmd, struct kbsentry __user *user_kdgkb,
+                                         int perm);
+ extern int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm);
++extern int vt_do_kdgkbmute(int console);
+ extern int vt_do_kdgkbmode(int console);
+ extern int vt_do_kdgkbmeta(int console);
+ extern void vt_reset_unicode(int console);
+diff --git a/include/uapi/linux/kd.h b/include/uapi/linux/kd.h
+index 87b7cc4..ce08f6a 100644
+--- a/include/uapi/linux/kd.h
++++ b/include/uapi/linux/kd.h
+@@ -150,6 +150,10 @@ struct kbd_repeat {
+ 			/* earlier this field was misnamed "rate" */
+ };
+ 
++/* get/set event mute */
++#define KDGKBMUTE	0x4B50
++#define KDSKBMUTE	0x4B51
++
+ #define KDKBDREP        0x4B52  /* set keyboard delay/repeat rate;
+ 				 * actually used values are returned */
+ 
+-- 
+1.7.11.7
 
