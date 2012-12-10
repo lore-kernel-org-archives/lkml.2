@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab2LJMeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 07:34:16 -0500
-Received: from fieldses.org ([174.143.236.118]:59363 "EHLO fieldses.org"
+	id S1753054Ab2LJMeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 07:34:50 -0500
+Received: from fieldses.org ([174.143.236.118]:59366 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab2LJMeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 07:34:14 -0500
-Date: Mon, 10 Dec 2012 07:34:13 -0500
+	id S1751329Ab2LJMet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 07:34:49 -0500
+Date: Mon, 10 Dec 2012 07:34:46 -0500
 From: "J. Bruce Fields" <bfields@fieldses.org>
 To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 0/7] nfsd: cleanup "init_net" references
-Message-ID: <20121210123413.GA13327@fieldses.org>
-References: <20121210091832.8855.26672.stgit@localhost.localdomain>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [Devel] [PATCH 3/6] nfsd: pass net to nfsd_create_serv()
+Message-ID: <20121210123446.GB13327@fieldses.org>
+References: <20121204134920.24504.95261.stgit@localhost.localdomain>
+ <20121204135016.24504.74168.stgit@localhost.localdomain>
+ <20121207165211.GK17115@fieldses.org>
+ <50C59C68.30803@parallels.com>
+ <50C5A889.2080604@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121210091832.8855.26672.stgit@localhost.localdomain>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50C5A889.2080604@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 12:18:59PM +0300, Stanislav Kinsbursky wrote:
-> Hard-coded "init_net" pointer is widely used in NFSd code.
-> This patch replaces "init_net" references by passed struct net pointer where
-> requied.
-> In future, proper network namespace context will be taken from NFSd file
-> system superblock private data or, where it's impossible, from current.
+On Mon, Dec 10, 2012 at 01:16:57PM +0400, Stanislav Kinsbursky wrote:
+> 10.12.2012 12:25, Stanislav Kinsbursky пишет:
+> >07.12.2012 20:52, J. Bruce Fields пишет:
+> >>On Tue, Dec 04, 2012 at 04:50:16PM +0300, Stanislav Kinsbursky wrote:
+> >>>diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+> >>>index 21cba3d..6448391 100644
+> >>>--- a/fs/nfsd/nfssvc.c
+> >>>+++ b/fs/nfsd/nfssvc.c
+> >>>@@ -334,10 +334,9 @@ static int nfsd_get_default_max_blksize(void)
+> >>>      return ret;
+> >>>  }
+> >>>
+> >>>-int nfsd_create_serv(void)
+> >>>+int nfsd_create_serv(struct net *net)
+> >>>  {
+> >>>      int error;
+> >>>-    struct net *net = &init_net;
+> >>
+> >>What does this apply to?  Since 3.6-rc1 we have
+> >>57c8b13e3cd0f94944c9691ce7f58e5fcef8a12d "NFSd: set nfsd_serv to NULL
+> >>after service destruction" which includes:
+> >>
+> >>@@ -332,6 +330,7 @@ static int nfsd_get_default_max_blksize(void)
+> >>  int nfsd_create_serv(void)
+> >>  {
+> >>         int error;
+> >>+       struct net *net = current->nsproxy->net_ns;
+> >>
+> >>         WARN_ON(!mutex_is_locked(&nfsd_mutex));
+> >>         if (nfsd_serv) {
+> >>
+> >>Am I missing some later patch?
+> >>
+> >
+> >Maybe I'm missing something.
+> >My tree is based on yours branch "for-3.8".
+> >Doe I need to rebase?
+> >
+> 
+> My bad, sorry.
+> I forgot to send one patch in this series.
 
-Thanks, applying.--b.
+Thanks, discarding this series, applying the resent version.
 
-> 
-> The following series implements...
-> 
-> ---
-> 
-> Stanislav Kinsbursky (7):
->       nfsd: use "init_net" for portmapper
->       nfsd: pass net to nfsd_init_socks()
->       nfsd: pass net to nfsd_startup() and nfsd_shutdown()
->       nfsd: pass net to nfsd_create_serv()
->       nfsd: pass net to nfsd_svc()
->       nfsd: pass net to nfsd_set_nrthreads()
->       nfsd: pass net to __write_ports() and down
-> 
-> 
->  fs/nfsd/nfsctl.c |   27 +++++++++++++++------------
->  fs/nfsd/nfsd.h   |    6 +++---
->  fs/nfsd/nfssvc.c |   35 ++++++++++++++---------------------
->  3 files changed, 32 insertions(+), 36 deletions(-)
-> 
+--b.
