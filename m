@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab2LJTHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:07:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22031 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab2LJTHf (ORCPT
+	id S1751828Ab2LJTJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:09:06 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:60510 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab2LJTJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:07:35 -0500
-X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=jD6vK9AFjAsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=5k3KMLIQJ_UA:10 a=Cu1iNLWyMHF5jY4uwGYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355166453.17101.236.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"
- atomic readers to prevent CPU offline
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tj@kernel.org,
-        tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, sbw@mit.edu,
-        amit.kucheria@linaro.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 10 Dec 2012 14:07:33 -0500
-In-Reply-To: <20121210182115.GA30892@redhat.com>
-References: <50BF96DF.3000500@linux.vnet.ibm.com>
-	 <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com>
-	 <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com>
-	 <50BFAB17.3090603@linux.vnet.ibm.com> <20121206161850.GA6710@redhat.com>
-	 <50C0E88E.9050909@linux.vnet.ibm.com>
-	 <1354822103.17101.24.camel@gandalf.local.home>
-	 <20121207200014.GB13238@redhat.com> <20121210182115.GA30892@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Dec 2012 14:09:04 -0500
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Mon, 10 Dec 2012 13:09:03 -0600
+X-Originating-IP: 108.223.40.66
+Date: Mon, 10 Dec 2012 11:09:05 -0800
+From: Guenter Roeck <groeck-dsl@sbcglobal.net>
+To: "Gabriel L. Somlo" <somlo@cmu.edu>
+Cc: rydberg@euromail.se, khali@linux-fr.org, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org, agraf@suse.de,
+        rene@exactcode.com
+Subject: Re: [PATCH] applesmc: add sysfs file to report OSK
+Message-ID: <20121210190905.GA24927@roeck-us.net>
+References: <20121210145134.GA2097@hedwig.ini.cmu.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210145134.GA2097@hedwig.ini.cmu.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 19:21 +0100, Oleg Nesterov wrote:
-> On 12/07, Oleg Nesterov wrote:
-> >
-> > On 12/06, Steven Rostedt wrote:
-> > >
-> > > You know reader locks can deadlock with each other, right? And this
-> > > isn't caught be lockdep yet. This is because rwlocks have been made to
-> > > be fair with writers. Before writers could be starved if a CPU always
-> > > let a reader in. Now if a writer is waiting, a reader will block behind
-> > > the writer. But this has introduced new issues with the kernel as
-> > > follows:
-> > >
-> > >
-> > >    CPU0			   CPU1	 	   CPU2		   CPU3
-> > >    ----			   ----		   ----		   ----
-> > > read_lock(A);
-> > > 			read_lock(B)
-> > > 					write_lock(A) <- block
-> > > 							write_lock(B) <- block
-> > > read_lock(B) <-block
-> > >
-> > > 			read_lock(A) <- block
-> > >
-> > > DEADLOCK!
-> >
-> > Really??? Oh I didn't know...
-> >
-> > Yes this was always true for rwsem, but rwlock_t?
+On Mon, Dec 10, 2012 at 09:51:35AM -0500, Gabriel L. Somlo wrote:
+> The AppleSMC contains two char[32] keys, OSK0 and OSK1, which are not
+> reported in the key count and index by default. These keys are used by
+> the OS X boot sequence, and normally don't matter when running Linux.
 > 
-> Sorry, please ignore my email. I misread your email.
+> This patch creates a sysfs entry which reports the value of these keys
+> as an ASCII string, to help emulators (such as QEMU) load OS X when
+> running on genuine Apple hardware.
 > 
+> Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
+> ---
+> 
+> For extra context: To boot OS X as a guest, QEMU must (among others)
+> emulate the AppleSMC. To boot successfully, OS X insists on querying
+> the (emulated) SMC for the value of OSK0 and OSK1. Currently, these
+> values must be supplied on the QEMU command line as
+> 
+>   -device applesmc,osk="...concatenated values of OSK0 and OSK1..."
+> 
+> With the availability of /sys/devices/platform/applesmc.768/osk, the
+> emulated QEMU AppleSMC could acquire this string directly from the
+> (Apple-manufactured) host machine.
+> 
+Hmm ... this is a non-hwmon attribute which doesn't really belong into hwmon
+in the first place ... like several other attributes in the same driver.
 
-No prob, looking at what I wrote, I should have explicitly stated two
-different rwlocks. The only hint that I gave about two locks was (A) and
-(B). Even what I started with: "reader locks can deadlock with each
-other" is a bit ambiguous. So I can easily see the confusion.
+So I'll leave it up to the maintainer to decide if we should accept it. Henrik ?
 
--- Steve
+Thanks,
+Guenter
 
-
+> Thanks,
+>   Gabriel
+> 
+>  drivers/hwmon/applesmc.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index b41baff..0c7cc71 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -1013,6 +1013,23 @@ static ssize_t applesmc_key_at_index_store(struct device *dev,
+>  	return count;
+>  }
+>  
+> +static ssize_t applesmc_osk_show(struct device *dev,
+> +				struct device_attribute *attr, char *sysfsbuf)
+> +{
+> +	int fail;
+> +
+> +	mutex_lock(&smcreg.mutex);
+> +	fail = read_smc(APPLESMC_READ_CMD, "OSK0", sysfsbuf, 32) ||
+> +	       read_smc(APPLESMC_READ_CMD, "OSK1", sysfsbuf + 32, 32);
+> +	mutex_unlock(&smcreg.mutex);
+> +	if (fail)
+> +		return -1;
+> +
+> +	sysfsbuf[64] = '\n';
+> +	sysfsbuf[65] = '\0';
+> +	return 65;
+> +}
+> +
+>  static struct led_classdev applesmc_backlight = {
+>  	.name			= "smc::kbd_backlight",
+>  	.default_trigger	= "nand-disk",
+> @@ -1027,6 +1044,7 @@ static struct applesmc_node_group info_group[] = {
+>  	{ "key_at_index_type", applesmc_key_at_index_type_show },
+>  	{ "key_at_index_data_length", applesmc_key_at_index_data_length_show },
+>  	{ "key_at_index_data", applesmc_key_at_index_read_show },
+> +	{ "osk", applesmc_osk_show },
+>  	{ }
+>  };
+>  
+> -- 
+> 1.7.7.6
+> 
+> 
