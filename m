@@ -1,81 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab2LJKFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:05:05 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44797 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752176Ab2LJKFD (ORCPT
+	id S1754022Ab2LJKIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:08:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47021 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab2LJKIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:05:03 -0500
-Date: Mon, 10 Dec 2012 10:04:33 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-Message-ID: <20121210100433.GB6624@mudshark.cambridge.arm.com>
-References: <1354821581.17101.17.camel@gandalf.local.home>
- <1354872138.3176.15.camel@computer5.home>
- <1354888985.17101.41.camel@gandalf.local.home>
- <1354892111.13000.50.camel@linaro1.home>
- <1354894134.17101.44.camel@gandalf.local.home>
- <20121207162346.GW14363@n2100.arm.linux.org.uk>
- <1354898200.17101.50.camel@gandalf.local.home>
- <20121207164530.GX14363@n2100.arm.linux.org.uk>
- <1354900436.17101.58.camel@gandalf.local.home>
- <1354902347.8263.12.camel@linaro1.home>
+	Mon, 10 Dec 2012 05:08:00 -0500
+Date: Mon, 10 Dec 2012 10:07:54 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com, viresh.kumar@linaro.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH 1/1 v2] gpio: Provide the STMPE GPIO driver with its own IRQ
+ Domain
+Message-ID: <20121210100754.GB9362@gmail.com>
+References: <1353683949-9275-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354902347.8263.12.camel@linaro1.home>
+In-Reply-To: <1353683949-9275-1-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
+Author: Lee Jones <lee.jones@linaro.org>
+Date:   Fri Nov 23 12:36:23 2012 +0000
 
-Back-pedalling a bit here, but I'm confused by one of your points below:
+    gpio: Provide the STMPE GPIO driver with its own IRQ Domain
+    
+    The STMPE GPIO driver can be used as an IRQ controller by some
+    related devices. Here we provide it with its very own IRQ Domain
+    so that IRQs can be issued dynamically. This will stand the
+    driver in good stead when it is enabled for Device Tree, as this
+    it a prerequisite.
+    
+    Cc: Grant Likely <grant.likely@secretlab.ca>
+    Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+    Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-On Fri, Dec 07, 2012 at 05:45:47PM +0000, Jon Medhurst (Tixy) wrote:
-> On Fri, 2012-12-07 at 12:13 -0500, Steven Rostedt wrote:
-> > I'll make my question more general:
-> > 
-> > If I have a nop, that is a size of a call (branch and link), which is
-> > near the beginning of a function and not part of any conditional, and I
-> > want to convert it into a call (branch and link), would adding a
-> > breakpoint to it, modifying it to the call, and then removing the
-> > breakpoint be possible? Of course it would require syncing in between
-> > steps, but my question is, if the above is possible on a thumb2 ARM
-> > processor?
-> 
-> I believe so. The details are (repeating your earlier explanation) ...
-> 
-> 1. Replace first half of nop with 16bit 'breakpoint' instruction.
-
-Sort of -- you'd actually need 2x16-bit nops to make this work.
-
-> 2. Sync.(cache flush to PoU + IPIs to make other cores invalidate the
-> icache for changed part of the nop instruction).
-
-Why do you need to use IPIs for I-cache invalidation on other cores? For
-ARMv7 SMP (i.e. the multi-processing extensions) doing I-cache invalidation
-by MVA to PoU will be broadcast to the applicable domain for the
-shareability attributes of the address. So if you do icimvau with an
-inner-shareable virtual address, it will be broadcast by the hardware.
-
-> However, wouldn't we need any of this breakpoint malarkey, why not just
-> just use a 16-bit branch instruction which branches over the second half
-> of the nop? :-)
-
-Yes, and I think if you do use two 16-bit nops, you can even get rid of all
-the intermediate `sync' operations (I guess you might want one at the end if
-you want the call to become visible at a particular point).
-
-Will
+diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+index dce3472..6365cd0 100644
+--- a/drivers/gpio/gpio-stmpe.c
++++ b/drivers/gpio/gpio-stmpe.c
+@@ -11,6 +11,7 @@
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
+ #include <linux/irq.h>
++#include <linux/irqdomain.h>
+ #include <linux/interrupt.h>
+ #include <linux/mfd/stmpe.h>
+ 
+@@ -28,6 +29,7 @@ struct stmpe_gpio {
+ 	struct stmpe *stmpe;
+ 	struct device *dev;
+ 	struct mutex irq_lock;
++	struct irq_domain *domain;
+ 
+ 	int irq_base;
+ 	unsigned norequest_mask;
+@@ -103,7 +105,7 @@ static int stmpe_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(chip);
+ 
+-	return stmpe_gpio->irq_base + offset;
++	return irq_create_mapping(stmpe_gpio->domain, offset);
+ }
+ 
+ static int stmpe_gpio_request(struct gpio_chip *chip, unsigned offset)
+@@ -132,7 +134,7 @@ static struct gpio_chip template_chip = {
+ static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ {
+ 	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
+-	int offset = d->irq - stmpe_gpio->irq_base;
++	int offset = d->hwirq;
+ 	int regoffset = offset / 8;
+ 	int mask = 1 << (offset % 8);
+ 
+@@ -199,7 +201,7 @@ static void stmpe_gpio_irq_sync_unlock(struct irq_data *d)
+ static void stmpe_gpio_irq_mask(struct irq_data *d)
+ {
+ 	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
+-	int offset = d->irq - stmpe_gpio->irq_base;
++	int offset = d->hwirq;
+ 	int regoffset = offset / 8;
+ 	int mask = 1 << (offset % 8);
+ 
+@@ -209,7 +211,7 @@ static void stmpe_gpio_irq_mask(struct irq_data *d)
+ static void stmpe_gpio_irq_unmask(struct irq_data *d)
+ {
+ 	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
+-	int offset = d->irq - stmpe_gpio->irq_base;
++	int offset = d->hwirq;
+ 	int regoffset = offset / 8;
+ 	int mask = 1 << (offset % 8);
+ 
+@@ -251,8 +253,9 @@ static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
+ 		while (stat) {
+ 			int bit = __ffs(stat);
+ 			int line = bank * 8 + bit;
++			int virq = irq_find_mapping(stmpe_gpio->domain, line);
+ 
+-			handle_nested_irq(stmpe_gpio->irq_base + line);
++			handle_nested_irq(virq);
+ 			stat &= ~(1 << bit);
+ 		}
+ 
+@@ -267,38 +270,55 @@ static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int __devinit stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
++int stmpe_gpio_irq_map(struct irq_domain *d, unsigned int virq,
++		       irq_hw_number_t hwirq)
+ {
+-	int base = stmpe_gpio->irq_base;
+-	int irq;
++	struct stmpe_gpio *stmpe_gpio = d->host_data;
++
++	if (!stmpe_gpio)
++		return -EINVAL;
+ 
+-	for (irq = base; irq < base + stmpe_gpio->chip.ngpio; irq++) {
+-		irq_set_chip_data(irq, stmpe_gpio);
+-		irq_set_chip_and_handler(irq, &stmpe_gpio_irq_chip,
+-					 handle_simple_irq);
+-		irq_set_nested_thread(irq, 1);
++	irq_set_chip_data(hwirq, stmpe_gpio);
++	irq_set_chip_and_handler(hwirq, &stmpe_gpio_irq_chip,
++				 handle_simple_irq);
++	irq_set_nested_thread(hwirq, 1);
+ #ifdef CONFIG_ARM
+-		set_irq_flags(irq, IRQF_VALID);
++	set_irq_flags(hwirq, IRQF_VALID);
+ #else
+-		irq_set_noprobe(irq);
++	irq_set_noprobe(hwirq);
+ #endif
+-	}
+ 
+ 	return 0;
+ }
+ 
+-static void stmpe_gpio_irq_remove(struct stmpe_gpio *stmpe_gpio)
++void stmpe_gpio_irq_unmap(struct irq_domain *d, unsigned int virq)
+ {
+-	int base = stmpe_gpio->irq_base;
+-	int irq;
+-
+-	for (irq = base; irq < base + stmpe_gpio->chip.ngpio; irq++) {
+ #ifdef CONFIG_ARM
+-		set_irq_flags(irq, 0);
++	set_irq_flags(virq, 0);
+ #endif
+-		irq_set_chip_and_handler(irq, NULL, NULL);
+-		irq_set_chip_data(irq, NULL);
++	irq_set_chip_and_handler(virq, NULL, NULL);
++	irq_set_chip_data(virq, NULL);
++}
++
++static const struct irq_domain_ops stmpe_gpio_irq_simple_ops = {
++	.unmap = stmpe_gpio_irq_unmap,
++	.map = stmpe_gpio_irq_map,
++	.xlate = irq_domain_xlate_twocell,
++};
++
++static int __devinit stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
++{
++	int base = stmpe_gpio->irq_base;
++
++	stmpe_gpio->domain = irq_domain_add_simple(NULL,
++				stmpe_gpio->chip.ngpio, base,
++				&stmpe_gpio_irq_simple_ops, stmpe_gpio);
++	if (!stmpe_gpio->domain) {
++		dev_err(stmpe_gpio->dev, "failed to create irqdomain\n");
++		return -ENOSYS;
+ 	}
++
++	return 0;
+ }
+ 
+ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+@@ -348,7 +368,7 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+ 				IRQF_ONESHOT, "stmpe-gpio", stmpe_gpio);
+ 		if (ret) {
+ 			dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
+-			goto out_removeirq;
++			goto out_disable;
+ 		}
+ 	}
+ 
+@@ -368,9 +388,6 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
+ out_freeirq:
+ 	if (irq >= 0)
+ 		free_irq(irq, stmpe_gpio);
+-out_removeirq:
+-	if (irq >= 0)
+-		stmpe_gpio_irq_remove(stmpe_gpio);
+ out_disable:
+ 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
+ out_free:
+@@ -398,10 +415,9 @@ static int __devexit stmpe_gpio_remove(struct platform_device *pdev)
+ 
+ 	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
+ 
+-	if (irq >= 0) {
++	if (irq >= 0)
+ 		free_irq(irq, stmpe_gpio);
+-		stmpe_gpio_irq_remove(stmpe_gpio);
+-	}
++
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(stmpe_gpio);
