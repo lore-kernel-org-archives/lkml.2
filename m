@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab2LJVZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:25:49 -0500
-Received: from mail-gh0-f202.google.com ([209.85.160.202]:60266 "EHLO
-	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab2LJVZq (ORCPT
+	id S1752281Ab2LJV06 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:26:58 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:58866 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab2LJV05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:25:46 -0500
-Date: Mon, 10 Dec 2012 14:25:45 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: linux-next: build warning after merge of the pci tree
-Message-ID: <20121210212545.GA15884@google.com>
-References: <20121210200321.1343445856179c58d0d0cb16@canb.auug.org.au>
+	Mon, 10 Dec 2012 16:26:57 -0500
+Message-ID: <50C65381.8010609@ahsoftware.de>
+Date: Mon, 10 Dec 2012 22:26:25 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121002 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210200321.1343445856179c58d0d0cb16@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
+References: <50C5DFCC.60203@ahsoftware.de> <1355151119-2489-1-git-send-email-holler@ahsoftware.de> <50C61675.2000407@metafoo.de> <50C63BBD.3080202@ahsoftware.de> <50C64484.4060306@metafoo.de>
+In-Reply-To: <50C64484.4060306@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 08:03:21PM +1100, Stephen Rothwell wrote:
-> Hi Bjorn,
+Am 10.12.2012 21:22, schrieb Lars-Peter Clausen:
+> On 12/10/2012 08:45 PM, Alexander Holler wrote:
+>> Am 10.12.2012 18:05, schrieb Lars-Peter Clausen:
+>>
+>>> Looks pretty good now. But there are still some IIO remnants which should be
+>>> removed as well. Also the driver should move to drivers/rtc/ since, well,
+>>> it's a rtc driver not a IIO driver.
+>>
+>> I think it still should be stick to iio, because that is where all HID
+>> sensors currently are found and where the user would expect to find such
+>> a driver.
 > 
-> After merging the pci tree, today's linux-next build (powerpc
-> ppc44x_defconfig) produced this warning:
+> That's because all the current IIO sensor drivers fall in the IIO domain. This
+> one clearly is a RTC driver, so it belongs in drivers/rtc/
+
+Where nobody will find it if he searches for drivers for his HID sensor.
+I still see it as HID sensor driver and not a rtc-driver.
+But ...
+
 > 
-> drivers/pci/rom.c: In function 'pci_map_rom':
-> drivers/pci/rom.c:125:23: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+>>
+>>>> +/* Channel definitions */
+>>>> +static const struct iio_chan_spec hid_time_channels[TIME_RTC_CHANNEL_MAX] = {
+>>
+>> And that is imho the last remaining iio-stuff. If necessary I can remove
+>> it too.
 > 
-> Introduced by commit 84c1b80e3263 ("PCI: Add support for non-BAR ROMs").
+> That and the remaining bits of the read_raw callback.
 
-I propose the following patch to fix this warning.  Any comments?  If
-it looks OK, I'll add it this afternoon.
+Ok. I will make a v3.
 
-commit dbd3fc3345390a989a033427aa915a0dfb62149f
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Mon Dec 10 11:24:42 2012 -0700
-
-    PCI: Use phys_addr_t for physical ROM address
-    
-    Use phys_addr_t rather than "void *" for physical memory address.
-    This removes casts and fixes a "cast from pointer to integer of different
-    size" warning on ppc44x_defconfig.
-    
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index fddb9f6..d07f3bb 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -628,8 +628,8 @@ int pcibios_add_device(struct pci_dev *dev)
- 			    (PCI_FUNC(dev->devfn) == rom->function) &&
- 			    (dev->vendor == rom->vendor) &&
- 			    (dev->device == rom->devid)) {
--				dev->rom = (void *)(unsigned long)(pa_data +
--				      offsetof(struct pci_setup_rom, romdata));
-+				dev->rom = pa_data +
-+				      offsetof(struct pci_setup_rom, romdata);
- 				dev->romlen = rom->pcilen;
- 			}
- 		}
-diff --git a/drivers/pci/rom.c b/drivers/pci/rom.c
-index 3a3828f..ab886b7 100644
---- a/drivers/pci/rom.c
-+++ b/drivers/pci/rom.c
-@@ -122,7 +122,7 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
- 	 */
- 	if (pdev->rom && pdev->romlen) {
- 		*size = pdev->romlen;
--		return phys_to_virt((phys_addr_t)pdev->rom);
-+		return phys_to_virt(pdev->rom);
- 	/*
- 	 * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
- 	 * memory map if the VGA enable bit of the Bridge Control register is
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index f116b2d..957563b 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -333,7 +333,7 @@ struct pci_dev {
- 	};
- 	struct pci_ats	*ats;	/* Address Translation Service */
- #endif
--	void *rom; /* Physical pointer to ROM if it's not from the BAR */
-+	phys_addr_t rom; /* Physical address of ROM if it's not from the BAR */
- 	size_t romlen; /* Length of ROM if it's not from the BAR */
- };
- 
+Alexander
