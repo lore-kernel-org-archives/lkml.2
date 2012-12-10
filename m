@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab2LJW20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:28:26 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19812 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2LJW2Y (ORCPT
+	id S1751869Ab2LJWaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:30:00 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:44167 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2LJW37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:28:24 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="12917207"
-From: Jack Pham <jackp@codeaurora.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jack Pham <jackp@codeaurora.org>
-Subject: [PATCH] usb: dwc3: debugfs: fix regdump offset
-Date: Mon, 10 Dec 2012 14:28:13 -0800
-Message-Id: <1355178493-16688-1-git-send-email-jackp@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Mon, 10 Dec 2012 17:29:59 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: samsung: Add terminating entry for exynos_pinctrl_ids
+To: Linus Walleij <linus.walleij@linaro.org>, Axel Lin <axel.lin@ingics.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <CACRpkdY=yoYi71MLC=7iktFMTTQWmk4iLwrKqOnuuJEz43K74g@mail.gmail.com>
+References: <1355103317.4166.1.camel@phoenix> <CACRpkdY=yoYi71MLC=7iktFMTTQWmk4iLwrKqOnuuJEz43K74g@mail.gmail.com>
+Date: Mon, 10 Dec 2012 22:10:45 +0000
+Message-Id: <20121210221045.4EA803E0D9C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As with dwc_readl/writel, the global registers are specified as
-offsets starting from the beginning of the xHCI address space,
-but the memory region pointed to by dwc->regs already maps to
-the start of the global addresses. Fix by offsetting each of the
-regs relative to DWC3_GLOBALS_REGS_START.
+On Mon, 10 Dec 2012 11:13:06 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Dec 10, 2012 at 2:35 AM, Axel Lin <axel.lin@ingics.com> wrote:
+> 
+> > The of_device_id table is supposed to be zero-terminated.
+> >
+> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > ---
+> >  drivers/gpio/gpio-samsung.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+> > index 01f7fe9..9e251be 100644
+> > --- a/drivers/gpio/gpio-samsung.c
+> > +++ b/drivers/gpio/gpio-samsung.c
+> > @@ -3026,6 +3026,7 @@ static __init int samsung_gpiolib_init(void)
+> >         static const struct of_device_id exynos_pinctrl_ids[] = {
+> >                 { .compatible = "samsung,pinctrl-exynos4210", },
+> >                 { .compatible = "samsung,pinctrl-exynos4x12", },
+> > +               { }
+> 
+> Wasn't somebody complaining that this was unnecessary recently?
+> 
+> Ohwell, I'll let the Samsung people comment first...
 
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
----
- drivers/usb/dwc3/debugfs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And this doesn't apply on my gpio/next branch. I assume it applies
+somewhere else so I'll ignore for now. :-)
 
-diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
-index d4a30f1..be4eff7 100644
---- a/drivers/usb/dwc3/debugfs.c
-+++ b/drivers/usb/dwc3/debugfs.c
-@@ -56,7 +56,7 @@
- #define dump_register(nm)				\
- {							\
- 	.name	= __stringify(nm),			\
--	.offset	= DWC3_ ##nm,				\
-+	.offset	= DWC3_ ##nm - DWC3_GLOBALS_REGS_START,	\
- }
- 
- static const struct debugfs_reg32 dwc3_regs[] = {
--- 
-Employee of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
+g.
