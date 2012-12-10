@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab2LJWPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:15:47 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:37317 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab2LJWPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:15:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="13018799"
-Date: Mon, 10 Dec 2012 14:15:44 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: jaswinder.singh@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, djbw@fb.com,
-        vinod.koul@intel.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, rubini@gnudd.com, wim@iguana.be,
-        cjb@laptop.org, nico@fluxnic.net, ben-linux@fluff.org,
-        viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Subject: Re: [PATCH v4 0/7] enable support for AMBA drivers under x86
-Message-ID: <20121210221544.GA7621@codeaurora.org>
-References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
+	id S1752538Ab2LJWP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:15:59 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:54995 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752516Ab2LJWP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:15:57 -0500
+X-Remote-IP: 213.191.128.133
+Date: Mon, 10 Dec 2012 23:15:50 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+References: <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org> <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org> <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr> <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com> <50C6477A.4090005@iskon.hr> <CA+55aFx9XSjtMZNuveyKrxL0LUjmZpFvJ7vzkjaKgQZLCs9QCg@mail.gmail.com> <20121210214256.GB23484@liondog.tnic> <CA+55aFzPa1tk_uWs_1cyYD0XpjWg_Fn+o431hUk3AnabOeUXSQ@mail.gmail.com> <20121210215436.GA31536@liondog.tnic>
+In-Reply-To: <20121210215436.GA31536@liondog.tnic>
+Message-ID: <50C65F16.1060809@iskon.hr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Subject: Re: kswapd craziness in 3.7
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121210 #8685622, check: 20121210 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40118 [Dec 11 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 02:42:29PM +0100, Davide Ciminaghi wrote:
-> Acked-by/Reviewed-by situation:
-> 
-> v1:
-> 
-> "mmc: use the new <linux/sizes.h>"
-> Acked by David Brown (see https://lkml.org/lkml/2012/9/14/613)
+On 10.12.2012 22:54, Borislav Petkov wrote:
+> On Mon, Dec 10, 2012 at 01:47:23PM -0800, Linus Torvalds wrote:
+>> On Mon, Dec 10, 2012 at 1:42 PM, Borislav Petkov <bp@alien8.de> wrote:
+>>>
+>>> Aren't we gonna consider the out-of-tree vbox modules being loaded and
+>>> causing some corruptions like maybe the single-bit error above?
+>>>
+>>> I'm also thinking of this here: https://lkml.org/lkml/2011/10/6/317
+>>
+>> Yup, that looks more likely, I agree.
+>
+> @Zlatko: can your daughter try to retrigger the freeze without the vbox
+> modules loaded?
+>
 
-The change doesn't look substantially different, you can keep my Ack
-for it.
+Sure thing! :)
 
-David
+Although, the vbox modules were only loaded, no VM was running at the 
+time lockup happened. But, I've just read the whole thread you mention 
+above and I understand the concern. I'll make sure the vbox modules are 
+unloaded when not really needed (most of the time on that machine), in 
+case lockup happens again.
 
+Next time my daughter plays online games, I'll tell her she's actually 
+serving a greater purpose, and let her take her time. :)
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Zlatko
