@@ -1,87 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab2LJBqu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 20:46:50 -0500
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:49058 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab2LJBqt (ORCPT
+	id S1751273Ab2LJBuS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 20:50:18 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:60496 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab2LJBuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 20:46:49 -0500
-Date: Mon, 10 Dec 2012 10:39:13 +0900
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: ebiederm@xmission.com
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH v2] Add the values related to buddy system for filtering
- free pages.
-Message-Id: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 9 Dec 2012 20:50:17 -0500
+X-AuditID: 85900ec0-d4077b900000152f-e8-50c53fd6e890
+Message-ID: <50C53FD6.3000306@hitachi.com>
+Date: Mon, 10 Dec 2012 10:50:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Cong Ding <dinggnu@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v2] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate
+ const
+References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com> <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com> <20121207224949.GA6179@gmail.com> <50C27410.7050101@zytor.com> <20121207230302.GB6179@gmail.com> <50C27665.4090206@zytor.com> <20121207231729.GC6179@gmail.com> <50C420A7.9090108@hitachi.com> <b1251e5e-6193-4da4-abfd-0c753995424a@email.android.com> <50C53441.7050802@hitachi.com> <6335450a-8ba4-4e88-a996-49225f0ec890@email.android.com> <50C53A97.4010409@hitachi.com> <51c3944e-5570-4e76-a7ac-c89b30c4c989@email.android.com>
+In-Reply-To: <51c3944e-5570-4e76-a7ac-c89b30c4c989@email.android.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the values related to buddy system to vmcoreinfo data
-so that makedumpfile (dump filtering command) can filter out all free
-pages with the new logic.
-It's faster than the current logic because it can distinguish free page
-by analyzing page structure at the same time as filtering for other
-unnecessary pages (e.g. anonymous page).
-OTOH, the current logic has to trace free_list to distinguish free 
-pages while analyzing page structure to filter out other unnecessary
-pages.
+(2012/12/10 10:34), H. Peter Anvin wrote:
+> You're changing the array from an array of insn_attr_t to pointers to insn_attr_t?
 
-The new logic uses the fact that buddy page is marked by _mapcount == 
-PAGE_BUDDY_MAPCOUNT_VALUE. But, _mapcount shares its memory with other
-fields for SLAB/SLUB when PG_slab is set, so we need to check if PG_slab
-is set or not before looking up _mapcount value.
-And we can get the order of buddy system from private field.
-To sum it up, the values below are required for this logic.
+No, please look at the code carefully,
 
-Required values:
-  - OFFSET(page._mapcount)
-  - OFFSET(page.private)
-  - NUMBER(PG_slab)
-  - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
+-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
+                                      ^^
++	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX + 1]" \
+                                ^^
+Both are pointers of array.
 
-Changelog from v1 to v2:
-1. remove SIZE(pageflags)
-  The new logic was changed after I sent v1 patch.  
-  Accordingly, SIZE(pageflags) has been unnecessary for makedumpfile.
+I'd just change the position of const.
 
-What's makedumpfile:
-  makedumpfile creates a small dumpfile by excluding unnecessary pages
-  for the analysis. To distinguish unnecessary pages, makedumpfile gets
-  the vmcoreinfo data which has the minimum debugging information only
-  for dump filtering.
+const insn_attr_t const * -> const insn_attr_t * const
 
-Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
----
- kernel/kexec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Thank you,
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 5e4bd78..b27efe4 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1490,6 +1490,8 @@ static int __init crash_save_vmcoreinfo_init(void)
-	VMCOREINFO_OFFSET(page, _count);
-	VMCOREINFO_OFFSET(page, mapping);
-	VMCOREINFO_OFFSET(page, lru);
-+	VMCOREINFO_OFFSET(page, _mapcount);
-+	VMCOREINFO_OFFSET(page, private);
-	VMCOREINFO_OFFSET(pglist_data, node_zones);
-	VMCOREINFO_OFFSET(pglist_data, nr_zones);
- #ifdef CONFIG_FLAT_NODE_MEM_MAP
-@@ -1512,6 +1514,8 @@ static int __init crash_save_vmcoreinfo_init(void)
-	VMCOREINFO_NUMBER(PG_lru);
-	VMCOREINFO_NUMBER(PG_private);
-	VMCOREINFO_NUMBER(PG_swapcache);
-+	VMCOREINFO_NUMBER(PG_slab);
-+	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+> 
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> (2012/12/10 10:03), H. Peter Anvin wrote:
+>>> Yes, if you add a * it becomes an array of pointers.
+>>
+>> Right, I would like to make each pointer in the array read-only.
+>>
+>> And, of course, the data itself which pointed by the pointer
+>> is already protected.
+>> You can see this in (builddir)/arch/x86/lib/inat_table.c
+>> ----
+>> /* Table: 2-byte opcode (0x0f) */
+>> const insn_attr_t inat_escape_table_1[INAT_OPCODE_TABLE_SIZE] = {
+>> [...]
+>> /* Escape opcode map array */
+>> const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX +
+>> 1][INAT_LSTPFX_MAX +
+>> 1] = {
+>>        [1][0] = inat_escape_table_1,
+>> ----
+>>
+>> So I think Cong's v3 is good :)
+>>
+>> Thank you,
+>>
+>>>
+>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>
+>>>> (2012/12/10 0:50), H. Peter Anvin wrote:
+>>>>> No, that would really be wrong - changing the type.
+>>>>
+>>>> What would be wrong? IMHO, this is just a fix to add a fool
+>>>> proof 'const' to array instance itself.
+>>>> ...Or, am I missed anything?
+>>>>
+>>>> Thank you,
+>>>>
+>>>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>>
+>>>>>> (2012/12/08 8:17), Cong Ding wrote:
+>>>>>>>>>>>> Patch description please?
+>>>>>>>>>>> there are 2 consts in the definition of one variable
+>>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> Please put in an actual patch description.  The first line
+>>>>>> (subject
+>>>>>>>>>> line) is a title; the patch should make sense without it.
+>>>>>>>>> sorry for that. so like this is fine?
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> Well, except that typically you should explain which variable it
+>>>> is.
+>>>>>>>> Yes, it is obvious if you look at the patch, but you're making
+>> the
+>>>>>>>> reader spend a few more moments than necessary.
+>>>>>>>>
+>>>>>>>> Also, you should explain what the harm is -- if it breaks
+>> anything
+>>>>>>>> or is just a cosmetic issue.
+>>>>>>> sorry again for lacking of experience...
+>>>>>>> and I missed another same error, so send version 2.
+>>>>>>
+>>>>>> Ah, sorry for my mistake. I would like to make both the value
+>>>>>> pointed by the pointers and the pointers itself read-only.
+>>>>>> Thus the right way of the patch should be;
+>>>>>>
+>>>>>> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX
+>> +
+>>>> 1]"
+>>>>>> \
+>>>>>> +	print "const insn_attr_t * const inat_escape_tables[INAT_ESC_MAX
+>> +
+>>>>>> 1]" \
+>>>>>>
+>>>>>> Cong, could you update your patch? then I can Ack that.
+>>>>>>
+>>>>>> Thank you,
+>>>>>>
+>>>>>>>
+>>>>>>> - cong
+>>>>>>> ---
+>>>>>>> From 6cf729b913287a6fc06325ca75ccf0efff9274e8 Mon Sep 17 00:00:00
+>>>>>> 2001
+>>>>>>> From: Cong Ding <dinggnu@gmail.com>
+>>>>>>> Date: Fri, 7 Dec 2012 23:14:32 +0000
+>>>>>>> Subject: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove
+>>>>>> duplicate const
+>>>>>>>
+>>>>>>> fix the following sparse warning:
+>>>>>>> arch/x86/lib/inat-tables.c:1080:25: warning: duplicate const
+>>>>>>> arch/x86/lib/inat-tables.c:1095:25: warning: duplicate const
+>>>>>>> arch/x86/lib/inat-tables.c:1118:25: warning: duplicate const
+>>>>>>>
+>>>>>>> for variable inat_escape_tables, inat_group_tables, and
+>>>>>> inat_avx_tables
+>>>>>>>
+>>>>>>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>>>>>>> ---
+>>>>>>>  arch/x86/tools/gen-insn-attr-x86.awk |    6 +++---
+>>>>>>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/arch/x86/tools/gen-insn-attr-x86.awk
+>>>>>> b/arch/x86/tools/gen-insn-attr-x86.awk
+>>>>>>> index ddcf39b..987c7b2 100644
+>>>>>>> --- a/arch/x86/tools/gen-insn-attr-x86.awk
+>>>>>>> +++ b/arch/x86/tools/gen-insn-attr-x86.awk
+>>>>>>> @@ -356,7 +356,7 @@ END {
+>>>>>>>  		exit 1
+>>>>>>>  	# print escape opcode map's array
+>>>>>>>  	print "/* Escape opcode map array */"
+>>>>>>> -	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX
+>> +
+>>>>>> 1]" \
+>>>>>>> +	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]"
+>> \
+>>>>>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>>>>>>>  	for (i = 0; i < geid; i++)
+>>>>>>>  		for (j = 0; j < max_lprefix; j++)
+>>>>>>> @@ -365,7 +365,7 @@ END {
+>>>>>>>  	print "};\n"
+>>>>>>>  	# print group opcode map's array
+>>>>>>>  	print "/* Group opcode map array */"
+>>>>>>> -	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX
+>> +
+>>>>>> 1]"\
+>>>>>>> +	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
+>>>>>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>>>>>>>  	for (i = 0; i < ggid; i++)
+>>>>>>>  		for (j = 0; j < max_lprefix; j++)
+>>>>>>> @@ -374,7 +374,7 @@ END {
+>>>>>>>  	print "};\n"
+>>>>>>>  	# print AVX opcode map's array
+>>>>>>>  	print "/* AVX opcode map array */"
+>>>>>>> -	print "const insn_attr_t const *inat_avx_tables[X86_VEX_M_MAX +
+>>>>>> 1]"\
+>>>>>>> +	print "const insn_attr_t *inat_avx_tables[X86_VEX_M_MAX + 1]"\
+>>>>>>>  	      "[INAT_LSTPFX_MAX + 1] = {"
+>>>>>>>  	for (i = 0; i < gaid; i++)
+>>>>>>>  		for (j = 0; j < max_lprefix; j++)
+>>>>>>>
+>>>>>
+>>>
+> 
 
-	arch_crash_save_vmcoreinfo();
-	update_vmcoreinfo_note();
---
-1.7.9.2
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
