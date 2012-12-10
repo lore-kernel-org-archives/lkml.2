@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603Ab2LJT7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:59:14 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:2396 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab2LJT7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:59:13 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Dmitry Kravkov" <dmitry@broadcom.com>
-To: "saeed bishara" <saeed.bishara@gmail.com>,
-        "Joseph Gasparakis" <joseph.gasparakis@intel.com>
-cc: "davem@davemloft.net" <davem@davemloft.net>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "gospo@redhat.com" <gospo@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
-        "Peter P Waskiewicz Jr" <peter.p.waskiewicz.jr@intel.com>,
-        "Alexander Duyck" <alexander.h.duyck@intel.com>
-Subject: RE: [PATCH v4 1/5] net: Add support for hardware-offloaded
- encapsulation
-Thread-Topic: [PATCH v4 1/5] net: Add support for hardware-offloaded
- encapsulation
-Thread-Index: AQHN1NfTCZueHEShBk21EtD9NcW/L5gSV9iAgAAfTrA=
-Date: Mon, 10 Dec 2012 19:58:34 +0000
-Message-ID: <504C9EFCA2D0054393414C9CB605C37F1BFC3555@SJEXCHMB06.corp.ad.broadcom.com>
-References: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com>
- <1354925658-24115-2-git-send-email-joseph.gasparakis@intel.com>
- <CAMAG_ee6xW4EnzPFt=_5+NL2+LuyUjxd52Xc242inYm2+Yhg7g@mail.gmail.com>
-In-Reply-To: <CAMAG_ee6xW4EnzPFt=_5+NL2+LuyUjxd52Xc242inYm2+Yhg7g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	id S1751874Ab2LJUBL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 15:01:11 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:39954 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2LJUBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 15:01:08 -0500
+From: Florian Fainelli <florian@openwrt.org>
+To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: matrix-keymap - provide a proper module license
+Date: Mon, 10 Dec 2012 12:01:05 -0800 (PST)
+Message-ID: <11020313.JpKK99GBpl@bender>
+Organization: OpenWrt
+User-Agent: KMail/4.8.5 (Linux/3.2.0-34-generic; KDE/4.9.2; x86_64; ; )
 MIME-Version: 1.0
-X-WSS-ID: 7CD8E1D13R017720185-01-01
-Content-Type: text/plain;
- charset=utf-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBAJxLqE007694
 
-> -----Original Message-----
-> From: saeed bishara [mailto:saeed.bishara@gmail.com]
-> Sent: Monday, December 10, 2012 12:04 PM
-> To: Joseph Gasparakis
-> Cc: davem@davemloft.net; shemminger@vyatta.com; chrisw@sous-sol.org;
-> gospo@redhat.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> Dmitry Kravkov; bhutchings@solarflare.com; Peter P Waskiewicz Jr; Alexander
-> Duyck
-> Subject: Re: [PATCH v4 1/5] net: Add support for hardware-offloaded
-> encapsulation
-> 
-> > +static inline struct iphdr *inner_ip_hdr(const struct sk_buff *skb)
-> > +{
-> > +       return (struct iphdr *)skb_inner_network_header(skb);
-> > +}
-> 
-> Hi,
-> I'm a little bit bothered because of those inner_ functions, what
-> about the following approach:
-> 1. the skb will have a new state, that state can be outer (normal
-> mode) and inner.
-> 2. when you change the state to inner, all the helper functions such
-> as ip_hdr will return the innter header.
-> 
-> that's ofcourse the API side. the implementation may still use the
-> fields you added to the skb.
-> 
-> what you think?
-> saeed
+The matrix-keymap module is currently lacking a proper module license,
+add one so we don't have this module tainting the entire kernel. This
+issue has been present since commit 1932811f (Input: matrix-keymap -
+uninline and prepare for device tree support)
 
-Some drivers will probably need both inner_ and other_ in same flow, switching between two states will consume cpu cycles. 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+CC: stable@vger.kernel.org
+---
+Dmitry, can you try to push this to Linus before 3.7 final? Thank you!
+
+ drivers/input/matrix-keymap.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
+index 443ad64b..d88d9be 100644
+--- a/drivers/input/matrix-keymap.c
++++ b/drivers/input/matrix-keymap.c
+@@ -23,6 +23,7 @@
+ #include <linux/input.h>
+ #include <linux/of.h>
+ #include <linux/export.h>
++#include <linux/module.h>
+ #include <linux/input/matrix_keypad.h>
+ 
+ static bool matrix_keypad_map_key(struct input_dev *input_dev,
+@@ -161,3 +162,5 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
+ 	return 0;
+ }
+ EXPORT_SYMBOL(matrix_keypad_build_keymap);
++
++MODULE_LICENSE("GPL");
+-- 
+1.7.10.4
