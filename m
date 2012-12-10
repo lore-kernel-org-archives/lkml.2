@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab2LJTPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:15:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62934 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab2LJTPw (ORCPT
+	id S1752079Ab2LJTQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:16:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55663 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751869Ab2LJTMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:15:52 -0500
-Date: Mon, 10 Dec 2012 20:15:45 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
-Message-ID: <20121210191545.GA14412@gmail.com>
-References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
- <alpine.LFD.2.02.1212101902050.4422@ionos>
- <50C62CE7.2000306@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C62CE7.2000306@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Dec 2012 14:12:51 -0500
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, benh@kernel.crashing.org, arnd@arndb.de,
+        james.hogan@imgtec.com, Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nico@fluxnic.net>, netdev@vger.kernel.org
+Subject: [PATCH v2 03/10] net: smc91x: use io{read,write}*_rep accessors instead of string functions
+Date: Mon, 10 Dec 2012 19:12:35 +0000
+Message-Id: <1355166762-15133-4-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
+References: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The {read,write}s{b,w,l} operations are not defined by all architectures
+and are being removed from the asm-generic/io.h interface.
 
-* Rik van Riel <riel@redhat.com> wrote:
+This patch replaces the usage of these string functions in the default
+SMC accessors with io{read,write}{8,16,32}_rep calls instead, which are
+defined for all architectures.
 
-> On 12/10/2012 01:22 PM, Thomas Gleixner wrote:
-> 
-> > So autonuma and numacore are basically on the same page, 
-> > with a slight advantage for numacore in the THP enabled 
-> > case. balancenuma is closer to mainline than to 
-> > autonuma/numacore.
-> 
-> Indeed, when the system is fully loaded, numacore does very 
-> well.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ drivers/net/ethernet/smsc/smc91x.h | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-Note that the latest (-v3) code also does well in under-loaded 
-situations:
+diff --git a/drivers/net/ethernet/smsc/smc91x.h b/drivers/net/ethernet/smsc/smc91x.h
+index 5f53fbb..370e13d 100644
+--- a/drivers/net/ethernet/smsc/smc91x.h
++++ b/drivers/net/ethernet/smsc/smc91x.h
+@@ -286,16 +286,16 @@ static inline void mcf_outsw(void *a, unsigned char *p, int l)
+ 
+ #define SMC_IO_SHIFT		(lp->io_shift)
+ 
+-#define SMC_inb(a, r)		readb((a) + (r))
+-#define SMC_inw(a, r)		readw((a) + (r))
+-#define SMC_inl(a, r)		readl((a) + (r))
+-#define SMC_outb(v, a, r)	writeb(v, (a) + (r))
+-#define SMC_outw(v, a, r)	writew(v, (a) + (r))
+-#define SMC_outl(v, a, r)	writel(v, (a) + (r))
+-#define SMC_insw(a, r, p, l)	readsw((a) + (r), p, l)
+-#define SMC_outsw(a, r, p, l)	writesw((a) + (r), p, l)
+-#define SMC_insl(a, r, p, l)	readsl((a) + (r), p, l)
+-#define SMC_outsl(a, r, p, l)	writesl((a) + (r), p, l)
++#define SMC_inb(a, r)		ioread8((a) + (r))
++#define SMC_inw(a, r)		ioread16((a) + (r))
++#define SMC_inl(a, r)		ioread32((a) + (r))
++#define SMC_outb(v, a, r)	iowrite8(v, (a) + (r))
++#define SMC_outw(v, a, r)	iowrite16(v, (a) + (r))
++#define SMC_outl(v, a, r)	iowrite32(v, (a) + (r))
++#define SMC_insw(a, r, p, l)	ioread16_rep((a) + (r), p, l)
++#define SMC_outsw(a, r, p, l)	iowrite16_rep((a) + (r), p, l)
++#define SMC_insl(a, r, p, l)	ioread32_rep((a) + (r), p, l)
++#define SMC_outsl(a, r, p, l)	iowrite32_rep((a) + (r), p, l)
+ 
+ #define RPC_LSA_DEFAULT		RPC_LED_100_10
+ #define RPC_LSB_DEFAULT		RPC_LED_TX_RX
+-- 
+1.8.0
 
-   http://lkml.org/lkml/2012/12/7/331
-
-Here's the 'perf bench numa' comparison to 'balancenuma':
-
-                            balancenuma  | NUMA-tip
- [test unit]            :          -v10  |    -v3
-------------------------------------------------------------
- 2x1-bw-process         :         6.136  |  9.647:  57.2%
- 3x1-bw-process         :         7.250  | 14.528: 100.4%
- 4x1-bw-process         :         6.867  | 18.903: 175.3%
- 8x1-bw-process         :         7.974  | 26.829: 236.5%
- 8x1-bw-process-NOTHP   :         5.937  | 22.237: 274.5%
- 16x1-bw-process        :         5.592  | 29.294: 423.9%
- 4x1-bw-thread          :        13.598  | 19.290:  41.9%
- 8x1-bw-thread          :        16.356  | 26.391:  61.4%
- 16x1-bw-thread         :        24.608  | 29.557:  20.1%
- 32x1-bw-thread         :        25.477  | 30.232:  18.7%
- 2x3-bw-thread          :         8.785  | 15.327:  74.5%
- 4x4-bw-thread          :         6.366  | 27.957: 339.2%
- 4x6-bw-thread          :         6.287  | 27.877: 343.4%
- 4x8-bw-thread          :         5.860  | 28.439: 385.3%
- 4x8-bw-thread-NOTHP    :         6.167  | 25.067: 306.5%
- 3x3-bw-thread          :         8.235  | 21.560: 161.8%
- 5x5-bw-thread          :         5.762  | 26.081: 352.6%
- 2x16-bw-thread         :         5.920  | 23.269: 293.1%
- 1x32-bw-thread         :         5.828  | 18.985: 225.8%
- numa02-bw              :        29.054  | 31.431:   8.2%
- numa02-bw-NOTHP        :        27.064  | 29.104:   7.5%
- numa01-bw-thread	:        20.338  | 28.607:  40.7%
- numa01-bw-thread-NOTHP :        18.528  | 21.119:  14.0%
-------------------------------------------------------------
-
-More than half of these testcases are under-loaded situations.
-
-> The main issues that have been observed with numacore are when 
-> the system is only partially loaded. Something strange seems 
-> to be going on that causes performance regressions in that 
-> situation.
-
-I haven't seen such reports with -v3 yet, which is what Thomas 
-tested. Mel has not tested -v3 yet AFAICS.
-
-If there are any such instances left then I'll investigate, but 
-right now it's looking pretty good.
-
-Thanks,
-
-	Ingo
