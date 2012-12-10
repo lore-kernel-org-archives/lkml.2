@@ -1,77 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab2LJEaN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 23:30:13 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:50559 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab2LJEaL (ORCPT
+	id S1751928Ab2LJEjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 23:39:49 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:30191 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab2LJEjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 23:30:11 -0500
-Message-ID: <50C564ED.9090803@linux.vnet.ibm.com>
-Date: Mon, 10 Dec 2012 09:58:29 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Sun, 9 Dec 2012 23:39:48 -0500
+Message-ID: <50C5660D.4050805@huawei.com>
+Date: Mon, 10 Dec 2012 12:33:17 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209191437.GA2816@redhat.com> <50C4EB79.5050203@linux.vnet.ibm.com> <20121209202234.GA5793@redhat.com>
-In-Reply-To: <20121209202234.GA5793@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
+        <andi@firstfloor.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
+References: <50C1AD6D.7010709@huawei.com> <20121207141102.4fda582d.akpm@linux-foundation.org>
+In-Reply-To: <20121207141102.4fda582d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121004-3864-0000-0000-000005ED8AB4
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 01:52 AM, Oleg Nesterov wrote:
-> On 12/10, Srivatsa S. Bhat wrote:
->>
->> On 12/10/2012 12:44 AM, Oleg Nesterov wrote:
->>
->>> But yes, it is easy to blame somebody else's code ;) And I can't suggest
->>> something better at least right now. If I understand correctly, we can not
->>> use, say, synchronize_sched() in _cpu_down() path
->>
->> We can't sleep in that code.. so that's a no-go.
+On 2012/12/8 6:11, Andrew Morton wrote:
+
+> On Fri, 7 Dec 2012 16:48:45 +0800
+> Xishi Qiu <qiuxishi@huawei.com> wrote:
 > 
-> But we can?
+>> On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
+>> free page twice, the value of mce_bad_pages will be added twice. So this is an error,
+>> since the page was already marked HWPoison, we should skip the page and don't add the
+>> value of mce_bad_pages.
+>>
+>> $ cat /proc/meminfo | grep HardwareCorrupted
+>>
+>> soft_offline_page()
+>> 	get_any_page()
+>> 		atomic_long_add(1, &mce_bad_pages)
+>>
+>> ...
+>>
+>> --- a/mm/memory-failure.c
+>> +++ b/mm/memory-failure.c
+>> @@ -1582,8 +1582,11 @@ int soft_offline_page(struct page *page, int flags)
+>>  		return ret;
+>>
+>>  done:
+>> -	atomic_long_add(1, &mce_bad_pages);
+>> -	SetPageHWPoison(page);
+>>  	/* keep elevated page count for bad page */
+>> +	if (!PageHWPoison(page)) {
+>> +		atomic_long_add(1, &mce_bad_pages);
+>> +		SetPageHWPoison(page);
+>> +	}
+>> +
+>>  	return ret;
+>>  }
 > 
-> Note that I meant _cpu_down(), not get_online_cpus_atomic() or take_cpu_down().
+> A few things:
+> 
+> - soft_offline_page() already checks for this case:
+> 
+> 	if (PageHWPoison(page)) {
+> 		unlock_page(page);
+> 		put_page(page);
+> 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+> 		return -EBUSY;
+> 	}
+> 
+>   so why didn't this check work for you?
+> 
+>   Presumably because one of the earlier "goto done" branches was
+>   taken.  Which one, any why?
+> 
+>   This function is an utter mess.  It contains six return points
+>   randomly intermingled with three "goto done" return points.
+> 
+>   This mess is probably the cause of the bug you have observed.  Can
+>   we please fix it up somehow?  It *seems* that the design (lol) of
+>   this function is "for errors, return immediately.  For success, goto
+>   done".  In which case "done" should have been called "success".  But
+>   if you just look at the function you'll see that this approach didn't
+>   work.  I suggest it be converted to have two return points - one for
+>   the success path, one for the failure path.  Or something.
+> 
+> - soft_offline_huge_page() is a miniature copy of soft_offline_page()
+>   and might suffer the same bug.
+> 
+> - A cleaner, shorter and possibly faster implementation is
+> 
+> 	if (!TestSetPageHWPoison(page))
+> 		atomic_long_add(1, &mce_bad_pages);
+> 
+> - We have atomic_long_inc().  Use it?
+> 
+> - Why do we have a variable called "mce_bad_pages"?  MCE is an x86
+>   concept, and this code is in mm/.  Lights are flashing, bells are
+>   ringing and a loudspeaker is blaring "layering violation" at us!
 > 
 
-Maybe I'm missing something, but how would it help if we did a
-synchronize_sched() so early (in _cpu_down())? Another bunch of preempt_disable()
-sections could start immediately after our call to synchronize_sched() no?
-How would we deal with that?
+Hi Andrew, thank you for your advice, I will send V3 soon.
 
-What we need to ensure here is that all existing preempt_disable() sections
-are over and that *we* (meaning, the cpu offline writer) get to proceed immediately
-after that, making all the new readers wait for us. And that is possible only if
-we do our 'wait-for-readers' thing very close to our actual cpu offline operation
-(which is take_cpu_down). Moreover, the writer needs to remain stable
-(non-preemptible) while doing the wait-for-readers. Else (if the writer himself
-keeps getting scheduled in and out of the CPU) I can't see how he can possibly
-do justice to the wait.
+Thanks
+Xishi Qiu
 
-Also, synchronize_sched() only helps us do the 'wait-for-existing-readers' logic.
-What would take care of the 'prevent-new-readers-from-going-ahead' logic?
+> .
+> 
 
-To add to it all, synchronize_sched() waits for _all_ preempt_disable() sections
-to complete, whereas only a handful of them might actually care about CPU hotplug.
-Which is an unnecessary burden for the writer (ie., waiting for unrelated readers
-to complete).
 
-I bet you meant something else. Sorry if I misunderstood it.
-
-Regards,
-Srivatsa S. Bhat
 
