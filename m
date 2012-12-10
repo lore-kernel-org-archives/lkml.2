@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2LJWi3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:38:29 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47162 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab2LJWi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:38:27 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC] gpiolib: introduce descriptor-based GPIO interface
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-In-Reply-To: <1985305.LiOKDTFPq4@percival>
-References: <1354779918-4028-1-git-send-email-acourbot@nvidia.com> <1354779918-4028-2-git-send-email-acourbot@nvidia.com> <20121206144259.136693E0950@localhost> <1985305.LiOKDTFPq4@percival>
-Date: Mon, 10 Dec 2012 22:34:25 +0000
-Message-Id: <20121210223425.DC2783E0796@localhost>
+	id S1752001Ab2LJWm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:42:29 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:53367 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751289Ab2LJWm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:42:27 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+Date: Mon, 10 Dec 2012 23:47:27 +0100
+Message-ID: <3585743.RAy43NB8MZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAE9FiQXsBC-CY4KqKkaAXx3sYLVWJOaaKGkg_kChb7ry_7Sq8Q@mail.gmail.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <2637774.lmuX5P2qQX@vostro.rjw.lan> <CAE9FiQXsBC-CY4KqKkaAXx3sYLVWJOaaKGkg_kChb7ry_7Sq8Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Dec 2012 11:06:34 +0900, Alex Courbot <acourbot@nvidia.com> wrote:
-> On Thursday 06 December 2012 22:42:59 Grant Likely wrote:
-> > how about "gpio_chip_hwnum()" to somewhat match irqdomain convention?
+On Monday, December 10, 2012 09:07:06 AM Yinghai Lu wrote:
+> On Mon, Dec 10, 2012 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, December 09, 2012 09:34:42 PM Yinghai Lu wrote:
+> >>
+> >> Can we expand the BUS_ADD_* concept to other devices instead of just
+> >> acpi_device?
+> >>
+> >> aka we should let struct device has this add_type field.
+> >
+> > Having done that in ACPI to cover our use case here, we can try to move it
+> > into struct device if there are use cases beyond ACPI that can't be covered
+> > by using deferred driver probing.
 > 
-> Sure, matching existing interfaces is better. "git grep hwnum" does not seem 
-> to reveal much related to irqdomain though?
+> pci device for hotplug have same problem. need to delay driver attach
+> for them too.
 
-irqdomain actually uses "hwirq". "hwgpio" would be a closer analog than
-'hwnum'.  At first I though hwgpio to be too goofy, but on further
-reflection it probably has the least likelyhood of getting used
-incorrectly.
+OK, I'll take a look.  Any pointers to speed that up?
 
-g.
+> also BUS_ADD_MATCH and BUS_ADD_START are duplicated.
 
+Not at the moment, they do different things as code goes.
+
+> old add are separated to adding all devices to tree and then matching
+> work to load the drivers.
+> 
+> so _START is not needed anymore, only user.start in pci_root driver
+> should be removed.
+> code in .start could be moved .add without problem.
+
+Yes, I'm going to do that as the next step.  I didn't want this particular
+patchset to grow too big.  I'll post another one on top of it if people
+don't have problems with this one.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
