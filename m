@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab2LJW0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:26:22 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:57606 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab2LJW0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:26:21 -0500
-Date: Mon, 10 Dec 2012 23:25:17 +0100
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: jaswinder.singh@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, djbw@fb.com,
-        vinod.koul@intel.com, grant.likely@secretlab.ca, rubini@gnudd.com,
-        wim@iguana.be, cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Subject: Re: [PATCH v4 2/7] pl080.h: moved from arm/include/asm/hardware to include/linux/amba/
-Message-ID: <20121210222516.GA31546@mail.gnudd.com>
-References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com> <1355146956-6009-3-git-send-email-ciminaghi@gnudd.com> <CACRpkdbF6S6nOQFwv+tmS4LXhnnwkQxzmGYmH3Xn6TM4E34r8g@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbF6S6nOQFwv+tmS4LXhnnwkQxzmGYmH3Xn6TM4E34r8g@mail.gmail.com>
-X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
-	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+	id S1751845Ab2LJW20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:28:26 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19812 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2LJW2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:28:24 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="12917207"
+From: Jack Pham <jackp@codeaurora.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jack Pham <jackp@codeaurora.org>
+Subject: [PATCH] usb: dwc3: debugfs: fix regdump offset
+Date: Mon, 10 Dec 2012 14:28:13 -0800
+Message-Id: <1355178493-16688-1-git-send-email-jackp@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 10:44:09PM +0100, Linus Walleij wrote:
-> On Mon, Dec 10, 2012 at 2:42 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
-> 
-> > From: Alessandro Rubini <rubini@gnudd.com>
-> >
-> > The header is used by drivers/dma/amba-pl08x.c, which can be compiled
-> > under x86, where PL080 exists under a PCI-to-AMBA bridge. This patche
-> > moves it where it can be accessed by other architectures, and fixes
-> > all users.
-> >
-> > Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> > Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> 
-> Didn't I already ACK this?
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-yes, sorry. You ack was listed in the cover letter.
+As with dwc_readl/writel, the global registers are specified as
+offsets starting from the beginning of the xHCI address space,
+but the memory region pointed to by dwc->regs already maps to
+the start of the global addresses. Fix by offsetting each of the
+regs relative to DWC3_GLOBALS_REGS_START.
 
+Signed-off-by: Jack Pham <jackp@codeaurora.org>
+---
+ drivers/usb/dwc3/debugfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
+index d4a30f1..be4eff7 100644
+--- a/drivers/usb/dwc3/debugfs.c
++++ b/drivers/usb/dwc3/debugfs.c
+@@ -56,7 +56,7 @@
+ #define dump_register(nm)				\
+ {							\
+ 	.name	= __stringify(nm),			\
+-	.offset	= DWC3_ ##nm,				\
++	.offset	= DWC3_ ##nm - DWC3_GLOBALS_REGS_START,	\
+ }
  
-> Pls ask Vinod to merge this.
-> 
-ok.
+ static const struct debugfs_reg32 dwc3_regs[] = {
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Thanks and regards
-Davide
