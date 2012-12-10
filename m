@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab2LJTN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 14:13:29 -0500
-Received: from smtp109.biz.mail.bf1.yahoo.com ([98.139.244.33]:32765 "HELO
-	smtp109.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751850Ab2LJTNX (ORCPT
+	id S1752331Ab2LJTNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 14:13:49 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41195 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab2LJTNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 14:13:23 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: NvDdb9sVM1k5TD4LtQXm_Evv.tK3aay55.sUUzOfwgH2_b7
- rVe2HaEeOZHkppUBiUB7oKexhBdkrLGaYtEHfTixJa6nAvK8yYLmcSK7uwZ9
- bg3UpNGzn1lCWcGOkENei3JCMh_cBN5t21OOm6b.HQ28QfhD5ES5KGNqSHJm
- DPVQkulv6Cf5sb6kG5t4khv4USbw_P3Dgt3fAEeSCnfwOp37460fYMGLVmGT
- H6GoBcSNAGIb22YfWb37qtsGRHriepJdhoXViinb_Bd.szYFjdBS2gGkWlJ_
- 3Tkk0RFGERDa2x_KGdfgKFPYzq7nCurgHL29uw.9qMCaX8MXvj2er0_bLAzB
- 0dWIHLXTiFxUqIPvVwPTmjxv5jB55WXsVgtp6.H9LxQvJvLCKunUvmpdPhmH
- noaedebrYEsFOuzXjAfQRJL3Ws.tUI3gWwrVbyWm2niiuV3nvA1b2mSj3jPq
- InqRqm_wuFe.BGc8kouPjb55F77Ab7rco.o_MBc3WlysbhdkeWvNPrKCQril
- KpvU0AQbJG07rFc5pDzaK6Po1A98UuDeqwiM0sMahRnMwIz6hgur5oi3oRbs
- dA7FF67kB4Zn_ARE7Q4zAM9cIa68-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50C6345C.8040804@schaufler-ca.com>
-Date: Mon, 10 Dec 2012 11:13:32 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 10 Dec 2012 14:13:46 -0500
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Serge Hallyn <serge.hallyn@canonical.com>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Markku Savela <msa@moth.iki.fi>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-References: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com> <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com> <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com> <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com> <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com> <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com> <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com> <20121210145950.GC8137@sergelap> <50C603F8.6070401@schaufler-ca.com> <CALCETrWNboHVRm_aZ-Fvqri6PW3C4FPfuLLe3-8q7+-vgEP2nw@mail.gmail.com>
-In-Reply-To: <CALCETrWNboHVRm_aZ-Fvqri6PW3C4FPfuLLe3-8q7+-vgEP2nw@mail.gmail.com>
+In-Reply-To: <50C62AE6.3030000@iskon.hr>
+References: <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org>
+ <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to>
+ <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
+ <50C32D32.6040800@iskon.hr> <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org>
+ <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org>
+ <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 10 Dec 2012 11:13:25 -0800
+X-Google-Sender-Auth: Zu-s7b9oRuUCQZz9uVyzyjwtZTY
+Message-ID: <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com>
+Subject: Re: kswapd craziness in 3.7
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 10:12 AM, Andy Lutomirski wrote:
-> On Mon, Dec 10, 2012 at 7:47 AM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->> Put an ACL on the program file.
->> If you want different users to run with different privilege
->> make two copies of the program and give them different
->> ACLs and cap sets.
->> If your program is so big that making a copy is a disk space issue
->> it is too big to have privilege.
->> If you can't deal with having the have different paths for different
->> users write a shell script that redirects to the correct version
->> based on user id.
->>
->> This is not rocket science. The kernel shouldn't be crammed
->> with mechanism and complexity just because disto/"OS"/site
->> developers can't be bothered with learning how the existing
->> facilities work.
-> I agree.  But I think that the existing capability support is already
-> overcomplicated, and I'd rather make it simpler.  Sticking the
-> complexity in userspace is too difficult right now because it requires
-> fiddling with the file inheritable mask.
+On Mon, Dec 10, 2012 at 10:33 AM, Zlatko Calusic
+<zlatko.calusic@iskon.hr> wrote:
 >
-> I think that the Windows approach is worth looking at.  See here:
+> I was about to apply the patch that you sent, and reboot the server, but it
+> seems there's no point because the patch is flawed?
 >
-> http://msdn.microsoft.com/en-us/library/windows/desktop/aa375202%28v=vs.85%29.aspx
->
-> In the Windows model, each capability ("privilege") can be in one of
-> three states: enabled (i.e working right now),
+> Anyway, if and when you have a proper one, I'll be glad to test it for you
+> and report results.
 
-Effective
+I have reverted (again) the __GFP_NO_KSWAPD removal, and considering
+that it really looks like there are overwhelming reasons to have that
+flag, I will *not* take some new patch to revert it. I'm getting
+convinced that the original removal really was bogus, and had no
+actual valid reason for it.
 
->  permitted (i.e.
-> available upon request but not currently enabled),
+Part of that is that I noticed that non-THP allocations wanted to use
+it too. The i915 driver had wanted to use __GFP_NO_KSWAPD because it
+too didn't want to start some cleaning thread. The whole mindset
+kswapd is somehow better than direct reclaim or needed when it fails
+is broken. Some allocations simply *will* fail, without necessarily
+wanting kswapd to be started. THP - where the high order of the
+allocation means that failure is inevitable under some fragmentation
+circumstances - is just one such case.
 
-Permitted
+I also reverted one of the "fix up the mess from removing
+__GFP_NO_KSWAPD" patch, because that one was an obvious workaround
+that tried to re-introduce the "let's not wake up kswapd after all for
+that case". It clashed with a clean revert, and it was pointless in
+the presense of __GFP_NO_KSWAPD anyway.
 
-> or removed
-> (disallowed to this process and all of its children).
+I did *not* revert some of the other fixup patches that tried to help
+kswapd balancing decisions and avoid excessive CPU use other ways. So
+some remains of this whole saga do still remain, but they look fairly
+minimal.
 
-~Inherited
+It's worth giving this as much testing as is at all possible, but at
+the same time I really don't think I can delay 3.7 any more without
+messing up the holiday season too much. So unless something obvious
+pops up, I will do the release tonight. So testing will be minimal -
+but it's not like we haven't gone back-and-forth on this several times
+already, and we revert to *mostly* the same old state as 3.6 anyway,
+so it should be fairly safe.
 
-> Permitted
-> privileges are always inherited when a child process is created.
->
-> This is *way* simpler than Linux's model, and it works just fine*.
-
-I see a different set of complications, and Windows never had
-a setuid bit to contend with. God created the universe in seven
-days, but then, He didn't have an installed base.
-
+                       Linus
