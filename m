@@ -1,136 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab2LJOCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 09:02:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10529 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab2LJOCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 09:02:51 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=B9K8gVNFgZEPPyvcd1MA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355148168.17101.165.camel@gandalf.local.home>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 10 Dec 2012 09:02:48 -0500
-In-Reply-To: <20121210112408.GC6988@mudshark.cambridge.arm.com>
-References: <1354892111.13000.50.camel@linaro1.home>
-	 <1354894134.17101.44.camel@gandalf.local.home>
-	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
-	 <1354898200.17101.50.camel@gandalf.local.home>
-	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
-	 <1354900436.17101.58.camel@gandalf.local.home>
-	 <20121207181309.GY14363@n2100.arm.linux.org.uk>
-	 <1354905805.17101.86.camel@gandalf.local.home>
-	 <20121207190244.GB29618@mudshark.cambridge.arm.com>
-	 <1355137445.3386.7.camel@linaro1.home>
-	 <20121210112408.GC6988@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1753314Ab2LJODs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 09:03:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60876 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab2LJODq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 09:03:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,252,1355126400"; 
+   d="scan'208";a="178920776"
+Message-ID: <50C5EC4D.4070102@linux.intel.com>
+Date: Mon, 10 Dec 2012 16:06:05 +0200
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: grant.likely@secretlab.ca, mika.westerberg@linux.intel.com,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/1] gpio: add Lynxpoint chipset gpio driver.
+References: <1354888899-21907-1-git-send-email-mathias.nyman@linux.intel.com> <1354888899-21907-2-git-send-email-mathias.nyman@linux.intel.com> <CACRpkdYG641KYR05jtu3OS7BDGcFpJ-pzu+gTM+RHJnMqytfEQ@mail.gmail.com>
+In-Reply-To: <CACRpkdYG641KYR05jtu3OS7BDGcFpJ-pzu+gTM+RHJnMqytfEQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 11:24 +0000, Will Deacon wrote:
-> On Mon, Dec 10, 2012 at 11:04:05AM +0000, Jon Medhurst (Tixy) wrote:
-> > On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
-> > > For ARMv7, there are small subsets of instructions for ARM and Thumb which
-> > > are guaranteed to be atomic wrt concurrent modification and execution of
-> > > the instruction stream between different processors:
-> > > 
-> > > Thumb:	The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
-> > > ARM:	The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
-> > > 
-> > 
-> > So this means for things like kprobes which can modify arbitrary kernel
-> > code we are going to need to continue to always use some form of
-> > stop_the_whole_system() function?
-> > 
-> > Also, kprobes currently uses patch_text() which only uses stop_machine
-> > for Thumb2 instructions which straddle a word boundary, so this needs
-> > changing?
-> 
-> Yes; if you're modifying instructions other than those mentioned above, then
-> you'll need to synchronise the CPUs, update the instructions, perform
-> cache-maintenance on the writing CPU and then execute an isb on the
-> executing core (this last bit isn't needed if you're going to go through an
-> exception return to get back to the new code -- depends on how your
-> stop/resume code works).
+On 12/10/2012 11:48 AM, Linus Walleij wrote:
+> On Fri, Dec 7, 2012 at 3:01 PM, Mathias Nyman
+> <mathias.nyman@linux.intel.com>  wrote:
+>
+>> Add gpio support for Intel Lynxpoint chipset.
+>> Lynxpoint supports 94 gpio pins which can generate interrupts.
+>> Driver will fail requests for pins that are marked as owned by ACPI, or
+>> set in an alternate mode (non-gpio).
+>>
+>> Signed-off-by: Mathias Nyman<mathias.nyman@linux.intel.com>
+>
+> Nice shape on this patch, makes it easy to focus the review on the
+> important stuff, thanks Magnus!
+>
+>> +config GPIO_LYNXPOINT
+>> +       bool "Intel Lynxpoint GPIO support"
+>
+> So you don't want to be able to build it as module?
+> (OK just odd on Intel systems.)
 
-Yeah, kprobe optimizing will probably require stop_machine() always, as
-it's modifying random code, or adding breakpoints into random places.
-That's another adventure to deal with at another time.
+Reason for having it as bool was the subsys_initcall() got degraded
+to something like module_init() if built as module. This was not good 
+because the IO port ranges used for gpios were specified in ACPI tables 
+both in the gpio device, and as a part of a motherboard device. Pnpacpi 
+code would then reserve all the IO port ranges in the motherboard device 
+before this gpio driver had a chance to take reserve them.
 
-> 
-> For ftrace we can (hopefully) avoid a lot of this when we have known points
-> of modification.
+I have to re-check if this is still the case.
 
-I'm also thinking about tracepoints which behave almost the same as
-ftrace. They have nop place holders too. They happen to be 32bits too,
-but may only need to be 16 bit. The way tracepoints work is with the use
-of asm goto. For example we have:
+>> +struct lp_gpio {
+>> +       struct gpio_chip        chip;
+>> +       struct irq_domain       *domain;
+>> +       struct platform_device  *pdev;
+>> +       spinlock_t              lock;
+>> +       unsigned                hwirq;
+>
+> This struct member is only used in probe() so make it a local variable there
+> and cut it from the struct.
+>
+>> +       unsigned long           reg_base;
+>> +       unsigned long           reg_len;
+>
+> Same comment for reg_len.
 
-arch/arm/include/asm/jump_label.h
+Will fix
 
-#ifdef CONFIG_THUMB2_KERNEL
-#define JUMP_LABEL_NOP	"nop.w"
-#else
-#define JUMP_LABEL_NOP	"nop"
-#endif
+>
+>> +};
+>> +
+>> +static unsigned long gpio_reg(struct gpio_chip *chip, unsigned gpio, int reg)
+>
+> Rename lp_gpio_reg() so as to match the family.
+>
+> Rename the argument "gpio" to "offset" since it's a local number,
+> not in the global GPIO numberspace. (Please change this everywhere
+> a local index is used.)
 
-static __always_inline bool arch_static_branch(struct static_key *key)
-{
-	asm goto("1:\n\t"
-		 JUMP_LABEL_NOP "\n\t"
-		 ".pushsection __jump_table,  \"aw\"\n\t"
-		 ".word 1b, %l[l_yes], %c0\n\t"
-		 ".popsection\n\t"
-		 : :  "i" (key) :  : l_yes);
+Sure.
 
-	return false;
-l_yes:
-	return true;
-}
+>
+>> +{
+>> +       struct lp_gpio *lg = container_of(chip, struct lp_gpio, chip);
+>> +       int offset;
+>> +
+>> +       if (reg == LP_CONFIG1 || reg == LP_CONFIG2)
+>> +               offset = gpio * 8;
+>> +       else
+>> +               offset = (gpio / 32) * 4;
+>
+> Put in some comment above this explaining the layout of the offsets
+> for these two cases so we understand what's happening here.
+>
+>> +       return lg->reg_base + reg + offset;
+>> +}
+>> +
+>> +static int lp_gpio_request(struct gpio_chip *chip, unsigned gpio)
+>> +{
+>> +       struct lp_gpio *lg = container_of(chip, struct lp_gpio, chip);
+>> +       unsigned long reg = gpio_reg(chip, gpio, LP_CONFIG1);
+>> +       unsigned long conf2 = gpio_reg(chip, gpio, LP_CONFIG2);
+>> +       unsigned long acpi_use = gpio_reg(chip, gpio, LP_ACPI_OWNED);
+>> +
+>> +       /* Fail if BIOS reserved pin for ACPI use */
+>> +       if (!(inl(acpi_use)&  BIT(gpio % 32))) {
+>> +               dev_err(&lg->pdev->dev, "gpio %d reserved for ACPI\n", gpio);
+>> +               return -EBUSY;
+>> +       }
+>
+> This %32 magic only seems to consider the latter part of the if()
+> statement in the gpio_reg() function. It's like you assume only the
+> (gpio / 32) * 4 path to be taken. It seems that for the two models
+> handled there this should be %8 or something. Or I'm getting it
+> wrong, which is an indication that something is pretty unclear here...
+>
 
-Tracepoints use the jump-label "static branch" logic, which uses a gcc
-4.6 feature called asm goto. The asm goto allows the internal asm to
-reference a label outside the asm stamement and the compiler is aware
-that the asm statement may jump to that label. Thus the compiler treats
-that asm statement as a possible branch to the given label and it wont
-optimize required statements after the asm, if they are needed for the
-jump to the label.
+I should document the register layout better. It's a bit messy because 
+in some cases a register represents a functionality where each bit 
+stands for a gpio (bitmapped) (each register is 32 bit, so to cover all 
+94 gpios three 32bit registers are needed).
 
-Now in include/linux/tracepoint.h we have:
+In other cases a register represent a gpio, and each bit a 
+functionality. This is the case with LP_CONFIGx registers. So we got
+94 LP_CONFIG1 registers and 94 LP_CONFIG2 registers.
 
-	static inline void trace_##name(proto)				\
-	{								\
-		if (static_key_false(&__tracepoint_##name.key))		\
-			__DO_TRACE(&__tracepoint_##name,		\
-				TP_PROTO(data_proto),			\
-				TP_ARGS(data_args),			\
-				TP_CONDITION(cond),,);			\
-	}								\
+In the case of acpi_use & BIT(gpio % 32) I know that acpi_used is 
+pointing to one of the three LP_ACPI_OWNED bitmapped registers, and the 
+(gpio / 32 * 4) path is taken, and % 32 will work.
 
-Where the static_key_false() is an "unlikely" version of the
-static_branch() that tells gcc the result of the if statement goes into
-the unlikely location (end of function perhaps).
+I'll add better description of the register layout as a comment
 
-But this doesn't guarantee that it becomes part of some if statement, so
-this doesn't have all the limitations that ftrace mcount call has.
+>> +static void lp_irq_enable(struct irq_data *d)
+>> +{
+>> +       struct lp_gpio *lg = irq_data_get_irq_chip_data(d);
+>> +       u32 gpio = irqd_to_hwirq(d);
+>
+> That variable is confusingly named. It's not a global gpio number,
+> it's a local offset, so please rename it "offset".
 
--- Steve
+sure, (is "pin" ok?  "offset" is already used in may places)
 
+>> +#ifdef CONFIG_ACPI
+>> +static const struct acpi_device_id lynxpoint_gpio_acpi_match[] = {
+>> +       { "INT33C7", 0 },
+>> +       { }
+>> +};
+>> +MODULE_DEVICE_TABLE(acpi, lynxpoint_gpio_acpi_match);
+>> +#endif
+>
+> Aha so how many users are there of this driver which are not
+> using ACPI?
+>
+> If zero, why not just depend on ACPI in Kconfig?
+>
+
+Only ACPI support for now.
+Will remove ifdefs and add dependency.
+
+>> +static int __devexit lp_gpio_remove(struct platform_device *pdev)
+>
+> All __devinit/__devexit macros are going away in v3.8 so delete them
+> everywhere.
+
+Ah, Ok.
+
+>
+> Yours,
+> Linus Walleij
+
+Thanks for taking the time to review this, I'll make the suggested changes.
+
+I also got some offline comments about adding runtime pm/system suspend 
+code to this driver.
+
+-Mathias
