@@ -1,131 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab2LJKIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:08:22 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35089 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab2LJKIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:08:20 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH] Introduce rproc serial device specification.
-Date: Mon, 10 Dec 2012 11:08:09 +0100
-Message-Id: <1355134089-3284-1-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20121210055443.GB17187@amit.redhat.com>
-References: <20121210055443.GB17187@amit.redhat.com>
+	id S1754188Ab2LJKKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:10:14 -0500
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:30835
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751677Ab2LJKKL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:10:11 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zzbb2dI98dI9371I542I1432I179dNzz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Wood Scott-B07421 <B07421@freescale.com>
+CC: Joerg Roedel <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Tabi Timur-B04825 <B04825@freescale.com>
+Subject: RE: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
+ by fsl PAMU driver.
+Thread-Topic: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
+ by fsl PAMU driver.
+Thread-Index: AQHN0kxereXJamSE4kOq4mmamJ54mJgR0yZA
+Date: Mon, 10 Dec 2012 10:10:06 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D2C09A4@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <C5ECD7A89D1DC44195F34B25E172658D2B70EE@039-SN2MPN1-013.039d.mgd.msft.net>
+	(from B16395@freescale.com on Tue Dec  4 05:53:33 2012)
+ <1354645371.16710.15@snotra>
+In-Reply-To: <1354645371.16710.15@snotra>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.132.77]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
-
->> Please pick the virtio spec from
->> 
->> https://github.com/rustyrussell/virtio-spec
->> 
->> and update the spec with info for remote-proc.
->
->Hi Sjur,
->
->I didn't hear back from you on this..
->
-
-Hi Amit
-Sorry for the delay. I've had this ready for a while waiting for
-go-ahead from our legal dept, and then it got stuck in my backlog.
-
-Anyway, here is a stab at describing the rproc serial device.
-Feedback is welcomed.
-
-Thanks,
-Sjur
 
 
- virtio-spec.lyx |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+> -----Original Message-----
+> From: Wood Scott-B07421
+> Sent: Tuesday, December 04, 2012 11:53 PM
+> To: Sethi Varun-B16395
+> Cc: Wood Scott-B07421; Joerg Roedel; linux-kernel@vger.kernel.org;
+> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; Tabi
+> Timur-B04825
+> Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
+> required by fsl PAMU driver.
+> 
+> On 12/04/2012 05:53:33 AM, Sethi Varun-B16395 wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Wood Scott-B07421
+> > > Sent: Monday, December 03, 2012 10:34 PM
+> > > To: Sethi Varun-B16395
+> > > Cc: Joerg Roedel; linux-kernel@vger.kernel.org; iommu@lists.linux-
+> > > foundation.org; Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org;
+> > Tabi
+> > > Timur-B04825
+> > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
+> > > required by fsl PAMU driver.
+> > >
+> > > On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> > > > > bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
+> > > > > Sent: Sunday, December 02, 2012 7:33 PM
+> > > > > To: Sethi Varun-B16395
+> > > > > Cc: linux-kernel@vger.kernel.org;
+> > iommu@lists.linux-foundation.org;
+> > > > Wood
+> > > > > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi Timur-B04825
+> > > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain
+> > attributes
+> > > > > required by fsl PAMU driver.
+> > > > >
+> > > > > Hmm, we need to work out a good abstraction for this.
+> > > > >
+> > > > > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
+> > > > > > Added the following domain attributes required by FSL PAMU
+> > driver:
+> > > > > > 1. Subwindows field added to the iommu domain geometry
+> > attribute.
+> > > > >
+> > > > > Are the Subwindows mapped with full size or do you map only
+> > parts
+> > > > of the
+> > > > > subwindows?
+> > > > >
+> > > > [Sethi Varun-B16395] It's possible to map a part of the subwindow
+> > i.e.
+> > > > size of the mapping can be less than the sub window size.
+> > > >
+> > > > > > +	 * This attribute indicates number of DMA subwindows
+> > > supported
+> > > > by
+> > > > > > +	 * the geometry. If there is a single window that maps
+> > the
+> > > > entire
+> > > > > > +	 * geometry, attribute must be set to "1". A value of
+> > "0"
+> > > > implies
+> > > > > > +	 * that this mechanism is not used at all(normal paging
+> > is
+> > > > used).
+> > > > > > +	 * Value other than* "0" or "1" indicates the actual
+> > number
+> > > of
+> > > > > > +	 * subwindows.
+> > > > > > +	 */
+> > > > >
+> > > > > This semantic is ugly, how about a feature detection mechanism?
+> > > > >
+> > > > [Sethi Varun-B16395] A feature mechanism to query the type of
+> > IOMMU?
+> > >
+> > > A feature mechanism to determine whether this subwindow mechanism is
+> > > available, and what the limits are.
+> > >
+> > So, we use the IOMMU capability interface to find out if IOMMU
+> > supports sub windows or not, right? But still number of sub windows
+> > would be specified as a part of the geometry and the valid value for
+> > sub windows would  0,1 or actual number of sub windows.
+> 
+> How does a user of the interface find out what values are possible for
+> the "actual number of subwindows"?  How does a user of the interface find
+> out whether there are any limitations on specifying a value of zero (in
+> the case of PAMU, that would be a maximum 1 MiB naturally-aligned
+> aperture to support arbitrary 4KiB mappings)?
+How about if we say that the default value for subwindows is zero and this what you get when you read the geometry (iommu_get_attr) after initializing the domain? In that case the user would know that implication of setting subwindows to zero with respect to the aperture size. Also, should we introduce an additional API like "iommu_check_attr", which the user can use to validate the attribute value. For example in case of geometry, the user can fill up the structure and pass it to the iommu driver in order to verify the aperture and subwindows field.
 
-diff --git a/virtio-spec.lyx b/virtio-spec.lyx
-index 83f2771..bbb5c75 100644
---- a/virtio-spec.lyx
-+++ b/virtio-spec.lyx
-@@ -9079,6 +9079,64 @@ For MMC devices (inquiry type 5) there would be some overlap between this
- 
- \end_deeper
- \begin_layout Chapter*
-+Appendix J: Rproc Serial Device
-+\end_layout
-+
-+\begin_layout Standard
-+The Remoteproc Serial Device device is used when communicating with a remote
-+ processor.
-+ The remote processor may be a modem communicating over a shared memory
-+ interface, or a CPU in an asymmetric multi-processing (AMP) configuration.
-+ The Remoteproc Serial Device provides a simple device for data IO.
-+ A device has one port and a single pair of virtqueues for input and output.
-+ Empty buffers are placed in one virtqueue for receiving packets, and outgoing
-+ packets are enqueued into another for transmission.
-+\end_layout
-+
-+\begin_layout Section*
-+Configuration
-+\end_layout
-+
-+\begin_layout Description
-+Subsystem
-+\begin_inset space ~
-+\end_inset
-+
-+Device
-+\begin_inset space ~
-+\end_inset
-+
-+ID 11
-+\end_layout
-+
-+\begin_deeper
-+\begin_layout Description
-+Virtqueues 0:receiveq(port0).
-+ 1:transmitq(port0),
-+\end_layout
-+
-+\begin_layout Section*
-+Device Initialization
-+\end_layout
-+
-+\begin_layout Enumerate
-+The receiveq for each port is populated with one or more receive buffers.
-+\end_layout
-+
-+\begin_layout Section*
-+Device Operation
-+\end_layout
-+
-+\begin_layout Enumerate
-+For output, a buffer containing the characters is placed in the port's transmitq.
-+\end_layout
-+
-+\begin_layout Enumerate
-+Inbound messages are placed in the receiveq and signalled by an interrupt.
-+\end_layout
-+
-+\end_deeper
-+\begin_layout Chapter*
- Appendix X: virtio-mmio
- \end_layout
- 
--- 
-1.7.9.5
+-Varun
 
