@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab2LJPOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 10:14:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44964 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab2LJPOs (ORCPT
+	id S1752961Ab2LJPQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 10:16:12 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17117 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2LJPQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 10:14:48 -0500
-From: Joonsoo Kim <js1304@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH v3 2/2] scripts/tags.sh: Support compiled source
-Date: Tue, 11 Dec 2012 00:11:46 +0900
-Message-Id: <1355152306-4513-2-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355152306-4513-1-git-send-email-js1304@gmail.com>
-References: <1355152306-4513-1-git-send-email-js1304@gmail.com>
+	Mon, 10 Dec 2012 10:16:11 -0500
+Date: Mon, 10 Dec 2012 10:15:33 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] xen-blkfront: implement safe version of
+ llist_for_each_entry
+Message-ID: <20121210151533.GE6955@localhost.localdomain>
+References: <1354630913-17287-1-git-send-email-roger.pau@citrix.com>
+ <1354630913-17287-2-git-send-email-roger.pau@citrix.com>
+ <20121207202003.GA9462@phenom.dumpdata.com>
+ <50C5D276.6090009@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50C5D276.6090009@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We usually have interst in compiled files only,
-because they are strongly related to individual's work.
-Current tags.sh can't select compiled files, so support it.
+On Mon, Dec 10, 2012 at 01:15:50PM +0100, Roger Pau Monné wrote:
+> On 07/12/12 21:20, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Dec 04, 2012 at 03:21:53PM +0100, Roger Pau Monne wrote:
+> >> Implement a safe version of llist_for_each_entry, and use it in
+> >> blkif_free. Previously grants where freed while iterating the list,
+> >> which lead to dereferences when trying to fetch the next item.
+> > 
+> > Looks like xen-blkfront is the only user of this llist_for_each_entry.
+> > 
+> > Would it be more prudent to put the macro in the llist.h file?
+> 
+> I'm not able to find out who is the maintainer of llist, should I just
+> CC it's author?
 
-We can use this functionality like below.
-"make cscope O=. SRCARCH=xxxx COMPILED_SOURCE=compiled"
-
-It must be executed after building the kernel.
-
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
----
-v2: change bash specific '[[]]' to 'case in' statement.
-    use COMPILED_SOURCE env var, instead of abusing SUBARCH
-v3: change [ "$COMPILED_SOURCE"="compiled" ] to [ -n $COMPILED_SOURCE" ]
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 8fb18d1..08f06c0 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -96,6 +96,32 @@ all_sources()
- 	find_other_sources '*.[chS]'
- }
- 
-+all_compiled_sources()
-+{
-+	for i in $(all_sources); do
-+		case "$i" in
-+			*.[cS])
-+				j=${i/\.[cS]/\.o}
-+				if [ -e $j ]; then
-+					echo $i
-+				fi
-+				;;
-+			*)
-+				echo $i
-+				;;
-+		esac
-+	done
-+}
-+
-+all_target_sources()
-+{
-+	if [ -n "$COMPILED_SOURCE" ]; then
-+		all_compiled_sources
-+	else
-+		all_sources
-+	fi
-+}
-+
- all_kconfigs()
- {
- 	for arch in $ALLSOURCE_ARCHS; do
-@@ -111,18 +137,18 @@ all_defconfigs()
- 
- docscope()
- {
--	(echo \-k; echo \-q; all_sources) > cscope.files
-+	(echo \-k; echo \-q; all_target_sources) > cscope.files
- 	cscope -b -f cscope.out
- }
- 
- dogtags()
- {
--	all_sources | gtags -i -f -
-+	all_target_sources | gtags -i -f -
- }
- 
- exuberant()
- {
--	all_sources | xargs $1 -a                               \
-+	all_target_sources | xargs $1 -a                        \
- 	-I __initdata,__exitdata,__acquires,__releases          \
- 	-I __read_mostly,____cacheline_aligned                  \
- 	-I ____cacheline_aligned_in_smp                         \
-@@ -174,7 +200,7 @@ exuberant()
- 
- emacs()
- {
--	all_sources | xargs $1 -a                               \
-+	all_target_sources | xargs $1 -a                        \
- 	--regex='/^(ENTRY|_GLOBAL)(\([^)]*\)).*/\2/'            \
- 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
- 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
-@@ -221,11 +247,10 @@ xtags()
- 	elif $1 --version 2>&1 | grep -iq emacs; then
- 		emacs $1
- 	else
--		all_sources | xargs $1 -a
-+		all_target_sources | xargs $1 -a
-         fi
- }
- 
--
- # Support um (which uses SUBARCH)
- if [ "${ARCH}" = "um" ]; then
- 	if [ "$SUBARCH" = "i386" ]; then
--- 
-1.7.9.5
-
+Sure. I CC-ed akpm here to solicit his input as well. Either way I am
+OK wit this being in xen-blkfront but it just seems that it could
+be useful in the llist file since that is where the non-safe version
+resides.
+> 
