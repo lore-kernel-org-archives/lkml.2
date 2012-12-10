@@ -1,66 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab2LJDSG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 22:18:06 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:54762 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2LJDSF convert rfc822-to-8bit (ORCPT
+	id S1751826Ab2LJDUD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 22:20:03 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33922 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751637Ab2LJDUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 22:18:05 -0500
+	Sun, 9 Dec 2012 22:20:01 -0500
+Date: Mon, 10 Dec 2012 12:19:55 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regulator: lp8788-buck: Kill _gpio_request function
+Message-ID: <20121210031954.GC10927@opensource.wolfsonmicro.com>
+References: <1354872181.15243.1.camel@phoenix>
+ <1354872313.15243.3.camel@phoenix>
 MIME-Version: 1.0
-Date: Mon, 10 Dec 2012 11:18:03 +0800
-Message-ID: <CAOZoOZUxcuzww-jywHxLohOWCMRvZ+NOM8BL2aNm_9a2PhbtJQ@mail.gmail.com>
-Subject: How about changing block size to fast huge memory init of sysfs
-From: yanchao wu <1446206@gmail.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354872313.15243.3.camel@phoenix>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hanse,
+On Fri, Dec 07, 2012 at 05:25:13PM +0800, Axel Lin wrote:
+> Simply use devm_gpio_request_one() instead.
 
-               I am reading the drive/base/memory.c that you the
-maintainer of it. I met a
+Applied, thanks.
 
-problem, could you help me with it?
-
-                My panic is following:  BUG: soft lockup - CPU#0 stuck
-for 22s! [swapper:1]
-
-. This is a warning from watch dog .  My platform is 4tb memory ,
-64bit x86, SLES sp2
-
-3.0.13 kernel.
-
-In the beginning, I found that a unnecessary search method named
-“find_ memory_block”
-
-then  removed( similar with one commit I found later). It reduced time
-from 50s to30s.
-
-Unluckily ,still show the panic.   I think the most expensive cost is
-register process.
-
-Because in 4TB  64bit, there are about 320000 block to register.   If
-we can reduce the
-
-block number, then the time cost will be smaller. So my another
-propose is to make block
-
-size bigger,  then sections_per_block will bigger, then more sections
-belong to one block ,
-
-then less block to register ,then less time will cost.
-
-               Is my propose suitable? If  yes, how to change the block size.
-
-
-
-
-
-Best regards,
-
-Yanchao
+Milo, you don't have a MAINTAINERS entry for this chip - would you mind
+sending a patch adding one as you are reviewing patches for the driver?
+This will ensure that people send you patches for review.
