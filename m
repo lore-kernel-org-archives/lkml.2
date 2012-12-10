@@ -1,47 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab2LJK2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:28:06 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52782 "EHLO multi.imgtec.com"
+	id S1754470Ab2LJKVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:21:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48772 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754127Ab2LJK2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 05:28:03 -0500
-Message-ID: <50C5B8FC.3080003@imgtec.com>
-Date: Mon, 10 Dec 2012 10:27:08 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754403Ab2LJKVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 05:21:04 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
+CC: <paul@pwsan.com>, <keshava_mgowda@ti.com>, <sshtylyov@mvista.com>,
+        <bjorn@mork.no>, <rogerq@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4 05/23] mfd: omap-usb-tll: Clean up clock handling
+Date: Mon, 10 Dec 2012 12:20:15 +0200
+Message-ID: <1355134833-5199-6-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1355134833-5199-1-git-send-email-rogerq@ti.com>
+References: <1355134833-5199-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Ingo Molnar" <mingo@redhat.com>
-Subject: Re: [PATCH v2 04/44] trace/ring_buffer: handle 64bit aligned structs
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>  <1354723742-6195-5-git-send-email-james.hogan@imgtec.com> <1354929851.17101.105.camel@gandalf.local.home>
-In-Reply-To: <1354929851.17101.105.camel@gandalf.local.home>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_12_10_10_27_58
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/12 01:24, Steven Rostedt wrote:
-> On Wed, 2012-12-05 at 16:08 +0000, James Hogan wrote:
->> Some 32 bit architectures have 64 bit struct alignment (for example
->> Meta which has 64 bit read/write instructions). These require 8 byte
->> alignment of event data too, so use CONFIG_HAVE_64BIT_ALIGNED_STRUCT
->> instead of CONFIG_64BIT to decide alignment, and align
->> buffer_data_page::data accordingly.
->>
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Every channel has a functional clock that is similarly named.
+It makes sense to use a for loop to manage these clocks as OMAPs
+can come with up to 3 channels.
 
-Thanks Steven
+Dynamically allocate and get channel clocks depending on the
+number of clocks avaiable on the platform.
 
-Cheers
-James
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/mfd/omap-usb-tll.c |   93 +++++++++++++++++++++++++++-----------------
+ 1 files changed, 57 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 828207f..7d0f6cf 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -96,10 +96,9 @@
+ #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
+ 
+ struct usbtll_omap {
+-	struct clk				*usbtll_p1_fck;
+-	struct clk				*usbtll_p2_fck;
+ 	int					nch;	/* num. of channels */
+ 	struct usbtll_omap_platform_data	*pdata;
++	struct clk				**ch_clk;
+ 	/* secure the register updates */
+ 	spinlock_t				lock;
+ };
+@@ -225,26 +224,10 @@ static int __devinit usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	tll->pdata = pdata;
+ 
+-	tll->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+-	if (IS_ERR(tll->usbtll_p1_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p1_fck);
+-		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		return ret;
+-	}
+-
+-	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+-	if (IS_ERR(tll->usbtll_p2_fck)) {
+-		ret = PTR_ERR(tll->usbtll_p2_fck);
+-		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_p2_fck;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	base = devm_request_and_ioremap(dev, res);
+-	if (!base) {
+-		ret = -EADDRNOTAVAIL;
+-		goto err_res;
+-	}
++	if (!base)
++		return -EADDRNOTAVAIL;
+ 
+ 	platform_set_drvdata(pdev, tll);
+ 	pm_runtime_enable(dev);
+@@ -269,6 +252,32 @@ static int __devinit usbtll_omap_probe(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
++	spin_unlock_irqrestore(&tll->lock, flags);
++
++	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
++						GFP_KERNEL);
++	if (!tll->ch_clk) {
++		ret = -ENOMEM;
++		dev_err(dev, "Couldn't allocate memory for channel clocks\n");
++		goto err_clk_alloc;
++	}
++
++	spin_lock_irqsave(&tll->lock, flags);
++
++	for (i = 0; i < tll->nch; i++) {
++		char clkname[] = "usb_tll_hs_usb_chx_clk";
++		struct clk *fck;
++
++		snprintf(clkname, sizeof(clkname),
++					"usb_tll_hs_usb_ch%d_clk", i);
++		fck = clk_get(dev, clkname);
++
++		if (IS_ERR(fck))
++			dev_dbg(dev, "can't get clock : %s\n", clkname);
++		else
++			tll->ch_clk[i] = fck;
++	}
++
+ 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[1]) ||
+ 	    is_ehci_tll_mode(pdata->port_mode[2]) ||
+@@ -320,11 +329,9 @@ static int __devinit usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-err_res:
+-	clk_put(tll->usbtll_p2_fck);
+-
+-err_p2_fck:
+-	clk_put(tll->usbtll_p1_fck);
++err_clk_alloc:
++	pm_runtime_put_sync(dev);
++	pm_runtime_disable(dev);
+ 
+ 	return ret;
+ }
+@@ -338,9 +345,11 @@ err_p2_fck:
+ static int __devexit usbtll_omap_remove(struct platform_device *pdev)
+ {
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < tll->nch; i++)
++		clk_put(tll->ch_clk[i]);
+ 
+-	clk_put(tll->usbtll_p2_fck);
+-	clk_put(tll->usbtll_p1_fck);
+ 	pm_runtime_disable(&pdev->dev);
+ 	return 0;
+ }
+@@ -350,6 +359,7 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbtll_omap_platform_data	*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_resume\n");
+ 
+@@ -360,11 +370,20 @@ static int usbtll_runtime_resume(struct device *dev)
+ 
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_enable(tll->usbtll_p1_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			int r;
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_enable(tll->usbtll_p2_fck);
++			if (!tll->ch_clk[i])
++				continue;
++
++			r = clk_enable(tll->ch_clk[i]);
++			if (r) {
++				dev_err(dev,
++				 "Error enabling ch %d clock: %d\n", i, r);
++			}
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
+@@ -376,6 +395,7 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 	struct usbtll_omap			*tll = dev_get_drvdata(dev);
+ 	struct usbtll_omap_platform_data	*pdata = tll->pdata;
+ 	unsigned long				flags;
++	int i;
+ 
+ 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 
+@@ -386,11 +406,12 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 
+ 	spin_lock_irqsave(&tll->lock, flags);
+ 
+-	if (is_ehci_tll_mode(pdata->port_mode[0]))
+-		clk_disable(tll->usbtll_p1_fck);
+-
+-	if (is_ehci_tll_mode(pdata->port_mode[1]))
+-		clk_disable(tll->usbtll_p2_fck);
++	for (i = 0; i < tll->nch; i++) {
++		if (is_ehci_tll_mode(pdata->port_mode[i])) {
++			if (tll->ch_clk[i])
++				clk_disable(tll->ch_clk[i]);
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+ 
+-- 
+1.7.4.1
 
