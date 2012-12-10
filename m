@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab2LJOVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 09:21:15 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11777 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab2LJOVO (ORCPT
+	id S1753755Ab2LJO2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 09:28:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53280 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2LJO2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 09:21:14 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=cU5zP3iA40MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wzXg5rMBBV8A:10 a=K9rc9MkwzZ3N4lOTNtoA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355149273.17101.176.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH] sched: rt: fix selecting runqueue for task to be
- pushed
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Dec 2012 09:21:13 -0500
-In-Reply-To: <CAJd=RBCk0eWQqTk-BX8_=aBdYEQnbnf57dHZdcVbWbVY=33OhQ@mail.gmail.com>
-References: <CAJd=RBCk0eWQqTk-BX8_=aBdYEQnbnf57dHZdcVbWbVY=33OhQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Dec 2012 09:28:09 -0500
+Date: Mon, 10 Dec 2012 08:27:57 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        linux-security-module@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        Markku Savela <msa@moth.iki.fi>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+Message-ID: <20121210142757.GA8137@sergelap>
+References: <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
+ <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
+ <20121204135445.GA7420@mail.hallyn.com>
+ <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+ <20121205210528.GA9047@sergelap>
+ <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+ <20121205222040.GB14884@sergelap>
+ <50C13F0E.5010401@schaufler-ca.com>
+ <20121207144233.GA6681@mail.hallyn.com>
+ <CALQRfL6UWLFpTfvan9oirtLdozJqZX4oZwDuQFVnJp8MP06C_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALQRfL6UWLFpTfvan9oirtLdozJqZX4oZwDuQFVnJp8MP06C_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 20:19 +0800, Hillf Danton wrote:
-> When we are trying to push task out, no point to select the last cpu that
-> the given task executed on, which is fixed by selecting target cpu with
-> cache affinity concerned, and with SD_WAKE_AFFINE ignored as we are not
-> handling sleeper.
+Quoting Andrew G. Morgan (morgan@kernel.org):
+> I'm still missing something with the problem definition.
+> 
+> So far if I follow the discussion we have determined that inheritance as
+> implemented is OK except for the fact that giving user an inheritable pI
+> bit which gives them default permission to use all binaries endowed with
+> the corresponding file fI bit.
 
-I have to ask. Why?
+There is another objection which ahs been raised, namely that it leaves too
+many tiny but crucial bits of security relevant information spread throughout
+the filesystem.
 
-The check you are skipping is if the task is running on a CPU that is
-already the lowest CPU priority (lowest_mask returns the CPUs running
-tasks of the lowest priority in the system). Which means that either the
-task that we are pushing is the same priority or lesser priority than
-what is running on the other CPUs. Either case, this task wont push out
-a task on the other CPUs because it's not higher priority than those
-tasks.
+This has also been said about using security.selinux xattrs.  The answer as
+there could be a good set of tools to set and report the system wide state.
+In fact, libcap-ng provides such tools, to list the file capabilities
+throughout the system and capabilities in use by all running programs.
 
-You just added more work for the same result (no push).
-
--- Steve
-
-
+-serge
