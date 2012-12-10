@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab2LJHJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 02:09:39 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56684 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab2LJHJg (ORCPT
+	id S1752537Ab2LJHLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 02:11:18 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39968 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2LJHLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 02:09:36 -0500
-Date: Mon, 10 Dec 2012 16:09:28 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Liam Girdwood <lrg@ti.com>, matthias@kaehlcke.net,
-        kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] sound/soc/soc-core.c: drop kfree of devm_kzalloc's
- data
-Message-ID: <20121210070927.GK10927@opensource.wolfsonmicro.com>
-References: <1354989680-25794-1-git-send-email-Julia.Lawall@lip6.fr>
- <20121210052334.GI10927@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1212100709450.2213@localhost6.localdomain6>
+	Mon, 10 Dec 2012 02:11:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1212100709450.2213@localhost6.localdomain6>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 10 Dec 2012 02:11:13 -0500
+Message-ID: <CAPgLHd8Bft7nY1A2S87vB2NbVOKBJreLNk_ti18WsauOLq-juw@mail.gmail.com>
+Subject: [PATCH -next v2] drm/exynos/iommu: fix return value check in drm_create_iommu_mapping()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, airlied@linux.ie
+Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 07:10:16AM +0100, Julia Lawall wrote:
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-> Sorry, I just resent the patch as is.  1 and 2 were I guess applied,
-> because I odn't findthe problem any more.
+In case of error, function arm_iommu_create_mapping() returns
+ERR_PTR() and never returns NULL. The NULL test in the return
+value check should be replaced with IS_ERR().
 
-It looks like this is what happened the first time round as well - I
-only got patch 3 but it was flagged as part of a three patch series.
-Please don't do things like this, it makes the patch look like part of a
-series which has already been applied but didn't get deleted when it's
-sitting in an inbox.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/gpu/drm/exynos/exynos_drm_iommu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_iommu.c b/drivers/gpu/drm/exynos/exynos_drm_iommu.c
+index 09db198..2482b7f 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_iommu.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_iommu.c
+@@ -56,8 +56,8 @@ int drm_create_iommu_mapping(struct drm_device *drm_dev)
+ 	mapping = arm_iommu_create_mapping(&platform_bus_type, priv->da_start,
+ 						priv->da_space_size,
+ 						priv->da_space_order);
+-	if (!mapping)
+-		return -ENOMEM;
++	if (IS_ERR(mapping))
++		return PTR_ERR(mapping);
+ 
+ 	dev->dma_parms = devm_kzalloc(dev, sizeof(*dev->dma_parms),
+ 					GFP_KERNEL);
+
+
