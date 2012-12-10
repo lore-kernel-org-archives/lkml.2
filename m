@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2LJAKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Dec 2012 19:10:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:44790 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305Ab2LJAKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Dec 2012 19:10:19 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Michal Marek <mmarek@suse.cz>, pefoley2@verizon.net,
-        David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/5] kbuild: silence rule for extra_certificates
-In-Reply-To: <20121209165425.GA29331@pobox.suse.cz>
-References: <1353269117-39917-1-git-send-email-pefoley2@verizon.net> <1353269117-39917-2-git-send-email-pefoley2@verizon.net> <20121209165425.GA29331@pobox.suse.cz>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 10 Dec 2012 10:38:38 +1030
-Message-ID: <87d2yiepkp.fsf@rustcorp.com.au>
+	id S1755396Ab2LJARY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Dec 2012 19:17:24 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49691 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755329Ab2LJARX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Dec 2012 19:17:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Mon, 10 Dec 2012 01:17:21 +0100
+Message-ID: <CAGDELX7f-Ee-V_M8kbDONRFCTBbZM2H_Q17Bk_12r4xw85Wq4Q@mail.gmail.com>
+Subject: "attempt to access beyond end of device" on DVD
+From: Jacek Poplawski <jacekpoplawski@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Marek <mmarek@suse.cz> writes:
-> Added David and Rusty.
->
-> On Sun, Nov 18, 2012 at 03:05:14PM -0500, pefoley2@verizon.net wrote:
->> From: Peter Foley <pefoley2@verizon.net>
->> 
->> Silence the touch extra_certificates command
->> 
->> Signed-off-by: Peter Foley <pefoley2@verizon.net>
->
-> I think we should tell the user that the default empty extra
-> certificates list is being used, in case the user used a wrong filename
-> or similar. How about this?
+hello,
 
-I prefer this one... Peter?
+few years ago I noticed annoying bug on Linux, when I was copying
+photos from old DVDs I realized that not all files were copied
+correctly, there were errors on last files on DVD, you could say "well
+that happens, DVD are faulty", but that's not the real issue
 
-Thanks,
-Rusty.
+when the problem appears it happens on each DVD I am trying to copy,
+last files on each disk have errors....
 
->
-> Subject: MODSIGN: Fix kbuild output when using default extra_certificates
->
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
->
-> diff --git a/kernel/Makefile b/kernel/Makefile
-> index 0dfeca4..8c708e4 100644
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -136,8 +136,12 @@ ifeq ($(CONFIG_MODULE_SIG),y)
->  #
->  # Pull the signing certificate and any extra certificates into the kernel
->  #
-> +
-> +quiet_cmd_touch = TOUCH   $@
-> +      cmd_touch = touch   $@
-> +
->  extra_certificates:
-> -	touch $@
-> +	$(call cmd,touch)
->  
->  kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
->  
-> But I don't insist on the above, feel free to hide the command
-> completely.
->
-> Michal
->
->> ---
->>  kernel/Makefile | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/kernel/Makefile b/kernel/Makefile
->> index 86e3285..18a0b61 100644
->> --- a/kernel/Makefile
->> +++ b/kernel/Makefile
->> @@ -137,7 +137,7 @@ ifeq ($(CONFIG_MODULE_SIG),y)
->>  # Pull the signing certificate and any extra certificates into the kernel
->>  #
->>  extra_certificates:
->> -	touch $@
->> +	@touch $@
->>  
->>  kernel/modsign_pubkey.o: signing_key.x509 extra_certificates
->>  
->> -- 
->> 1.8.0
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+...until I reboot Linux, then there are no errors at all and full DVD
+is copied correctly.
+
+Now I needed some files from DVDs and I realized the problem still
+exists. After at least three years. I verified that reboot helps and I
+also noticed the problem doesn't exist on Windows 7.
+
+And looks like I wasn't only one who found this:
+
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/404472
+
+Problem was reported in 2009 on 2.6.28 and closed in 2012. But I
+noticed it in last days.
+
+my system is:
+
+Linux version 3.6.8-1-ARCH (tobias@T-POWA-LX) (gcc version 4.7.2 (GCC)
+) #1 SMP PREEMPT Mon Nov 26 22:10:40 CET 2012
+
+dmesg:
+
+[ 4017.384169] attempt to access beyond end of device
+[ 4017.384171] sr0: rw=0, want=8511124, limit=8433216
+[ 4017.384174] attempt to access beyond end of device
+[ 4017.384175] sr0: rw=0, want=8510876, limit=8433216
+
+I suspect that people just stopped using CDs and DVDs and that's why
+nobody was looking on this problem, or maybe the first though was
+always "that DVD is broken, trash it".
+
+Is there more information I could give you about this issue? Or could
+you point me to any ways I could debug it? It's fully reproducible on
+my system.
