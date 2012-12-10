@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2LJKa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 05:30:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab2LJKaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754538Ab2LJKa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 05:30:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51967 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab2LJKaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Dec 2012 05:30:55 -0500
-Message-ID: <50C5B9D9.1080208@suse.cz>
-Date: Mon, 10 Dec 2012 11:30:49 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+Date: Mon, 10 Dec 2012 10:30:50 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 11/12] ARM: ux500: Use the GPIO regulator framework for
+ SDI0's 'en' and 'vsel'
+Message-ID: <20121210103050.GE9362@gmail.com>
+References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
+ <1355129761-8088-12-git-send-email-lee.jones@linaro.org>
+ <CAPDyKFo8NjiYdcyx3pk8byc1N2f7r+erQj74A1zhOaNK_WbkZA@mail.gmail.com>
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Noam Camus <noamc@ezchip.com>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: Makefile race between jobs
-References: <264C179F799EF24AB26D5319053335E80CC3049A10@ezexch.ezchip.com> <50C4B8F3.6030704@suse.cz> <264C179F799EF24AB26D5319053335E80CC31B9D41@ezexch.ezchip.com> <20121210094515.GA31121@sepie.suse.cz> <50C5B54B.5080806@synopsys.com>
-In-Reply-To: <50C5B54B.5080806@synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDyKFo8NjiYdcyx3pk8byc1N2f7r+erQj74A1zhOaNK_WbkZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.12.2012 11:11, Vineet Gupta wrote:
-> ARC Port caches current task pointer in a register - thus we have a
-> global asm register definition in current.h
-> In the past, a customer ran into issue when porting some "really
-> portable" code to kernel - such that asm/current.h didn't make it into
-> the build of their module - via normal header includes - strange but
-> true. Thus forcing current.h via way of -include seemed like a
-> safe/sensible way.
+> > +        .constraints = {
+> > +                .min_uV         = 1800000,
+> 
+> 2.9V, not 3.3V
 
-To me that sounds like either an arc header is using the define but
-lacking an include of asm/current.h, or the code is lacking asm/current.h.
+> > +static struct gpio_regulator_state sdi0_reg_states[] = {
+> > +        { .value = 3300000, .gpios = (0 << 0) },
+> 
+> 2.9V, not 3.3V
 
-Michal
+I'm still a little unsure about this. I know the actual
+voltage is v2.9, but the supported/requested MMC voltage
+from the driver is v3.3.
+
+Will it still work if I set it all up as v2.9?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
