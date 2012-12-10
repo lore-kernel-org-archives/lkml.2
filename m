@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab2LJM14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 07:27:56 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:37851 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab2LJM1z (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Mon, 10 Dec 2012 07:27:55 -0500
-Date: Mon, 10 Dec 2012 20:27:35 +0800
-From: Guangliang Zhao <gzhao@suse.com>
-To: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH 0/3] add resync speed control for dm-raid1
-Message-ID: <20121210122735.GB2310@glzhao-laptop.site>
-Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
-	linux-kernel@vger.kernel.org
-References: <1353565673-4233-1-git-send-email-gzhao@suse.com>
- <20121210132123.5a4ab015@notabene.brown>
+	id S1752878Ab2LJMdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 07:33:13 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55627 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab2LJMdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 07:33:11 -0500
+Date: Mon, 10 Dec 2012 17:32:52 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] uprobes: Kill uprobe_consumer->filter()
+Message-ID: <20121210120252.GG22164@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121123202741.GA18858@redhat.com>
+ <20121123202810.GA18894@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20121210132123.5a4ab015@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121123202810.GA18894@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121012-7182-0000-0000-000003A87E10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 01:21:23PM +1100, NeilBrown wrote:
-> On Thu, 22 Nov 2012 14:27:50 +0800 Guangliang Zhao <gzhao@suse.com> wrote:
+* Oleg Nesterov <oleg@redhat.com> [2012-11-23 21:28:10]:
+
+> uprobe_consumer->filter() is pointless in its current form, kill it.
 > 
-> > Hi,
-> > 
-> > These patches are used to add resync speed control for dm-raid1. The
-> > second and third patch provide support for user-space tool dmsetup.
-> > 
-> > Guangliang Zhao (3):
-> >   dm raid1: add resync speed control for dm-raid1
-> >   dm raid1: add interface to set resync speed
-> >   dm raid1: add interface to get resync speed
-> > 
-> >  drivers/md/dm-raid1.c |   93 +++++++++++++++++++++++++++++++++++++++++++++++--
-> >  1 file changed, 90 insertions(+), 3 deletions(-)
-> > 
+> We will add it back, but with the different signature/semantics. Perhaps
+> we will even re-introduce the callsite in handler_chain(), but not to
+> just skip uc->handler().
 > 
-> The problem with this approach is that it slows down resync even when there
-> is no other IO happening.
-> If that is deemed to be acceptable, then the patch set seems fine, though I
-> would probably make the default a lot higher so as not to change current
-> default behaviour for anyone.
-Yes, the users who don't need this feature will not be affected, fully
-accepted.
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  include/linux/uprobes.h     |    5 -----
+>  kernel/events/uprobes.c     |    6 ++----
+>  kernel/trace/trace_uprobe.c |    1 -
+>  3 files changed, 2 insertions(+), 10 deletions(-)
 > 
-> If it isn't acceptable, then you either need to monitor the number of
-> requests going to the underlying devices - like md does - or monitor the
-> number of requests coming in to the dm-raid1 target - which is probably
-> easier with dm.
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 4f628a6..83742b9 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -37,11 +37,6 @@ struct inode;
 > 
-> i.e. only impose the rate limit if there have been any requests for the
-> dm-raid1 target in the last 'RESYNC_JIFFIES'.
-Good idea, that's would be on my TODO list. But anyway these patches are
-still required.
-
+>  struct uprobe_consumer {
+>  	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+> -	/*
+> -	 * filter is optional; If a filter exists, handler is run
+> -	 * if and only if filter returns true.
+> -	 */
+> -	bool (*filter)(struct uprobe_consumer *self, struct task_struct *task);
 > 
-> What do you think of that?
+>  	struct uprobe_consumer *next;
+>  };
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index d8e930a..e761974 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -477,10 +477,8 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+>  		return;
 > 
-> NeilBrown
+>  	down_read(&uprobe->consumer_rwsem);
+> -	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> -		if (!uc->filter || uc->filter(uc, current))
+> -			uc->handler(uc, regs);
+> -	}
+> +	for (uc = uprobe->consumers; uc; uc = uc->next)
+> +		uc->handler(uc, regs);
+>  	up_read(&uprobe->consumer_rwsem);
+>  }
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 03003cd..38eee92 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -546,7 +546,6 @@ static int probe_event_enable(struct trace_uprobe *tu, int flag)
+>  		return -EINTR;
+> 
+>  	utc->cons.handler = uprobe_dispatcher;
+> -	utc->cons.filter = NULL;
+>  	ret = uprobe_register(tu->inode, tu->offset, &utc->cons);
+>  	if (ret) {
+>  		kfree(utc);
+> -- 
+> 1.5.5.1
+> 
 
-
-
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-
-
--- 
-Best regards,
-Guangliang
