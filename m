@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2LJVXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 16:23:30 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25204 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab2LJVX3 (ORCPT
+	id S1752346Ab2LJVXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 16:23:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45289 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab2LJVXm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 16:23:29 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=F1vn84g2v5IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=GbT8ctTW91IA:10 a=VwQbUJbxAAAA:8 a=lpMYTlfUf9b6BEJUZTQA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355174607.17101.251.camel@gandalf.local.home>
-Subject: Re: Missing tags in my local stable git repo
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Dec 2012 16:23:27 -0500
-In-Reply-To: <m2vcc9oblu.fsf@igel.home>
-References: <1355160900.17101.229.camel@gandalf.local.home>
-	 <1355165264.17101.233.camel@gandalf.local.home>
-	 <20121210190247.GA32119@kroah.com>
-	 <1355166920.17101.239.camel@gandalf.local.home>
-	 <CA+55aFzvTrrM_t_K3W5s32p610MS0PuTrUUhFKaB5tGPmsW73g@mail.gmail.com>
-	 <1355172274.17101.250.camel@gandalf.local.home> <m2vcc9oblu.fsf@igel.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Dec 2012 16:23:42 -0500
+References: <20121210145134.GA2097@hedwig.ini.cmu.edu> <20121210190905.GA24927@roeck-us.net> <20121210195414.GA642@polaris.bitmath.org> <4BC00520-E08A-43D0-AA2B-EA8154F3D160@suse.de> <4017A6C6-3074-44A5-AAAC-F4246946F151@exactcode.com>
+In-Reply-To: <4017A6C6-3074-44A5-AAAC-F4246946F151@exactcode.com>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <28FE8A08-131B-4E20-BBC0-EEDDA129C1C8@suse.de>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <groeck-dsl@sbcglobal.net>,
+        "Gabriel L. Somlo" <somlo@cmu.edu>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (9B206)
+From: Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH] applesmc: add sysfs file to report OSK
+Date: Mon, 10 Dec 2012 22:24:55 +0100
+To: Rene Rebe <rene@exactcode.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 22:12 +0100, Andreas Schwab wrote:
-> Steven Rostedt <rostedt@goodmis.org> writes:
+
+On 10.12.2012, at 21:43, Rene Rebe <rene@exactcode.com> wrote:
+
 > 
-> > [remote "origin"]
-> >         fetch = +refs/*:refs/*
-> >         mirror = true
-> >         url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> > [remote "stable"]
-> >         url = git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-> >         fetch = +refs/heads/*:refs/heads/*
+> On 10.12.2012, at 21:19, Alexander Graf <agraf@suse.de> wrote:
 > 
-> This is your problem.  When fetching from origin all references
-> (including tags) not part of origin are removed.  When you mirror a repo
-> you cannot have another remote in the same repo.
+>> 
+>> On 10.12.2012, at 20:54, Henrik Rydberg wrote:
+>> 
+>>> Hi Guenter,
+>>> 
+>>>> On Mon, Dec 10, 2012 at 09:51:35AM -0500, Gabriel L. Somlo wrote:
+>>>>> The AppleSMC contains two char[32] keys, OSK0 and OSK1, which are not
+>>>>> reported in the key count and index by default. These keys are used by
+>>>>> the OS X boot sequence, and normally don't matter when running Linux.
+>>>>> 
+>>>>> This patch creates a sysfs entry which reports the value of these keys
+>>>>> as an ASCII string, to help emulators (such as QEMU) load OS X when
+>>>>> running on genuine Apple hardware.
+>>>>> 
+>>>>> Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
+>>>>> ---
+>>>>> 
+>>>>> For extra context: To boot OS X as a guest, QEMU must (among others)
+>>>>> emulate the AppleSMC. To boot successfully, OS X insists on querying
+>>>>> the (emulated) SMC for the value of OSK0 and OSK1. Currently, these
+>>>>> values must be supplied on the QEMU command line as
+>>>>> 
+>>>>> -device applesmc,osk="...concatenated values of OSK0 and OSK1..."
+>>>>> 
+>>>>> With the availability of /sys/devices/platform/applesmc.768/osk, the
+>>>>> emulated QEMU AppleSMC could acquire this string directly from the
+>>>>> (Apple-manufactured) host machine.
+>>>> Hmm ... this is a non-hwmon attribute which doesn't really belong into hwmon
+>>>> in the first place ... like several other attributes in the same driver.
+>>>> 
+>>>> So I'll leave it up to the maintainer to decide if we should accept it. Henrik ?
+>>> 
+>>> Indeed, the reaons against this patch are too many. I was just about
+>>> to reply with the below:
+>>> 
+>>> Gabriel,
+>>> 
+>>> The OSK string seems constant accross machines, which renders the
+>>> patch rather pointless, no? And even if the OSK differs between a
+>>> couple of machines, the emulator could easily handle it gracefully.
+>> 
+>> The point is that the return value of the OSK is a copyrighted string, we can not include in any other layer. The only way to make this legally savvy is to read the key from the host.
+>> 
+>>> 
+>>> There are also some technical issues with the patch below, to keep in
+>>> mind for future submissions.
+>> 
+>> Sigh - most of the comments below go back to earlier review from me. He basically had a version almost exactly like what you're asking him to do :). Funny how code style taste differs.
+> 
+> And this is exactly the reason why I'm less and less motivated to waste my lifetime with upstream work ...
 
-Note, the above was my proposal to merge stable.git with linus.git. It's
-not what I currently have.
+It's nit that bad really. Gabriel can just send his earlier version again with the ret variable name changed and then it shouldn't be an issue to get it in.
 
--- Steve
+Reading the key really is an important bit in creating a legally safe and easy method to virtualize Mac OS X on Linux. Just believe us on this one :).
 
+
+Alex
 
