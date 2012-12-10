@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2LJWaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:30:00 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:44167 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2LJW37 (ORCPT
+	id S1752009Ab2LJWbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:31:35 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60794 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab2LJWbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:29:59 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: samsung: Add terminating entry for exynos_pinctrl_ids
-To: Linus Walleij <linus.walleij@linaro.org>, Axel Lin <axel.lin@ingics.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <CACRpkdY=yoYi71MLC=7iktFMTTQWmk4iLwrKqOnuuJEz43K74g@mail.gmail.com>
-References: <1355103317.4166.1.camel@phoenix> <CACRpkdY=yoYi71MLC=7iktFMTTQWmk4iLwrKqOnuuJEz43K74g@mail.gmail.com>
-Date: Mon, 10 Dec 2012 22:10:45 +0000
-Message-Id: <20121210221045.4EA803E0D9C@localhost>
+	Mon, 10 Dec 2012 17:31:34 -0500
+Date: Mon, 10 Dec 2012 17:31:32 -0500 (EST)
+Message-Id: <20121210.173132.1705832618971554116.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Dec 2012 11:13:06 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Dec 10, 2012 at 2:35 AM, Axel Lin <axel.lin@ingics.com> wrote:
-> 
-> > The of_device_id table is supposed to be zero-terminated.
-> >
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > ---
-> >  drivers/gpio/gpio-samsung.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-> > index 01f7fe9..9e251be 100644
-> > --- a/drivers/gpio/gpio-samsung.c
-> > +++ b/drivers/gpio/gpio-samsung.c
-> > @@ -3026,6 +3026,7 @@ static __init int samsung_gpiolib_init(void)
-> >         static const struct of_device_id exynos_pinctrl_ids[] = {
-> >                 { .compatible = "samsung,pinctrl-exynos4210", },
-> >                 { .compatible = "samsung,pinctrl-exynos4x12", },
-> > +               { }
-> 
-> Wasn't somebody complaining that this was unnecessary recently?
-> 
-> Ohwell, I'll let the Samsung people comment first...
 
-And this doesn't apply on my gpio/next branch. I assume it applies
-somewhere else so I'll ignore for now. :-)
+1) Netlink socket dumping had several missing verifications and
+   checks.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+   In particular, address comparisons in the request byte code
+   interpreter could access past the end of the address in the
+   inet_request_sock.
 
-g.
+   Also, address family and address prefix lengths were not
+   validated properly at all.
+
+   This means arbitrary applications can read past the end of
+   certain kernel data structures.
+
+   Fixes from Neal Cardwell.
+
+2) ip_check_defrag() operates in contexts where we're in the
+   process of, or about to, input the packet into the real
+   protocols (specifically macvlan and AF_PACKET snooping).
+
+   Unfortunately, it does a pskb_may_pull() which can modify
+   the backing packet data which is not legal if the SKB is
+   shared.  It very much can be shared in this context.
+
+   Deal with the possibility that the SKB is segmented by
+   using skb_copy_bits().
+
+   Fix from Johannes Berg based upon a report by Eric Leblond.
+
+Please pull, thanks a lot!
+
+The following changes since commit ed23ec4f0a510528e0ffe415f9394107418ae854:
+
+  mm: vmscan: fix inappropriate zone congestion clearing (2012-12-08 08:41:18 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 1bf3751ec90cc3174e01f0d701e8449ce163d113:
+
+  ipv4: ip_check_defrag must not modify skb before unsharing (2012-12-10 13:51:44 -0500)
+
+----------------------------------------------------------------
+Johannes Berg (1):
+      ipv4: ip_check_defrag must not modify skb before unsharing
+
+Neal Cardwell (4):
+      inet_diag: fix oops for IPv4 AF_INET6 TCP SYN-RECV state
+      inet_diag: validate byte code to prevent oops in inet_diag_bc_run()
+      inet_diag: avoid unsafe and nonsensical prefix matches in inet_diag_bc_run()
+      inet_diag: validate port comparison byte code to prevent unsafe reads
+
+ net/ipv4/inet_diag.c   | 154 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------------------
+ net/ipv4/ip_fragment.c |  19 ++++++-------
+ 2 files changed, 131 insertions(+), 42 deletions(-)
