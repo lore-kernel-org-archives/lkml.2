@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab2LJIby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:31:54 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14834 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674Ab2LJI0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:26:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
-   d="scan'208";a="178808691"
-From: Alex Shi <alex.shi@intel.com>
-To: rob@landley.net, mingo@redhat.com, peterz@infradead.org
-Cc: gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, vincent.guittot@linaro.org
-Subject: [PATCH 01/18] sched: select_task_rq_fair clean up
-Date: Mon, 10 Dec 2012 16:22:17 +0800
-Message-Id: <1355127754-8444-2-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+	id S1752771Ab2LJIgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:36:53 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:39203 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2LJIgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 03:36:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <loom.20121210T091624-754@post.gmane.org>
+References: <1355120784-31118-1-git-send-email-a.kesavan@samsung.com>
+	<1355120784-31118-2-git-send-email-a.kesavan@samsung.com>
+	<1355120784-31118-3-git-send-email-a.kesavan@samsung.com>
+	<20121210064650.GJ10927@opensource.wolfsonmicro.com>
+	<loom.20121210T091624-754@post.gmane.org>
+Date: Mon, 10 Dec 2012 14:06:49 +0530
+Message-ID: <CAM4voanevLVXW5_WFts2cjDi-5aAbj1_2=EN1amfp14KnKXNug@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3] regulator: max77686: Add support for various
+ operating modes
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com
+Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is impossible to miss a task allowed cpu in a eligible group.
+Adding missed Cc's
 
-And since find_idlest_group only return a different group which
-excludes old cpu, it's also imporissible to find a new cpu same as old
-cpu.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- kernel/sched/fair.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 59e072b..df99456 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3150,11 +3150,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 		}
- 
- 		new_cpu = find_idlest_cpu(group, p, cpu);
--		if (new_cpu == -1 || new_cpu == cpu) {
--			/* Now try balancing at a lower domain level of cpu */
--			sd = sd->child;
--			continue;
--		}
- 
- 		/* Now try balancing at a lower domain level of new_cpu */
- 		cpu = new_cpu;
--- 
-1.7.5.1
-
+On Mon, Dec 10, 2012 at 1:49 PM, Abhilash Kesavan
+<kesavan.abhilash@gmail.com> wrote:
+> Mark Brown <broonie <at> opensource.wolfsonmicro.com> writes:
+>
+> [...]
+>> Binding documenation is mandatory for any new OF properties, please add
+>> this.
+> Patch 3/3 of this series adds documentation for the max77686-opmode property.
+>>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
