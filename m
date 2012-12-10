@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2LJOkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 09:40:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:18379 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab2LJOkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 09:40:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,252,1355126400"; 
-   d="scan'208";a="229381382"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 1/2] dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-Date: Mon, 10 Dec 2012 16:40:03 +0200
-Message-Id: <1355150404-6732-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754126Ab2LJOkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 09:40:49 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46311 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2LJOkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 09:40:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121207145909.GA4928@redhat.com>
+References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
+	<20121206145020.93fd7128.akpm@linux-foundation.org>
+	<CAAmzW4N-=uXBdgjbkdL=aNVtKvvXZs-6BNgpDzi7CLkeo0-jBg@mail.gmail.com>
+	<20121207145909.GA4928@redhat.com>
+Date: Mon, 10 Dec 2012 23:40:47 +0900
+Message-ID: <CAAmzW4NHO=y=utmK_at+JxvyYMd4O_7W_6n541GEA0aeDfukyw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
+From: JoonSoo Kim <js1304@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Anderson <anderson@redhat.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same information could be exctracted from the struct dma_chan.
-The patch introduces helper function dwc_get_data_width() as well.
+Hello, Vivek.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c      |   19 ++++++++++++-------
- drivers/dma/dw_dmac_regs.h |    3 ---
- 2 files changed, 12 insertions(+), 10 deletions(-)
+2012/12/7 Vivek Goyal <vgoyal@redhat.com>:
+> On Fri, Dec 07, 2012 at 10:16:55PM +0900, JoonSoo Kim wrote:
+>> 2012/12/7 Andrew Morton <akpm@linux-foundation.org>:
+>> > On Fri,  7 Dec 2012 01:09:27 +0900
+>> > Joonsoo Kim <js1304@gmail.com> wrote:
+>> >
+>> >> I'm not sure that "7/8: makes vmlist only for kexec" is fine.
+>> >> Because it is related to userspace program.
+>> >> As far as I know, makedumpfile use kexec's output information and it only
+>> >> need first address of vmalloc layer. So my implementation reflect this
+>> >> fact, but I'm not sure. And now, I don't fully test this patchset.
+>> >> Basic operation work well, but I don't test kexec. So I send this
+>> >> patchset with 'RFC'.
+>> >
+>> > Yes, this is irritating.  Perhaps Vivek or one of the other kexec
+>> > people could take a look at this please - if would obviously be much
+>> > better if we can avoid merging [patch 7/8] at all.
+>>
+>> I'm not sure, but I almost sure that [patch 7/8] have no problem.
+>> In kexec.c, they write an address of vmlist and offset of vm_struct's
+>> address field.
+>> It imply that user for this information doesn't have any other
+>> information about vm_struct,
+>> and they can't use other field of vm_struct. They can use *only* address field.
+>> So, remaining just one vm_struct for vmlist which represent first area
+>> of vmalloc layer
+>> may be safe.
+>
+> I browsed through makedumpfile source quickly. So yes it does look like
+> that we look at first vmlist element ->addr field to figure out where
+> vmalloc area is starting.
+>
+> Can we get the same information from this rb-tree of vmap_area? Is
+> ->va_start field communication same information as vmlist was
+> communicating? What's the difference between vmap_area_root and vmlist.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index fdae96f..427d35b 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -73,6 +73,14 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
-  */
- #define NR_DESCS_PER_CHANNEL	64
- 
-+static inline unsigned int dwc_get_data_width(struct dma_chan *chan, bool d)
-+{
-+	struct dw_dma *dw = to_dw_dma(chan->device);
-+	struct dw_dma_slave *dws = chan->private;
-+
-+	return dw->data_width[d ? dwc_get_dms(dws) : dwc_get_sms(dws)];
-+}
-+
- /*----------------------------------------------------------------------*/
- 
- /*
-@@ -703,7 +711,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		size_t len, unsigned long flags)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma_slave	*dws = chan->private;
- 	struct dw_desc		*desc;
- 	struct dw_desc		*first;
- 	struct dw_desc		*prev;
-@@ -726,8 +733,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 
- 	dwc->direction = DMA_MEM_TO_MEM;
- 
--	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
--					 dwc->dw->data_width[dwc_get_dms(dws)]);
-+	data_width = min_t(unsigned int, dwc_get_data_width(chan, true),
-+			   dwc_get_data_width(chan, false));
- 
- 	src_width = dst_width = min_t(unsigned int, data_width,
- 				      dwc_fast_fls(src | dest | len));
-@@ -792,7 +799,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		unsigned long flags, void *context)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma_slave	*dws = chan->private;
- 	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
- 	struct dw_desc		*prev;
- 	struct dw_desc		*first;
-@@ -826,7 +832,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
- 
--		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
-+		data_width = dwc_get_data_width(chan, false);
- 
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
-@@ -889,7 +895,7 @@ slave_sg_todev_fill_desc:
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
- 
--		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
-+		data_width = dwc_get_data_width(chan, true);
- 
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
-@@ -1720,7 +1726,6 @@ static int dw_probe(struct platform_device *pdev)
- 
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
- 
--		dwc->dw = dw;
- 		dwc->direction = DMA_TRANS_NONE;
- 
- 		/* hardware configuration */
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index f9532c2..577f2dd 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -214,9 +214,6 @@ struct dw_dma_chan {
- 
- 	/* configuration passed via DMA_SLAVE_CONFIG */
- 	struct dma_slave_config dma_sconfig;
--
--	/* backlink to dw_dma */
--	struct dw_dma		*dw;
- };
- 
- static inline struct dw_dma_chan_regs __iomem *
--- 
-1.7.10.4
+Thanks for comment.
 
+Yes. vmap_area's va_start field represent same information as vm_struct's addr.
+vmap_area_root is data structure for fast searching an area.
+vmap_area_list is address sorted list, so we can use it like as vmlist.
+
+There is a little difference vmap_area_list and vmlist.
+vmlist is lack of information about some areas in vmalloc address space.
+For example, vm_map_ram() allocate area in vmalloc address space,
+but it doesn't make a link with vmlist. To provide full information
+about vmalloc address space,
+using vmap_area_list is more adequate.
+
+> So without knowing details of both the data structures, I think if vmlist
+> is going away, then user space tools should be able to traverse vmap_area_root
+> rb tree. I am assuming it is sorted using ->addr field and we should be
+> able to get vmalloc area start from there. It will just be a matter of
+> exporting right fields to user space (instead of vmlist).
+
+There is address sorted list of vmap_area, vmap_area_list.
+So we can use it for traversing vmalloc areas if it is necessary.
+But, as I mentioned before, kexec write *just* address of vmlist and
+offset of vm_struct's address field.
+It imply that they don't traverse vmlist,
+because they didn't write vm_struct's next field which is needed for traversing.
+Without vm_struct's next field, they have no method for traversing.
+So, IMHO, assigning dummy vm_struct to vmlist which is implemented by [7/8] is
+a safe way to maintain a compatibility of userspace tool. :)
+
+Thanks.
