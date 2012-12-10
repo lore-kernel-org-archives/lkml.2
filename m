@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab2LJXnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 18:43:22 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:45845 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2LJXnV (ORCPT
+	id S1751744Ab2LJXwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 18:52:41 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:41389 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2LJXwk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 18:43:21 -0500
-Date: Tue, 11 Dec 2012 00:43:18 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Matt Porter <mporter@ti.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.7 does not boot on OMAP L137 with CONFIG_TI_EDMA=y
-Message-ID: <20121210234318.GA8439@shrek.podlesie.net>
-References: <20121210233129.GA18190@shrek.podlesie.net>
+	Mon, 10 Dec 2012 18:52:40 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
+Thread-Topic: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
+Thread-Index: Ac3UwvCZixvXisXmRfC/Xc8ha8nnHACXEeSAAAKIfEA=
+Date: Mon, 10 Dec 2012 23:52:21 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1DFC8@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B7B2@USINDEM103.corp.hds.com>
+ <20121210164215.GZ53431@redhat.com>
+In-Reply-To: <20121210164215.GZ53431@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210233129.GA18190@shrek.podlesie.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-10_07:2012-12-10,2012-12-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1212100244
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 12:31:29AM +0100, Krzysztof Mazur wrote:
-> Hi,
+> Now my first reaction would be, if that is the scenario, why couldn't cpuA release the lock within one second.  Because if cpuA is stuck
+> talking with firmware, then your patch to force the unlock is probably going to trip over the same problems.
+> (those problems include dealing with resetting a firmware state machine)
 > 
-> commit c2dde5f8f2095d7c623ff3565c1462e190272273
-> (dmaengine: add TI EDMA DMA engine driver)
-> with new option CONFIG_TI_EDMA=y causes system hang after
-> "Uncompressing Linux... done, booting the kernel."
-> on OMAP L137.
+> IOW, your patch is just one of many minefields you will have to cross in order to be successful.
 
-The system board is probably also important. The problem
-occurs on Spectrum Digital OMAP-L137 EVM. I used following
-board-specific options:
+I agree that I need to fix the platform driver's deadlocking as well to make an overall system workable. 
+(I just wanted to fix the deadlocking problems step by step.)
 
-CONFIG_ARCH_DAVINCI=y
-CONFIG_CP_INTC=y
-CONFIG_ARCH_DAVINCI_DA830=y
-CONFIG_ARCH_DAVINCI_DA8XX=y
-CONFIG_MACH_DAVINCI_DA830_EVM=y
-CONFIG_DA830_UI_LCD=y
-CONFIG_GPIO_PCA953X=y
-CONFIG_DAVINCI_MUX=y
-CONFIG_DAVINCI_RESET_CLOCKS=y
 
 > 
-> The same problem still exists in current v3.7-rc8-41-gcaf4919.
-> 
-> This causes some regressions, for instance the converted to new DMA engine
-> SPI driver does not work without CONFIG_TI_EDMA=y:
-> 
-> spi_davinci spi_davinci.0: Runtime PM disabled, clock forced on.
-> spi_davinci spi_davinci.0: request RX DMA channel failed
-> Trying to free nonexistent resource <0000000001c41000-0000000001c41000>
-> 
-> By the way:
-> 
-> 1. It's possible to compile davinci SPI driver with
-> CONFIG_DMADEVICES=n (and CONFIG_TI_EMDA=n), but it does work
-> in that configuration (see error above).
-> 
-> 2. The "Trying to free nonexistent resource" seems to indicate some
-> other error in SPI driver cleanup after error code.
-> 
+> Without any testing to show that you have cleared all those minefields, I am leaning against your patch for now.  I would rather have a
+> complete patchset that fixes all the problems in this path.
 
-Krzysiek
+Thanks. I will try to make the complete patchset.
+
+> 
+> If you did have to go this route, why not take the 'reason' variable and pass it to some function 'in_panic_path(reason)' that tells you if
+> you are panicing or not.  Then you can change the 'if in_nmi()' to 'if in_nmi() || in_panic'.
+> 
+> The panic path already disables irqs for you, not sure you need to do it again.  Unless you have some other path you are trying to
+> protect in mind.
+
+Thank you for the suggestion.
+I will update my patch in accordance with your comment if anyone else disagree that.
+
+> 
+> Cheers,
+> Don
