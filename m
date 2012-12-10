@@ -1,111 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab2LJWTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 17:19:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47266 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2LJWTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 17:19:41 -0500
-Date: Mon, 10 Dec 2012 22:19:36 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [GIT TREE] Unified NUMA balancing tree, v3
-Message-ID: <20121210221936.GO1009@suse.de>
-References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
- <alpine.LFD.2.02.1212101902050.4422@ionos>
- <50C62CE7.2000306@redhat.com>
- <20121210191545.GA14412@gmail.com>
- <20121210192828.GL1009@suse.de>
- <20121210200755.GA15097@gmail.com>
+	id S1751404Ab2LJWVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 17:21:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49313 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2LJWVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 17:21:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 2/3] dmaengine: dw_dmac: Enhance device tree support
+Date: Mon, 10 Dec 2012 22:21:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, vinod.koul@intel.com,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, andriy.shevchenko@linux.intel.com
+References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org> <169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org> <201212102208.52347.arnd@arndb.de>
+In-Reply-To: <201212102208.52347.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121210200755.GA15097@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212102221.06614.arnd@arndb.de>
+X-Provags-ID: V02:K0:HPl2uzHiapTtHOBYDoKiVryhMPAZzmvgSYcTM6QVZfK
+ TnQkn0Y4Iib15KuR47PQujtCm9Q/bR6r/LgrnONAicF0MQYxBv
+ CEBxCX/J3NM5BhiHebHj/JrxHtzS4KyoDtOZZUsfJnnEKTjnUm
+ wHdeEoLsKG+pQjmElEw7ePuH0nllSaWiZro92S6e6o3SiWO4FL
+ iuL3qVPp8sRhImHlqgrCZI0oRH8AEUnAvvzmAw9bWiC67vBLp7
+ d1dPZIqo5C1eGCIyAkXTbwVI6hjUIh/1Wjnf31JjW6GSqU1PYd
+ nvYBDaMsfgTh+pvDDbgfmoP6B+A0qcIyGc1Qt4ewsPp3YNeB6g
+ SGNCEs4P+sL4XsEAydKM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 09:07:55PM +0100, Ingo Molnar wrote:
-> > > 
-> > 
-> > Yes, I have. The drop I took and the results I posted to you 
-> > were based on a tip/master pull from December 9th. v3 was 
-> > released on December 7th and your release said to test based 
-> > on tip/master. The results are here 
-> > https://lkml.org/lkml/2012/12/9/108 . Look at the columns 
-> > marked numafix-20121209 which is tip/master with a bodge on 
-> > top to remove the "if (p->nr_cpus_allowed != 
-> > num_online_cpus())" check.
-> 
-> Ah, indeed - I saw those results but the 'numafix' tag threw me 
-> off.
-> 
-> Looks like at least in terms of AutoNUMA-benchmark numbers you 
-> measured the best-ever results with the -v3 tree? That aspect is 
-> obviously good news.
+On Monday 10 December 2012, Arnd Bergmann wrote:
+> The build bug is not the problem however, but the abuse of the
+> API is. Andy, are you sure you understood what this does when
+> you gave you Reviewed-by comment?
 > 
 
-It's still regressing specjbb for lower numbers of warehouses and single
-JVM with THP disabled performed very poorly. The system CPU usage is
-still through the roof for a number of tests. The rate of migration looks
-excessive at parts. Maybe that rate of migration is really necessary but
-it seems doubtful that so much bandwidth should be consumed moving data
-around by the kernel.
+Ah, I just saw that Andy had the right intuition when commenting on
+it at first, but Viresh managed to convince him otherwise, and appearently
+neither had followed the discussion about the dmaengine bindings...
 
-> This part isn't:
-> 
-> > > If there are any such instances left then I'll investigate, 
-> > > but right now it's looking pretty good.
-> > 
-> > If you had read that report, you would know that I didn't have 
-> > results for specjbb with THP enabled due to the JVM crashing 
-> > with null pointer exceptions.
-> 
-> Hm, it's the unified tree where most of the mm/ bits are the 
-> AutoNUMA bits from your tree.
-
-The handling of PTEs as an effective hugepage is a major difference.
-Holding PTL across task_numa_fault() is a major difference and could be a
-significant contributer to the ptl-related bottlenecks you are complaining
-about. The fault stats are busted but that's a minor issue. All this is
-already in another mail http://www.spinics.net/lists/linux-mm/msg47888.html.
-
-> (It does not match 100%, because 
-> your tree has an ancient version of key memory usage statistics 
-> that the scheduler needs for its convergence model. I'll take a 
-> look at the differences.)
-> 
-
-I'm assuming you are referring to the last_cpuid versus last_nid
-information that is fed in. That should have been a fairly minor delta
-between balancenuma and numacore. It would also affect what mpol_misplaced()
-returned.
-
-> Given how well the unified kernel performs,
-
-Except for the places where it doesn't such as single JVM with THP disabled.
-Maybe I have a spectacularly unlucky machine.
-
-> and given that the 
-> segfaults occur on your box, would you be willing to debug this 
-> a bit and help me out fixing the bug? Thanks!
-> 
-
-The machine is currently occupied running current tip/master. When it
-frees up, I'll try find the time to debug it. My strong suspicion is
-that the bug is in the patch that treats 4K as effect hugepage faults,
-particularly as an earlier version of that patch had serious problems.
-
--- 
-Mel Gorman
-SUSE Labs
+	Arnd
