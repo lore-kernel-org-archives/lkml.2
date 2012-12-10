@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab2LJIZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 03:25:45 -0500
-Received: from relay.parallels.com ([195.214.232.42]:55104 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab2LJIZo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 03:25:44 -0500
-Message-ID: <50C59C68.30803@parallels.com>
-Date: Mon, 10 Dec 2012 12:25:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 3/6] nfsd: pass net to nfsd_create_serv()
-References: <20121204134920.24504.95261.stgit@localhost.localdomain> <20121204135016.24504.74168.stgit@localhost.localdomain> <20121207165211.GK17115@fieldses.org>
-In-Reply-To: <20121207165211.GK17115@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.20.135]
+	id S1752639Ab2LJI0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 03:26:06 -0500
+Received: from mga14.intel.com ([143.182.124.37]:14834 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab2LJI0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 03:26:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,250,1355126400"; 
+   d="scan'208";a="178808684"
+From: Alex Shi <alex.shi@intel.com>
+To: rob@landley.net, mingo@redhat.com, peterz@infradead.org
+Cc: gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Subject: [PATCH 0/18] sched: simplified fork, enable load average into LB and power awareness scheduling 
+Date: Mon, 10 Dec 2012 16:22:16 +0800
+Message-Id: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07.12.2012 20:52, J. Bruce Fields пишет:
-> On Tue, Dec 04, 2012 at 04:50:16PM +0300, Stanislav Kinsbursky wrote:
->> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
->> index 21cba3d..6448391 100644
->> --- a/fs/nfsd/nfssvc.c
->> +++ b/fs/nfsd/nfssvc.c
->> @@ -334,10 +334,9 @@ static int nfsd_get_default_max_blksize(void)
->>   	return ret;
->>   }
->>
->> -int nfsd_create_serv(void)
->> +int nfsd_create_serv(struct net *net)
->>   {
->>   	int error;
->> -	struct net *net = &init_net;
->
-> What does this apply to?  Since 3.6-rc1 we have
-> 57c8b13e3cd0f94944c9691ce7f58e5fcef8a12d "NFSd: set nfsd_serv to NULL
-> after service destruction" which includes:
->
-> @@ -332,6 +330,7 @@ static int nfsd_get_default_max_blksize(void)
->   int nfsd_create_serv(void)
->   {
->          int error;
-> +       struct net *net = current->nsproxy->net_ns;
->
->          WARN_ON(!mutex_is_locked(&nfsd_mutex));
->          if (nfsd_serv) {
->
-> Am I missing some later patch?
->
+This patchset base on tip/sched/core tree temporary, since it is more 
+steady than tip/master. and it's easy to rebase on tip/master.
 
-Maybe I'm missing something.
-My tree is based on yours branch "for-3.8".
-Doe I need to rebase?
+It includes 3 parts changes.
 
-> --b.
->
+1, simplified fork, patch 1~4, that simplified the fork/exec/wake log in
+find_idlest_group and select_task_rq_fair. it can increase 10+%
+hackbench process and thread performance on our 4 sockets SNB EP machine.
 
+2, enable load average into LB, patch 5~9, that using load average in
+load balancing, with a runnable load value industrialization bug fix and
+new fork task load contrib enhancement.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+3, power awareness scheduling, patch 10~18, 
+Defined 2 new power aware policy balance and
+powersaving, and then try to spread or shrink tasks on CPU unit
+according the different scheduler policy. That can save much power when
+task number in system is no more then cpu number.
+
+Any comments are appreciated!
+
+Best regards!
+Alex
+
+[PATCH 01/18] sched: select_task_rq_fair clean up
+[PATCH 02/18] sched: fix find_idlest_group mess logical
+[PATCH 03/18] sched: don't need go to smaller sched domain
+[PATCH 04/18] sched: remove domain iterations in fork/exec/wake
+[PATCH 05/18] sched: load tracking bug fix
+[PATCH 06/18] sched: set initial load avg of new forked task as its
+[PATCH 07/18] sched: compute runnable load avg in cpu_load and
+[PATCH 08/18] sched: consider runnable load average in move_tasks
+[PATCH 09/18] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+[PATCH 10/18] sched: add sched_policy in kernel
+[PATCH 11/18] sched: add sched_policy and it's sysfs interface
+[PATCH 12/18] sched: log the cpu utilization at rq
+[PATCH 13/18] sched: add power aware scheduling in fork/exec/wake
+[PATCH 14/18] sched: add power/performance balance allowed flag
+[PATCH 15/18] sched: don't care if the local group has capacity
+[PATCH 16/18] sched: pull all tasks from source group
+[PATCH 17/18] sched: power aware load balance,
+[PATCH 18/18] sched: lazy powersaving balance
