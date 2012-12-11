@@ -1,208 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2LKLL4 (ORCPT <rfc822;w@1wt.eu>);
+	id S1753478Ab2LKLMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 06:12:00 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:34374 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab2LKLL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Dec 2012 06:11:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab2LKLLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 06:11:53 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, pmoore@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mprivozn@redhat.com, Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net-next rfc 2/2] tuntap: allow unpriveledge user to enable and disable queues
-Date: Tue, 11 Dec 2012 19:03:47 +0800
-Message-Id: <1355223827-57290-3-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1355223827-57290-1-git-send-email-jasowang@redhat.com>
-References: <1355223827-57290-1-git-send-email-jasowang@redhat.com>
+X-AuditID: cbfee61b-b7f616d00000319b-f3-50c714f88076
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>
+Cc: "'Dae Inki'" <inki.dae@samsung.com>, "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahun Sharma'" <rahul.sharma@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'SWKim'" <sw0312.kim@samsung.com>
+Subject: [PATCH v5 14/14] iommu/exynos: add debugfs entries for System MMU
+Date: Tue, 11 Dec 2012 20:11:51 +0900
+Message-id: <003e01cdd790$523267f0$f69737d0$%cho@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3XjIeZh0vL9PKDSuW1dZosoQwlsgAA8RFg
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zfd0fIscDDL5sFbS4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq4+eoqW0GvfcW2a08YGxj/GXcxcnJICJhIHOx+zg5h
+	i0lcuLeerYuRi0NIYBmjxLGVZ1hgip6t6GKCSCxilGjZdhfK+cco8X3bC7AqNgEtidVzjzOC
+	2CICdxklXp7nASliFjjCJLHz/jmwImEBL4lLC/eA2SwCqhKt7yeB7eYVsJV4MHURK4QtKPFj
+	8j2wGmagoet3HmeCsOUlNq95y9zFyAF0krrEo7+6ELuMJA78vMYOUSIise/FO0aI8QIS3yYf
+	YoEol5XYdIAZ5BwJgX52ia+zFjNCfCYpcXDFDZYJjGKzkGyehWTzLCSbZyFZsYCRZRWjaGpB
+	ckFxUnqukV5xYm5xaV66XnJ+7iZGSNxI72Bc1WBxiFGAg1GJh1dD61iAEGtiWXFl7iFGCQ5m
+	JRHeSKHjAUK8KYmVValF+fFFpTmpxYcYfYAun8gsJZqcD4zpvJJ4Q2NjEzMTUxNzS1NzUxzC
+	SuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoYtXcf8z4T0PY+5fnZZaZvi7JMuoM2pCr/XK0y
+	TepKiNXd7R2Lr76ZlDjzHbP/mVzzZw7T+FvFj75fmhBj/pTZtlRNM0CvjtWHNS3lzeLrZfHv
+	Lmhe0Y+cVlLf9+3BvJUture5F39fvEJJKud/IOPyebPORctv+bg0QGXhnkzxM/HREV0i9l1/
+	lFiKMxINtZiLihMBsTfA98gCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jAd0fIscDDLZc4ra4vGsOm8WM8/uY
+	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuPnqKltBr33F
+	tmtPGBsY/xl3MXJySAiYSDxb0cUEYYtJXLi3nq2LkYtDSGARo0TLtrtMEM4/Ronv216wgFSx
+	CWhJrJ57nBHEFhG4yyjx8jwPSBGzwBEmiZ33z4EVCQt4SVxauAfMZhFQlWh9P4kdxOYVsJV4
+	MHURK4QtKPFj8j2wGmagoet3HmeCsOUlNq95y9zFyAF0krrEo7+6ELuMJA78vMYOUSIise/F
+	O8YJjAKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOCqfSe9g
+	XNVgcYhRgINRiYdXQ+tYgBBrYllxZe4hRgkOZiUR3kih4wFCvCmJlVWpRfnxRaU5qcWHGH2A
+	Hp3ILCWanA9MGHkl8YbGJmZGlkZmFkYm5uY4hJXEeZs9UgKEBNITS1KzU1MLUotgxjFxcEo1
+	MCpGeC5YZGKyVECybVLSgRWJLW0nEh7xsGg+rTq12/nFXj524bK7Sz+n7T6wVjX1reM8idmy
+	psZH79jP8dHLMd+6wnzfi45vlnFTvqr83rSs5tPWq8HpDNL1N0vP559UelIy0epYd11r5RfB
+	oqdHlrdwTmrRsz5o4fShQeuSn31wd+/icOnif0osxRmJhlrMRcWJAEcx09D3AgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, when a file is attached to tuntap through TUNSETQUEUE, the uid/gid
-and CAP_NET_ADMIN were checked, and we use this ioctl to create and destroy
-queues. Sometimes, userspace such as qemu need to the ability to enable and
-disable a specific queue without priveledge since guest operating system may
-change the number of queues it want use.
+This commit adds debugfs directory and nodes for inspecting internal
+state of System MMU.
 
-To support this kind of ability, this patch introduce a flag enabled which is
-used to track whether the queue is enabled by userspace. And also restrict that
-only one deivce could be used for a queue to attach. With this patch, the DAC
-checking when adding queues through IFF_ATTACH_QUEUE is still done and after
-this, IFF_DETACH_QUEUE/IFF_ATTACH_QUEUE  could be used to disable/enable this
-queue.
-
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
 ---
- drivers/net/tun.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 73 insertions(+), 8 deletions(-)
+ drivers/iommu/exynos-iommu.c | 204 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 198 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index d593f56..43831a7 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -138,6 +138,7 @@ struct tun_file {
- 	/* only used for fasnyc */
- 	unsigned int flags;
- 	u16 queue_index;
-+	bool enabled;
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+index 9753e0e..78c0eb7 100644
+--- a/drivers/iommu/exynos-iommu.c
++++ b/drivers/iommu/exynos-iommu.c
+@@ -26,12 +26,17 @@
+ #include <linux/list.h>
+ #include <linux/memblock.h>
+ #include <linux/export.h>
++#include <linux/fs.h>
++#include <linux/seq_file.h>
++#include <linux/debugfs.h>
+ #include <linux/string.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ 
+ #include <asm/cacheflush.h>
+ 
++#define MODULE_NAME "exynos-sysmmu"
++
+ /* We does not consider super section mapping (16MB) */
+ #define SECT_ORDER 20
+ #define LPAGE_ORDER 16
+@@ -223,6 +228,7 @@ struct sysmmu_drvdata {
+ 	struct sysmmu_prefbuf pbufs[MAX_NUM_PBUF];
+ 	int num_pbufs;
+ 	struct sysmmu_version ver;
++	struct dentry *debugfs_root;
+ 	struct iommu_domain *domain;
+ 	unsigned long pgtable;
+ 	bool runtime_active;
+@@ -1066,6 +1072,8 @@ static void __init __sysmmu_init_mmuname(struct device *sysmmu,
+ 	}
+ }
+ 
++static void __create_debugfs_entry(struct sysmmu_drvdata *drvdata);
++
+ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ {
+ 	int i, ret;
+@@ -1134,6 +1142,8 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ 
+ 		data->runtime_active = !pm_runtime_enabled(dev);
+ 
++		__create_debugfs_entry(data);
++
+ 		platform_set_drvdata(pdev, data);
+ 
+ 		dev->archdata.iommu = &sysmmu_placeholder;
+@@ -1238,7 +1248,7 @@ static struct platform_driver exynos_sysmmu_driver __refdata = {
+ 	.probe		= exynos_sysmmu_probe,
+ 	.driver		= {
+ 		.owner		= THIS_MODULE,
+-		.name		= "exynos-sysmmu",
++		.name		= MODULE_NAME,
+ 		.pm		= &__pm_ops,
+ 		.of_match_table = of_match_ptr(sysmmu_of_match),
+ 	}
+@@ -1631,6 +1641,8 @@ static struct iommu_ops exynos_iommu_ops = {
+ 	.pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
  };
  
- struct tun_flow_entry {
-@@ -345,9 +346,11 @@ unlock:
- static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
++static struct dentry *sysmmu_debugfs_root; /* /sys/kernel/debug/sysmmu */
++
+ static int __init exynos_iommu_init(void)
  {
- 	struct tun_struct *tun = netdev_priv(dev);
-+	struct tun_file *tfile;
- 	struct tun_flow_entry *e;
- 	u32 txq = 0;
- 	u32 numqueues = 0;
-+	int i;
- 
- 	rcu_read_lock();
- 	numqueues = tun->numqueues;
-@@ -366,6 +369,19 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
- 			txq -= numqueues;
+ 	int ret;
+@@ -1642,17 +1654,197 @@ static int __init exynos_iommu_init(void)
+ 		return -ENOMEM;
  	}
  
-+	tfile = rcu_dereference(tun->tfiles[txq]);
-+	if (unlikely(!tfile->enabled))
-+		/* tun_detach() should make sure there's at least one queue
-+		 * could be used to do the tranmission.
-+		 */
-+		for (i = 0; i < numqueues; i++) {
-+			tfile = rcu_dereference(tun->tfiles[i]);
-+			if (tfile->enabled) {
-+				txq = i;
-+				break;
-+			}
-+		}
-+
- 	rcu_read_unlock();
- 	return txq;
- }
-@@ -386,6 +402,36 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
- 	netif_set_real_num_rx_queues(tun->dev, tun->numqueues);
- }
+-	ret = platform_driver_register(&exynos_sysmmu_driver);
++	ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++	if (ret) {
++		kmem_cache_destroy(lv2table_kmem_cache);
++		pr_err("%s: Failed to register IOMMU ops\n", __func__);
++		return -EFAULT;
++	}
  
-+static int tun_enable(struct tun_file *tfile)
+-	if (ret == 0)
+-		ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++	sysmmu_debugfs_root = debugfs_create_dir("sysmmu", NULL);
++	if (!sysmmu_debugfs_root)
++		pr_err("%s: Failed to create debugfs entry, 'sysmmu'\n",
++							__func__);
++	if (IS_ERR(sysmmu_debugfs_root))
++		sysmmu_debugfs_root = NULL;
+ 
++	ret = platform_driver_register(&exynos_sysmmu_driver);
+ 	if (ret) {
+-		pr_err("%s: Failed to register exynos-iommu driver.\n",
+-								__func__);
+ 		kmem_cache_destroy(lv2table_kmem_cache);
++		pr_err("%s: Failed to register System MMU driver\n", __func__);
+ 	}
+ 
+ 	return ret;
+ }
+ subsys_initcall(exynos_iommu_init);
++
++static int debug_string_show(struct seq_file *s, void *unused)
 +{
-+	if (tfile->enabled == true)
-+		return -EINVAL;
++	char *str = s->private;
 +
-+	tfile->enabled = true;
-+	return 0;
-+}
-+
-+static int tun_disable(struct tun_file *tfile)
-+{
-+	struct tun_struct *tun = rcu_dereference_protected(tfile->tun,
-+							   lockdep_rtnl_is_held());
-+	u16 index = tfile->queue_index;
-+
-+	if (!tun)
-+		return -EINVAL;
-+
-+	if (tun->numqueues == 1)
-+		return -EINVAL;
-+
-+	BUG_ON(index >= tun->numqueues);
-+	tfile->enabled = false;
-+
-+	synchronize_net();
-+	tun_flow_delete_by_queue(tun, index);
++	seq_printf(s, "%s\n", str);
 +
 +	return 0;
 +}
 +
- static void __tun_detach(struct tun_file *tfile, bool clean)
- {
- 	struct tun_file *ntfile;
-@@ -446,6 +492,7 @@ static void tun_detach_all(struct net_device *dev)
- 		BUG_ON(!tfile);
- 		wake_up_all(&tfile->wq.wait);
- 		rcu_assign_pointer(tfile->tun, NULL);
-+		tfile->enabled = false;
- 		--tun->numqueues;
- 	}
- 	BUG_ON(tun->numqueues != 0);
-@@ -490,6 +537,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
- 	sock_hold(&tfile->sk);
- 	tun->numqueues++;
-+	tfile->enabled = true;
- 
- 	tun_set_real_num_queues(tun);
- 
-@@ -672,6 +720,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (txq >= tun->numqueues)
- 		goto drop;
- 
-+	/* Drop packet if the queue was not enabled */
-+	if (!tfile->enabled)
-+		goto drop;
++static int debug_sysmmu_list_show(struct seq_file *s, void *unused)
++{
++	struct sysmmu_drvdata *drvdata = s->private;
++	struct platform_device *pdev = to_platform_device(drvdata->sysmmu);
++	int idx, maj, min, ret;
 +
- 	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
- 
- 	BUG_ON(!tfile);
-@@ -1010,6 +1062,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	bool zerocopy = false;
- 	int err;
- 
-+	if (!tfile->enabled)
-+		return -EINVAL;
++	seq_printf(s, "SysMMU Name | Ver | SFR Base\n");
 +
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) > total_len)
- 			return -EINVAL;
-@@ -1199,6 +1254,9 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total = 0;
- 
-+	if (!tfile->enabled)
-+		return -EINVAL;
++	if (pm_runtime_enabled(drvdata->sysmmu)) {
++		ret = pm_runtime_get_sync(drvdata->sysmmu);
++		if (ret < 0)
++			return ret;
++	}
 +
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
- 			return -EINVAL;
-@@ -1769,15 +1827,21 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
- 		if (dev->netdev_ops != &tap_netdev_ops &&
- 			dev->netdev_ops != &tun_netdev_ops)
- 			ret = -EINVAL;
--		else if (tun_not_capable(tun))
--			ret = -EPERM;
--		/* TUNSETIFF is needed to do permission checking */
--		else if (tun->numqueues == 0)
--			ret = -EPERM;
--		else
--			ret = tun_attach(tun, file);
-+		else {
-+			if (!rcu_dereference(tfile->tun)) {
-+				if (tun_not_capable(tun) ||
-+				    tun->numqueues == 0)
-+					ret = -EPERM;
-+				else
-+					ret = tun_attach(tun, file);
-+			}
-+			else {
-+				/* FIXME: permission check? */
-+				ret = tun_enable(tfile);
-+			}
++	for (idx = 0; idx < drvdata->nsfrs; idx++) {
++		struct resource *res;
++
++		res = platform_get_resource(pdev, IORESOURCE_MEM, idx);
++		if (!res)
++			break;
++
++		maj = __sysmmu_version(drvdata, idx, &min);
++
++		if (drvdata->mmuname) {
++			if (maj == 0)
++				seq_printf(s, "%11.s | N/A | 0x%08x\n",
++					drvdata->mmuname[idx], res->start);
++			else
++				seq_printf(s, "%11.s | %d.%d | 0x%08x\n",
++				drvdata->mmuname[idx], maj, min, res->start);
++		} else {
++			if (maj == 0)
++				seq_printf(s, "N/A | 0x%08x\n", res->start);
++			else
++				seq_printf(s, "%d.%d | 0x%08x\n",
++							maj, min, res->start);
 +		}
- 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE)
--		__tun_detach(tfile, false);
-+		tun_disable(tfile);
- 	else
- 		ret = -EINVAL;
- 
-@@ -2085,6 +2149,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
- 	tfile->socket.file = file;
- 	tfile->socket.ops = &tun_socket_ops;
- 
-+	tfile->enabled = false;
- 	sock_init_data(&tfile->socket, &tfile->sk);
- 	sk_change_net(&tfile->sk, tfile->net);
- 
++	}
++
++	if (pm_runtime_enabled(drvdata->sysmmu))
++		pm_runtime_put(drvdata->sysmmu);
++
++	return 0;
++}
++
++static int debug_next_sibling_show(struct seq_file *s, void *unused)
++{
++	struct device *dev = s->private;
++
++	if (dev->parent &&
++		!strncmp(dev_name(dev->parent),
++			MODULE_NAME, strlen(MODULE_NAME)))
++		seq_printf(s, "%s\n", dev_name(dev->parent));
++	return 0;
++}
++
++static int __show_master(struct device *dev, void *data)
++{
++	struct seq_file *s = data;
++
++	if (strncmp(dev_name(dev), MODULE_NAME, strlen(MODULE_NAME)))
++		seq_printf(s, "%s\n", dev_name(dev));
++	return 0;
++}
++
++static int debug_master_show(struct seq_file *s, void *unused)
++{
++	struct device *dev = s->private;
++
++	device_for_each_child(dev, s, __show_master);
++	return 0;
++}
++
++static int debug_string_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_string_show, inode->i_private);
++}
++
++static int debug_sysmmu_list_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_sysmmu_list_show, inode->i_private);
++}
++
++static int debug_next_sibling_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_next_sibling_show, inode->i_private);
++}
++
++static int debug_master_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_master_show, inode->i_private);
++}
++
++static const struct file_operations debug_string_fops = {
++	.open = debug_string_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static const struct file_operations debug_sysmmu_list_fops = {
++	.open = debug_sysmmu_list_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static const struct file_operations debug_next_sibling_fops = {
++	.open = debug_next_sibling_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static const struct file_operations debug_master_fops = {
++	.open = debug_master_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static void __init __create_debugfs_entry(struct sysmmu_drvdata *drvdata)
++{
++	if (!sysmmu_debugfs_root)
++		return;
++
++	drvdata->debugfs_root = debugfs_create_dir(dev_name(drvdata->sysmmu),
++							sysmmu_debugfs_root);
++	if (!drvdata->debugfs_root)
++		dev_err(drvdata->sysmmu, "Failed to create debugfs dentry\n");
++	if (IS_ERR(drvdata->debugfs_root))
++		drvdata->debugfs_root = NULL;
++
++	if (!drvdata->debugfs_root)
++		return;
++
++	if (!debugfs_create_u32("enable", 0664, drvdata->debugfs_root,
++						&drvdata->activations))
++		dev_err(drvdata->sysmmu,
++				"Failed to create debugfs file 'enable'\n");
++
++	if (!debugfs_create_x32("pagetable", 0664, drvdata->debugfs_root,
++						(u32 *)&drvdata->pgtable))
++		dev_err(drvdata->sysmmu,
++				"Failed to create debugfs file 'pagetable'\n");
++
++	if (!debugfs_create_file("sysmmu_list", 0444, drvdata->debugfs_root,
++					drvdata, &debug_sysmmu_list_fops))
++		dev_err(drvdata->sysmmu,
++			"Failed to create debugfs file 'sysmmu_list'\n");
++
++	if (!debugfs_create_file("next_sibling", 0x444, drvdata->debugfs_root,
++				drvdata->sysmmu, &debug_next_sibling_fops))
++		dev_err(drvdata->sysmmu,
++			"Failed to create debugfs file 'next_siblings'\n");
++
++	if (!debugfs_create_file("master", 0x444, drvdata->debugfs_root,
++				drvdata->sysmmu, &debug_master_fops))
++		dev_err(drvdata->sysmmu,
++			"Failed to create debugfs file 'next_siblings'\n");
++}
 -- 
-1.7.1
+1.8.0
+
 
