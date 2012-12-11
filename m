@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab2LKKVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 05:21:19 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60358 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab2LKKVS (ORCPT
+	id S1752976Ab2LKK0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 05:26:47 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:47490 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab2LKK0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 05:21:18 -0500
-Date: Tue, 11 Dec 2012 10:26:44 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Woody Wu <narkewoody@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Serial8250 doesn't populate in /proc/iomem?
-Message-ID: <20121211102644.0be2eb94@pyramind.ukuu.org.uk>
-In-Reply-To: <slrnkcd1uq.28d.narkewoody@zuhnb712.local.com>
-References: <slrnkcb00b.77o.narkewoody@zuhnb712.local.com>
-	<slrnkcd1uq.28d.narkewoody@zuhnb712.local.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 05:26:46 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-1e-50c70a64b5f3
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linaro-mm-sig@lists.linaro.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] CMA and DMA-mapping updates for v3.8
+Date: Tue, 11 Dec 2012 11:26:28 +0100
+Message-id: <1355221589-26538-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBJMWRmVeSWpSXmKPExsVy+t9jAd0UruMBBp9PqFtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M61PXsRUc4a6YcSmmgXETZxcjB4eEgInEzh9sXYycQKaYxIV7
+	64FsLg4hgUWMEk+PbWCBcFYwSTTfXcACUsUmYCjR9bYLrENEwEji84srrCBFzAK7GSVW7J7I
+	CpIQFrCQOPVyHTuIzSKgKvF901+wOK+Ah8ScOb8ZITYrSMyZZDOBkXsBI8MqRtHUguSC4qT0
+	XEO94sTc4tK8dL3k/NxNjGD/PZPawbiyweIQowAHoxIPr4bWsQAh1sSy4srcQ4wSHMxKIryl
+	uUAh3pTEyqrUovz4otKc1OJDjNIcLErivM0eKQFCAumJJanZqakFqUUwWSYOTqkGxtU5rHdj
+	C3g7TC4ufhIdr33TYYrqn4ftz4KnOr0p83oWO1Hw4eozArm7k1UWe65ovfln8r9TPZvEErZs
+	a1rRX7evfo7wZK2n6/JdFr30U1a+m6P6vThwB5fQJ9amwO3pPhZ7fBdqnXz/8OQyUykB4zO6
+	alUVM2QV3N4nx/Fsesd3f8O617eKBJVYijMSDbWYi4oTAXuoS4vbAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > You see, there is no serial8250 informations.
-> >
-> > Can anyone here please tell me how this can happen?  Does it mean the
-> > serial8250 driver don't populate or register in the /proc/iomem?
-> 
-> Could someone help me? Thanks!
+Hi Linus,
 
-I think you are in the wrong place - the kernel newbies list may be a
-better place to ask this level of question.
+I would like to ask for pulling another set of Contiguous Memory Allocator and
+DMA-mapping framework updates for v3.8.
 
+The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
+
+  Linux 3.7 (2012-12-10 19:30:57 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.8
+
+for you to fetch changes up to 4009793e15d44469da1547a46ab129cc08ffa503:
+
+  drivers: cma: represent physical addresses as phys_addr_t (2012-12-11 09:28:09 +0100)
+
+----------------------------------------------------------------
+
+This pull request consists only of two patches. First fixes long standing
+issue with dmapools (the code predates current GIT history), which forced all
+allocations to use GFP_ATOMIC flag, ignoring the flags passed by the caller.
+The second patch changes CMA code to correctly use phys_addr_t type what
+enables support for LPAE systems.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+Patch summary:
+
+Marek Szyprowski (1):
+      mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
+
+Vitaly Andrianov (1):
+      drivers: cma: represent physical addresses as phys_addr_t
+
+ drivers/base/dma-contiguous.c  |   24 ++++++++++--------------
+ include/linux/dma-contiguous.h |    4 ++--
+ mm/dmapool.c                   |   31 +++++++------------------------
+ 3 files changed, 19 insertions(+), 40 deletions(-)
