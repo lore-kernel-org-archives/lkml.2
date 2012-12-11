@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab2LKCjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 21:39:18 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49852 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab2LKCjR (ORCPT
+	id S1752475Ab2LKCjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 21:39:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43108 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2LKCjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 21:39:17 -0500
-Message-ID: <50C69CC8.3080107@linux.vnet.ibm.com>
-Date: Tue, 11 Dec 2012 10:39:04 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 10 Dec 2012 21:39:40 -0500
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: TIP tree's master branch failed to boot up
-References: <50C56A13.9040604@linux.vnet.ibm.com> <50C615A3.8090400@zytor.com> <50C698FD.7000503@linux.vnet.ibm.com> <50C69BC8.2030702@zytor.com>
-In-Reply-To: <50C69BC8.2030702@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121102-2000-0000-0000-00000A355D08
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com>
+References: <1354240068-9821-6-git-send-email-fenghua.yu@intel.com>
+	<tip-474355fe313391de2429ae225e0fb02f67ec6c31@git.kernel.org>
+	<CAE9FiQW13Ji1wGSvFKrhY5UEArHyY5bfL5Ma37SRU9uROdPYDw@mail.gmail.com>
+	<3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com>
+Date: Mon, 10 Dec 2012 18:39:39 -0800
+X-Google-Sender-Auth: YTKXl2GWhcv0zsCg8GwrVrsESpY
+Message-ID: <CAE9FiQXGZYZiH3eUup2UXGWkeqKjsiHk7aMTFJO7xxFkqTpBZA@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 10:34 AM, H. Peter Anvin wrote:
-> On 12/10/2012 06:22 PM, Michael Wang wrote:
->> On 12/11/2012 01:02 AM, H. Peter Anvin wrote:
->>> On 12/09/2012 08:50 PM, Michael Wang wrote:
->>>> Hi, Folks
->>>>
->>>> I'm testing with the latest tip tree's master branch 3.7.0-rc8 and
->>>> failed to boot up my server, it's hung at very beginning and I could not
->>>> catch any useful log, is there any one else got this problem or I'm the
->>>> only one?.
->>>>
->>>> Regards,
->>>> Michael Wang
->>>>
->>>
->>> 32 or 64 bits?
+On Mon, Dec 3, 2012 at 4:18 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
+>> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+>> Yinghai Lu
 >>
->> 64 bits.
+>> may need to copy the ucode.bin to BRK at first. that will make code
+>> much simple, and later does not need to
+>> copy them back in free_bootmem_initrd.
 >>
-> 
-> Thanks.  We're working on that patchset and have found a bunch of
-> issues, hopefully we can get them resolved very soon.
+>> aka, this patchset is not ready for 3.8 even.
+>>
+>
+> I will relocate saved microcode blob (mc_saved_in_initrd) after initrd is
+> relocated in updated patches. Thus, mc_saved_in_initrd always point to
+> right initrd during boot time.
 
-I see, let me know if you need more info :)
+No, you should not copy that several times.
 
-Regards,
-Michael Wang
+just pre-allocate some kbytes in BRK, and copy to there one time.
 
-> 
-> 	-hpa
-> 
-> 
-
+Yinghai
