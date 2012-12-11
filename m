@@ -1,238 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab2LKM1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:27:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1702 "EHLO mx1.redhat.com"
+	id S1753180Ab2LKMbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:31:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37088 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752499Ab2LKM1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:27:02 -0500
-Date: Tue, 11 Dec 2012 14:30:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: pmoore@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mprivozn@redhat.com
-Subject: Re: [PATCH net-next rfc 2/2] tuntap: allow unpriveledge user to
- enable and disable queues
-Message-ID: <20121211123012.GB15435@redhat.com>
-References: <1355223827-57290-1-git-send-email-jasowang@redhat.com>
- <1355223827-57290-3-git-send-email-jasowang@redhat.com>
+	id S1752163Ab2LKMby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 07:31:54 -0500
+From: Nikola Pajkovsky <npajkovs@redhat.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: WARNING: at drivers/gpu/drm/i915/i915_gem.c:3437 i915_gem_object_pin+0x151/0x1a0()
+Date: Tue, 11 Dec 2012 13:31:36 +0100
+Message-ID: <87vcc8vkgn.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355223827-57290-3-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 07:03:47PM +0800, Jason Wang wrote:
-> Currently, when a file is attached to tuntap through TUNSETQUEUE, the uid/gid
-> and CAP_NET_ADMIN were checked, and we use this ioctl to create and destroy
-> queues. Sometimes, userspace such as qemu need to the ability to enable and
-> disable a specific queue without priveledge since guest operating system may
-> change the number of queues it want use.
-> 
-> To support this kind of ability, this patch introduce a flag enabled which is
-> used to track whether the queue is enabled by userspace. And also restrict that
-> only one deivce could be used for a queue to attach. With this patch, the DAC
-> checking when adding queues through IFF_ATTACH_QUEUE is still done and after
-> this, IFF_DETACH_QUEUE/IFF_ATTACH_QUEUE  could be used to disable/enable this
-> queue.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/tun.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++-----
->  1 files changed, 73 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index d593f56..43831a7 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -138,6 +138,7 @@ struct tun_file {
->  	/* only used for fasnyc */
->  	unsigned int flags;
->  	u16 queue_index;
-> +	bool enabled;
->  };
->  
->  struct tun_flow_entry {
-> @@ -345,9 +346,11 @@ unlock:
->  static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
->  {
->  	struct tun_struct *tun = netdev_priv(dev);
-> +	struct tun_file *tfile;
->  	struct tun_flow_entry *e;
->  	u32 txq = 0;
->  	u32 numqueues = 0;
-> +	int i;
->  
->  	rcu_read_lock();
->  	numqueues = tun->numqueues;
-> @@ -366,6 +369,19 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
->  			txq -= numqueues;
->  	}
->  
-> +	tfile = rcu_dereference(tun->tfiles[txq]);
-> +	if (unlikely(!tfile->enabled))
+Hey folks,
 
-This unlikely tag is suspicious. It should be perfectly
-legal to use less queues than created.
+looks like we still have some oops in i915. i915 maintainers do you have
+any ideas what's going on? I will try to trigger that oops later today
+and provide more information.
 
-> +		/* tun_detach() should make sure there's at least one queue
-> +		 * could be used to do the tranmission.
-> +		 */
-> +		for (i = 0; i < numqueues; i++) {
-> +			tfile = rcu_dereference(tun->tfiles[i]);
-> +			if (tfile->enabled) {
-> +				txq = i;
-> +				break;
-> +			}
-> +		}
-> +
+[10733.442608] WARNING: at drivers/gpu/drm/i915/i915_gem.c:3437 i915_gem_object_pin+0x151/0x1a0()
+[10733.442612] Hardware name: 4243BQ9
+[10733.442615] Modules linked in: kvm_intel kvm
+[10733.442632] Pid: 1361, comm: X Not tainted 3.7.0 #19
+[10733.442635] Call Trace:
+[10733.442650]  [<ffffffff81095efa>] warn_slowpath_common+0x7a/0xb0
+[10733.442659]  [<ffffffff81095f45>] warn_slowpath_null+0x15/0x20
+[10733.442669]  [<ffffffff814dc041>] i915_gem_object_pin+0x151/0x1a0
+[10733.442679]  [<ffffffff814dc0ea>] i915_gem_object_pin_to_display_plane+0x5a/0x90
+[10733.442689]  [<ffffffff814d80f5>] ? i915_mutex_lock_interruptible+0x35/0xc0
+[10733.442700]  [<ffffffff814ec6b0>] intel_pin_and_fence_fb_obj+0x50/0x130
+[10733.442709]  [<ffffffff814ec9de>] intel_gen6_queue_flip+0x3e/0x160
+[10733.442719]  [<ffffffff814f01f2>] intel_crtc_page_flip+0x1d2/0x370
+[10733.442728]  [<ffffffff814bd633>] drm_mode_page_flip_ioctl+0x273/0x300
+[10733.442738]  [<ffffffff814aba20>] drm_ioctl+0x2d0/0x520
+[10733.442746]  [<ffffffff814bd3c0>] ? drm_mode_gamma_get_ioctl+0x120/0x120
+[10733.442757]  [<ffffffff818d172f>] ? _raw_spin_unlock_irqrestore+0x5f/0x70
+[10733.442768]  [<ffffffff810a4321>] ? del_timer+0x61/0x90
+[10733.442779]  [<ffffffff8111fc34>] ? rcu_cleanup_after_idle+0x24/0x40
+[10733.442829]  [<ffffffff811205b6>] ? rcu_prepare_for_idle+0x1b6/0x300
+[10733.442838]  [<ffffffff81121d89>] ? rcu_user_exit+0x69/0xc0
+[10733.442847]  [<ffffffff8119eafa>] do_vfs_ioctl+0x8a/0x2f0
+[10733.442859]  [<ffffffff810ebfbd>] ? trace_hardirqs_on+0xd/0x10
+[10733.442866]  [<ffffffff8119edf1>] sys_ioctl+0x91/0xa0
+[10733.442876]  [<ffffffff818d8d18>] tracesys+0xe1/0xe6
 
-Worst case this will do a linear scan over all queueus on each packet.
-Instead, I think we need a list of all queues and only install
-the active ones in the array.
-
->  	rcu_read_unlock();
->  	return txq;
->  }
-> @@ -386,6 +402,36 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
->  	netif_set_real_num_rx_queues(tun->dev, tun->numqueues);
->  }
->  
-> +static int tun_enable(struct tun_file *tfile)
-> +{
-> +	if (tfile->enabled == true)
-
-simply if (tfile->enabled)
-
-> +		return -EINVAL;
-
-Actually it's better to have operations be
-idempotent. If it's enabled, enabling should
-be a NOP not an error.
-
-> +
-> +	tfile->enabled = true;
-> +	return 0;
-> +}
-> +
-> +static int tun_disable(struct tun_file *tfile)
-> +{
-> +	struct tun_struct *tun = rcu_dereference_protected(tfile->tun,
-> +							   lockdep_rtnl_is_held());
-> +	u16 index = tfile->queue_index;
-> +
-> +	if (!tun)
-> +		return -EINVAL;
-> +
-> +	if (tun->numqueues == 1)
-> +		return -EINVAL;
-
-So if there's a single queue we can't disable it,
-but if there are > 1 we can disable them all.
-This seems arbitrary.
-
-> +
-> +	BUG_ON(index >= tun->numqueues);
-> +	tfile->enabled = false;
-> +
-> +	synchronize_net();
-> +	tun_flow_delete_by_queue(tun, index);
-> +
-> +	return 0;
-> +}
-> +
->  static void __tun_detach(struct tun_file *tfile, bool clean)
->  {
->  	struct tun_file *ntfile;
-> @@ -446,6 +492,7 @@ static void tun_detach_all(struct net_device *dev)
->  		BUG_ON(!tfile);
->  		wake_up_all(&tfile->wq.wait);
->  		rcu_assign_pointer(tfile->tun, NULL);
-> +		tfile->enabled = false;
->  		--tun->numqueues;
->  	}
->  	BUG_ON(tun->numqueues != 0);
-> @@ -490,6 +537,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
->  	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
->  	sock_hold(&tfile->sk);
->  	tun->numqueues++;
-> +	tfile->enabled = true;
->  
->  	tun_set_real_num_queues(tun);
->  
-> @@ -672,6 +720,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->  	if (txq >= tun->numqueues)
->  		goto drop;
->  
-> +	/* Drop packet if the queue was not enabled */
-> +	if (!tfile->enabled)
-> +		goto drop;
-> +
->  	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
->  
->  	BUG_ON(!tfile);
-> @@ -1010,6 +1062,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
->  	bool zerocopy = false;
->  	int err;
->  
-> +	if (!tfile->enabled)
-> +		return -EINVAL;
-> +
->  	if (!(tun->flags & TUN_NO_PI)) {
->  		if ((len -= sizeof(pi)) > total_len)
->  			return -EINVAL;
-> @@ -1199,6 +1254,9 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  	struct tun_pi pi = { 0, skb->protocol };
->  	ssize_t total = 0;
->  
-> +	if (!tfile->enabled)
-> +		return -EINVAL;
-> +
->  	if (!(tun->flags & TUN_NO_PI)) {
->  		if ((len -= sizeof(pi)) < 0)
->  			return -EINVAL;
-> @@ -1769,15 +1827,21 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->  		if (dev->netdev_ops != &tap_netdev_ops &&
->  			dev->netdev_ops != &tun_netdev_ops)
->  			ret = -EINVAL;
-> -		else if (tun_not_capable(tun))
-> -			ret = -EPERM;
-> -		/* TUNSETIFF is needed to do permission checking */
-> -		else if (tun->numqueues == 0)
-> -			ret = -EPERM;
-> -		else
-> -			ret = tun_attach(tun, file);
-> +		else {
-> +			if (!rcu_dereference(tfile->tun)) {
-
-Should be rcu_dereference_protected.
-
-> +				if (tun_not_capable(tun) ||
-> +				    tun->numqueues == 0)
-> +					ret = -EPERM;
-> +				else
-> +					ret = tun_attach(tun, file);
-> +			}
-> +			else {
-> +				/* FIXME: permission check? */
-> +				ret = tun_enable(tfile);
-> +			}
-> +		}
->  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE)
-> -		__tun_detach(tfile, false);
-> +		tun_disable(tfile);
->  	else
->  		ret = -EINVAL;
->  
-> @@ -2085,6 +2149,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
->  	tfile->socket.file = file;
->  	tfile->socket.ops = &tun_socket_ops;
->  
-> +	tfile->enabled = false;
->  	sock_init_data(&tfile->socket, &tfile->sk);
->  	sk_change_net(&tfile->sk, tfile->net);
->  
-> -- 
-> 1.7.1
+-- 
+Nikola
