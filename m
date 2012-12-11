@@ -1,994 +1,851 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab2LKLKj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 06:10:39 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48747 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab2LKLKd (ORCPT
+	id S1753255Ab2LKLKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 06:10:45 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:36372 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2LKLKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 06:10:33 -0500
-Date: Tue, 11 Dec 2012 12:10:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [RFC GIT PULL] "Nuke 386-DX/SX support" changes for v3.8
-Message-ID: <20121211111026.GA26507@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Dec 2012 06:10:40 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-1f-50c714afa16e
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>
+Cc: "'Dae Inki'" <inki.dae@samsung.com>, "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahun Sharma'" <rahul.sharma@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'SWKim'" <sw0312.kim@samsung.com>
+Subject: [PATCH v5 09/14] ARM: EXYNOS: remove system mmu initialization from
+ exynos tree
+Date: Tue, 11 Dec 2012 20:10:38 +0900
+Message-id: <003901cdd790$26cb1bc0$74615340$%cho@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3XjHxHdvP/QpOGQOeA3r97fP1m8AAA6QKw
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zA931IscDDO4flbW4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mp4MmEta8HuW4wVf84fY2tgXL+NsYuRk0NCwETiyeIr
+	LBC2mMSFe+vZuhi5OIQEljFKfJnzhBWm6OKss8wQiemMEgdOXAXrEBL4xyjx+ZUoiM0moCWx
+	eu5xsKkiAncZJV6e5wFpYBY4wiSx8/45sAZhgSiJvTsXgtksAqoSP7vfgzXwCthKbNn+jQXC
+	FpT4MfkemM0MNHT9zuNMELa8xOY1b4Gu4AC6SF3i0V9diF1GEkvezGCEKBGR2PfiHSPEeAGJ
+	b5MPsUCUy0psOgB2v4TAZHaJy0fns0E8JilxcMUNlgmMYrOQbJ6FZPMsJJtnIVmxgJFlFaNo
+	akFyQXFSeq6hXnFibnFpXrpecn7uJkZI5EjtYFzZYHGIUYCDUYmHV0PrWIAQa2JZcWXuIUYJ
+	DmYlEd5IoeMBQrwpiZVVqUX58UWlOanFhxh9gC6fyCwlmpwPjOq8knhDY2MTMxNTE3NLU3NT
+	HMJK4rzNHikBQgLpiSWp2ampBalFMOOYODilGhgVuDorD5uE54kW6DY4lkZabHRYmrFxRv0s
+	htcpQo6/Vx+/ee/hwg0LDdN+ndoce1zDj+vhmWmFR5gKtNtFjm13OtHqMvG3KXfD3Ogvkzn2
+	MCv2HlX4YvzkY/U97qcPZN/2X/mx5EhNb7rujDWMoikCr7836itOaJCO2ib6KsGd742d3XKL
+	mm1KLMUZiYZazEXFiQAGGZFfyQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQd31IscDDFY2iVtc3jWHzWLG+X1M
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmPJmwlrVg9y3G
+	ij/nj7E1MK7fxtjFyMkhIWAicXHWWWYIW0ziwr31bF2MXBxCAtMZJQ6cuMoCkhAS+Mco8fmV
+	KIjNJqAlsXrucbBmEYG7jBIvz/OANDALHGGS2Hn/HFiDsECUxN6dC8FsFgFViZ/d78EaeAVs
+	JbZs/8YCYQtK/Jh8D8xmBhq6fudxJghbXmLzmrdAF3EAXaQu8eivLsQuI4klb2YwQpSISOx7
+	8Y5xAqPALCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7LZ1I7
+	GFc2WBxiFOBgVOLh1dA6FiDEmlhWXJl7iFGCg1lJhDdS6HiAEG9KYmVValF+fFFpTmrxIUYf
+	oEcnMkuJJucDU0ZeSbyhsYmZkaWRmYWRibk5DmElcd5mj5QAIYH0xJLU7NTUgtQimHFMHJxS
+	DYwBs699XvR3A/PB8pKWXT38abuitTy2Np8Xy1Y2+7AiRfG19aQDvqaN71sTw0WzU9pudGYe
+	Y3WOetLUu3KNR2hNcNPXhQ3BOt/8L3m9dix0viw1qy/yz8xrm3unckeuWuWVGvCzqfZgyeeb
+	G6ZeYI96UbVjqRXf64rXaw/eO3gj3417VcLJsNVKLMUZiYZazEXFiQApgyPe+AIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This removes System MMU initialization from arch/arm/mach-exynos/
+to move them to DT and the exynos-iommu driver except gating clock
+definitions.
 
-Please consider pulling the latest x86-nuke386-for-linus git 
-tree from:
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+---
+ arch/arm/mach-exynos/Kconfig               |   5 -
+ arch/arm/mach-exynos/Makefile              |   1 -
+ arch/arm/mach-exynos/clock-exynos4.c       |  41 +++--
+ arch/arm/mach-exynos/clock-exynos4210.c    |   9 +-
+ arch/arm/mach-exynos/clock-exynos4212.c    |  23 ++-
+ arch/arm/mach-exynos/clock-exynos5.c       |  62 ++++---
+ arch/arm/mach-exynos/dev-sysmmu.c          | 274 -----------------------------
+ arch/arm/mach-exynos/include/mach/sysmmu.h |  66 -------
+ arch/arm/mach-exynos/mach-exynos4-dt.c     |  34 ++++
+ arch/arm/mach-exynos/mach-exynos5-dt.c     |  30 ++++
+ 10 files changed, 137 insertions(+), 408 deletions(-)
+ delete mode 100644 arch/arm/mach-exynos/dev-sysmmu.c
+ delete mode 100644 arch/arm/mach-exynos/include/mach/sysmmu.h
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-nuke386-for-linus
-
-   HEAD: 11af32b69ef7ee64c7d8848cad71a6f3749d9e37 x86, 386 removal: Document Nx586 as a 386 and thus unsupported
-
-This tree removes ancient-386-CPUs support and thus zaps quite a 
-bit of complexity:
-
-   24 files changed, 56 insertions(+), 425 deletions(-)
-
-... which complexity has plagued us with extra work whenever we 
-wanted to change SMP primitives, for years.
-
-Unfortunately there's a nostalgic cost: your old original 386 
-DX33 system from early 1991 won't be able to boot modern Linux 
-kernels anymore. Sniff.
-
- Thanks,
-
-	Ingo
-
------------------->
-H. Peter Anvin (9):
-      x86, 386 removal: Remove CONFIG_M386 from Kconfig
-      x86, 386 removal: Remove CONFIG_CMPXCHG
-      x86, 386 removal: Remove CONFIG_XADD
-      x86, 386 removal: Remove CONFIG_BSWAP
-      x86, 386 removal: Remove CONFIG_INVLPG
-      x86, 386 removal: Remove CONFIG_X86_WP_WORKS_OK
-      x86, 386 removal: Remove CONFIG_X86_POPAD_OK
-      x86, cleanups: Simplify sync_core() in the case of no CPUID
-      x86, 386 removal: Document Nx586 as a 386 and thus unsupported
-
-
- arch/x86/Kconfig                  | 11 ++----
- arch/x86/Kconfig.cpu              | 73 +++++++++++----------------------------
- arch/x86/Makefile_32.cpu          |  1 -
- arch/x86/include/asm/atomic.h     | 16 ---------
- arch/x86/include/asm/cmpxchg_32.h | 55 -----------------------------
- arch/x86/include/asm/cpufeature.h |  6 ----
- arch/x86/include/asm/futex.h      | 12 -------
- arch/x86/include/asm/local.h      | 18 +---------
- arch/x86/include/asm/module.h     |  2 --
- arch/x86/include/asm/percpu.h     |  3 --
- arch/x86/include/asm/processor.h  | 33 ++++++++++++------
- arch/x86/include/asm/swab.h       | 29 ++--------------
- arch/x86/include/asm/tlbflush.h   |  3 --
- arch/x86/include/asm/uaccess.h    | 42 ----------------------
- arch/x86/kernel/cpu/amd.c         |  3 --
- arch/x86/kernel/cpu/bugs.c        | 41 ++--------------------
- arch/x86/kernel/cpu/intel.c       |  4 ---
- arch/x86/lib/Makefile             |  1 -
- arch/x86/lib/cmpxchg.c            | 54 -----------------------------
- arch/x86/lib/usercopy_32.c        | 57 ------------------------------
- arch/x86/mm/init_32.c             |  5 +--
- arch/x86/mm/tlb.c                 |  8 ++---
- arch/x86/um/Kconfig               |  2 +-
- arch/x86/xen/Kconfig              |  2 +-
- 24 files changed, 56 insertions(+), 425 deletions(-)
- delete mode 100644 arch/x86/lib/cmpxchg.c
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..631b298 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -69,8 +69,8 @@ config X86
- 	select HAVE_PERF_USER_STACK_DUMP
- 	select HAVE_DEBUG_KMEMLEAK
- 	select ANON_INODES
--	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
--	select HAVE_CMPXCHG_LOCAL if !M386
-+	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
-+	select HAVE_CMPXCHG_LOCAL
- 	select HAVE_CMPXCHG_DOUBLE
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
-@@ -171,13 +171,8 @@ config ARCH_MAY_HAVE_PC_FDC
- 	def_bool y
- 	depends on ISA_DMA_API
- 
--config RWSEM_GENERIC_SPINLOCK
--	def_bool y
--	depends on !X86_XADD
--
- config RWSEM_XCHGADD_ALGORITHM
- 	def_bool y
--	depends on X86_XADD
- 
- config GENERIC_CALIBRATE_DELAY
- 	def_bool y
-@@ -1100,7 +1095,7 @@ config HIGHMEM4G
- 
- config HIGHMEM64G
- 	bool "64GB"
--	depends on !M386 && !M486
-+	depends on !M486
- 	select X86_PAE
- 	---help---
- 	  Select this if you have a 32-bit processor and more than 4
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index f3b86d0..c026cca 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -4,23 +4,24 @@ choice
- 	default M686 if X86_32
- 	default GENERIC_CPU if X86_64
- 
--config M386
--	bool "386"
--	depends on X86_32 && !UML
-+config M486
-+	bool "486"
-+	depends on X86_32
- 	---help---
--	  This is the processor type of your CPU. This information is used for
--	  optimizing purposes. In order to compile a kernel that can run on
--	  all x86 CPU types (albeit not optimally fast), you can specify
--	  "386" here.
-+	  This is the processor type of your CPU. This information is
-+	  used for optimizing purposes. In order to compile a kernel
-+	  that can run on all supported x86 CPU types (albeit not
-+	  optimally fast), you can specify "486" here.
-+
-+	  Note that the 386 is no longer supported, this includes
-+	  AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI 486DLC/DLC2,
-+	  UMC 486SX-S and the NexGen Nx586.
- 
- 	  The kernel will not necessarily run on earlier architectures than
- 	  the one you have chosen, e.g. a Pentium optimized kernel will run on
- 	  a PPro, but not necessarily on a i486.
- 
- 	  Here are the settings recommended for greatest speed:
--	  - "386" for the AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI
--	  486DLC/DLC2, and UMC 486SX-S.  Only "386" kernels will run on a 386
--	  class machine.
- 	  - "486" for the AMD/Cyrix/IBM/Intel 486DX/DX2/DX4 or
- 	  SL/SLC/SLC2/SLC3/SX/SX2 and UMC U5D or U5S.
- 	  - "586" for generic Pentium CPUs lacking the TSC
-@@ -43,16 +44,7 @@ config M386
- 	  - "VIA C3-2" for VIA C3-2 "Nehemiah" (model 9 and above).
- 	  - "VIA C7" for VIA C7.
- 
--	  If you don't know what to do, choose "386".
--
--config M486
--	bool "486"
--	depends on X86_32
--	---help---
--	  Select this for a 486 series processor, either Intel or one of the
--	  compatible processors from AMD, Cyrix, IBM, or Intel.  Includes DX,
--	  DX2, and DX4 variants; also SL/SLC/SLC2/SLC3/SX/SX2 and UMC U5D or
--	  U5S.
-+	  If you don't know what to do, choose "486".
- 
- config M586
- 	bool "586/K5/5x86/6x86/6x86MX"
-@@ -305,24 +297,16 @@ config X86_INTERNODE_CACHE_SHIFT
- 	default "12" if X86_VSMP
- 	default X86_L1_CACHE_SHIFT
- 
--config X86_CMPXCHG
--	def_bool y
--	depends on X86_64 || (X86_32 && !M386)
--
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
- 	default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
--	default "4" if MELAN || M486 || M386 || MGEODEGX1
-+	default "4" if MELAN || M486 || MGEODEGX1
- 	default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
- 
--config X86_XADD
--	def_bool y
--	depends on !M386
--
- config X86_PPRO_FENCE
- 	bool "PentiumPro memory ordering errata workaround"
--	depends on M686 || M586MMX || M586TSC || M586 || M486 || M386 || MGEODEGX1
-+	depends on M686 || M586MMX || M586TSC || M586 || M486 || MGEODEGX1
- 	---help---
- 	  Old PentiumPro multiprocessor systems had errata that could cause
- 	  memory operations to violate the x86 ordering standard in rare cases.
-@@ -335,27 +319,11 @@ config X86_PPRO_FENCE
- 
- config X86_F00F_BUG
- 	def_bool y
--	depends on M586MMX || M586TSC || M586 || M486 || M386
-+	depends on M586MMX || M586TSC || M586 || M486
- 
- config X86_INVD_BUG
- 	def_bool y
--	depends on M486 || M386
--
--config X86_WP_WORKS_OK
--	def_bool y
--	depends on !M386
--
--config X86_INVLPG
--	def_bool y
--	depends on X86_32 && !M386
--
--config X86_BSWAP
--	def_bool y
--	depends on X86_32 && !M386
--
--config X86_POPAD_OK
--	def_bool y
--	depends on X86_32 && !M386
-+	depends on M486
- 
- config X86_ALIGNMENT_16
- 	def_bool y
-@@ -412,12 +380,11 @@ config X86_MINIMUM_CPU_FAMILY
- 	default "64" if X86_64
- 	default "6" if X86_32 && X86_P6_NOP
- 	default "5" if X86_32 && X86_CMPXCHG64
--	default "4" if X86_32 && (X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK)
--	default "3"
-+	default "4"
- 
- config X86_DEBUGCTLMSR
- 	def_bool y
--	depends on !(MK6 || MWINCHIPC6 || MWINCHIP3D || MCYRIXIII || M586MMX || M586TSC || M586 || M486 || M386) && !UML
-+	depends on !(MK6 || MWINCHIPC6 || MWINCHIP3D || MCYRIXIII || M586MMX || M586TSC || M586 || M486) && !UML
- 
- menuconfig PROCESSOR_SELECT
- 	bool "Supported processor vendors" if EXPERT
-@@ -441,7 +408,7 @@ config CPU_SUP_INTEL
- config CPU_SUP_CYRIX_32
- 	default y
- 	bool "Support Cyrix processors" if PROCESSOR_SELECT
--	depends on M386 || M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
-+	depends on M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for Cyrix processors
- 
-@@ -495,7 +462,7 @@ config CPU_SUP_TRANSMETA_32
- config CPU_SUP_UMC_32
- 	default y
- 	bool "Support UMC processors" if PROCESSOR_SELECT
--	depends on M386 || M486 || (EXPERT && !64BIT)
-+	depends on M486 || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for UMC processors
- 
-diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
-index 86cee7b..6647ed4 100644
---- a/arch/x86/Makefile_32.cpu
-+++ b/arch/x86/Makefile_32.cpu
-@@ -10,7 +10,6 @@ tune		= $(call cc-option,-mcpu=$(1),$(2))
- endif
- 
- align := $(cc-option-align)
--cflags-$(CONFIG_M386)		+= -march=i386
- cflags-$(CONFIG_M486)		+= -march=i486
- cflags-$(CONFIG_M586)		+= -march=i586
- cflags-$(CONFIG_M586TSC)	+= -march=i586
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index b6c3b82..722aa3b 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -172,23 +172,7 @@ static inline int atomic_add_negative(int i, atomic_t *v)
-  */
- static inline int atomic_add_return(int i, atomic_t *v)
- {
--#ifdef CONFIG_M386
--	int __i;
--	unsigned long flags;
--	if (unlikely(boot_cpu_data.x86 <= 3))
--		goto no_xadd;
--#endif
--	/* Modern 486+ processor */
- 	return i + xadd(&v->counter, i);
--
--#ifdef CONFIG_M386
--no_xadd: /* Legacy 386 processor */
--	raw_local_irq_save(flags);
--	__i = atomic_read(v);
--	atomic_set(v, i + __i);
--	raw_local_irq_restore(flags);
--	return i + __i;
--#endif
- }
- 
- /**
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 53f4b21..f8bf2ee 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -34,9 +34,7 @@ static inline void set_64bit(volatile u64 *ptr, u64 value)
- 		     : "memory");
- }
- 
--#ifdef CONFIG_X86_CMPXCHG
- #define __HAVE_ARCH_CMPXCHG 1
--#endif
- 
- #ifdef CONFIG_X86_CMPXCHG64
- #define cmpxchg64(ptr, o, n)						\
-@@ -73,59 +71,6 @@ static inline u64 __cmpxchg64_local(volatile u64 *ptr, u64 old, u64 new)
- 	return prev;
- }
- 
--#ifndef CONFIG_X86_CMPXCHG
--/*
-- * Building a kernel capable running on 80386. It may be necessary to
-- * simulate the cmpxchg on the 80386 CPU. For that purpose we define
-- * a function for each of the sizes we support.
-- */
--
--extern unsigned long cmpxchg_386_u8(volatile void *, u8, u8);
--extern unsigned long cmpxchg_386_u16(volatile void *, u16, u16);
--extern unsigned long cmpxchg_386_u32(volatile void *, u32, u32);
--
--static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
--					unsigned long new, int size)
--{
--	switch (size) {
--	case 1:
--		return cmpxchg_386_u8(ptr, old, new);
--	case 2:
--		return cmpxchg_386_u16(ptr, old, new);
--	case 4:
--		return cmpxchg_386_u32(ptr, old, new);
--	}
--	return old;
--}
--
--#define cmpxchg(ptr, o, n)						\
--({									\
--	__typeof__(*(ptr)) __ret;					\
--	if (likely(boot_cpu_data.x86 > 3))				\
--		__ret = (__typeof__(*(ptr)))__cmpxchg((ptr),		\
--				(unsigned long)(o), (unsigned long)(n),	\
--				sizeof(*(ptr)));			\
--	else								\
--		__ret = (__typeof__(*(ptr)))cmpxchg_386((ptr),		\
--				(unsigned long)(o), (unsigned long)(n),	\
--				sizeof(*(ptr)));			\
--	__ret;								\
--})
--#define cmpxchg_local(ptr, o, n)					\
--({									\
--	__typeof__(*(ptr)) __ret;					\
--	if (likely(boot_cpu_data.x86 > 3))				\
--		__ret = (__typeof__(*(ptr)))__cmpxchg_local((ptr),	\
--				(unsigned long)(o), (unsigned long)(n),	\
--				sizeof(*(ptr)));			\
--	else								\
--		__ret = (__typeof__(*(ptr)))cmpxchg_386((ptr),		\
--				(unsigned long)(o), (unsigned long)(n),	\
--				sizeof(*(ptr)));			\
--	__ret;								\
--})
--#endif
--
- #ifndef CONFIG_X86_CMPXCHG64
- /*
-  * Building a kernel capable running on 80386 and 80486. It may be necessary
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 8c297aa..ff8dd62 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -312,12 +312,6 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
- 
--#if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
--# define cpu_has_invlpg		1
--#else
--# define cpu_has_invlpg		(boot_cpu_data.x86 > 3)
--#endif
--
- #ifdef CONFIG_X86_64
- 
- #undef  cpu_has_vme
-diff --git a/arch/x86/include/asm/futex.h b/arch/x86/include/asm/futex.h
-index f373046..be27ba1 100644
---- a/arch/x86/include/asm/futex.h
-+++ b/arch/x86/include/asm/futex.h
-@@ -55,12 +55,6 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
- 		return -EFAULT;
- 
--#if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
--	/* Real i386 machines can only support FUTEX_OP_SET */
--	if (op != FUTEX_OP_SET && boot_cpu_data.x86 == 3)
--		return -ENOSYS;
--#endif
--
- 	pagefault_disable();
- 
- 	switch (op) {
-@@ -118,12 +112,6 @@ static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
- {
- 	int ret = 0;
- 
--#if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
--	/* Real i386 machines have no cmpxchg instruction */
--	if (boot_cpu_data.x86 == 3)
--		return -ENOSYS;
--#endif
--
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
- 		return -EFAULT;
- 
-diff --git a/arch/x86/include/asm/local.h b/arch/x86/include/asm/local.h
-index c8bed0d..2d89e39 100644
---- a/arch/x86/include/asm/local.h
-+++ b/arch/x86/include/asm/local.h
-@@ -124,27 +124,11 @@ static inline int local_add_negative(long i, local_t *l)
-  */
- static inline long local_add_return(long i, local_t *l)
- {
--	long __i;
--#ifdef CONFIG_M386
--	unsigned long flags;
--	if (unlikely(boot_cpu_data.x86 <= 3))
--		goto no_xadd;
--#endif
--	/* Modern 486+ processor */
--	__i = i;
-+	long __i = i;
- 	asm volatile(_ASM_XADD "%0, %1;"
- 		     : "+r" (i), "+m" (l->a.counter)
- 		     : : "memory");
- 	return i + __i;
--
--#ifdef CONFIG_M386
--no_xadd: /* Legacy 386 processor */
--	local_irq_save(flags);
--	__i = local_read(l);
--	local_set(l, i + __i);
--	local_irq_restore(flags);
--	return i + __i;
--#endif
- }
- 
- static inline long local_sub_return(long i, local_t *l)
-diff --git a/arch/x86/include/asm/module.h b/arch/x86/include/asm/module.h
-index 9eae775..e3b7819 100644
---- a/arch/x86/include/asm/module.h
-+++ b/arch/x86/include/asm/module.h
-@@ -5,8 +5,6 @@
- 
- #ifdef CONFIG_X86_64
- /* X86_64 does not define MODULE_PROC_FAMILY */
--#elif defined CONFIG_M386
--#define MODULE_PROC_FAMILY "386 "
- #elif defined CONFIG_M486
- #define MODULE_PROC_FAMILY "486 "
- #elif defined CONFIG_M586
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index 1104afa..0da5200 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -406,7 +406,6 @@ do {									\
- #define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
- 
--#ifndef CONFIG_M386
- #define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
- #define __this_cpu_add_return_2(pcp, val) percpu_add_return_op(pcp, val)
- #define __this_cpu_add_return_4(pcp, val) percpu_add_return_op(pcp, val)
-@@ -421,8 +420,6 @@ do {									\
- #define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- #define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- 
--#endif /* !CONFIG_M386 */
--
- #ifdef CONFIG_X86_CMPXCHG64
- #define percpu_cmpxchg8b_double(pcp1, pcp2, o1, o2, n1, n2)		\
- ({									\
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index ad1fc85..b0d3e73 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -672,18 +672,29 @@ static inline void sync_core(void)
- {
- 	int tmp;
- 
--#if defined(CONFIG_M386) || defined(CONFIG_M486)
--	if (boot_cpu_data.x86 < 5)
--		/* There is no speculative execution.
--		 * jmp is a barrier to prefetching. */
--		asm volatile("jmp 1f\n1:\n" ::: "memory");
--	else
-+#ifdef CONFIG_M486
-+	/*
-+	 * Do a CPUID if available, otherwise do a jump.  The jump
-+	 * can conveniently enough be the jump around CPUID.
-+	 */
-+	asm volatile("cmpl %2,%1\n\t"
-+		     "jl 1f\n\t"
-+		     "cpuid\n"
-+		     "1:"
-+		     : "=a" (tmp)
-+		     : "rm" (boot_cpu_data.cpuid_level), "ri" (0), "0" (1)
-+		     : "ebx", "ecx", "edx", "memory");
-+#else
-+	/*
-+	 * CPUID is a barrier to speculative execution.
-+	 * Prefetched instructions are automatically
-+	 * invalidated when modified.
-+	 */
-+	asm volatile("cpuid"
-+		     : "=a" (tmp)
-+		     : "0" (1)
-+		     : "ebx", "ecx", "edx", "memory");
- #endif
--		/* cpuid is a barrier to speculative execution.
--		 * Prefetched instructions are automatically
--		 * invalidated when modified. */
--		asm volatile("cpuid" : "=a" (tmp) : "0" (1)
--			     : "ebx", "ecx", "edx", "memory");
- }
- 
- static inline void __monitor(const void *eax, unsigned long ecx,
-diff --git a/arch/x86/include/asm/swab.h b/arch/x86/include/asm/swab.h
-index 557cd9f..7f235c7 100644
---- a/arch/x86/include/asm/swab.h
-+++ b/arch/x86/include/asm/swab.h
-@@ -6,22 +6,7 @@
- 
- static inline __attribute_const__ __u32 __arch_swab32(__u32 val)
- {
--#ifdef __i386__
--# ifdef CONFIG_X86_BSWAP
--	asm("bswap %0" : "=r" (val) : "0" (val));
--# else
--	asm("xchgb %b0,%h0\n\t"	/* swap lower bytes	*/
--	    "rorl $16,%0\n\t"	/* swap words		*/
--	    "xchgb %b0,%h0"	/* swap higher bytes	*/
--	    : "=q" (val)
--	    : "0" (val));
--# endif
--
--#else /* __i386__ */
--	asm("bswapl %0"
--	    : "=r" (val)
--	    : "0" (val));
--#endif
-+	asm("bswapl %0" : "=r" (val) : "0" (val));
- 	return val;
- }
- #define __arch_swab32 __arch_swab32
-@@ -37,22 +22,12 @@ static inline __attribute_const__ __u64 __arch_swab64(__u64 val)
- 		__u64 u;
- 	} v;
- 	v.u = val;
--# ifdef CONFIG_X86_BSWAP
- 	asm("bswapl %0 ; bswapl %1 ; xchgl %0,%1"
- 	    : "=r" (v.s.a), "=r" (v.s.b)
- 	    : "0" (v.s.a), "1" (v.s.b));
--# else
--	v.s.a = __arch_swab32(v.s.a);
--	v.s.b = __arch_swab32(v.s.b);
--	asm("xchgl %0,%1"
--	    : "=r" (v.s.a), "=r" (v.s.b)
--	    : "0" (v.s.a), "1" (v.s.b));
--# endif
- 	return v.u;
- #else /* __i386__ */
--	asm("bswapq %0"
--	    : "=r" (val)
--	    : "0" (val));
-+	asm("bswapq %0" : "=r" (val) : "0" (val));
- 	return val;
- #endif
- }
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 74a4433..0fee48e 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -56,10 +56,7 @@ static inline void __flush_tlb_all(void)
- 
- static inline void __flush_tlb_one(unsigned long addr)
- {
--	if (cpu_has_invlpg)
- 		__flush_tlb_single(addr);
--	else
--		__flush_tlb();
- }
- 
- #define TLB_FLUSH_ALL	-1UL
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index 7ccf8d1..1709801 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -237,8 +237,6 @@ extern void __put_user_2(void);
- extern void __put_user_4(void);
- extern void __put_user_8(void);
- 
--#ifdef CONFIG_X86_WP_WORKS_OK
--
- /**
-  * put_user: - Write a simple value into user space.
-  * @x:   Value to copy to user space.
-@@ -326,29 +324,6 @@ do {									\
- 	}								\
- } while (0)
- 
--#else
--
--#define __put_user_size(x, ptr, size, retval, errret)			\
--do {									\
--	__typeof__(*(ptr))__pus_tmp = x;				\
--	retval = 0;							\
--									\
--	if (unlikely(__copy_to_user_ll(ptr, &__pus_tmp, size) != 0))	\
--		retval = errret;					\
--} while (0)
--
--#define put_user(x, ptr)					\
--({								\
--	int __ret_pu;						\
--	__typeof__(*(ptr))__pus_tmp = x;			\
--	__ret_pu = 0;						\
--	if (unlikely(__copy_to_user_ll(ptr, &__pus_tmp,		\
--				       sizeof(*(ptr))) != 0))	\
--		__ret_pu = -EFAULT;				\
--	__ret_pu;						\
--})
--#endif
--
- #ifdef CONFIG_X86_32
- #define __get_user_asm_u64(x, ptr, retval, errret)	(x) = __get_user_bad()
- #define __get_user_asm_ex_u64(x, ptr)			(x) = __get_user_bad()
-@@ -543,29 +518,12 @@ struct __large_struct { unsigned long buf[100]; };
- 	(x) = (__force __typeof__(*(ptr)))__gue_val;			\
- } while (0)
- 
--#ifdef CONFIG_X86_WP_WORKS_OK
--
- #define put_user_try		uaccess_try
- #define put_user_catch(err)	uaccess_catch(err)
- 
- #define put_user_ex(x, ptr)						\
- 	__put_user_size_ex((__typeof__(*(ptr)))(x), (ptr), sizeof(*(ptr)))
- 
--#else /* !CONFIG_X86_WP_WORKS_OK */
--
--#define put_user_try		do {		\
--	int __uaccess_err = 0;
--
--#define put_user_catch(err)			\
--	(err) |= __uaccess_err;			\
--} while (0)
--
--#define put_user_ex(x, ptr)	do {		\
--	__uaccess_err |= __put_user(x, ptr);	\
--} while (0)
--
--#endif /* CONFIG_X86_WP_WORKS_OK */
--
- extern unsigned long
- copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
- extern __must_check long
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 1b7d165..a025d8c 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -753,9 +753,6 @@ static unsigned int __cpuinit amd_size_cache(struct cpuinfo_x86 *c,
- 
- static void __cpuinit cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
- {
--	if (!cpu_has_invlpg)
--		return;
--
- 	tlb_flushall_shift = 5;
- 
- 	if (c->x86 <= 0x11)
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index d0e910d..92dfec9 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -107,53 +107,17 @@ static void __init check_hlt(void)
- }
- 
- /*
-- *	Most 386 processors have a bug where a POPAD can lock the
-- *	machine even from user space.
-- */
--
--static void __init check_popad(void)
--{
--#ifndef CONFIG_X86_POPAD_OK
--	int res, inp = (int) &res;
--
--	pr_info("Checking for popad bug... ");
--	__asm__ __volatile__(
--	  "movl $12345678,%%eax; movl $0,%%edi; pusha; popa; movl (%%edx,%%edi),%%ecx "
--	  : "=&a" (res)
--	  : "d" (inp)
--	  : "ecx", "edi");
--	/*
--	 * If this fails, it means that any user program may lock the
--	 * CPU hard. Too bad.
--	 */
--	if (res != 12345678)
--		pr_cont("Buggy\n");
--	else
--		pr_cont("OK\n");
--#endif
--}
--
--/*
-  * Check whether we are able to run this kernel safely on SMP.
-  *
-- * - In order to run on a i386, we need to be compiled for i386
-- *   (for due to lack of "invlpg" and working WP on a i386)
-+ * - i386 is no longer supported.
-  * - In order to run on anything without a TSC, we need to be
-  *   compiled for a i486.
-  */
- 
- static void __init check_config(void)
- {
--/*
-- * We'd better not be a i386 if we're configured to use some
-- * i486+ only features! (WP works in supervisor mode and the
-- * new "invlpg" and "bswap" instructions)
-- */
--#if defined(CONFIG_X86_WP_WORKS_OK) || defined(CONFIG_X86_INVLPG) || \
--	defined(CONFIG_X86_BSWAP)
--	if (boot_cpu_data.x86 == 3)
-+	if (boot_cpu_data.x86 < 4)
- 		panic("Kernel requires i486+ for 'invlpg' and other features");
--#endif
- }
- 
- 
-@@ -166,7 +130,6 @@ void __init check_bugs(void)
- #endif
- 	check_config();
- 	check_hlt();
--	check_popad();
- 	init_utsname()->machine[1] =
- 		'0' + (boot_cpu_data.x86 > 6 ? 6 : boot_cpu_data.x86);
- 	alternative_instructions();
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 198e019..fcaabd0 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -612,10 +612,6 @@ static void __cpuinit intel_tlb_lookup(const unsigned char desc)
- 
- static void __cpuinit intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
- {
--	if (!cpu_has_invlpg) {
--		tlb_flushall_shift = -1;
--		return;
--	}
- 	switch ((c->x86 << 8) + c->x86_model) {
- 	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
- 	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
-diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-index b00f678..96b2c66 100644
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -32,7 +32,6 @@ ifeq ($(CONFIG_X86_32),y)
-         lib-y += checksum_32.o
-         lib-y += strstr_32.o
-         lib-y += string_32.o
--        lib-y += cmpxchg.o
- ifneq ($(CONFIG_X86_CMPXCHG64),y)
-         lib-y += cmpxchg8b_emu.o atomic64_386_32.o
- endif
-diff --git a/arch/x86/lib/cmpxchg.c b/arch/x86/lib/cmpxchg.c
-deleted file mode 100644
-index 5d619f6..0000000
---- a/arch/x86/lib/cmpxchg.c
-+++ /dev/null
-@@ -1,54 +0,0 @@
--/*
-- * cmpxchg*() fallbacks for CPU not supporting these instructions
-- */
--
--#include <linux/kernel.h>
--#include <linux/smp.h>
--#include <linux/module.h>
--
--#ifndef CONFIG_X86_CMPXCHG
--unsigned long cmpxchg_386_u8(volatile void *ptr, u8 old, u8 new)
--{
--	u8 prev;
--	unsigned long flags;
--
--	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
--	local_irq_save(flags);
--	prev = *(u8 *)ptr;
--	if (prev == old)
--		*(u8 *)ptr = new;
--	local_irq_restore(flags);
--	return prev;
--}
--EXPORT_SYMBOL(cmpxchg_386_u8);
--
--unsigned long cmpxchg_386_u16(volatile void *ptr, u16 old, u16 new)
--{
--	u16 prev;
--	unsigned long flags;
--
--	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
--	local_irq_save(flags);
--	prev = *(u16 *)ptr;
--	if (prev == old)
--		*(u16 *)ptr = new;
--	local_irq_restore(flags);
--	return prev;
--}
--EXPORT_SYMBOL(cmpxchg_386_u16);
--
--unsigned long cmpxchg_386_u32(volatile void *ptr, u32 old, u32 new)
--{
--	u32 prev;
--	unsigned long flags;
--
--	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
--	local_irq_save(flags);
--	prev = *(u32 *)ptr;
--	if (prev == old)
--		*(u32 *)ptr = new;
--	local_irq_restore(flags);
--	return prev;
--}
--EXPORT_SYMBOL(cmpxchg_386_u32);
--#endif
-diff --git a/arch/x86/lib/usercopy_32.c b/arch/x86/lib/usercopy_32.c
-index 98f6d6b6..f0312d7 100644
---- a/arch/x86/lib/usercopy_32.c
-+++ b/arch/x86/lib/usercopy_32.c
-@@ -570,63 +570,6 @@ do {									\
- unsigned long __copy_to_user_ll(void __user *to, const void *from,
- 				unsigned long n)
- {
--#ifndef CONFIG_X86_WP_WORKS_OK
--	if (unlikely(boot_cpu_data.wp_works_ok == 0) &&
--			((unsigned long)to) < TASK_SIZE) {
--		/*
--		 * When we are in an atomic section (see
--		 * mm/filemap.c:file_read_actor), return the full
--		 * length to take the slow path.
--		 */
--		if (in_atomic())
--			return n;
--
--		/*
--		 * CPU does not honor the WP bit when writing
--		 * from supervisory mode, and due to preemption or SMP,
--		 * the page tables can change at any time.
--		 * Do it manually.	Manfred <manfred@colorfullife.com>
--		 */
--		while (n) {
--			unsigned long offset = ((unsigned long)to)%PAGE_SIZE;
--			unsigned long len = PAGE_SIZE - offset;
--			int retval;
--			struct page *pg;
--			void *maddr;
--
--			if (len > n)
--				len = n;
--
--survive:
--			down_read(&current->mm->mmap_sem);
--			retval = get_user_pages(current, current->mm,
--					(unsigned long)to, 1, 1, 0, &pg, NULL);
--
--			if (retval == -ENOMEM && is_global_init(current)) {
--				up_read(&current->mm->mmap_sem);
--				congestion_wait(BLK_RW_ASYNC, HZ/50);
--				goto survive;
--			}
--
--			if (retval != 1) {
--				up_read(&current->mm->mmap_sem);
--				break;
--			}
--
--			maddr = kmap_atomic(pg);
--			memcpy(maddr + offset, from, len);
--			kunmap_atomic(maddr);
--			set_page_dirty_lock(pg);
--			put_page(pg);
--			up_read(&current->mm->mmap_sem);
--
--			from += len;
--			to += len;
--			n -= len;
--		}
--		return n;
--	}
--#endif
- 	stac();
- 	if (movsl_is_ok(to, from, n))
- 		__copy_user(to, from, n);
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 11a5800..745d66b 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -715,10 +715,7 @@ static void __init test_wp_bit(void)
- 
- 	if (!boot_cpu_data.wp_works_ok) {
- 		printk(KERN_CONT "No.\n");
--#ifdef CONFIG_X86_WP_WORKS_OK
--		panic(
--  "This kernel doesn't support CPU's with broken WP. Recompile it for a 386!");
--#endif
-+		panic("Linux doesn't support CPUs with broken WP.");
- 	} else {
- 		printk(KERN_CONT "Ok.\n");
- 	}
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 60f926c..13a6b29 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -104,7 +104,7 @@ static void flush_tlb_func(void *info)
- 		return;
- 
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
--		if (f->flush_end == TLB_FLUSH_ALL || !cpu_has_invlpg)
-+		if (f->flush_end == TLB_FLUSH_ALL)
- 			local_flush_tlb();
- 		else if (!f->flush_end)
- 			__flush_tlb_single(f->flush_start);
-@@ -337,10 +337,8 @@ static const struct file_operations fops_tlbflush = {
- 
- static int __cpuinit create_tlb_flushall_shift(void)
- {
--	if (cpu_has_invlpg) {
--		debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
--			arch_debugfs_dir, NULL, &fops_tlbflush);
--	}
-+	debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
-+			    arch_debugfs_dir, NULL, &fops_tlbflush);
- 	return 0;
- }
- late_initcall(create_tlb_flushall_shift);
-diff --git a/arch/x86/um/Kconfig b/arch/x86/um/Kconfig
-index 0761175..b0c30da 100644
---- a/arch/x86/um/Kconfig
-+++ b/arch/x86/um/Kconfig
-@@ -31,7 +31,7 @@ config X86_64
- 	select MODULES_USE_ELF_RELA
- 
- config RWSEM_XCHGADD_ALGORITHM
--	def_bool X86_XADD && 64BIT
-+	def_bool 64BIT
- 
- config RWSEM_GENERIC_SPINLOCK
- 	def_bool !RWSEM_XCHGADD_ALGORITHM
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index fdce49c..9a6775c 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -7,7 +7,7 @@ config XEN
- 	select PARAVIRT
- 	select PARAVIRT_CLOCK
- 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
--	depends on X86_CMPXCHG && X86_TSC
-+	depends on X86_TSC
+diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+index bb3b09a..d5157d7 100644
+--- a/arch/arm/mach-exynos/Kconfig
++++ b/arch/arm/mach-exynos/Kconfig
+@@ -94,11 +94,6 @@ config EXYNOS4_SETUP_FIMD0
  	help
- 	  This is the Linux Xen port.  Enabling this will allow the
- 	  kernel to boot in a paravirtualized environment under the
+ 	  Common setup code for FIMD0.
+ 
+-config EXYNOS_DEV_SYSMMU
+-	bool
+-	help
+-	  Common setup code for SYSTEM MMU in EXYNOS platforms
+-
+ config EXYNOS4_DEV_DWMCI
+ 	bool
+ 	help
+diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
+index 1797dee..7460ba2 100644
+--- a/arch/arm/mach-exynos/Makefile
++++ b/arch/arm/mach-exynos/Makefile
+@@ -53,7 +53,6 @@ obj-$(CONFIG_EXYNOS4_DEV_AHCI)		+= dev-ahci.o
+ obj-$(CONFIG_EXYNOS4_DEV_DWMCI)		+= dev-dwmci.o
+ obj-$(CONFIG_EXYNOS_DEV_DMA)		+= dma.o
+ obj-$(CONFIG_EXYNOS4_DEV_USB_OHCI)	+= dev-ohci.o
+-obj-$(CONFIG_EXYNOS_DEV_SYSMMU)		+= dev-sysmmu.o
+ 
+ obj-$(CONFIG_ARCH_EXYNOS)		+= setup-i2c0.o
+ obj-$(CONFIG_EXYNOS4_SETUP_FIMC)	+= setup-fimc.o
+diff --git a/arch/arm/mach-exynos/clock-exynos4.c b/arch/arm/mach-exynos/clock-exynos4.c
+index efead60..c81a0ca 100644
+--- a/arch/arm/mach-exynos/clock-exynos4.c
++++ b/arch/arm/mach-exynos/clock-exynos4.c
+@@ -24,7 +24,6 @@
+ 
+ #include <mach/map.h>
+ #include <mach/regs-clock.h>
+-#include <mach/sysmmu.h>
+ 
+ #include "common.h"
+ #include "clock-exynos4.h"
+@@ -709,53 +708,53 @@ static struct clk exynos4_init_clocks_off[] = {
+ 		.enable		= exynos4_clk_ip_peril_ctrl,
+ 		.ctrlbit	= (1 << 14),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(mfc_l, 0),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.0",
+ 		.enable		= exynos4_clk_ip_mfc_ctrl,
+ 		.ctrlbit	= (1 << 1),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(mfc_r, 1),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.1",
+ 		.enable		= exynos4_clk_ip_mfc_ctrl,
+ 		.ctrlbit	= (1 << 2),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(tv, 2),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.2",
+ 		.enable		= exynos4_clk_ip_tv_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(jpeg, 3),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.3",
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 11),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(rot, 4),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.4",
+ 		.enable		= exynos4_clk_ip_image_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(fimc0, 5),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.5",
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 7),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(fimc1, 6),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.6",
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 8),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(fimc2, 7),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.7",
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 9),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(fimc3, 8),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.8",
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 10),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(fimd0, 10),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.10",
+ 		.enable		= exynos4_clk_ip_lcd0_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}
+diff --git a/arch/arm/mach-exynos/clock-exynos4210.c b/arch/arm/mach-exynos/clock-exynos4210.c
+index fed4c26..19af9f7 100644
+--- a/arch/arm/mach-exynos/clock-exynos4210.c
++++ b/arch/arm/mach-exynos/clock-exynos4210.c
+@@ -26,7 +26,6 @@
+ #include <mach/hardware.h>
+ #include <mach/map.h>
+ #include <mach/regs-clock.h>
+-#include <mach/sysmmu.h>
+ 
+ #include "common.h"
+ #include "clock-exynos4.h"
+@@ -129,13 +128,13 @@ static struct clk init_clocks_off[] = {
+ 		.enable		= exynos4_clk_ip_lcd1_ctrl,
+ 		.ctrlbit	= (1 << 0),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(2d, 14),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.9",
+ 		.enable		= exynos4_clk_ip_image_ctrl,
+ 		.ctrlbit	= (1 << 3),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(fimd1, 11),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.11",
+ 		.enable		= exynos4_clk_ip_lcd1_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+diff --git a/arch/arm/mach-exynos/clock-exynos4212.c b/arch/arm/mach-exynos/clock-exynos4212.c
+index 8fba0b5..529476f 100644
+--- a/arch/arm/mach-exynos/clock-exynos4212.c
++++ b/arch/arm/mach-exynos/clock-exynos4212.c
+@@ -26,7 +26,6 @@
+ #include <mach/hardware.h>
+ #include <mach/map.h>
+ #include <mach/regs-clock.h>
+-#include <mach/sysmmu.h>
+ 
+ #include "common.h"
+ #include "clock-exynos4.h"
+@@ -111,21 +110,31 @@ static struct clksrc_clk clksrcs[] = {
+ 
+ static struct clk init_clocks_off[] = {
+ 	{
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(2d, 14),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.9",
+ 		.enable		= exynos4_clk_ip_dmc_ctrl,
+ 		.ctrlbit	= (1 << 24),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(isp, 9),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.12",
+ 		.enable		= exynos4212_clk_ip_isp0_ctrl,
+ 		.ctrlbit	= (7 << 8),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME2,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(isp, 9),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.13",
+ 		.enable		= exynos4212_clk_ip_isp1_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.14",
++		.enable		= exynos4212_clk_ip_isp0_ctrl,
++		.ctrlbit	= (1 << 11),
++	}, {
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.15",
++		.enable		= exynos4212_clk_ip_isp0_ctrl,
++		.ctrlbit	= (1 << 12),
++	}, {
+ 		.name		= "flite",
+ 		.devname	= "exynos-fimc-lite.0",
+ 		.enable		= exynos4212_clk_ip_isp0_ctrl,
+diff --git a/arch/arm/mach-exynos/clock-exynos5.c b/arch/arm/mach-exynos/clock-exynos5.c
+index a86e88e..a8ed52f 100644
+--- a/arch/arm/mach-exynos/clock-exynos5.c
++++ b/arch/arm/mach-exynos/clock-exynos5.c
+@@ -24,7 +24,6 @@
+ 
+ #include <mach/map.h>
+ #include <mach/regs-clock.h>
+-#include <mach/sysmmu.h>
+ 
+ #include "common.h"
+ 
+@@ -862,86 +861,91 @@ static struct clk exynos5_init_clocks_off[] = {
+ 		.enable		= exynos5_clk_ip_gscl_ctrl,
+ 		.ctrlbit	= (1 << 3),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(mfc_l, 0),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.1",
+ 		.enable		= &exynos5_clk_ip_mfc_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 1),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(mfc_r, 1),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.0",
+ 		.enable		= &exynos5_clk_ip_mfc_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 2),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(tv, 2),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.2",
+ 		.enable		= &exynos5_clk_ip_disp1_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 9)
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(jpeg, 3),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.3",
+ 		.enable		= &exynos5_clk_ip_gen_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 7),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(rot, 4),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.4",
+ 		.enable		= &exynos5_clk_ip_gen_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 6)
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(gsc0, 5),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.5",
+ 		.enable		= &exynos5_clk_ip_gscl_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 7),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(gsc1, 6),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.6",
+ 		.enable		= &exynos5_clk_ip_gscl_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 8),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(gsc2, 7),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.7",
+ 		.enable		= &exynos5_clk_ip_gscl_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 9),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(gsc3, 8),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.8",
+ 		.enable		= &exynos5_clk_ip_gscl_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 10),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(isp, 9),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.9",
+ 		.enable		= &exynos5_clk_ip_isp0_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (0x3F << 8),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME2,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(isp, 9),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.10",
+ 		.enable		= &exynos5_clk_ip_isp1_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (0xF << 4),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(camif0, 12),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.11",
++		.enable		= &exynos5_clk_ip_disp1_ctrl,
++		.ctrlbit	= (1 << 8)
++	}, {
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.12",
+ 		.enable		= &exynos5_clk_ip_gscl_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 11),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(camif1, 13),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.13",
+ 		.enable		= &exynos5_clk_ip_gscl_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 12),
+ 	}, {
+-		.name		= SYSMMU_CLOCK_NAME,
+-		.devname	= SYSMMU_CLOCK_DEVNAME(2d, 14),
++		.name		= "sysmmu",
++		.devname	= "exynos-sysmmu.14",
+ 		.enable		= &exynos5_clk_ip_acp_ctrl,
+ 		.ops		= &exynos5_gate_clk_ops,
+ 		.ctrlbit	= (1 << 7)
+diff --git a/arch/arm/mach-exynos/dev-sysmmu.c b/arch/arm/mach-exynos/dev-sysmmu.c
+deleted file mode 100644
+index c5b1ea3..0000000
+--- a/arch/arm/mach-exynos/dev-sysmmu.c
++++ /dev/null
+@@ -1,274 +0,0 @@
+-/* linux/arch/arm/mach-exynos/dev-sysmmu.c
+- *
+- * Copyright (c) 2010-2012 Samsung Electronics Co., Ltd.
+- *		http://www.samsung.com
+- *
+- * EXYNOS - System MMU support
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/platform_device.h>
+-#include <linux/dma-mapping.h>
+-
+-#include <plat/cpu.h>
+-
+-#include <mach/map.h>
+-#include <mach/irqs.h>
+-#include <mach/sysmmu.h>
+-
+-static u64 exynos_sysmmu_dma_mask = DMA_BIT_MASK(32);
+-
+-#define SYSMMU_PLATFORM_DEVICE(ipname, devid)				\
+-static struct sysmmu_platform_data platdata_##ipname = {		\
+-	.dbgname = #ipname,						\
+-};									\
+-struct platform_device SYSMMU_PLATDEV(ipname) =				\
+-{									\
+-	.name		= SYSMMU_DEVNAME_BASE,				\
+-	.id		= devid,					\
+-	.dev		= {						\
+-		.dma_mask		= &exynos_sysmmu_dma_mask,	\
+-		.coherent_dma_mask	= DMA_BIT_MASK(32),		\
+-		.platform_data		= &platdata_##ipname,		\
+-	},								\
+-}
+-
+-SYSMMU_PLATFORM_DEVICE(mfc_l,	0);
+-SYSMMU_PLATFORM_DEVICE(mfc_r,	1);
+-SYSMMU_PLATFORM_DEVICE(tv,	2);
+-SYSMMU_PLATFORM_DEVICE(jpeg,	3);
+-SYSMMU_PLATFORM_DEVICE(rot,	4);
+-SYSMMU_PLATFORM_DEVICE(fimc0,	5); /* fimc* and gsc* exist exclusively */
+-SYSMMU_PLATFORM_DEVICE(fimc1,	6);
+-SYSMMU_PLATFORM_DEVICE(fimc2,	7);
+-SYSMMU_PLATFORM_DEVICE(fimc3,	8);
+-SYSMMU_PLATFORM_DEVICE(gsc0,	5);
+-SYSMMU_PLATFORM_DEVICE(gsc1,	6);
+-SYSMMU_PLATFORM_DEVICE(gsc2,	7);
+-SYSMMU_PLATFORM_DEVICE(gsc3,	8);
+-SYSMMU_PLATFORM_DEVICE(isp,	9);
+-SYSMMU_PLATFORM_DEVICE(fimd0,	10);
+-SYSMMU_PLATFORM_DEVICE(fimd1,	11);
+-SYSMMU_PLATFORM_DEVICE(camif0,	12);
+-SYSMMU_PLATFORM_DEVICE(camif1,	13);
+-SYSMMU_PLATFORM_DEVICE(2d,	14);
+-
+-#define SYSMMU_RESOURCE_NAME(core, ipname) sysmmures_##core##_##ipname
+-
+-#define SYSMMU_RESOURCE(core, ipname)					\
+-	static struct resource SYSMMU_RESOURCE_NAME(core, ipname)[] __initdata =
+-
+-#define DEFINE_SYSMMU_RESOURCE(core, mem, irq)				\
+-	DEFINE_RES_MEM_NAMED(core##_PA_SYSMMU_##mem, SZ_4K, #mem),	\
+-	DEFINE_RES_IRQ_NAMED(core##_IRQ_SYSMMU_##irq##_0, #mem)
+-
+-#define SYSMMU_RESOURCE_DEFINE(core, ipname, mem, irq)			\
+-	SYSMMU_RESOURCE(core, ipname) {					\
+-		DEFINE_SYSMMU_RESOURCE(core, mem, irq)			\
+-	}
+-
+-struct sysmmu_resource_map {
+-	struct platform_device *pdev;
+-	struct resource *res;
+-	u32 rnum;
+-	struct device *pdd;
+-	char *clocknames;
+-};
+-
+-#define SYSMMU_RESOURCE_MAPPING(core, ipname, resname) {		\
+-	.pdev = &SYSMMU_PLATDEV(ipname),				\
+-	.res = SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),		\
+-	.rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+-	.clocknames = SYSMMU_CLOCK_NAME,				\
+-}
+-
+-#define SYSMMU_RESOURCE_MAPPING_MC(core, ipname, resname, pdata) {	\
+-	.pdev = &SYSMMU_PLATDEV(ipname),				\
+-	.res = SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),		\
+-	.rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+-	.clocknames = SYSMMU_CLOCK_NAME "," SYSMMU_CLOCK_NAME2,		\
+-}
+-
+-#ifdef CONFIG_EXYNOS_DEV_PD
+-#define SYSMMU_RESOURCE_MAPPING_PD(core, ipname, resname, pd) {		\
+-	.pdev = &SYSMMU_PLATDEV(ipname),				\
+-	.res = &SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),		\
+-	.rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+-	.clocknames = SYSMMU_CLOCK_NAME,				\
+-	.pdd = &exynos##core##_device_pd[pd].dev,			\
+-}
+-
+-#define SYSMMU_RESOURCE_MAPPING_MCPD(core, ipname, resname, pd, pdata) {\
+-	.pdev = &SYSMMU_PLATDEV(ipname),				\
+-	.res = &SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),		\
+-	.rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+-	.clocknames = SYSMMU_CLOCK_NAME "," SYSMMU_CLOCK_NAME2,		\
+-	.pdd = &exynos##core##_device_pd[pd].dev,			\
+-}
+-#else
+-#define SYSMMU_RESOURCE_MAPPING_PD(core, ipname, resname, pd)		\
+-		SYSMMU_RESOURCE_MAPPING(core, ipname, resname)
+-#define SYSMMU_RESOURCE_MAPPING_MCPD(core, ipname, resname, pd, pdata)	\
+-		SYSMMU_RESOURCE_MAPPING_MC(core, ipname, resname, pdata)
+-
+-#endif /* CONFIG_EXYNOS_DEV_PD */
+-
+-#ifdef CONFIG_ARCH_EXYNOS4
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, fimc0,	FIMC0,	FIMC0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, fimc1,	FIMC1,	FIMC1);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, fimc2,	FIMC2,	FIMC2);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, fimc3,	FIMC3,	FIMC3);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, jpeg,	JPEG,	JPEG);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, 2d,	G2D,	2D);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, tv,	TV,	TV_M0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, 2d_acp,	2D_ACP,	2D);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, rot,	ROTATOR, ROTATOR);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, fimd0,	FIMD0,	LCD0_M0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, fimd1,	FIMD1,	LCD1_M1);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, flite0,	FIMC_LITE0, FIMC_LITE0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, flite1,	FIMC_LITE1, FIMC_LITE1);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, mfc_r,	MFC_R,	MFC_M0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS4, mfc_l,	MFC_L,	MFC_M1);
+-SYSMMU_RESOURCE(EXYNOS4, isp) {
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS4, FIMC_ISP, FIMC_ISP),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS4, FIMC_DRC, FIMC_DRC),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS4, FIMC_FD, FIMC_FD),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS4, ISPCPU, FIMC_CX),
+-};
+-
+-static struct sysmmu_resource_map sysmmu_resmap4[] __initdata = {
+-	SYSMMU_RESOURCE_MAPPING_PD(4, fimc0,	fimc0,	PD_CAM),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, fimc1,	fimc1,	PD_CAM),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, fimc2,	fimc2,	PD_CAM),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, fimc3,	fimc3,	PD_CAM),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, tv,	tv,	PD_TV),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, mfc_r,	mfc_r,	PD_MFC),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, mfc_l,	mfc_l,	PD_MFC),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, rot,	rot,	PD_LCD0),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, jpeg,	jpeg,	PD_CAM),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, fimd0,	fimd0,	PD_LCD0),
+-};
+-
+-static struct sysmmu_resource_map sysmmu_resmap4210[] __initdata = {
+-	SYSMMU_RESOURCE_MAPPING_PD(4, 2d,	2d,	PD_LCD0),
+-	SYSMMU_RESOURCE_MAPPING_PD(4, fimd1,	fimd1,	PD_LCD1),
+-};
+-
+-static struct sysmmu_resource_map sysmmu_resmap4212[] __initdata = {
+-	SYSMMU_RESOURCE_MAPPING(4,	2d,	2d_acp),
+-	SYSMMU_RESOURCE_MAPPING_PD(4,	camif0, flite0,	PD_ISP),
+-	SYSMMU_RESOURCE_MAPPING_PD(4,	camif1, flite1,	PD_ISP),
+-	SYSMMU_RESOURCE_MAPPING_PD(4,	isp,	isp,	PD_ISP),
+-};
+-#endif /* CONFIG_ARCH_EXYNOS4 */
+-
+-#ifdef CONFIG_ARCH_EXYNOS5
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, jpeg,	JPEG,	JPEG);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, fimd1,	FIMD1,	FIMD1);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, 2d,	2D,	2D);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, rot,	ROTATOR, ROTATOR);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, tv,	TV,	TV);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, flite0,	LITE0,	LITE0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, flite1,	LITE1,	LITE1);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, gsc0,	GSC0,	GSC0);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, gsc1,	GSC1,	GSC1);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, gsc2,	GSC2,	GSC2);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, gsc3,	GSC3,	GSC3);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, mfc_r,	MFC_R,	MFC_R);
+-SYSMMU_RESOURCE_DEFINE(EXYNOS5, mfc_l,	MFC_L,	MFC_L);
+-SYSMMU_RESOURCE(EXYNOS5, isp) {
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, ISP, ISP),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, DRC, DRC),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, FD, FD),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, ISPCPU, MCUISP),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, SCALERC, SCALERCISP),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, SCALERP, SCALERPISP),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5,	ODC, ODC),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, DIS0, DIS0),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, DIS1, DIS1),
+-	DEFINE_SYSMMU_RESOURCE(EXYNOS5, 3DNR, 3DNR),
+-};
+-
+-static struct sysmmu_resource_map sysmmu_resmap5[] __initdata = {
+-	SYSMMU_RESOURCE_MAPPING(5,	jpeg,	jpeg),
+-	SYSMMU_RESOURCE_MAPPING(5,	fimd1,	fimd1),
+-	SYSMMU_RESOURCE_MAPPING(5,	2d,	2d),
+-	SYSMMU_RESOURCE_MAPPING(5,	rot,	rot),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	tv,	tv,	PD_DISP1),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	camif0,	flite0,	PD_GSCL),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	camif1,	flite1,	PD_GSCL),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	gsc0,	gsc0,	PD_GSCL),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	gsc1,	gsc1,	PD_GSCL),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	gsc2,	gsc2,	PD_GSCL),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	gsc3,	gsc3,	PD_GSCL),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	mfc_r,	mfc_r,	PD_MFC),
+-	SYSMMU_RESOURCE_MAPPING_PD(5,	mfc_l,	mfc_l,	PD_MFC),
+-	SYSMMU_RESOURCE_MAPPING_MCPD(5,	isp,	isp,	PD_ISP, mc_platdata),
+-};
+-#endif /* CONFIG_ARCH_EXYNOS5 */
+-
+-static int __init init_sysmmu_platform_device(void)
+-{
+-	int i, j;
+-	struct sysmmu_resource_map *resmap[2] = {NULL, NULL};
+-	int nmap[2] = {0, 0};
+-
+-#ifdef CONFIG_ARCH_EXYNOS5
+-	if (soc_is_exynos5250()) {
+-		resmap[0] = sysmmu_resmap5;
+-		nmap[0] = ARRAY_SIZE(sysmmu_resmap5);
+-		nmap[1] = 0;
+-	}
+-#endif
+-
+-#ifdef CONFIG_ARCH_EXYNOS4
+-	if (resmap[0] == NULL) {
+-		resmap[0] = sysmmu_resmap4;
+-		nmap[0] = ARRAY_SIZE(sysmmu_resmap4);
+-	}
+-
+-	if (soc_is_exynos4210()) {
+-		resmap[1] = sysmmu_resmap4210;
+-		nmap[1] = ARRAY_SIZE(sysmmu_resmap4210);
+-	}
+-
+-	if (soc_is_exynos4412() || soc_is_exynos4212()) {
+-		resmap[1] = sysmmu_resmap4212;
+-		nmap[1] = ARRAY_SIZE(sysmmu_resmap4212);
+-	}
+-#endif
+-
+-	for (j = 0; j < 2; j++) {
+-		for (i = 0; i < nmap[j]; i++) {
+-			struct sysmmu_resource_map *map;
+-			struct sysmmu_platform_data *platdata;
+-
+-			map = &resmap[j][i];
+-
+-			map->pdev->dev.parent = map->pdd;
+-
+-			platdata = map->pdev->dev.platform_data;
+-			platdata->clockname = map->clocknames;
+-
+-			if (platform_device_add_resources(map->pdev, map->res,
+-								map->rnum)) {
+-				pr_err("%s: Failed to add device resources for "
+-						"%s.%d\n", __func__,
+-						map->pdev->name, map->pdev->id);
+-				continue;
+-			}
+-
+-			if (platform_device_register(map->pdev)) {
+-				pr_err("%s: Failed to register %s.%d\n",
+-					__func__, map->pdev->name,
+-						map->pdev->id);
+-			}
+-		}
+-	}
+-
+-	return 0;
+-}
+-arch_initcall(init_sysmmu_platform_device);
+diff --git a/arch/arm/mach-exynos/include/mach/sysmmu.h b/arch/arm/mach-exynos/include/mach/sysmmu.h
+deleted file mode 100644
+index 88a4543..0000000
+--- a/arch/arm/mach-exynos/include/mach/sysmmu.h
++++ /dev/null
+@@ -1,66 +0,0 @@
+-/*
+- * Copyright (c) 2011-2012 Samsung Electronics Co., Ltd.
+- *		http://www.samsung.com
+- *
+- * EXYNOS - System MMU support
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef _ARM_MACH_EXYNOS_SYSMMU_H_
+-#define _ARM_MACH_EXYNOS_SYSMMU_H_
+-
+-struct sysmmu_platform_data {
+-	char *dbgname;
+-	/* comma(,) separated list of clock names for clock gating */
+-	char *clockname;
+-};
+-
+-#define SYSMMU_DEVNAME_BASE "exynos-sysmmu"
+-
+-#define SYSMMU_CLOCK_NAME "sysmmu"
+-#define SYSMMU_CLOCK_NAME2 "sysmmu_mc"
+-
+-#ifdef CONFIG_EXYNOS_DEV_SYSMMU
+-#include <linux/device.h>
+-struct platform_device;
+-
+-#define SYSMMU_PLATDEV(ipname) exynos_device_sysmmu_##ipname
+-
+-extern struct platform_device SYSMMU_PLATDEV(mfc_l);
+-extern struct platform_device SYSMMU_PLATDEV(mfc_r);
+-extern struct platform_device SYSMMU_PLATDEV(tv);
+-extern struct platform_device SYSMMU_PLATDEV(jpeg);
+-extern struct platform_device SYSMMU_PLATDEV(rot);
+-extern struct platform_device SYSMMU_PLATDEV(fimc0);
+-extern struct platform_device SYSMMU_PLATDEV(fimc1);
+-extern struct platform_device SYSMMU_PLATDEV(fimc2);
+-extern struct platform_device SYSMMU_PLATDEV(fimc3);
+-extern struct platform_device SYSMMU_PLATDEV(gsc0);
+-extern struct platform_device SYSMMU_PLATDEV(gsc1);
+-extern struct platform_device SYSMMU_PLATDEV(gsc2);
+-extern struct platform_device SYSMMU_PLATDEV(gsc3);
+-extern struct platform_device SYSMMU_PLATDEV(isp);
+-extern struct platform_device SYSMMU_PLATDEV(fimd0);
+-extern struct platform_device SYSMMU_PLATDEV(fimd1);
+-extern struct platform_device SYSMMU_PLATDEV(camif0);
+-extern struct platform_device SYSMMU_PLATDEV(camif1);
+-extern struct platform_device SYSMMU_PLATDEV(2d);
+-
+-#ifdef CONFIG_IOMMU_API
+-static inline void platform_set_sysmmu(
+-				struct device *sysmmu, struct device *dev)
+-{
+-	dev->archdata.iommu = sysmmu;
+-}
+-#endif
+-
+-#else /* !CONFIG_EXYNOS_DEV_SYSMMU */
+-#define platform_set_sysmmu(sysmmu, dev) do { } while (0)
+-#endif
+-
+-#define SYSMMU_CLOCK_DEVNAME(ipname, id) (SYSMMU_DEVNAME_BASE "." #id)
+-
+-#endif /* _ARM_MACH_EXYNOS_SYSMMU_H_ */
+diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+index 8858068..14e5f84 100644
+--- a/arch/arm/mach-exynos/mach-exynos4-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+@@ -79,6 +79,40 @@ static const struct of_dev_auxdata exynos4_auxdata_lookup[] __initconst = {
+ 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_PDMA1, "dma-pl330.1", NULL),
+ 	OF_DEV_AUXDATA("samsung,exynos4210-tmu", EXYNOS4_PA_TMU,
+ 				"exynos-tmu", NULL),
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13620000,
++			"exynos-sysmmu.0", NULL), /* MFC_L */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13630000,
++			"exynos-sysmmu.1", NULL), /* MFC_R */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13E20000,
++			"exynos-sysmmu.2", NULL), /* TV */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11A60000,
++			"exynos-sysmmu.3", NULL), /* JPEG */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x12A30000,
++			"exynos-sysmmu.4", NULL), /* ROTATOR */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11A20000,
++			"exynos-sysmmu.5", NULL), /* FIMC0 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11A30000,
++			"exynos-sysmmu.6", NULL), /* FIMC1 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11A40000,
++			"exynos-sysmmu.7", NULL), /* FIMC2 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11A50000,
++			"exynos-sysmmu.8", NULL), /* FIMC3 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x12A20000,
++			"exynos-sysmmu.9", NULL), /* G2D(4210) */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x10A40000,
++			"exynos-sysmmu.9", NULL), /* G2D(4x12) */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11E20000,
++			"exynos-sysmmu.10", NULL), /* FIMD0 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x12220000,
++			"exynos-sysmmu.11", NULL), /* FIMD1(4210) */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x12260000,
++			"exynos-sysmmu.12", NULL), /* IS0(4x12) */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x122B0000,
++			"exynos-sysmmu.13", NULL), /* IS1(4x12) */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x123B0000,
++			"exynos-sysmmu.14", NULL), /* FIMC-LITE0(4x12) */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x123C0000,
++			"exynos-sysmmu.15", NULL), /* FIMC-LITE1(4x12) */
+ 	{},
+ };
+ 
+diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+index ed37273..98c6b25 100644
+--- a/arch/arm/mach-exynos/mach-exynos5-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+@@ -86,6 +86,36 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
+ 				"exynos5-hdmi", NULL),
+ 	OF_DEV_AUXDATA("samsung,exynos5-mixer", 0x14450000,
+ 				"exynos5-mixer", NULL),
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11210000,
++			"exynos-sysmmu.0", "mfc"), /* MFC_L */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11200000,
++			"exynos-sysmmu.1", "mfc"), /* MFC_R */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x14650000,
++			"exynos-sysmmu.2", NULL), /* TV */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11F20000,
++			"exynos-sysmmu.3", "jpeg"), /* JPEG */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x11D40000,
++			"exynos-sysmmu.4", NULL), /* ROTATOR */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13E80000,
++			"exynos-sysmmu.5", "gscl"), /* GSCL0 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13E90000,
++			"exynos-sysmmu.6", "gscl"), /* GSCL1 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13EA0000,
++			"exynos-sysmmu.7", "gscl"), /* GSCL2 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13EB0000,
++			"exynos-sysmmu.8", "gscl"), /* GSCL3 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13260000,
++			"exynos-sysmmu.9", NULL), /* FIMC-IS0 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x132C0000,
++			"exynos-sysmmu.10", NULL), /* FIMC-IS1 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x14640000,
++			"exynos-sysmmu.11", NULL), /* FIMD1 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13C40000,
++			"exynos-sysmmu.12", NULL), /* FIMC-LITE0 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x13C50000,
++			"exynos-sysmmu.13", NULL), /* FIMC-LITE1 */
++	OF_DEV_AUXDATA("samsung,exynos-sysmmu", 0x10A60000,
++			"exynos-sysmmu.14", NULL), /* G2D */
+ 	{},
+ };
+ 
+-- 
+1.8.0
+
+
