@@ -1,142 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab2LKUAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 15:00:32 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54497 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab2LKUAb (ORCPT
+	id S1753838Ab2LKUFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 15:05:33 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:45926 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083Ab2LKUFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 15:00:31 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Daniel Berrange <berrange@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        containers@lists.linux-foundation.org
-Subject: [PATCH] core_pattern: set core helpers root and namespace to crashing process
-Date: Tue, 11 Dec 2012 14:59:56 -0500
-Message-Id: <1355255996-25953-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.7.11.7
-X-Spam-Score: -2.9 (--)
+	Tue, 11 Dec 2012 15:05:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <1355255320.2356.148.camel@falcor>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+ <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+ <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+ <1355234914.2356.85.camel@falcor> <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+ <1355249884.2356.108.camel@falcor> <CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
+ <1355252392.2356.131.camel@falcor> <CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
+ <1355255320.2356.148.camel@falcor>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 11 Dec 2012 12:05:08 -0800
+X-Google-Sender-Auth: IxFITYKRmKBRWwiRuerPpcQKF6Y
+Message-ID: <CA+55aFwaFqJQXR3Z8M3byube6hODmiT-dDEH3uFPSKpTDGXHaQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As its currently implemented, redirection of core dumps to a pipe reader should
-be executed such that the reader runs in the namespace of the crashing process,
-and it currently does not. This is the only sane way to deal with namespaces
-properly it seems to me, and this patch implements that functionality.
+On Tue, Dec 11, 2012 at 11:48 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>
+> Ok. To summarize, S_IMA indicates that there is a rule and that the iint
+> was allocated.  To differentiate between 'haven't looked/don't know' and
+> 'definitely not', we need another bit.  For this, you're suggesting
+> using IS_PRIVATE()?  Hopefully, I misunderstood.
 
-Theres one problem I currently see with it, and that is that I'm not sure we can
-change the current behavior of how the root fs is set for the pipe reader, lest
-we break some user space expectations. As such, I've added a sysctl in this
-patch to allow administrators to globally select if a core reader specified via
-/proc/sys/kernel/core_pattern should use the global rootfs, or the (possibly)
-chrooted fs of the crashing process.
+No, for that, I'm suggesting using a new bit in i_flags.
 
-I've tested this using both settings for the new sysctl, and it works well.
+The "IS_PRIVATE()" thing is more a "if you know a-priori that you
+aren't interested in pseudo-filesystems, you can already check that
+bit, because it will be set for things like /proc and shmem mappings
+and pipes etc".
 
-For the sake of history, this was discussed before:
-http://www.spinics.net/lists/linux-containers/msg21531.html
+Dmitry seemed to imply that the biggest use for the new bit was for
+taking out whole pseudo-filesystems in one go. That would pretty much
+be what S_PRIVATE is.
 
-It seems there was some modicum of consensus as to how this should work, but
-there was no action taken on it.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Daniel Berrange <berrange@redhat.com>
-CC: Daniel Berrange <berrange@redhat.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Serge Hallyn <serge.hallyn@canonical.com>
-CC: containers@lists.linux-foundation.org
----
- fs/coredump.c           | 11 +++++++++++
- include/linux/binfmts.h |  1 +
- kernel/sysctl.c         |  8 ++++++++
- 3 files changed, 20 insertions(+)
-
-diff --git a/fs/coredump.c b/fs/coredump.c
-index ce47379..e7d8ca2 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -47,6 +47,7 @@
- int core_uses_pid;
- char core_pattern[CORENAME_MAX_SIZE] = "core";
- unsigned int core_pipe_limit;
-+unsigned int core_pipe_global_root;
- 
- struct core_name {
- 	char *corename;
-@@ -443,6 +444,7 @@ static void wait_for_dump_helpers(struct file *file)
- static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
- {
- 	struct file *files[2];
-+	struct path root;
- 	struct coredump_params *cp = (struct coredump_params *)info->data;
- 	int err = create_pipe_files(files, 0);
- 	if (err)
-@@ -455,6 +457,14 @@ static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
- 	/* and disallow core files too */
- 	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
- 
-+
-+	if (!core_pipe_global_root) {
-+		get_fs_root(cp->cprocess->fs, &root);
-+		set_fs_root(current->fs, &root);
-+	}
-+
-+	switch_task_namespaces(current, cp->cprocess->nsproxy);
-+
- 	return err;
- }
- 
-@@ -476,6 +486,7 @@ void do_coredump(siginfo_t *siginfo, struct pt_regs *regs)
- 		.siginfo = siginfo,
- 		.regs = regs,
- 		.limit = rlimit(RLIMIT_CORE),
-+		.cprocess = current,
- 		/*
- 		 * We must use the same mm->flags while dumping core to avoid
- 		 * inconsistency of bit flags, since this flag is not protected
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index cfcc6bf..08e7bcb 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -61,6 +61,7 @@ struct coredump_params {
- 	siginfo_t *siginfo;
- 	struct pt_regs *regs;
- 	struct file *file;
-+	struct task_struct *cprocess;
- 	unsigned long limit;
- 	unsigned long mm_flags;
- };
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 26f65ea..be7b69d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -102,6 +102,7 @@ extern int suid_dumpable;
- extern int core_uses_pid;
- extern char core_pattern[];
- extern unsigned int core_pipe_limit;
-+extern unsigned int core_pipe_global_root;
- #endif
- extern int pid_max;
- extern int min_free_kbytes;
-@@ -430,6 +431,13 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+	{
-+		.procname	= "core_pipe_global_root",
-+		.data		= &core_pipe_global_root,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- #endif
- #ifdef CONFIG_PROC_SYSCTL
- 	{
--- 
-1.7.11.7
-
+                  Linus
