@@ -1,53 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2LKVLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:11:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56304 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab2LKVLw (ORCPT
+	id S1753577Ab2LKVRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:17:25 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:58768 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab2LKVRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:11:52 -0500
-Message-ID: <50C7A194.7070102@wwwdotorg.org>
-Date: Tue, 11 Dec 2012 14:11:48 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 11 Dec 2012 16:17:24 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Date: Tue, 11 Dec 2012 13:17:12 -0800
+Message-ID: <87ip88uw4n.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Julien Delacou <julien.delacou@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/2] pinctrl: add sleep mode management for hogs
-References: <1355234393-17368-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1355234393-17368-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19mXbfw+jdCWOh8As6K5PX4NWs1/OsJdSs=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [GIT PULL] user namespace and namespace infrastructure changes for 3.8
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 06:59 AM, Linus Walleij wrote:
-> From: Julien Delacou <julien.delacou@stericsson.com>
-> 
-> This fix allows handling sleep mode for hogged
-> pins in pinctrl. It provides functions to set pins
-> to sleep/default configurations according to their
-> current state from the individual pinctrl drivers.
 
-> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+Linus,
 
-> +extern int pinctrl_force_sleep(struct pinctrl_dev *pctldev);
-> +extern int pinctrl_force_default(struct pinctrl_dev *pctldev);
+Please pull the for-linus git tree from:
 
-Since I assume those function are only supposed to be used by pinctrl
-drivers themselves, should the prototypes go into drivers/pinctrl/core.h
-or similar, rather than something in include/linux/pinctrl?
+   git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
 
-Oh, and don't you need EXPORT_SYMBOL in case the pinctrl driver is a module?
+   HEAD: 98f842e675f96ffac96e6c50315790912b2812be proc: Usable inode numbers for the namespace file descriptors.
 
-Aside from that,
+   This tree is against v3.7-rc3
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+While small this set of changes is very significant with respect to
+containers in general and user namespaces in particular.  The user space
+interface is now complete.
 
+This set of changes adds support for unprivileged users to create user
+namespaces and as a user namespace root to create other namespaces.  The
+tyrrany of supporting suid root preventing unprivileged users from using
+cool new kernel features is broken.
+
+This set of changes completes the work on setns, adding support for
+the pid, user, mount namespaces.
+
+This set of changes includes a bunch of basic pid namespace
+cleanups/simplifications.  Of particular significance is the rework of
+the pid namespace cleanup so it no longer requires sending out tendrils
+into all kinds of unexpected cleanup paths for operation.  At least one
+case of broken error handling is fixed by this cleanup.
+
+The files under /proc/<pid>/ns/ have been converted from regular files
+to magic symlinks which prevents incorrect caching by the VFS, ensuring
+the files always refer to the namespace the process is currently using
+and ensuring that the ptrace_mayaccess permission checks are always
+applied.
+
+The files under /proc/<pid>/ns/ have been given stable inode numbers so
+it is now possible to see if different processes share the same
+namespaces.
+
+Through the David Miller's net tree are changes to relax many of the
+permission checks in the networking stack to allowing the user namespace
+root to usefully use the networking stack.  Similar changes for the
+mount namespace and the pid namespace are coming through my tree.
+
+Two small nework namespace changes were double committed here and in
+David Millers -net tree so that I could complete the work on the
+/proc/<pid>/ns/ files in this tree.
+
+The user namespace work that remains is converting, 9p, afs, ceph, cifs,
+coda, gfs2, ncpfs, nfs, nfsd, ocfs2, and xfs so they are safe to enable
+when user namespaces are enabled, and implementing unprivileged mounts
+of more than just /proc and /sys.
+
+I had hoped to get through more of those changes this cycle but
+I turned into a cold magnet this season and the UAPI changes caused
+a lot of churn late into the 3.7 -rc cycle that made a stable starting
+place hard to work from hard to find.
+
+Eric W. Biederman (37):
+      userns: Support autofs4 interacing with multiple user namespaces
+      userns: Support fuse interacting with multiple user namespaces
+      netns: Deduplicate and fix copy_net_ns when !CONFIG_NET_NS
+      userns: make each net (net_ns) belong to a user_ns
+      userns: On mips modify check_same_owner to use uid_eq
+      procfs: Use the proc generic infrastructure for proc/self.
+      procfs: Don't cache a pid in the root inode.
+      pidns: Capture the user namespace and filter ns_last_pid
+      pidns: Use task_active_pid_ns where appropriate
+      pidns: Make the pidns proc mount/umount logic obvious.
+      pidns: Don't allow new processes in a dead pid namespace.
+      pidns: Wait in zap_pid_ns_processes until pid_ns->nr_hashed == 1
+      pidns: Deny strange cases when creating pid namespaces.
+      pidns: Add setns support
+      pidns: Consolidate initialzation of special init task state
+      pidns: Support unsharing the pid namespace.
+      vfs: Allow chroot if you have CAP_SYS_CHROOT in your user namespace
+      vfs: Add setns support for the mount namespace
+      vfs: Add a user namespace reference from struct mnt_namespace
+      vfs: Only support slave subtrees across different user namespaces
+      vfs: Allow unprivileged manipulation of the mount namespace.
+      userns: Ignore suid and sgid on binaries if the uid or gid can not be mapped
+      userns: Allow unprivileged users to create user namespaces.
+      userns: Allow chown and setgid preservation
+      userns: Allow setting a userns mapping to your current uid.
+      userns: Allow unprivileged users to create new namespaces
+      userns: Allow unprivileged use of setns.
+      userns: Make create_new_namespaces take a user_ns parameter
+      userns: Kill task_user_ns
+      userns: Implent proc namespace operations
+      userns: Implement unshare of the user namespace
+      procfs: Print task uids and gids in the userns that opened the proc file
+      userns: For /proc/self/{uid,gid}_map derive the lower userns from the struct file
+      userns: Allow unprivilged mounts of proc and sysfs
+      proc: Generalize proc inode allocation
+      proc: Fix the namespace inode permission checks.
+      proc: Usable inode numbers for the namespace file descriptors.
+
+Zhao Hongjiang (1):
+      userns: fix return value on mntns_install() failure
+
+ arch/mips/kernel/mips-mt-fpaff.c          |    4 +-
+ arch/powerpc/platforms/cell/spufs/sched.c |    2 +-
+ arch/um/drivers/mconsole_kern.c           |    2 +-
+ drivers/staging/android/binder.c          |    3 +-
+ fs/attr.c                                 |   11 +-
+ fs/autofs4/autofs_i.h                     |    8 +-
+ fs/autofs4/dev-ioctl.c                    |    4 +-
+ fs/autofs4/inode.c                        |   24 ++--
+ fs/autofs4/waitq.c                        |    5 +-
+ fs/exec.c                                 |    9 +-
+ fs/fuse/dev.c                             |    4 +-
+ fs/fuse/dir.c                             |   20 ++--
+ fs/fuse/fuse_i.h                          |    4 +-
+ fs/fuse/inode.c                           |   23 ++--
+ fs/hppfs/hppfs.c                          |    2 +-
+ fs/mount.h                                |    3 +
+ fs/namespace.c                            |  211 ++++++++++++++++++++++++-----
+ fs/open.c                                 |    2 +-
+ fs/pnode.h                                |    1 +
+ fs/proc/Makefile                          |    1 +
+ fs/proc/array.c                           |    2 +-
+ fs/proc/base.c                            |  169 +-----------------------
+ fs/proc/generic.c                         |   26 ++--
+ fs/proc/inode.c                           |    6 +-
+ fs/proc/internal.h                        |    1 +
+ fs/proc/namespaces.c                      |  185 ++++++++++++++++++++++---
+ fs/proc/root.c                            |   17 +--
+ fs/proc/self.c                            |   59 ++++++++
+ fs/sysfs/mount.c                          |    1 +
+ include/linux/cred.h                      |    2 -
+ include/linux/fs.h                        |    2 +
+ include/linux/ipc_namespace.h             |    9 +-
+ include/linux/mnt_namespace.h             |    3 +-
+ include/linux/nsproxy.h                   |    2 +-
+ include/linux/pid_namespace.h             |   11 +-
+ include/linux/proc_fs.h                   |   26 ++++-
+ include/linux/user_namespace.h            |   10 ++
+ include/linux/utsname.h                   |    7 +-
+ include/net/net_namespace.h               |   26 +++-
+ init/Kconfig                              |    2 -
+ init/main.c                               |    1 -
+ init/version.c                            |    2 +
+ ipc/msgutil.c                             |    2 +
+ ipc/namespace.c                           |   32 ++++-
+ kernel/cgroup.c                           |    2 +-
+ kernel/events/core.c                      |    2 +-
+ kernel/exit.c                             |   12 --
+ kernel/fork.c                             |   69 +++++++---
+ kernel/nsproxy.c                          |   36 +++---
+ kernel/pid.c                              |   47 ++++++-
+ kernel/pid_namespace.c                    |  112 ++++++++++++---
+ kernel/ptrace.c                           |   10 +-
+ kernel/sched/core.c                       |   10 +-
+ kernel/signal.c                           |    2 +-
+ kernel/sysctl_binary.c                    |    2 +-
+ kernel/user.c                             |    2 +
+ kernel/user_namespace.c                   |  147 +++++++++++++++++---
+ kernel/utsname.c                          |   33 ++++-
+ net/core/net_namespace.c                  |   54 ++++++--
+ security/yama/yama_lsm.c                  |   12 ++-
+ 60 files changed, 1026 insertions(+), 472 deletions(-)
