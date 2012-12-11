@@ -1,173 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab2LKBA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:00:56 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:25966 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752417Ab2LKBAz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:00:55 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI98dI9371I179dN542I1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1155h)
-Date: Mon, 10 Dec 2012 19:00:44 -0600
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: Wood Scott-B07421 <B07421@freescale.com>, Joerg Roedel <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-References: <C5ECD7A89D1DC44195F34B25E172658D2B70EE@039-SN2MPN1-013.039d.mgd.msft.net>
-	<1354645371.16710.15@snotra>
-	<C5ECD7A89D1DC44195F34B25E172658D2C09A4@039-SN2MPN1-013.039d.mgd.msft.net>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D2C09A4@039-SN2MPN1-013.039d.mgd.msft.net>
-	(from B16395@freescale.com on Mon Dec 10 04:10:06 2012)
-X-Mailer: Balsa 2.4.11
-Message-ID: <1355187644.5334.23@snotra>
+	id S1752490Ab2LKBCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 20:02:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51853 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985Ab2LKBCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 20:02:08 -0500
+Date: Tue, 11 Dec 2012 01:02:01 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121211010201.GP1009@suse.de>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <20121207110113.GB21482@gmail.com>
+ <20121209203630.GC1009@suse.de>
+ <20121210113945.GA7550@gmail.com>
+ <20121210152405.GJ1009@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20121210152405.GJ1009@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 04:10:06 AM, Sethi Varun-B16395 wrote:
+On Mon, Dec 10, 2012 at 03:24:05PM +0000, Mel Gorman wrote:
+> For example, I think that point 5 above is the potential source of the
+> corruption because. You're not flushing the TLBs for the PTEs you are
+> updating in batch. Granted, you're relaxing rather than restricting access
+> so it should be ok and at worse cause a spurious fault but I also find
+> it suspicious that you do not recheck pte_same under the PTL when doing
+> the final PTE update.
+
+Looking again, the lack of a pte_same check should be ok. The addr,
+addr_start, ptep and ptep_start is a little messy but also look fine.
+You're not accidentally crossing a PMD boundary. You should be protected
+against huge pages being collapsed underneath you as you hold mmap_sem for
+read. If the first page in the pmd (or VMA) is not present then
+target_nid == -1 which gets passed into __do_numa_page. This check
+
+        if (target_nid == -1 || target_nid == page_nid)
+                goto out;
+
+then means you never actually migrate for that whole PMD and will just
+clear the PTEs. Possibly wrong, but not what we're looking for. Holding
+PTL across task_numa_fault is bad, but not the bad we're looking for.
+
+/me scratches his head
+
+Machine is still unavailable so in an attempt to rattle this out I prototyped
+the equivalent patch for balancenuma and then went back to numacore to see
+could I spot a major difference.  Comparing them, there is no guarantee you
+clear pte_numa for the address that was originally faulted if there was a
+racing fault that cleared it underneath you but in itself that should not
+be an issue. Your use of ptep++ instead of pte_offset_map() might break
+on 32-bit with NUMA support if PTE pages are stored in highmem. Still the
+wrong wrong.
+
+If the bug is indeed here, it's not obvious. I don't know why I'm
+triggering it or why it only triggers for specjbb as I cannot imagine
+what the JVM would be doing that is that weird or that would not have
+triggered before. Maybe we both suffer this type of problem but that
+numacores rate of migration is able to trigger it.
+
+> Basically if I felt that handling ptes in batch like this was of
+> critical important I would have implemented it very differently on top of
+> balancenuma. I would have only taken the PTL lock if updating the PTE to
+> keep contention down and redid racy checks under PTL, I'd have only used
+> trylock for every non-faulted PTE and I would only have migrated if it
+> was a remote->local copy. I certainly would not hold PTL while calling
+> task_numa_fault(). I would have kept the handling ona per-pmd basis when
+> it was expected that most PTEs underneath should be on the same node.
 > 
-> 
-> > -----Original Message-----
-> > From: Wood Scott-B07421
-> > Sent: Tuesday, December 04, 2012 11:53 PM
-> > To: Sethi Varun-B16395
-> > Cc: Wood Scott-B07421; Joerg Roedel; linux-kernel@vger.kernel.org;
-> > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;  
-> Tabi
-> > Timur-B04825
-> > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> > required by fsl PAMU driver.
-> >
-> > On 12/04/2012 05:53:33 AM, Sethi Varun-B16395 wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Wood Scott-B07421
-> > > > Sent: Monday, December 03, 2012 10:34 PM
-> > > > To: Sethi Varun-B16395
-> > > > Cc: Joerg Roedel; linux-kernel@vger.kernel.org;  
-> iommu@lists.linux-
-> > > > foundation.org; Wood Scott-B07421;  
-> linuxppc-dev@lists.ozlabs.org;
-> > > Tabi
-> > > > Timur-B04825
-> > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain  
-> attributes
-> > > > required by fsl PAMU driver.
-> > > >
-> > > > On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
-> > > > >
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: iommu-bounces@lists.linux-foundation.org  
-> [mailto:iommu-
-> > > > > > bounces@lists.linux-foundation.org] On Behalf Of Joerg  
-> Roedel
-> > > > > > Sent: Sunday, December 02, 2012 7:33 PM
-> > > > > > To: Sethi Varun-B16395
-> > > > > > Cc: linux-kernel@vger.kernel.org;
-> > > iommu@lists.linux-foundation.org;
-> > > > > Wood
-> > > > > > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi  
-> Timur-B04825
-> > > > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain
-> > > attributes
-> > > > > > required by fsl PAMU driver.
-> > > > > >
-> > > > > > Hmm, we need to work out a good abstraction for this.
-> > > > > >
-> > > > > > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
-> > > > > > > Added the following domain attributes required by FSL PAMU
-> > > driver:
-> > > > > > > 1. Subwindows field added to the iommu domain geometry
-> > > attribute.
-> > > > > >
-> > > > > > Are the Subwindows mapped with full size or do you map only
-> > > parts
-> > > > > of the
-> > > > > > subwindows?
-> > > > > >
-> > > > > [Sethi Varun-B16395] It's possible to map a part of the  
-> subwindow
-> > > i.e.
-> > > > > size of the mapping can be less than the sub window size.
-> > > > >
-> > > > > > > +	 * This attribute indicates number of DMA subwindows
-> > > > supported
-> > > > > by
-> > > > > > > +	 * the geometry. If there is a single window that maps
-> > > the
-> > > > > entire
-> > > > > > > +	 * geometry, attribute must be set to "1". A value of
-> > > "0"
-> > > > > implies
-> > > > > > > +	 * that this mechanism is not used at all(normal paging
-> > > is
-> > > > > used).
-> > > > > > > +	 * Value other than* "0" or "1" indicates the actual
-> > > number
-> > > > of
-> > > > > > > +	 * subwindows.
-> > > > > > > +	 */
-> > > > > >
-> > > > > > This semantic is ugly, how about a feature detection  
-> mechanism?
-> > > > > >
-> > > > > [Sethi Varun-B16395] A feature mechanism to query the type of
-> > > IOMMU?
-> > > >
-> > > > A feature mechanism to determine whether this subwindow  
-> mechanism is
-> > > > available, and what the limits are.
-> > > >
-> > > So, we use the IOMMU capability interface to find out if IOMMU
-> > > supports sub windows or not, right? But still number of sub  
-> windows
-> > > would be specified as a part of the geometry and the valid value  
-> for
-> > > sub windows would  0,1 or actual number of sub windows.
-> >
-> > How does a user of the interface find out what values are possible  
-> for
-> > the "actual number of subwindows"?  How does a user of the  
-> interface find
-> > out whether there are any limitations on specifying a value of zero  
-> (in
-> > the case of PAMU, that would be a maximum 1 MiB naturally-aligned
-> > aperture to support arbitrary 4KiB mappings)?
-> How about if we say that the default value for subwindows is zero and  
-> this what you get when you read the geometry (iommu_get_attr) after  
-> initializing the domain? In that case the user would know that  
-> implication of setting subwindows to zero with respect to the  
-> aperture size.
 
-So it would default to the maximum aperture size possible with no  
-subwindows?  That might be OK, though is there a way to reset the  
-domain later on to get back to that informational state?
+This is prototype only but what I was using as a reference to see could
+I spot a problem in yours. It has not been even boot tested but avoids
+remote->remote copies, contending on PTL or holding it longer than necessary
+(should anyway)
 
-How about finding out the maximum number of subwindows?
+---8<---
+mm: numa: Batch pte handling
 
-> Also, should we introduce an additional API like "iommu_check_attr",  
-> which the user can use to validate the attribute value. For example  
-> in case of geometry, the user can fill up the structure and pass it  
-> to the iommu driver in order to verify the aperture and subwindows  
-> field.
-
-Doesn't the current API raise an error if you do something  
-unsupported?  In any case I don't think making a series of guesses and  
-seeing which ones are accepted is a good substitute for being able to  
-simply read out the relevant parameters.
-
--Scott
+diff --git a/mm/memory.c b/mm/memory.c
+index 33e20b3..f871d5d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3461,30 +3461,14 @@ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+ 	return mpol_misplaced(page, vma, addr);
+ }
+ 
+-int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+-		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
++static
++int __do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd,
++		   spinlock_t *ptl, bool only_local, bool *migrated)
+ {
+ 	struct page *page = NULL;
+-	spinlock_t *ptl;
+ 	int current_nid = -1;
+ 	int target_nid;
+-	bool migrated = false;
+-
+-	/*
+-	* The "pte" at this point cannot be used safely without
+-	* validation through pte_unmap_same(). It's of NUMA type but
+-	* the pfn may be screwed if the read is non atomic.
+-	*
+-	* ptep_modify_prot_start is not called as this is clearing
+-	* the _PAGE_NUMA bit and it is not really expected that there
+-	* would be concurrent hardware modifications to the PTE.
+-	*/
+-	ptl = pte_lockptr(mm, pmd);
+-	spin_lock(ptl);
+-	if (unlikely(!pte_same(*ptep, pte))) {
+-		pte_unmap_unlock(ptep, ptl);
+-		goto out;
+-	}
+ 
+ 	pte = pte_mknonnuma(pte);
+ 	set_pte_at(mm, addr, ptep, pte);
+@@ -3493,7 +3477,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	page = vm_normal_page(vma, addr, pte);
+ 	if (!page) {
+ 		pte_unmap_unlock(ptep, ptl);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	current_nid = page_to_nid(page);
+@@ -3509,15 +3493,88 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Only do remote-local copies when handling PTEs in batch. This does
++	 * mean we effectively lost the NUMA hinting fault if the workload
++	 * was not converged on a PMD boundary. This is bad but is it worse
++	 * can doing a remote->remote copy?
++	 */
++	if (only_local && target_nid != numa_node_id()) {
++		current_nid = -1;
++		put_page(page);
++		goto out;
++	}
++
+ 	/* Migrate to the requested node */
+-	migrated = migrate_misplaced_page(page, target_nid);
+-	if (migrated)
++	*migrated = migrate_misplaced_page(page, target_nid);
++	if (*migrated)
+ 		current_nid = target_nid;
+ 
+ out:
++	return current_nid;
++}
++
++int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
++{
++	spinlock_t *ptl;
++	int current_nid = -1;
++	bool migrated = false;
++	unsigned long end_addr;
++
++	/*
++	* The "pte" at this point cannot be used safely without
++	* validation through pte_unmap_same(). It's of NUMA type but
++	* the pfn may be screwed if the read is non atomic.
++	*
++	* ptep_modify_prot_start is not called as this is clearing
++	* the _PAGE_NUMA bit and it is not really expected that there
++	* would be concurrent hardware modifications to the PTE.
++	*/
++	ptl = pte_lockptr(mm, pmd);
++	spin_lock(ptl);
++	if (unlikely(!pte_same(*ptep, pte))) {
++		pte_unmap_unlock(ptep, ptl);
++		goto out;
++	}
++
++	current_nid = __do_numa_page(mm, vma, addr, pte, ptep, pmd, ptl, false, &migrated);
++
++	/* Batch handle all PTEs in this area. PTL is not held initially */
++	addr = max(addr & PMD_MASK, vma->vm_start);
++	end_addr = min((addr + PMD_SIZE) & PMD_MASK, vma->vm_end);
++	for (; addr < end_addr; addr += PAGE_SIZE) {
++		bool batch_migrated = false;
++		int batch_nid = -1;
++
++		ptep = pte_offset_map(pmd, addr);
++		pte = *ptep;
++		if (!pte_present(pte))
++			continue;
++		if (!pte_numa(pte))
++			continue;
++
++		if (!spin_trylock(ptl)) {
++			pte_unmap(ptep);
++			break;
++		}
++
++		/* Recheck PTE under lock */
++		if (!pte_same(*ptep, pte)) {
++			pte_unmap_unlock(ptep, ptl);
++			continue;
++		}
++
++		batch_nid = __do_numa_page(mm, vma, addr, pte, ptep, pmd, ptl, true, &batch_migrated);
++		if (batch_nid != -1)
++			task_numa_fault(current_nid, 1, batch_migrated);
++	}
++
++out:
+ 	if (current_nid != -1)
+ 		task_numa_fault(current_nid, 1, migrated);
+ 	return 0;
++
+ }
+ 
+ /* NUMA hinting page fault entry point for regular pmds */
