@@ -1,130 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab2LKXVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 18:21:07 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51218 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab2LKXVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 18:21:06 -0500
-X-AuditID: 9c930179-b7b25ae0000031c2-5f-50c7bfdeb3eb
-Date: Wed, 12 Dec 2012 08:21:01 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arun Sharma <asharma@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v3] Support volatile range for anon vma
-Message-ID: <20121211232101.GA32158@blaptop>
-References: <1355193255-7217-1-git-send-email-minchan@kernel.org>
- <50C77F47.10601@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C77F47.10601@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1755197Ab2LKXV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 18:21:58 -0500
+Received: from gate.crashing.org ([63.228.1.57]:44608 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754052Ab2LKXV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 18:21:56 -0500
+Message-ID: <1355267959.19932.40.camel@pasglop>
+Subject: Re: linux-next: some merging notes
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Greg KH <greg@kroah.com>, Steven Rostedt <srostedt@redhat.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "N, Mugunthan V" <mugunthanvnm@ti.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Date: Wed, 12 Dec 2012 10:19:19 +1100
+In-Reply-To: <20121212091552.02c72c8926f9f9147b080d68@canb.auug.org.au>
+References: <20121212091552.02c72c8926f9f9147b080d68@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On Wed, 2012-12-12 at 09:15 +1100, Stephen Rothwell wrote:
+> The powerpc tree
+> (git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git#next)
+> contains a commit that breaks the building of
+> lib/pSeries-reconfig-notifier-error-inject.c.  I applied a patch to
+> linux-next to disable CONFIG_PSERIES_RECONFIG_NOTIFIER_ERROR_INJECT.
 
-On Tue, Dec 11, 2012 at 10:45:27AM -0800, John Stultz wrote:
-> On 12/10/2012 06:34 PM, Minchan Kim wrote:
-> >This still is [RFC v3] because just passed my simple test
-> >with TCMalloc tweaking.
-> >
-> >I hope more inputs from user-space allocator people and test patch
-> >with their allocator because it might need design change of arena
-> >management design for getting real vaule.
-> >
-> >Changelog from v2
-> >
-> >  * Removing madvise(addr, length, MADV_NOVOLATILE).
-> >  * add vmstat about the number of discarded volatile pages
-> >  * discard volatile pages without promotion in reclaim path
-> >
-> >This is based on v3.6.
-> >
-> >- What's the madvise(addr, length, MADV_VOLATILE)?
-> >
-> >   It's a hint that user deliver to kernel so kernel can *discard*
-> >   pages in a range anytime.
-> >
-> >- What happens if user access page(ie, virtual address) discarded
-> >   by kernel?
-> >
-> >   The user can see zero-fill-on-demand pages as if madvise(DONTNEED).
-> >
-> >- What happens if user access page(ie, virtual address) doesn't
-> >   discarded by kernel?
-> >
-> >   The user can see old data without page fault.
-> >
-> >- What's different with madvise(DONTNEED)?
-> >
-> >   System call semantic
-> >
-> >   DONTNEED makes sure user always can see zero-fill pages after
-> >   he calls madvise while VOLATILE can see zero-fill pages or
-> >   old data.
-> I still need to really read and understand the patch, but at a high
-> level I'm not sure how this works. So does the VOLATILE flag get
-> cleared on any access, even if the pages have not been discarded?
+I will put a fix in before I send the pull request.
 
-No. It is cleared when user try to access discareded pages so
-This patch is utter crap. I missed that point.
-Thanks for pointing out, John.
+Cheers,
+Ben.
 
-Hmm, in the end, we need NOVOLATILE.
 
-> What happens if an application wants to store non-volatile data in
-> an area that was once marked volatile. If there was never memory
-> pressure, it seems the volatility would persist with no way of
-> removing it.
-
-Yes. that's why this patch is crap and I'm insane. :(
-
-> 
-> Either way, I feel that with this revision, specifically dropping
-> the NOVOLATILE call and the SIGBUS optimization the Mozilla folks
-> suggested, your implementation has drifted quite far from the
-> concept I'm pushing. While I hope we can still align the underlying
-> mm implementation, I might ask that you use a different term for the
-> semantics you propose, so we don't add too much confusion to the
-> discussion.
-> 
-> Maybe you could call it DONTNEED_DEFERRED or something?
-> 
-> In the meantime, I'll be reading your patch in detail and seeing how
-> we might be able to combine our differing approaches.
-
-You don't need it. Ignore this patch.
-I will rework.
-
-Thanks.
-
-> 
-> thanks
-> -john
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
