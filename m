@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab2LKLJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 06:09:31 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:43055 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab2LKLJ2 (ORCPT
+	id S1753024Ab2LKLJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 06:09:52 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:52038 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab2LKLJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 06:09:28 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-df-50c71467d48b
+	Tue, 11 Dec 2012 06:09:49 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-18-50c7147bb057
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
         "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
@@ -20,163 +20,554 @@ Cc: "'Dae Inki'" <inki.dae@samsung.com>, "'Joerg Roedel'" <joro@8bytes.org>,
         "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
         "'Subash Patel'" <subash.ramaswamy@linaro.org>,
         "'SWKim'" <sw0312.kim@samsung.com>
-Subject: [PATCH v5 05/14] ARM: EXYNOS: Add clk_ops for gating clocks of System
- MMU
-Date: Tue, 11 Dec 2012 20:09:27 +0900
-Message-id: <003501cdd78f$fc276db0$f4764910$%cho@samsung.com>
+Subject: [PATCH v5 06/14] ARM: EXYNOS: add System MMU definition to DT
+Date: Tue, 11 Dec 2012 20:09:47 +0900
+Message-id: <003601cdd790$082a1310$187e3930$%cho@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3XjHNcM1dN30GgQw6XWOazTgfB8AAA4DTw
+Thread-index: Ac3XjHWaszgUbFJMTa+r2PZY0K2s6QAA4mgQ
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zI910keMBBkvW61pc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGX8vLaRseCtbMWLD7ENjBvEuxg5OSQETCT6D15ig7DF
-	JC7cWw9mCwksY5R48ykPpqZrQh97FyMXUHw6o8Thb1MYIZx/jBK/e9Yxg1SxCWhJrJ57nBHE
-	FhG4yyjx8jwPSBGzwBEmiZ33z7GAJIQFQiT+z29gB7FZBFQl7n7/BNTMwcErYCuxeEUNSJhX
-	QFDix+R7YOXMQDPX7zzOBGHLS2xe8xasXEJAXeLRX12IVUYSD9/eYIYoEZHY9+IdI8R0AYlv
-	kw+xQJTLSmw6wAxyjYRAP7vEj+5J7BCPSUocXHGDZQKj2Cwkm2ch2TwLyeZZSFYsYGRZxSia
-	WpBcUJyUnmuoV5yYW1yal66XnJ+7iRESMVI7GFc2WBxiFOBgVOLh1dA6FiDEmlhWXJl7iFGC
-	g1lJhDdS6HiAEG9KYmVValF+fFFpTmrxIUYfoMsnMkuJJucDozmvJN7Q2NjEzMTUxNzS1NwU
-	h7CSOG+zR0qAkEB6YklqdmpqQWoRzDgmDk6pBsaSs9E16WsXekb8vP7lvE/kxeVPJkp93Ba9
-	Wryjiynvwb8egetiKnv1yo7MU70Z0XPtoW1t35VFd2eyrTySp/Z0maPso83sitMVL+5d8mPH
-	iS6hi5G7HykeXdVqJzkrxUD6gb23XsTPl1ejZC5d2HrjaeuftXfOxLVIy3ycd8v96qLY8/dM
-	V/7/rcRSnJFoqMVcVJwIACZzBkzFAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jQd10keMBBndXqFtc3jWHzWLG+X1M
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zA91qkeMBBltm2lhc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGW8a57AVLAut6Ltwg+mBsbDoV2MHBwSAiYS589JdzFy
+	ApliEhfurWfrYuTiEBJYxijR0XGBCSJhIvHiwHFWiMQiRonDfUuZIJx/jBIL5jUxg1SxCWhJ
+	rJ57nBHEFhG4yyjx8jwPSBGzwBEmiZ33z7GAJIQF3CR+rF0LNpZFQFXi5ZkTrCA2r4CtxO7Z
+	hxkhbEGJH5PvgdUzAw1dv/M4E4QtL7F5zVtmiLPVJR791QUxRQSMJL6eSIaoEJHY9+IdI8R0
+	AYlvkw+xQFTLSmw6wAxyjYTAZHaJR1uns0A8JilxcMUNlgmMYrOQLJ6FZPEsJItnIVmxgJFl
+	FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZIzEjtYFzZYHGIUYCDUYmHV0PrWIAQa2JZcWXu
+	IUYJDmYlEd5IoeMBQrwpiZVVqUX58UWlOanFhxh9gC6fyCwlmpwPjOe8knhDY2MTMxNTE3NL
+	U3NTHMJK4rzNHikBQgLpiSWp2ampBalFMOOYODilGhjzOPn6+jhOJAROM/kU6SDpVdK2VufS
+	U7aV9Q8ZgvymT5rGN9174f3vinqzy3dKRtfEbl89vyppehqrWckDYZubkmdWZ79SPjN5lq3g
+	7ck3TgUtCmiyElT7pJVgHZ59psnpVNcko5/fZm5YUWz/YvdDzd2KYiurFt9iXbplybs0Y+vE
+	8kyhp7uUWIozEg21mIuKEwEMIl7kxgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jAd1qkeMBBi+nG1tc3jWHzWLG+X1M
 	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm/Ly2kbHgrWzF
-	iw+xDYwbxLsYOTkkBEwkuib0sUPYYhIX7q1n62Lk4hASmM4ocfjbFEYI5x+jxO+edcwgVWwC
-	WhKr5x5nBLFFBO4ySrw8zwNSxCxwhEli5/1zLCAJYYEQif/zG8DGsgioStz9/gmomYODV8BW
-	YvGKGpAwr4CgxI/J98DKmYFmrt95nAnClpfYvOYtWLmEgLrEo7+6EKuMJB6+vcEMUSIise/F
-	O8YJjAKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOCKfSe1g
-	XNlgcYhRgINRiYdXQ+tYgBBrYllxZe4hRgkOZiUR3kih4wFCvCmJlVWpRfnxRaU5qcWHGH2A
-	/pzILCWanA9MFnkl8YbGJmZGlkZmFkYm5uY4hJXEeZs9UgKEBNITS1KzU1MLUotgxjFxcEo1
-	MMpPzNjYtY5BlTeeeYvhn9UBAhkSzPre17OCgr28vlef+vy35wKLR6P49LeuS4P7fiyoWPtL
-	9bGGXJzkK5kdXIGf2r56Rus9dJDrP508749nQ5ZAn6x6w5YPYUckz8063GrJ+arJ6PQem0lf
-	9n3+u6Fd0H+vyUnBvctvqhZ2p+gyvj8oMKNooxJLcUaioRZzUXEiANsKd5/1AgAA
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmvGuewFSwLrei
+	7cIPpgbGw6FdjJwcEgImEi8OHGeFsMUkLtxbz9bFyMUhJLCIUeJw31ImCOcfo8SCeU3MIFVs
+	AloSq+ceZwSxRQTuMkq8PM8DUsQscIRJYuf9cywgCWEBN4kfa9cygdgsAqoSL8+cAFvBK2Ar
+	sXv2YUYIW1Dix+R7YPXMQEPX7zzOBGHLS2xe8xZoGQfQSeoSj/7qgpgiAkYSX08kQ1SISOx7
+	8Y5xAqPALCSDZiEZNAvJoFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7JZ1I7
+	GFc2WBxiFOBgVOLh1dA6FiDEmlhWXJl7iFGCg1lJhDdS6HiAEG9KYmVValF+fFFpTmrxIUYf
+	oD8nMkuJJucD00VeSbyhsYmZkaWRmYWRibk5DmElcd5mj5QAIYH0xJLU7NTUgtQimHFMHJxS
+	wDjKKHsT8jrpD2PKHBWmZSIvr83eWc2qsrta9tE/9daFly7F7HP+eSR6t7OvfRnDs/vr8rom
+	pVpOL5ddfl5Q52rH9ud3D5xk1Bb3lkzx7HGuyZg4IV1R8Uh3hNz3Q/3pyyaVdoff+Tv5ld7p
+	Fwe+WrpwOTJoSpzmm3T1psvSxocblGLunBVg8FNiKc5INNRiLipOBACe4gfO9gIAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Touching some System MMU needs its master devices' clock to be enabled
-before. This commit adds clk_ops.set_parent of gating clocks of System
-MMU to ensure gating clocks of System MMU's mater devices are enabled
-when enabling gating clocks of System MMU.
+This commit adds System MMU nodes to DT of Exynos SoCs.
 
 Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
 ---
- arch/arm/mach-exynos/clock-exynos5.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ .../devicetree/bindings/arm/exynos/system-mmu.txt  |  86 ++++++++++++
+ arch/arm/boot/dts/exynos4210.dtsi                  |  96 ++++++++++++++
+ arch/arm/boot/dts/exynos4x12.dtsi                  | 124 +++++++++++++++++
+ arch/arm/boot/dts/exynos5250.dtsi                  | 147 ++++++++++++++++++++-
+ 4 files changed, 451 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/exynos/system-mmu.txt
 
-diff --git a/arch/arm/mach-exynos/clock-exynos5.c b/arch/arm/mach-exynos/clock-exynos5.c
-index e48d7c2..a86e88e 100644
---- a/arch/arm/mach-exynos/clock-exynos5.c
-+++ b/arch/arm/mach-exynos/clock-exynos5.c
-@@ -614,6 +614,16 @@ static struct clksrc_clk exynos5_clk_aclk_300_gscl = {
- 	.reg_src = { .reg = EXYNOS5_CLKSRC_TOP3, .shift = 10, .size = 1 },
+diff --git a/Documentation/devicetree/bindings/arm/exynos/system-mmu.txt
+b/Documentation/devicetree/bindings/arm/exynos/system-mmu.txt
+new file mode 100644
+index 0000000..9c30a36
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/exynos/system-mmu.txt
+@@ -0,0 +1,86 @@
++* Samsung Exynos System MMU
++
++Samsung's Exynos architecture includes System MMU that enables scattered
++physical chunks to be visible as a contiguous region to DMA-capabile peripheral
++devices like MFC, FIMC, FIMD, GScaler, FIMC-IS and so forth.
++
++System MMU is a sort of IOMMU and support identical translation table format to
++ARMv7 translation tables with minimum set of page properties including access
++permissions, shareability and security protection. In addition System MMU has
++another capabilities like L2 TLB or block-fetch buffers to minimize translation
++latency
++
++Each System MMU is included in the H/W block of a peripheral device. Thus, it is
++important to specify that a System MMU is dedicated to which peripheral device
++before using System MMU. System initialization must specify the relationships
++between a System MMU and a peripheral device that owns the System MMU.
++
++Some device drivers may control several peripheral devices with a single device
++descriptor like MFC. Since handling a System MMU with IOMMU API requires a
++device descriptor that needs the System MMU, it is best to combine the System
++MMUs of the peripheral devices and control them with a single System MMU device
++descriptor. If it is unable to combine them into a single device descriptor,
++they can be linked with each other by the means of device.parent relationship.
++
++Required properties:
++- compatible: Should be "samsung,exynos-sysmmu".
++- reg: Tuples of base address and size of System MMU registers. The number of
++       tuples can be more than one if two or more System MMUs are controlled
++       by a single device descriptor.
++- interrupt-parent: The phandle of the interrupt controller of System MMU
++- interrupts: Tuples of numbers that indicates the interrupt source. The
++              number of elements in the tuple is dependent upon
++	      'interrupt-parent' property. The number of tuples in this property
++	      must be the same with 'reg' property.
++
++Optional properties:
++- mmuname: Strings of the name of System MMU for debugging purpose. The number
++	   of strings must be the same with the number of tuples in 'reg'
++	   property.
++- mmu-master: phandle to the device node that owns System MMU. Only the device
++	   that is specified whith this property can control System MMU with
++	   IOMMU API.
++
++Examples:
++
++MFC has 2 System MMUs for each port that MFC is attached. Thus it seems natural
++to define 2 System MMUs for each port of the MFC:
++
++	sysmmu-mfc-l {
++		mmuname = "mfc_l";
++		reg = <0x11210000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <8 5>;
++		mmu-master = <&mfc>;
++	};
++
++	sysmmu-mfc-r {
++		mmuname = "mfc_r";
++		reg = <0x11200000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <6 2>;
++		mmu-master = <&mfc>;
++	};
++
++Actually, MFC device driver requires sub-devices that represents each port and
++above 'mmu-master' properties of sysmmu-mfc-l and sysmmu-mfc-r have the phandles
++to those sub-devices.
++
++However, it is also a good idea that treats the above System MMUs as one System
++MMU because those System MMUs are actually required by the MFC device:
++
++	sysmmu-mfc {
++		mmuname = "mfc_l", "mfc_r";
++		reg = <0x11210000 0x1000
++		       0x11200000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <8 5
++			      6 2>;
++		mmu-master = <&mfc>;
++	};
++
++If System MMU of MFC is defined like the above, the number of elements and the
++order of list in 'mmuname', 'reg' and 'interrupts' must be the same.
+diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+index 939f639..d7a7a06 100644
+--- a/arch/arm/boot/dts/exynos4210.dtsi
++++ b/arch/arm/boot/dts/exynos4210.dtsi
+@@ -71,4 +71,100 @@
+ 		reg = <0x100C0000 0x100>;
+ 		interrupts = <2 4>;
+ 	};
++
++	sysmmu-mfcL {
++		mmuname = "mfc_l";
++		reg = <0x13620000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 5>;
++	};
++
++	sysmmu-mfcR {
++		mmuname = "mfc_r";
++		reg = <0x13630000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 6>;
++	};
++
++	sysmmu-tv {
++		mmuname = "tv";
++		reg = <0x13E20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 4>;
++	};
++
++	sysmmu-fimc0 {
++		mmuname = "fimc0";
++		reg = <0x11A20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 2>;
++	};
++
++	sysmmu-fimc1 {
++		mmuname = "fimc1";
++		reg = <0x11A30000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 3>;
++	};
++
++	sysmmu-fimc2 {
++		mmuname = "fimc2";
++		reg = <0x11A40000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 4>;
++	};
++
++	sysmmu-fimc3 {
++		mmuname = "fimc3";
++		reg = <0x11A50000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 5>;
++	};
++
++	sysmmu-jpeg {
++		mmuname = "jpeg";
++		reg = <0x11A60000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 6>;
++	};
++
++	sysmmu-g2d {
++		mmuname = "g2d";
++		reg = <0x12A20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 7>;
++	};
++
++	sysmmu-rotator {
++		mmuname = "rotator";
++		reg = <0x12A30000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 0>;
++	};
++
++	sysmmu-fimd0 {
++		mmuname = "fimd0";
++		reg = <0x11E20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 2>;
++	};
++
++	sysmmu-fimd1 {
++		mmuname = "fimd1";
++		reg = <0x12220000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 3>;
++	};
  };
+diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+index 179a62e..0c6d001 100644
+--- a/arch/arm/boot/dts/exynos4x12.dtsi
++++ b/arch/arm/boot/dts/exynos4x12.dtsi
+@@ -66,4 +66,128 @@
+ 		reg = <0x106E0000 0x1000>;
+ 		interrupts = <0 72 0>;
+ 	};
++
++	sysmmu-mfcL {
++		mmuname = "mfc_l";
++		reg = <0x13620000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 5>;
++	};
++
++	sysmmu-mfcR {
++		mmuname = "mfc_r";
++		reg = <0x13630000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 6>;
++	};
++
++	sysmmu-tv {
++		mmuname = "tv";
++		reg = <0x13E20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 4>;
++	};
++
++	sysmmu-fimc0 {
++		mmuname = "fimc0";
++		reg = <0x11A20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 2>;
++	};
++
++	sysmmu-fimc1 {
++		mmuname = "fimc1";
++		reg = <0x11A30000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 3>;
++	};
++
++	sysmmu-fimc2 {
++		mmuname = "fimc2";
++		reg = <0x11A40000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 4>;
++	};
++
++	sysmmu-fimc3 {
++		mmuname = "fimc3";
++		reg = <0x11A50000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 5>;
++	};
++
++	sysmmu-jpeg {
++		mmuname = "jpeg";
++		reg = <0x11A60000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 6>;
++	};
++
++	sysmmu-g2d {
++		mmuname = "g2d";
++		reg = <0x10A40000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 7>;
++	};
++
++	sysmmu-rotator {
++		mmuname = "rotator";
++		reg = <0x12A30000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 0>;
++	};
++
++	sysmmu-fimd0 {
++		mmuname = "fimd0";
++		reg = <0x11E20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <5 2>;
++	};
++
++	sysmmu-is0 {
++		mmuname = "isp", "drc", "fd";
++		reg = < 0x12260000 0x1000
++			0x12270000 0x1000
++			0x122A0000 0x1000 >;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <  16 2
++				16 3
++				16 4 >;
++	};
++
++	sysmmu-is1 {
++		mmuname = "ispcpu";
++		reg = <0x122B0000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <16 5>;
++	};
++
++	sysmmu-flite0 {
++		mmuname = "fimc-lite0";
++		reg = <0x123B0000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <16 0>;
++	};
++
++	sysmmu-flite1 {
++		mmuname = "fimc-lite1";
++		reg = <0x123C0000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <16 1>;
++	};
+ };
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index cf6a02d..ff2311d 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -62,7 +62,7 @@
+ 		interrupts = <0 42 0>;
+ 	};
  
-+static int exynos5_gate_clk_set_parent(struct clk *clk, struct clk *parent)
-+{
-+	clk->parent = parent;
-+	return 0;
-+}
+-	codec@11000000 {
++	mfc: codec@11000000 {
+ 		compatible = "samsung,mfc-v6";
+ 		reg = <0x11000000 0x10000>;
+ 		interrupts = <0 96 0>;
+@@ -547,9 +547,152 @@
+ 		interrupts = <0 95 0>;
+ 	};
+ 
+-	mixer {
++	mixer: mixer {
+ 		compatible = "samsung,exynos5-mixer";
+ 		reg = <0x14450000 0x10000>;
+ 		interrupts = <0 94 0>;
+ 	};
 +
-+static struct clk_ops exynos5_gate_clk_ops = {
-+	.set_parent = exynos5_gate_clk_set_parent
-+};
++	sysmmu-mfc-l {
++		mmuname = "mfc_l";
++		reg = <0x11210000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <8 5>;
++		mmu-master = <&mfc>;
++	};
 +
- static struct clk exynos5_init_clocks_off[] = {
- 	{
- 		.name		= "timers",
-@@ -855,71 +865,85 @@ static struct clk exynos5_init_clocks_off[] = {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(mfc_l, 0),
- 		.enable		= &exynos5_clk_ip_mfc_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 1),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(mfc_r, 1),
- 		.enable		= &exynos5_clk_ip_mfc_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 2),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(tv, 2),
- 		.enable		= &exynos5_clk_ip_disp1_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 9)
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(jpeg, 3),
- 		.enable		= &exynos5_clk_ip_gen_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 7),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(rot, 4),
- 		.enable		= &exynos5_clk_ip_gen_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 6)
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(gsc0, 5),
- 		.enable		= &exynos5_clk_ip_gscl_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 7),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(gsc1, 6),
- 		.enable		= &exynos5_clk_ip_gscl_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 8),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(gsc2, 7),
- 		.enable		= &exynos5_clk_ip_gscl_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 9),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(gsc3, 8),
- 		.enable		= &exynos5_clk_ip_gscl_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 10),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(isp, 9),
- 		.enable		= &exynos5_clk_ip_isp0_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (0x3F << 8),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME2,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(isp, 9),
- 		.enable		= &exynos5_clk_ip_isp1_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (0xF << 4),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(camif0, 12),
- 		.enable		= &exynos5_clk_ip_gscl_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 11),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(camif1, 13),
- 		.enable		= &exynos5_clk_ip_gscl_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 12),
- 	}, {
- 		.name		= SYSMMU_CLOCK_NAME,
- 		.devname	= SYSMMU_CLOCK_DEVNAME(2d, 14),
- 		.enable		= &exynos5_clk_ip_acp_ctrl,
-+		.ops		= &exynos5_gate_clk_ops,
- 		.ctrlbit	= (1 << 7)
- 	}
++	sysmmu-mfc-r {
++		mmuname = "mfc_r";
++		reg = <0x11200000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <6 2>;
++		mmu-master = <&mfc>;
++	};
++
++	sysmmu-tv {
++		mmuname = "tv";
++		reg = <0x14650000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <7 4>;
++		mmu-master = <&mixer>;
++	};
++
++	sysmmu-gsc0 {
++		mmuname = "gsc0";
++		reg = <0x13E80000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <2 0>;
++		mmu-master = <&gsc_0>;
++	};
++
++	sysmmu-gsc1 {
++		mmuname = "gsc1";
++		reg = <0x13E90000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <2 2>;
++		mmu-master = <&gsc_1>;
++	};
++
++	sysmmu-gsc2 {
++		mmuname = "gsc2";
++		reg = <0x13EA0000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <2 4>;
++		mmu-master = <&gsc_2>;
++	};
++
++	sysmmu-gsc3 {
++		mmuname = "gsc3";
++		reg = <0x13EB0000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <2 6>;
++		mmu-master = <&gsc_3>;
++	};
++
++	sysmmu-fimd1 {
++		mmuname = "fimd1";
++		reg = <0x14640000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <3 2>;
++	};
++
++	sysmmu-rotator {
++		mmuname = "rotator";
++		reg = <0x11D40000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 0>;
++	};
++
++	sysmmu-is0 {
++		mmuname = "isp", "drc", "scalerc", "scalerp", "fd", "mcu";
++		reg = < 0x13260000 0x1000
++			0x13270000 0x1000
++			0x13280000 0x1000
++			0x13290000 0x1000
++			0x132A0000 0x1000
++			0x132B0000 0x1000 >;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <  10 6
++				11 6
++				 5 2
++				 3 6
++				 5 0
++				 5 4 >;
++	};
++
++	sysmmu-is1 {
++		mmuname = "odc", "dis0", "dis1", "3dnr";
++		reg = < 0x132C0000 0x1000
++			0x132D0000 0x1000
++			0x132E0000 0x1000
++			0x132F0000 0x1000 >;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <  11 0
++				10 4
++				 9 4
++				 5 6 >;
++	};
++
++	sysmmu-2d {
++		mmuname = "2d";
++		reg = <0x10A60000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <24 5>;
++	};
++
++	sysmmu-jpeg {
++		mmuname = "jpeg";
++		reg = <0x11F20000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <4 2>;
++	};
++
++	sysmmu-flite0 {
++		mmuname = "flite0";
++		reg = <0x13C40000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <3 4>;
++	};
++
++	sysmmu-flite1 {
++		mmuname = "flite1";
++		reg = <0x13C50000 0x1000>;
++		compatible = "samsung,exynos-sysmmu";
++		interrupt-parent = <&combiner>;
++		interrupts = <24 1>;
++	};
  };
 -- 
 1.8.0
