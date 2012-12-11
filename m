@@ -1,52 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab2LKOIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:08:51 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56533 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632Ab2LKOIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753654Ab2LKOIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:08:49 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49991 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab2LKOIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Dec 2012 09:08:47 -0500
-Message-ID: <1355234914.2356.85.camel@falcor>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Morris <jmorris@namei.org>
-Date: Tue, 11 Dec 2012 09:08:34 -0500
-In-Reply-To: <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	 <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	 <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v4 5/9] sched,
+ cpu hotplug: Use stable online cpus in try_to_wake_up() &
+ select_task_rq()
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        oleg@redhat.com
+Cc: sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
+        srivatsa.bhat@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 11 Dec 2012 19:35:03 +0530
+Message-ID: <20121211140502.23621.18600.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com>
+References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121114-7182-0000-0000-000003B25383
+x-cbid: 12121114-8256-0000-0000-0000056309FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 14:51 +0200, Kasatkin, Dmitry wrote:
+Once stop_machine() is gone from the CPU offline path, we won't be able to
+depend on preempt_disable() to prevent CPUs from going offline from under us.
 
-> >> Here is two patches for policy search speedup.
-> >>
-> >> First patch adds additional features flags to superblock.
-> >> Second - implementation for IMA.
-> >>
-> >> Two months ago I was asking about it on mailing lists.
-> >> Suggestion was not to use s_flags, but e.g. s_feature_flags.
-> >>
-> >> Any objections about such approach?
+Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
+while invoking from atomic context.
 
-First of all my appologies for not responding earlier.  Based on the
-previous discussion https://lkml.org/lkml/2012/9/19/9, this looks like
-the right direction.  Specific comments will be posted on the individual
-patches.
+Scheduler functions such as try_to_wake_up() and select_task_rq() (and even
+select_fallback_rq()) deal with picking new CPUs to run tasks. So they need
+to synchronize with CPU offline operations.
 
-thanks,
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Mimi
+ kernel/sched/core.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..f51e0aa 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1103,6 +1103,10 @@ EXPORT_SYMBOL_GPL(kick_process);
+ #ifdef CONFIG_SMP
+ /*
+  * ->cpus_allowed is protected by both rq->lock and p->pi_lock
++ *
++ *  Must be called under get/put_online_cpus_atomic() or
++ *  equivalent, to avoid CPUs from going offline from underneath
++ *  us.
+  */
+ static int select_fallback_rq(int cpu, struct task_struct *p)
+ {
+@@ -1166,6 +1170,9 @@ out:
+ 
+ /*
+  * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
++ *
++ * Must be called under get/put_online_cpus_atomic(), to prevent
++ * CPUs from going offline from underneath us.
+  */
+ static inline
+ int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
+@@ -1406,6 +1413,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	int cpu, success = 0;
+ 
+ 	smp_wmb();
++	get_online_cpus_atomic();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	if (!(p->state & state))
+ 		goto out;
+@@ -1446,6 +1454,7 @@ stat:
+ 	ttwu_stat(p, cpu, wake_flags);
+ out:
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++	put_online_cpus_atomic();
+ 
+ 	return success;
+ }
+@@ -1624,6 +1633,7 @@ void wake_up_new_task(struct task_struct *p)
+ 	unsigned long flags;
+ 	struct rq *rq;
+ 
++	get_online_cpus_atomic();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ #ifdef CONFIG_SMP
+ 	/*
+@@ -1644,6 +1654,7 @@ void wake_up_new_task(struct task_struct *p)
+ 		p->sched_class->task_woken(rq, p);
+ #endif
+ 	task_rq_unlock(rq, p, &flags);
++	put_online_cpus_atomic();
+ }
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+@@ -2541,6 +2552,7 @@ void sched_exec(void)
+ 	unsigned long flags;
+ 	int dest_cpu;
+ 
++	get_online_cpus_atomic();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
+ 	if (dest_cpu == smp_processor_id())
+@@ -2550,11 +2562,13 @@ void sched_exec(void)
+ 		struct migration_arg arg = { p, dest_cpu };
+ 
+ 		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++		put_online_cpus_atomic();
+ 		stop_one_cpu(task_cpu(p), migration_cpu_stop, &arg);
+ 		return;
+ 	}
+ unlock:
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++	put_online_cpus_atomic();
+ }
+ 
+ #endif
 
