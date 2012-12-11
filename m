@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab2LKNG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 08:06:59 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:35008 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab2LKNG5 (ORCPT
+	id S1753333Ab2LKNIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 08:08:25 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:6192 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752823Ab2LKNIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 08:06:57 -0500
-Message-ID: <50C72F92.9030704@linux.vnet.ibm.com>
-Date: Tue, 11 Dec 2012 18:35:22 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 11 Dec 2012 08:08:23 -0500
+X-IronPort-AV: E=Sophos;i="4.84,259,1355094000"; 
+   d="scan'208";a="165457331"
+Date: Tue, 11 Dec 2012 14:08:16 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to
+ devm_kfree
+In-Reply-To: <50C72E75.8030706@mvista.com>
+Message-ID: <alpine.DEB.2.02.1212111407570.2091@hadrien>
+References: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr> <50C72E75.8030706@mvista.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209191437.GA2816@redhat.com> <50C4EB79.5050203@linux.vnet.ibm.com> <20121209211338.GA8090@redhat.com> <50C56CC0.4000200@linux.vnet.ibm.com> <20121210172859.GB28479@redhat.com>
-In-Reply-To: <20121210172859.GB28479@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121113-8878-0000-0000-0000051F7C13
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 10:58 PM, Oleg Nesterov wrote:
-> On 12/10, Srivatsa S. Bhat wrote:
->>
->> On 12/10/2012 02:43 AM, Oleg Nesterov wrote:
->>> Damn, sorry for noise. I missed this part...
->>>
->>> On 12/10, Srivatsa S. Bhat wrote:
->>>>
->>>> On 12/10/2012 12:44 AM, Oleg Nesterov wrote:
->>>>> the latency. And I guess something like kick_all_cpus_sync() is "too heavy".
->>>>
->>>> I hadn't considered that. Thinking of it, I don't think it would help us..
->>>> It won't get rid of the currently running preempt_disable() sections no?
->>>
->>> Sure. But (again, this is only my feeling so far) given that get_online_cpus_atomic()
->>> does cli/sti,
->>
->> Ah, that one! Actually, the only reason I do that cli/sti is because, potentially
->> interrupt handlers can be hotplug readers too. So we need to protect the portion
->> of the code of get_online_cpus_atomic() which is not re-entrant.
-> 
-> Yes, I understand.
-> 
->>> this can help to implement ensure-the-readers-must-see-the-pending-writer.
->>> IOW this might help to implement sync-with-readers.
->>>
->>
->> 2 problems:
->>
->> 1. It won't help with cases like this:
->>
->>    preempt_disable()
->> 	...
->> 	preempt_disable()
->> 		...
->> 			<------- Here
->> 		...
->> 	preempt_enable()
->> 	...
->>    preempt_enable()
-> 
-> No, I meant that kick_all_cpus_sync() can be used to synchronize with
-> cli/sti in get_online_cpus_atomic(), just like synchronize_sched() does
-> in the code I posted a minute ago.
-> 
+On Tue, 11 Dec 2012, Sergei Shtylyov wrote:
 
-Ah, OK.
+> Hello.
+>
+> On 11-12-2012 14:58, Julia Lawall wrote:
+>
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> > The function at91_dt_node_to_map is ultimately called by the function
+> > pinctrl_get, which is an exported function.  Since it is possible that this
+> > function is not called from within a probe function, for safety, the kfree
+> > is converted to a devm_kfree, to both free the data and remove it from the
+> > device in a failure situation.
+>
+> > A newline is added in the call to devm_kfree to avoid exceeding the 80
+>
+>    devm_kzalloc() you mean?
 
->> 2. Part of the reason we want to get rid of stop_machine() is to avoid the
->> latency it induces on _all_ CPUs just to take *one* CPU offline. If we use
->> kick_all_cpus_sync(), we get into that territory again : we unfairly interrupt
->> every CPU, _even when_ that CPU's existing preempt_disabled() sections might
->> not actually be hotplug readers! (ie., not bothered about CPU Hotplug).
-> 
-> I agree, that is why I said it is "too heavy".
-> 
+Yes, sorry.  Should I send a new patch?
 
-Got it :)
+thanks,
+julia
 
-Regards,
-Srivatsa S. Bhat
-
+> > character limit.
+>
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> > ---
+> >   drivers/pinctrl/pinctrl-at91.c |    5 +++--
+> >   1 file changed, 3 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> > index c5e7571..0da8a5f 100644
+> > --- a/drivers/pinctrl/pinctrl-at91.c
+> > +++ b/drivers/pinctrl/pinctrl-at91.c
+> > @@ -255,7 +255,8 @@ static int at91_dt_node_to_map(struct pinctrl_dev
+> > *pctldev,
+> >   	}
+> >
+> >   	map_num += grp->npins;
+> > -	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
+> > GFP_KERNEL);
+> > +	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
+> > +			       GFP_KERNEL);
+>
+> WBR, Sergei
+>
+>
+>
