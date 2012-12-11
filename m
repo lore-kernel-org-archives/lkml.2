@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2LKO62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:58:28 -0500
-Received: from relay.parallels.com ([195.214.232.42]:46097 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab2LKO61 convert rfc822-to-8bit (ORCPT
+	id S1753882Ab2LKO7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:59:02 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38003 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab2LKO7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:58:27 -0500
-Message-ID: <50C749E0.4040107@parallels.com>
-Date: Tue, 11 Dec 2012 18:57:36 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 11 Dec 2012 09:59:00 -0500
+Date: Tue, 11 Dec 2012 14:58:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+Message-ID: <20121211145858.GI4939@ZenIV.linux.org.uk>
+References: <20121206153204.30693.11408.stgit@localhost.localdomain>
+ <20121206153447.30693.54128.stgit@localhost.localdomain>
+ <20121210202842.GB17350@fieldses.org>
+ <50C73C60.8060405@parallels.com>
+ <50C73F58.1080005@parallels.com>
+ <20121211145621.GA3336@fieldses.org>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
-References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org> <50C73C60.8060405@parallels.com> <20121211145443.GH4939@ZenIV.linux.org.uk>
-In-Reply-To: <20121211145443.GH4939@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.20.135]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211145621.GA3336@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.12.2012 18:54, Al Viro пишет:
-> On Tue, Dec 11, 2012 at 06:00:00PM +0400, Stanislav Kinsbursky wrote:
->> 11.12.2012 00:28, J. Bruce Fields ??????????:
->>> On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
->>>> NFSd does lookup. Lookup is done starting from current->fs->root.
->>>> NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
->>>> unshared) root.
->>>> So we have to swap root to those, which process, started NFSd, has. Because
->>>> that process can be in a container with it's own root.
->>>
->>> This doesn't sound right to me.
->>>
->>> Which lookups exactly do you see being done relative to
->>> current->fs->root ?
->>>
->>
->> Ok, you are right. I was mistaken here.
->> This is not a exactly lookup, but d_path() problem in svc_export_request().
->> I.e. without root swapping, d_path() will give not local export path (like "/export")
->> but something like this "/root/containers_root/export".
->
-> Now, *that* is a different story (and makes some sense).  Take a look
-> at __d_path(), please.  You don't need to set ->fs->root to get d_path()
-> equivalent relative to given point.
->
+On Tue, Dec 11, 2012 at 09:56:21AM -0500, J. Bruce Fields wrote:
 
-Thanks, Al.
-But __d_path() is not exported and this code is called from NFSd module.
-Is it suitable for you to export __d_path()?
+> That looks simpler, but I still don't understand why we need it.
+> 
+> I'm confused about how d_path works; I would have thought that
+> filesystem namespaces would have their own vfsmount trees and hence that
+> the (vfsmount, dentry) would be enough to specify the path.  Is the root
+> argument for the case of chroot?  Do we care about that?
 
--- 
-Best regards,
-Stanislav Kinsbursky
+__d_path() is relative pathname from here to there.  Whether (and what for)
+is it wanted in case of nfsd patches is a separate question...
+
+> Also, svc_export_request is called from mountd's read of
+> /proc/net/rpc/nfsd.export/channel.  If mountd's root is wrong, then
+> nothing's going to work anyway.
