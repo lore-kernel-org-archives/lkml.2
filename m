@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2LKFuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:50:55 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36986 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2LKFuy (ORCPT
+	id S1752218Ab2LKFz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 00:55:57 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:8014 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2LKFz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:50:54 -0500
-Message-ID: <50C6C990.1090704@linux.vnet.ibm.com>
-Date: Tue, 11 Dec 2012 11:20:08 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 11 Dec 2012 00:55:56 -0500
+Message-ID: <50C6CAC3.1090809@huawei.com>
+Date: Tue, 11 Dec 2012 13:55:15 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, vincent.guittot@linaro.org
-Subject: Re: [PATCH 02/18] sched: fix find_idlest_group mess logical
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-3-git-send-email-alex.shi@intel.com> <50C6BFB9.7030405@linux.vnet.ibm.com> <50C6C4A9.2090003@intel.com>
-In-Reply-To: <50C6C4A9.2090003@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Andi Kleen <andi@firstfloor.org>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <wency@cn.fujitsu.com>
+Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
+References: <20121210083342.GA31670@hacker.(null)>  <50C5A62A.6030401@huawei.com> <1355136423.1700.2.camel@kernel.cn.ibm.com>  <50C5C4A2.2070002@huawei.com> <20121210153805.GS16230@one.firstfloor.org>  <1355190540.1933.4.camel@kernel.cn.ibm.com>  <20121211020313.GV16230@one.firstfloor.org>  <1355192071.1933.7.camel@kernel.cn.ibm.com>  <20121211030125.GY16230@one.firstfloor.org>  <1355195591.1933.18.camel@kernel.cn.ibm.com>  <20121211031907.GZ16230@one.firstfloor.org> <1355197690.1933.20.camel@kernel.cn.ibm.com>
+In-Reply-To: <1355197690.1933.20.camel@kernel.cn.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121105-5816-0000-0000-000005C91E89
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-On 12/11/2012 10:59 AM, Alex Shi wrote:
-> On 12/11/2012 01:08 PM, Preeti U Murthy wrote:
->> Hi Alex,
+On 2012/12/11 11:48, Simon Jeons wrote:
+
+> On Tue, 2012-12-11 at 04:19 +0100, Andi Kleen wrote:
+>> On Mon, Dec 10, 2012 at 09:13:11PM -0600, Simon Jeons wrote:
+>>> On Tue, 2012-12-11 at 04:01 +0100, Andi Kleen wrote:
+>>>>> Oh, it will be putback to lru list during migration. So does your "some
+>>>>> time" mean before call check_new_page?
+>>>>
+>>>> Yes until the next check_new_page() whenever that is. If the migration
+>>>> works it will be earlier, otherwise later.
+>>>
+>>> But I can't figure out any page reclaim path check if the page is set
+>>> PG_hwpoison, can poisoned pages be rclaimed?
 >>
->> On 12/10/2012 01:52 PM, Alex Shi wrote:
->>> There is 4 situations in the function:
->>> 1, no task allowed group;
->>> 	so min_load = ULONG_MAX, this_load = 0, idlest = NULL
->>> 2, only local group task allowed;
->>> 	so min_load = ULONG_MAX, this_load assigned, idlest = NULL
->>> 3, only non-local task group allowed;
->>> 	so min_load assigned, this_load = 0, idlest != NULL
->>> 4, local group + another group are task allowed.
->>> 	so min_load assigned, this_load assigned, idlest != NULL
->>>
->>> Current logical will return NULL in first 3 kinds of scenarios.
->>> And still return NULL, if idlest group is heavier then the
->>> local group in the 4th situation.
->>>
->>> Actually, I thought groups in situation 2,3 are also eligible to host
->>> the task. And in 4th situation, agree to bias toward local group.
->>> So, has this patch.
->>>
->>> Signed-off-by: Alex Shi <alex.shi@intel.com>
->>> ---
->>>  kernel/sched/fair.c |   12 +++++++++---
->>>  1 files changed, 9 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index df99456..b40bc2b 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -2953,6 +2953,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
->>>  		  int this_cpu, int load_idx)
->>>  {
->>>  	struct sched_group *idlest = NULL, *group = sd->groups;
->>> +	struct sched_group *this_group = NULL;
->>>  	unsigned long min_load = ULONG_MAX, this_load = 0;
->>>  	int imbalance = 100 + (sd->imbalance_pct-100)/2;
->>>  
->>> @@ -2987,14 +2988,19 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
->>>  
->>>  		if (local_group) {
->>>  			this_load = avg_load;
->>> -		} else if (avg_load < min_load) {
->>> +			this_group = group;
->>> +		}
->>> +		if (avg_load < min_load) {
->>>  			min_load = avg_load;
->>>  			idlest = group;
->>>  		}
->>>  	} while (group = group->next, group != sd->groups);
->>>  
->>> -	if (!idlest || 100*this_load < imbalance*min_load)
->>> -		return NULL;
->>> +	if (this_group && idlest != this_group)
->>> +		/* Bias toward our group again */
->>> +		if (100*this_load < imbalance*min_load)
->>> +			idlest = this_group;
->>
->> If the idlest group is heavier than this_group(or to put it better if
->> the difference in the loads of the local group and idlest group is less
->> than a threshold,it means there is no point moving the load from the
->> local group) you return NULL,that immediately means this_group is chosen
->> as the candidate group for the task to run,one does not have to
->> explicitly return that.
+>> The only way to reclaim a page is to free and reallocate it.
 > 
-> In situation 4, this_group is not NULL.
+> Then why there doesn't have check in reclaim path to avoid relcaim
+> poisoned page?
+> 
+> 			-Simon
 
-True.The return value of find_idlest_group() indicates that there is no
-other idle group other than the local group(the group to which cpu
-belongs to). it does not indicate that there is no host group for the
-task.If this is the case,select_task_rq_fair() falls back to the
-group(sd->child) to which the cpu chosen in the previous iteration
-belongs to,This is nothing but this_group in the current iteration.
+Hi Simon,
 
-Regards
-Preeti U Murthy
+If the page is free, it will be set PG_hwpoison, and soft_offline_page() is done.
+When the page is alocated later, check_new_page() will find the poisoned page and
+isolate the whole buddy block(just drop the block).
+
+If the page is not free, soft_offline_page() try to free it first, if this is
+failed, it will migrate the page, but the page is still in LRU list after migration,
+migrate_pages()
+	unmap_and_move()
+		if (rc != -EAGAIN) {
+			...
+			putback_lru_page(page);
+		}
+We can use lru_add_drain_all() to drain lru pagevec, at last free_hot_cold_page()
+will be called, and free_pages_prepare() check the poisoned pages.
+free_pages_prepare()
+	free_pages_check()
+		bad_page()
+
+Is this right, Andi?
+
+Thanks
+Xishi Qiu
+
+>>
+>> -Andi
+> 
+> 
+> 
+> 
+
+
 
