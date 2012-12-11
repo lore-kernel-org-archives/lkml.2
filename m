@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab2LKQst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:48:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33338 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab2LKQsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:48:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,260,1355126400"; 
-   d="scan'208";a="232313207"
-Message-ID: <50C76372.7070403@intel.com>
-Date: Tue, 11 Dec 2012 08:46:42 -0800
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754067Ab2LKQvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 11:51:11 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58379 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab2LKQvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 11:51:10 -0500
+Date: Tue, 11 Dec 2012 16:50:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, Yehuda Yitschak <yehuday@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions
+	in CONFIG_HAS_IOPORT
+Message-ID: <20121211165050.GU14363@n2100.arm.linux.org.uk>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <201212111043.50627.arnd@arndb.de> <20121211170338.4859ddf0@skate> <201212111615.03262.arnd@arndb.de> <20121211162325.GR14363@n2100.arm.linux.org.uk> <20121211173819.6f2cf32b@skate>
 MIME-Version: 1.0
-To: saeed bishara <saeed.bishara@gmail.com>
-CC: Dmitry Kravkov <dmitry@broadcom.com>,
-        Joseph Gasparakis <joseph.gasparakis@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "gospo@redhat.com" <gospo@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [PATCH v4 1/5] net: Add support for hardware-offloaded encapsulation
-References: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com> <1354925658-24115-2-git-send-email-joseph.gasparakis@intel.com> <CAMAG_ee6xW4EnzPFt=_5+NL2+LuyUjxd52Xc242inYm2+Yhg7g@mail.gmail.com> <504C9EFCA2D0054393414C9CB605C37F1BFC3555@SJEXCHMB06.corp.ad.broadcom.com> <CAMAG_efu-skGsJiTDR5gQ09kJ1Y7OtJ3P-ii1QEX6ZpyUm-d4Q@mail.gmail.com>
-In-Reply-To: <CAMAG_efu-skGsJiTDR5gQ09kJ1Y7OtJ3P-ii1QEX6ZpyUm-d4Q@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211173819.6f2cf32b@skate>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 12:11 AM, saeed bishara wrote:
-> On Mon, Dec 10, 2012 at 9:58 PM, Dmitry Kravkov <dmitry@broadcom.com> wrote:
->>> -----Original Message-----
->>> From: saeed bishara [mailto:saeed.bishara@gmail.com]
->>> Sent: Monday, December 10, 2012 12:04 PM
->>> To: Joseph Gasparakis
->>> Cc: davem@davemloft.net; shemminger@vyatta.com; chrisw@sous-sol.org;
->>> gospo@redhat.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->>> Dmitry Kravkov; bhutchings@solarflare.com; Peter P Waskiewicz Jr; Alexander
->>> Duyck
->>> Subject: Re: [PATCH v4 1/5] net: Add support for hardware-offloaded
->>> encapsulation
->>>
->>>> +static inline struct iphdr *inner_ip_hdr(const struct sk_buff *skb)
->>>> +{
->>>> +       return (struct iphdr *)skb_inner_network_header(skb);
->>>> +}
->>>
->>> Hi,
->>> I'm a little bit bothered because of those inner_ functions, what
->>> about the following approach:
->>> 1. the skb will have a new state, that state can be outer (normal
->>> mode) and inner.
->>> 2. when you change the state to inner, all the helper functions such
->>> as ip_hdr will return the innter header.
->>>
->>> that's ofcourse the API side. the implementation may still use the
->>> fields you added to the skb.
->>>
->>> what you think?
->>> saeed
->>
->> Some drivers will probably need both inner_ and other_ in same flow, switching between two states will consume cpu cycles.
-> from performance perspective, I'm not sure the switching is worse, it
-> may be better as it reduces code size. please have a look at patch
-> 2/5, with switching you can avoid doing the following change -> less
-> code, less if-else.
-> -                               skb_set_transport_header(skb,
-> -                                       skb_checksum_start_offset(skb));
-> +                               if (skb->encapsulation)
-> +                                       skb_set_inner_transport_header(skb,
-> +                                               skb_checksum_start_offset(skb));
-> +                               else
-> +                                       skb_set_transport_header(skb,
-> +                                               skb_checksum_start_offset(skb));
->                                 if (!(features & NETIF_F_ALL_CSUM) &&
+On Tue, Dec 11, 2012 at 05:38:19PM +0100, Thomas Petazzoni wrote:
+> Russell,
 > 
-> I think also that from (stack) maintenance perspective, less code is better.
+> On Tue, 11 Dec 2012 16:23:25 +0000, Russell King - ARM Linux wrote:
+> 
+> > > * ARCH_VEXPRESS should not select NO_IOPORT. It's generally wrong
+> > >   to select this in combination with ARCH_MULTIPLATFORM, when some
+> > >   of the other platforms you may enable actually have IOPORT mapping
+> > >   support.
+> > 
+> > No.  ARCH_VEXPRESS selects NO_IOPORT because it _does_ _not_ support
+> > PCI/ISA IO space.  That in itself is reasonable, but what isn't
+> > reasonable is the _negative_ logic being used.  Negative logic in
+> > the config system always tends to provoke this kind of sillyness
+> > because you're selecting something to be excluded which another
+> > platform may require.
+> 
+> Could you enlighten my very naive understanding of things about PCI/ISA
+> IO space? On x86, I seem to understand this is the separate address
+> space accessed by the special in/out CPU instructions. Are there ARM
+> platforms with the same sort of things?
+> 
+> As far as I understand, on my ARM Marvell system, everything is
+> memory-mapped, so there isn't such a separate PCI/ISA IO space.
+> 
+> Therefore, why would I need to "select HAVE_IOPORT" simply to be able
+> to build libata-sff.c, that is used for PCI drivers that work fine with
+> purely memory-mapped registers?
 
-I don't think your argument is making much sense.  With the approach we
-took the switching only needs to take place in the offloaded path.  If
-we were to put the switching in place generically we would end up with
-the code scattered all throughout the stack.  In addition we will need
-both the inner and outer headers to be captured in the case of an
-encapsulated offload because the stack will need access to the outer
-headers for routing.
+- PCI buses make the distinction between memory accesses and IO accesses.
+- ARM doesn't have IO access instructions; everything is memory mapped.
+- In order to make the two work together, whatever PCI interface provides
+  a way to issue IO accesses via a contiguous memory mapped region.
+- The PCI layer and drivers are written to keep these two spaces separate
+  so that they remain portable across multiple different platforms.
 
-My advice is if you have an idea then please just code it up, test it,
-and submit a patch so that we can see what you are talking about.  My
-concern is that you are suggesting we come up with a generic network and
-transport offset that I don't believe has been completely thought through.
-
-Thanks,
-
-Alex
-
+Therefore, if you have PCI/ISA drivers that make use of IO space, you need
+to provide the IO space accessors and mapping functions so that these
+drivers can access the IO space on their devices in a platform independent
+manner.
