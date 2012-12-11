@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab2LKSZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:25:58 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:55792 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab2LKSZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:25:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
-Date: Tue, 11 Dec 2012 19:30:57 +0100
-Message-ID: <2093499.q2b9fD3smR@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50C74C92.1040405@gmail.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com> <50C74C92.1040405@gmail.com>
+	id S1754218Ab2LKS1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 13:27:25 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53087 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab2LKS1Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 13:27:24 -0500
+Date: Tue, 11 Dec 2012 10:27:20 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: zram: fix invalid memory references during disk write
+Message-ID: <20121211182720.GC29421@kroah.com>
+References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gerry,
+On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
+> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+> of incompressible pages") which caused invalid memory references
+> during disk write. Invalid references could occur in two cases:
+>  - Incoming data expands on compression: In this case, reference was
+> made to kunmap()'ed bio page.
+>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+> case, reference was made to a kfree()'ed buffer.
+> 
+> Fixes bug 50081:
+> https://bugzilla.kernel.org/show_bug.cgi?id=50081
+> 
+> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
+> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
+> 
+> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
+> 				# zram_decompress_page() function
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+> Reported-by: Tomas M <tomas@slax.org>
+> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+>  1 file changed, 24 insertions(+), 15 deletions(-)
 
-On Tuesday, December 11, 2012 11:09:06 PM Jiang Liu wrote:
-> Hi Rafael,
-> 	I have worked out a patch set to clean up ACPI/PCI related notifications,
-> please refer to
-> http://www.spinics.net/lists/linux-pci/msg17822.html
-> 	The patchset doesn't apply cleanly to Bjorn's latest pci-next tree. I will
-> help to rebase it if needed.
+This patch fails to apply to 3.6.10:
 
-I have reviewed the patches and I think they make sense overall.  However,
-the statement that acpi_pci_bind()/acpi_pci_unbind() are used to maintain
-PCI-ACPI binding relationships is quite inaccurate, because all what these
-functions do is to (1) add/remove ACPI PM notifiers to/from PCI devices and
-(2) retrieve the _PRT information for bridges from ACPI tables.  In fact,
-the *binding* itself is managed by the code in drivers/acpi/glue.c.
+patching file drivers/staging/zram/zram_drv.c
+Hunk #1 succeeded at 282 (offset 17 lines).
+Hunk #2 FAILED at 286.
+Hunk #3 succeeded at 319 (offset 17 lines).
+Hunk #4 succeeded at 340 (offset 17 lines).
+Hunk #5 succeeded at 353 (offset 17 lines).
+Hunk #6 succeeded at 368 (offset 17 lines).
+Hunk #7 succeeded at 385 (offset 17 lines).
+1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
 
-Also, please have a look at my suggestion in the last reply to Yinghai:
+Please redo this patch and resend it if you wish for it to be applied to
+the 3.6-stable tree.
 
-http://marc.info/?l=linux-pci&m=135522965707752&w=2
+thanks,
 
-In fact, I think we can go even further than that.  Namely, if we populate the
-ACPI handle of the device in pci_scan_device(), then we can just move the PM
-notifier and wakeup setup to platform_pci_wakeup_init(), where it should be
-(we'll also need to add a corresponding _exit() function, then, but that'll be
-much cleaner anyway).
-
-Then, the remaining thing would be to ensure that _PRT entries are parsed
-as appropriate somewhere around pci_init_capabilities().
-
-Also, I wonder if you can help test the $subject patchset on a system with
-hardware PCI hotplug (preferably on top of the linux-pm.git/master branch)?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
