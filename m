@@ -1,137 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2LKOAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:00:25 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:56553 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753057Ab2LKOAX (ORCPT
+	id S1753558Ab2LKOAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:00:54 -0500
+Received: from relay.parallels.com ([195.214.232.42]:34401 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab2LKOAx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:00:23 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Julien Delacou <julien.delacou@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2] pinctrl: add sleep mode management for hogs
-Date: Tue, 11 Dec 2012 14:59:53 +0100
-Message-ID: <1355234393-17368-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Tue, 11 Dec 2012 09:00:53 -0500
+Message-ID: <50C73C60.8060405@parallels.com>
+Date: Tue, 11 Dec 2012 18:00:00 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org>
+In-Reply-To: <20121210202842.GB17350@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.20.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julien Delacou <julien.delacou@stericsson.com>
+11.12.2012 00:28, J. Bruce Fields пишет:
+> On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
+>> NFSd does lookup. Lookup is done starting from current->fs->root.
+>> NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
+>> unshared) root.
+>> So we have to swap root to those, which process, started NFSd, has. Because
+>> that process can be in a container with it's own root.
+>
+> This doesn't sound right to me.
+>
+> Which lookups exactly do you see being done relative to
+> current->fs->root ?
+>
 
-This fix allows handling sleep mode for hogged
-pins in pinctrl. It provides functions to set pins
-to sleep/default configurations according to their
-current state from the individual pinctrl drivers.
+Ok, you are right. I was mistaken here.
+This is not a exactly lookup, but d_path() problem in svc_export_request().
+I.e. without root swapping, d_path() will give not local export path (like "/export")
+but something like this "/root/containers_root/export".
 
-Signed-off-by: Julien Delacou <julien.delacou@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/core.c          | 35 ++++++++++++++++++++++++++++++++---
- drivers/pinctrl/core.h          |  4 ++++
- include/linux/pinctrl/pinctrl.h |  2 ++
- 3 files changed, 38 insertions(+), 3 deletions(-)
+> --b.
+>
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> ---
+>>   fs/nfsd/netns.h  |    1 +
+>>   fs/nfsd/nfssvc.c |   33 ++++++++++++++++++++++++++++++++-
+>>   2 files changed, 33 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+>> index abfc97c..5c423c6 100644
+>> --- a/fs/nfsd/netns.h
+>> +++ b/fs/nfsd/netns.h
+>> @@ -101,6 +101,7 @@ struct nfsd_net {
+>>   	struct timeval nfssvc_boot;
+>>
+>>   	struct svc_serv *nfsd_serv;
+>> +	struct path	root;
+>>   };
+>>
+>>   extern int nfsd_net_id;
+>> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+>> index cee62ab..177bb60 100644
+>> --- a/fs/nfsd/nfssvc.c
+>> +++ b/fs/nfsd/nfssvc.c
+>> @@ -392,6 +392,7 @@ int nfsd_create_serv(struct net *net)
+>>
+>>   	set_max_drc();
+>>   	do_gettimeofday(&nn->nfssvc_boot);		/* record boot time */
+>> +	get_fs_root(current->fs, &nn->root);
+>>   	return 0;
+>>   }
+>>
+>> @@ -426,8 +427,10 @@ void nfsd_destroy(struct net *net)
+>>   	if (destroy)
+>>   		svc_shutdown_net(nn->nfsd_serv, net);
+>>   	svc_destroy(nn->nfsd_serv);
+>> -	if (destroy)
+>> +	if (destroy) {
+>> +		path_put(&nn->root);
+>>   		nn->nfsd_serv = NULL;
+>> +	}
+>>   }
+>>
+>>   int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
+>> @@ -533,6 +536,25 @@ out:
+>>   	return error;
+>>   }
+>>
+>> +/*
+>> + * This function is actually slightly modified set_fs_root()<F9>
+>> + */
+>> +static void nfsd_swap_root(struct net *net)
+>> +{
+>> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+>> +	struct fs_struct *fs = current->fs;
+>> +	struct path old_root;
+>> +
+>> +	path_get(&nn->root);
+>> +	spin_lock(&fs->lock);
+>> +	write_seqcount_begin(&fs->seq);
+>> +	old_root = fs->root;
+>> +	fs->root = nn->root;
+>> +	write_seqcount_end(&fs->seq);
+>> +	spin_unlock(&fs->lock);
+>> +	if (old_root.dentry)
+>> +		path_put(&old_root);
+>> +}
+>>
+>>   /*
+>>    * This is the NFS server kernel thread
+>> @@ -559,6 +581,15 @@ nfsd(void *vrqstp)
+>>   	current->fs->umask = 0;
+>>
+>>   	/*
+>> +	 * We have to swap NFSd kthread's fs->root.
+>> +	 * Why so? Because NFSd can be started in container, which has it's own
+>> +	 * root.
+>> +	 * And so what? NFSd lookup files, and lookup start from
+>> +	 * current->fs->root.
+>> +	 */
+>> +	nfsd_swap_root(net);
+>> +
+>> +	/*
+>>   	 * thread is spawned with all signals set to SIG_IGN, re-enable
+>>   	 * the ones that will bring down the thread
+>>   	 */
+>>
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 5cdee86..f9c50bb 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1055,6 +1055,28 @@ void pinctrl_unregister_map(struct pinctrl_map const *map)
- 	}
- }
- 
-+/**
-+ * pinctrl_force_sleep() - turn a given controller device into sleep state
-+ * @pctldev: pin controller device
-+ */
-+int pinctrl_force_sleep(struct pinctrl_dev *pctldev)
-+{
-+	if (!IS_ERR(pctldev->p) && !IS_ERR(pctldev->hog_sleep))
-+		return pinctrl_select_state(pctldev->p, pctldev->hog_sleep);
-+	return 0;
-+}
-+
-+/**
-+ * pinctrl_force_default() - turn a given controller device into default state
-+ * @pctldev: pin controller device
-+ */
-+int pinctrl_force_default(struct pinctrl_dev *pctldev)
-+{
-+	if (!IS_ERR(pctldev->p) && !IS_ERR(pctldev->hog_default))
-+		return pinctrl_select_state(pctldev->p, pctldev->hog_default);
-+	return 0;
-+}
-+
- #ifdef CONFIG_DEBUG_FS
- 
- static int pinctrl_pins_show(struct seq_file *s, void *what)
-@@ -1500,16 +1522,23 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
- 
- 	pctldev->p = pinctrl_get_locked(pctldev->dev);
- 	if (!IS_ERR(pctldev->p)) {
--		struct pinctrl_state *s =
-+		pctldev->hog_default =
- 			pinctrl_lookup_state_locked(pctldev->p,
- 						    PINCTRL_STATE_DEFAULT);
--		if (IS_ERR(s)) {
-+		if (IS_ERR(pctldev->hog_default)) {
- 			dev_dbg(dev, "failed to lookup the default state\n");
- 		} else {
--			if (pinctrl_select_state_locked(pctldev->p, s))
-+			if (pinctrl_select_state_locked(pctldev->p,
-+						pctldev->hog_default))
- 				dev_err(dev,
- 					"failed to select default state\n");
- 		}
-+
-+		pctldev->hog_sleep =
-+			pinctrl_lookup_state_locked(pctldev->p,
-+						    PINCTRL_STATE_SLEEP);
-+		if (IS_ERR(pctldev->hog_sleep))
-+			dev_dbg(dev, "failed to lookup the sleep state\n");
- 	}
- 
- 	mutex_unlock(&pinctrl_mutex);
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 12f5694..b5bbb09 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -30,6 +30,8 @@ struct pinctrl_gpio_range;
-  * @driver_data: driver data for drivers registering to the pin controller
-  *	subsystem
-  * @p: result of pinctrl_get() for this device
-+ * @hog_default: default state for pins hogged by this device
-+ * @hog_sleep: sleep state for pins hogged by this device
-  * @device_root: debugfs root for this device
-  */
- struct pinctrl_dev {
-@@ -41,6 +43,8 @@ struct pinctrl_dev {
- 	struct module *owner;
- 	void *driver_data;
- 	struct pinctrl *p;
-+	struct pinctrl_state *hog_default;
-+	struct pinctrl_state *hog_sleep;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry *device_root;
- #endif
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 04d6700..814cb56 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -155,6 +155,8 @@ struct pinctrl_dev *of_pinctrl_get(struct device_node *np)
- 
- extern const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev);
- extern void *pinctrl_dev_get_drvdata(struct pinctrl_dev *pctldev);
-+extern int pinctrl_force_sleep(struct pinctrl_dev *pctldev);
-+extern int pinctrl_force_default(struct pinctrl_dev *pctldev);
- #else
- 
- struct pinctrl_dev;
+
 -- 
-1.7.11.3
-
+Best regards,
+Stanislav Kinsbursky
