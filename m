@@ -1,104 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab2LKW4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:56:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43859 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab2LKWsk (ORCPT
+	id S1755291Ab2LKW5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:57:36 -0500
+Received: from mga06.intel.com ([134.134.136.21]:39500 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754622Ab2LKW5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:48:40 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 36/37] perf record: Export the callchain parsing routine and help
-Date: Tue, 11 Dec 2012 19:48:22 -0300
-Message-Id: <1355266103-17238-37-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
-References: <1355266103-17238-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Dec 2012 17:57:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACLa4psVpx8YPcgiQs0FETg8d+zLcjivnks_So6Dpii48pDNBQ@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	<1355234914.2356.85.camel@falcor>
+	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+	<1355249884.2356.108.camel@falcor>
+	<CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
+	<1355252392.2356.131.camel@falcor>
+	<CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
+	<1355255320.2356.148.camel@falcor>
+	<CACLa4psVpx8YPcgiQs0FETg8d+zLcjivnks_So6Dpii48pDNBQ@mail.gmail.com>
+Date: Wed, 12 Dec 2012 00:57:21 +0200
+Message-ID: <CALLzPKbqAa7-vJnXbYFbkaD5NVW=6wHQQMDc_Ww==p1hwQ1EJg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Tue, Dec 11, 2012 at 10:08 PM, Eric Paris <eparis@parisplace.org> wrote:
+> S_PRIVATE is totally unacceptable as it has a meaning across all LSMs,
+> not just IMA.
+>
+> S_NOSEC means 'this is not setuid or setgid and we don't need to do
+> those checks on modify'
+>
+> You are going to need to use a S_NOIMA.
+>
+> Of Dmitry's 90,000 fewer policy lookups using the per sb flag, how
+> many of them are the same inode over and over again which would be
+> circumvented using S_NOIMA per inode flag?
+>
 
-Will be used by perf top, that will first setup the symbol system to
-deal with callchains and then call these routines to ask the kernel
-for callchains.
+IIRC those were only newly instantiated inodes.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-jg0dh8rmlx7x11e7u7mnasvd@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c |   11 ++++++-----
- tools/perf/util/callchain.h |    5 +++++
- 2 files changed, 11 insertions(+), 5 deletions(-)
+For new inodes, S_NOIMA would not be set and used at that point.
+IMA must do the policy search and then would set the S_NOIMA.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d035040..028de72 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -868,7 +868,8 @@ static int get_stack_size(char *str, unsigned long *_size)
- }
- #endif /* LIBUNWIND_SUPPORT */
- 
--static int parse_callchain_opt(const struct option *opt, const char *arg, int unset)
-+int record_parse_callchain_opt(const struct option *opt,
-+			       const char *arg, int unset)
- {
- 	struct perf_record_opts *opts = opt->value;
- 	char *tok, *name, *saveptr = NULL;
-@@ -973,9 +974,9 @@ static struct perf_record record = {
- #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
- 
- #ifdef LIBUNWIND_SUPPORT
--static const char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
-+const char record_callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
- #else
--static const char callchain_help[] = CALLCHAIN_HELP "[fp]";
-+const char record_callchain_help[] = CALLCHAIN_HELP "[fp]";
- #endif
- 
- /*
-@@ -1020,8 +1021,8 @@ const struct option record_options[] = {
- 	OPT_BOOLEAN(0, "group", &record.opts.group,
- 		    "put the counters into a counter group"),
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &record.opts,
--			     "mode[,dump_size]", callchain_help,
--			     &parse_callchain_opt, "fp"),
-+			     "mode[,dump_size]", record_callchain_help,
-+			     &record_parse_callchain_opt, "fp"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index eb34057..3ee9f67 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -143,4 +143,9 @@ static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
- 	cursor->curr = cursor->curr->next;
- 	cursor->pos++;
- }
-+
-+struct option;
-+
-+int record_parse_callchain_opt(const struct option *opt, const char *arg, int unset);
-+extern const char record_callchain_help[];
- #endif	/* __PERF_CALLCHAIN_H */
--- 
-1.7.9.2.358.g22243
+For subsequent calls, S_NOIMA makes sense.
 
+If we would have the SB flag like MS_NOIMA, then we could replicate sb
+flag to inode S_NOIMA flag,
+in similar way as inode_has_no_xattr() does:
+
+static inline void inode_has_no_xattr(struct inode *inode)
+{
+	if (!is_sxid(inode->i_mode) && (inode->i_sb->s_flags & MS_NOSEC))
+		inode->i_flags |= S_NOSEC;
+}
+
+Then later there is no need to dereference inode->i_sb...
+
+Can we reach conclusion about it?
+Will we have SB flag?
+if yes, then where, s_flags, or in some other field like s_feature_flags?
+if not, then we can stop this discussion...
+
+- Dmitry
+
+>
+>
+> On Tue, Dec 11, 2012 at 2:48 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> On Tue, 2012-12-11 at 11:10 -0800, Linus Torvalds wrote:
+>>
+>>> Anyway, the whole "you can do it at file granularity" isn't the bulk
+>>> of my argument (the "we already have the field that makes sense" is).
+>>> But my point is that per-inode is not only the logically more
+>>> straightforward place to do it, it's also the much more flexible place
+>>> to do it. Because it *allows* for things like that.
+>>
+>> Ok. To summarize, S_IMA indicates that there is a rule and that the iint
+>> was allocated.  To differentiate between 'haven't looked/don't know' and
+>> 'definitely not', we need another bit.  For this, you're suggesting
+>> using IS_PRIVATE()?  Hopefully, I misunderstood.
+>>
+>> thanks,
+>>
+>> Mimi
+>>
+>>
+>>
