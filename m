@@ -1,99 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2LKQBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:01:45 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49927 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab2LKQBo (ORCPT
+	id S1753932Ab2LKQB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 11:01:57 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38350 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2LKQBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:01:44 -0500
-Date: Tue, 11 Dec 2012 08:01:37 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Zhao Shuai <zhaoshuai@freebsd.org>, axboe@kernel.dk, ctalbott@google.com,
-        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: performance drop after using blkcg
-Message-ID: <20121211160137.GJ7084@htj.dyndns.org>
-References: <CAFVn34SxqAJe_4P-WT8MOiG-kmKKD7ge96zoHXQuGqHWPgAt+A@mail.gmail.com>
- <20121211142518.GA5580@redhat.com>
- <20121211142742.GE7084@htj.dyndns.org>
- <20121211144336.GB5580@redhat.com>
- <20121211144718.GF7084@htj.dyndns.org>
- <20121211150234.GC5580@redhat.com>
- <20121211151412.GG7084@htj.dyndns.org>
- <20121211153725.GD5580@redhat.com>
+	Tue, 11 Dec 2012 11:01:55 -0500
+Date: Tue, 11 Dec 2012 17:01:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 4/6] memcg: simplify mem_cgroup_iter
+Message-ID: <20121211160149.GE1612@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-5-git-send-email-mhocko@suse.cz>
+ <CALWz4ixgQzhZeqt_9JiMT0XOGFOh1co6xYo1dkS9Rrksey7KUA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121211153725.GD5580@redhat.com>
+In-Reply-To: <CALWz4ixgQzhZeqt_9JiMT0XOGFOh1co6xYo1dkS9Rrksey7KUA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
+On Mon 10-12-12 20:35:20, Ying Han wrote:
+> On Mon, Nov 26, 2012 at 10:47 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > Current implementation of mem_cgroup_iter has to consider both css and
+> > memcg to find out whether no group has been found (css==NULL - aka the
+> > loop is completed) and that no memcg is associated with the found node
+> > (!memcg - aka css_tryget failed because the group is no longer alive).
+> > This leads to awkward tweaks like tests for css && !memcg to skip the
+> > current node.
+> >
+> > It will be much easier if we got rid off css variable altogether and
+> > only rely on memcg. In order to do that the iteration part has to skip
+> > dead nodes. This sounds natural to me and as a nice side effect we will
+> > get a simple invariant that memcg is always alive when non-NULL and all
+> > nodes have been visited otherwise.
+> >
+> > We could get rid of the surrounding while loop but keep it in for now to
+> > make review easier. It will go away in the following patch.
+> >
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  mm/memcontrol.c |   56 +++++++++++++++++++++++++++----------------------------
+> >  1 file changed, 27 insertions(+), 29 deletions(-)
+> >
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 6bcc97b..d1bc0e8 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1086,7 +1086,6 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+> >         rcu_read_lock();
+> >         while (!memcg) {
+> >                 struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+> > -               struct cgroup_subsys_state *css = NULL;
+> >
+> >                 if (reclaim) {
+> >                         int nid = zone_to_nid(reclaim->zone);
+> > @@ -1112,53 +1111,52 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+> >                  * explicit visit.
+> >                  */
+> >                 if (!last_visited) {
+		    ^^^^^^^^
+		    here
 
-On Tue, Dec 11, 2012 at 10:37:25AM -0500, Vivek Goyal wrote:
-> I have experimented with schemes like that but did not see any very
-> promising resutls. Assume device supports queue depth of 128, and there
-> is one dependent reader and one writer. If reader goes away and comes
-> back and preempts low priority writer, in that small time window writer
-> has dispatched enough requests to introduce read delays. So preemption
-> helps only so much. I am curious to know how iops based scheduler solve
-> these issues.  
+> > -                       css = &root->css;
+> > +                       memcg = root;
+> >                 } else {
+> >                         struct cgroup *prev_cgroup, *next_cgroup;
+> >
+> >                         prev_cgroup = (last_visited == root) ? NULL
+> >                                 : last_visited->css.cgroup;
+> > -                       next_cgroup = cgroup_next_descendant_pre(prev_cgroup,
+> > -                                       root->css.cgroup);
+> > -                       if (next_cgroup)
+> > -                               css = cgroup_subsys_state(next_cgroup,
+> > -                                               mem_cgroup_subsys_id);
+> > -               }
+> > +skip_node:
+> > +                       next_cgroup = cgroup_next_descendant_pre(
+> > +                                       prev_cgroup, root->css.cgroup);
+> >
+> > -               /*
+> > -                * Even if we found a group we have to make sure it is alive.
+> > -                * css && !memcg means that the groups should be skipped and
+> > -                * we should continue the tree walk.
+> > -                * last_visited css is safe to use because it is protected by
+> > -                * css_get and the tree walk is rcu safe.
+> > -                */
+> > -               if (css == &root->css || (css && css_tryget(css)))
+> > -                       memcg = mem_cgroup_from_css(css);
+> > +                       /*
+> > +                        * Even if we found a group we have to make sure it is
+> > +                        * alive. css && !memcg means that the groups should be
+> > +                        * skipped and we should continue the tree walk.
+> > +                        * last_visited css is safe to use because it is
+> > +                        * protected by css_get and the tree walk is rcu safe.
+> > +                        */
+> > +                       if (next_cgroup) {
+> > +                               struct mem_cgroup *mem = mem_cgroup_from_cont(
+> > +                                               next_cgroup);
+> > +                               if (css_tryget(&mem->css))
+> > +                                       memcg = mem;
 > 
-> Only way to provide effective isolation seemed to be idling and the
-> moment we idle we kill the performance. It does not matter whether we
-> are scheduling time or iops.
+> I see a functional change after this, where we now hold a refcnt of
+> css if memcg is root. It is not the case before this change.
 
-If the completion latency of IOs fluctuates heavily depend on queue
-depth, queue depth would need to be throttled so that lower priority
-queue can't overwhelm the device queue while prospect higher priority
-accessors exist.  Another aspect is that devices are getting a lot
-more consistent in terms of latency.
+I know it is a bit obscure but this is not the case.
+cgroup_next_descendant_pre never visits its root. That's why we have
+that if (!last_visited) test above. We have to handle it separately.
 
-While idling would also solve isolation issue with unordered deep
-device queue, it really is a solution for a rotational device with
-large seek penalty as the time lost while idling can often/somtimes
-made up by the save from lower seeks.  For non-rot devices with deep
-queue, the right thing to do would be controlling queue depth or
-propagate priority to the device queue (from what I hear, people are
-working on it. dunno how well it would turn out tho).
+Makes sense?
 
-> >  cfq is way too heavy and
-> > ill-suited for high speed non-rot devices which are becoming more and
-> > more consistent in terms of iops they can handle.
-> > 
-> > I think we need something better suited for the maturing non-rot
-> > devices.  They're becoming very different from what cfq was built for
-> > and we really shouldn't be maintaining several rb trees which need
-> > full synchronization for each IO.  We're doing way too much and it
-> > just isn't scalable.
 > 
-> I am fine with doing things differently in a different scheduler. But 
-> what I am aruging here is that atleast with CFQ we should be able to
-> experiment and figure out what works.  In CFQ all the code is there and
-> if this iops based scheduling has merit, one should be able to quickly
-> experiment and demonstrate how would one do things differently.
-> 
-> To me I have not been able to understand yet that what is iops based
-> scheduling doing differently. Will we idle there or not. If we idle
-> we again have performance problems.
-
-When the device can do tens of thousands ios per sec, I don't think it
-makes much sense to idle the device.  You just lose too much.
-
-> So doing things out of CFQ is fine. I am only after understanding the
-> technical idea which will solve the problem of provinding isolation
-> as well as fairness without losing throughput. And I have not been
-> able to get a hang of it yet.
-
-I think it already has some aspect of it.  It has the half-iops mode
-for a reason, right?  It just is very inefficient and way more complex
-than it needs to be.
-
-Thanks.
-
+> --Ying
+[...]
 -- 
-tejun
+Michal Hocko
+SUSE Labs
