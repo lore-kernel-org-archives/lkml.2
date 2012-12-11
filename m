@@ -1,97 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab2LKPWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 10:22:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49842 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753030Ab2LKPWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 10:22:13 -0500
-Date: Tue, 11 Dec 2012 15:22:07 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
-Message-ID: <20121211152207.GQ1009@suse.de>
-References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
- <20121207110113.GB21482@gmail.com>
- <20121209203630.GC1009@suse.de>
- <20121210113945.GA7550@gmail.com>
- <20121210152405.GJ1009@suse.de>
- <20121211010201.GP1009@suse.de>
- <20121211085238.GA21673@gmail.com>
- <20121211091807.GA23600@gmail.com>
+	id S1753363Ab2LKPaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 10:30:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52126 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab2LKPaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 10:30:17 -0500
+Date: Tue, 11 Dec 2012 07:30:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [GIT PULL] percpu changes for v3.8
+Message-ID: <20121211153012.GH7084@htj.dyndns.org>
+References: <20121211142453.GD7084@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121211091807.GA23600@gmail.com>
+In-Reply-To: <20121211142453.GD7084@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 10:18:07AM +0100, Ingo Molnar wrote:
+On Tue, Dec 11, 2012 at 06:24:53AM -0800, Tejun Heo wrote:
+> Hello, Linus.
 > 
-> * Ingo Molnar <mingo@kernel.org> wrote:
+> Percpu changes for v3.8.  Nothing exciting here either.  Joonsoo's is
+> almost cosmetic.  Cyrill's patch fixes "percpu_alloc" early kernel
+> param handling so that the kernel doesn't crash when the parameter is
+> specified w/o any argument.
 > 
-> > > This is prototype only but what I was using as a reference 
-> > > to see could I spot a problem in yours. It has not been even 
-> > > boot tested but avoids remote->remote copies, contending on 
-> > > PTL or holding it longer than necessary (should anyway)
-> > 
-> > So ... because time is running out and it would be nice to 
-> > progress with this for v3.8, I'd suggest the following 
-> > approach:
-> > 
-> >  - Please send your current tree to Linus as-is. You already 
-> >    have my Acked-by/Reviewed-by for its scheduler bits, and my
-> >    testing found your tree to have no regression to mainline,
-> >    plus it's a nice win in a number of NUMA-intense workloads.
-> >    So it's a good, monotonic step forward in terms of NUMA
-> >    balancing, very close to what the bits I'm working on need as
-> >    infrastructure.
-> > 
-> >  - I'll rebase all my devel bits on top of it. Instead of
-> >    removing the migration bandwidth I'll simply increase it for
-> >    testing - this should trigger similarly aggressive behavior.
-> >    I'll try to touch as little of the mm/ code as possible, to
-> >    keep things debuggable.
-> 
-> One minor last-minute request/nit before you send it to Linus, 
-> would you mind doing a:
-> 
->    CONFIG_BALANCE_NUMA => CONFIG_NUMA_BALANCING
-> 
-> rename please? (I can do it for you if you don't have the time.)
-> 
-> CONFIG_NUMA_BALANCING is really what fits into our existing NUMA 
-> namespace, CONFIG_NUMA, CONFIG_NUMA_EMU - and, more importantly, 
-> the ordering of words follows the common generic -> less generic 
-> ordering we do in the kernel for config names and methods.
-> 
-> So it would fit nicely into existing Kconfig naming schemes:
-> 
->    CONFIG_TRACING
->    CONFIG_FILE_LOCKING
->    CONFIG_EVENT_TRACING
-> 
-> etc.
-> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-next
 
-Yes, that makes sense. I should have spotted the rationale. I also took
-the liberty of renaming the command-line parameter and the variables to
-be consistent with this.
+Oops, for-next and for-3.8 point to the same commit, so either should
+work but this shoul have been,
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.8
+
+Thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+tejun
