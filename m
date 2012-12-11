@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2LKMvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:51:48 -0500
-Received: from mga07.intel.com ([143.182.124.22]:34666 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752559Ab2LKMvq (ORCPT
+	id S1753164Ab2LKM47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:56:59 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34736 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752224Ab2LKM45 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:51:46 -0500
+	Tue, 11 Dec 2012 07:56:57 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "Mohammed, Afzal" <afzal@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: RE: [PATCH v3 2/3] mtd: devices: elm: Add support for ELM error
+ correction
+Thread-Topic: [PATCH v3 2/3] mtd: devices: elm: Add support for ELM error
+ correction
+Thread-Index: AQHNzidHymKJQMxCykm8lU2YmG5mH5gTBGQAgACbo0A=
+Date: Tue, 11 Dec 2012 12:55:21 +0000
+Deferred-Delivery: Tue, 11 Dec 2012 12:54:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA285C0@DBDE01.ent.ti.com>
+References: <1354189595-12784-1-git-send-email-avinashphilip@ti.com>
+ <1354189595-12784-3-git-send-email-avinashphilip@ti.com>
+ <20121211090356.8D3D93E076D@localhost>
+In-Reply-To: <20121211090356.8D3D93E076D@localhost>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-Date: Tue, 11 Dec 2012 14:51:43 +0200
-Message-ID: <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Tue, Dec 11, 2012 at 14:33:56, Grant Likely wrote:
+> On Thu, 29 Nov 2012 17:16:33 +0530, "Philip, Avinash" <avinashphilip@ti.com> wrote:
+> > The ELM hardware module can be used to speedup BCH 4/8/16 ECC scheme
+> > error correction.
+> > For now only 4 & 8 bit support is added
+> > 
+> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Rob Landley <rob@landley.net>
+> > ---
+> > Changes since v2:
+> > 	- Remove __devinit & __devexit annotations
+> > 
+> > Changes since v1:
+> > 	- Change build attribute to CONFIG_MTD_NAND_OMAP_BCH
+> > 	- Reduced indentation using by passing elm_info , offset
+> > 	  to elm_read & elm_write
+> > 	- Removed syndrome manipulation functions.
+> > 
+> > :000000 100644 0000000... b88ee83... A	Documentation/devicetree/bindings/mtd/elm.txt
+> > :100644 100644 395733a... 369a194... M	drivers/mtd/devices/Makefile
+> > :000000 100644 0000000... d2667f3... A	drivers/mtd/devices/elm.c
+> > :000000 100644 0000000... d4fce31... A	include/linux/platform_data/elm.h
+> >  Documentation/devicetree/bindings/mtd/elm.txt |   17 +
+> >  drivers/mtd/devices/Makefile                  |    4 +-
+> >  drivers/mtd/devices/elm.c                     |  418 +++++++++++++++++++++++++
+> >  include/linux/platform_data/elm.h             |   54 ++++
+> >  4 files changed, 493 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mtd/elm.txt b/Documentation/devicetree/bindings/mtd/elm.txt
+> > new file mode 100644
+> > index 0000000..b88ee83
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mtd/elm.txt
+> > @@ -0,0 +1,17 @@
+> > +Error location module
+> > +
+> > +Required properties:
+> > +- compatible: Must be "ti,elm"
+> 
+> Compatible string is too generic. Need to specify a specific SoC here.
+> ie: "ti,omap3430-elm"
 
-Can you please comment on the feature flag in this patchset?
+I will change to "ti,am33xx-elm" in next version.
 
-Thanks,
-Dmitry
+Thanks
+Avinash
 
 
-On Tue, Nov 27, 2012 at 3:42 PM, Kasatkin, Dmitry
-<dmitry.kasatkin@intel.com> wrote:
-> Hello,
->
-> Any thoughts about this proposal?
->
-> - Dmitry
->
-> On Thu, Nov 22, 2012 at 11:54 PM, Dmitry Kasatkin
-> <dmitry.kasatkin@intel.com> wrote:
->> Hello,
->>
->> Here is two patches for policy search speedup.
->>
->> First patch adds additional features flags to superblock.
->> Second - implementation for IMA.
->>
->> Two months ago I was asking about it on mailing lists.
->> Suggestion was not to use s_flags, but e.g. s_feature_flags.
->>
->> Any objections about such approach?
->>
->> Thanks,
->> Dmitry
->>
->> Dmitry Kasatkin (2):
->>   vfs: new super block feature flags attribute
->>   ima: skip policy search for never appraised or measured files
->>
->>  include/linux/fs.h                  |    4 ++++
->>  security/integrity/ima/ima_api.c    |    8 ++------
->>  security/integrity/ima/ima_policy.c |   20 +++++++++++++++++---
->>  security/integrity/integrity.h      |    3 +++
->>  4 files changed, 26 insertions(+), 9 deletions(-)
->>
->> --
->> 1.7.10.4
->>
+> 
+> Otherwise the binding looks fine. I haven't reviewed the code though.
+> 
+> g.
+> 
+> 
+
