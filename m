@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab2LKR1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:27:31 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36548 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab2LKR13 (ORCPT
+	id S1754250Ab2LKR1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:27:39 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60918 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab2LKR1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:27:29 -0500
-Message-ID: <50C77AE8.8090008@mvista.com>
-Date: Tue, 11 Dec 2012 21:26:48 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to devm_kfree
-References: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr> <50C72E75.8030706@mvista.com> <alpine.DEB.2.02.1212111407570.2091@hadrien>
-In-Reply-To: <alpine.DEB.2.02.1212111407570.2091@hadrien>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Dec 2012 12:27:37 -0500
+Date: Tue, 11 Dec 2012 17:32:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, Yehuda Yitschak <yehuday@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in
+ CONFIG_HAS_IOPORT
+Message-ID: <20121211173232.43668ab3@pyramind.ukuu.org.uk>
+In-Reply-To: <20121211164608.GT14363@n2100.arm.linux.org.uk>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	<201212111043.50627.arnd@arndb.de>
+	<20121211170338.4859ddf0@skate>
+	<201212111615.03262.arnd@arndb.de>
+	<20121211173013.0ceea196@skate>
+	<20121211164608.GT14363@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+> with it.  It's very simple.  The IO port space is for ISA/PCMCIA and
+> PCI IO port regions.  It is nothing more than that.
 
-On 12/11/2012 04:08 PM, Julia Lawall wrote:
+And on a lot of devices the LPC bus.
 
->>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> Plus, if you _have_ IO space support, you must have some MMIO region for
+> them to target - doing what many platforms have done to date and targetted
+> ISA IO address 0 at virtual address 0 is just not on because as soon as
+> you build a device driver which probes ISA addresses into your kernel,
+> you will oops.
 
->>> The function at91_dt_node_to_map is ultimately called by the function
->>> pinctrl_get, which is an exported function.  Since it is possible that this
->>> function is not called from within a probe function, for safety, the kfree
->>> is converted to a devm_kfree, to both free the data and remove it from the
->>> device in a failure situation.
->>
->>> A newline is added in the call to devm_kfree to avoid exceeding the 80
->>
->>    devm_kzalloc() you mean?
+There shouldn't really be anything poking around that is modern - this is
+true of some PC stuff too.
 
-> Yes, sorry.  Should I send a new patch?
+In general however if its because you have a window partly mapped you
+could just catch the exception and load 0xFF for reads (and probably
+whine with a backtrace so you know who to moan at).
 
-   Up to the maintainer I guess...
-
-> thanks,
-> julia
-
-WBR, Sergei
-
-
+Alan
