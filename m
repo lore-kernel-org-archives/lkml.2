@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab2LKUhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 15:37:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34889 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab2LKUhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 15:37:11 -0500
-Message-ID: <50C7995E.7060301@zytor.com>
-Date: Tue, 11 Dec 2012 12:36:46 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754797Ab2LKUhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 15:37:35 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:50696 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753915Ab2LKUhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 15:37:33 -0500
+Date: Tue, 11 Dec 2012 15:37:32 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: prasannatsmkumar <prasannatsmkumar@gmail.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
+        <nautilus-list@gnome.org>
+Subject: Re: Fwd: Safely remove option shows with Micro SD Card connected to
+ Linux through an Android phone
+In-Reply-To: <CANc+2y50-AYJcJgeQ8JHJiMjwxg=tbkQ2HQR4=ZZsEthKiWXgw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1212111530250.1180-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Enable A20 using KBC for some MSI laptops to fix S3
- resume
-References: <201210261056.44225.zary@gsystems.sk> <201212111959.15808.linux@rainbow-software.org> <50C78486.9070700@zytor.com> <201212112129.13248.linux@rainbow-software.org>
-In-Reply-To: <201212112129.13248.linux@rainbow-software.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 12:29 PM, Ondrej Zary wrote:
-> 
-> Something like this? (It works.)
-> 
+On Tue, 11 Dec 2012, prasannatsmkumar wrote:
 
-Something like that.  We need to make sure we send the proper sequence,
-though, or it might break some SMM firmware...
-
-> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-> index d6cc77a..0807ac7 100644
-> --- a/drivers/input/serio/i8042-x86ia64io.h
-> +++ b/drivers/input/serio/i8042-x86ia64io.h
-> @@ -921,6 +921,7 @@ static int __init i8042_platform_init(void)
->  	int retval;
->  
->  #ifdef CONFIG_X86
-> +	u8 a20_on = 0xdf;
->  	/* Just return if pre-detection shows no i8042 controller exist */
->  	if (!x86_platform.i8042_detect())
->  		return -ENODEV;
-> @@ -960,6 +961,13 @@ static int __init i8042_platform_init(void)
->  
->  	if (dmi_check_system(i8042_dmi_dritek_table))
->  		i8042_dritek = true;
-> +
-> +	/*
-> +	 * A20 was already enabled during early kernel init. But some buggy
-> +	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-> +	 * resume from S3. So we do it here and hope that nothing breaks.
-> +	 */
-> +	i8042_command(&a20_on, 0x10d1);
->  #endif /* CONFIG_X86 */
->  
->  	return retval;
+> Hi All,
 > 
+> I connected an Android phone using USB cable to my machine running
+> Linux (Linux 3.0, 3.2, 3.5). Mounted the SD card in phone in system
+> (phone is just a pass through I guess). When I choose "Safely Remove"
+> option in nautilus file manager (gnome's default file manager) I got
+> an error saying
+> 
+> "Error detaching: helper exited with exit code 1: Detaching device /dev/sdb
+> USB device: /sys/devices/pci0000:00/0000:00:1d.7/usb1/1-5)
+> SYNCHRONIZE CACHE: OK
+> STOP UNIT: FAILED: No such file or directory"
+
+STOP UNIT means spin down the disk or eject the disc.  Since your phone
+doesn't have a disk drive or an optical disc, no wonder this step
+failed.
+
+> and it goes to unmounted state (yes it should go to and this is not a
+> problem). But I am not able to find the reason for the above error
+> message pop-up. If I choose "Eject" option then things are fine (I
+> think Eject does more than un-mounting the file system).
+> 
+> I think "safely remove" tries to cut the power supply to the device
+> but eject does not do that. Is that correct?
+
+No, neither option cuts power.  The main difference is that "safely
+remove" disables the USB connection, so that if the device has an "okay
+to unplug now" light, the light will turn on.
+
+> If the device cannot be
+> powered down (due to battery charging) why this option is shown? Is
+> kernel exposing such capability to the user space?
+> 
+> I am not sure whether this is the correct place to ask this question.
+> If this is not the correct place please direct me to correct place.
+
+You probably should get in touch with the people who maintain the 
+Nautilus program if you want to know why it does something.
+
+Alan Stern
 
