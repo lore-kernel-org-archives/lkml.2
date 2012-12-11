@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab2LKJx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 04:53:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34553 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256Ab2LKJx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 04:53:26 -0500
-Message-ID: <50C70287.1060006@ti.com>
-Date: Tue, 11 Dec 2012 10:53:11 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752552Ab2LKJyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 04:54:41 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45497 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab2LKJyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 04:54:39 -0500
+Date: Tue, 11 Dec 2012 09:54:33 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 06/12] ARM: ux500: Set correct MMCI regulator voltages in
+ the ux5x0 Device Tree
+Message-ID: <20121211095433.GK9362@gmail.com>
+References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
+ <1355129761-8088-7-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZJFbHSwowKnfWyXLckVePHrC6o2CtDJaFb+dXTkNYPjw@mail.gmail.com>
+ <CAPDyKFo6KhshYJfSvodPK4e7zC25etz0G8fV4jnAssZX3BDZBg@mail.gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v3 1/4] leds: leds-pwm: Convert to use devm_get_pwm
-References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com> <3193669.Hv54bBklsP@barack> <20121211083632.GC27084@avionic-0098.adnet.avionic-design.de> <1406670.ryvqfkiNXS@barack> <20121211093100.GA8437@avionic-0098.adnet.avionic-design.de> <50C6FF69.3030001@ti.com> <20121211094812.GA22222@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121211094812.GA22222@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDyKFo6KhshYJfSvodPK4e7zC25etz0G8fV4jnAssZX3BDZBg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 10:48 AM, Thierry Reding wrote:
-> On Tue, Dec 11, 2012 at 10:39:53AM +0100, Peter Ujfalusi wrote:
->> On 12/11/2012 10:31 AM, Thierry Reding wrote:
->>> On Tue, Dec 11, 2012 at 09:57:51AM +0100, Peter Ujfalusi wrote:
->>> Okay, if there are no intree users that may be broken, then it should be
->>> fine to remove it. In that case you might want to remove the pwm_id
->>> field as well instead of deprecating it in this patch.
->>
->> The reason I marked the pwm_id as deprecated is to signal to out of tree users
->> (if any) that they should stop using it since it is going to go away in the
->> next cycle.
->> If we remove it right away the sdp4030 board file will not going to compile in
->> subsystem trees, only in linux-next.
+On Tue, 11 Dec 2012, Ulf Hansson wrote:
+
+> On 11 December 2012 10:17, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Mon, Dec 10, 2012 at 9:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >
+> >> The voltages for the MMCI GPIO controlled voltage regulation differ
+> >> depending on who you believe and where you pick the information up
+> >> from. More recent internal code suggests that the true upper voltage
+> >> from the shifter is actually v3.3, instead of the previously
+> >> indicated v2.9. Let's mirror that change in the Device Tree file.
 > 
-> Okay, go ahead then. As long as the field will be removed eventually
-> that's fine with me.
+> This is wrong. The value should be 2.9V nothing else!
 
-Thank you and yes, it will be removed.
+Don't panic. I'm already on this. :)
 
-Probably it would be a good thing to check other places for legacy
-pwm_request() users and prepare them to move to (devm_)pwm_get gracefully over
-coming kernel releases.
+> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > Yours,
+> > Linus Walleij
+> 
+> Kind regards
+> Ulf Hansson
 
 -- 
-Péter
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
