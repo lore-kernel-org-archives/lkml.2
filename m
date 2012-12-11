@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2LKBV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:21:26 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:49294 "EHLO www.hansjkoch.de"
+	id S1752167Ab2LKBXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 20:23:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:53721 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab2LKBVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:21:25 -0500
-Date: Tue, 11 Dec 2012 02:21:12 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
-Message-ID: <20121211012112.GA11273@local>
-References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
+	id S1750902Ab2LKBXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 20:23:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+Date: Tue, 11 Dec 2012 02:28:04 +0100
+Message-ID: <8119513.v7VrlzcaZC@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <38722368.Fl8pJoLSRi@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <CAE9FiQWZ8WaAJm8ayU+woVRqNLdSRtPS4=gpsrJovmzrUG6FNw@mail.gmail.com> <38722368.Fl8pJoLSRi@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 05:40:00PM +0000, Cong Ding wrote:
-> In version 1, I forgot to modify the same bug in the first loop.
+On Tuesday, December 11, 2012 02:02:14 AM Rafael J. Wysocki wrote:
+> On Monday, December 10, 2012 03:14:32 PM Yinghai Lu wrote:
+> > On Mon, Dec 10, 2012 at 3:09 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Monday, December 10, 2012 11:47:27 PM Rafael J. Wysocki wrote:
+> > >> On Monday, December 10, 2012 09:07:06 AM Yinghai Lu wrote:
+> > >> > On Mon, Dec 10, 2012 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> > > On Sunday, December 09, 2012 09:34:42 PM Yinghai Lu wrote:
+> > >> > >>
+> > >> > >> Can we expand the BUS_ADD_* concept to other devices instead of just
+> > >> > >> acpi_device?
+> > >> > >>
+> > >> > >> aka we should let struct device has this add_type field.
+> > >> > >
+> > >> > > Having done that in ACPI to cover our use case here, we can try to move it
+> > >> > > into struct device if there are use cases beyond ACPI that can't be covered
+> > >> > > by using deferred driver probing.
+> > >> >
+> > >> > pci device for hotplug have same problem. need to delay driver attach
+> > >> > for them too.
+> > >>
+> > >> OK, I'll take a look.  Any pointers to speed that up?
+> > >>
+> > >> > also BUS_ADD_MATCH and BUS_ADD_START are duplicated.
+> > >>
+> > >> Not at the moment, they do different things as code goes.
+> > >>
+> > >> > old add are separated to adding all devices to tree and then matching
+> > >> > work to load the drivers.
+> > >> >
+> > >> > so _START is not needed anymore, only user.start in pci_root driver
+> > >> > should be removed.
+> > >> > code in .start could be moved .add without problem.
+> > >>
+> > >> Yes, I'm going to do that as the next step.  I didn't want this particular
+> > >> patchset to grow too big.  I'll post another one on top of it if people
+> > >> don't have problems with this one.
+> > >
+> > > By the way, can you please remind me where you wanted to put the
+> > > pci_bus_add_devices() and why?
+> > >
+> > 
+> > please check my for-pci-next branch at
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-next
+> > 
+> > that includes delay loading acpi driver and pci driver.
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=8c031eabbdc83dd4d93933b82d96b55d038bcb64
+> >  PCI: prepare to use device drivers_autoprobe to delay attach drivers
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=40a12dc8942a8ed02bfbf75ee1ffbfbdf1511b45
+> > PCI: Use device_add for device and bus early
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=8af9b4c250091c30afedeb2e7f14fca06997c811
+> > ACPI: add drivers_autoprobe in struct acpi_device
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=ae498e157e9dc8794932562b2f885ddc3a1a229a
+> >  ACPI: use device drivers_autoprobe to delay loading acpi drivers
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=6bee785b563a0b0e311e188321b1160593d5e6ee
+> >  PCI, ACPI: Remove not used acpi_pci_root_start()
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=f467a1cd18a07a250be8527b94612fd4a654fbd1
+> > ACPI: remove acpi_op_start workaround
 > 
-> we have to call kobject_put() to clean up the kobject after function
-> kobject_init(), kobject_add(), or kobject_uevent() is called.
-> 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> OK, thanks for the pointers.  I actually see more differences between our
+> patchsets.  For one example, you seem to have left the parent->ops.bind()
+> stuff in acpi_add_single_object() which calls it even drivers_autoprobe is
+> set.
 
-Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
+Sorry, that should have been "which calls it even when drivers_autoprobe is
+not set".  I need to be more careful.
 
-> ---
->  drivers/uio/uio.c |   16 ++++++++++------
->  1 files changed, 10 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index 5110f36..79774d3 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -291,10 +291,10 @@ static int uio_dev_add_attributes(struct uio_device *idev)
->  		mem->map = map;
->  		ret = kobject_add(&map->kobj, idev->map_dir, "map%d", mi);
->  		if (ret)
-> -			goto err_map;
-> +			goto err_map_kobj;
->  		ret = kobject_uevent(&map->kobj, KOBJ_ADD);
->  		if (ret)
-> -			goto err_map;
-> +			goto err_map_kobj;
->  	}
->  
->  	for (pi = 0; pi < MAX_UIO_PORT_REGIONS; pi++) {
-> @@ -317,23 +317,27 @@ static int uio_dev_add_attributes(struct uio_device *idev)
->  		ret = kobject_add(&portio->kobj, idev->portio_dir,
->  							"port%d", pi);
->  		if (ret)
-> -			goto err_portio;
-> +			goto err_portio_kobj;
->  		ret = kobject_uevent(&portio->kobj, KOBJ_ADD);
->  		if (ret)
-> -			goto err_portio;
-> +			goto err_portio_kobj;
->  	}
->  
->  	return 0;
->  
->  err_portio:
-> -	for (pi--; pi >= 0; pi--) {
-> +	pi--;
-> +err_portio_kobj:
-> +	for (; pi >= 0; pi--) {
->  		port = &idev->info->port[pi];
->  		portio = port->portio;
->  		kobject_put(&portio->kobj);
->  	}
->  	kobject_put(idev->portio_dir);
->  err_map:
-> -	for (mi--; mi>=0; mi--) {
-> +	mi--;
-> +err_map_kobj:
-> +	for (; mi >= 0; mi--) {
->  		mem = &idev->info->mem[mi];
->  		map = mem->map;
->  		kobject_put(&map->kobj);
-> -- 
-> 1.7.4.5
-> 
-> 
+
+> Is that the case, or am I missing anything?
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
