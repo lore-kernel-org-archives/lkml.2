@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab2LKSWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:22:45 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:38396 "EHLO
+	id S1754459Ab2LKSW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 13:22:56 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:38417 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab2LKSWo (ORCPT
+	with ESMTP id S1754417Ab2LKSWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:22:44 -0500
+	Tue, 11 Dec 2012 13:22:55 -0500
 From: Alexander Holler <holler@ahsoftware.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
@@ -15,121 +15,45 @@ Cc: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
         srinivas pandruvada <srinivas.pandruvada@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 1/4 v2] iio: hid-sensors: respect CONFIG_IIO_TRIGGER
-Date: Tue, 11 Dec 2012 19:21:43 +0100
-Message-Id: <1355250106-3114-1-git-send-email-holler@ahsoftware.de>
+Subject: [PATCH 2/4 RESEND] iio: Add Usage IDs for HID time sensors.
+Date: Tue, 11 Dec 2012 19:21:44 +0100
+Message-Id: <1355250106-3114-2-git-send-email-holler@ahsoftware.de>
 X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <50C73AFC.1050904@jic23.retrosnub.co.uk>
+In-Reply-To: <1355250106-3114-1-git-send-email-holler@ahsoftware.de>
 References: <50C73AFC.1050904@jic23.retrosnub.co.uk>
+ <1355250106-3114-1-git-send-email-holler@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not much to say, without that change, hid-sensor-trigger will be
-always compiled if HID_SENSOR_IIO_COMMON is selected which fails if
-CONFIG_IIO_TRIGGER is not set because CONFIG_IIO_CONSUMERS_PER_TRIGGER
-will not be defined.
+These are Usage IDs for the attributes year, month, day,
+hour, minute and second, needed to read HID time sensors.
 
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- drivers/iio/accel/Kconfig               |    1 +
- drivers/iio/common/hid-sensors/Kconfig  |   13 ++++++++++++-
- drivers/iio/common/hid-sensors/Makefile |    3 ++-
- drivers/iio/gyro/Kconfig                |    1 +
- drivers/iio/light/Kconfig               |    1 +
- drivers/iio/magnetometer/Kconfig        |    1 +
- 6 files changed, 18 insertions(+), 2 deletions(-)
+ include/linux/hid-sensor-ids.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iio/accel/Kconfig b/drivers/iio/accel/Kconfig
-index b2510c4..b84b806 100644
---- a/drivers/iio/accel/Kconfig
-+++ b/drivers/iio/accel/Kconfig
-@@ -8,6 +8,7 @@ config HID_SENSOR_ACCEL_3D
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select HID_SENSOR_IIO_COMMON
-+	select HID_SENSOR_IIO_TRIGGER
- 	tristate "HID Acelerometers 3D"
- 	help
- 	  Say yes here to build support for the HID SENSOR
-diff --git a/drivers/iio/common/hid-sensors/Kconfig b/drivers/iio/common/hid-sensors/Kconfig
-index 8e63d81..e294f31 100644
---- a/drivers/iio/common/hid-sensors/Kconfig
-+++ b/drivers/iio/common/hid-sensors/Kconfig
-@@ -6,7 +6,7 @@ menu "Hid Sensor IIO Common"
- config HID_SENSOR_IIO_COMMON
- 	tristate "Common modules for all HID Sensor IIO drivers"
- 	depends on HID_SENSOR_HUB
--	select IIO_TRIGGER if IIO_BUFFER
-+	select HID_SENSOR_IIO_TRIGGER if IIO_BUFFER
- 	help
- 	  Say yes here to build support for HID sensor to use
- 	  HID sensor common processing for attributes and IIO triggers.
-@@ -14,6 +14,17 @@ config HID_SENSOR_IIO_COMMON
- 	  HID sensor drivers, this module contains processing for those
- 	  attributes.
+diff --git a/include/linux/hid-sensor-ids.h b/include/linux/hid-sensor-ids.h
+index ca8d7e9..3754ea9 100644
+--- a/include/linux/hid-sensor-ids.h
++++ b/include/linux/hid-sensor-ids.h
+@@ -67,6 +67,15 @@
+ #define HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS		0x200486
+ #define HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS		0x200487
  
-+config HID_SENSOR_IIO_TRIGGER
-+	tristate "Common module (trigger) for all HID Sensor IIO drivers"
-+	depends on HID_SENSOR_HUB && HID_SENSOR_IIO_COMMON
-+	select IIO_TRIGGER
-+	help
-+	  Say yes here to build trigger support for HID sensors.
-+	  Triggers will be send if all requested attributes were read.
++/* Time (2000a0) */
++#define HID_USAGE_SENSOR_TIME					0x2000a0
++#define HID_USAGE_SENSOR_TIME_YEAR				0x200521
++#define HID_USAGE_SENSOR_TIME_MONTH				0x200522
++#define HID_USAGE_SENSOR_TIME_DAY				0x200523
++#define HID_USAGE_SENSOR_TIME_HOUR				0x200525
++#define HID_USAGE_SENSOR_TIME_MINUTE				0x200526
++#define HID_USAGE_SENSOR_TIME_SECOND				0x200527
 +
-+	  If this driver is compiled as a module, it will be named
-+	  hid-sensor-trigger.
-+
- config HID_SENSOR_ENUM_BASE_QUIRKS
- 	tristate "ENUM base quirks for HID Sensor IIO drivers"
- 	depends on HID_SENSOR_IIO_COMMON
-diff --git a/drivers/iio/common/hid-sensors/Makefile b/drivers/iio/common/hid-sensors/Makefile
-index 1f463e0..22e7c5a 100644
---- a/drivers/iio/common/hid-sensors/Makefile
-+++ b/drivers/iio/common/hid-sensors/Makefile
-@@ -3,4 +3,5 @@
- #
- 
- obj-$(CONFIG_HID_SENSOR_IIO_COMMON) += hid-sensor-iio-common.o
--hid-sensor-iio-common-y := hid-sensor-attributes.o hid-sensor-trigger.o
-+obj-$(CONFIG_HID_SENSOR_IIO_TRIGGER) += hid-sensor-trigger.o
-+hid-sensor-iio-common-y := hid-sensor-attributes.o
-diff --git a/drivers/iio/gyro/Kconfig b/drivers/iio/gyro/Kconfig
-index 21e27e2..bc9daff 100644
---- a/drivers/iio/gyro/Kconfig
-+++ b/drivers/iio/gyro/Kconfig
-@@ -8,6 +8,7 @@ config HID_SENSOR_GYRO_3D
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select HID_SENSOR_IIO_COMMON
-+	select HID_SENSOR_IIO_TRIGGER
- 	tristate "HID Gyroscope 3D"
- 	help
- 	  Say yes here to build support for the HID SENSOR
-diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
-index 1763c9b..dbf80ab 100644
---- a/drivers/iio/light/Kconfig
-+++ b/drivers/iio/light/Kconfig
-@@ -47,6 +47,7 @@ config HID_SENSOR_ALS
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select HID_SENSOR_IIO_COMMON
-+	select HID_SENSOR_IIO_TRIGGER
- 	tristate "HID ALS"
- 	help
- 	  Say yes here to build support for the HID SENSOR
-diff --git a/drivers/iio/magnetometer/Kconfig b/drivers/iio/magnetometer/Kconfig
-index c1f0cdd..ff11d68 100644
---- a/drivers/iio/magnetometer/Kconfig
-+++ b/drivers/iio/magnetometer/Kconfig
-@@ -8,6 +8,7 @@ config HID_SENSOR_MAGNETOMETER_3D
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select HID_SENSOR_IIO_COMMON
-+	select HID_SENSOR_IIO_TRIGGER
- 	tristate "HID Magenetometer 3D"
- 	help
- 	  Say yes here to build support for the HID SENSOR
+ /* Units */
+ #define HID_USAGE_SENSOR_UNITS_NOT_SPECIFIED			0x00
+ #define HID_USAGE_SENSOR_UNITS_LUX				0x01
 -- 
 1.7.8.6
 
