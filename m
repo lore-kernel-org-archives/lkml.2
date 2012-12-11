@@ -1,60 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2LKTsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 14:48:55 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34320 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2LKTsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 14:48:54 -0500
-Message-ID: <1355255320.2356.148.camel@falcor>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@parisplace.org>,
-        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Date: Tue, 11 Dec 2012 14:48:40 -0500
-In-Reply-To: <CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	 <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	 <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-	 <1355234914.2356.85.camel@falcor>
-	 <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-	 <1355249884.2356.108.camel@falcor>
-	 <CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
-	 <1355252392.2356.131.camel@falcor>
-	 <CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121119-7408-0000-0000-00000AF1135D
+	id S1754713Ab2LKTuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 14:50:09 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:58287 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753757Ab2LKTuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 14:50:07 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        johnstul@us.ibm.com, viro@zeniv.linux.org.uk, peterz@infradead.org,
+        mingo@redhat.com, Nathan Zimmer <nzimmer@sgi.com>
+Subject: [PATCH 1/4] procfs: /proc/sched_stat fails on very very large machines.
+Date: Tue, 11 Dec 2012 13:50:02 -0600
+Message-Id: <1355255405-32758-2-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <1355255405-32758-1-git-send-email-nzimmer@sgi.com>
+References: <1355255405-32758-1-git-send-email-nzimmer@sgi.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 11:10 -0800, Linus Torvalds wrote:
+On systems with 4096 cores doing a cat /proc/sched_stat fails.
+We are trying to push all the data into a single kmalloc buffer.
+The issue is on these very large machines all the data will not fit in 4mb.
 
-> Anyway, the whole "you can do it at file granularity" isn't the bulk
-> of my argument (the "we already have the field that makes sense" is).
-> But my point is that per-inode is not only the logically more
-> straightforward place to do it, it's also the much more flexible place
-> to do it. Because it *allows* for things like that.
+A better solution is to not us the single_open mechanism but to provide
+our own seq_operations.
 
-Ok. To summarize, S_IMA indicates that there is a rule and that the iint
-was allocated.  To differentiate between 'haven't looked/don't know' and
-'definitely not', we need another bit.  For this, you're suggesting
-using IS_PRIVATE()?  Hopefully, I misunderstood.
+The output should be identical to previous version and thus not need the
+version number.
 
-thanks,
+CC: Ingo Molnar <mingo@redhat.com> 
+CC: Peter Zijlstra <peterz@infradead.org> 
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: linux-kernel@vger.kernel.org
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+---
+ kernel/sched/stats.c |   73 ++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 53 insertions(+), 20 deletions(-)
 
-Mimi
-
-
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index 903ffa9..33a85c9 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -21,9 +21,13 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 	if (mask_str == NULL)
+ 		return -ENOMEM;
+ 
+-	seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
+-	seq_printf(seq, "timestamp %lu\n", jiffies);
+-	for_each_online_cpu(cpu) {
++	if (v == (void *)1) {
++		seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
++		seq_printf(seq, "timestamp %lu\n", jiffies);
++	} else {
++
++		cpu = (unsigned long)(v - 2);
++
+ 		struct rq *rq = cpu_rq(cpu);
+ #ifdef CONFIG_SMP
+ 		struct sched_domain *sd;
+@@ -72,35 +76,64 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 		}
+ 		rcu_read_unlock();
+ #endif
++		kfree(mask_str);
+ 	}
+-	kfree(mask_str);
+ 	return 0;
+ }
+ 
+-static int schedstat_open(struct inode *inode, struct file *file)
++static void *schedstat_start(struct seq_file *file, loff_t *offset)
+ {
+-	unsigned int size = PAGE_SIZE * (1 + num_online_cpus() / 32);
+-	char *buf = kmalloc(size, GFP_KERNEL);
+-	struct seq_file *m;
+-	int res;
++	unsigned long n = *offset;
+ 
+-	if (!buf)
+-		return -ENOMEM;
+-	res = single_open(file, show_schedstat, NULL);
+-	if (!res) {
+-		m = file->private_data;
+-		m->buf = buf;
+-		m->size = size;
+-	} else
+-		kfree(buf);
+-	return res;
++	if (n == 0)
++		return (void *) 1;
++
++	n--;
++
++	if (n > 0)
++		n = cpumask_next(n - 1, cpu_online_mask);
++	else
++		n = cpumask_first(cpu_online_mask);
++
++	*offset = n + 1;
++
++	if (n < nr_cpu_ids)
++		return (void *)(unsigned long)(n + 2);
++	return NULL;
++}
++
++static void *schedstat_next(struct seq_file *file, void *data, loff_t *offset)
++{
++	(*offset)++;
++	return schedstat_start(file, offset);
++}
++
++static void schedstat_stop(struct seq_file *file, void *data)
++{
++}
++
++static const struct seq_operations schedstat_sops = {
++	.start = schedstat_start,
++	.next  = schedstat_next,
++	.stop  = schedstat_stop,
++	.show  = show_schedstat,
++};
++
++static int schedstat_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &schedstat_sops);
+ }
+ 
++static int schedstat_release(struct inode *inode, struct file *file)
++{
++	return 0;
++};
++
+ static const struct file_operations proc_schedstat_operations = {
+ 	.open    = schedstat_open,
+ 	.read    = seq_read,
+ 	.llseek  = seq_lseek,
+-	.release = single_release,
++	.release = schedstat_release,
+ };
+ 
+ static int __init proc_schedstat_init(void)
+-- 
+1.6.0.2
 
