@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2LKMjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:39:21 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48371 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab2LKMjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:39:19 -0500
-Message-ID: <50C72967.5050807@ahsoftware.de>
-Date: Tue, 11 Dec 2012 13:39:03 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753310Ab2LKMkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:40:45 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:55068 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752525Ab2LKMkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 07:40:43 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+Date: Tue, 11 Dec 2012 13:45:43 +0100
+Message-ID: <1918088.8lbRqmEGMX@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <8119513.v7VrlzcaZC@vostro.rjw.lan> <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>,
-        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
-References: <50C5DFCC.60203@ahsoftware.de> <1355151119-2489-1-git-send-email-holler@ahsoftware.de> <50C61675.2000407@metafoo.de> <50C63BBD.3080202@ahsoftware.de> <50C64484.4060306@metafoo.de> <50C65381.8010609@ahsoftware.de> <50C6567D.7080303@metafoo.de> <50C65746.8030609@kernel.org> <50C6674D.1000901@ahsoftware.de> <50C6FD60.7080300@jic23.retrosnub.co.uk> <50C6FF71.1010504@metafoo.de>
-In-Reply-To: <50C6FF71.1010504@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.12.2012 10:40, schrieb Lars-Peter Clausen:
+On Monday, December 10, 2012 06:26:08 PM Yinghai Lu wrote:
+> On Mon, Dec 10, 2012 at 5:28 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>
+> >> OK, thanks for the pointers.  I actually see more differences between our
+> >> patchsets.  For one example, you seem to have left the parent->ops.bind()
+> >> stuff in acpi_add_single_object() which calls it even drivers_autoprobe is
+> >> set.
+> >
+> > Sorry, that should have been "which calls it even when drivers_autoprobe is
+> > not set".  I need to be more careful.
+> >
+> 
+> oh,  Jiang Liu had one patch to remove that workaround.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=b40dba80c2b8395570d8357e6b3f417c27c84504
+> 
+> ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
 
->> Yes, move the header or merge into existing one as makes sense.
->> I'm not pulling this driver into the IIO tree (unless for some
->> reason Alessandro wants me to and I can't think why he would...).
->>
->
-> Alessandro has been pretty quiet for quite some time now. Luckily Andrew
-> Morton usually picks up the stuff for orphaned subsystems. So put him on Cc
-> for v4.
+OK, so I'm looking at the current code, which for me is the master branch of
+the linux-pm.git tree (the linux-next branch is the same ATM), and I'm not
+seeing acpi_pci_unbind_cb() in there.  So surely this patch applies to
+something different, right?  In which case I wonder what reason there is for
+me to look at it at all?
 
-Will do it. Thanks a lot for your review.
+Besides, I think it may be done differently and in a more straightforward
+way.  Namely, on top of my current patchset, it is guaranteed that not only
+struct pci_dev objects will always be registered after the companion struct
+acpi_device ones, but also they always will be *created* after those
+companion objects have been registered.  So in principle we can populate
+a new struct pci_dev's ACPI handle as soon as in pci_scan_device(),
+next to pci_set_of_node().  Then, we can do something like acpi_pci_bind(),
+although without the whole acpi_get_pci_dev() nonsense, in pci_setup_device(),
+in which case we won't need to do it anywhere else.
 
-I willl post the whole series (4 patches including the merge of 
-hid-sensor-attributes.h) again, when I've finished v3 of the driver 
-(hopefully this evening), marking some patches as RESEND. So 3 out of 
-those 4 patches will be for iio (as hid-sensor-hub is part of it), and 
-the last one, the rtc driver itself, will be for the rtc subsystem. I 
-don't know if they have to be pulled by different maintainers. ;)
+As an added benefit, acpi_platform_notify() would then see a populated ACPI
+handle in that struct pci_dev when finally registering the PCI device, so it
+wouldn't need to do the whole acpi_find_bridge_device() and type->find_device()
+dance.
 
-Regards,
+> Maybe you can review that patches in my for-pci-next2...
+> those are ACPI related anyway.
 
-Alexander
+I can, provided that (1) they are based on top of my tree or v3.7 and (2)
+they don't conflict with patches we're currently discussing.
+
+> those patches have been there for a while, and Bjorn did not have time
+> to digest them.
+
+Well, Bjorn's review bandwidth is limited and we need to take that into
+account.
+
+> or you prefer I resend updated version as huge whole patchset?
+
+No, no huge patchsets, please.  Let's take one step at a time, so that
+everyone involved/interested can understand what's going on, OK?
+
+My review capacity also is not unlimited, mind you.  I can't promise I'll
+have the time to review more than a few patches a day (where "a few" is
+rather less than "several").
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
