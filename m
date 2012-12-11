@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab2LKODC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:03:02 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23368 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab2LKODA (ORCPT
+	id S1753612Ab2LKODt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:03:49 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47135 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab2LKODr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:03:00 -0500
-X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DhgVYC8l6PEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=PwOMEcHXvqEA:10 a=hJ3tXogHtnBvSq9QUNMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355234577.17101.288.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH RT 3/4] sched/rt: Use IPI to trigger RT task push
- migration instead of pulling
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: frank.rowand@am.sony.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Tue, 11 Dec 2012 09:02:57 -0500
-In-Reply-To: <alpine.LFD.2.02.1212111326310.3028@ionos>
-References: <20121207235615.206108556@goodmis.org>
-	  <20121208000900.613917378@goodmis.org> <50C682F6.5030709@am.sony.com>
-	  <50C68922.5030203@am.sony.com>
-	 <1355190830.17101.280.camel@gandalf.local.home>
-	 <alpine.LFD.2.02.1212111326310.3028@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 11 Dec 2012 09:03:47 -0500
+Message-ID: <50C73CE5.1080201@linux.vnet.ibm.com>
+Date: Tue, 11 Dec 2012 19:32:13 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>, tglx@linutronix.de, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org,
+        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
+        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209191437.GA2816@redhat.com> <50C4EB79.5050203@linux.vnet.ibm.com> <20121209202234.GA5793@redhat.com> <50C564ED.9090803@linux.vnet.ibm.com> <20121210172410.GA28479@redhat.com> <50C73192.9010905@linux.vnet.ibm.com> <20121211134758.GA7084@htj.dyndns.org>
+In-Reply-To: <20121211134758.GA7084@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121114-4790-0000-0000-000005FA8A63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 13:43 +0100, Thomas Gleixner wrote:
-> On Mon, 10 Dec 2012, Steven Rostedt wrote:
-> > On Mon, 2012-12-10 at 17:15 -0800, Frank Rowand wrote:
-> > 
-> > > I should have also mentioned some previous experience using IPIs to
-> > > avoid runq lock contention on wake up.  Someone encountered IPI
-> > > storms when using the TTWU_QUEUE feature, thus it defaults to off
-> > > for CONFIG_PREEMPT_RT_FULL:
-> > > 
-> > >   #ifndef CONFIG_PREEMPT_RT_FULL
-> > >   /*
-> > >    * Queue remote wakeups on the target CPU and process them
-> > >    * using the scheduler IPI. Reduces rq->lock contention/bounces.
-> > >    */
-> > >   SCHED_FEAT(TTWU_QUEUE, true)
-> > >   #else
-> > >   SCHED_FEAT(TTWU_QUEUE, false)
-> > > 
-> > 
-> > Interesting, but I'm wondering if this also does it for every wakeup? If
-> > you have 1000 tasks waking up on another CPU, this could potentially
-> > send out 1000 IPIs. The number of IPIs here looks to be # of tasks
-> > waking up, and perhaps more than that, as there could be multiple
-> > instances that try to wake up the same task.
+On 12/11/2012 07:17 PM, Tejun Heo wrote:
+> Hello, Srivatsa.
 > 
-> Not using the TTWU_QUEUE feature limits the IPIs to a single one,
-> which is only sent if the newly woken task preempts the current task
-> on the remote cpu and the NEED_RESCHED flag was not yet set.
->  
-> With TTWU_QUEUE you can induce massive latencies just by starting
-> hackbench. You get a herd wakeup on CPU0 which then enqueues hundreds
-> of tasks to the remote pull list and sends IPIs. The remote CPUs pulls
-> the tasks and activate them on their runqueue in hard interrupt
-> context. That easiliy can accumulate to hundreds of microseconds when
-> you do a mass push of newly woken tasks.
+> On Tue, Dec 11, 2012 at 06:43:54PM +0530, Srivatsa S. Bhat wrote:
+>> This approach (of using synchronize_sched()) also looks good. It is simple,
+>> yet effective, but unfortunately inefficient at the writer side (because
+>> he'll have to wait for a full synchronize_sched()).
 > 
-> Of course it avoids fiddling with the remote rq lock, but it becomes
-> massivly non deterministic.
-
-Agreed. I never suggested to use TTWU_QUEUE. I was just stating the
-difference between that and my patches.
-
+> While synchornize_sched() is heavier on the writer side than the
+> originally posted version, it doesn't stall the whole machine and
+> wouldn't introduce latencies to others.  Shouldn't that be enough?
 > 
-> > Now this patch set, the # of IPIs is limited to the # of CPUs. If you
-> > have 4 CPUs, you'll get a storm of 3 IPIs. That's a big difference.
-> 
-> Yeah, the big difference is that you offload the double lock to the
-> IPI. So in the worst case you interrupt the most latency sensitive
-> task running on the remote CPU. Not sure if I really like that
-> "feature".
->  
 
-First, the pulled CPU isn't necessarily running the most latency
-sensitive task. It just happens to be running more than one RT task, and
-the waiting RT task can migrate. The running task may be of the same
-priority as the waiting task. And they both may be the lowest priority
-RT tasks in the system, and a CPU just went idle.
+Short answer: Yes. But we can do better, with almost comparable code
+complexity. So I'm tempted to try that out.
 
-Currently, what we have is a huge contention on both the pulled CPU rq
-lock. We've measured over 500us latencies due to it. This hurts even the
-CPU that has the overloaded task, as the contention is on its lock.
+Long answer:
+Even in the synchronize_sched() approach, we still have to identify the
+readers who need to be converted to use the new get/put_online_cpus_atomic()
+APIs and convert them. Then, if we can come up with a scheme such that
+the writer has to wait only for those readers to complete, then why not?
 
--- Steve
+If such a scheme ends up becoming too complicated, then I agree, we
+can use synchronize_sched() itself. (That's what I meant by saying that
+we'll use this as a fallback).
 
+But even in this scheme which uses synchronize_sched(), we are
+already half-way through (we already use 2 types of sync schemes -
+counters and rwlocks). Just a little more logic can get rid of the
+unnecessary full-wait too.. So why not give it a shot?
+
+Regards,
+Srivatsa S. Bhat
 
