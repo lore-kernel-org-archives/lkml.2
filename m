@@ -1,39 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab2LKXUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 18:20:37 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50654 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab2LKXUg (ORCPT
+	id S1755194Ab2LKXVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 18:21:07 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51218 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab2LKXVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 18:20:36 -0500
-Date: Tue, 11 Dec 2012 15:20:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Benedikt Spranger <b.spranger@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de,
-        Alexander.Frank@eberspaecher.com
-Subject: Re: [PATCH 2/2] uio: do not expose inode to uio open/release hooks
-Message-ID: <20121211232032.GA24933@kroah.com>
-References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
- <1355267523-19724-3-git-send-email-b.spranger@linutronix.de>
+	Tue, 11 Dec 2012 18:21:06 -0500
+X-AuditID: 9c930179-b7b25ae0000031c2-5f-50c7bfdeb3eb
+Date: Wed, 12 Dec 2012 08:21:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v3] Support volatile range for anon vma
+Message-ID: <20121211232101.GA32158@blaptop>
+References: <1355193255-7217-1-git-send-email-minchan@kernel.org>
+ <50C77F47.10601@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355267523-19724-3-git-send-email-b.spranger@linutronix.de>
+In-Reply-To: <50C77F47.10601@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 12:12:02AM +0100, Benedikt Spranger wrote:
-> The inode parameter is unused by in kernel users of UIO.
+Hi John,
 
-Ok.
+On Tue, Dec 11, 2012 at 10:45:27AM -0800, John Stultz wrote:
+> On 12/10/2012 06:34 PM, Minchan Kim wrote:
+> >This still is [RFC v3] because just passed my simple test
+> >with TCMalloc tweaking.
+> >
+> >I hope more inputs from user-space allocator people and test patch
+> >with their allocator because it might need design change of arena
+> >management design for getting real vaule.
+> >
+> >Changelog from v2
+> >
+> >  * Removing madvise(addr, length, MADV_NOVOLATILE).
+> >  * add vmstat about the number of discarded volatile pages
+> >  * discard volatile pages without promotion in reclaim path
+> >
+> >This is based on v3.6.
+> >
+> >- What's the madvise(addr, length, MADV_VOLATILE)?
+> >
+> >   It's a hint that user deliver to kernel so kernel can *discard*
+> >   pages in a range anytime.
+> >
+> >- What happens if user access page(ie, virtual address) discarded
+> >   by kernel?
+> >
+> >   The user can see zero-fill-on-demand pages as if madvise(DONTNEED).
+> >
+> >- What happens if user access page(ie, virtual address) doesn't
+> >   discarded by kernel?
+> >
+> >   The user can see old data without page fault.
+> >
+> >- What's different with madvise(DONTNEED)?
+> >
+> >   System call semantic
+> >
+> >   DONTNEED makes sure user always can see zero-fill pages after
+> >   he calls madvise while VOLATILE can see zero-fill pages or
+> >   old data.
+> I still need to really read and understand the patch, but at a high
+> level I'm not sure how this works. So does the VOLATILE flag get
+> cleared on any access, even if the pages have not been discarded?
 
-> Also the inode parameter makes it hard to resolve the existing open(),
-> mmap() and close() difficulty.
+No. It is cleared when user try to access discareded pages so
+This patch is utter crap. I missed that point.
+Thanks for pointing out, John.
 
-I don't understand, what do you mean by this?  What is this parameter
-causing problems with?
+Hmm, in the end, we need NOVOLATILE.
 
-greg k-h
+> What happens if an application wants to store non-volatile data in
+> an area that was once marked volatile. If there was never memory
+> pressure, it seems the volatility would persist with no way of
+> removing it.
+
+Yes. that's why this patch is crap and I'm insane. :(
+
+> 
+> Either way, I feel that with this revision, specifically dropping
+> the NOVOLATILE call and the SIGBUS optimization the Mozilla folks
+> suggested, your implementation has drifted quite far from the
+> concept I'm pushing. While I hope we can still align the underlying
+> mm implementation, I might ask that you use a different term for the
+> semantics you propose, so we don't add too much confusion to the
+> discussion.
+> 
+> Maybe you could call it DONTNEED_DEFERRED or something?
+> 
+> In the meantime, I'll be reading your patch in detail and seeing how
+> we might be able to combine our differing approaches.
+
+You don't need it. Ignore this patch.
+I will rework.
+
+Thanks.
+
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
