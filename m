@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2LKLNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 06:13:21 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56509 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab2LKLNU (ORCPT
+	id S1752917Ab2LKLOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 06:14:34 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:43195 "EHLO
+	eddie.linux-mips.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751421Ab2LKLOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 06:13:20 -0500
-Date: Tue, 11 Dec 2012 12:13:14 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/ras changes for v3.8
-Message-ID: <20121211111314.GA26721@gmail.com>
+	Tue, 11 Dec 2012 06:14:33 -0500
+Date: Tue, 11 Dec 2012 12:14:28 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Shane McDonald <mcdonald.shane@gmail.com>
+Cc: linux-mips <linux-mips@linux-mips.org>, linux-kernel@vger.kernel.org
+Subject: Re: RM9000 / E9000, MSP71xx class processors, SOCs and eval boards
+Message-ID: <20121211111427.GA23572@linux-mips.org>
+References: <20121206160052.GB32620@linux-mips.org>
+ <CACoURw7JTFMzmcRZHmBchcWPC8x5LFFfC1nGH-Xxc8f3KjNE2Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CACoURw7JTFMzmcRZHmBchcWPC8x5LFFfC1nGH-Xxc8f3KjNE2Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Dec 06, 2012 at 03:28:17PM -0600, Shane McDonald wrote:
 
-Please pull the latest x86-ras-for-linus git tree from:
+> I'm interested in the MSP71xx eval board, although I may be
+> the only person in the world who cares.  Specifically, I use the
+> msp71xx_defconfig.  3.7-rc8 compiles with gcc-4.6.3
+> without requiring any patches.
+> 
+> I don't know when the last time the RM9000 was compilable,
+> but I have no interest in that, nor do I have interest in the
+> FPGA or eval board versions of the MSP7120 (no hardware to
+> test with).
+> 
+> I had hoped that someone from PMC-Sierra would respond, but
+> maybe they don't care anymore...
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-ras-for-linus
+Being a crazy tradition set by the Sparc AP1000, I'm happy with a single
+user :-)
 
-   HEAD: 003db633d6f2d3649ea18652a3c55ad17d4f0e47 Merge tag 'mca_cfg' of git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras into x86/ras
+The Yosemite stuff scores higher on my kill list anyway.  The board
+support code was never too great but that's not the issue; the SOC's
+network driver which is rotting away in the linux-mips.org git tree as
+the last change that can't be merged upstream as it is, stopped even
+compiling ages ago and while a superior replacement has been posted,
+nobody cared enough to get it into mergeable shape.
 
-Rework all config variables used throughout the MCA code and 
-collect them together into a mca_config struct. This keeps them 
-tightly and neatly packed together instead of spilled all over 
-the place.
-    
-Then, convert those which are used as booleans into real 
-booleans and save some space.
+Now that 3.7 is finally released, hasta la vista, Yosemite.
 
-out-of-topic modifications in x86-ras-for-linus:
-------------------------------------------------
-drivers/base/core.c                # 9187239: drivers/base: Add a DEVICE_BOOL_A
-include/linux/device.h             # 9187239: drivers/base: Add a DEVICE_BOOL_A
-
- Thanks,
-
-	Ingo
-
------------------->
-Borislav Petkov (5):
-      drivers/base: Add a DEVICE_BOOL_ATTR macro
-      x86, MCA: Convert dont_log_ce, banks and tolerant
-      x86, MCA: Convert rip_msr, mce_bootlog, monarch_timeout
-      x86, MCA: Convert the next three variables batch
-      x86, MCA: Finish mca_config conversion
-
+  Ralf
