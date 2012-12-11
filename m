@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab2LKQ7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:59:25 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41274 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2LKQ7X (ORCPT
+	id S1754042Ab2LKRA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:00:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57027 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab2LKRA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:59:23 -0500
+	Tue, 11 Dec 2012 12:00:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <1355234914.2356.85.camel@falcor>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
- <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
- <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com> <1355234914.2356.85.camel@falcor>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 11 Dec 2012 08:59:01 -0800
-X-Google-Sender-Auth: mY2yWdOyOw2fjgII5FQ_bZIhwpk
-Message-ID: <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
+In-Reply-To: <50C763C2.5020603@zytor.com>
+References: <1354240068-9821-6-git-send-email-fenghua.yu@intel.com>
+	<tip-474355fe313391de2429ae225e0fb02f67ec6c31@git.kernel.org>
+	<CAE9FiQW13Ji1wGSvFKrhY5UEArHyY5bfL5Ma37SRU9uROdPYDw@mail.gmail.com>
+	<3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com>
+	<CAE9FiQXGZYZiH3eUup2UXGWkeqKjsiHk7aMTFJO7xxFkqTpBZA@mail.gmail.com>
+	<50C6AB63.9070008@zytor.com>
+	<CAE9FiQX7sPLXOacoLakaJ1qC5UuSUbrX_g7N-oWmLYg5W-91UA@mail.gmail.com>
+	<50C6D3DF.3030209@zytor.com>
+	<CAE9FiQUiEx=p6wTC5wu_E=ih1CSBaTmw90zsc2=+xu6rMO5usg@mail.gmail.com>
+	<20121211145716.GB8873@liondog.tnic>
+	<CAE9FiQVByBTHwPrtYvVxv4u9QrtN1iN6GH9YaDn3dvmwv5Sg7g@mail.gmail.com>
+	<50C763C2.5020603@zytor.com>
+Date: Tue, 11 Dec 2012 09:00:55 -0800
+X-Google-Sender-Auth: 5hlA2bBB970PwNGFvWwog1RdoGs
+Message-ID: <CAE9FiQUzHBb5SiEhfrOg7hFbuD1H1-7aXa0aTjhZ9tNqdrwGqw@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 6:08 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Tue, 2012-12-11 at 14:51 +0200, Kasatkin, Dmitry wrote:
->> >>
->> >> Two months ago I was asking about it on mailing lists.
->> >> Suggestion was not to use s_flags, but e.g. s_feature_flags.
+On Tue, Dec 11, 2012 at 8:48 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> It's not about "not working"... it is about "if the microcode isn't
+> loaded early we have to disable features."
 
-Quite frankly, this seems stupid.
+ok, then next question is how early it should be.
 
-Without really knowing the problem space, the sane thing to do would
-seem to be inode->i_flags. At which point it's
+before early_cpu_init/early_identify_cpu
 
- (a) faster to test (no need to dereference inode->i_sb)
+or just before check_bugs/identify_cpu
 
- (b) matches what the integrity layer does with S_IMA (well, there the
-logic is reversed: S_IMA means that it has a integrity structure
-associated with it)
-
- (c) allows you to mark individual inodes as "no checking".
-
-and quite frankly, (c) in particular seems to make sense to me, since
-it would seem to be rather possible to do things like "I've checked
-this inode, it had no policies associated with it, I never need to
-check it again". Clear the flag when policies change or whatever.
-
-What's the advantage of making it per-filesystem?
-
-            Linus
+Yinghai
