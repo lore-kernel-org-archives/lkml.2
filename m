@@ -1,112 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab2LKKAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 05:00:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61444 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2LKKAt (ORCPT
+	id S1752662Ab2LKKGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 05:06:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48390 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2LKKGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 05:00:49 -0500
-Date: Tue, 11 Dec 2012 11:00:32 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] leds: leds-pwm: Convert to use devm_get_pwm
-Message-ID: <20121211100032.GA8907@avionic-0098.adnet.avionic-design.de>
-References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com>
- <3193669.Hv54bBklsP@barack>
- <20121211083632.GC27084@avionic-0098.adnet.avionic-design.de>
- <1406670.ryvqfkiNXS@barack>
- <20121211093100.GA8437@avionic-0098.adnet.avionic-design.de>
- <50C6FF69.3030001@ti.com>
- <20121211094812.GA22222@avionic-0098.adnet.avionic-design.de>
- <50C70287.1060006@ti.com>
+	Tue, 11 Dec 2012 05:06:51 -0500
+Date: Tue, 11 Dec 2012 11:06:46 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/asm changes for v3.8
+Message-ID: <20121211100646.GA24919@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50C70287.1060006@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:9Xw+8awhfeFKg7ZC8x4KRuF/wXMNuEytsHCbarRzW76
- zXbRbH0QmKF1fq/UA4aMzUF/KPFiYC4Ph10l6s105xY6ooCKP6
- dRf7Qxgx21+9fFITIqpzdeSrytJpzDdBT7e7RT9nA1SABF69HS
- 48xfcswhahUMr9cTtIZMmfufVFVbHwFhxVGcf0I/DoJ5pT7JI9
- KzhzQGClzLKA5ovHHmUU9azgLlH3r8DXH4TEkbT20XDDovwS0R
- JC5kLaIIXofAULCZOy73kD0Kgs+Q+fQG9DeS+lukU6HgqbGhyk
- 24jLEnScw+n0ShdfwvmNQ5ZAOZxrPeI9HJD4rbuh3R6nEVMwJe
- ryCrObTTVHmkr/XF8xI66cDTfl0ILcCyzFx+l9uDrEU5E+v5V9
- Ink/SQ2B694k4ZxDBerhf7jyc2SCcCHn0g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull the latest x86-asm-for-linus git tree from:
 
-On Tue, Dec 11, 2012 at 10:53:11AM +0100, Peter Ujfalusi wrote:
-> On 12/11/2012 10:48 AM, Thierry Reding wrote:
-> > On Tue, Dec 11, 2012 at 10:39:53AM +0100, Peter Ujfalusi wrote:
-> >> On 12/11/2012 10:31 AM, Thierry Reding wrote:
-> >>> On Tue, Dec 11, 2012 at 09:57:51AM +0100, Peter Ujfalusi wrote:
-> >>> Okay, if there are no intree users that may be broken, then it should=
- be
-> >>> fine to remove it. In that case you might want to remove the pwm_id
-> >>> field as well instead of deprecating it in this patch.
-> >>
-> >> The reason I marked the pwm_id as deprecated is to signal to out of tr=
-ee users
-> >> (if any) that they should stop using it since it is going to go away i=
-n the
-> >> next cycle.
-> >> If we remove it right away the sdp4030 board file will not going to co=
-mpile in
-> >> subsystem trees, only in linux-next.
-> >=20
-> > Okay, go ahead then. As long as the field will be removed eventually
-> > that's fine with me.
->=20
-> Thank you and yes, it will be removed.
->=20
-> Probably it would be a good thing to check other places for legacy
-> pwm_request() users and prepare them to move to (devm_)pwm_get gracefully=
- over
-> coming kernel releases.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-asm-for-linus
 
-Yes, I have a local patch that deprecates pwm_request() and pwm_free()
-to make it easy to spot them (though git grep does a better job actually
-as it doesn't require compilation). I originally planned to replace all
-pwm_request()/pwm_free() usage by pwm_get()/pwm_put() already for 3.8
-but got side-tracked with other stuff but I hope I can make it for 3.9.
-If that works out we could remove pwm_request() and pwm_free()
-completely for 3.10.
+   HEAD: 6c8d8b3c69cef1330e0c5cbc2a8b9268024927a0 x86_32: Return actual stack when requesting sp from regs
 
-Thierry
+Two fixlets and a cleanup.
 
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature
+ Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+	Ingo
 
-iQIcBAEBAgAGBQJQxwRAAAoJEN0jrNd/PrOhAgUQAJGP29h4E13zOyQDgnvS/azA
-/B8wCXN4hr9TkFDJOK7X8bt/Cq/u3ALHqCQKLzl8RxS293vsra50pBk7LOHoBGTR
-+pqnIKoWU/fqZrGaGKN+FNPXmBskpL9cpbc9gSDe4Y2DffOAbZKdbKh8cOgO5NCD
-0qxLFr1mdsTKu+3/yhx714Kt5Ki16WB+3oIctEswyP7/tvxMyECx/88TImQjT3DH
-VzY2DdlUwt7Xq36iLx9QJUS182fgfFI2g6N921QQoxY77/thOkgaYIlG1BhKoATl
-7/8fa5KrR3KEBbmnnA4AD/kzc4IlfFMTkpJQd2ZnwJCeMahtABbfLPZsO2Namuc6
-O1bP8xb4XohhwrG/Th4JkshqDI999y/sgPpw85WFrdFlKKogNodz1radaCtPY3Yl
-w1478QG6qExWlL8Aaxc/OHBbUv6hKwV/S50928afl3xDVcYuLm+Vhm9L86IMGNEo
-61A9aesoVa3Oyu6wYuBVrgDi/j/m/tAagAgohv2iRvehdOAJ0rRpkvfb9pHHBY9K
-7aotIWW9nLIs2rKcyc1vcO/hfmzKiBZewWrjZh5PJfq7rqwWtSfJA0v4jWLWboVh
-rrKYMjIVbWLHDkf9ifpfVgW9dn8wUMhgm6LRSVP1IYcWh2KwQrh4x027dYPVFBEL
-sAUV2/zm7VcDPZgmyHmo
-=7MQE
------END PGP SIGNATURE-----
+------------------>
+Ma Ling (1):
+      x86/asm: Clean up copy_page_*() comments and code
 
---zhXaljGHf11kAtnf--
+Salman Qazi (1):
+      x86: Don't clobber top of pt_regs in nested NMI
+
+Steven Rostedt (1):
+      x86_32: Return actual stack when requesting sp from regs
+
+
+ arch/x86/include/asm/ptrace.h |   9 ++++
+ arch/x86/kernel/entry_64.S    |  41 ++++++++++-----
+ arch/x86/lib/copy_page_64.S   | 120 +++++++++++++++++++++---------------------
+ 3 files changed, 95 insertions(+), 75 deletions(-)
+
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index dcfde52..2233713 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -246,6 +246,15 @@ static inline unsigned long regs_get_register(struct pt_regs *regs,
+ {
+ 	if (unlikely(offset > MAX_REG_OFFSET))
+ 		return 0;
++#ifdef CONFIG_X86_32
++	/*
++	 * Traps from the kernel do not save sp and ss.
++	 * Use the helper function to retrieve sp.
++	 */
++	if (offset == offsetof(struct pt_regs, sp) &&
++	    regs->cs == __KERNEL_CS)
++		return kernel_stack_pointer(regs);
++#endif
+ 	return *(unsigned long *)((unsigned long)regs + offset);
+ }
+ 
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b51b2c7..811795d 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1699,9 +1699,10 @@ nested_nmi:
+ 
+ 1:
+ 	/* Set up the interrupted NMIs stack to jump to repeat_nmi */
+-	leaq -6*8(%rsp), %rdx
++	leaq -1*8(%rsp), %rdx
+ 	movq %rdx, %rsp
+-	CFI_ADJUST_CFA_OFFSET 6*8
++	CFI_ADJUST_CFA_OFFSET 1*8
++	leaq -10*8(%rsp), %rdx
+ 	pushq_cfi $__KERNEL_DS
+ 	pushq_cfi %rdx
+ 	pushfq_cfi
+@@ -1709,8 +1710,8 @@ nested_nmi:
+ 	pushq_cfi $repeat_nmi
+ 
+ 	/* Put stack back */
+-	addq $(11*8), %rsp
+-	CFI_ADJUST_CFA_OFFSET -11*8
++	addq $(6*8), %rsp
++	CFI_ADJUST_CFA_OFFSET -6*8
+ 
+ nested_nmi_out:
+ 	popq_cfi %rdx
+@@ -1736,18 +1737,18 @@ first_nmi:
+ 	 * +-------------------------+
+ 	 * | NMI executing variable  |
+ 	 * +-------------------------+
+-	 * | Saved SS                |
+-	 * | Saved Return RSP        |
+-	 * | Saved RFLAGS            |
+-	 * | Saved CS                |
+-	 * | Saved RIP               |
+-	 * +-------------------------+
+ 	 * | copied SS               |
+ 	 * | copied Return RSP       |
+ 	 * | copied RFLAGS           |
+ 	 * | copied CS               |
+ 	 * | copied RIP              |
+ 	 * +-------------------------+
++	 * | Saved SS                |
++	 * | Saved Return RSP        |
++	 * | Saved RFLAGS            |
++	 * | Saved CS                |
++	 * | Saved RIP               |
++	 * +-------------------------+
+ 	 * | pt_regs                 |
+ 	 * +-------------------------+
+ 	 *
+@@ -1763,9 +1764,14 @@ first_nmi:
+ 	/* Set the NMI executing variable on the stack. */
+ 	pushq_cfi $1
+ 
++	/*
++	 * Leave room for the "copied" frame
++	 */
++	subq $(5*8), %rsp
++
+ 	/* Copy the stack frame to the Saved frame */
+ 	.rept 5
+-	pushq_cfi 6*8(%rsp)
++	pushq_cfi 11*8(%rsp)
+ 	.endr
+ 	CFI_DEF_CFA_OFFSET SS+8-RIP
+ 
+@@ -1786,12 +1792,15 @@ repeat_nmi:
+ 	 * is benign for the non-repeat case, where 1 was pushed just above
+ 	 * to this very stack slot).
+ 	 */
+-	movq $1, 5*8(%rsp)
++	movq $1, 10*8(%rsp)
+ 
+ 	/* Make another copy, this one may be modified by nested NMIs */
++	addq $(10*8), %rsp
++	CFI_ADJUST_CFA_OFFSET -10*8
+ 	.rept 5
+-	pushq_cfi 4*8(%rsp)
++	pushq_cfi -6*8(%rsp)
+ 	.endr
++	subq $(5*8), %rsp
+ 	CFI_DEF_CFA_OFFSET SS+8-RIP
+ end_repeat_nmi:
+ 
+@@ -1842,8 +1851,12 @@ nmi_swapgs:
+ 	SWAPGS_UNSAFE_STACK
+ nmi_restore:
+ 	RESTORE_ALL 8
++
++	/* Pop the extra iret frame */
++	addq $(5*8), %rsp
++
+ 	/* Clear the NMI executing stack variable */
+-	movq $0, 10*8(%rsp)
++	movq $0, 5*8(%rsp)
+ 	jmp irq_return
+ 	CFI_ENDPROC
+ END(nmi)
+diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
+index 6b34d04..176cca6 100644
+--- a/arch/x86/lib/copy_page_64.S
++++ b/arch/x86/lib/copy_page_64.S
+@@ -5,91 +5,89 @@
+ #include <asm/alternative-asm.h>
+ 
+ 	ALIGN
+-copy_page_c:
++copy_page_rep:
+ 	CFI_STARTPROC
+-	movl $4096/8,%ecx
+-	rep movsq
++	movl	$4096/8, %ecx
++	rep	movsq
+ 	ret
+ 	CFI_ENDPROC
+-ENDPROC(copy_page_c)
++ENDPROC(copy_page_rep)
+ 
+-/* Don't use streaming store because it's better when the target
+-   ends up in cache. */
+-	    
+-/* Could vary the prefetch distance based on SMP/UP */
++/*
++ *  Don't use streaming copy unless the CPU indicates X86_FEATURE_REP_GOOD.
++ *  Could vary the prefetch distance based on SMP/UP.
++*/
+ 
+ ENTRY(copy_page)
+ 	CFI_STARTPROC
+-	subq	$2*8,%rsp
++	subq	$2*8,	%rsp
+ 	CFI_ADJUST_CFA_OFFSET 2*8
+-	movq	%rbx,(%rsp)
++	movq	%rbx,	(%rsp)
+ 	CFI_REL_OFFSET rbx, 0
+-	movq	%r12,1*8(%rsp)
++	movq	%r12,	1*8(%rsp)
+ 	CFI_REL_OFFSET r12, 1*8
+ 
+-	movl	$(4096/64)-5,%ecx
++	movl	$(4096/64)-5,	%ecx
+ 	.p2align 4
+ .Loop64:
+-  	dec     %rcx
+-
+-	movq        (%rsi), %rax
+-	movq      8 (%rsi), %rbx
+-	movq     16 (%rsi), %rdx
+-	movq     24 (%rsi), %r8
+-	movq     32 (%rsi), %r9
+-	movq     40 (%rsi), %r10
+-	movq     48 (%rsi), %r11
+-	movq     56 (%rsi), %r12
++	dec	%rcx
++	movq	0x8*0(%rsi), %rax
++	movq	0x8*1(%rsi), %rbx
++	movq	0x8*2(%rsi), %rdx
++	movq	0x8*3(%rsi), %r8
++	movq	0x8*4(%rsi), %r9
++	movq	0x8*5(%rsi), %r10
++	movq	0x8*6(%rsi), %r11
++	movq	0x8*7(%rsi), %r12
+ 
+ 	prefetcht0 5*64(%rsi)
+ 
+-	movq     %rax,    (%rdi)
+-	movq     %rbx,  8 (%rdi)
+-	movq     %rdx, 16 (%rdi)
+-	movq     %r8,  24 (%rdi)
+-	movq     %r9,  32 (%rdi)
+-	movq     %r10, 40 (%rdi)
+-	movq     %r11, 48 (%rdi)
+-	movq     %r12, 56 (%rdi)
++	movq	%rax, 0x8*0(%rdi)
++	movq	%rbx, 0x8*1(%rdi)
++	movq	%rdx, 0x8*2(%rdi)
++	movq	%r8,  0x8*3(%rdi)
++	movq	%r9,  0x8*4(%rdi)
++	movq	%r10, 0x8*5(%rdi)
++	movq	%r11, 0x8*6(%rdi)
++	movq	%r12, 0x8*7(%rdi)
+ 
+-	leaq    64 (%rsi), %rsi
+-	leaq    64 (%rdi), %rdi
++	leaq	64 (%rsi), %rsi
++	leaq	64 (%rdi), %rdi
+ 
+-	jnz     .Loop64
++	jnz	.Loop64
+ 
+-	movl	$5,%ecx
++	movl	$5, %ecx
+ 	.p2align 4
+ .Loop2:
+-	decl   %ecx
+-
+-	movq        (%rsi), %rax
+-	movq      8 (%rsi), %rbx
+-	movq     16 (%rsi), %rdx
+-	movq     24 (%rsi), %r8
+-	movq     32 (%rsi), %r9
+-	movq     40 (%rsi), %r10
+-	movq     48 (%rsi), %r11
+-	movq     56 (%rsi), %r12
+-
+-	movq     %rax,    (%rdi)
+-	movq     %rbx,  8 (%rdi)
+-	movq     %rdx, 16 (%rdi)
+-	movq     %r8,  24 (%rdi)
+-	movq     %r9,  32 (%rdi)
+-	movq     %r10, 40 (%rdi)
+-	movq     %r11, 48 (%rdi)
+-	movq     %r12, 56 (%rdi)
+-
+-	leaq	64(%rdi),%rdi
+-	leaq	64(%rsi),%rsi
+-
++	decl	%ecx
++
++	movq	0x8*0(%rsi), %rax
++	movq	0x8*1(%rsi), %rbx
++	movq	0x8*2(%rsi), %rdx
++	movq	0x8*3(%rsi), %r8
++	movq	0x8*4(%rsi), %r9
++	movq	0x8*5(%rsi), %r10
++	movq	0x8*6(%rsi), %r11
++	movq	0x8*7(%rsi), %r12
++
++	movq	%rax, 0x8*0(%rdi)
++	movq	%rbx, 0x8*1(%rdi)
++	movq	%rdx, 0x8*2(%rdi)
++	movq	%r8,  0x8*3(%rdi)
++	movq	%r9,  0x8*4(%rdi)
++	movq	%r10, 0x8*5(%rdi)
++	movq	%r11, 0x8*6(%rdi)
++	movq	%r12, 0x8*7(%rdi)
++
++	leaq	64(%rdi), %rdi
++	leaq	64(%rsi), %rsi
+ 	jnz	.Loop2
+ 
+-	movq	(%rsp),%rbx
++	movq	(%rsp), %rbx
+ 	CFI_RESTORE rbx
+-	movq	1*8(%rsp),%r12
++	movq	1*8(%rsp), %r12
+ 	CFI_RESTORE r12
+-	addq	$2*8,%rsp
++	addq	$2*8, %rsp
+ 	CFI_ADJUST_CFA_OFFSET -2*8
+ 	ret
+ .Lcopy_page_end:
+@@ -103,7 +101,7 @@ ENDPROC(copy_page)
+ 
+ 	.section .altinstr_replacement,"ax"
+ 1:	.byte 0xeb					/* jmp <disp8> */
+-	.byte (copy_page_c - copy_page) - (2f - 1b)	/* offset */
++	.byte (copy_page_rep - copy_page) - (2f - 1b)	/* offset */
+ 2:
+ 	.previous
+ 	.section .altinstructions,"a"
