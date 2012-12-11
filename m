@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab2LKA2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 19:28:32 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58617 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab2LKA2a (ORCPT
+	id S1751962Ab2LKAeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 19:34:09 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54191 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab2LKAeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 19:28:30 -0500
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: dan.carpenter@oracle.com
-Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
-        marcos.souza.org@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Cyril Roelandt <tipecaml@gmail.com>
-Subject: [PATCH v2] staging: rtl8712: avoid a useless call to memset().
-Date: Tue, 11 Dec 2012 01:20:48 +0100
-Message-Id: <1355185248-26842-1-git-send-email-tipecaml@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <0121210085516.GO6568@mwanda>
-References: <0121210085516.GO6568@mwanda>
+	Mon, 10 Dec 2012 19:34:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121210230749.7820F3E081F@localhost>
+References: <1354888899-21907-1-git-send-email-mathias.nyman@linux.intel.com>
+	<1354888899-21907-2-git-send-email-mathias.nyman@linux.intel.com>
+	<20121210230749.7820F3E081F@localhost>
+Date: Tue, 11 Dec 2012 01:34:04 +0100
+Message-ID: <CACRpkdaaFZ2Ai1tWy5KYxF9dVWmc8s4Lj8DajACAFYHdBFxBtg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] gpio: add Lynxpoint chipset gpio driver.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        mika.westerberg@linux.intel.com, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In r8711_wx_get_wap(), make sure we do not call memcpy() on a memory area that
-has just been zeroed by a call to memset().
+On Tue, Dec 11, 2012 at 12:07 AM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> On Fri,  7 Dec 2012 16:01:39 +0200, Mathias Nyman <mathias.nyman@linux.intel.com> wrote:
+>> Add gpio support for Intel Lynxpoint chipset.
+>> Lynxpoint supports 94 gpio pins which can generate interrupts.
+>> Driver will fail requests for pins that are marked as owned by ACPI, or
+>> set in an alternate mode (non-gpio).
+>>
+>> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> ---
+>> +static void lp_gpio_set(struct gpio_chip *chip, unsigned gpio, int value)
+>> +{
+>> +     struct lp_gpio *lg = container_of(chip, struct lp_gpio, chip);
+>> +     unsigned long reg = gpio_reg(chip, gpio, LP_CONFIG1);
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&lg->lock, flags);
+>> +
+>> +     if (value)
+>> +             outl(inl(reg) | OUT_LVL_BIT, reg);
+>> +     else
+>> +             outl(inl(reg) & ~OUT_LVL_BIT, reg);
+>> +
+>> +     spin_unlock_irqrestore(&lg->lock, flags);
+>> +}
+>
+> A *lot* of drivers implement their own GPIO ops like this, and they all
+> end up looking the same. Please take a look at
+> drivers/gpio/gpio-generic.c and see if you can use the stock operations
+> provided there.
 
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
----
- drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+I was under the impression that the generic code could not be
+used off-the-shelf for drivers doing irqchips (like this one).
 
-diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-index 3a64790..72c51b3 100644
---- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-+++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-@@ -1131,11 +1131,11 @@ static int r8711_wx_get_wap(struct net_device *dev,
- 	struct ndis_wlan_bssid_ex *pcur_bss = &pmlmepriv->cur_network.network;
- 
- 	wrqu->ap_addr.sa_family = ARPHRD_ETHER;
--	memset(wrqu->ap_addr.sa_data, 0, ETH_ALEN);
--	if (check_fwstate(pmlmepriv, _FW_LINKED |
--	    WIFI_ADHOC_MASTER_STATE|WIFI_AP_STATE)) {
-+	if (check_fwstate(pmlmepriv, _FW_LINKED | WIFI_ADHOC_MASTER_STATE |
-+				     WIFI_AP_STATE))
- 		memcpy(wrqu->ap_addr.sa_data, pcur_bss->MacAddress, ETH_ALEN);
--	}
-+	else
-+		memset(wrqu->ap_addr.sa_data, 0, ETH_ALEN);
- 	return 0;
- }
- 
--- 
-1.7.10.4
+But maybe I'm mistaken or it's trivial to fix?
 
+Yours,
+Linus Walleij
