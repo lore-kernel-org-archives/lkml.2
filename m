@@ -1,110 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab2LKPhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 10:37:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab2LKPhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 10:37:36 -0500
-Date: Tue, 11 Dec 2012 10:37:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhao Shuai <zhaoshuai@freebsd.org>, axboe@kernel.dk, ctalbott@google.com,
-        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: performance drop after using blkcg
-Message-ID: <20121211153725.GD5580@redhat.com>
-References: <CAFVn34SxqAJe_4P-WT8MOiG-kmKKD7ge96zoHXQuGqHWPgAt+A@mail.gmail.com>
- <20121211142518.GA5580@redhat.com>
- <20121211142742.GE7084@htj.dyndns.org>
- <20121211144336.GB5580@redhat.com>
- <20121211144718.GF7084@htj.dyndns.org>
- <20121211150234.GC5580@redhat.com>
- <20121211151412.GG7084@htj.dyndns.org>
+	id S1753901Ab2LKPmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 10:42:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:51875 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083Ab2LKPmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 10:42:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
+Date: Tue, 11 Dec 2012 10:43:49 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Yinghai Lu <yinghai@kernel.org>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <1354917879-32073-2-git-send-email-thomas.petazzoni@free-electrons.com>
+In-Reply-To: <1354917879-32073-2-git-send-email-thomas.petazzoni@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211151412.GG7084@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212111043.50627.arnd@arndb.de>
+X-Provags-ID: V02:K0:p3m27j/RX/BP0nZKOxGu2KLegAtqLM6d2fQDcQjJI+N
+ Ohjr1qmfv/sa81Jnzwx+Pwau/EEE2noTwuDJAEhlJjrdPR4hMQ
+ X12I9KSb8KrHEVEGzu+sDygAQZ3wv9w0OldefA0l9rjFO8bxTX
+ 2z54eOJt0FUqbi/qiM0TqQiIl/b66bRQbu2s1MZ6pMdNFYG4da
+ Z8qgzNTaKCNSzB9m4ZwciMEBeBg6SCyb0DPAQO3JZYQI/nDLm2
+ cUvSJfeGJyXhRhqYtnCmmUmz6dd0DatnEir2dljpAjvjD0JmE2
+ AmxUETHs6gmS957j+H+A+P5R0MBmjDhI3M1KuN5kDW0lvzQ4vH
+ cr6yXhZiKCRZmDkn9F5g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 07:14:12AM -0800, Tejun Heo wrote:
-> Hello, Vivek.
+On Friday 07 December 2012, Thomas Petazzoni wrote:
+> The pcim_*() functions are used by the libata-sff subsystem, and this
+> subsystem is used for many SATA drivers on ARM platforms that do not
+> necessarily have I/O ports.
+
+I think this one is wrong as the CONFIG_HAS_IOPORT does not refer to the
+presence of PIO ports but to whether or not they provide an ioport_map
+function. If there is no ioport_map(), devm_pci_iomap will fail to link
+as far as I can tell.
+
+	Arnd
+
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  lib/devres.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> On Tue, Dec 11, 2012 at 10:02:34AM -0500, Vivek Goyal wrote:
-> > cfq_group_served() {
-> >         if (iops_mode(cfqd))
-> >                 charge = cfqq->slice_dispatch;
-> > 	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
-> > }
-> > 
-> > Isn't it effectively IOPS scheduling. One should get IOPS rate in proportion to
-> > their weight (as long as they can throw enough traffic at device to keep
-> > it busy). If not, can you please give more details about your proposal.
-> 
-> The problem is that we lose a lot of isolation w/o idling between
-> queues or groups.  This is because we switch between slices and while
-> a slice is in progress only ios belongint to that slice can be issued.
-> ie. higher priority cfqgs / cfqqs, after dispatching the ios they have
-> ready, lose their slice immmediately.  Lower priority slice takes over
-> and when hgiher priority ones get ready, they have to wait for the
-> lower priority one before submitting the new IOs.  In many cases, they
-> end up not being able to generate IOs any faster than the ones in
-> lower priority cfqqs/cfqgs.
-> 
-> This is becase we switch slices rather than iops.
+> diff --git a/lib/devres.c b/lib/devres.c
+> index 80b9c76..5639c3e 100644
+> --- a/lib/devres.c
+> +++ b/lib/devres.c
+> @@ -195,6 +195,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
+>  			       devm_ioport_map_match, (void *)addr));
+>  }
+>  EXPORT_SYMBOL(devm_ioport_unmap);
+> +#endif /* CONFIG_HAS_IOPORT */
+>  
+>  #ifdef CONFIG_PCI
+>  /*
+> @@ -400,4 +401,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
+>  }
+>  EXPORT_SYMBOL(pcim_iounmap_regions);
+>  #endif /* CONFIG_PCI */
+> -#endif /* CONFIG_HAS_IOPORT */
 
-I am not sure how any of the above problems will go away if we start
-scheduling iops. 
 
->  We can make cfq
-> essentially switch iops by implementing very aggressive preemption but
-> I really don't see much point in that.
-
-Yes, this should be easily doable. Once a queue/group is being removed
-and is losing its share, just keep track of last vdisktime. When more IO
-comes in this group and current group is preempted (if its vdisktime is
-greater than one being queued). And new group is probably queued at
-the front.
-
-I have experimented with schemes like that but did not see any very
-promising resutls. Assume device supports queue depth of 128, and there
-is one dependent reader and one writer. If reader goes away and comes
-back and preempts low priority writer, in that small time window writer
-has dispatched enough requests to introduce read delays. So preemption
-helps only so much. I am curious to know how iops based scheduler solve
-these issues.  
-
-Only way to provide effective isolation seemed to be idling and the
-moment we idle we kill the performance. It does not matter whether we
-are scheduling time or iops.
-
->  cfq is way too heavy and
-> ill-suited for high speed non-rot devices which are becoming more and
-> more consistent in terms of iops they can handle.
-> 
-> I think we need something better suited for the maturing non-rot
-> devices.  They're becoming very different from what cfq was built for
-> and we really shouldn't be maintaining several rb trees which need
-> full synchronization for each IO.  We're doing way too much and it
-> just isn't scalable.
-
-I am fine with doing things differently in a different scheduler. But 
-what I am aruging here is that atleast with CFQ we should be able to
-experiment and figure out what works.  In CFQ all the code is there and
-if this iops based scheduling has merit, one should be able to quickly
-experiment and demonstrate how would one do things differently.
-
-To me I have not been able to understand yet that what is iops based
-scheduling doing differently. Will we idle there or not. If we idle
-we again have performance problems.
-
-So doing things out of CFQ is fine. I am only after understanding the
-technical idea which will solve the problem of provinding isolation
-as well as fairness without losing throughput. And I have not been
-able to get a hang of it yet.
-
-Thanks
-Vivek
