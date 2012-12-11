@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2LKREm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:04:42 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35468 "EHLO mga11.intel.com"
+	id S1754136Ab2LKREw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:04:52 -0500
+Received: from mga03.intel.com ([143.182.124.21]:7481 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753693Ab2LKREl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:04:41 -0500
+	id S1753728Ab2LKREv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 12:04:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,260,1355126400"; 
-   d="scan'208";a="262478162"
+   d="scan'208";a="229995075"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ACPI5 error injection fix
-Date: Tue, 11 Dec 2012 09:04:40 -0800
-Message-Id: <50c767a8438e8cf1@agluck-desk.sc.intel.com>
+Subject: [GIT PULL] pstore fixes for 3.8 merge window
+Date: Tue, 11 Dec 2012 09:04:50 -0800
+Message-Id: <50c767b243957db9@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit b69f0859dc8e633c5d8c06845811588fe17e68b3:
+The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
 
-  Linux 3.7-rc8 (2012-12-03 11:22:37 -0800)
+  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-einj-fix-for-acpi5
+  git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git tags/please-pull-pstore_mevent
 
-for you to fetch changes up to 112f1fc08d0b3f81c594af617d88c0db6ce0873c:
+for you to fetch changes up to f94ec0c0594ef73ab3a2f1f32735aca8ddaf65e2:
 
-  ACPI, APEI, EINJ: Add missed ACPI5 support for error trigger table (2012-12-07 11:50:02 -0800)
-
-----------------------------------------------------------------
-Trivial fix for error injection code using ACPI5 version of EINJ
+  efi_pstore: Add a format check for an existing variable name at erasing time (2012-11-26 16:08:37 -0800)
 
 ----------------------------------------------------------------
-Chen Gong (1):
-      ACPI, APEI, EINJ: Add missed ACPI5 support for error trigger table
+Patch series to allow EFI variable backend to pstore
+to hold multiple records.
 
- drivers/acpi/apei/einj.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+----------------------------------------------------------------
+Seiji Aguchi (7):
+      efi_pstore: Check remaining space with QueryVariableInfo() before writing data
+      efi_pstore: Add a logic erasing entries to an erase callback
+      efi_pstore: Remove a logic erasing entries from a write callback to hold multiple logs
+      efi_pstore: Add ctime to argument of erase callback
+      efi_pstore: Add a sequence counter to a variable name
+      efi_pstore: Add a format check for an existing variable name at reading time
+      efi_pstore: Add a format check for an existing variable name at erasing time
+
+ drivers/acpi/apei/erst.c   |   16 ++---
+ drivers/firmware/efivars.c |  163 +++++++++++++++++++++++++++++++-------------
+ fs/pstore/inode.c          |    7 +-
+ fs/pstore/internal.h       |    2 +-
+ fs/pstore/platform.c       |   13 ++--
+ fs/pstore/ram.c            |    9 ++-
+ include/linux/efi.h        |    1 +
+ include/linux/pstore.h     |    6 +-
+ 8 files changed, 144 insertions(+), 73 deletions(-)
