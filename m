@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2LKW3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:29:02 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57117 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab2LKW3A (ORCPT
+	id S1755064Ab2LKWbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:31:13 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43416 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753570Ab2LKWbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:29:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
-Date: Tue, 11 Dec 2012 22:28:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shadi Ammouri <shadi@marvell.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
-References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <20121211164608.GT14363@n2100.arm.linux.org.uk> <20121211173232.43668ab3@pyramind.ukuu.org.uk>
-In-Reply-To: <20121211173232.43668ab3@pyramind.ukuu.org.uk>
+	Tue, 11 Dec 2012 17:31:12 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmMOAPayx1B5LO66/2dsb2JhbABFhU6ycYYQF3OCHgEBBScTHDMIAxQELhQlAyEBEogQu24UjDaDYmEDlgaQSYMH
+Date: Wed, 12 Dec 2012 09:31:09 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: 3.7 XFS lockdep trace
+Message-ID: <20121211223109.GD16353@dastard>
+References: <20121211154207.GA12771@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212112228.53720.arnd@arndb.de>
-X-Provags-ID: V02:K0:q/sYaBWOCe/0BwmtCYwvOmy+bgWiYMd2awimnsZvU9Z
- mUPoINd5senNtIoxztcJ4EKTm1hsdguaIMZFDCkvU6fwIsGf/7
- KAuI8rzNKRubH5ILJQc1XeiyFHDzMufv6aq8sS+WxYd8x3Sg56
- mRH9OUCaz21IBCewXWNcQ/Q2Uf4BJm/yJmMQgAx27q1ZKl1o1R
- nnRvJ51DeCwmKyiErP65Wwq4zvja0OHD2L4U+j1oU+ZhBNHlD9
- jG0Hj8z5ho7XtoEKSqiECFy7oMqavgo68MpeHJ35AK142NLg1R
- SWwD+aWg6rljQAPf2tEozx6rxwf4Nf/XiwVOJlfEqXKo4HlOG8
- EBmFYzyZfzb7IIy677OI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211154207.GA12771@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 December 2012, Alan Cox wrote:
-> > Plus, if you have IO space support, you must have some MMIO region for
-> > them to target - doing what many platforms have done to date and targetted
-> > ISA IO address 0 at virtual address 0 is just not on because as soon as
-> > you build a device driver which probes ISA addresses into your kernel,
-> > you will oops.
-> 
-> There shouldn't really be anything poking around that is modern - this is
-> true of some PC stuff too.
-> 
-> In general however if its because you have a window partly mapped you
-> could just catch the exception and load 0xFF for reads (and probably
-> whine with a backtrace so you know who to moan at).
+On Tue, Dec 11, 2012 at 10:42:07AM -0500, Dave Jones wrote:
+> This says rc8+, but it's just missing the Makefile change, so it's still there in 3.7
+> Curious that firefox was the process mentioned here, as ~/.mozilla isn't on xfs.
+> My only xfs partition is /data holding a kernel source tree & .ccache
 
-The problem that Russell refers to is that some platforms define a window
-that is 4GB large and starts at NULL. They then ioremap their PCI
-or PCMCIA I/O space window and use the virtual __iomem address as the
-offset into the 4GB I/O space window. Any driver (e.g. vgacon, /dev/port
-or some legacy alsa sound driver) that tries to access a low port number
-then ends up in user space memory, typically in an unmapped area there.
+The fs freeze lockdep annotations have caused some ....  interesting
+lockdep reports.....
 
-We definitely don't want to catch and fixup those exceptions. The solution
-is to change the platforms so they actually use the proper I/O window
-at a virtual address that is not used for anything else.
+> [30557.776326] 3 locks on stack by firefox/17386:
+> [30557.776571]  #0: blocked:  (&mm->mmap_sem){++++++}, instance: ffff8800a823c308, at: [<ffffffff816ac2b3>] __do_page_fault+0x103/0x4f0
+> [30557.777276]  #1: blocked:  (shrinker_rwsem){++++..}, instance: ffffffff81c49de0, at: [<ffffffff81169ccc>] shrink_slab+0x3c/0x510
+> [30557.777962]  #2: blocked:  (&type->s_umount_key#42){.+.+.+}, instance: ffff8800c4ed5730, at: [<ffffffff811c24c4>] grab_super_passive+0x44/0x90
 
-	Arnd
+There's no filesystem specific locks here, and it indicates that
+the shrinkers are involved, so firefox can indeed touch the XFS
+filesystem directly this way...
+
+> [30557.789160]     RECLAIM_FS-ON-W at:
+> [30557.789362]                          [<ffffffff810c8042>] mark_held_locks+0xb2/0x130
+> [30557.789792]                          [<ffffffff810c8795>] lockdep_trace_alloc+0x75/0xd0
+> [30557.790241]                          [<ffffffff811af81a>] kmem_cache_alloc_node_trace+0x3a/0x2e0
+> [30557.790740]                          [<ffffffff81192242>] vm_map_ram+0x2a2/0x7f0
+> [30557.791161]                          [<ffffffffa052a4c3>] _xfs_buf_map_pages+0x73/0x130 [xfs]
+> [30557.791646]                          [<ffffffffa052baeb>] xfs_buf_get_map+0x15b/0x270 [xfs]
+> [30557.792114]                          [<ffffffffa05ada19>] xfs_trans_get_buf_map+0x1d9/0x3b0 [xfs]
+> [30557.792615]                          [<ffffffffa0589f04>] xfs_ialloc_inode_init+0xe4/0x1f0 [xfs]
+
+Oh, that's already fixed in the 3.8- queue.
+
+$ gl -n 1 7c4cebe
+commit 7c4cebe8e02dd0b0e655605442bbe9268db9ed4f
+Author: Dave Chinner <dchinner@redhat.com>
+Date:   Fri Nov 23 14:24:23 2012 +1100
+
+    xfs: inode allocation should use unmapped buffers.
+    
+    Inode buffers do not need to be mapped as inodes are read or written
+    directly from/to the pages underlying the buffer. This fixes a
+    regression introduced by commit 611c994 ("xfs: make XBF_MAPPED the
+    default behaviour").
+....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
