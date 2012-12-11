@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab2LKLIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 06:08:55 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:42982 "EHLO
+	id S1753010Ab2LKLJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 06:09:14 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:43017 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab2LKLIx (ORCPT
+	with ESMTP id S1752525Ab2LKLJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 06:08:53 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-e8-50c71444bd16
+	Tue, 11 Dec 2012 06:09:11 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-23-50c714569163
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
         "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
@@ -20,121 +20,184 @@ Cc: "'Dae Inki'" <inki.dae@samsung.com>, "'Joerg Roedel'" <joro@8bytes.org>,
         "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
         "'Subash Patel'" <subash.ramaswamy@linaro.org>,
         "'SWKim'" <sw0312.kim@samsung.com>
-Subject: [PATCH v5 03/14] iommu/exynos: allocate lv2 page table from own slab
-Date: Tue, 11 Dec 2012 20:08:51 +0900
-Message-id: <003301cdd78f$e71a7b60$b54f7220$%cho@samsung.com>
+Subject: [PATCH v5 04/14] iommu/exynos: change rwlock to spinlock
+Date: Tue, 11 Dec 2012 20:09:09 +0900
+Message-id: <003401cdd78f$f1d2c670$d5785350$%cho@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3XjG+P2Ij5g2hRRDmuQTzvSQa18wAA3AKg
+Thread-index: Ac3XjHFq7K3FszdQSaKgKZFLNcNd9wAA3jBA
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zA10XkeMBBltfSVhc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGX0915hK3gnXHHjzm2mBsbVAl2MnBwSAiYSOxbtZYKw
-	xSQu3FvPBmILCSxjlLjzkR+mZs2dU0BxLqD4dEaJ/pMvWSCK/jFK7N7PCGKzCWhJrJ57HMwW
-	EbjLKPHyPA9IA7PAESaJnffPgTUIC/hK/PuwGsxmEVCVOP5rDVADBwevgK3E5oNgvbwCghI/
-	Jt8DK2EGmrl+53EmCFteYvOat8wg5RIC6hKP/upCrDKSuLp6ETNEiYjEvhfvGCGmC0h8m3yI
-	BaJcVmLTAWaQayQE+tklnn67wQbxl6TEwRU3WCYwis1CsnkWks2zkGyehWTFAkaWVYyiqQXJ
-	BcVJ6blGesWJucWleel6yfm5mxghESO9g3FVg8UhRgEORiUeXg2tYwFCrIllxZW5hxglOJiV
-	RHgjhY4HCPGmJFZWpRblxxeV5qQWH2L0Abp8IrOUaHI+MJrzSuINjY1NzExMTcwtTc1NcQgr
-	ifM2e6QECAmkJ5akZqemFqQWwYxj4uCUamD0W8K4ouPYNnnRV/rfma5cd/EIVRBYsCBq564v
-	PzY9E9rszHv3vI5clqMms9rOmKR9YosS+I4+8dHq/nvSd2lm4FIz6SVlitZz25a4HVl7l1Pu
-	1s5DO5o/nlnXoaF6yaRtVs78iTkSK4/f2X5Y5MX3Zi+Wg/08d74lKK4rzbC7vu6XlUXf91ou
-	JZbijERDLeai4kQAP9x5wcUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jQV0XkeMBBi+6hC0u75rDZjHj/D4m
-	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
-	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz+nuvsBW8E664
-	cec2UwPjaoEuRk4OCQETiTV3TrFB2GISF+6tB7K5OIQEpjNK9J98yQKSEBL4xyixez8jiM0m
-	oCWxeu5xMFtE4C6jxMvzPCANzAJHmCR23j8H1iAs4Cvx78NqMJtFQFXi+K81QA0cHLwCthKb
-	D4L18goISvyYfA+shBlo5vqdx5kgbHmJzWveMoOUSwioSzz6qwuxykji6upFzBAlIhL7Xrxj
-	nMAoMAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYIj8pn0DsZV
-	DRaHGAU4GJV4eDW0jgUIsSaWFVfmHmKU4GBWEuGNFDoeIMSbklhZlVqUH19UmpNafIjRB+jP
-	icxSosn5wGSRVxJvaGxiZmRpZGZhZGJujkNYSZy32SMlQEggPbEkNTs1tSC1CGYcEwenVANj
-	XF/DSoZt0p9DAmJvr9jUUZLAMatt6rUfe86cWxu5ffOJ88w2NX+ubFx5p4WlYkFfU8rt35PL
-	MpkXTVZ6ecyj28nR3c501azXngUMkvlfdDqtkitZeH6mrT12nLHb1K3x4sYpvTX809Tlnzpt
-	lNh38ZniporqxlaToyff5Z77/aBKXK9pJ99MJZbijERDLeai4kQABlmLQ/UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zQ90wkeMBBktfSVhc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGWs2L6RteCCYsXKJR3MDYx/pbsYOTkkBEwkfh56xAph
+	i0lcuLeerYuRi0NIYBmjxN/NM1lgivbf+sQOYgsJLGKUuP66FKLoH6PEho3TmUASbAJaEqvn
+	HmcEsUUE7jJKvDzPA1LELHCESWLn/XNgk4QFHCWO/z7ODGKzCKhKvN8JMZVXwFZi2vk9zBC2
+	oMSPyffA6pmBhq7feZwJwpaX2LzmLVANB9BF6hKP/upC7DKSmHT1PjNEiYjEvhfvGCHGC0h8
+	m3yIBaJcVmLTAWaQcyQE+tklXuzcywTxmKTEwRU3WCYwis1CsnkWks2zkGyehWTFAkaWVYyi
+	qQXJBcVJ6blGesWJucWleel6yfm5mxghUSO9g3FVg8UhRgEORiUeXg2tYwFCrIllxZW5hxgl
+	OJiVRHgjhY4HCPGmJFZWpRblxxeV5qQWH2L0Abp8IrOUaHI+MKLzSuINjY1NzExMTcwtTc1N
+	cQgrifM2e6QECAmkJ5akZqemFqQWwYxj4uCUamDcHGppvt6sSM/oz6frmZk+c5pZDz32/+Nw
+	7m+eqN/9iPIGl5Oad59JRP16p/7Ja9rawJZdHj82tk1JkI5f3XD3Ut6l9tffHlRue3z7zlIz
+	kwbD/g/JzzfUTFLndJsnWOR0OPRl8inTprzXvLoRFmURkreX885/mVx9nN93w+fL3+L/fipU
+	2WukxFKckWioxVxUnAgA/BiSs8cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jAd0wkeMBBgfvCFpc3jWHzWLG+X1M
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmrNi+kbXggmLF
+	yiUdzA2Mf6W7GDk5JARMJPbf+sQOYYtJXLi3ng3EFhJYxChx/XVpFyMXkP2PUWLDxulMIAk2
+	AS2J1XOPM4LYIgJ3GSVenucBKWIWOMIksfP+ORaQhLCAo8Tx38eZQWwWAVWJ9zshNvAK2EpM
+	O7+HGcIWlPgx+R5YPTPQ0PU7jzNB2PISm9e8BarhALpIXeLRX12IXUYSk67eZ4YoEZHY9+Id
+	4wRGgVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREck8+kdzCu
+	arA4xCjAwajEw6uhdSxAiDWxrLgy9xCjBAezkghvpNDxACHelMTKqtSi/Pii0pzU4kOMPkCP
+	TmSWEk3OB6aLvJJ4Q2MTMyNLIzMLIxNzcxzCSuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoY
+	G5N3/XXfxm/T2lUx4RRjQ0NMm7b661Rh9b7fAR7Jx71u+X960fLFfSfrsv08iqeD5Yv1jS6c
+	Txe+nzZ9XkH5/5eXrqyX2+q6umzm7haP9X8D79mtjmBTrOzeGVdh0yPqXKP3ul/mUx770Td3
+	7D6rmf4VPZ+18OfUhOAnjye5fH28l7VF36xMiaU4I9FQi7moOBEAqT63RfYCAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since kmalloc() does not guarantee the alignment of 1KB when it
-allocates 1KB, it is required to allocate lv2 page table from
-own slab that guarantees alignment of 1KB.
+Since acquiring read_lock is not more frequent than write_lock, it is
+not beneficial to use rwlock, this commit changes rwlock to spinlock.
 
 Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c | 24 ++++++++++++++++++++----
- 1 file changed, 20 insertions(+), 4 deletions(-)
+ drivers/iommu/exynos-iommu.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index ef7dbd1..58d2a24 100644
+index 58d2a24..5847508 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -101,6 +101,8 @@
- #define REG_PB1_SADDR		0x054
- #define REG_PB1_EADDR		0x058
+@@ -166,7 +166,7 @@ struct sysmmu_drvdata {
+ 	void __iomem **sfrbases;
+ 	struct clk *clk[2];
+ 	int activations;
+-	rwlock_t lock;
++	spinlock_t lock;
+ 	struct iommu_domain *domain;
+ 	unsigned long pgtable;
+ };
+@@ -249,7 +249,7 @@ void exynos_sysmmu_set_prefbuf(struct device *dev,
+ 	BUG_ON((base0 + size0) <= base0);
+ 	BUG_ON((size1 > 0) && ((base1 + size1) <= base1));
  
-+static struct kmem_cache *lv2table_kmem_cache;
-+
- static unsigned long *section_entry(unsigned long *pgtable, unsigned long iova)
- {
- 	return pgtable + lv1ent_offset(iova);
-@@ -739,7 +741,8 @@ static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
+-	read_lock_irqsave(&data->lock, flags);
++	spin_lock_irqsave(&data->lock, flags);
+ 	if (!is_sysmmu_active(data))
+ 		goto finish;
  
- 	for (i = 0; i < NUM_LV1ENTRIES; i++)
- 		if (lv1ent_page(priv->pgtable + i))
--			kfree(__va(lv2table_base(priv->pgtable + i)));
-+			kmem_cache_free(lv2table_kmem_cache,
-+					__va(lv2table_base(priv->pgtable + i)));
- 
- 	free_pages((unsigned long)priv->pgtable, 2);
- 	free_pages((unsigned long)priv->lv2entcnt, 1);
-@@ -833,7 +836,7 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
- 	if (lv1ent_fault(sent)) {
- 		unsigned long *pent;
- 
--		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
-+		pent = kmem_cache_zalloc(lv2table_kmem_cache, GFP_ATOMIC);
- 		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
- 		if (!pent)
- 			return NULL;
-@@ -856,7 +859,7 @@ static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
- 		if (*pgcnt != NUM_LV2ENTRIES)
- 			return -EADDRINUSE;
- 
--		kfree(page_entry(sent, 0));
-+		kmem_cache_free(lv2table_kmem_cache, page_entry(sent, 0));
- 
- 		*pgcnt = 0;
+@@ -279,7 +279,7 @@ void exynos_sysmmu_set_prefbuf(struct device *dev,
+ 		}
  	}
-@@ -1044,10 +1047,23 @@ static int __init exynos_iommu_init(void)
- {
- 	int ret;
+ finish:
+-	read_unlock_irqrestore(&data->lock, flags);
++	spin_unlock_irqrestore(&data->lock, flags);
+ }
  
-+	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
-+		LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
-+	if (!lv2table_kmem_cache) {
-+		pr_err("%s: failed to create kmem cache\n", __func__);
-+		return -ENOMEM;
-+	}
-+
- 	ret = platform_driver_register(&exynos_sysmmu_driver);
+ static void __show_fault_information(unsigned long *pgtable, unsigned long iova,
+@@ -312,7 +312,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
  
- 	if (ret == 0)
--		bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
-+		ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
-+
-+	if (ret) {
-+		pr_err("%s: Failed to register exynos-iommu driver.\n",
-+								__func__);
-+		kmem_cache_destroy(lv2table_kmem_cache);
-+	}
+ 	int i, ret = -ENOSYS;
+ 
+-	read_lock(&data->lock);
++	spin_lock(&data->lock);
+ 
+ 	WARN_ON(!is_sysmmu_active(data));
+ 
+@@ -354,7 +354,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+ 
+ 	sysmmu_unblock(data->sfrbases[i]);
+ 
+-	read_unlock(&data->lock);
++	spin_unlock(&data->lock);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -365,7 +365,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
+ 	bool disabled = false;
+ 	int i;
+ 
+-	write_lock_irqsave(&data->lock, flags);
++	spin_lock_irqsave(&data->lock, flags);
+ 
+ 	if (!set_sysmmu_inactive(data))
+ 		goto finish;
+@@ -382,7 +382,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
+ 	data->pgtable = 0;
+ 	data->domain = NULL;
+ finish:
+-	write_unlock_irqrestore(&data->lock, flags);
++	spin_unlock_irqrestore(&data->lock, flags);
+ 
+ 	if (disabled)
+ 		dev_dbg(data->sysmmu, "(%s) Disabled\n", data->dbgname);
+@@ -405,7 +405,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 	int i, ret = 0;
+ 	unsigned long flags;
+ 
+-	write_lock_irqsave(&data->lock, flags);
++	spin_lock_irqsave(&data->lock, flags);
+ 
+ 	if (!set_sysmmu_active(data)) {
+ 		if (WARN_ON(pgtable != data->pgtable)) {
+@@ -444,7 +444,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 
+ 	dev_dbg(data->sysmmu, "(%s) Enabled\n", data->dbgname);
+ finish:
+-	write_unlock_irqrestore(&data->lock, flags);
++	spin_unlock_irqrestore(&data->lock, flags);
  
  	return ret;
  }
+@@ -491,7 +491,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
+ 	unsigned long flags;
+ 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+ 
+-	read_lock_irqsave(&data->lock, flags);
++	spin_lock_irqsave(&data->lock, flags);
+ 
+ 	if (is_sysmmu_active(data)) {
+ 		int i;
+@@ -508,7 +508,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
+ 			data->dbgname);
+ 	}
+ 
+-	read_unlock_irqrestore(&data->lock, flags);
++	spin_unlock_irqrestore(&data->lock, flags);
+ }
+ 
+ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+@@ -516,7 +516,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+ 	unsigned long flags;
+ 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+ 
+-	read_lock_irqsave(&data->lock, flags);
++	spin_lock_irqsave(&data->lock, flags);
+ 
+ 	if (is_sysmmu_active(data)) {
+ 		int i;
+@@ -532,7 +532,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+ 			data->dbgname);
+ 	}
+ 
+-	read_unlock_irqrestore(&data->lock, flags);
++	spin_unlock_irqrestore(&data->lock, flags);
+ }
+ 
+ static int exynos_sysmmu_probe(struct platform_device *pdev)
+@@ -629,7 +629,7 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	data->sysmmu = dev;
+-	rwlock_init(&data->lock);
++	spin_lock_init(&data->lock);
+ 	INIT_LIST_HEAD(&data->node);
+ 
+ 	if (dev->parent)
 -- 
 1.8.0
 
