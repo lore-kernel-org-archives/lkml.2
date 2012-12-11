@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab2LKMKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:10:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22609 "EHLO mga01.intel.com"
+	id S1753149Ab2LKMRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:17:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20133 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab2LKMKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:10:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,259,1355126400"; 
-   d="scan'208";a="260464110"
-Message-ID: <50C722AC.3080806@intel.com>
-Date: Tue, 11 Dec 2012 20:10:20 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Alex Shi <lkml.alex@gmail.com>
-CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, vincent.guittot@linaro.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into
- LB and power awareness scheduling
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com>
-In-Reply-To: <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752499Ab2LKMRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 07:17:18 -0500
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to
+ fallocate UAPI
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20121210182053.GC7516@thunk.org>
+References: <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+	 <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com>
+	 <50C22923.90102@redhat.com>
+	 <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
+	 <20121207190306.GB14972@shiny> <20121208001705.GO27172@dastard>
+	 <20121210173739.GA1359@thunk.org> <1355162759.2704.50.camel@menhir>
+	 <20121210181328.GB7516@thunk.org>  <20121210182053.GC7516@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 11 Dec 2012 12:16:03 +0000
+Message-ID: <1355228163.2721.32.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 08:51 AM, Alex Shi wrote:
-> On Mon, Dec 10, 2012 at 4:22 PM, Alex Shi <alex.shi@intel.com> wrote:
->> This patchset base on tip/sched/core tree temporary, since it is more
->> steady than tip/master. and it's easy to rebase on tip/master.
->>
->> It includes 3 parts changes.
->>
->> 1, simplified fork, patch 1~4, that simplified the fork/exec/wake log in
->> find_idlest_group and select_task_rq_fair. it can increase 10+%
->> hackbench process and thread performance on our 4 sockets SNB EP machine.
->>
->> 2, enable load average into LB, patch 5~9, that using load average in
->> load balancing, with a runnable load value industrialization bug fix and
->> new fork task load contrib enhancement.
->>
->> 3, power awareness scheduling, patch 10~18,
->> Defined 2 new power aware policy balance and
->> powersaving, and then try to spread or shrink tasks on CPU unit
->> according the different scheduler policy. That can save much power when
->> task number in system is no more then cpu number.
+Hi,
+
+On Mon, 2012-12-10 at 13:20 -0500, Theodore Ts'o wrote:
+> A sentence or two got chopped out during an editing pass.  Let me try
+> that again so it's a bit clearer what I was trying to say....
 > 
-> tried with sysbench fileio test rndrw mode, with half thread of LCPU number,
-> performance is similar, power can save about 5~10 Watts on 2 sockets SNB EP
-> and NHM EP boxes.
+> Sure, but if the block device supports WRITE_SAME or persistent
+> discard, then presumably fallocate() should do this automatically all
+> the time, and not require a flag to request this behavior.  The only
+> reason why you might not is if the WRITE_SAME is more costly.  That is
+> when a seek plus writing 1MB does take more time than the amount of
+> disk time fraction that it consumes if you compare it to a seek plus
+> writing 4k or 32k.
+> 
+Well there are two cases here I think....
 
-Another testing of parallel compress with pigz on Linus' git tree.
-results show we get much better performance/power with powersaving and
-balance policy:
+One is the GFS2 type case where the metadata doesn't support "these
+blocks are allocated but zero" so that we must, for all fallocate
+requests, zero out the blocks at fallocate time to avoid exposing stale
+data to userspace.
 
-testing command:
-#pigz -k -c  -p$x -r linux* &> /dev/null
+The advantage over dd from userspace in this case is firstly that no
+copy from userspace means that it should be faster. Also the use of
+sb_issue_zeroout means that block devices which don't need an explicit
+block of zeros to write should be able to do this faster - however that
+is implemented at the block layer. The fs shouldn't need to care about
+how is it implemented. In the case of GFS2, we implemented fallocate
+because it was useful to have the feature of being able to allocate
+beyond the end of file without changing the file size. This helped us
+fix a bug in our fs grow code, so performance was a secondary (but
+welcome!) consideration. 
 
-On a NHM EP box
-         powersaving               balance   	         performance
-x = 4    166.516 /88 68           170.515 /82 71         165.283 /103 58
-x = 8    173.654 /61 94           177.693 /60 93         172.31 /76 76
+The other case is ext4/XFS type case where the metadata does support
+"these blocks are allocated but zero" which means that the metadata
+needs to be changed twice. Once to "these blocks are allocated but zero"
+at fallocate time and again to "these blocks have valid content" at
+write time. As I understand the issue, the problem is that this second
+metadata change is what is causing the performance issue.
 
-On a 2 sockets SNB EP box.
-         powersaving               balance   	         performance
-x = 4    190.995 /149 35          200.6 /129 38          208.561 /135 35
-x = 8    197.969 /108 46          208.885 /103 46        213.96 /108 43
-x = 16   205.163 /76 64           212.144 /91 51         229.287 /97 44
+> Ext4 currently uses a threshold of 32k for this break point (below
+> that, we will use sb_issue_zeroout; above that, we will break apart an
+> uninitialized extent when writing into a preallocated region).  It may
+> be that 32k is too low, especailly for certain types of devices (i.e.,
+> SSD's versus RAID 5, where it should be aligned on a RAID strip,
+> etc.).  More of an issue might be that there will be some disagreement
+> about whether people want to the system to automatically tune for
+> average throughput vs 99.9 percentile latency.
+> 
+> Regardless, this is actually something which I think the file system
+> should try to do automatically if at all possible, via some kind of
+> auto-tuning hueristic, instead of using an explicit fallocate(2) flag.
+> (See, I don't propose using a new fallocate flag for everything.  :-)
+> 
+>       	      	      	      - Ted
+> 
 
-data format is: 166.516 /88 68
-        166.516: avagerage Watts
-        88: seconds(compress time)
-        68:  scaled performance/power = 1000000 / time / power
+It sounds like it might well be worth experimenting with the thresholds
+as you suggest, 32k is really pretty small. I guess that the real
+question here is what is the cost of the metadata change (to say what is
+written and what remains unwritten) vs. simply zeroing out the unwritten
+blocks in the extent when the write occurs.
+
+There are likely to be a number of factors affecting that, and the
+answer doesn't appear straightforward,
+
+Steve.
 
 
