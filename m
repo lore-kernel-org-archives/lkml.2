@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab2LKVwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:52:32 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:53422 "EHLO
+	id S1754834Ab2LKVuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:50:22 -0500
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:40708 "EHLO
 	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab2LKVuX (ORCPT
+	with ESMTP id S1753656Ab2LKVuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:50:23 -0500
+	Tue, 11 Dec 2012 16:50:16 -0500
 From: Cesar Eduardo Barros <cesarb@cesarb.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
         Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Alan Cox <alan@linux.intel.com>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org
-Subject: [PATCH 13/19] MAINTAINERS: remove arch/x86/platform/mrst/pmu.*
-Date: Tue, 11 Dec 2012 19:49:55 -0200
-Message-Id: <1355262601-4263-14-git-send-email-cesarb@cesarb.net>
+        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH 03/19] MAINTAINERS: remove arch/arm/plat-s5p/
+Date: Tue, 11 Dec 2012 19:49:45 -0200
+Message-Id: <1355262601-4263-4-git-send-email-cesarb@cesarb.net>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
 References: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
@@ -23,34 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These files were removed by commit 1a8359e (x86/mid: Remove Intel
-Moorestown).
+These files were merged into plat-samsung.
 
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: linux-pm@vger.kernel.org
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org
 Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 ---
- MAINTAINERS | 6 ------
- 1 file changed, 6 deletions(-)
+ MAINTAINERS | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 78d07f5..fbb9c06 100644
+index f4890a3..e013f00 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -3970,12 +3970,6 @@ F:	Documentation/networking/ixgbe.txt
- F:	Documentation/networking/ixgbevf.txt
- F:	drivers/net/ethernet/intel/
+@@ -1074,7 +1074,6 @@ W:	http://www.fluff.org/ben/linux/
+ S:	Maintained
+ F:	arch/arm/plat-samsung/
+ F:	arch/arm/plat-s3c24xx/
+-F:	arch/arm/plat-s5p/
+ F:	arch/arm/mach-s3c24*/
+ F:	arch/arm/mach-s3c64xx/
+ F:	drivers/*/*s3c2410*
+@@ -1105,7 +1104,6 @@ M:	Sylwester Nawrocki <s.nawrocki@samsung.com>
+ L:	linux-arm-kernel@lists.infradead.org
+ L:	linux-media@vger.kernel.org
+ S:	Maintained
+-F:	arch/arm/plat-s5p/dev-fimc*
+ F:	arch/arm/plat-samsung/include/plat/*fimc*
+ F:	drivers/media/platform/s5p-fimc/
  
--INTEL MRST PMU DRIVER
--M:	Len Brown <len.brown@intel.com>
--L:	linux-pm@vger.kernel.org
--S:	Supported
--F:	arch/x86/platform/mrst/pmu.*
--
- INTEL PRO/WIRELESS 2100, 2200BG, 2915ABG NETWORK CONNECTION SUPPORT
- M:	Stanislav Yakovlev <stas.yakovlev@gmail.com>
- L:	linux-wireless@vger.kernel.org
+@@ -1116,7 +1114,7 @@ M:	Jeongtae Park <jtp.park@samsung.com>
+ L:	linux-arm-kernel@lists.infradead.org
+ L:	linux-media@vger.kernel.org
+ S:	Maintained
+-F:	arch/arm/plat-s5p/dev-mfc.c
++F:	arch/arm/plat-samsung/s5p-dev-mfc.c
+ F:	drivers/media/platform/s5p-mfc/
+ 
+ ARM/SAMSUNG S5P SERIES TV SUBSYSTEM SUPPORT
 -- 
 1.7.11.7
 
