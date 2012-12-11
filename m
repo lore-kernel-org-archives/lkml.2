@@ -1,72 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab2LKUvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 15:51:18 -0500
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:43708 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753389Ab2LKUvR (ORCPT
+	id S1754878Ab2LKUzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 15:55:09 -0500
+Received: from www84.your-server.de ([213.133.104.84]:49309 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965Ab2LKUzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 15:51:17 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v3] Enable A20 using KBC for some MSI laptops to fix S3 resume
-Date: Tue, 11 Dec 2012 21:50:38 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201210261056.44225.zary@gsystems.sk> <201212112129.13248.linux@rainbow-software.org> <50C7995E.7060301@zytor.com>
-In-Reply-To: <50C7995E.7060301@zytor.com>
-X-KMail-QuotePrefix: > 
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Tue, 11 Dec 2012 15:55:06 -0500
+Message-ID: <1355259259.30831.13.camel@wall-e>
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, aarcange@redhat.com,
+        luto@amacapital.net
+Date: Tue, 11 Dec 2012 21:54:19 +0100
+In-Reply-To: <50C78927.6080302@linaro.org>
+References: <1355242260-28762-1-git-send-email-stefani@seibold.net>
+	 <50C78927.6080302@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212112150.38410.linux@rainbow-software.org>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 December 2012 21:36:46 H. Peter Anvin wrote:
-> On 12/11/2012 12:29 PM, Ondrej Zary wrote:
-> > Something like this? (It works.)
->
-> Something like that.  We need to make sure we send the proper sequence,
-> though, or it might break some SMM firmware...
-
-Could you please create proper patch? You're the x86 expert (and I'm not).
-
-I've read that 0xd1 command with 0xdf data is often used to enable A20. But I 
-don't know when this must be done or what else needs to be done for the SMM 
-to not break.
-
-> > diff --git a/drivers/input/serio/i8042-x86ia64io.h
-> > b/drivers/input/serio/i8042-x86ia64io.h index d6cc77a..0807ac7 100644
-> > --- a/drivers/input/serio/i8042-x86ia64io.h
-> > +++ b/drivers/input/serio/i8042-x86ia64io.h
-> > @@ -921,6 +921,7 @@ static int __init i8042_platform_init(void)
-> >  	int retval;
+Am Dienstag, den 11.12.2012, 11:27 -0800 schrieb John Stultz:
+> On 12/11/2012 08:11 AM, stefani@seibold.net wrote:
+> > From: Stefani Seibold <stefani@seibold.net>
 > >
-> >  #ifdef CONFIG_X86
-> > +	u8 a20_on = 0xdf;
-> >  	/* Just return if pre-detection shows no i8042 controller exist */
-> >  	if (!x86_platform.i8042_detect())
-> >  		return -ENODEV;
-> > @@ -960,6 +961,13 @@ static int __init i8042_platform_init(void)
+> > This small patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+> > and vdso_time() support to the VDSO for x86 32-bit kernels.
 > >
-> >  	if (dmi_check_system(i8042_dmi_dritek_table))
-> >  		i8042_dritek = true;
-> > +
-> > +	/*
-> > +	 * A20 was already enabled during early kernel init. But some buggy
-> > +	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-> > +	 * resume from S3. So we do it here and hope that nothing breaks.
-> > +	 */
-> > +	i8042_command(&a20_on, 0x10d1);
-> >  #endif /* CONFIG_X86 */
+> > The reason to do this was to get a fast reliable time stamp. Many developers
+> > uses TSC to get a fast time time stamp, without knowing the pitfalls. VDSO
+> > time functions a fast and reliable way, because the kernel knows the best time
+> > source and the P- and C-state of the CPU.
+> Very cool. There have been similar implementations of this patch over 
+> the years, but they were all bit more hackish then this.
+> 
+Thanks, i think it is not more hackish than the x86 64 code.
+
+> 
+> > For x86 the vclock_gettime.c currently supports only the HPET and TSC timer,
+> > the ACPI timer should be easily to add with an other patch.
+> Although the ACPI PM timer requires port-io which would need tweaking to 
+> allow normal users to access it. And I'm not sure if the performance 
+> would be much improved, as the port-io probably dominates the 
+> performance cost.
+> 
+
+It was only an idea. I think it would be easy to give the ioperm read
+for the ACPI Timer without breaking anything.
+
+> > The helper library to use the VDSO functions can be download at
+> > http://http://seibold.net/vdso.c
+> > The libary is very small, only 228 lines of code. Compile it with
+> > gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
+> > and use it with LD_PRELOAD=<path>/libvdso.so
 > >
-> >  	return retval;
+> > This kind of helper must be integrated into glibc, for x86 64-bit and
+> > PowerPC it is already there.
+> >
+> A few notes below...
+> 
+> 
+> > diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+> > index 59c6c40..45ba688 100644
+> > --- a/arch/x86/include/asm/compat.h
+> > +++ b/arch/x86/include/asm/compat.h
+> > @@ -295,6 +295,10 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+> >   
+> >   static inline void __user *arch_compat_alloc_user_space(long len)
+> >   {
+> > +#ifdef CONFIG_X86_32
+> > +	struct pt_regs *regs = task_pt_regs(current);
+> > +	return (void __user *)regs->sp - len;
+> > +#else
+> >   	compat_uptr_t sp;
+> >   
+> >   	if (test_thread_flag(TIF_IA32)) {
+> > @@ -305,6 +309,7 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+> >   	}
+> >   
+> >   	return (void __user *)round_down(sp - len, 16);
+> > +#endif
+> >   }
+> 
+> This style of in-line ifdefs are ugly and hard to read.
+> 
+> So instead of doing:
+> void myfunction (void)
+> {
+> #ifdef 32bits
+>      32_bit_implementation();
+> #else
+>      64_bit_implementation();
+> #endif
+> }
+> 
+> Where possible, please do:
+> #ifdef 32bits
+> void myfunction1(void)
+> {
+>      32_bit implementation();
+> }
+> void myfunction2(void)
+> {
+> ....
+> #else /*64 bit versions */
+> void myfunction1(void)
+> {
+>      64_bit implementation();
+> }
+> void myfunction2(void)
+> ....
+> #endif
+> 
+> > diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> > index 4df6c37..2dc6b72 100644
+> > --- a/arch/x86/vdso/vclock_gettime.c
+> > +++ b/arch/x86/vdso/vclock_gettime.c
+> > @@ -59,14 +59,23 @@ notrace static cycle_t vread_tsc(void)
+> >   
+> >   static notrace cycle_t vread_hpet(void)
+> >   {
+> > +#ifdef CONFIG_X86_64
+> >   	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + 0xf0);
+> > +#else
+> > +	return readl(VVAR(vsyscall_hpet) + HPET_COUNTER);
+> > +#endif
+> >   }
+> >   
+> >   notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+> >   {
+> >   	long ret;
+> > +#ifdef CONFIG_X86_64
+> >   	asm("syscall" : "=a" (ret) :
+> >   	    "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
+> > +#else
+> > +	asm("int $0x80" : "=a" (ret) :
+> > +	    "a" (__NR_clock_gettime), "b" (clock), "c" (ts) : "memory");
+> > +#endif
+> >   	return ret;
+> >   }
+> Same point here.
+> 
+> 
+
+Will be fixed.
+
+> > diff --git a/arch/x86/vdso/vdso32/vclock_gettime.c b/arch/x86/vdso/vdso32/vclock_gettime.c
+> > new file mode 100644
+> > index 0000000..c9a1909
+> > --- /dev/null
+> > +++ b/arch/x86/vdso/vdso32/vclock_gettime.c
+> > @@ -0,0 +1,7 @@
+> > +/*
+> > + * since vgtod layout differs between X86_64 and x86_32, it is not possible to
+> > + * provide a 32 bit vclock with a 64 bit kernel
+> > + */
+> > +#ifdef CONFIG_X86_32
+> > +#include "../vclock_gettime.c"
+> > +#endif
+> Could you expand a bit as to why a compat layer isn't possible? It seems 
+> we could easily convert the vsyscall_gtod_data to a more explicit 
+> arch-neutral size. Or is it the actual data page mapping?
+> 
+
+This could be done in a subsequent patch. First i want not change to
+much, to make the review easier. Converting the vsyscall_gtod_data to
+arch neutral is not so easy, because the size of time_t, timezone and
+timespec differs. So currently 32 bit programs running under a 64 bit
+kernel will not get a VDSO with time functions. But real 32 bit kernel
+will provide it.
 
 
--- 
-Ondrej Zary
