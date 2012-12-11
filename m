@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab2LKV4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:56:42 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60424 "EHLO e8.ny.us.ibm.com"
+	id S1755092Ab2LKV4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:56:52 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42294 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785Ab2LKV4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:56:36 -0500
+	id S1755044Ab2LKV4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 16:56:41 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -18,144 +18,109 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
         Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 1/8] staging: zsmalloc: add gfp flags to zs_create_pool
-Date: Tue, 11 Dec 2012 15:55:59 -0600
-Message-Id: <1355262966-15281-2-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: =?UTF-8?q?=5BPATCH=208/8=5D=20zswap=3A=20add=20documentation?=
+Date: Tue, 11 Dec 2012 15:56:06 -0600
+Message-Id: <1355262966-15281-9-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121121-9360-0000-0000-00000DD32078
+x-cbid: 12121121-7182-0000-0000-000003B6C691
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zs_create_pool() currently takes a gfp flags argument
-that is used when growing the memory pool.  However
-it is not used in allocating the metadata for the pool
-itself.  That is currently hardcoded to GFP_KERNEL.
-
-zswap calls zs_create_pool() at swapon time which is done
-in atomic context, resulting in a "might sleep" warning.
-
-This patch changes the meaning of the flags argument in
-zs_create_pool() to mean the flags for the metadata allocation,
-and adds a flags argument to zs_malloc that will be used for
-memory pool growth if required.
+This patch adds the documentation file for the zswap functionality
 
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/zcache-main.c     |    4 ++--
- drivers/staging/zram/zram_drv.c          |    4 ++--
- drivers/staging/zsmalloc/zsmalloc-main.c |    9 +++------
- drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
- 4 files changed, 8 insertions(+), 11 deletions(-)
+ Documentation/vm/zswap.txt |   74 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
+ create mode 100644 Documentation/vm/zswap.txt
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 52b43b7..674c754 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -711,7 +711,7 @@ static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
- 
- 	BUG_ON(!irqs_disabled());
- 	BUG_ON(chunks >= NCHUNKS);
--	handle = zs_malloc(pool, size);
-+	handle = zs_malloc(pool, size, ZCACHE_GFP_MASK);
- 	if (!handle)
- 		goto out;
- 	atomic_inc(&zv_curr_dist_counts[chunks]);
-@@ -982,7 +982,7 @@ int zcache_new_client(uint16_t cli_id)
- 		goto out;
- 	cli->allocated = 1;
- #ifdef CONFIG_FRONTSWAP
--	cli->zspool = zs_create_pool("zcache", ZCACHE_GFP_MASK);
-+	cli->zspool = zs_create_pool("zcache", GFP_KERNEL);
- 	if (cli->zspool == NULL)
- 		goto out;
- 	idr_init(&cli->tmem_pools);
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index fb4a7c9..13e9b4b 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -336,7 +336,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		clen = PAGE_SIZE;
- 	}
- 
--	handle = zs_malloc(zram->mem_pool, clen);
-+	handle = zs_malloc(zram->mem_pool, clen, GFP_NOIO | __GFP_HIGHMEM);
- 	if (!handle) {
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
-@@ -576,7 +576,7 @@ int zram_init_device(struct zram *zram)
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
--	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-+	zram->mem_pool = zs_create_pool("zram", GFP_KERNEL);
- 	if (!zram->mem_pool) {
- 		pr_err("Error creating memory pool\n");
- 		ret = -ENOMEM;
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 09a9d35..6ff380e 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -205,8 +205,6 @@ struct link_free {
- 
- struct zs_pool {
- 	struct size_class size_class[ZS_SIZE_CLASSES];
--
--	gfp_t flags;	/* allocation flags used when growing pool */
- 	const char *name;
- };
- 
-@@ -807,7 +805,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
- 		return NULL;
- 
- 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
--	pool = kzalloc(ovhd_size, GFP_KERNEL);
-+	pool = kzalloc(ovhd_size, flags);
- 	if (!pool)
- 		return NULL;
- 
-@@ -827,7 +825,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
- 
- 	}
- 
--	pool->flags = flags;
- 	pool->name = name;
- 
- 	return pool;
-@@ -863,7 +860,7 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
-  * otherwise 0.
-  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
-  */
--unsigned long zs_malloc(struct zs_pool *pool, size_t size)
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags)
- {
- 	unsigned long obj;
- 	struct link_free *link;
-@@ -885,7 +882,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 
- 	if (!first_page) {
- 		spin_unlock(&class->lock);
--		first_page = alloc_zspage(class, pool->flags);
-+		first_page = alloc_zspage(class, flags);
- 		if (unlikely(!first_page))
- 			return 0;
- 
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index de2e8bf..907ff03 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -31,7 +31,7 @@ struct zs_pool;
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
--unsigned long zs_malloc(struct zs_pool *pool, size_t size);
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
- void zs_free(struct zs_pool *pool, unsigned long obj);
- 
- void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
+new file mode 100644
+index 0000000..f12d690
+--- /dev/null
++++ b/Documentation/vm/zswap.txt
+@@ -0,0 +1,74 @@
++Overview:
++
++Zswap is a lightweight compressed cache for swap pages. It takes
++pages that are in the process of being swapped out and attempts to
++compress them into a dynamically allocated RAM-based memory pool.
++If this process is successful, the writeback to the swap device is
++deferred and, in many cases, avoided completely.  This results in
++a significant I/O reduction and performance gains for systems that
++are swapping.
++
++Zswap provides compressed swap caching that basically trades CPU cycles
++for reduced swap I/O.  This trade-off can result in a significant
++performance improvement as reads to/writes from to the compressed
++cache almost always faster that reading from a swap device
++which incurs the latency of an asynchronous block I/O read.
++
++Some potential benefits:
++* Desktop/laptop users with limited RAM capacities can mitigate the
++    performance impact of swapping.
++* Overcommitted guests that share a common I/O resource can
++    dramatically reduce their swap I/O pressure, avoiding heavy
++    handed I/O throttling by the hypervisor.  This allows more work
++    to get done with less impact to the guest workload and guests
++    sharing the I/O subsystem
++* Users with SSDs as swap devices can extend the life of the device by
++    drastically reducing life-shortening writes.
++
++Zswap evicts pages from compressed cache on an LRU basis to the backing
++swap device when the compress pool reaches it size limit or the pool is
++unable to obtain additional pages from the buddy allocator.  This
++requirement had been identified in prior community discussions.
++
++To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
++e.g. zswap.enabled=1
++
++Design:
++
++Zswap receives pages for compression through the Frontswap API and
++is able to evict pages from its own compressed pool on an LRU basis
++and write them back to the backing swap device in the case that the
++compressed pool is full or unable to secure additional pages from
++the buddy allocator.
++
++Zswap makes use of zsmalloc for the managing the compressed memory
++pool.  This is because zsmalloc is specifically designed to minimize
++fragmentation on large (> PAGE_SIZE/2) allocation sizes.  Each
++allocation in zsmalloc is not directly accessible by address.
++Rather, a handle is return by the allocation routine and that handle
++must be mapped before being accessed.  The compressed memory pool grows
++on demand and shrinks as compressed pages are freed.  The pool is
++not preallocated.
++
++When a swap page is passed from frontswap to zswap, zswap maintains
++a mapping of the swap entry, a combination of the swap type and swap
++offset, to the zsmalloc handle that references that compressed swap
++page.  This mapping is achieved with a red-black tree per swap type.
++The swap offset is the search key for the tree nodes.
++
++Zswap seeks to be simple in its policies.  Sysfs attributes allow for
++two user controlled policies:
++* max_compression_ratio - Maximum compression ratio, as as percentage,
++    for an acceptable compressed page. Any page that does not compress
++    by at least this ratio will be rejected.
++* max_pool_percent - The maximum percentage of memory that the compressed
++    pool can occupy.
++
++Zswap allows the compressor to be selected at kernel boot time by
++setting the “compressor” attribute.  The default compressor is lzo.
++e.g. zswap.compressor=deflate
++
++A debugfs interface is provided for various statistic about pool size,
++number of pages stored, and various counters for the reasons pages
++are rejected.
++
 -- 
 1.7.9.5
 
