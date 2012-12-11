@@ -1,80 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab2LKL0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 06:26:07 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:10355 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2LKL0F (ORCPT
+	id S1752988Ab2LKL2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 06:28:43 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:53957 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2LKL2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 06:26:05 -0500
-X-IronPort-AV: E=Sophos;i="4.84,258,1355097600"; 
-   d="scan'208";a="56237"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>, Huang Ying <ying.huang@intel.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH v3] llist: add a safe version of llist_for_each_entry
-Date: Tue, 11 Dec 2012 12:25:57 +0100
-Message-ID: <1355225157-23609-1-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1355187084.7216.102.camel@yhuang-dev>
-References: <1355187084.7216.102.camel@yhuang-dev>
-MIME-Version: 1.0
+	Tue, 11 Dec 2012 06:28:42 -0500
+Message-ID: <1355225313.1919.1.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>, jiang.liu@huawei.com, hpa@zytor.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Date: Tue, 11 Dec 2012 05:28:33 -0600
+In-Reply-To: <50C6A93A.50404@cn.fujitsu.com>
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
+	 <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
----
-Changes since v2:
- * Allow to pass a NULL node as the first entry of deleted list
-   entries.
----
- include/linux/llist.h |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+On Tue, 2012-12-11 at 11:32 +0800, Tang Chen wrote:
+> On 12/11/2012 11:07 AM, Jianguo Wu wrote:
+> > On 2012/12/11 10:33, Tang Chen wrote:
+> >
+> >> This patch introduces a new array zone_movable_limit[] to store the
+> >> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+> >> The function sanitize_zone_movable_limit() will find out to which
+> >> node the ranges in movable_map.map[] belongs, and calculates the
+> >> low boundary of ZONE_MOVABLE for each node.
 
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-index a5199f6..4e0aec1 100644
---- a/include/linux/llist.h
-+++ b/include/linux/llist.h
-@@ -125,6 +125,33 @@ static inline void init_llist_head(struct llist_head *list)
- 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
- 
- /**
-+ * llist_for_each_entry_safe - safely iterate over some deleted entries of
-+ *                             lock-less list of given type
-+ * @pos:	the type * to use as a loop cursor.
-+ * @n:		the &struct llist_node to use as a temporary loop cursor
-+ * @node:	the fist entry of deleted list entries.
-+ * @member:	the name of the llist_node with the struct.
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being removed from list, so start with an entry
-+ * instead of list head.
-+ *
-+ * If being used on entries deleted from lock-less list directly, the
-+ * traverse order is from the newest to the oldest added entry.  If
-+ * you want to traverse from the oldest to the newest, you must
-+ * reverse the order by yourself before traversing.
-+ *
-+ * n is used to store a reference to the next item llist_node, so
-+ * pos can be freed while iterating.
-+ */
-+#define llist_for_each_entry_safe(pos, n, node, member)		\
-+	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
-+	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL;\
-+	     &(pos)->member != NULL;					\
-+	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
-+	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
-+
-+/**
-  * llist_empty - tests whether a lock-less list is empty
-  * @head:	the list to test
-  *
--- 
-1.7.7.5 (Apple Git-26)
+What's the difference between zone_movable_limit[nid] and
+zone_movable_pfn[nid]?
+
+> >>
+> >> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> >> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+> >> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
+> >> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+> >> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
+> >> ---
+> >>   mm/page_alloc.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>   1 files changed, 77 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >> index 1c91d16..4853619 100644
+> >> --- a/mm/page_alloc.c
+> >> +++ b/mm/page_alloc.c
+> >> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+> >>   static unsigned long __initdata required_kernelcore;
+> >>   static unsigned long __initdata required_movablecore;
+> >>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+> >> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+> >>
+> >>   /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+> >>   int movable_zone;
+> >> @@ -4340,6 +4341,77 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+> >>   	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+> >>   }
+> >>
+> >> +/**
+> >> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
+> >> + *
+> >> + * zone_movable_limit is initialized as 0. This function will try to get
+> >> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
+> >> + * assigne them to zone_movable_limit.
+> >> + * zone_movable_limit[nid] == 0 means no limit for the node.
+> >> + *
+> >> + * Note: Each range is represented as [start_pfn, end_pfn)
+> >> + */
+> >> +static void __meminit sanitize_zone_movable_limit(void)
+> >> +{
+> >> +	int map_pos = 0, i, nid;
+> >> +	unsigned long start_pfn, end_pfn;
+> >> +
+> >> +	if (!movablecore_map.nr_map)
+> >> +		return;
+> >> +
+> >> +	/* Iterate all ranges from minimum to maximum */
+> >> +	for_each_mem_pfn_range(i, MAX_NUMNODES,&start_pfn,&end_pfn,&nid) {
+> >> +		/*
+> >> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
+> >> +		 * specified by user, just go on to check next range.
+> >> +		 */
+> >> +		if (zone_movable_limit[nid])
+> >> +			continue;
+> >> +
+> >> +#ifdef CONFIG_ZONE_DMA
+> >> +		/* Skip DMA memory. */
+> >> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA])
+> >> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
+> >> +#endif
+> >> +
+> >> +#ifdef CONFIG_ZONE_DMA32
+> >> +		/* Skip DMA32 memory. */
+> >> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA32])
+> >> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
+> >> +#endif
+> >> +
+> >> +#ifdef CONFIG_HIGHMEM
+> >> +		/* Skip lowmem if ZONE_MOVABLE is highmem. */
+> >> +		if (zone_movable_is_highmem()&&
+> >
+> > Hi Tang,
+> >
+> > I think zone_movable_is_highmem() is not work correctly here.
+> > 	sanitize_zone_movable_limit
+> > 		zone_movable_is_highmem<--using movable_zone here
+> > 	find_zone_movable_pfns_for_nodes
+> > 		find_usable_zone_for_movable<--movable_zone is specified here
+> >
+> > I think Jiang Liu's patch works fine for highmem, please refer to:
+> > http://marc.info/?l=linux-mm&m=135476085816087&w=2
+> 
+> Hi Wu,
+> 
+> Yes, I forgot movable_zone think. Thanks for reminding me. :)
+> 
+> But Liu's patch you just mentioned, I didn't use it because I
+> don't think we should skip kernelcore when movablecore_map is specified.
+> If these 2 options are not conflict, we should satisfy them both. :)
+> 
+> Of course, I also think Liu's suggestion is wonderful. But I think we
+> need more discussion on it. :)
+> 
+> I'll fix it soon.
+> Thanks. :)
+> 
+> >
+> > Thanks,
+> > Jianguo Wu
+> >
+> >> +		    start_pfn<  arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
+> >> +			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
+> >> +#endif
+> >> +
+> >> +		if (start_pfn>= end_pfn)
+> >> +			continue;
+> >> +
+> >> +		while (map_pos<  movablecore_map.nr_map) {
+> >> +			if (end_pfn<= movablecore_map.map[map_pos].start_pfn)
+> >> +				break;
+> >> +
+> >> +			if (start_pfn>= movablecore_map.map[map_pos].end_pfn) {
+> >> +				map_pos++;
+> >> +				continue;
+> >> +			}
+> >> +
+> >> +			/*
+> >> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
+> >> +			 * pfn specified by movablecore_map, or 0, which means
+> >> +			 * the node has no ZONE_MOVABLE.
+> >> +			 */
+> >> +			zone_movable_limit[nid] = max(start_pfn,
+> >> +					movablecore_map.map[map_pos].start_pfn);
+> >> +
+> >> +			break;
+> >> +		}
+> >> +	}
+> >> +}
+> >> +
+> >>   #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+> >>   static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+> >>   					unsigned long zone_type,
+> >> @@ -4358,6 +4430,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
+> >>   	return zholes_size[zone_type];
+> >>   }
+> >>
+> >> +static void __meminit sanitize_zone_movable_limit(void)
+> >> +{
+> >> +}
+> >> +
+> >>   #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+> >>
+> >>   static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+> >> @@ -4923,6 +4999,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+> >>
+> >>   	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+> >>   	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+> >> +	sanitize_zone_movable_limit();
+> >>   	find_zone_movable_pfns_for_nodes();
+> >>
+> >>   	/* Print out the zone ranges */
+> >
+> >
+> >
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 
