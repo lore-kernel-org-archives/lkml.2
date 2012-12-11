@@ -1,81 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab2LKNIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 08:08:25 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:6192 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752823Ab2LKNIX (ORCPT
+	id S1753380Ab2LKNLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 08:11:45 -0500
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:49868 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054Ab2LKNLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 08:08:23 -0500
-X-IronPort-AV: E=Sophos;i="4.84,259,1355094000"; 
-   d="scan'208";a="165457331"
-Date: Tue, 11 Dec 2012 14:08:16 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to
- devm_kfree
-In-Reply-To: <50C72E75.8030706@mvista.com>
-Message-ID: <alpine.DEB.2.02.1212111407570.2091@hadrien>
-References: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr> <50C72E75.8030706@mvista.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Dec 2012 08:11:42 -0500
+Date: Tue, 11 Dec 2012 08:11:35 -0500
+From: Jeff Layton <jlayton@samba.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>,
+        Christoph Hellwig <hch@infradead.org>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        wine-devel@winehq.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121211081135.136ee0d0@tlielax.poochiereds.net>
+In-Reply-To: <20121210164116.GC13327@fieldses.org>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+	<20121207161602.GA17710@infradead.org>
+	<495d17310e0a687d446afc86def0f058@office.etersoft.ru>
+	<20121210164116.GC13327@fieldses.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012, Sergei Shtylyov wrote:
+On Mon, 10 Dec 2012 11:41:16 -0500
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-> Hello.
->
-> On 11-12-2012 14:58, Julia Lawall wrote:
->
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> > The function at91_dt_node_to_map is ultimately called by the function
-> > pinctrl_get, which is an exported function.  Since it is possible that this
-> > function is not called from within a probe function, for safety, the kfree
-> > is converted to a devm_kfree, to both free the data and remove it from the
-> > device in a failure situation.
->
-> > A newline is added in the call to devm_kfree to avoid exceeding the 80
->
->    devm_kzalloc() you mean?
+> On Sat, Dec 08, 2012 at 12:43:14AM +0400, Pavel Shilovsky wrote:
+> > The problem is the possibility of denial-of-service attacks here. We
+> > can try to prevent them by:
+> > 1) specifying an extra security bit on the file that indicates that
+> > share flags are accepted (like we have for mandatory locks now) and
+> > setting it for neccessary files only, or
+> > 2) adding a special mount option (but it it probably makes sense if
+> > we decided to add this support for CIFS and NFS only).
+> 
+> In the case of knfsd and samba exporting a common filesystem, you'd also
+> want to be able to enforce it on the exported filesystem.
+> 
 
-Yes, sorry.  Should I send a new patch?
+Sorry for chiming in late on this, but I've been looking at this
+problem from the other end as well, from the POV of a fileserver. For
+there, you absolutely do want to have some mechanism for enforcing this
+on local filesystems. 
 
-thanks,
-julia
+Currently, file servers generally enforce share reservations
+internally. The upshot is that they're not aware when other tasks
+outside the server modify a file. This is also problematic too in many
+common fileserving situations -- when exporting files via both NFS and
+SMB, for instance.
 
-> > character limit.
->
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> > ---
-> >   drivers/pinctrl/pinctrl-at91.c |    5 +++--
-> >   1 file changed, 3 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> > index c5e7571..0da8a5f 100644
-> > --- a/drivers/pinctrl/pinctrl-at91.c
-> > +++ b/drivers/pinctrl/pinctrl-at91.c
-> > @@ -255,7 +255,8 @@ static int at91_dt_node_to_map(struct pinctrl_dev
-> > *pctldev,
-> >   	}
-> >
-> >   	map_num += grp->npins;
-> > -	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
-> > GFP_KERNEL);
-> > +	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
-> > +			       GFP_KERNEL);
->
-> WBR, Sergei
->
->
->
+One thing that's important to note is that there is already some
+support for this in the kernel. The LOCK_MAND flag and its associates
+are intended for just this purpose. Samba even already calls into the
+kernel to set LOCK_MAND locks, but the kernel just passes them through
+to the fs. Rumor has it that GPFS does something with these flags, but
+I can't confirm that.
+
+Of course, LOCK_MAND is racy since you can't set it on open(), but it
+might be nice to use that as a starting point for trying to add this
+support.
+
+At the very least, if we're going to do this, we need to consider what
+to do with the LOCK_MAND interfaces. As a starting point for
+discussion, here's a patch that I was playing with a few months ago. I
+haven't had much time to really spend on this project, but it may be
+worthwhile to consider. It works, but I'm not sure about the
+semantics...
+
+-----------------------------[snip]--------------------------------
+
+locks: add enforcement of LOCK_MAND locks
+
+The LOCK_MAND lock mechanism is currently a no-op for any in-tree
+filesystem. The flags are passed to f_ops->flock, but the standard
+flock routines basically ignore them.
+
+Change this by adding enforcement against other LOCK_MAND locks. Also,
+assume that LOCK_MAND also implies LOCK_NB.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 42 insertions(+), 3 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 814c51d..736e38b 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -625,6 +625,43 @@ static int posix_locks_conflict(struct file_lock *caller_fl, struct file_lock *s
+ 	return (locks_conflict(caller_fl, sys_fl));
+ }
+ 
++/*
++ * locks_mand_conflict - Determine if there's a share reservation conflict
++ * @caller_fl: lock we're attempting to acquire
++ * @sys_fl: lock already present on system that we're checking against
++ *
++ * Check to see if there's a share_reservation conflict. LOCK_READ/LOCK_WRITE
++ * tell us whether the reservation allows other readers and writers.
++ *
++ * We only check against other LOCK_MAND locks, so applications that want to
++ * use share mode locking will only conflict against one another. "normal"
++ * applications that open files won't be affected by and won't themselves
++ * affect the share reservations.
++ */
++static int locks_mand_conflict(struct file_lock *caller_fl,
++				struct file_lock *sys_fl)
++{
++	unsigned char caller_type = caller_fl->fl_type;
++	unsigned char sys_type = sys_fl->fl_type;
++	fmode_t	caller_fmode = caller_fl->fl_file->f_mode;
++	fmode_t sys_fmode = sys_fl->fl_file->f_mode;
++
++	/* they can only conflict if they're both LOCK_MAND */
++	if (!(caller_type & LOCK_MAND) || !(sys_type & LOCK_MAND))
++		return 0;
++
++	if (!(caller_type & LOCK_READ) && (sys_fmode & FMODE_READ))
++		return 1;
++	if (!(caller_type & LOCK_WRITE) && (sys_fmode & FMODE_WRITE))
++		return 1;
++	if (!(sys_type & LOCK_READ) && (caller_fmode & FMODE_READ))
++		return 1;
++	if (!(sys_type & LOCK_WRITE) && (caller_fmode & FMODE_WRITE))
++		return 1;
++
++	return 0;
++}
++
+ /* Determine if lock sys_fl blocks lock caller_fl. FLOCK specific
+  * checking before calling the locks_conflict().
+  */
+@@ -633,9 +670,11 @@ static int flock_locks_conflict(struct file_lock *caller_fl, struct file_lock *s
+ 	/* FLOCK locks referring to the same filp do not conflict with
+ 	 * each other.
+ 	 */
+-	if (!IS_FLOCK(sys_fl) || (caller_fl->fl_file == sys_fl->fl_file))
+-		return (0);
++	if (!IS_FLOCK(sys_fl))
++		return 0;
+ 	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND))
++		return locks_mand_conflict(caller_fl, sys_fl);
++	if (caller_fl->fl_file == sys_fl->fl_file)
+ 		return 0;
+ 
+ 	return (locks_conflict(caller_fl, sys_fl));
+@@ -1646,7 +1685,7 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
+ 	if (!filp)
+ 		goto out;
+ 
+-	can_sleep = !(cmd & LOCK_NB);
++	can_sleep = !(cmd & (LOCK_NB|LOCK_MAND));
+ 	cmd &= ~LOCK_NB;
+ 	unlock = (cmd == LOCK_UN);
+ 
+-- 
+1.7.11.7
+
