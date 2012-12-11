@@ -1,186 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2LKEue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 23:50:34 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:19575 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751625Ab2LKEud convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 23:50:33 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -10
-X-BigFish: VS-10(zzbb2dI98dI9371I179dN542I1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: Joerg Roedel <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-Subject: RE: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Thread-Topic: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Thread-Index: AQHN1zryreXJamSE4kOq4mmamJ54mJgS/5Rw
-Date: Tue, 11 Dec 2012 04:50:29 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D2C4AEE@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <C5ECD7A89D1DC44195F34B25E172658D2B70EE@039-SN2MPN1-013.039d.mgd.msft.net>
-	<1354645371.16710.15@snotra>
-	<C5ECD7A89D1DC44195F34B25E172658D2C09A4@039-SN2MPN1-013.039d.mgd.msft.net>
- <1355187644.5334.23@snotra>
-In-Reply-To: <1355187644.5334.23@snotra>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.77]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1752810Ab2LKE4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 23:56:47 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:48780 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751918Ab2LKE4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 23:56:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,257,1355068800"; 
+   d="scan'208";a="6372884"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v3 3/5][RESEND] page_alloc: Introduce zone_movable_limit[] to keep movable limit for nodes
+Date: Tue, 11 Dec 2012 12:55:49 +0800
+Message-Id: <1355201749-27182-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
+References: <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/11 12:55:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/11 12:55:56,
+	Serialize complete at 2012/12/11 12:55:56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch introduces a new array zone_movable_limit[] to store the
+ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+The function sanitize_zone_movable_limit() will find out to which
+node the ranges in movable_map.map[] belongs, and calculates the
+low boundary of ZONE_MOVABLE for each node.
+
+change log:
+Do find_usable_zone_for_movable() to initialize movable_zone
+so that sanitize_zone_movable_limit() could use it.
+
+Reported-by: Wu Jianguo <wujianguo@huawei.com>
 
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Tuesday, December 11, 2012 6:31 AM
-> To: Sethi Varun-B16395
-> Cc: Wood Scott-B07421; Joerg Roedel; linux-kernel@vger.kernel.org;
-> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; Tabi
-> Timur-B04825
-> Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> required by fsl PAMU driver.
-> 
-> On 12/10/2012 04:10:06 AM, Sethi Varun-B16395 wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Tuesday, December 04, 2012 11:53 PM
-> > > To: Sethi Varun-B16395
-> > > Cc: Wood Scott-B07421; Joerg Roedel; linux-kernel@vger.kernel.org;
-> > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> > Tabi
-> > > Timur-B04825
-> > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> > > required by fsl PAMU driver.
-> > >
-> > > On 12/04/2012 05:53:33 AM, Sethi Varun-B16395 wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Wood Scott-B07421
-> > > > > Sent: Monday, December 03, 2012 10:34 PM
-> > > > > To: Sethi Varun-B16395
-> > > > > Cc: Joerg Roedel; linux-kernel@vger.kernel.org;
-> > iommu@lists.linux-
-> > > > > foundation.org; Wood Scott-B07421;
-> > linuxppc-dev@lists.ozlabs.org;
-> > > > Tabi
-> > > > > Timur-B04825
-> > > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain
-> > attributes
-> > > > > required by fsl PAMU driver.
-> > > > >
-> > > > > On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
-> > > > > >
-> > > > > >
-> > > > > > > -----Original Message-----
-> > > > > > > From: iommu-bounces@lists.linux-foundation.org
-> > [mailto:iommu-
-> > > > > > > bounces@lists.linux-foundation.org] On Behalf Of Joerg
-> > Roedel
-> > > > > > > Sent: Sunday, December 02, 2012 7:33 PM
-> > > > > > > To: Sethi Varun-B16395
-> > > > > > > Cc: linux-kernel@vger.kernel.org;
-> > > > iommu@lists.linux-foundation.org;
-> > > > > > Wood
-> > > > > > > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi
-> > Timur-B04825
-> > > > > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain
-> > > > attributes
-> > > > > > > required by fsl PAMU driver.
-> > > > > > >
-> > > > > > > Hmm, we need to work out a good abstraction for this.
-> > > > > > >
-> > > > > > > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
-> > > > > > > > Added the following domain attributes required by FSL PAMU
-> > > > driver:
-> > > > > > > > 1. Subwindows field added to the iommu domain geometry
-> > > > attribute.
-> > > > > > >
-> > > > > > > Are the Subwindows mapped with full size or do you map only
-> > > > parts
-> > > > > > of the
-> > > > > > > subwindows?
-> > > > > > >
-> > > > > > [Sethi Varun-B16395] It's possible to map a part of the
-> > subwindow
-> > > > i.e.
-> > > > > > size of the mapping can be less than the sub window size.
-> > > > > >
-> > > > > > > > +	 * This attribute indicates number of DMA subwindows
-> > > > > supported
-> > > > > > by
-> > > > > > > > +	 * the geometry. If there is a single window that maps
-> > > > the
-> > > > > > entire
-> > > > > > > > +	 * geometry, attribute must be set to "1". A value of
-> > > > "0"
-> > > > > > implies
-> > > > > > > > +	 * that this mechanism is not used at all(normal paging
-> > > > is
-> > > > > > used).
-> > > > > > > > +	 * Value other than* "0" or "1" indicates the actual
-> > > > number
-> > > > > of
-> > > > > > > > +	 * subwindows.
-> > > > > > > > +	 */
-> > > > > > >
-> > > > > > > This semantic is ugly, how about a feature detection
-> > mechanism?
-> > > > > > >
-> > > > > > [Sethi Varun-B16395] A feature mechanism to query the type of
-> > > > IOMMU?
-> > > > >
-> > > > > A feature mechanism to determine whether this subwindow
-> > mechanism is
-> > > > > available, and what the limits are.
-> > > > >
-> > > > So, we use the IOMMU capability interface to find out if IOMMU
-> > > > supports sub windows or not, right? But still number of sub
-> > windows
-> > > > would be specified as a part of the geometry and the valid value
-> > for
-> > > > sub windows would  0,1 or actual number of sub windows.
-> > >
-> > > How does a user of the interface find out what values are possible
-> > for
-> > > the "actual number of subwindows"?  How does a user of the
-> > interface find
-> > > out whether there are any limitations on specifying a value of zero
-> > (in
-> > > the case of PAMU, that would be a maximum 1 MiB naturally-aligned
-> > > aperture to support arbitrary 4KiB mappings)?
-> > How about if we say that the default value for subwindows is zero and
-> > this what you get when you read the geometry (iommu_get_attr) after
-> > initializing the domain? In that case the user would know that
-> > implication of setting subwindows to zero with respect to the aperture
-> > size.
-> 
-> So it would default to the maximum aperture size possible with no
-> subwindows?  That might be OK, though is there a way to reset the domain
-> later on to get back to that informational state?
-> 
-[Sethi Varun-B16395] Yes, that can be done via iommu_set_attr API.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Liu Jiang <jiang.liu@huawei.com>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ mm/page_alloc.c |   79 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 78 insertions(+), 1 deletions(-)
 
-> How about finding out the maximum number of subwindows?
-[Sethi Varun-B16395] We can introduce an API to determine the permissible range of values for an attribute, but it may be redundant for other IOMMU implementations. For the IOMMU implementations where geometry is just a read only attribute, iommu_get_attr returns the set of permissible values. I think it would be better if we can add a read only field (for the users) "max_subwindows" to the geometry.
-
--Varun
-
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1c91d16..52c368e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+ static unsigned long __initdata required_kernelcore;
+ static unsigned long __initdata required_movablecore;
+ static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
++static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+ 
+ /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+ int movable_zone;
+@@ -4340,6 +4341,77 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+ 	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+ }
+ 
++/**
++ * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
++ *
++ * zone_movable_limit is initialized as 0. This function will try to get
++ * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
++ * assigne them to zone_movable_limit.
++ * zone_movable_limit[nid] == 0 means no limit for the node.
++ *
++ * Note: Each range is represented as [start_pfn, end_pfn)
++ */
++static void __meminit sanitize_zone_movable_limit(void)
++{
++	int map_pos = 0, i, nid;
++	unsigned long start_pfn, end_pfn;
++
++	if (!movablecore_map.nr_map)
++		return;
++
++	/* Iterate all ranges from minimum to maximum */
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid) {
++		/*
++		 * If we have found lowest pfn of ZONE_MOVABLE of the node
++		 * specified by user, just go on to check next range.
++		 */
++		if (zone_movable_limit[nid])
++			continue;
++
++#ifdef CONFIG_ZONE_DMA
++		/* Skip DMA memory. */
++		if (start_pfn < arch_zone_highest_possible_pfn[ZONE_DMA])
++			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
++#endif
++
++#ifdef CONFIG_ZONE_DMA32
++		/* Skip DMA32 memory. */
++		if (start_pfn < arch_zone_highest_possible_pfn[ZONE_DMA32])
++			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
++#endif
++
++#ifdef CONFIG_HIGHMEM
++		/* Skip lowmem if ZONE_MOVABLE is highmem. */
++		if (zone_movable_is_highmem() &&
++		    start_pfn < arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
++			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
++#endif
++
++		if (start_pfn >= end_pfn)
++			continue;
++
++		while (map_pos < movablecore_map.nr_map) {
++			if (end_pfn <= movablecore_map.map[map_pos].start_pfn)
++				break;
++
++			if (start_pfn >= movablecore_map.map[map_pos].end_pfn) {
++				map_pos++;
++				continue;
++			}
++
++			/*
++			 * The start_pfn of ZONE_MOVABLE is either the minimum
++			 * pfn specified by movablecore_map, or 0, which means
++			 * the node has no ZONE_MOVABLE.
++			 */
++			zone_movable_limit[nid] = max(start_pfn,
++					movablecore_map.map[map_pos].start_pfn);
++
++			break;
++		}
++	}
++}
++
+ #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+ 					unsigned long zone_type,
+@@ -4358,6 +4430,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
+ 	return zholes_size[zone_type];
+ }
+ 
++static void __meminit sanitize_zone_movable_limit(void)
++{
++}
++
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+@@ -4768,7 +4844,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 		goto out;
+ 
+ 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+-	find_usable_zone_for_movable();
+ 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+ 
+ restart:
+@@ -4923,6 +4998,8 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ 
+ 	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+ 	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
++	find_usable_zone_for_movable();
++	sanitize_zone_movable_limit();
+ 	find_zone_movable_pfns_for_nodes();
+ 
+ 	/* Print out the zone ranges */
+-- 
+1.7.1
 
