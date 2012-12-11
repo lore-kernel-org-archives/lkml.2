@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab2LKNkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 08:40:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45212 "EHLO mx2.suse.de"
+	id S1753532Ab2LKNlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 08:41:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45227 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab2LKNkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 08:40:47 -0500
-Message-ID: <50C737DC.9070307@suse.cz>
-Date: Tue, 11 Dec 2012 14:40:44 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	id S1753104Ab2LKNlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 08:41:16 -0500
+Date: Tue, 11 Dec 2012 14:41:13 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: livelock in __writeback_inodes_wb ?
+Message-ID: <20121211134113.GA15801@quack.suse.cz>
+References: <20121128145515.GA26564@redhat.com>
+ <20121211082327.GA15706@localhost>
 MIME-Version: 1.0
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] scripts/tags.sh: Support compiled source
-References: <1355152306-4513-1-git-send-email-js1304@gmail.com> <1355152306-4513-2-git-send-email-js1304@gmail.com>
-In-Reply-To: <1355152306-4513-2-git-send-email-js1304@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211082327.GA15706@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 10.12.2012 16:11, Joonsoo Kim napsal(a):
-> We usually have interst in compiled files only,
-> because they are strongly related to individual's work.
-> Current tags.sh can't select compiled files, so support it.
+On Tue 11-12-12 16:23:27, Wu Fengguang wrote:
+> On Wed, Nov 28, 2012 at 09:55:15AM -0500, Dave Jones wrote:
+> > We had a user report the soft lockup detector kicked after 22
+> > seconds of no progress, with this trace..
 > 
-> We can use this functionality like below.
-> "make cscope O=. SRCARCH=xxxx COMPILED_SOURCE=compiled"
+> Where is the original report? The reporter may help provide some clues
+> on the workload that triggered the bug.
 > 
-> It must be executed after building the kernel.
+> > :BUG: soft lockup - CPU#1 stuck for 22s! [flush-8:16:3137]
+> > :Pid: 3137, comm: flush-8:16 Not tainted 3.6.7-4.fc17.x86_64 #1
+> > :RIP: 0010:[<ffffffff812eeb8c>]  [<ffffffff812eeb8c>] __list_del_entry+0x2c/0xd0
+> > :Call Trace:
+> > : [<ffffffff811b783e>] redirty_tail+0x5e/0x80
+> > : [<ffffffff811b8212>] __writeback_inodes_wb+0x72/0xd0
+> > : [<ffffffff811b980b>] wb_writeback+0x23b/0x2d0
+> > : [<ffffffff811b9b5c>] wb_do_writeback+0xac/0x1f0
+> > : [<ffffffff8106c0e0>] ? __internal_add_timer+0x130/0x130
+> > : [<ffffffff811b9d2b>] bdi_writeback_thread+0x8b/0x230
+> > : [<ffffffff811b9ca0>] ? wb_do_writeback+0x1f0/0x1f0
+> > : [<ffffffff8107fde3>] kthread+0x93/0xa0
+> > : [<ffffffff81627e04>] kernel_thread_helper+0x4/0x10
+> > : [<ffffffff8107fd50>] ? kthread_freezable_should_stop+0x70/0x70
+> > : [<ffffffff81627e00>] ? gs_change+0x13/0x13
+> > 
+> > Looking over the code, is it possible that something could be
+> > dirtying pages faster than writeback can get them written out,
+> > keeping us in this loop indefitely ?
 > 
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> ---
-> v2: change bash specific '[[]]' to 'case in' statement.
->     use COMPILED_SOURCE env var, instead of abusing SUBARCH
-> v3: change [ "$COMPILED_SOURCE"="compiled" ] to [ -n $COMPILED_SOURCE" ]
+> The bug reporter should know best whether there are heavy IO.
+> 
+> However I suspect it's not directly caused by heavy IO: we will
+> release &wb->list_lock before each __writeback_single_inode() call,
+> which starts writeback IO for each inode.
+  Umm, it's not about releasing wb->list_lock I think. Softlockup will
+trigger whenever we are looping in a kernel for more than given timeout
+(e.g. those 22 s) without sleeping.
 
-Thanks, I applied both patches to kbuild.git#misc now.
+> > Should there be something in this loop periodically poking
+> > the watchdog perhaps ?
+> 
+> It seems we failed to release &wb->list_lock in wb_writeback() for
+> long time (dozens of seconds). That is, the inode_sleep_on_writeback()
+> is somehow not called. However it's not obvious to me how come this
+> can happen..
+  Maybe, progress is always non-zero but small and nr_pages is high (e.g.
+when writeback is triggered by wakeup_flusher_threads()). What filesystem
+is the guy using? I remember e.g. btrfs used to have always-dirty inodes
+which could confuse us.
 
-Michal
+>From the backtrace it is clear there's some superblock which has s_umount
+locked and we cannot writeback inodes there. So if this superblock contains
+most of the dirty pages we need to write and there's another superblock
+with always dirty inode we would livelock like observed... So my question
+would be about what filesystems are there in the system (/proc/mounts),
+what load does trigger this, trigger sysrq-w when the lockup happens.
 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
