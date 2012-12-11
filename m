@@ -1,71 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2LKIMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 03:12:37 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53639 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054Ab2LKIMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 03:12:35 -0500
-X-IronPort-AV: E=Sophos;i="4.84,258,1355068800"; 
-   d="scan'208";a="6374417"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, yinghai@kernel.org, hpa@zytor.com
-Cc: davem@davemloft.net, hannes@cmpxchg.org, eric.dumazet@gmail.com,
-        tj@kernel.org, shangw@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Lin Feng <linfeng@cn.fujitsu.com>
-Subject: [PATCH] mm/bootmem.c: remove unused wrapper function reserve_bootmem_generic()
-Date: Tue, 11 Dec 2012 16:12:03 +0800
-Message-Id: <1355213523-15698-1-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/11 16:11:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/11 16:11:47,
-	Serialize complete at 2012/12/11 16:11:47
+	id S1753188Ab2LKINA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 03:13:00 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33048 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753036Ab2LKIM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 03:12:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,256,1355126400"; 
+   d="scan'208";a="179293309"
+Message-ID: <1355213572.7216.140.camel@yhuang-dev>
+Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent
+ in D3cold
+From: Huang Ying <ying.huang@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Tue, 11 Dec 2012 16:12:52 +0800
+In-Reply-To: <1354244049.29553.97.camel@yhuang-dev>
+References: <20121122003904.262382971@linuxfoundation.org>
+	 <20121122003904.516735571@linuxfoundation.org>
+	 <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
+	 <1353640177.28789.21.camel@yhuang-dev>
+	 <1353656862.28789.57.camel@yhuang-dev> <20121130020104.GJ13478@kroah.com>
+	 <1354244049.29553.97.camel@yhuang-dev>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrapper fucntion reserve_bootmem_generic() currently have no caller,
-so clean it up.
+On Fri, 2012-11-30 at 10:54 +0800, Huang Ying wrote:
+> On Thu, 2012-11-29 at 18:01 -0800, Greg Kroah-Hartman wrote:
+> > On Fri, Nov 23, 2012 at 03:47:42PM +0800, Huang Ying wrote:
+> > > On Fri, 2012-11-23 at 11:09 +0800, Huang Ying wrote:
+> > > > On Fri, 2012-11-23 at 02:35 +0000, Ben Hutchings wrote:
+> > > > > On Wed, 2012-11-21 at 16:39 -0800, Greg Kroah-Hartman wrote:
+> > > > > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > > > > > 
+> > > > > > ------------------
+> > > > > > 
+> > > > > > From: Huang Ying <ying.huang@intel.com>
+> > > > > > 
+> > > > > > commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
+> > > > > > 
+> > > > > > If a PCI device and its parents are put into D3cold, unbinding the
+> > > > > > device will trigger deadlock as follow:
+> > > > > > 
+> > > > > > - driver_unbind
+> > > > > >   - device_release_driver
+> > > > > >     - device_lock(dev)				<--- previous lock here
+> > > > > >     - __device_release_driver
+> > > > > >       - pm_runtime_get_sync
+> > > > > >         ...
+> > > > > >           - rpm_resume(dev)
+> > > > > >             - rpm_resume(dev->parent)
+> > > > > >               ...
+> > > > > >                 - pci_pm_runtime_resume
+> > > > > >                   ...
+> > > > > >                   - pci_set_power_state
+> > > > > >                     - __pci_start_power_transition
+> > > > > >                       - pci_wakeup_bus(dev->parent->subordinate)
+> > > > > >                         - pci_walk_bus
+> > > > > >                           - device_lock(dev)	<--- deadlock here
+> > > > > > 
+> > > > > > 
+> > > > > > If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
+> > > > > > Device_lock in pci_walk_bus is introduced in commit:
+> > > > > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > > > > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > > > > > said device_lock is added to pci_walk_bus because:
+> > > > > > 
+> > > > > >   Some error handling functions call pci_walk_bus. For example, PCIe
+> > > > > >   aer. Here we lock the device, so the driver wouldn't detach from the
+> > > > > >   device, as the cb might call driver's callback function.
+> > > > > > 
+> > > > > > So I fixed the deadlock as follows:
+> > > > > > 
+> > > > > > - remove device_lock from pci_walk_bus
+> > > > > > - add device_lock into callback if callback will call driver's callback
+> > > > > > 
+> > > > > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > > > > > device lock.
+> > > > > [...]
+> > > > > 
+> > > > > What about eeh_report_error() in
+> > > > > arch/powerpc/platforms/pseries/eeh_driver.c?
+> > > > 
+> > > > En...  Because pci_walk_bus() invocation is removed in 3.7, so this
+> > > > patch is only valid for 3.7.  We need another version for 3.6.
+> > > 
+> > > Here is the patch for 3.6.  I have no powerpc machine, so build test
+> > > only.
+> > > 
+> > > Subject: [BUGFIX] PCI/PM: Fix deadlock when unbind device if its parent in D3cold
+> > > 
+> > > If a PCI device and its parents are put into D3cold, unbinding the
+> > > device will trigger deadlock as follow:
+> > > 
+> > > - driver_unbind
+> > >   - device_release_driver
+> > >     - device_lock(dev)				<--- previous lock here
+> > >     - __device_release_driver
+> > >       - pm_runtime_get_sync
+> > >         ...
+> > >           - rpm_resume(dev)
+> > >             - rpm_resume(dev->parent)
+> > >               ...
+> > >                 - pci_pm_runtime_resume
+> > >                   ...
+> > >                   - pci_set_power_state
+> > >                     - __pci_start_power_transition
+> > >                       - pci_wakeup_bus(dev->parent->subordinate)
+> > >                         - pci_walk_bus
+> > >                           - device_lock(dev)	<--- dead lock here
+> > > 
+> > > 
+> > > If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
+> > > Device_lock in pci_walk_bus is introduced in commit:
+> > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > > said device_lock is added to pci_walk_bus because:
+> > > 
+> > >   Some error handling functions call pci_walk_bus. For example, PCIe
+> > >   aer. Here we lock the device, so the driver wouldn't detach from the
+> > >   device, as the cb might call driver's callback function.
+> > > 
+> > > So I fixed the dead lock as follow:
+> > > 
+> > > - remove device_lock from pci_walk_bus
+> > > - add device_lock into callback if callback will call driver's callback
+> > > 
+> > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > > device lock.
+> > > 
+> > > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > > Cc: Zhang Yanmin <yanmin.zhang@intel.com>
+> > > ---
+> > >  arch/powerpc/platforms/pseries/eeh_driver.c |   51 ++++++++++++++++++----------
+> > 
+> > Due to me applying a power pci patch,
+> > feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc in Linus's tree to 3.6-stable,
+> > this patch doesn't apply here anymore.
+> > 
+> > Because that patch is in the tree, is it now just safe to take your
+> > original, unmodified, version of this patch for 3.6-stable?
+> 
+> No.  My original version does not work.  I need to rebase my patch on
+> this patch.  Which tree should I base?
 
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
----
- include/linux/bootmem.h |    3 ---
- mm/bootmem.c            |    6 ------
- 2 files changed, 0 insertions(+), 9 deletions(-)
+Which tree should I base the patch on?
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 6d6795d..bfc742c 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -137,9 +137,6 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- #define alloc_bootmem_low_pages_node(pgdat, x) \
- 	__alloc_bootmem_low_node(pgdat, x, PAGE_SIZE, 0)
- 
--extern int reserve_bootmem_generic(unsigned long addr, unsigned long size,
--				   int flags);
--
- #ifdef CONFIG_HAVE_ARCH_ALLOC_REMAP
- extern void *alloc_remap(int nid, unsigned long size);
- #else
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index f468185..2812730 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -439,12 +439,6 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
- 	return mark_bootmem(start, end, 1, flags);
- }
- 
--int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
--				   int flags)
--{
--	return reserve_bootmem(phys, len, flags);
--}
--
- static unsigned long __init align_idx(struct bootmem_data *bdata,
- 				      unsigned long idx, unsigned long step)
- {
--- 
-1.7.1
+Best Regards,
+Huang Ying
+
 
