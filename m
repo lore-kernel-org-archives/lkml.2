@@ -1,72 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab2LKD3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 22:29:14 -0500
-Received: from smtp.wow.synacor.com ([64.8.70.55]:55246 "EHLO
-	smtp.mail.wowway.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab2LKD3M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 22:29:12 -0500
-X-Spam-Rating: None
-X_CMAE_Category: 0,0 Undefined,Undefined
-X-CNFS-Analysis: v=1.1 cv=CIrd2VtW4t2jO5UNyUYpi19KxaV+yoPbBAtYeYHFuTA= c=1 sm=0 a=c8qTiYX8uCAA:10 a=nDghuxUhq_wA:10 a=kj9zAlcOel0A:10 a=pGLkceISAAAA:8 a=f7kJgRzcEiAnLtOiHm0A:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=zsaeSSr3pazHFAQJU9uUyg==:117
-X-CM-Score: 0
-Authentication-Results: smtp01.wow.synacor.com smtp.mail=set@squish.homelinux.org; spf=neutral
-Date: Mon, 10 Dec 2012 22:29:10 -0500
-From: Paul Thompson <set.mailinglist@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix Irq Subsystem menu
-Message-ID: <20121211032910.GA8203@squish.home.loc>
+	id S1752558Ab2LKDdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 22:33:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:49374 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751528Ab2LKDdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 22:33:07 -0500
+X-IronPort-AV: E=Sophos;i="4.84,256,1355068800"; 
+   d="scan'208";a="6372388"
+Message-ID: <50C6A93A.50404@cn.fujitsu.com>
+Date: Tue, 11 Dec 2012 11:32:10 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Jianguo Wu <wujianguo@huawei.com>
+CC: jiang.liu@huawei.com, hpa@zytor.com, akpm@linux-foundation.org,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com> <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com> <50C6A36C.5030606@huawei.com>
+In-Reply-To: <50C6A36C.5030606@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/11 11:32:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/11 11:32:17,
+	Serialize complete at 2012/12/11 11:32:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi;
+On 12/11/2012 11:07 AM, Jianguo Wu wrote:
+> On 2012/12/11 10:33, Tang Chen wrote:
+>
+>> This patch introduces a new array zone_movable_limit[] to store the
+>> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+>> The function sanitize_zone_movable_limit() will find out to which
+>> node the ranges in movable_map.map[] belongs, and calculates the
+>> low boundary of ZONE_MOVABLE for each node.
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+>> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
+>> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+>> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
+>> ---
+>>   mm/page_alloc.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>   1 files changed, 77 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 1c91d16..4853619 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+>>   static unsigned long __initdata required_kernelcore;
+>>   static unsigned long __initdata required_movablecore;
+>>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+>> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+>>
+>>   /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+>>   int movable_zone;
+>> @@ -4340,6 +4341,77 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+>>   	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+>>   }
+>>
+>> +/**
+>> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
+>> + *
+>> + * zone_movable_limit is initialized as 0. This function will try to get
+>> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
+>> + * assigne them to zone_movable_limit.
+>> + * zone_movable_limit[nid] == 0 means no limit for the node.
+>> + *
+>> + * Note: Each range is represented as [start_pfn, end_pfn)
+>> + */
+>> +static void __meminit sanitize_zone_movable_limit(void)
+>> +{
+>> +	int map_pos = 0, i, nid;
+>> +	unsigned long start_pfn, end_pfn;
+>> +
+>> +	if (!movablecore_map.nr_map)
+>> +		return;
+>> +
+>> +	/* Iterate all ranges from minimum to maximum */
+>> +	for_each_mem_pfn_range(i, MAX_NUMNODES,&start_pfn,&end_pfn,&nid) {
+>> +		/*
+>> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
+>> +		 * specified by user, just go on to check next range.
+>> +		 */
+>> +		if (zone_movable_limit[nid])
+>> +			continue;
+>> +
+>> +#ifdef CONFIG_ZONE_DMA
+>> +		/* Skip DMA memory. */
+>> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA])
+>> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
+>> +#endif
+>> +
+>> +#ifdef CONFIG_ZONE_DMA32
+>> +		/* Skip DMA32 memory. */
+>> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA32])
+>> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
+>> +#endif
+>> +
+>> +#ifdef CONFIG_HIGHMEM
+>> +		/* Skip lowmem if ZONE_MOVABLE is highmem. */
+>> +		if (zone_movable_is_highmem()&&
+>
+> Hi Tang,
+>
+> I think zone_movable_is_highmem() is not work correctly here.
+> 	sanitize_zone_movable_limit
+> 		zone_movable_is_highmem<--using movable_zone here
+> 	find_zone_movable_pfns_for_nodes
+> 		find_usable_zone_for_movable<--movable_zone is specified here
+>
+> I think Jiang Liu's patch works fine for highmem, please refer to:
+> http://marc.info/?l=linux-mm&m=135476085816087&w=2
 
-	In menuconfig, General setup -> Irq subsystem contains two
-possible menu-items. Sometimes, neither menu-item exists. This
-patch prevents the Irq susystem menu from appearing at all unless it
-will contain at least one menu-item, preventing a confusing, empty menu.
+Hi Wu,
 
---- linux-3.7-rc8/kernel/irq/Kconfig.orig	2012-12-05 20:59:00.963707538 -0500
-+++ linux-3.7-rc8/kernel/irq/Kconfig	2012-12-05 21:00:18.454788693 -0500
-@@ -3,7 +3,6 @@ config HAVE_GENERIC_HARDIRQS
- 	bool
- 
- if HAVE_GENERIC_HARDIRQS
--menu "IRQ subsystem"
- #
- # Interrupt subsystem related configuration options
- #
-@@ -56,6 +55,13 @@ config GENERIC_IRQ_CHIP
- config IRQ_DOMAIN
- 	bool
- 
-+# Support forced irq threading
-+config IRQ_FORCED_THREADING
-+       bool
-+
-+menu "IRQ subsystem"
-+	depends on ( IRQ_DOMAIN && DEBUG_FS ) || MAY_HAVE_SPARSE_IRQ
-+
- config IRQ_DOMAIN_DEBUG
- 	bool "Expose hardware/virtual IRQ mapping via debugfs"
- 	depends on IRQ_DOMAIN && DEBUG_FS
-@@ -66,10 +72,6 @@ config IRQ_DOMAIN_DEBUG
- 
- 	  If you don't know what this means you don't need it.
- 
--# Support forced irq threading
--config IRQ_FORCED_THREADING
--       bool
--
- config SPARSE_IRQ
- 	bool "Support sparse irq numbering" if MAY_HAVE_SPARSE_IRQ
- 	---help---
+Yes, I forgot movable_zone think. Thanks for reminding me. :)
 
-Signed-off-by: Paul Thompson <set.mailinglist@gmail.com>
+But Liu's patch you just mentioned, I didn't use it because I
+don't think we should skip kernelcore when movablecore_map is specified.
+If these 2 options are not conflict, we should satisfy them both. :)
+
+Of course, I also think Liu's suggestion is wonderful. But I think we
+need more discussion on it. :)
+
+I'll fix it soon.
+Thanks. :)
+
+>
+> Thanks,
+> Jianguo Wu
+>
+>> +		    start_pfn<  arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
+>> +			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
+>> +#endif
+>> +
+>> +		if (start_pfn>= end_pfn)
+>> +			continue;
+>> +
+>> +		while (map_pos<  movablecore_map.nr_map) {
+>> +			if (end_pfn<= movablecore_map.map[map_pos].start_pfn)
+>> +				break;
+>> +
+>> +			if (start_pfn>= movablecore_map.map[map_pos].end_pfn) {
+>> +				map_pos++;
+>> +				continue;
+>> +			}
+>> +
+>> +			/*
+>> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
+>> +			 * pfn specified by movablecore_map, or 0, which means
+>> +			 * the node has no ZONE_MOVABLE.
+>> +			 */
+>> +			zone_movable_limit[nid] = max(start_pfn,
+>> +					movablecore_map.map[map_pos].start_pfn);
+>> +
+>> +			break;
+>> +		}
+>> +	}
+>> +}
+>> +
+>>   #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>>   static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+>>   					unsigned long zone_type,
+>> @@ -4358,6 +4430,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
+>>   	return zholes_size[zone_type];
+>>   }
+>>
+>> +static void __meminit sanitize_zone_movable_limit(void)
+>> +{
+>> +}
+>> +
+>>   #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>>
+>>   static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+>> @@ -4923,6 +4999,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+>>
+>>   	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+>>   	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+>> +	sanitize_zone_movable_limit();
+>>   	find_zone_movable_pfns_for_nodes();
+>>
+>>   	/* Print out the zone ranges */
+>
+>
+>
+>
 
