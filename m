@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab2LKXCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 18:02:47 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55260 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab2LKXCp (ORCPT
+	id S1755154Ab2LKXMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 18:12:33 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44885 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab2LKXMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 18:02:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALLzPKbqAa7-vJnXbYFbkaD5NVW=6wHQQMDc_Ww==p1hwQ1EJg@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-	<1355234914.2356.85.camel@falcor>
-	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-	<1355249884.2356.108.camel@falcor>
-	<CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
-	<1355252392.2356.131.camel@falcor>
-	<CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
-	<1355255320.2356.148.camel@falcor>
-	<CACLa4psVpx8YPcgiQs0FETg8d+zLcjivnks_So6Dpii48pDNBQ@mail.gmail.com>
-	<CALLzPKbqAa7-vJnXbYFbkaD5NVW=6wHQQMDc_Ww==p1hwQ1EJg@mail.gmail.com>
-Date: Tue, 11 Dec 2012 18:02:43 -0500
-Message-ID: <CACLa4pske6okjDj5mRC1+20VhWZmFt+L6j+Y6e=weA7PvD13yw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: Eric Paris <eparis@parisplace.org>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Dec 2012 18:12:31 -0500
+From: Benedikt Spranger <b.spranger@linutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org,
+        Alexander.Frank@eberspaecher.com,
+        Benedikt Spranger <b.spranger@linutronix.de>
+Subject: [PATCH 1/2] uio: add warning to documentation
+Date: Wed, 12 Dec 2012 00:12:01 +0100
+Message-Id: <1355267523-19724-2-git-send-email-b.spranger@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
+References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus made it clear he likes per-inode.  Do a test with per-inode
-S_NOIMA.  See how that compares to your 100,000 vs 10,000 lookups.
-Then we can discuss with facts if per sb is worth it or not.  We still
-don't actually know if 100,000 lookups vs 10,000 lookups really
-matters, but at least we'll have some facts...
+The documentation has no clear statement to the POSIX 1003.1 mmap()
+feature, wich allows open(), mmap(), close() while the mmaped pointer is valid.
+The release() hook inveigled driver programmer to activate owermanagement
+functuonality in the release hook. This may harm.
 
-On Tue, Dec 11, 2012 at 5:57 PM, Kasatkin, Dmitry
-<dmitry.kasatkin@intel.com> wrote:
-> On Tue, Dec 11, 2012 at 10:08 PM, Eric Paris <eparis@parisplace.org> wrote:
->> S_PRIVATE is totally unacceptable as it has a meaning across all LSMs,
->> not just IMA.
->>
->> S_NOSEC means 'this is not setuid or setgid and we don't need to do
->> those checks on modify'
->>
->> You are going to need to use a S_NOIMA.
->>
->> Of Dmitry's 90,000 fewer policy lookups using the per sb flag, how
->> many of them are the same inode over and over again which would be
->> circumvented using S_NOIMA per inode flag?
->>
->
-> IIRC those were only newly instantiated inodes.
->
-> For new inodes, S_NOIMA would not be set and used at that point.
-> IMA must do the policy search and then would set the S_NOIMA.
->
-> For subsequent calls, S_NOIMA makes sense.
->
-> If we would have the SB flag like MS_NOIMA, then we could replicate sb
-> flag to inode S_NOIMA flag,
-> in similar way as inode_has_no_xattr() does:
->
-> static inline void inode_has_no_xattr(struct inode *inode)
-> {
->         if (!is_sxid(inode->i_mode) && (inode->i_sb->s_flags & MS_NOSEC))
->                 inode->i_flags |= S_NOSEC;
-> }
->
-> Then later there is no need to dereference inode->i_sb...
->
-> Can we reach conclusion about it?
-> Will we have SB flag?
-> if yes, then where, s_flags, or in some other field like s_feature_flags?
-> if not, then we can stop this discussion...
->
-> - Dmitry
->
->>
->>
->> On Tue, Dec 11, 2012 at 2:48 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>> On Tue, 2012-12-11 at 11:10 -0800, Linus Torvalds wrote:
->>>
->>>> Anyway, the whole "you can do it at file granularity" isn't the bulk
->>>> of my argument (the "we already have the field that makes sense" is).
->>>> But my point is that per-inode is not only the logically more
->>>> straightforward place to do it, it's also the much more flexible place
->>>> to do it. Because it *allows* for things like that.
->>>
->>> Ok. To summarize, S_IMA indicates that there is a rule and that the iint
->>> was allocated.  To differentiate between 'haven't looked/don't know' and
->>> 'definitely not', we need another bit.  For this, you're suggesting
->>> using IS_PRIVATE()?  Hopefully, I misunderstood.
->>>
->>> thanks,
->>>
->>> Mimi
->>>
->>>
->>>
+Signed-off-by: Benedikt Spranger <b.spranger@linutronix.de>
+---
+ Documentation/DocBook/uio-howto.tmpl |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
+index ac3d001..59a886d 100644
+--- a/Documentation/DocBook/uio-howto.tmpl
++++ b/Documentation/DocBook/uio-howto.tmpl
+@@ -499,8 +499,13 @@ device is actually used.
+ <listitem><para>
+ <varname>int (*release)(struct uio_info *info, struct inode *inode)
+ </varname>: Optional. If you define your own
+-<function>open()</function>, you will probably also want a custom
++<function>release()</function>, you will probably also want a custom
+ <function>release()</function> function.
++</para><para>CAVE: The release hook may be processed, even if a mmap is aktive.
++Disabling clocks or other powermanagement functionality may cause a system
++crash, hangup or other unwanted sideeffects.
++</para><para><emphasis>The mmap() function shall add an extra reference to the file associated with the file descriptor fildes which is not removed by a subsequent close() on that file descriptor. This reference shall be removed when there are no more mappings to the file.</emphasis></para><para>
++<link xlink:href="http://pubs.opengroup.org/onlinepubs/009695399/functions/mmap.html">IEEE Std 1003.1, 2004 Edition, mmap()</link>
+ </para></listitem>
+ 
+ <listitem><para>
+-- 
+1.7.10.4
+
