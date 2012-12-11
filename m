@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab2LKWvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:51:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43888 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab2LKWsp (ORCPT
+	id S1755260Ab2LKWwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:52:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58566 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab2LKWwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:48:45 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/37] perf diff: Remove displacement from struct hist_entry_diff
-Date: Tue, 11 Dec 2012 19:48:01 -0300
-Message-Id: <1355266103-17238-16-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
-References: <1355266103-17238-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Dec 2012 17:52:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121211160149.GE1612@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+	<1353955671-14385-5-git-send-email-mhocko@suse.cz>
+	<CALWz4ixgQzhZeqt_9JiMT0XOGFOh1co6xYo1dkS9Rrksey7KUA@mail.gmail.com>
+	<20121211160149.GE1612@dhcp22.suse.cz>
+Date: Tue, 11 Dec 2012 14:52:16 -0800
+Message-ID: <CALWz4izRiRFWykOr2DutHCqQnspF7NS9=G3PAVcqu80s3RXE-w@mail.gmail.com>
+Subject: Re: [patch v2 4/6] memcg: simplify mem_cgroup_iter
+From: Ying Han <yinghan@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On Tue, Dec 11, 2012 at 8:01 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Mon 10-12-12 20:35:20, Ying Han wrote:
+>> On Mon, Nov 26, 2012 at 10:47 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>> > Current implementation of mem_cgroup_iter has to consider both css and
+>> > memcg to find out whether no group has been found (css==NULL - aka the
+>> > loop is completed) and that no memcg is associated with the found node
+>> > (!memcg - aka css_tryget failed because the group is no longer alive).
+>> > This leads to awkward tweaks like tests for css && !memcg to skip the
+>> > current node.
+>> >
+>> > It will be much easier if we got rid off css variable altogether and
+>> > only rely on memcg. In order to do that the iteration part has to skip
+>> > dead nodes. This sounds natural to me and as a nice side effect we will
+>> > get a simple invariant that memcg is always alive when non-NULL and all
+>> > nodes have been visited otherwise.
+>> >
+>> > We could get rid of the surrounding while loop but keep it in for now to
+>> > make review easier. It will go away in the following patch.
+>> >
+>> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+>> > ---
+>> >  mm/memcontrol.c |   56 +++++++++++++++++++++++++++----------------------------
+>> >  1 file changed, 27 insertions(+), 29 deletions(-)
+>> >
+>> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> > index 6bcc97b..d1bc0e8 100644
+>> > --- a/mm/memcontrol.c
+>> > +++ b/mm/memcontrol.c
+>> > @@ -1086,7 +1086,6 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>> >         rcu_read_lock();
+>> >         while (!memcg) {
+>> >                 struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+>> > -               struct cgroup_subsys_state *css = NULL;
+>> >
+>> >                 if (reclaim) {
+>> >                         int nid = zone_to_nid(reclaim->zone);
+>> > @@ -1112,53 +1111,52 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>> >                  * explicit visit.
+>> >                  */
+>> >                 if (!last_visited) {
+>                     ^^^^^^^^
+>                     here
+>
+>> > -                       css = &root->css;
+>> > +                       memcg = root;
+>> >                 } else {
+>> >                         struct cgroup *prev_cgroup, *next_cgroup;
+>> >
+>> >                         prev_cgroup = (last_visited == root) ? NULL
+>> >                                 : last_visited->css.cgroup;
+>> > -                       next_cgroup = cgroup_next_descendant_pre(prev_cgroup,
+>> > -                                       root->css.cgroup);
+>> > -                       if (next_cgroup)
+>> > -                               css = cgroup_subsys_state(next_cgroup,
+>> > -                                               mem_cgroup_subsys_id);
+>> > -               }
+>> > +skip_node:
+>> > +                       next_cgroup = cgroup_next_descendant_pre(
+>> > +                                       prev_cgroup, root->css.cgroup);
+>> >
+>> > -               /*
+>> > -                * Even if we found a group we have to make sure it is alive.
+>> > -                * css && !memcg means that the groups should be skipped and
+>> > -                * we should continue the tree walk.
+>> > -                * last_visited css is safe to use because it is protected by
+>> > -                * css_get and the tree walk is rcu safe.
+>> > -                */
+>> > -               if (css == &root->css || (css && css_tryget(css)))
+>> > -                       memcg = mem_cgroup_from_css(css);
+>> > +                       /*
+>> > +                        * Even if we found a group we have to make sure it is
+>> > +                        * alive. css && !memcg means that the groups should be
+>> > +                        * skipped and we should continue the tree walk.
+>> > +                        * last_visited css is safe to use because it is
+>> > +                        * protected by css_get and the tree walk is rcu safe.
+>> > +                        */
+>> > +                       if (next_cgroup) {
+>> > +                               struct mem_cgroup *mem = mem_cgroup_from_cont(
+>> > +                                               next_cgroup);
+>> > +                               if (css_tryget(&mem->css))
+>> > +                                       memcg = mem;
+>>
+>> I see a functional change after this, where we now hold a refcnt of
+>> css if memcg is root. It is not the case before this change.
+>
+> I know it is a bit obscure but this is not the case.
+> cgroup_next_descendant_pre never visits its root. That's why we have
+> that if (!last_visited) test above. We have to handle it separately.
+>
+> Makes sense?
 
-Removing displacement from struct hist_entry_diff, because it's not
-used. Displacement is not used for sorting, so there's no reason to
-pre-calculate it.
+Ah, OK. The code is more readable after this patch then
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1354110769-2998-5-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/sort.h |    3 ---
- 1 file changed, 3 deletions(-)
+--Ying
 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 91ae274..a1c0d56 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -55,9 +55,6 @@ struct he_stat {
- struct hist_entry_diff {
- 	bool	computed;
- 
--	/* PERF_HPP__DISPL */
--	int	displacement;
--
- 	/* PERF_HPP__DELTA */
- 	double	period_ratio_delta;
- 
--- 
-1.7.9.2.358.g22243
-
+>
+>>
+>> --Ying
+> [...]
+> --
+> Michal Hocko
+> SUSE Labs
