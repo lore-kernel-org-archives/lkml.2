@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab2LKJEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 04:04:10 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:20636
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751558Ab2LKJEG (ORCPT
+	id S1752715Ab2LKJEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 04:04:20 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:37586 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab2LKJEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 04:04:06 -0500
-X-IronPort-AV: E=Sophos;i="4.84,258,1355094000"; 
-   d="scan'208";a="165423256"
-Date: Tue, 11 Dec 2012 10:04:03 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Julia Lawall <julia.lawall@lip6.fr>, plagnioj@jcrosoft.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: question about drivers/pinctrl/pinctrl-at91.c
-In-Reply-To: <CACRpkdY_znNHckam+PsysddCib2PP-6Lk4OM8_v34BX+p4pu-A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1212110958110.2091@hadrien>
-References: <alpine.DEB.2.02.1212081643590.1984@hadrien> <CACRpkdY_znNHckam+PsysddCib2PP-6Lk4OM8_v34BX+p4pu-A@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Dec 2012 04:04:12 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 2/3] mtd: devices: elm: Add support for ELM error correction
+To: "Philip, Avinash" <avinashphilip@ti.com>, dwmw2@infradead.org,
+        artem.bityutskiy@linux.intel.com, afzal@ti.com, tony@atomide.com,
+        broonie@opensource.wolfsonmicro.com, rmk+kernel@arm.linux.org.uk,
+        gregkh@linuxfoundation.org
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com, ivan.djelic@parrot.com,
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+In-Reply-To: <1354189595-12784-3-git-send-email-avinashphilip@ti.com>
+References: <1354189595-12784-1-git-send-email-avinashphilip@ti.com> <1354189595-12784-3-git-send-email-avinashphilip@ti.com>
+Date: Tue, 11 Dec 2012 09:03:56 +0000
+Message-Id: <20121211090356.8D3D93E076D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012, Linus Walleij wrote:
+On Thu, 29 Nov 2012 17:16:33 +0530, "Philip, Avinash" <avinashphilip@ti.com> wrote:
+> The ELM hardware module can be used to speedup BCH 4/8/16 ECC scheme
+> error correction.
+> For now only 4 & 8 bit support is added
+> 
+> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+> Changes since v2:
+> 	- Remove __devinit & __devexit annotations
+> 
+> Changes since v1:
+> 	- Change build attribute to CONFIG_MTD_NAND_OMAP_BCH
+> 	- Reduced indentation using by passing elm_info , offset
+> 	  to elm_read & elm_write
+> 	- Removed syndrome manipulation functions.
+> 
+> :000000 100644 0000000... b88ee83... A	Documentation/devicetree/bindings/mtd/elm.txt
+> :100644 100644 395733a... 369a194... M	drivers/mtd/devices/Makefile
+> :000000 100644 0000000... d2667f3... A	drivers/mtd/devices/elm.c
+> :000000 100644 0000000... d4fce31... A	include/linux/platform_data/elm.h
+>  Documentation/devicetree/bindings/mtd/elm.txt |   17 +
+>  drivers/mtd/devices/Makefile                  |    4 +-
+>  drivers/mtd/devices/elm.c                     |  418 +++++++++++++++++++++++++
+>  include/linux/platform_data/elm.h             |   54 ++++
+>  4 files changed, 493 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/mtd/elm.txt b/Documentation/devicetree/bindings/mtd/elm.txt
+> new file mode 100644
+> index 0000000..b88ee83
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mtd/elm.txt
+> @@ -0,0 +1,17 @@
+> +Error location module
+> +
+> +Required properties:
+> +- compatible: Must be "ti,elm"
 
-> On Sat, Dec 8, 2012 at 4:52 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
->
-> > The function at91_dt_node_to_map in drivers/pinctrl/pinctrl-at91.c contains
-> > the following code:
-> >
-> >        new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
-> > GFP_KERNEL);
-> >         if (!new_map)
-> >                 return -ENOMEM;
-> >
-> >         *map = new_map;
-> >         *num_maps = map_num;
-> >
-> >         /* create mux map */
-> >         parent = of_get_parent(np);
-> >         if (!parent) {
-> >                 kfree(new_map);
-> >                 return -EINVAL;
-> >         }
-> >
-> > This is clearly not correct, because the combination of devm_kzalloc and
-> > kfree risks creating a double free.
->
-> Agreed, probably just some spurious leftover.
->
-> > But I am not sure how best to fix it.
-> > Is the data structure intended to normally exist until the driver's remove
-> > function is called?  If so, perhaps the devm_kzalloc is OK.  If I just
-> > remove the kfree, then the structure will persist until the remove function
-> > is called, even though there was an error, which is perhaps not good.  So I
-> > could change the kfree to devm_kfree?
->
-> I was under the impression that if you exit the probe function
-> with a negative value anything allocated with devm_* was freed
-> immediately, that is atleast how it's described in
-> Documentation/driver-model/devres.txt
-> atleast that seems to be the intetion with the whole thing.
+Compatible string is too generic. Need to specify a specific SoC here.
+ie: "ti,omap3430-elm"
 
-That is true, but I wasn't sure taht this function was part of the probe
-function.  Its only reference is in:
+Otherwise the binding looks fine. I haven't reviewed the code though.
 
-static struct pinctrl_ops at91_pctrl_ops = {
-        .get_groups_count       = at91_get_groups_count,
-        .get_group_name         = at91_get_group_name,
-        .get_group_pins         = at91_get_group_pins,
-	.pin_dbg_show           = at91_pin_dbg_show,
-        .dt_node_to_map         = at91_dt_node_to_map,
-        .dt_free_map            = at91_dt_free_map,
-};
+g.
 
-Working backwards, one possible call site is pinctrl_get, which is an
-exported function.  Is it safe to assume that it will always be called
-from within a probe function?
-
-thanks,
-julia
