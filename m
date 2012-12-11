@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2LKPUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 10:20:39 -0500
-Received: from fieldses.org ([174.143.236.118]:49986 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab2LKPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 10:20:37 -0500
-Date: Tue, 11 Dec 2012 10:20:36 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
-Message-ID: <20121211152036.GB3336@fieldses.org>
-References: <20121206153204.30693.11408.stgit@localhost.localdomain>
- <20121206153447.30693.54128.stgit@localhost.localdomain>
- <20121210202842.GB17350@fieldses.org>
- <50C73C60.8060405@parallels.com>
- <50C73F58.1080005@parallels.com>
- <20121211145621.GA3336@fieldses.org>
- <50C74C14.8030807@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50C74C14.8030807@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753962Ab2LKPVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 10:21:06 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:59520 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2LKPVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 10:21:04 -0500
+Date: Tue, 11 Dec 2012 16:20:48 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH 3/4 v2] gpio/mvebu: convert to use
+ irq_domain_add_simple()
+Message-ID: <20121211162048.6c9206c7@skate>
+In-Reply-To: <1350644042-31793-1-git-send-email-linus.walleij@linaro.org>
+References: <1350644042-31793-1-git-send-email-linus.walleij@linaro.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
-> 11.12.2012 18:56, J. Bruce Fields пишет:
-> >On Tue, Dec 11, 2012 at 06:12:40PM +0400, Stanislav Kinsbursky wrote:
-> >>UID: 9899
-> >>
-> >>11.12.2012 18:00, Stanislav Kinsbursky пишет:
-> >>>11.12.2012 00:28, J. Bruce Fields пишет:
-> >>>>On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
-> >>>>>NFSd does lookup. Lookup is done starting from current->fs->root.
-> >>>>>NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
-> >>>>>unshared) root.
-> >>>>>So we have to swap root to those, which process, started NFSd, has. Because
-> >>>>>that process can be in a container with it's own root.
-> >>>>
-> >>>>This doesn't sound right to me.
-> >>>>
-> >>>>Which lookups exactly do you see being done relative to
-> >>>>current->fs->root ?
-> >>>>
-> >>>
-> >>>Ok, you are right. I was mistaken here.
-> >>>This is not a exactly lookup, but d_path() problem in svc_export_request().
-> >>>I.e. without root swapping, d_path() will give not local export path (like "/export")
-> >>>but something like this "/root/containers_root/export".
-> >>>
-> >>
-> >>We, actually, can do it less in less aggressive way.
-> >>I.e. instead root swap and current svc_export_request() implementation:
-> >>
-> >>void svc_export_request(...)
-> >>{
-> >>	<snip>
-> >>         pth = d_path(&exp->ex_path, *bpp, *blen);
-> >>	<snip>
-> >>}
-> >>
-> >>we can do something like this:
-> >>
-> >>void svc_export_request(...)
-> >>{
-> >>	struct nfsd_net *nn = ...
-> >>	<snip>
-> >>	spin_lock(&dcache_lock);
-> >>         pth = __d_path(&exp->ex_path, &nn->root, *bpp, *blen);
-> >>	spin_unlock(&dcache_lock);
-> >>	<snip>
-> >>}
-> >
-> >That looks simpler, but I still don't understand why we need it.
-> >
-> >I'm confused about how d_path works; I would have thought that
-> >filesystem namespaces would have their own vfsmount trees and hence that
-> >the (vfsmount, dentry) would be enough to specify the path.  Is the root
-> >argument for the case of chroot?  Do we care about that?
-> >
-> 
-> It works very simple: just traverse the tree from specified dentry up to current->fs->root.dentry.
-> Having container in some fully separated mount point is great, of course. But:
-> 1) this is a limitation we really want to avoid. I.e. container can be chrooted into some path like "/root/containers_root/" as in example above.
-> 2) NFSd kthread works in init root environment. But we anyway want to get proper path string in container root, but not in kthreads root.
-> 
-> >Also, svc_export_request is called from mountd's read of
-> >/proc/net/rpc/nfsd.export/channel.  If mountd's root is wrong, then
-> >nothing's going to work anyway.
-> >
-> 
-> I don't really understand, how  mountd's root can be wrong. I.e.
-> its' always right as I see it. NFSd kthreads have to swap/use
-> relative path/whatever to communicate with proper mountd.
-> Or I'm missing something?
+Dear Linus Walleij,
 
-Ugh, I see the problem: I thought svc_export_request was called at the
-time mountd does the read, but instead its done at the time nfsd does
-the upcall.
+On Fri, 19 Oct 2012 12:54:02 +0200, Linus Walleij wrote:
+> The MVEBU driver probably just wants a few IRQs. Using the simple
+> domain has the upside of allocating IRQ descriptors if need be,
+> especially in a SPARSE_IRQ environment.
 
-I suspect that's wrong, and we really want this done in the context of
-the mountd process when it does the read call.  If d_path is called
-there then we have no problem.
+Unfortunately, this creates the following warning at boot time for each
+GPIO bank:
 
---b.
+------------[ cut here ]------------
+WARNING: at /home/thomas/projets/linux-2.6/kernel/irq/irqdomain.c:181 irq_domain_add_simple+0x8c/0x9c()
+Cannot allocate irq_descs @ IRQ33, assuming pre-allocated
+Modules linked in:
+[<c0014360>] (unwind_backtrace+0x0/0xf8) from [<c001d2b0>] (warn_slowpath_common+0x4c/0x64)
+[<c001d2b0>] (warn_slowpath_common+0x4c/0x64) from [<c001d35c>] (warn_slowpath_fmt+0x30/0x40)
+[<c001d35c>] (warn_slowpath_fmt+0x30/0x40) from [<c0065be4>] (irq_domain_add_simple+0x8c/0x9c)
+[<c0065be4>] (irq_domain_add_simple+0x8c/0x9c) from [<c02641f8>] (mvebu_gpio_probe+0x3cc/0x49c)
+[<c02641f8>] (mvebu_gpio_probe+0x3cc/0x49c) from [<c0185000>] (platform_drv_probe+0x18/0x1c)
+[<c0185000>] (platform_drv_probe+0x18/0x1c) from [<c0183db4>] (driver_probe_device+0x70/0x1f0)
+[<c0183db4>] (driver_probe_device+0x70/0x1f0) from [<c01826ac>] (bus_for_each_drv+0x5c/0x88)
+[<c01826ac>] (bus_for_each_drv+0x5c/0x88) from [<c0183d1c>] (device_attach+0x74/0x80)
+[<c0183d1c>] (device_attach+0x74/0x80) from [<c01833b4>] (bus_probe_device+0x84/0xa8)
+[<c01833b4>] (bus_probe_device+0x84/0xa8) from [<c0181ce0>] (device_add+0x4ac/0x57c)
+[<c0181ce0>] (device_add+0x4ac/0x57c) from [<c01dfa60>] (of_platform_device_create_pdata+0x5c/0x80)
+[<c01dfa60>] (of_platform_device_create_pdata+0x5c/0x80) from [<c01dfb50>] (of_platform_bus_create+0xcc/0x270)
+[<c01dfb50>] (of_platform_bus_create+0xcc/0x270) from [<c01dfbb0>] (of_platform_bus_create+0x12c/0x270)
+[<c01dfbb0>] (of_platform_bus_create+0x12c/0x270) from [<c01dfd54>] (of_platform_populate+0x60/0x98)
+[<c01dfd54>] (of_platform_populate+0x60/0x98) from [<c033c938>] (armada_370_xp_dt_init+0x18/0x24)
+[<c033c938>] (armada_370_xp_dt_init+0x18/0x24) from [<c03383a8>] (customize_machine+0x1c/0x28)
+[<c03383a8>] (customize_machine+0x1c/0x28) from [<c0008704>] (do_one_initcall+0x34/0x174)
+[<c0008704>] (do_one_initcall+0x34/0x174) from [<c0262060>] (kernel_init+0x100/0x2b4)
+[<c0262060>] (kernel_init+0x100/0x2b4) from [<c000df98>] (ret_from_fork+0x14/0x3c)
+---[ end trace 1b75b31a2719ed1c ]---
+
+Of course, the fix should be to remove the irq_alloc_descs() from the
+driver prior to calling irq_domain_add_simple(). But the thing is that
+our gpio-mvebu driver uses the
+irq_alloc_generic_chip()/irq_setup_generic_chip() infrastructure, which
+it seems requires a legacy IRQ domain (it needs the base IRQ number).
+
+Or maybe there's a proper fix I'm missing?
+
+Thanks,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
