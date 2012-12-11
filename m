@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab2LKQwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:52:22 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62275 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab2LKQwV (ORCPT
+	id S1754022Ab2LKQ4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 11:56:16 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58393 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab2LKQ4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:52:21 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/1] gpio: add Lynxpoint chipset gpio driver.
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: linus.walleij@linaro.org, mika.westerberg@linux.intel.com,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-In-Reply-To: <50C71BC3.2090006@linux.intel.com>
-References: <1354888899-21907-1-git-send-email-mathias.nyman@linux.intel.com> <1354888899-21907-2-git-send-email-mathias.nyman@linux.intel.com> <20121210230749.7820F3E081F@localhost> <50C71BC3.2090006@linux.intel.com>
-Date: Tue, 11 Dec 2012 16:52:07 +0000
-Message-Id: <20121211165207.C30423E0C3E@localhost>
+	Tue, 11 Dec 2012 11:56:15 -0500
+Date: Tue, 11 Dec 2012 16:55:45 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, Yehuda Yitschak <yehuday@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions
+	in CONFIG_HAS_IOPORT
+Message-ID: <20121211165545.GV14363@n2100.arm.linux.org.uk>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <201212111043.50627.arnd@arndb.de> <20121211170338.4859ddf0@skate> <201212111615.03262.arnd@arndb.de> <20121211173013.0ceea196@skate>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211173013.0ceea196@skate>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012 13:40:51 +0200, Mathias Nyman <mathias.nyman@linux.intel.com> wrote:
-> On 12/11/2012 01:07 AM, Grant Likely wrote:
-> > On Fri,  7 Dec 2012 16:01:39 +0200, Mathias Nyman<mathias.nyman@linux.intel.com>  wrote:
-> >> Add gpio support for Intel Lynxpoint chipset.
-> >> Lynxpoint supports 94 gpio pins which can generate interrupts.
-> >> Driver will fail requests for pins that are marked as owned by ACPI, or
-> >> set in an alternate mode (non-gpio).
-> >>
-> >> Signed-off-by: Mathias Nyman<mathias.nyman@linux.intel.com>
-> >> ---
-> >> +static void lp_gpio_set(struct gpio_chip *chip, unsigned gpio, int value)
-> >> +{
-> >> +	struct lp_gpio *lg = container_of(chip, struct lp_gpio, chip);
-> >> +	unsigned long reg = gpio_reg(chip, gpio, LP_CONFIG1);
-> >> +	unsigned long flags;
-> >> +
-> >> +	spin_lock_irqsave(&lg->lock, flags);
-> >> +
-> >> +	if (value)
-> >> +		outl(inl(reg) | OUT_LVL_BIT, reg);
-> >> +	else
-> >> +		outl(inl(reg)&  ~OUT_LVL_BIT, reg);
-> >> +
-> >> +	spin_unlock_irqrestore(&lg->lock, flags);
-> >> +}
-> >
-> > A *lot* of drivers implement their own GPIO ops like this, and they all
-> > end up looking the same. Please take a look at
-> > drivers/gpio/gpio-generic.c and see if you can use the stock operations
-> > provided there.
-> >
-> > g.
-> >
-> 
-> Look quite similar but turns out the only potential generic ones which 
-> could be used are the bgpio_set() and bgpio_get() funtions. Using them 
-> would require custom pin2mask, write_reg, read_reg, etc functions.
-> bgpio_set_direction
+On Tue, Dec 11, 2012 at 05:30:13PM +0100, Thomas Petazzoni wrote:
+> arch/arm/mm/iomap.c is unconditionally compiled in all ARM kernels. And
+> in this file, ioport_map() and ioport_unmap() are implement as soon as
+> __io is defined. And basically, in arch/arm/include/asm/io.h, __io is
+> defined for all platforms
 
-You would need new write_reg and read_reg, but they'd just become part
-of the library. Ah, but I see now that each GPIO has a separate
-register, and not a bitmask for multiple gpio lines. Fair enough.
+Actually, I think that's a major bug in the single-zImage conversion:
 
-g.
+#ifdef CONFIG_NEED_MACH_IO_H
+#include <mach/io.h>
+#elif defined(CONFIG_PCI)
+#define IO_SPACE_LIMIT  ((resource_size_t)0xfffff)
+#define __io(a)         __typesafe_io(PCI_IO_VIRT_BASE + ((a) & IO_SPACE_LIMIT))
+#else
+#define __io(a)         __typesafe_io((a) & IO_SPACE_LIMIT)
+#endif
 
+#ifndef IO_SPACE_LIMIT
+#if defined(CONFIG_PCMCIA_SOC_COMMON) || defined(CONFIG_PCMCIA_SOC_COMMON_MODULE)
+#define IO_SPACE_LIMIT ((resource_size_t)0xffffffff)
+#elif defined(CONFIG_PCI) || defined(CONFIG_ISA) || defined(CONFIG_PCCARD)
+#define IO_SPACE_LIMIT ((resource_size_t)0xffff)
+#else
+#define IO_SPACE_LIMIT ((resource_size_t)0)
+#endif
+#endif
+
+So, in the !PCI !PCMCIA !ISA !PCCARD case, IO_SPACE_LIMIT will be zero,
+which means the above common __io() functions will end up pointing the
+access at the NULL pointer - whereas we shouldn't be providing IO space
+support at all.  (Okay, there's a couple of corner cases we've known
+about for a few _years_ but it's about time that stuff got fixed before
+we try and put yet more band-aids over this.  Fix the root problems
+guys, don't create more problems.)
