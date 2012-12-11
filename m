@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab2LKVxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:53:11 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:46188 "EHLO
+	id S1754929Ab2LKVxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:53:45 -0500
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:33119 "EHLO
 	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806Ab2LKVuV (ORCPT
+	with ESMTP id S1754779Ab2LKVuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:50:21 -0500
+	Tue, 11 Dec 2012 16:50:20 -0500
 From: Cesar Eduardo Barros <cesarb@cesarb.net>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
         Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net
-Subject: [PATCH 11/19] MAINTAINERS: fix drivers/ieee802154/
-Date: Tue, 11 Dec 2012 19:49:53 -0200
-Message-Id: <1355262601-4263-12-git-send-email-cesarb@cesarb.net>
+        Christopher Hoover <ch@murgatroid.com>,
+        Christopher Hoover <ch@hpl.hp.com>
+Subject: [PATCH 09/19] MAINTAINERS: remove drivers/video/epson1355fb.c
+Date: Tue, 11 Dec 2012 19:49:51 -0200
+Message-Id: <1355262601-4263-10-git-send-email-cesarb@cesarb.net>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
 References: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
@@ -24,30 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This directory was moved to drivers/net/ieee802154/ by commit 31d178b
-(drivers/ieee802154: move ieee802154 drivers to net folder).
+This driver was removed by commit 1c3a918 (ARM: clps711x: Remove board
+support for CEIVA).
 
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-zigbee-devel@lists.sourceforge.net
+Cc: Christopher Hoover <ch@murgatroid.com>
+Cc: Christopher Hoover <ch@hpl.hp.com>
 Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 ---
- MAINTAINERS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ MAINTAINERS | 6 ------
+ 1 file changed, 6 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 9bc4861d..6e54716 100644
+index b8dfc72..3bf84d4 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -3800,7 +3800,7 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lowpan/lowpan.git
+@@ -2889,12 +2889,6 @@ M:	Maxim Levitsky <maximlevitsky@gmail.com>
  S:	Maintained
- F:	net/ieee802154/
- F:	net/mac802154/
--F:	drivers/ieee802154/
-+F:	drivers/net/ieee802154/
+ F:	drivers/media/rc/ene_ir.*
  
- IIO SUBSYSTEM AND DRIVERS
- M:	Jonathan Cameron <jic23@cam.ac.uk>
+-EPSON 1355 FRAMEBUFFER DRIVER
+-M:	Christopher Hoover <ch@murgatroid.com>
+-M:	Christopher Hoover <ch@hpl.hp.com>
+-S:	Maintained
+-F:	drivers/video/epson1355fb.c
+-
+ EPSON S1D13XXX FRAMEBUFFER DRIVER
+ M:	Kristoffer Ericson <kristoffer.ericson@gmail.com>
+ S:	Maintained
 -- 
 1.7.11.7
 
