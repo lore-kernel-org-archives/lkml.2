@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2LKEYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 23:24:04 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49851 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab2LKEYC (ORCPT
+	id S1752736Ab2LKEZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 23:25:11 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:37462 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2LKEZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 23:24:02 -0500
-Message-ID: <50C6B530.3030307@linux.vnet.ibm.com>
-Date: Tue, 11 Dec 2012 09:53:12 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 10 Dec 2012 23:25:09 -0500
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, vincent.guittot@linaro.org
-Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-2-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1355127754-8444-2-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1355146956-6009-2-git-send-email-ciminaghi@gnudd.com>
+References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
+	<1355146956-6009-2-git-send-email-ciminaghi@gnudd.com>
+Date: Tue, 11 Dec 2012 09:55:08 +0530
+Message-ID: <CAJe_ZhfE9-kvB9s5=VZ5tgzXa7GsQj_1rt232aCsrfJ-KiTP1g@mail.gmail.com>
+Subject: Re: [PATCH v4 1/7] DMA: PL330: use prefix in reg names to build under x86
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: will.deacon@arm.com, linux@arm.linux.org.uk, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org, rubini@gnudd.com,
+        wim@iguana.be, cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
+        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        giancarlo.asnaghi@st.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121104-4790-0000-0000-000005F83FF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-
-On 12/10/2012 01:52 PM, Alex Shi wrote:
-> It is impossible to miss a task allowed cpu in a eligible group.
-
-The one thing I am concerned with here is if there is a possibility of
-the task changing its tsk_cpus_allowed() while this code is running.
-
-i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
-for the task changes,perhaps by the user himself,which might not include
-the cpus in the idle group.After this find_idlest_cpu() is called.I mean
-a race condition in short.Then we might not have an eligible cpu in that
-group right?
-
-> And since find_idlest_group only return a different group which
-> excludes old cpu, it's also imporissible to find a new cpu same as old
-> cpu.
-
-This I agree with.
-
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+On 10 December 2012 19:12, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
+> From: Alessandro Rubini <rubini@gnudd.com>
+>
+>     This driver would not compile if ARM_AMBA is selected under x86,
+>     because "CS" and "DS" are already defined there.  But AMBA
+>     is used in the x86 world by a PCI-to-AMBA bridge, to be submitted.
+>
+>     The patch just adds the "PL330_" prefix to all registers,
+>     so it can be built by randomconfig after ARM_AMBA appears within x86.
+>     No other technical changes have been performed.
+>     The patch was build-tested only.
+>
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> [Davide Ciminaghi <ciminaghi@gnudd.com>: only registers prefixed]
+> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
 > ---
->  kernel/sched/fair.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 59e072b..df99456 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3150,11 +3150,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->  		}
->  
->  		new_cpu = find_idlest_cpu(group, p, cpu);
-> -		if (new_cpu == -1 || new_cpu == cpu) {
-> -			/* Now try balancing at a lower domain level of cpu */
-> -			sd = sd->child;
-> -			continue;
-> -		}
->  
->  		/* Now try balancing at a lower domain level of new_cpu */
->  		cpu = new_cpu;
-> 
-Regards
-Preeti U Murthy
 
+ Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+
+Thanks.
