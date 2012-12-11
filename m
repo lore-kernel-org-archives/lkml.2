@@ -1,116 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab2LKOBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:01:15 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55728 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab2LKOBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:01:13 -0500
-Date: Tue, 11 Dec 2012 15:01:08 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] EDAC fixes for 3.8
-Message-ID: <20121211140108.GC4303@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-edac <linux-edac@vger.kernel.org>,
-	lkml <linux-kernel@vger.kernel.org>
+	id S1753636Ab2LKOBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:01:30 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53932 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab2LKOB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 09:01:29 -0500
+Message-ID: <50C73CA5.3040608@huawei.com>
+Date: Tue, 11 Dec 2012 22:01:09 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] MCE: fix an error of mce_bad_pages statistics
+References: <50C72493.3080009@huawei.com> <20121211124238.GA9959@hacker.(null)>
+In-Reply-To: <20121211124238.GA9959@hacker.(null)>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 2012/12/11 20:42, Wanpeng Li wrote:
 
-please pull the 'for-linus' branch below to receive the following
-changes to EDAC:
+> On Tue, Dec 11, 2012 at 08:18:27PM +0800, Xishi Qiu wrote:
+>> 1) move poisoned page check at the beginning of the function.
+>> 2) add page_lock to avoid unpoison clear the flag.
+>>
+>> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+>> ﻿Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> ---
+>> mm/memory-failure.c |   43 ++++++++++++++++++++++---------------------
+>> 1 files changed, 22 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+>> index 8b20278..9b74983 100644
+>> --- a/mm/memory-failure.c
+>> +++ b/mm/memory-failure.c
+>> @@ -1419,18 +1419,17 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>> 	unsigned long pfn = page_to_pfn(page);
+>> 	struct page *hpage = compound_head(page);
+>>
+>> +	if (PageHWPoison(hpage)) {
+>> +		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+>> +		return -EBUSY;
+>> +	}
+>> +
+>> 	ret = get_any_page(page, pfn, flags);
+>> 	if (ret < 0)
+>> 		return ret;
+>> 	if (ret == 0)
+>> 		goto done;
+>>
+>> -	if (PageHWPoison(hpage)) {
+>> -		put_page(hpage);
+>> -		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+>> -		return -EBUSY;
+>> -	}
+>> -
+>> 	/* Keep page count to indicate a given hugepage is isolated. */
+>> 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
+>> 				MIGRATE_SYNC);
+>> @@ -1441,12 +1440,14 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>> 		return ret;
+>> 	}
+>> done:
+>> -	if (!PageHWPoison(hpage))
+>> -		atomic_long_add(1 << compound_trans_order(hpage),
+>> -				&mce_bad_pages);
+>> +	/* keep elevated page count for bad page */
+>> +	lock_page(hpage);
+>> +	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
+>> 	set_page_hwpoison_huge_page(hpage);
+>> +	unlock_page(hpage);
+>> +
+>> 	dequeue_hwpoisoned_huge_page(hpage);
+>> -	/* keep elevated page count for bad page */
+>> +
+>> 	return ret;
+>> }
+>>
+>> @@ -1488,6 +1489,11 @@ int soft_offline_page(struct page *page, int flags)
+>> 		}
+>> 	}
+>>
+>> +	if (PageHWPoison(page)) {
+>> +		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+>> +		return -EBUSY;
+>> +	}
+>> +
+>> 	ret = get_any_page(page, pfn, flags);
+>> 	if (ret < 0)
+>> 		return ret;
+>> @@ -1519,19 +1525,11 @@ int soft_offline_page(struct page *page, int flags)
+>> 		return -EIO;
+>> 	}
+>>
+>> -	lock_page(page);
+>> -	wait_on_page_writeback(page);
+>> -
+>> 	/*
+>> 	 * Synchronized using the page lock with memory_failure()
+>> 	 */
+>> -	if (PageHWPoison(page)) {
+>> -		unlock_page(page);
+>> -		put_page(page);
+>> -		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+>> -		return -EBUSY;
+>> -	}
+>> -
+>> +	lock_page(page);
+>> +	wait_on_page_writeback(page);
+>> 	/*
+>> 	 * Try to invalidate first. This should work for
+>> 	 * non dirty unmapped page cache pages.
+>> @@ -1582,8 +1580,11 @@ int soft_offline_page(struct page *page, int flags)
+>> 		return ret;
+>>
+>> done:
+>> +	/* keep elevated page count for bad page */
+>> +	lock_page(page);
+>> 	atomic_long_add(1, &mce_bad_pages);
+>> 	SetPageHWPoison(page);
+>> -	/* keep elevated page count for bad page */
+>> +	unlock_page(page);
+>> +
+> 
+> Hi Xishi,
+> 
+> Why add lock_page here, the comment in function unpoison_memory tell us
+> we don't need it.
+> 
 
-* EDAC core error path fix, from Denis Kirjanov.
+Hi Wangpeng,
 
-* Generalization of AMD MCE bank names and some minor error reporting
-improvements.
+Since unpoison is only for debugging, so it's unnecessary to add the lock
+here, right?
 
-* EDAC core cleanups and simplifications, from Wei Yongjun.
+> /*
+>  * This test is racy because PG_hwpoison is set outside of page lock.
+>  * That's acceptable because that won't trigger kernel panic. Instead,
+>  * the PG_hwpoison page will be caught and isolated on the entrance to
+>  * the free buddy page pool.
+>  */
+> 
+> Futhermore, Andrew didn't like a variable called "mce_bad_pages".
+> 
+> - Why do we have a variable called "mce_bad_pages"?  MCE is an x86
+>   concept, and this code is in mm/.  Lights are flashing, bells are
+>   ringing and a loudspeaker is blaring "layering violation" at us!
+>
 
-* amd64_edac fixes for sysfs-reported values, from Josh Hunt.
+Just change the name?
 
-* some heavy amd64_edac error reporting path shaving, leading to
-removing a bunch of code.
+Thanks
+Xishi Qiu
 
-* amd64_edac error injection method improvements.
+> Regards,
+> Wanpeng Li 
+> 
+>> 	return ret;
+>> }
+>> -- 
+>> 1.7.1
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+> .
+> 
 
-* EDAC core cleanups and fixes.
 
-Thanks.
 
-The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
-
-  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
-
-are available in the git repository at:
-
-  ssh://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
-
-for you to fetch changes up to 3bfe5aae8edd8436d26cddfeab783492d8950821:
-
-  EDAC, pci_sysfs: Use for_each_pci_dev to simplify the code (2012-12-04 08:27:39 +0100)
-
-----------------------------------------------------------------
-Borislav Petkov (19):
-      EDAC: Respect operational state in edac_pci.c
-      EDAC: Boundary-check edac_debug_level
-      EDAC: Remove useless assignment of error type
-      EDAC: Handle empty msg strings when reporting errors
-      amd64_edac: Small fixlets and cleanups
-      amd64_edac: Cleanup error injection code
-      amd64_edac: Improve error injection
-      amd64_edac: Do not check whether error address is valid
-      amd64_edac: Reorganize error reporting path
-      amd64_edac: Fix K8 chip select reporting
-      amd64_edac: Use DBAM_DIMM macro
-      amd64_edac: Fix csrows size and pages computation
-      EDAC: Add memory controller flags
-      EDAC: Pass mci parent
-      EDAC: Fix csrow size reported in sysfs
-      MCE, AMD: Remove functional unit references
-      MCE, AMD: Dump CPU f/m/s triple with the error
-      MCE, AMD: Report decoded error type first
-      MCE, AMD: Dump error status
-
-Denis Kirjanov (1):
-      EDAC: Handle error path in edac_mc_sysfs_init() properly
-
-Josh Hunt (1):
-      EDAC: Fix mc size reported in sysfs
-
-Wei Yongjun (3):
-      EDAC, Calxeda highbank: Convert to use simple_open()
-      EDAC: Convert to use simple_open()
-      EDAC, pci_sysfs: Use for_each_pci_dev to simplify the code
-
- drivers/edac/Kconfig            |   8 +-
- drivers/edac/amd64_edac.c       | 297 +++++++++++++++-------------------------
- drivers/edac/amd64_edac.h       |  59 ++++++--
- drivers/edac/amd64_edac_inj.c   | 128 ++++++++---------
- drivers/edac/edac_mc.c          |  51 +++----
- drivers/edac/edac_mc_sysfs.c    |  39 ++++--
- drivers/edac/edac_module.c      |  27 +++-
- drivers/edac/edac_pci.c         |   3 +-
- drivers/edac/edac_pci_sysfs.c   |  12 +-
- drivers/edac/highbank_mc_edac.c |   8 +-
- drivers/edac/mce_amd.c          | 254 ++++++++++++++++++----------------
- drivers/edac/mce_amd.h          |  11 +-
- include/linux/edac.h            |   3 +
- 13 files changed, 454 insertions(+), 446 deletions(-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
