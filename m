@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab2LKUQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 15:16:01 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:35163 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab2LKUP6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 15:15:58 -0500
+	id S1754752Ab2LKUQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 15:16:53 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41850 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753034Ab2LKUQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 15:16:52 -0500
+Date: Tue, 11 Dec 2012 21:16:47 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?RnLDqWTDqXJpYyBMLiBXLg==?= Meunier <fredlwm@fredlwm.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: soft lockup with 3.7.0 but not 3.6.10
+Message-ID: <20121211201647.GD8873@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?RnLDqWTDqXJpYyBMLiBXLg==?= Meunier <fredlwm@fredlwm.net>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20121211213636.GA19943@pervalidus>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwaFqJQXR3Z8M3byube6hODmiT-dDEH3uFPSKpTDGXHaQ@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-	<1355234914.2356.85.camel@falcor>
-	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-	<1355249884.2356.108.camel@falcor>
-	<CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
-	<1355252392.2356.131.camel@falcor>
-	<CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
-	<1355255320.2356.148.camel@falcor>
-	<CA+55aFwaFqJQXR3Z8M3byube6hODmiT-dDEH3uFPSKpTDGXHaQ@mail.gmail.com>
-Date: Tue, 11 Dec 2012 15:15:57 -0500
-Message-ID: <CACLa4puuwbvSibSk2Q4t732jAyf=ncTMvYe_57opNTEz-2NLWw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: Eric Paris <eparis@parisplace.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121211213636.GA19943@pervalidus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 3:05 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Tue, Dec 11, 2012 at 07:36:36PM -0200, Frédéric L. W. Meunier wrote:
+> While compiling MPlayer git on 3.7.0, I noticed the attached messages. I 
+> then compiled 3.6.10, without any message being printed by the kernel, 
+> and thought it could be due to MPlayer being compiled on tmpfs, while 
+> the kernel on ext4. But compiling MPlayer on ext4 didn't change 
+> anything.
+> 
+> I booted on 3.6.10 and couldn't reproduce it.
+> 
+> According to 'free', swap isn't used at all during the compilation.
+> 
+> I'm also attaching my .config.
+> 
+> It's an Athlon 64 X2 Dual Core Processor 4000+ with 2Gb of DDR2.
 
-> The "IS_PRIVATE()" thing is more a "if you know a-priori that you
-> aren't interested in pseudo-filesystems, you can already check that
-> bit, because it will be set for things like /proc and shmem mappings
-> and pipes etc".
+What family is that? Can you give /proc/cpuinfo?
 
-I know it isn't relevant to the final solution, but this is simply
-wrong.  IS_PRIVATE() means 'this inode is filesystem internal.'  It is
-not used by anything except rieser and the anon_inode.  If it is used
-by psuedo filesystems in general, like /proc, shmem mappings, and
-pipes that is a huge bug and is absolutely wrong.
+> Dec 11 16:02:15 pervalidus kernel: [11260.096015] BUG: soft lockup - CPU#1 stuck for 22s! [cc1:20906]
 
-You are correct IS_PRIVATE is sufficient to know you don't need to do
-any IMA stuff with that inode, but it is used in damn few places and
-better remain that way....
+Hmm, this says that gcc gets stuck at some point. Is this always
+reproducible on 3.7?
 
--Eric
+What about using another version of gcc, can you repro it then too?
+
+It would be interesting to know where all those cc1 processes get stuck.
+Can you break into them with gdb and dump the code around RIP everytime
+those tasks gets stuck? Try doing a couple of them to see whether it is
+repeatable.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
