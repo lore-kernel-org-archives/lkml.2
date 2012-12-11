@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab2LKM5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:57:22 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44227 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753267Ab2LKM5U (ORCPT
+	id S1753076Ab2LKNCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 08:02:17 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36255 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab2LKNCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:57:20 -0500
-Date: Tue, 11 Dec 2012 21:57:14 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lrg@ti.com, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, sameo@linux.intel.com
-Subject: Re: [RFC PATCH 2/3] regulator: max77686: Add support for various
- operating modes
-Message-ID: <20121211125713.GH9097@opensource.wolfsonmicro.com>
-References: <1355120784-31118-1-git-send-email-a.kesavan@samsung.com>
- <1355120784-31118-2-git-send-email-a.kesavan@samsung.com>
- <1355120784-31118-3-git-send-email-a.kesavan@samsung.com>
- <20121210064650.GJ10927@opensource.wolfsonmicro.com>
- <loom.20121210T091624-754@post.gmane.org>
- <CAM4voanevLVXW5_WFts2cjDi-5aAbj1_2=EN1amfp14KnKXNug@mail.gmail.com>
+	Tue, 11 Dec 2012 08:02:16 -0500
+Message-ID: <50C72E75.8030706@mvista.com>
+Date: Tue, 11 Dec 2012 17:00:37 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3yNHWXBV/QO9xKNm"
-Content-Disposition: inline
-In-Reply-To: <CAM4voanevLVXW5_WFts2cjDi-5aAbj1_2=EN1amfp14KnKXNug@mail.gmail.com>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to devm_kfree
+References: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---3yNHWXBV/QO9xKNm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 11-12-2012 14:58, Julia Lawall wrote:
 
-On Mon, Dec 10, 2012 at 02:06:49PM +0530, Abhilash Kesavan wrote:
-> On Mon, Dec 10, 2012 at 1:49 PM, Abhilash Kesavan
-> <kesavan.abhilash@gmail.com> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> > Mark Brown <broonie <at> opensource.wolfsonmicro.com> writes:
+> The function at91_dt_node_to_map is ultimately called by the function
+> pinctrl_get, which is an exported function.  Since it is possible that this
+> function is not called from within a probe function, for safety, the kfree
+> is converted to a devm_kfree, to both free the data and remove it from the
+> device in a failure situation.
 
-> >> Binding documenation is mandatory for any new OF properties, please add
-> >> this.
+> A newline is added in the call to devm_kfree to avoid exceeding the 80
 
-> > Patch 3/3 of this series adds documentation for the max77686-opmode property.
+    devm_kzalloc() you mean?
 
-There is no point in splitting changes like this up, it just makes
-review harder - in this case it caused me to not read your patch due
-to the missing documentation.  Put the whole change together unless
-things are getting too big to review.
+> character limit.
 
---3yNHWXBV/QO9xKNm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> ---
+>   drivers/pinctrl/pinctrl-at91.c |    5 +++--
+>   1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index c5e7571..0da8a5f 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -255,7 +255,8 @@ static int at91_dt_node_to_map(struct pinctrl_dev *pctldev,
+>   	}
+>
+>   	map_num += grp->npins;
+> -	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num, GFP_KERNEL);
+> +	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
+> +			       GFP_KERNEL);
 
-iQIcBAEBAgAGBQJQxy1XAAoJELSic+t+oim9NN4QAJniZUKtXd8T+0qAbauGhp/i
-nnvPtBVz9qVM2ePxP38sizAhPWh7ScPfcc0mQwNvj3cTeiQiWYDI+HeXqOmgGb+W
-h39JvQ8xJmRCICe+yaWzgwW0aGvl4rlQKsEMkqJVZY+A8vF+bQCrxp+1sI8bnsCA
-FjCPgl5YS7M7mYX3qRql+B6r7G7sEKV3lKZgPqSIgjCLOv5DZc5Vj+pqLMtskkFi
-L6C6OyRAQ6a6muO+N1p6t4yRKevyEoSkdfS0usc8+vwC34jxd8140FOVvoFWw2Xf
-8qkzzo/D2BKw4H3CmX16EmbiyAtjEfDbqGpUCKtQCYGzGswiBa4CzbQOe0ORO0kp
-DDF1FrCgnYYIZlFdpFi4IFfCLNKV0+BwGpbq0aBSza+Sf7mBthvMHlNsTVeH9eSa
-/4U7aZRR1z9gJpNmz47ttppPZYa8sQ2J45mLSvVKmCAOeuxXL8dl2ENect6T5yGt
-u4s2UzFNRXJMduqs+TIq/RoLyxssI8Sx8fK3meNXpLEboWTjBf3VMM2AgiQcHbp5
-vam7Y6CX/oK4EqQRGST4ggmgkPjFTFD2H3bHW9PnEI5yXn6CQD5sZVjKYocnsH7a
-5/MFC8SrnbN55hfRpnvYX/RUeZ1o/usmRM60Twde5KuVqvV8IeXBsc9oWQLd5/V9
-eqpxHw+qoYQSKDWUnfYs
-=Vd+K
------END PGP SIGNATURE-----
+WBR, Sergei
 
---3yNHWXBV/QO9xKNm--
+
