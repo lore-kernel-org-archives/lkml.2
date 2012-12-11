@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab2LKRwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:52:00 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:41080 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab2LKRv6 (ORCPT
+	id S1754238Ab2LKRxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:53:00 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58463 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948Ab2LKRw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:51:58 -0500
-Date: Tue, 11 Dec 2012 12:51:56 -0500 (EST)
-Message-Id: <20121211.125156.1507794854679959729.davem@davemloft.net>
-To: will.deacon@arm.com
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        benh@kernel.crashing.org, arnd@arndb.de, james.hogan@imgtec.com,
-        matthew@mattleach.net, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 04/10] net: smc911x: use io{read,write}*_rep
- accessors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121211144949.GD16759@mudshark.cambridge.arm.com>
-References: <1355166762-15133-5-git-send-email-will.deacon@arm.com>
-	<20121210.154705.1773845547652835423.davem@davemloft.net>
-	<20121211144949.GD16759@mudshark.cambridge.arm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 12:52:58 -0500
+Date: Tue, 11 Dec 2012 17:51:13 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Yehuda Yitschak <yehuday@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Lior Amsalem <alior@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions
+	in CONFIG_HAS_IOPORT
+Message-ID: <20121211175113.GX14363@n2100.arm.linux.org.uk>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <1354917879-32073-2-git-send-email-thomas.petazzoni@free-electrons.com> <201212111043.50627.arnd@arndb.de> <20121211162647.GS14363@n2100.arm.linux.org.uk> <20121211171610.01c2de16@pyramind.ukuu.org.uk> <20121211173450.GW14363@n2100.arm.linux.org.uk> <20121211174509.69c8c66e@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211174509.69c8c66e@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
-Date: Tue, 11 Dec 2012 14:49:49 +0000
-
-> On Mon, Dec 10, 2012 at 08:47:05PM +0000, David Miller wrote:
->> This misses the two uses in smsc911x_tx_writefifo and
->> smsc911x_rx_readfifo.
+On Tue, Dec 11, 2012 at 05:45:09PM +0000, Alan Cox wrote:
+> > The problem comes when you end up trying to deal with stuff which
+> > uses ioread{8,16} on ioport_map() cookies where it's assumed that
+> > adding N to the cookie is the same as adding N to the port address.
 > 
-> Well spotted, updated patch below.
+> It's a cookie - this isn't a problem, you can support it via the mapping
+> approah. Whether you want to is another question.
 
-Although I'd like to take credit, the compiler told me :-)
+We're drifting off the topic of whether these things should be provided
+and whether the config symbols should be selected...
 
-> From b46e33465e755e945136d19938c9a8331cbafce7 Mon Sep 17 00:00:00 2001
-> From: Matthew Leach <matthew@mattleach.net>
-> Date: Tue, 6 Nov 2012 14:51:11 +0000
-> Subject: [PATCH v3] net: smc911x: use io{read,write}*_rep accessors
-> 
-> The {read,write}s{b,w,l} operations are not defined by all
-> architectures and are being removed from the asm-generic/io.h
-> interface.
-> 
-> This patch replaces the usage of these string functions in the smc911x
-> accessors with io{read,write}{8,16,32}_rep calls instead.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Matthew Leach <matthew@mattleach.net>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+For a kernel configuration which includes platforms where there is are no
+ISA peripherals, no PCI bridge present, and no PCMCIA support, there's
+little point to having IO space support present.
 
-Applied, thanks.
+However, the platform should still work correctly if IO space support is
+configured into the kernel (in other words, it shouldn't cause a failure)
+so that such a platform can co-operate with those platforms which do
+require IO space support.
+
+Now, there was an idea a while back about having a common virtual address
+space to map PCI/ISA IO space to - which we have in the kernel - 1MB at
+0xfee00000.
+
+If PCI is disabled, the ends up being a 1:1 conversion between IO offset
+and CPU virtual address - that's partly there because no one's fixed up
+the soc-common PCMCIA stuff to dea with the PCMCIA socket IO spaces
+there.  We really need to be fixing some of this stuff...
+
+(Unfortunately, my SA11x0 platform with the dual PCMCIA/CF sockets is now
+my firewall so its out of the question to mess around with it on an ad-hoc
+basis.)
