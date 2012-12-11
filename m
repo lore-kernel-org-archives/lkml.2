@@ -1,524 +1,551 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab2LKWwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:52:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43875 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab2LKWsn (ORCPT
+	id S1755337Ab2LKWwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:52:39 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53851
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755199Ab2LKWsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Dec 2012 17:48:43 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 37/37] perf top: Use perf_evlist__config()
-Date: Tue, 11 Dec 2012 19:48:23 -0300
-Message-Id: <1355266103-17238-38-git-send-email-acme@infradead.org>
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/37] perf hists: Introduce perf_hpp__list for period related columns
+Date: Tue, 11 Dec 2012 19:47:54 -0300
+Message-Id: <1355266103-17238-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
 References: <1355266103-17238-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Using struct perf_record_opts to specify how to configure the evsel
-perf_event_attrs.
+Adding perf_hpp__list list to register and contain all period related
+columns the command is interested in.
 
-This gets top closer to record in the way it sets up evsels, with the
-aim of sharing more and more to the point that both will be a single
-utility.
+This way we get rid of static array holding all possible columns and
+enable commands to register their own columns.
 
-In this direction top now uses the same callchain option parsing as
-record and that brings DWARF callchains to top, something that was
-already available for record.
+It'll be handy for diff command in future to process and display data
+for multiple files.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-u03o0bsrqcjgskciso3pvsjr@git.kernel.org
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/tip-kiykge4igrcl7etmpmveto1h@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-top.txt |    2 +-
- tools/perf/builtin-top.c              |  204 +++++++++++----------------------
- tools/perf/util/top.c                 |   22 ++--
- tools/perf/util/top.h                 |    8 +-
- 4 files changed, 79 insertions(+), 157 deletions(-)
+ tools/perf/builtin-diff.c      |   21 ++++-----
+ tools/perf/builtin-report.c    |    1 +
+ tools/perf/ui/browsers/hists.c |   20 +++++----
+ tools/perf/ui/gtk/browser.c    |   30 +++++--------
+ tools/perf/ui/hist.c           |   96 ++++++++++++++++++++++------------------
+ tools/perf/ui/setup.c          |    1 +
+ tools/perf/ui/stdio/hist.c     |   17 +++----
+ tools/perf/util/hist.h         |   11 ++++-
+ 8 files changed, 101 insertions(+), 96 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 5b80d84..a414bc9 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -60,7 +60,7 @@ Default is to monitor all CPUS.
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 93b852f..9fbbc01 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -597,40 +597,35 @@ static const struct option options[] = {
  
- -i::
- --inherit::
--	Child tasks inherit counters, only makes sens with -p option.
-+	Child tasks do not inherit counters.
- 
- -k <path>::
- --vmlinux=<path>::
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index a306474..b7d2ea6 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -596,7 +596,7 @@ static void *display_thread_tui(void *arg)
- 	 * via --uid.
- 	 */
- 	list_for_each_entry(pos, &top->evlist->entries, node)
--		pos->hists.uid_filter_str = top->target.uid_str;
-+		pos->hists.uid_filter_str = top->record_opts.target.uid_str;
- 
- 	perf_evlist__tui_browse_hists(top->evlist, help, &hbt,
- 				      &top->session->header.env);
-@@ -894,34 +894,13 @@ static void perf_top__start_counters(struct perf_top *top)
+ static void ui_init(void)
  {
- 	struct perf_evsel *counter;
- 	struct perf_evlist *evlist = top->evlist;
-+	struct perf_record_opts *opts = &top->record_opts;
+-	perf_hpp__init();
+-
+-	/* No overhead column. */
+-	perf_hpp__column_enable(PERF_HPP__OVERHEAD, false);
+-
+ 	/*
+ 	 * Display baseline/delta/ratio/displacement/
+ 	 * formula/periods columns.
+ 	 */
+-	perf_hpp__column_enable(PERF_HPP__BASELINE, true);
++	perf_hpp__column_enable(PERF_HPP__BASELINE);
  
--	if (top->group)
--		perf_evlist__set_leader(evlist);
-+	perf_evlist__config(evlist, opts);
+ 	switch (compute) {
+ 	case COMPUTE_DELTA:
+-		perf_hpp__column_enable(PERF_HPP__DELTA, true);
++		perf_hpp__column_enable(PERF_HPP__DELTA);
+ 		break;
+ 	case COMPUTE_RATIO:
+-		perf_hpp__column_enable(PERF_HPP__RATIO, true);
++		perf_hpp__column_enable(PERF_HPP__RATIO);
+ 		break;
+ 	case COMPUTE_WEIGHTED_DIFF:
+-		perf_hpp__column_enable(PERF_HPP__WEIGHTED_DIFF, true);
++		perf_hpp__column_enable(PERF_HPP__WEIGHTED_DIFF);
+ 		break;
+ 	default:
+ 		BUG_ON(1);
+ 	};
  
- 	list_for_each_entry(counter, &evlist->entries, node) {
- 		struct perf_event_attr *attr = &counter->attr;
+ 	if (show_displacement)
+-		perf_hpp__column_enable(PERF_HPP__DISPL, true);
++		perf_hpp__column_enable(PERF_HPP__DISPL);
  
--		perf_evsel__set_sample_bit(counter, IP);
--		perf_evsel__set_sample_bit(counter, TID);
--
--		if (top->freq) {
--			perf_evsel__set_sample_bit(counter, PERIOD);
--			attr->freq	  = 1;
--			attr->sample_freq = top->freq;
--		}
--
--		if (evlist->nr_entries > 1)
--			perf_evsel__set_sample_id(counter);
--
--		if (perf_target__has_cpu(&top->target))
--			perf_evsel__set_sample_bit(counter, CPU);
--
--		if (symbol_conf.use_callchain)
--			perf_evsel__set_sample_bit(counter, CALLCHAIN);
--
--		attr->mmap = 1;
--		attr->comm = 1;
--		attr->inherit = top->inherit;
- fallback_missing_features:
- 		if (top->exclude_guest_missing)
- 			attr->exclude_guest = attr->exclude_host = 0;
-@@ -995,7 +974,7 @@ try_again:
- 		}
+ 	if (show_formula)
+-		perf_hpp__column_enable(PERF_HPP__FORMULA, true);
++		perf_hpp__column_enable(PERF_HPP__FORMULA);
+ 
+ 	if (show_period) {
+-		perf_hpp__column_enable(PERF_HPP__PERIOD, true);
+-		perf_hpp__column_enable(PERF_HPP__PERIOD_BASELINE, true);
++		perf_hpp__column_enable(PERF_HPP__PERIOD);
++		perf_hpp__column_enable(PERF_HPP__PERIOD_BASELINE);
  	}
- 
--	if (perf_evlist__mmap(evlist, top->mmap_pages, false) < 0) {
-+	if (perf_evlist__mmap(evlist, opts->mmap_pages, false) < 0) {
- 		ui__error("Failed to mmap with %d (%s)\n",
- 			    errno, strerror(errno));
- 		goto out_err;
-@@ -1015,7 +994,7 @@ static int perf_top__setup_sample_type(struct perf_top *top)
- 			ui__error("Selected -g but \"sym\" not present in --sort/-s.");
- 			return -EINVAL;
- 		}
--	} else if (!top->dont_use_callchains && callchain_param.mode != CHAIN_NONE) {
-+	} else if (callchain_param.mode != CHAIN_NONE) {
- 		if (callchain_register_param(&callchain_param) < 0) {
- 			ui__error("Can't register callchain params.\n");
- 			return -EINVAL;
-@@ -1027,6 +1006,7 @@ static int perf_top__setup_sample_type(struct perf_top *top)
- 
- static int __cmd_top(struct perf_top *top)
- {
-+	struct perf_record_opts *opts = &top->record_opts;
- 	pthread_t thread;
- 	int ret;
- 	/*
-@@ -1041,7 +1021,7 @@ static int __cmd_top(struct perf_top *top)
- 	if (ret)
- 		goto out_delete;
- 
--	if (perf_target__has_task(&top->target))
-+	if (perf_target__has_task(&opts->target))
- 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
- 						  perf_event__process,
- 						  &top->session->host_machine);
-@@ -1052,6 +1032,17 @@ static int __cmd_top(struct perf_top *top)
- 	top->session->evlist = top->evlist;
- 	perf_session__set_id_hdr_size(top->session);
- 
-+	/*
-+	 * When perf is starting the traced process, all the events (apart from
-+	 * group members) have enable_on_exec=1 set, so don't spoil it by
-+	 * prematurely enabling them.
-+	 *
-+	 * XXX 'top' still doesn't start workloads like record, trace, but should,
-+	 * so leave the check here.
-+	 */
-+        if (!perf_target__none(&opts->target))
-+                perf_evlist__enable(top->evlist);
-+
- 	/* Wait for a minimal set of events before starting the snapshot */
- 	poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
- 
-@@ -1092,116 +1083,56 @@ out_delete:
- static int
- parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- {
--	struct perf_top *top = (struct perf_top *)opt->value;
--	char *tok, *tok2;
--	char *endptr;
--
- 	/*
- 	 * --no-call-graph
- 	 */
--	if (unset) {
--		top->dont_use_callchains = true;
-+	if (unset)
- 		return 0;
--	}
- 
- 	symbol_conf.use_callchain = true;
- 
--	if (!arg)
--		return 0;
--
--	tok = strtok((char *)arg, ",");
--	if (!tok)
--		return -1;
--
--	/* get the output mode */
--	if (!strncmp(tok, "graph", strlen(arg)))
--		callchain_param.mode = CHAIN_GRAPH_ABS;
--
--	else if (!strncmp(tok, "flat", strlen(arg)))
--		callchain_param.mode = CHAIN_FLAT;
--
--	else if (!strncmp(tok, "fractal", strlen(arg)))
--		callchain_param.mode = CHAIN_GRAPH_REL;
--
--	else if (!strncmp(tok, "none", strlen(arg))) {
--		callchain_param.mode = CHAIN_NONE;
--		symbol_conf.use_callchain = false;
--
--		return 0;
--	} else
--		return -1;
--
--	/* get the min percentage */
--	tok = strtok(NULL, ",");
--	if (!tok)
--		goto setup;
--
--	callchain_param.min_percent = strtod(tok, &endptr);
--	if (tok == endptr)
--		return -1;
--
--	/* get the print limit */
--	tok2 = strtok(NULL, ",");
--	if (!tok2)
--		goto setup;
--
--	if (tok2[0] != 'c') {
--		callchain_param.print_limit = strtod(tok2, &endptr);
--		tok2 = strtok(NULL, ",");
--		if (!tok2)
--			goto setup;
--	}
--
--	/* get the call chain order */
--	if (!strcmp(tok2, "caller"))
--		callchain_param.order = ORDER_CALLER;
--	else if (!strcmp(tok2, "callee"))
--		callchain_param.order = ORDER_CALLEE;
--	else
--		return -1;
--setup:
--	if (callchain_register_param(&callchain_param) < 0) {
--		fprintf(stderr, "Can't register callchain params\n");
--		return -1;
--	}
--	return 0;
-+	return record_parse_callchain_opt(opt, arg, unset);
  }
  
- int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- {
--	struct perf_evsel *pos;
- 	int status;
- 	char errbuf[BUFSIZ];
- 	struct perf_top top = {
- 		.count_filter	     = 5,
- 		.delay_secs	     = 2,
--		.freq		     = 4000, /* 4 KHz */
--		.mmap_pages	     = 128,
--		.sym_pcnt_filter     = 5,
--		.target		     = {
--			.uses_mmap   = true,
-+		.record_opts = {
-+			.mmap_pages	= UINT_MAX,
-+			.user_freq	= UINT_MAX,
-+			.user_interval	= ULLONG_MAX,
-+			.freq		= 4000, /* 4 KHz */
-+			.target		     = {
-+				.uses_mmap   = true,
-+			},
- 		},
-+		.sym_pcnt_filter     = 5,
- 	};
--	char callchain_default_opt[] = "fractal,0.5,callee";
-+	struct perf_record_opts *opts = &top.record_opts;
-+	struct perf_target *target = &opts->target;
- 	const struct option options[] = {
- 	OPT_CALLBACK('e', "event", &top.evlist, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events_option),
--	OPT_INTEGER('c', "count", &top.default_interval,
--		    "event period to sample"),
--	OPT_STRING('p', "pid", &top.target.pid, "pid",
-+	OPT_U64('c', "count", &opts->user_interval, "event period to sample"),
-+	OPT_STRING('p', "pid", &target->pid, "pid",
- 		    "profile events on existing process id"),
--	OPT_STRING('t', "tid", &top.target.tid, "tid",
-+	OPT_STRING('t', "tid", &target->tid, "tid",
- 		    "profile events on existing thread id"),
--	OPT_BOOLEAN('a', "all-cpus", &top.target.system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &target->system_wide,
- 			    "system-wide collection from all CPUs"),
--	OPT_STRING('C', "cpu", &top.target.cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &target->cpu_list, "cpu",
- 		    "list of cpus to monitor"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- 	OPT_BOOLEAN('K', "hide_kernel_symbols", &top.hide_kernel_symbols,
- 		    "hide kernel symbols"),
--	OPT_UINTEGER('m', "mmap-pages", &top.mmap_pages, "number of mmap data pages"),
-+	OPT_UINTEGER('m', "mmap-pages", &opts->mmap_pages,
-+		     "number of mmap data pages"),
- 	OPT_INTEGER('r', "realtime", &top.realtime_prio,
- 		    "collect data with this RT SCHED_FIFO priority"),
- 	OPT_INTEGER('d', "delay", &top.delay_secs,
-@@ -1210,16 +1141,14 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 			    "dump the symbol table used for profiling"),
- 	OPT_INTEGER('f', "count-filter", &top.count_filter,
- 		    "only display functions with more events than this"),
--	OPT_BOOLEAN('g', "group", &top.group,
-+	OPT_BOOLEAN('g', "group", &opts->group,
- 			    "put the counters into a counter group"),
--	OPT_BOOLEAN('i', "inherit", &top.inherit,
--		    "child tasks inherit counters"),
-+	OPT_BOOLEAN('i', "no-inherit", &opts->no_inherit,
-+		    "child tasks do not inherit counters"),
- 	OPT_STRING(0, "sym-annotate", &top.sym_filter, "symbol name",
- 		    "symbol to annotate"),
--	OPT_BOOLEAN('z', "zero", &top.zero,
--		    "zero history across updates"),
--	OPT_INTEGER('F', "freq", &top.freq,
--		    "profile at this frequency"),
-+	OPT_BOOLEAN('z', "zero", &top.zero, "zero history across updates"),
-+	OPT_UINTEGER('F', "freq", &opts->user_freq, "profile at this frequency"),
- 	OPT_INTEGER('E', "entries", &top.print_entries,
- 		    "display this many functions"),
- 	OPT_BOOLEAN('U', "hide_user_symbols", &top.hide_user_symbols,
-@@ -1232,10 +1161,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "sort by key(s): pid, comm, dso, symbol, parent"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
--	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
--		     "Display callchains using output_type (graph, flat, fractal, or none), min percent threshold and callchain order. "
--		     "Default: fractal,0.5,callee", &parse_callchain_opt,
--		     callchain_default_opt),
-+	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
-+			     "mode[,dump_size]", record_callchain_help,
-+			     &parse_callchain_opt, "fp"),
- 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
- 		    "Show a column with the sum of periods"),
- 	OPT_STRING(0, "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-@@ -1250,7 +1178,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Display raw encoding of assembly instructions (default)"),
- 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
- 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
--	OPT_STRING('u', "uid", &top.target.uid_str, "user", "user to profile"),
-+	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
- 	OPT_END()
- 	};
- 	const char * const top_usage[] = {
-@@ -1280,27 +1208,27 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	setup_browser(false);
- 
--	status = perf_target__validate(&top.target);
-+	status = perf_target__validate(target);
- 	if (status) {
--		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
-+		perf_target__strerror(target, status, errbuf, BUFSIZ);
- 		ui__warning("%s", errbuf);
- 	}
- 
--	status = perf_target__parse_uid(&top.target);
-+	status = perf_target__parse_uid(target);
- 	if (status) {
- 		int saved_errno = errno;
- 
--		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
-+		perf_target__strerror(target, status, errbuf, BUFSIZ);
- 		ui__error("%s", errbuf);
- 
- 		status = -saved_errno;
- 		goto out_delete_evlist;
- 	}
- 
--	if (perf_target__none(&top.target))
--		top.target.system_wide = true;
-+	if (perf_target__none(target))
-+		target->system_wide = true;
- 
--	if (perf_evlist__create_maps(top.evlist, &top.target) < 0)
-+	if (perf_evlist__create_maps(top.evlist, target) < 0)
- 		usage_with_options(top_usage, options);
- 
- 	if (!top.evlist->nr_entries &&
-@@ -1314,24 +1242,22 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (top.delay_secs < 1)
- 		top.delay_secs = 1;
- 
-+	if (opts->user_interval != ULLONG_MAX)
-+		opts->default_interval = opts->user_interval;
-+	if (opts->user_freq != UINT_MAX)
-+		opts->freq = opts->user_freq;
-+
- 	/*
- 	 * User specified count overrides default frequency.
- 	 */
--	if (top.default_interval)
--		top.freq = 0;
--	else if (top.freq) {
--		top.default_interval = top.freq;
-+	if (opts->default_interval)
-+		opts->freq = 0;
-+	else if (opts->freq) {
-+		opts->default_interval = opts->freq;
- 	} else {
- 		ui__error("frequency and count are zero, aborting\n");
--		exit(EXIT_FAILURE);
--	}
--
--	list_for_each_entry(pos, &top.evlist->entries, node) {
--		/*
--		 * Fill in the ones not specifically initialized via -c:
--		 */
--		if (!pos->attr.sample_period)
--			pos->attr.sample_period = top.default_interval;
-+		status = -EINVAL;
-+		goto out_delete_evlist;
- 	}
- 
- 	top.sym_evsel = perf_evlist__first(top.evlist);
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index 884dde9..54d37a4 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -26,6 +26,8 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 	float samples_per_sec = top->samples / top->delay_secs;
- 	float ksamples_per_sec = top->kernel_samples / top->delay_secs;
- 	float esamples_percent = (100.0 * top->exact_samples) / top->samples;
-+	struct perf_record_opts *opts = &top->record_opts;
-+	struct perf_target *target = &opts->target;
- 	size_t ret = 0;
- 
- 	if (!perf_guest) {
-@@ -61,31 +63,31 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 		struct perf_evsel *first = perf_evlist__first(top->evlist);
- 		ret += SNPRINTF(bf + ret, size - ret, "%" PRIu64 "%s ",
- 				(uint64_t)first->attr.sample_period,
--				top->freq ? "Hz" : "");
-+				opts->freq ? "Hz" : "");
- 	}
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "%s", perf_evsel__name(top->sym_evsel));
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "], ");
- 
--	if (top->target.pid)
-+	if (target->pid)
- 		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %s",
--				top->target.pid);
--	else if (top->target.tid)
-+				target->pid);
-+	else if (target->tid)
- 		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %s",
--				top->target.tid);
--	else if (top->target.uid_str != NULL)
-+				target->tid);
-+	else if (target->uid_str != NULL)
- 		ret += SNPRINTF(bf + ret, size - ret, " (uid: %s",
--				top->target.uid_str);
-+				target->uid_str);
- 	else
- 		ret += SNPRINTF(bf + ret, size - ret, " (all");
- 
--	if (top->target.cpu_list)
-+	if (target->cpu_list)
- 		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
- 				top->evlist->cpus->nr > 1 ? "s" : "",
--				top->target.cpu_list);
-+				target->cpu_list);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index fc25100..5134acf 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -692,6 +692,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		setup_browser(true);
  	else {
--		if (top->target.tid)
-+		if (target->tid)
- 			ret += SNPRINTF(bf + ret, size - ret, ")");
+ 		use_browser = 0;
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+ 		perf_hpp__init();
+ 	}
+ 
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index ccc4bd1..57b82c2 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -587,6 +587,8 @@ HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+ 
+ void hist_browser__init_hpp(void)
+ {
++	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
++
+ 	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+@@ -607,12 +609,13 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ {
+ 	char s[256];
+ 	double percent;
+-	int i, printed = 0;
++	int printed = 0;
+ 	int width = browser->b.width;
+ 	char folded_sign = ' ';
+ 	bool current_entry = ui_browser__is_current_entry(&browser->b, row);
+ 	off_t row_offset = entry->row_offset;
+ 	bool first = true;
++	struct perf_hpp_fmt *fmt;
+ 
+ 	if (current_entry) {
+ 		browser->he_selection = entry;
+@@ -629,12 +632,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			.buf		= s,
+ 			.size		= sizeof(s),
+ 		};
++		int i = 0;
+ 
+ 		ui_browser__gotorc(&browser->b, row, 0);
+ 
+-		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-			if (!perf_hpp__format[i].cond)
+-				continue;
++		perf_hpp__for_each_format(fmt) {
+ 
+ 			if (!first) {
+ 				slsmg_printf("  ");
+@@ -642,14 +644,14 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			}
+ 			first = false;
+ 
+-			if (perf_hpp__format[i].color) {
++			if (fmt->color) {
+ 				hpp.ptr = &percent;
+ 				/* It will set percent for us. See HPP__COLOR_FN above. */
+-				width -= perf_hpp__format[i].color(&hpp, entry);
++				width -= fmt->color(&hpp, entry);
+ 
+ 				ui_browser__set_percent_color(&browser->b, percent, current_entry);
+ 
+-				if (i == PERF_HPP__OVERHEAD && symbol_conf.use_callchain) {
++				if (!i && symbol_conf.use_callchain) {
+ 					slsmg_printf("%c ", folded_sign);
+ 					width -= 2;
+ 				}
+@@ -659,9 +661,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 				if (!current_entry || !browser->b.navkeypressed)
+ 					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
+ 			} else {
+-				width -= perf_hpp__format[i].entry(&hpp, entry);
++				width -= fmt->entry(&hpp, entry);
+ 				slsmg_printf("%s", s);
+ 			}
++
++			i++;
+ 		}
+ 
+ 		/* The scroll bar isn't being used */
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 253b621..e59ba33 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -74,6 +74,8 @@ HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+ 
+ void perf_gtk__init_hpp(void)
+ {
++	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
++
+ 	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+@@ -90,13 +92,14 @@ void perf_gtk__init_hpp(void)
+ 
+ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ {
++	struct perf_hpp_fmt *fmt;
+ 	GType col_types[MAX_COLUMNS];
+ 	GtkCellRenderer *renderer;
+ 	struct sort_entry *se;
+ 	GtkListStore *store;
+ 	struct rb_node *nd;
+ 	GtkWidget *view;
+-	int i, col_idx;
++	int col_idx;
+ 	int nr_cols;
+ 	char s[512];
+ 
+@@ -107,12 +110,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 	nr_cols = 0;
+ 
+-	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		if (!perf_hpp__format[i].cond)
+-			continue;
+-
++	perf_hpp__for_each_format(fmt)
+ 		col_types[nr_cols++] = G_TYPE_STRING;
+-	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+@@ -129,12 +128,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 	col_idx = 0;
+ 
+-	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		if (!perf_hpp__format[i].cond)
+-			continue;
+-
+-		perf_hpp__format[i].header(&hpp);
+-
++	perf_hpp__for_each_format(fmt) {
++		fmt->header(&hpp);
+ 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+ 							    -1, s,
+ 							    renderer, "markup",
+@@ -166,14 +161,11 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 		col_idx = 0;
+ 
+-		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-			if (!perf_hpp__format[i].cond)
+-				continue;
+-
+-			if (perf_hpp__format[i].color)
+-				perf_hpp__format[i].color(&hpp, h);
++		perf_hpp__for_each_format(fmt) {
++			if (fmt->color)
++				fmt->color(&hpp, h);
+ 			else
+-				perf_hpp__format[i].entry(&hpp, h);
++				fmt->entry(&hpp, h);
+ 
+ 			gtk_list_store_set(store, &iter, col_idx++, s, -1);
+ 		}
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index aa84130..0a5281f 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -386,60 +386,71 @@ static int hpp__entry_formula(struct perf_hpp *hpp, struct hist_entry *he)
+ 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+ }
+ 
+-#define HPP__COLOR_PRINT_FNS(_name)		\
+-	.header	= hpp__header_ ## _name,		\
+-	.width	= hpp__width_ ## _name,		\
+-	.color	= hpp__color_ ## _name,		\
+-	.entry	= hpp__entry_ ## _name
++#define HPP__COLOR_PRINT_FNS(_name)			\
++	{						\
++		.header	= hpp__header_ ## _name,	\
++		.width	= hpp__width_ ## _name,		\
++		.color	= hpp__color_ ## _name,		\
++		.entry	= hpp__entry_ ## _name		\
++	}
+ 
+-#define HPP__PRINT_FNS(_name)			\
+-	.header	= hpp__header_ ## _name,		\
+-	.width	= hpp__width_ ## _name,		\
+-	.entry	= hpp__entry_ ## _name
++#define HPP__PRINT_FNS(_name)				\
++	{						\
++		.header	= hpp__header_ ## _name,	\
++		.width	= hpp__width_ ## _name,		\
++		.entry	= hpp__entry_ ## _name		\
++	}
+ 
+ struct perf_hpp_fmt perf_hpp__format[] = {
+-	{ .cond = false, HPP__COLOR_PRINT_FNS(baseline) },
+-	{ .cond = true,  HPP__COLOR_PRINT_FNS(overhead) },
+-	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_sys) },
+-	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_us) },
+-	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_guest_sys) },
+-	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_guest_us) },
+-	{ .cond = false, HPP__PRINT_FNS(samples) },
+-	{ .cond = false, HPP__PRINT_FNS(period) },
+-	{ .cond = false, HPP__PRINT_FNS(period_baseline) },
+-	{ .cond = false, HPP__PRINT_FNS(delta) },
+-	{ .cond = false, HPP__PRINT_FNS(ratio) },
+-	{ .cond = false, HPP__PRINT_FNS(wdiff) },
+-	{ .cond = false, HPP__PRINT_FNS(displ) },
+-	{ .cond = false, HPP__PRINT_FNS(formula) }
++	HPP__COLOR_PRINT_FNS(baseline),
++	HPP__COLOR_PRINT_FNS(overhead),
++	HPP__COLOR_PRINT_FNS(overhead_sys),
++	HPP__COLOR_PRINT_FNS(overhead_us),
++	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
++	HPP__COLOR_PRINT_FNS(overhead_guest_us),
++	HPP__PRINT_FNS(samples),
++	HPP__PRINT_FNS(period),
++	HPP__PRINT_FNS(period_baseline),
++	HPP__PRINT_FNS(delta),
++	HPP__PRINT_FNS(ratio),
++	HPP__PRINT_FNS(wdiff),
++	HPP__PRINT_FNS(displ),
++	HPP__PRINT_FNS(formula)
+ };
+ 
++LIST_HEAD(perf_hpp__list);
++
+ #undef HPP__COLOR_PRINT_FNS
+ #undef HPP__PRINT_FNS
+ 
+ void perf_hpp__init(void)
+ {
+ 	if (symbol_conf.show_cpu_utilization) {
+-		perf_hpp__format[PERF_HPP__OVERHEAD_SYS].cond = true;
+-		perf_hpp__format[PERF_HPP__OVERHEAD_US].cond = true;
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD_SYS);
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD_US);
+ 
+ 		if (perf_guest) {
+-			perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_SYS].cond = true;
+-			perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].cond = true;
++			perf_hpp__column_enable(PERF_HPP__OVERHEAD_GUEST_SYS);
++			perf_hpp__column_enable(PERF_HPP__OVERHEAD_GUEST_US);
+ 		}
+ 	}
+ 
+ 	if (symbol_conf.show_nr_samples)
+-		perf_hpp__format[PERF_HPP__SAMPLES].cond = true;
++		perf_hpp__column_enable(PERF_HPP__SAMPLES);
+ 
+ 	if (symbol_conf.show_total_period)
+-		perf_hpp__format[PERF_HPP__PERIOD].cond = true;
++		perf_hpp__column_enable(PERF_HPP__PERIOD);
+ }
+ 
+-void perf_hpp__column_enable(unsigned col, bool enable)
++void perf_hpp__column_register(struct perf_hpp_fmt *format)
++{
++	list_add_tail(&format->list, &perf_hpp__list);
++}
++
++void perf_hpp__column_enable(unsigned col)
+ {
+ 	BUG_ON(col >= PERF_HPP__MAX_INDEX);
+-	perf_hpp__format[col].cond = enable;
++	perf_hpp__column_register(&perf_hpp__format[col]);
+ }
+ 
+ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+@@ -452,27 +463,25 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 				bool color)
+ {
+ 	const char *sep = symbol_conf.field_sep;
++	struct perf_hpp_fmt *fmt;
+ 	char *start = hpp->buf;
+-	int i, ret;
++	int ret;
+ 	bool first = true;
+ 
+ 	if (symbol_conf.exclude_other && !he->parent)
+ 		return 0;
+ 
+-	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		if (!perf_hpp__format[i].cond)
+-			continue;
+-
++	perf_hpp__for_each_format(fmt) {
+ 		if (!sep || !first) {
+ 			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+ 			advance_hpp(hpp, ret);
+ 			first = false;
+ 		}
+ 
+-		if (color && perf_hpp__format[i].color)
+-			ret = perf_hpp__format[i].color(hpp, he);
++		if (color && fmt->color)
++			ret = fmt->color(hpp, he);
  		else
- 			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 86ff1b1..927c229 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -14,7 +14,7 @@ struct perf_session;
- struct perf_top {
- 	struct perf_tool   tool;
- 	struct perf_evlist *evlist;
--	struct perf_target target;
-+	struct perf_record_opts record_opts;
- 	/*
- 	 * Symbols will be added here in perf_event__process_sample and will
- 	 * get out after decayed.
-@@ -24,15 +24,11 @@ struct perf_top {
- 	u64		   exact_samples;
- 	u64		   guest_us_samples, guest_kernel_samples;
- 	int		   print_entries, count_filter, delay_secs;
--	int		   freq;
- 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
- 	bool		   use_tui, use_stdio;
- 	bool		   sort_has_symbols;
--	bool		   dont_use_callchains;
- 	bool		   kptr_restrict_warned;
- 	bool		   vmlinux_warned;
--	bool		   inherit;
--	bool		   group;
- 	bool		   sample_id_all_missing;
- 	bool		   exclude_guest_missing;
- 	bool		   dump_symtab;
-@@ -40,8 +36,6 @@ struct perf_top {
- 	struct perf_evsel  *sym_evsel;
- 	struct perf_session *session;
- 	struct winsize	   winsize;
--	unsigned int	   mmap_pages;
--	int		   default_interval;
- 	int		   realtime_prio;
- 	int		   sym_pcnt_filter;
- 	const char	   *sym_filter;
+-			ret = perf_hpp__format[i].entry(hpp, he);
++			ret = fmt->entry(hpp, he);
+ 
+ 		advance_hpp(hpp, ret);
+ 	}
+@@ -504,16 +513,15 @@ int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
+  */
+ unsigned int hists__sort_list_width(struct hists *hists)
+ {
++	struct perf_hpp_fmt *fmt;
+ 	struct sort_entry *se;
+-	int i, ret = 0;
++	int i = 0, ret = 0;
+ 
+-	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		if (!perf_hpp__format[i].cond)
+-			continue;
++	perf_hpp__for_each_format(fmt) {
+ 		if (i)
+ 			ret += 2;
+ 
+-		ret += perf_hpp__format[i].width(NULL);
++		ret += fmt->width(NULL);
+ 	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index ebb4cc1..166f13d 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -30,6 +30,7 @@ void setup_browser(bool fallback_to_pager)
+ 		if (fallback_to_pager)
+ 			setup_pager();
+ 
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+ 		perf_hpp__init();
+ 		break;
+ 	}
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index f0ee204..0eae3b2 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -335,13 +335,14 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		      int max_cols, FILE *fp)
+ {
++	struct perf_hpp_fmt *fmt;
+ 	struct sort_entry *se;
+ 	struct rb_node *nd;
+ 	size_t ret = 0;
+ 	unsigned int width;
+ 	const char *sep = symbol_conf.field_sep;
+ 	const char *col_width = symbol_conf.col_width_list_str;
+-	int idx, nr_rows = 0;
++	int nr_rows = 0;
+ 	char bf[96];
+ 	struct perf_hpp dummy_hpp = {
+ 		.buf	= bf,
+@@ -355,16 +356,14 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		goto print_entries;
+ 
+ 	fprintf(fp, "# ");
+-	for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
+-		if (!perf_hpp__format[idx].cond)
+-			continue;
+ 
++	perf_hpp__for_each_format(fmt) {
+ 		if (!first)
+ 			fprintf(fp, "%s", sep ?: "  ");
+ 		else
+ 			first = false;
+ 
+-		perf_hpp__format[idx].header(&dummy_hpp);
++		fmt->header(&dummy_hpp);
+ 		fprintf(fp, "%s", bf);
+ 	}
+ 
+@@ -400,18 +399,16 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	first = true;
+ 
+ 	fprintf(fp, "# ");
+-	for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
+-		unsigned int i;
+ 
+-		if (!perf_hpp__format[idx].cond)
+-			continue;
++	perf_hpp__for_each_format(fmt) {
++		unsigned int i;
+ 
+ 		if (!first)
+ 			fprintf(fp, "%s", sep ?: "  ");
+ 		else
+ 			first = false;
+ 
+-		width = perf_hpp__format[idx].width(&dummy_hpp);
++		width = fmt->width(&dummy_hpp);
+ 		for (i = 0; i < width; i++)
+ 			fprintf(fp, ".");
+ 	}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 8b091a5..a935a60 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -126,13 +126,19 @@ struct perf_hpp {
+ };
+ 
+ struct perf_hpp_fmt {
+-	bool cond;
+ 	int (*header)(struct perf_hpp *hpp);
+ 	int (*width)(struct perf_hpp *hpp);
+ 	int (*color)(struct perf_hpp *hpp, struct hist_entry *he);
+ 	int (*entry)(struct perf_hpp *hpp, struct hist_entry *he);
++
++	struct list_head list;
+ };
+ 
++extern struct list_head perf_hpp__list;
++
++#define perf_hpp__for_each_format(format) \
++	list_for_each_entry(format, &perf_hpp__list, list)
++
+ extern struct perf_hpp_fmt perf_hpp__format[];
+ 
+ enum {
+@@ -155,7 +161,8 @@ enum {
+ };
+ 
+ void perf_hpp__init(void);
+-void perf_hpp__column_enable(unsigned col, bool enable);
++void perf_hpp__column_register(struct perf_hpp_fmt *format);
++void perf_hpp__column_enable(unsigned col);
+ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 				bool color);
+ 
 -- 
 1.7.9.2.358.g22243
 
