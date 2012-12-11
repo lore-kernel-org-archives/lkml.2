@@ -1,201 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab2LKDdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 22:33:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:49374 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab2LKDdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 22:33:07 -0500
-X-IronPort-AV: E=Sophos;i="4.84,256,1355068800"; 
-   d="scan'208";a="6372388"
-Message-ID: <50C6A93A.50404@cn.fujitsu.com>
-Date: Tue, 11 Dec 2012 11:32:10 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752604Ab2LKDeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 22:34:21 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38329 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab2LKDeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 22:34:19 -0500
+Message-ID: <50C6A995.1020908@gmail.com>
+Date: Tue, 11 Dec 2012 09:03:41 +0530
+From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Jianguo Wu <wujianguo@huawei.com>
-CC: jiang.liu@huawei.com, hpa@zytor.com, akpm@linux-foundation.org,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
-        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
- keep movable limit for nodes
-References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com> <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com> <50C6A36C.5030606@huawei.com>
-In-Reply-To: <50C6A36C.5030606@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/11 11:32:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/11 11:32:17,
-	Serialize complete at 2012/12/11 11:32:17
+To: David Miller <davem@davemloft.net>
+CC: abhi.c.pawar@gmail.com, pablo@netfilter.org, kaber@trash.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        linville@tuxdriver.com, johannes@sipsolutions.net, amwang@redhat.com,
+        edumazet@google.com, nhorman@tuxdriver.com, joe@perches.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH RESEND] net: remove obsolete simple_strto<foo>
+References: <1355130748-7828-1-git-send-email-abhi.c.pawar@gmail.com> <20121210.141002.450030380391247897.davem@davemloft.net>
+In-Reply-To: <20121210.141002.450030380391247897.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 11:07 AM, Jianguo Wu wrote:
-> On 2012/12/11 10:33, Tang Chen wrote:
->
->> This patch introduces a new array zone_movable_limit[] to store the
->> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
->> The function sanitize_zone_movable_limit() will find out to which
->> node the ranges in movable_map.map[] belongs, and calculates the
->> low boundary of ZONE_MOVABLE for each node.
+On 12/11/2012 12:40 AM, David Miller wrote:
+> From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+> Date: Mon, 10 Dec 2012 14:42:28 +0530
+> 
+>> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
 >>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
->> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
->> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
->> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
->> ---
->>   mm/page_alloc.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>   1 files changed, 77 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 1c91d16..4853619 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
->>   static unsigned long __initdata required_kernelcore;
->>   static unsigned long __initdata required_movablecore;
->>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
->> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
->>
->>   /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
->>   int movable_zone;
->> @@ -4340,6 +4341,77 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
->>   	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
->>   }
->>
->> +/**
->> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
->> + *
->> + * zone_movable_limit is initialized as 0. This function will try to get
->> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
->> + * assigne them to zone_movable_limit.
->> + * zone_movable_limit[nid] == 0 means no limit for the node.
->> + *
->> + * Note: Each range is represented as [start_pfn, end_pfn)
->> + */
->> +static void __meminit sanitize_zone_movable_limit(void)
->> +{
->> +	int map_pos = 0, i, nid;
->> +	unsigned long start_pfn, end_pfn;
->> +
->> +	if (!movablecore_map.nr_map)
->> +		return;
->> +
->> +	/* Iterate all ranges from minimum to maximum */
->> +	for_each_mem_pfn_range(i, MAX_NUMNODES,&start_pfn,&end_pfn,&nid) {
->> +		/*
->> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
->> +		 * specified by user, just go on to check next range.
->> +		 */
->> +		if (zone_movable_limit[nid])
->> +			continue;
->> +
->> +#ifdef CONFIG_ZONE_DMA
->> +		/* Skip DMA memory. */
->> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA])
->> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
->> +#endif
->> +
->> +#ifdef CONFIG_ZONE_DMA32
->> +		/* Skip DMA32 memory. */
->> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA32])
->> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
->> +#endif
->> +
->> +#ifdef CONFIG_HIGHMEM
->> +		/* Skip lowmem if ZONE_MOVABLE is highmem. */
->> +		if (zone_movable_is_highmem()&&
->
-> Hi Tang,
->
-> I think zone_movable_is_highmem() is not work correctly here.
-> 	sanitize_zone_movable_limit
-> 		zone_movable_is_highmem<--using movable_zone here
-> 	find_zone_movable_pfns_for_nodes
-> 		find_usable_zone_for_movable<--movable_zone is specified here
->
-> I think Jiang Liu's patch works fine for highmem, please refer to:
-> http://marc.info/?l=linux-mm&m=135476085816087&w=2
+>> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+> 
+> Applied.
+> 
+Hi David,
+It seems that there are occurences of simple_strto* still present in the
+couple of files which are not yet removed correctly by this patch. I
+will send a modified patch shortly. Please revert this commit and use
+the newly sent patch to merge with the tree.
 
-Hi Wu,
-
-Yes, I forgot movable_zone think. Thanks for reminding me. :)
-
-But Liu's patch you just mentioned, I didn't use it because I
-don't think we should skip kernelcore when movablecore_map is specified.
-If these 2 options are not conflict, we should satisfy them both. :)
-
-Of course, I also think Liu's suggestion is wonderful. But I think we
-need more discussion on it. :)
-
-I'll fix it soon.
-Thanks. :)
-
->
-> Thanks,
-> Jianguo Wu
->
->> +		    start_pfn<  arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
->> +			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
->> +#endif
->> +
->> +		if (start_pfn>= end_pfn)
->> +			continue;
->> +
->> +		while (map_pos<  movablecore_map.nr_map) {
->> +			if (end_pfn<= movablecore_map.map[map_pos].start_pfn)
->> +				break;
->> +
->> +			if (start_pfn>= movablecore_map.map[map_pos].end_pfn) {
->> +				map_pos++;
->> +				continue;
->> +			}
->> +
->> +			/*
->> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
->> +			 * pfn specified by movablecore_map, or 0, which means
->> +			 * the node has no ZONE_MOVABLE.
->> +			 */
->> +			zone_movable_limit[nid] = max(start_pfn,
->> +					movablecore_map.map[map_pos].start_pfn);
->> +
->> +			break;
->> +		}
->> +	}
->> +}
->> +
->>   #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->>   static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
->>   					unsigned long zone_type,
->> @@ -4358,6 +4430,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
->>   	return zholes_size[zone_type];
->>   }
->>
->> +static void __meminit sanitize_zone_movable_limit(void)
->> +{
->> +}
->> +
->>   #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->>
->>   static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
->> @@ -4923,6 +4999,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
->>
->>   	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
->>   	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
->> +	sanitize_zone_movable_limit();
->>   	find_zone_movable_pfns_for_nodes();
->>
->>   	/* Print out the zone ranges */
->
->
->
->
-
+-- 
+-
+Abhijit
