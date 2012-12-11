@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab2LKPJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 10:09:26 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53602 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab2LKPJY (ORCPT
+	id S1753923Ab2LKPKj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 10:10:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64686 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab2LKPKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 10:09:24 -0500
-Message-ID: <50C74C92.1040405@gmail.com>
-Date: Tue, 11 Dec 2012 23:09:06 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <CAE9FiQWZ8WaAJm8ayU+woVRqNLdSRtPS4=gpsrJovmzrUG6FNw@mail.gmail.com> <38722368.Fl8pJoLSRi@vostro.rjw.lan> <8119513.v7VrlzcaZC@vostro.rjw.lan> <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com>
-In-Reply-To: <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 10:10:37 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH] f2fs: fix up f2fs_get_parent issue to retrieve correct parent inode number
+Date: Wed, 12 Dec 2012 00:10:25 +0900
+Message-Id: <1355238625-6581-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-	I have worked out a patch set to clean up ACPI/PCI related notifications,
-please refer to
-http://www.spinics.net/lists/linux-pci/msg17822.html
-	The patchset doesn't apply cleanly to Bjorn's latest pci-next tree. I will
-help to rebase it if needed.
-Regards!
-Gerry
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-On 12/11/2012 10:26 AM, Yinghai Lu wrote:
-> On Mon, Dec 10, 2012 at 5:28 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>>
->>> OK, thanks for the pointers.  I actually see more differences between our
->>> patchsets.  For one example, you seem to have left the parent->ops.bind()
->>> stuff in acpi_add_single_object() which calls it even drivers_autoprobe is
->>> set.
->>
->> Sorry, that should have been "which calls it even when drivers_autoprobe is
->> not set".  I need to be more careful.
->>
-> 
-> oh,  Jiang Liu had one patch to remove that workaround.
-> 
-> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=b40dba80c2b8395570d8357e6b3f417c27c84504
-> 
-> ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
-> 
-> Maybe you can review that patches in my for-pci-next2...
-> those are ACPI related anyway.
-> 
-> those patches have been there for a while, and Bjorn did not have time
-> to digest them.
-> 
-> or you prefer I resend updated version as huge whole patchset?
-> 
-> Thanks
-> 
-> Yinghai
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Test Case:
+[NFS Client]
+ls -lR .
+
+[NFS Server]
+while [ 1 ]
+do
+echo 3 > /proc/sys/vm/drop_caches
+done
+
+Error on NFS Client: "No such file or directory"
+
+When cache is dropped at the server, it results in lookup failure at the
+NFS client due to non-connection with the parent. The default path is it
+initiates a lookup by calculating the hash value for the name, even though
+the hash values stored on the disk for "." and ".." is maintained as zero,
+which results in failure from find_in_block due to not matching HASH values.
+Fix up, by using the correct hashing values for these entries and
+then initiating lookup request.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/f2fs/dir.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index b4e24f3..6cf39db 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -184,7 +184,7 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode *dir,
+ 	int namelen = child->len;
+ 	unsigned long npages = dir_blocks(dir);
+ 	struct f2fs_dir_entry *de = NULL;
+-	f2fs_hash_t name_hash;
++	f2fs_hash_t name_hash = 0;
+ 	unsigned int max_depth;
+ 	unsigned int level;
+ 
+@@ -193,7 +193,8 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode *dir,
+ 
+ 	*res_page = NULL;
+ 
+-	name_hash = f2fs_dentry_hash(name, namelen);
++	if (strcmp(name, ".") && (strcmp(name, "..")))
++		name_hash = f2fs_dentry_hash(name, namelen);
+ 	max_depth = F2FS_I(dir)->i_current_depth;
+ 
+ 	for (level = 0; level < max_depth; level++) {
+-- 
+1.7.9.5
 
