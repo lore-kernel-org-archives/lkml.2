@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2LKWUn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:20:43 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:37545 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab2LKWUc (ORCPT
+	id S1755054Ab2LKW3C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:29:02 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57117 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab2LKW3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:20:32 -0500
-Date: Wed, 12 Dec 2012 09:19:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kees Cook <keescook@google.com>
-Subject: Re: linux-next: recent rebases
-Message-Id: <20121212091945.5ae4dab6e6716fdb4239201e@canb.auug.org.au>
-In-Reply-To: <1355263123.3527.27.camel@localhost>
-References: <20121212084108.de14154ec0e365453617bfd7@canb.auug.org.au>
-	<1355263123.3527.27.camel@localhost>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+."
+	Tue, 11 Dec 2012 17:29:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
+Date: Tue, 11 Dec 2012 22:28:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shadi Ammouri <shadi@marvell.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <20121211164608.GT14363@n2100.arm.linux.org.uk> <20121211173232.43668ab3@pyramind.ukuu.org.uk>
+In-Reply-To: <20121211173232.43668ab3@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212112228.53720.arnd@arndb.de>
+X-Provags-ID: V02:K0:q/sYaBWOCe/0BwmtCYwvOmy+bgWiYMd2awimnsZvU9Z
+ mUPoINd5senNtIoxztcJ4EKTm1hsdguaIMZFDCkvU6fwIsGf/7
+ KAuI8rzNKRubH5ILJQc1XeiyFHDzMufv6aq8sS+WxYd8x3Sg56
+ mRH9OUCaz21IBCewXWNcQ/Q2Uf4BJm/yJmMQgAx27q1ZKl1o1R
+ nnRvJ51DeCwmKyiErP65Wwq4zvja0OHD2L4U+j1oU+ZhBNHlD9
+ jG0Hj8z5ho7XtoEKSqiECFy7oMqavgo68MpeHJ35AK142NLg1R
+ SWwD+aWg6rljQAPf2tEozx6rxwf4Nf/XiwVOJlfEqXKo4HlOG8
+ EBmFYzyZfzb7IIy677OI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 11 December 2012, Alan Cox wrote:
+> > Plus, if you have IO space support, you must have some MMIO region for
+> > them to target - doing what many platforms have done to date and targetted
+> > ISA IO address 0 at virtual address 0 is just not on because as soon as
+> > you build a device driver which probes ISA addresses into your kernel,
+> > you will oops.
+> 
+> There shouldn't really be anything poking around that is modern - this is
+> true of some PC stuff too.
+> 
+> In general however if its because you have a window partly mapped you
+> could just catch the exception and load 0xFF for reads (and probably
+> whine with a backtrace so you know who to moan at).
 
-Hi Eric,
+The problem that Russell refers to is that some platforms define a window
+that is 4GB large and starts at NULL. They then ioremap their PCI
+or PCMCIA I/O space window and use the virtual __iomem address as the
+offset into the 4GB I/O space window. Any driver (e.g. vgacon, /dev/port
+or some legacy alsa sound driver) that tries to access a low port number
+then ends up in user space memory, typically in an unmapped area there.
 
-On Tue, 11 Dec 2012 16:58:43 -0500 Eric Paris <eparis@redhat.com> wrote:
->
-> On Wed, 2012-12-12 at 08:41 +1100, Stephen Rothwell wrote:
-> >=20
-> > fsnotify: rebased to v3.6(!) to resolve a conflict.
-> > 	git://git.infradead.org/users/eparis/notify.git#for-next
->=20
-> I planned to let it sit in -next until at least next thursday before I
-> sent a pull request.  Thought that fit within the rules...
+We definitely don't want to catch and fixup those exceptions. The solution
+is to change the platforms so they actually use the proper I/O window
+at a virtual address that is not used for anything else.
 
-No worries, just noting.  Though you could have just done a merge against
-v3.6 with an explanation in the merge changelog of why it was done.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQx7GBAAoJEECxmPOUX5FEjnEP/0eNHq5Rd6URbpGNDY4I33B+
-Yqzz451VuZD+v2HW4cvE0EH8L5y7hkyPqc8PJg7/oZdtOcK2nVlD/HxYqntSi6+M
-5wm5yBhS/MpmD1gpaQAR8P/1BL8qOtZhraCMZHqxcwoKXrlmEIJ5lbzy6hrj6ZHk
-BMxsm4GxwZKJuQFGLvJGS0CKgWorH5FIkSLsqBCFvjVgbuAOMiohegBHNXqqryty
-yQiiCsWB3JpvzmU2TGMDnavlovv/4QRXmtpUfk2N4vwsVjqVejCqzOF7g0+IXjUk
-gbl+oqwL+TTRQbXapR4kIjyxUuqliIAipDJlWzpWh084egGk85mzSs+s+jdPZWRl
-PSZH625G4rL59bILBvBSsq5+0jD9OwKnL7VnSalQXxdZ4U2ohAGbhn8eW7i8vb4d
-Y4b/XtRKhrpbzKVfKOnMAUUykjqd88XxtOBLX/A5YqEuciOiR2KQvLfhJ02AySKV
-TQxKUx2c4HcJHpOz50UAVL8FPGGi813rT7icL0UppcpeiDOk2iJEviwNRotebObt
-uZpLrgUUac+Muu16LZ1uzBL6AzVz93eIo4c3LsFM0h4Asw+UDLcjM5CL67qAabr4
-8pU9MOYiAq5nlnvZyqWzNPUyJJdFup9VUjkZNzP4rKbQ7/iXg97bZisN1BVj+s1l
-IA2cmsQlPKm7A8Sv6FL/
-=WCGl
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+.--
+	Arnd
