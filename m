@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab2LKBTW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:19:22 -0500
-Received: from vms173021pub.verizon.net ([206.46.173.21]:58938 "EHLO
-	vms173021pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2LKBTV (ORCPT
+	id S1752074Ab2LKBUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 20:20:54 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64463 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab2LKBUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:19:21 -0500
-MIME-version: 1.0
-X-Originating-IP: [96.241.26.26]
-In-reply-to: <87d2yiepkp.fsf@rustcorp.com.au>
-References: <1353269117-39917-1-git-send-email-pefoley2@verizon.net>
- <1353269117-39917-2-git-send-email-pefoley2@verizon.net>
- <20121209165425.GA29331@pobox.suse.cz> <87d2yiepkp.fsf@rustcorp.com.au>
-From: Peter Foley <pefoley2@verizon.net>
-Date: Mon, 10 Dec 2012 20:18:40 -0500
-Message-id: <CAOFdcFP_mzGDkaNyve_Djmy+B-_8u1C62Wt4LizhPTGJv9wBMg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] kbuild: silence rule for extra_certificates
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Content-type: text/plain; charset=ISO-8859-1
+	Mon, 10 Dec 2012 20:20:53 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
+References: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
+Date: Tue, 11 Dec 2012 10:20:51 +0900
+X-Google-Sender-Auth: aeFbTayZoil2B9Y2jSbwdyuvxXo
+Message-ID: <CAJ0PZbTTDdAXJ378R7CDO2=spx7WF_RpztG5ch7iFZWx-v3N2Q@mail.gmail.com>
+Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver for Exynos5250.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Abhilash Kesavan <a.kesavan@samsung.com>
+Cc: kyungmin.park@samsung.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, kgene.kim@samsung.com,
+        jhbird.choi@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 9, 2012 at 7:08 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Michal Marek <mmarek@suse.cz> writes:
->> Added David and Rusty.
->>
->> On Sun, Nov 18, 2012 at 03:05:14PM -0500, pefoley2@verizon.net wrote:
->>> From: Peter Foley <pefoley2@verizon.net>
->>>
->>> Silence the touch extra_certificates command
->>>
->>> Signed-off-by: Peter Foley <pefoley2@verizon.net>
->>
->> I think we should tell the user that the default empty extra
->> certificates list is being used, in case the user used a wrong filename
->> or similar. How about this?
+On Fri, Nov 30, 2012 at 5:42 PM, Abhilash Kesavan <a.kesavan@samsung.com> wrote:
+> Exynos5-bus device devfreq driver monitors PPMU counters and
+> adjusts operating frequencies and voltages with OPP. ASV should
+> be used to provide appropriate voltages as per the speed group
+> of the SoC rather than using a constant 1.025V.
 >
-> I prefer this one... Peter?
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+
+I've got a few general comments and questions on your patch.
+
+> ---
+> This code is based on Jonghwan Choi's <jhbird.choi@samsung.com> devfreq work
+> for Exynos5250. This requires corresponding machine specific changes which
+> will be posted once the driver is reviewed.
 >
-> Thanks,
-> Rusty.
->
+>  drivers/devfreq/Kconfig        |   10 +
+>  drivers/devfreq/Makefile       |    1 +
+>  drivers/devfreq/exynos5_bus.c  |  595 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/devfreq/exynos5_ppmu.c |  395 ++++++++++++++++++++++++++
+>  drivers/devfreq/exynos5_ppmu.h |   26 ++
+>  drivers/devfreq/exynos_ppmu.c  |   56 ++++
+>  drivers/devfreq/exynos_ppmu.h  |   79 ++++++
+>  7 files changed, 1162 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/devfreq/exynos5_bus.c
+>  create mode 100644 drivers/devfreq/exynos5_ppmu.c
+>  create mode 100644 drivers/devfreq/exynos5_ppmu.h
+>  create mode 100644 drivers/devfreq/exynos_ppmu.c
+>  create mode 100644 drivers/devfreq/exynos_ppmu.h
 
-Looks good to me.
+I understand that Exynos PPMU drivers seem not to be used (at least in
+mainline Linux) widely and it'd be convinent for a bus driver to have
+ppmu driver located in the same source directory.
 
-Thanks,
+However, I don't feel very comfortable to have ppmu drivers explicitly
+landing in devfreq directory. Would it be possible to place them
+somewhere else? (in drivers/misc, arch/arm/mach-exynos, or somewhere
+appropriate?) If PPMU drivers really have nowhere to relocate, they
+may be located along with its sole user (exynos5_bus.c) anyway.
 
-Peter
+
+> +
+> +struct exynos5_bus_int_handle {
+> +       struct list_head node;
+> +       struct delayed_work work;
+> +       bool boost;
+> +       bool poll;
+> +       unsigned long min;
+> +};
+
+It appears that "boost" is something may be handled by per-dev QoS.
+It looks like that you are reimplementing the pm-qos infrastructure in
+the driver.
+
+Could you please implement this w/ per-dev QoS?
+Or explain why this is required instead of per-dev PM-QoS?
+
+
+
+Cheers,
+MyungJoo
+
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
