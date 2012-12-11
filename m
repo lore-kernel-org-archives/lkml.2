@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2LKPOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 10:14:20 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2LKPOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 10:14:18 -0500
-Date: Tue, 11 Dec 2012 07:14:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Zhao Shuai <zhaoshuai@freebsd.org>, axboe@kernel.dk, ctalbott@google.com,
-        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: performance drop after using blkcg
-Message-ID: <20121211151412.GG7084@htj.dyndns.org>
-References: <CAFVn34SxqAJe_4P-WT8MOiG-kmKKD7ge96zoHXQuGqHWPgAt+A@mail.gmail.com>
- <20121211142518.GA5580@redhat.com>
- <20121211142742.GE7084@htj.dyndns.org>
- <20121211144336.GB5580@redhat.com>
- <20121211144718.GF7084@htj.dyndns.org>
- <20121211150234.GC5580@redhat.com>
+	id S1753950Ab2LKPUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 10:20:39 -0500
+Received: from fieldses.org ([174.143.236.118]:49986 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753395Ab2LKPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 10:20:37 -0500
+Date: Tue, 11 Dec 2012 10:20:36 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+Message-ID: <20121211152036.GB3336@fieldses.org>
+References: <20121206153204.30693.11408.stgit@localhost.localdomain>
+ <20121206153447.30693.54128.stgit@localhost.localdomain>
+ <20121210202842.GB17350@fieldses.org>
+ <50C73C60.8060405@parallels.com>
+ <50C73F58.1080005@parallels.com>
+ <20121211145621.GA3336@fieldses.org>
+ <50C74C14.8030807@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121211150234.GC5580@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50C74C14.8030807@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
-
-On Tue, Dec 11, 2012 at 10:02:34AM -0500, Vivek Goyal wrote:
-> cfq_group_served() {
->         if (iops_mode(cfqd))
->                 charge = cfqq->slice_dispatch;
-> 	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
-> }
+On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
+> 11.12.2012 18:56, J. Bruce Fields пишет:
+> >On Tue, Dec 11, 2012 at 06:12:40PM +0400, Stanislav Kinsbursky wrote:
+> >>UID: 9899
+> >>
+> >>11.12.2012 18:00, Stanislav Kinsbursky пишет:
+> >>>11.12.2012 00:28, J. Bruce Fields пишет:
+> >>>>On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
+> >>>>>NFSd does lookup. Lookup is done starting from current->fs->root.
+> >>>>>NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
+> >>>>>unshared) root.
+> >>>>>So we have to swap root to those, which process, started NFSd, has. Because
+> >>>>>that process can be in a container with it's own root.
+> >>>>
+> >>>>This doesn't sound right to me.
+> >>>>
+> >>>>Which lookups exactly do you see being done relative to
+> >>>>current->fs->root ?
+> >>>>
+> >>>
+> >>>Ok, you are right. I was mistaken here.
+> >>>This is not a exactly lookup, but d_path() problem in svc_export_request().
+> >>>I.e. without root swapping, d_path() will give not local export path (like "/export")
+> >>>but something like this "/root/containers_root/export".
+> >>>
+> >>
+> >>We, actually, can do it less in less aggressive way.
+> >>I.e. instead root swap and current svc_export_request() implementation:
+> >>
+> >>void svc_export_request(...)
+> >>{
+> >>	<snip>
+> >>         pth = d_path(&exp->ex_path, *bpp, *blen);
+> >>	<snip>
+> >>}
+> >>
+> >>we can do something like this:
+> >>
+> >>void svc_export_request(...)
+> >>{
+> >>	struct nfsd_net *nn = ...
+> >>	<snip>
+> >>	spin_lock(&dcache_lock);
+> >>         pth = __d_path(&exp->ex_path, &nn->root, *bpp, *blen);
+> >>	spin_unlock(&dcache_lock);
+> >>	<snip>
+> >>}
+> >
+> >That looks simpler, but I still don't understand why we need it.
+> >
+> >I'm confused about how d_path works; I would have thought that
+> >filesystem namespaces would have their own vfsmount trees and hence that
+> >the (vfsmount, dentry) would be enough to specify the path.  Is the root
+> >argument for the case of chroot?  Do we care about that?
+> >
 > 
-> Isn't it effectively IOPS scheduling. One should get IOPS rate in proportion to
-> their weight (as long as they can throw enough traffic at device to keep
-> it busy). If not, can you please give more details about your proposal.
+> It works very simple: just traverse the tree from specified dentry up to current->fs->root.dentry.
+> Having container in some fully separated mount point is great, of course. But:
+> 1) this is a limitation we really want to avoid. I.e. container can be chrooted into some path like "/root/containers_root/" as in example above.
+> 2) NFSd kthread works in init root environment. But we anyway want to get proper path string in container root, but not in kthreads root.
+> 
+> >Also, svc_export_request is called from mountd's read of
+> >/proc/net/rpc/nfsd.export/channel.  If mountd's root is wrong, then
+> >nothing's going to work anyway.
+> >
+> 
+> I don't really understand, how  mountd's root can be wrong. I.e.
+> its' always right as I see it. NFSd kthreads have to swap/use
+> relative path/whatever to communicate with proper mountd.
+> Or I'm missing something?
 
-The problem is that we lose a lot of isolation w/o idling between
-queues or groups.  This is because we switch between slices and while
-a slice is in progress only ios belongint to that slice can be issued.
-ie. higher priority cfqgs / cfqqs, after dispatching the ios they have
-ready, lose their slice immmediately.  Lower priority slice takes over
-and when hgiher priority ones get ready, they have to wait for the
-lower priority one before submitting the new IOs.  In many cases, they
-end up not being able to generate IOs any faster than the ones in
-lower priority cfqqs/cfqgs.
+Ugh, I see the problem: I thought svc_export_request was called at the
+time mountd does the read, but instead its done at the time nfsd does
+the upcall.
 
-This is becase we switch slices rather than iops.  We can make cfq
-essentially switch iops by implementing very aggressive preemption but
-I really don't see much point in that.  cfq is way too heavy and
-ill-suited for high speed non-rot devices which are becoming more and
-more consistent in terms of iops they can handle.
+I suspect that's wrong, and we really want this done in the context of
+the mountd process when it does the read call.  If d_path is called
+there then we have no problem.
 
-I think we need something better suited for the maturing non-rot
-devices.  They're becoming very different from what cfq was built for
-and we really shouldn't be maintaining several rb trees which need
-full synchronization for each IO.  We're doing way too much and it
-just isn't scalable.
-
-Thanks.
-
--- 
-tejun
+--b.
