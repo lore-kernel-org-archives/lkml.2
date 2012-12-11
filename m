@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2LKHSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 02:18:06 -0500
-Received: from cha92-13-88-165-248-19.fbx.proxad.net ([88.165.248.19]:50741
-	"EHLO jigen.glandium.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752861Ab2LKHSE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 02:18:04 -0500
-Date: Tue, 11 Dec 2012 08:17:42 +0100
-From: Mike Hommey <mh@glandium.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arun Sharma <asharma@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v3] Support volatile range for anon vma
-Message-ID: <20121211071742.GA26598@glandium.org>
-References: <1355193255-7217-1-git-send-email-minchan@kernel.org>
- <20121211024104.GA10523@blaptop>
+	id S1752920Ab2LKHTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 02:19:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751918Ab2LKHTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 02:19:40 -0500
+Date: Tue, 11 Dec 2012 09:19:38 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+Cc: KVM list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm/vmx: fix the return value of handle_vmcall()
+Message-ID: <20121211071938.GB11016@redhat.com>
+References: <50C653ED.9000009@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121211024104.GA10523@blaptop>
-X-GPG-Fingerprint: 182E 161D 1130 B9FC CD7D  B167 E42A A04F A6AA 8C72
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50C653ED.9000009@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 11:41:04AM +0900, Minchan Kim wrote:
-> - What's the madvise(addr, length, MADV_VOLATILE)?
+On Mon, Dec 10, 2012 at 03:28:13PM -0600, Jesse Larrew wrote:
 > 
->   It's a hint that user deliver to kernel so kernel can *discard*
->   pages in a range anytime.
+> The return value of kvm_emulate_hypercall() is intended to inform callers
+> whether or not we need to exit to userspace. However, handle_vmcall()
+> currently ignores the return value.
 > 
-> - What happens if user access page(ie, virtual address) discarded
->   by kernel?
-> 
->   The user can see zero-fill-on-demand pages as if madvise(DONTNEED).
+No, it it not. KVM does not handle vmcalls in userspace.
 
-What happened to getting SIGBUS?
+> This patch simply propogates the return value from kvm_emulate_hypercall()
+> to callers so that it can be acted upon appropriately.
+> 
+> Signed-off-by: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/vmx.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index f858159..8b37f5f 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -4682,8 +4682,7 @@ static int handle_halt(struct kvm_vcpu *vcpu)
+>  static int handle_vmcall(struct kvm_vcpu *vcpu)
+>  {
+>  	skip_emulated_instruction(vcpu);
+> -	kvm_emulate_hypercall(vcpu);
+> -	return 1;
+> +	return kvm_emulate_hypercall(vcpu);
+>  }
+>  
+>  static int handle_invd(struct kvm_vcpu *vcpu)
+> -- 
+> 1.7.11.7
+> 
+> Jesse Larrew
+> Software Engineer, KVM Team
+> IBM Linux Technology Center
+> Phone: (512) 973-2052 (T/L: 363-2052)
+> jlarrew@linux.vnet.ibm.com
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Mike
+--
+			Gleb.
