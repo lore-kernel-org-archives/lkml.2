@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab2LKQsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:48:32 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63248 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab2LKQsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:48:30 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/1] gpio: add Lynxpoint chipset gpio driver.
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        mika.westerberg@linux.intel.com, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-In-Reply-To: <CACRpkdaaFZ2Ai1tWy5KYxF9dVWmc8s4Lj8DajACAFYHdBFxBtg@mail.gmail.com>
-References: <1354888899-21907-1-git-send-email-mathias.nyman@linux.intel.com> <1354888899-21907-2-git-send-email-mathias.nyman@linux.intel.com> <20121210230749.7820F3E081F@localhost> <CACRpkdaaFZ2Ai1tWy5KYxF9dVWmc8s4Lj8DajACAFYHdBFxBtg@mail.gmail.com>
-Date: Tue, 11 Dec 2012 16:48:16 +0000
-Message-Id: <20121211164817.0570F3E0C3E@localhost>
+	id S1754082Ab2LKQsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 11:48:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59088 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753522Ab2LKQsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 11:48:40 -0500
+Message-ID: <50C763C2.5020603@zytor.com>
+Date: Tue, 11 Dec 2012 08:48:02 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+References: <1354240068-9821-6-git-send-email-fenghua.yu@intel.com> <tip-474355fe313391de2429ae225e0fb02f67ec6c31@git.kernel.org> <CAE9FiQW13Ji1wGSvFKrhY5UEArHyY5bfL5Ma37SRU9uROdPYDw@mail.gmail.com> <3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com> <CAE9FiQXGZYZiH3eUup2UXGWkeqKjsiHk7aMTFJO7xxFkqTpBZA@mail.gmail.com> <50C6AB63.9070008@zytor.com> <CAE9FiQX7sPLXOacoLakaJ1qC5UuSUbrX_g7N-oWmLYg5W-91UA@mail.gmail.com> <50C6D3DF.3030209@zytor.com> <CAE9FiQUiEx=p6wTC5wu_E=ih1CSBaTmw90zsc2=+xu6rMO5usg@mail.gmail.com> <20121211145716.GB8873@liondog.tnic> <CAE9FiQVByBTHwPrtYvVxv4u9QrtN1iN6GH9YaDn3dvmwv5Sg7g@mail.gmail.com>
+In-Reply-To: <CAE9FiQVByBTHwPrtYvVxv4u9QrtN1iN6GH9YaDn3dvmwv5Sg7g@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012 01:34:04 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Dec 11, 2012 at 12:07 AM, Grant Likely
-> <grant.likely@secretlab.ca> wrote:
-> > On Fri,  7 Dec 2012 16:01:39 +0200, Mathias Nyman <mathias.nyman@linux.intel.com> wrote:
-> >> Add gpio support for Intel Lynxpoint chipset.
-> >> Lynxpoint supports 94 gpio pins which can generate interrupts.
-> >> Driver will fail requests for pins that are marked as owned by ACPI, or
-> >> set in an alternate mode (non-gpio).
-> >>
-> >> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> >> ---
-> >> +static void lp_gpio_set(struct gpio_chip *chip, unsigned gpio, int value)
-> >> +{
-> >> +     struct lp_gpio *lg = container_of(chip, struct lp_gpio, chip);
-> >> +     unsigned long reg = gpio_reg(chip, gpio, LP_CONFIG1);
-> >> +     unsigned long flags;
-> >> +
-> >> +     spin_lock_irqsave(&lg->lock, flags);
-> >> +
-> >> +     if (value)
-> >> +             outl(inl(reg) | OUT_LVL_BIT, reg);
-> >> +     else
-> >> +             outl(inl(reg) & ~OUT_LVL_BIT, reg);
-> >> +
-> >> +     spin_unlock_irqrestore(&lg->lock, flags);
-> >> +}
-> >
-> > A *lot* of drivers implement their own GPIO ops like this, and they all
-> > end up looking the same. Please take a look at
-> > drivers/gpio/gpio-generic.c and see if you can use the stock operations
-> > provided there.
+On 12/11/2012 08:46 AM, Yinghai Lu wrote:
+> On Tue, Dec 11, 2012 at 6:57 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Mon, Dec 10, 2012 at 11:07:38PM -0800, Yinghai Lu wrote:
+>>> BTW, do we really need to update microcode so early?
+>>
+>> Yes we do. Normally ucode gets applied by the BIOS - this early approach
+>> is for those cases where OEMs don't release new BIOS anymore but we
+>> still need to apply a ucode patch as early as possible.
 > 
-> I was under the impression that the generic code could not be
-> used off-the-shelf for drivers doing irqchips (like this one).
+> but old bios with old ucode still work with some kind of previous kernel?
 > 
-> But maybe I'm mistaken or it's trivial to fix?
+> Do we have case that system would not work with kernel if ucode is not
+> updated so early?
+> 
 
-There's two parts to the generic code, a library of helper ops and a
-full fledged platform driver. The library can be used without the
-platform driver bit.
+It's not about "not working"... it is about "if the microcode isn't
+loaded early we have to disable features."
 
-g.
+	-hpa
+
 
