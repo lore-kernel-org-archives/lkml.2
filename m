@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2LKOIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:08:35 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:51262 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2LKOIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:08:34 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v4 2/9] CPU hotplug: Convert preprocessor macros to static
- inline functions
-To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        oleg@redhat.com
-Cc: sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
-        srivatsa.bhat@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Dec 2012 19:34:41 +0530
-Message-ID: <20121211140438.23621.81204.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com>
-References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753893Ab2LKOIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:08:51 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56533 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753632Ab2LKOIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 09:08:47 -0500
+Message-ID: <1355234914.2356.85.camel@falcor>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <jmorris@namei.org>
+Date: Tue, 11 Dec 2012 09:08:34 -0500
+In-Reply-To: <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	 <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	 <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121114-9574-0000-0000-000005B6A93C
+x-cbid: 12121114-7182-0000-0000-000003B25383
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 06:10 AM, Andrew Morton wrote:
-"static inline C functions would be preferred if possible.  Feel free to
-fix up the wrong crufty surrounding code as well ;-)"
+On Tue, 2012-12-11 at 14:51 +0200, Kasatkin, Dmitry wrote:
 
-Convert the macros in the CPU hotplug code to static inline C functions.
+> >> Here is two patches for policy search speedup.
+> >>
+> >> First patch adds additional features flags to superblock.
+> >> Second - implementation for IMA.
+> >>
+> >> Two months ago I was asking about it on mailing lists.
+> >> Suggestion was not to use s_flags, but e.g. s_feature_flags.
+> >>
+> >> Any objections about such approach?
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+First of all my appologies for not responding earlier.  Based on the
+previous discussion https://lkml.org/lkml/2012/9/19/9, this looks like
+the right direction.  Specific comments will be posted on the individual
+patches.
 
- include/linux/cpu.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+thanks,
 
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index cf24da1..eb79f47 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -198,10 +198,10 @@ static inline void cpu_hotplug_driver_unlock(void)
- 
- #else		/* CONFIG_HOTPLUG_CPU */
- 
--#define get_online_cpus()	do { } while (0)
--#define put_online_cpus()	do { } while (0)
--#define get_online_cpus_atomic()	do { } while (0)
--#define put_online_cpus_atomic()	do { } while (0)
-+static inline void get_online_cpus(void) {}
-+static inline void put_online_cpus(void) {}
-+static inline void get_online_cpus_atomic(void) {}
-+static inline void put_online_cpus_atomic(void) {}
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+Mimi
 
