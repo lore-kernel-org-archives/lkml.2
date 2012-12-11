@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab2LKKNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 05:13:36 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36859 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752149Ab2LKKNe (ORCPT
+	id S1752894Ab2LKKQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 05:16:48 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:33049 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab2LKKQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 05:13:34 -0500
-Message-ID: <1355220811.2400.5.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [patch,v3,repost 00/10] make I/O path allocations more
- numa-friendly
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 11 Dec 2012 10:13:31 +0000
-In-Reply-To: <x49zk1l6b5p.fsf@segfault.boston.devel.redhat.com>
-References: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
-	 <x49zk1l6b5p.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 05:16:47 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] lib/rbtree_test.c: fix uninitialized variable warning
+Date: Tue, 11 Dec 2012 10:16:31 +0000
+Message-Id: <1355220996-32753-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.4.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 12:59 -0500, Jeff Moyer wrote:
-> Jeff Moyer <jmoyer@redhat.com> writes:
-> 
-> > Hi,
-> >
-> > This patch set makes memory allocations for data structures used in
-> > the I/O path more numa friendly by allocating them from the same numa
-> > node as the storage device.  I've only converted a handful of drivers
-> > at this point.  My testing is limited by the hardware I have on hand.
-> > Using these patches, I was able to max out the bandwidth of the storage
-> > controller when issuing I/O from any node on my 4 node system.  Without
-> > the patch, I/O from nodes remote to the storage device would suffer a
-> > penalty ranging from 6-12%.  Given my relatively low-end setup[1], I
-> > wouldn't be surprised if others could show a more significant performance
-> > advantage.
-> >
-> > This is a repost of the last posting.  The only changes are additional
-> > reviewed-by/acked-by tags.  I think this version is ready for inclusion.
-> > James, would you mind taking a look?
-> 
-> James?  Do you have any objections to including this for 3.8?
+this patch is to fix the following compilation warning:
+lib/rbtree_test.c: In function ‘check’:
+lib/rbtree_test.c:121: warning: ‘blacks’ may be used uninitialized in this
+function
 
-Probably for 3.9 since the 3.8 merge window is upon us.
+the use of variable blacks in line 133 might be uninitialized
 
-Do we actually have any performance numbers from the big system people?
-That's really a must for this type of work.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ lib/rbtree_test.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It's missing acks from the affected drivers; that's not a show stopper
-but it would be better to have them.
-
-James
-
+diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
+index da96578..af38aed 100644
+--- a/lib/rbtree_test.c
++++ b/lib/rbtree_test.c
+@@ -118,7 +118,7 @@ static void check(int nr_nodes)
+ {
+ 	struct rb_node *rb;
+ 	int count = 0;
+-	int blacks;
++	int blacks = 0;
+ 	u32 prev_key = 0;
+ 
+ 	for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
+-- 
+1.7.4.5
 
