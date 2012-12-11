@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab2LKMTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:19:13 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:31261 "EHLO
+	id S1753253Ab2LKMTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:19:12 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:31262 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab2LKMTI (ORCPT
+	with ESMTP id S1752499Ab2LKMTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Dec 2012 07:19:08 -0500
-Message-ID: <50C72493.3080009@huawei.com>
-Date: Tue, 11 Dec 2012 20:18:27 +0800
+Message-ID: <50C72497.9090904@huawei.com>
+Date: Tue, 11 Dec 2012 20:18:31 +0800
 From: Xishi Qiu <qiuxishi@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ To: WuJianguo <wujianguo@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
         Fengguang Wu <fengguang.wu@intel.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH V3 1/2] MCE: fix an error of mce_bad_pages statistics
+Subject: [PATCH V3 2/2] MCE: fix an error of mce_bad_pages statistics
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 X-Originating-IP: [10.135.74.196]
@@ -28,107 +28,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) move poisoned page check at the beginning of the function.
-2) add page_lock to avoid unpoison clear the flag.
+1) adjust the function structure, there are too many return points
+   randomly intermingled with some "goto done" return points.
+2) use atomic_long_inc instead of atomic_long_add.
 
 Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
 ﻿Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- mm/memory-failure.c |   43 ++++++++++++++++++++++---------------------
- 1 files changed, 22 insertions(+), 21 deletions(-)
+ mm/memory-failure.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
 
 diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 8b20278..9b74983 100644
+index 9b74983..81f942d 100644
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -1419,18 +1419,17 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_head(page);
+@@ -1421,12 +1421,13 @@ static int soft_offline_huge_page(struct page *page, int flags)
 
-+	if (PageHWPoison(hpage)) {
-+		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
-+		return -EBUSY;
-+	}
-+
+ 	if (PageHWPoison(hpage)) {
+ 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto out;
+ 	}
+
  	ret = get_any_page(page, pfn, flags);
  	if (ret < 0)
- 		return ret;
+-		return ret;
++		goto out;
  	if (ret == 0)
  		goto done;
 
--	if (PageHWPoison(hpage)) {
--		put_page(hpage);
--		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
--		return -EBUSY;
--	}
--
- 	/* Keep page count to indicate a given hugepage is isolated. */
- 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
- 				MIGRATE_SYNC);
-@@ -1441,12 +1440,14 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 		return ret;
+@@ -1437,7 +1438,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+-		return ret;
++		goto out;
  	}
  done:
--	if (!PageHWPoison(hpage))
--		atomic_long_add(1 << compound_trans_order(hpage),
--				&mce_bad_pages);
-+	/* keep elevated page count for bad page */
-+	lock_page(hpage);
-+	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
- 	set_page_hwpoison_huge_page(hpage);
-+	unlock_page(hpage);
-+
+ 	/* keep elevated page count for bad page */
+@@ -1447,7 +1448,7 @@ done:
+ 	unlock_page(hpage);
+
  	dequeue_hwpoisoned_huge_page(hpage);
--	/* keep elevated page count for bad page */
-+
+-
++out:
  	return ret;
  }
 
-@@ -1488,6 +1489,11 @@ int soft_offline_page(struct page *page, int flags)
+@@ -1479,24 +1480,28 @@ int soft_offline_page(struct page *page, int flags)
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_trans_head(page);
+
+-	if (PageHuge(page))
+-		return soft_offline_huge_page(page, flags);
++	if (PageHuge(page)) {
++		ret = soft_offline_huge_page(page, flags);
++		goto out;
++	}
+ 	if (PageTransHuge(hpage)) {
+ 		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
+ 			pr_info("soft offline: %#lx: failed to split THP\n",
+ 				pfn);
+-			return -EBUSY;
++			ret = -EBUSY;
++			goto out;
  		}
  	}
 
-+	if (PageHWPoison(page)) {
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
-+	}
-+
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
- 		return ret;
-@@ -1519,19 +1525,11 @@ int soft_offline_page(struct page *page, int flags)
- 		return -EIO;
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto out;
  	}
 
--	lock_page(page);
--	wait_on_page_writeback(page);
--
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	if (ret == 0)
+ 		goto done;
+
+@@ -1515,14 +1520,15 @@ int soft_offline_page(struct page *page, int flags)
+ 		 */
+ 		ret = get_any_page(page, pfn, 0);
+ 		if (ret < 0)
+-			return ret;
++			goto out;
+ 		if (ret == 0)
+ 			goto done;
+ 	}
+ 	if (!PageLRU(page)) {
+ 		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
+ 			pfn, page->flags);
+-		return -EIO;
++		ret = -EIO;
++		goto out;
+ 	}
+
  	/*
- 	 * Synchronized using the page lock with memory_failure()
- 	 */
--	if (PageHWPoison(page)) {
--		unlock_page(page);
--		put_page(page);
--		pr_info("soft offline: %#lx page already poisoned\n", pfn);
--		return -EBUSY;
--	}
--
-+	lock_page(page);
-+	wait_on_page_writeback(page);
- 	/*
- 	 * Try to invalidate first. This should work for
- 	 * non dirty unmapped page cache pages.
-@@ -1582,8 +1580,11 @@ int soft_offline_page(struct page *page, int flags)
- 		return ret;
+@@ -1577,14 +1583,14 @@ int soft_offline_page(struct page *page, int flags)
+ 			pfn, ret, page_count(page), page->flags);
+ 	}
+ 	if (ret)
+-		return ret;
++		goto out;
 
  done:
-+	/* keep elevated page count for bad page */
-+	lock_page(page);
- 	atomic_long_add(1, &mce_bad_pages);
+ 	/* keep elevated page count for bad page */
+ 	lock_page(page);
+-	atomic_long_add(1, &mce_bad_pages);
++	atomic_long_inc(&mce_bad_pages);
  	SetPageHWPoison(page);
--	/* keep elevated page count for bad page */
-+	unlock_page(page);
-+
+ 	unlock_page(page);
+-
++out:
  	return ret;
  }
 -- 
