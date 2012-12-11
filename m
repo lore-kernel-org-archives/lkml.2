@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab2LKJRQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 04:17:16 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:64209 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2LKJRO (ORCPT
+	id S1752718Ab2LKJRw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 04:17:52 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42707 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2LKJRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 04:17:14 -0500
+	Tue, 11 Dec 2012 04:17:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <1355129761-8088-7-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1355129761-8088-8-git-send-email-lee.jones@linaro.org>
 References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
-	<1355129761-8088-7-git-send-email-lee.jones@linaro.org>
-Date: Tue, 11 Dec 2012 10:17:13 +0100
-Message-ID: <CACRpkdZJFbHSwowKnfWyXLckVePHrC6o2CtDJaFb+dXTkNYPjw@mail.gmail.com>
-Subject: Re: [PATCH 06/12] ARM: ux500: Set correct MMCI regulator voltages in
- the ux5x0 Device Tree
+	<1355129761-8088-8-git-send-email-lee.jones@linaro.org>
+Date: Tue, 11 Dec 2012 10:17:49 +0100
+Message-ID: <CACRpkdaDoLnyn4DHoEnha7zxxYA7v7nyte1CeeRyp87O6EE3xw@mail.gmail.com>
+Subject: Re: [PATCH 07/12] ARM: ux500: Specify the ux5x0 MMCI regulator's
+ on/off GPIO as high-enable
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -26,11 +26,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Dec 10, 2012 at 9:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> The voltages for the MMCI GPIO controlled voltage regulation differ
-> depending on who you believe and where you pick the information up
-> from. More recent internal code suggests that the true upper voltage
-> from the shifter is actually v3.3, instead of the previously
-> indicated v2.9. Let's mirror that change in the Device Tree file.
+> If not specified, the GPIO control bit is inverted by default i.e.
+> low-enable and high-disable. This is not the case with the MMCI
+> regulator, hence it will turn on during a disable and off when
+> regulator_enable() is invoked.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
