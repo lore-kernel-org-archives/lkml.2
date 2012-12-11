@@ -1,145 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2LKF7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:59:50 -0500
-Received: from na3sys010aog108.obsmtp.com ([74.125.245.84]:40123 "HELO
-	na3sys010aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751223Ab2LKF7s (ORCPT
+	id S1752858Ab2LKF7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 00:59:53 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:57234 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2LKF7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:59:48 -0500
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Mon, 10 Dec 2012 21:59:41 -0800
-Message-Id: <1355205581-10573-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 11 Dec 2012 00:59:51 -0500
+X-Originating-IP: 108.223.40.66
+Date: Mon, 10 Dec 2012 21:59:54 -0800
+From: Guenter Roeck <groeck-dsl@sbcglobal.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon updates for 3.8-rc1
+Message-ID: <20121211055954.GA2621@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--bg08WKrSYDhXBjb5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
 Hi Linus,
 
-Please pull from
+Please pull hwmon updates for Linux 3.8-rc1 from signed tag:
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Thanks,
+Guenter
+------
+
+The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
+
+  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 44f751cee1b4baef9e3b49c6bd954f8b12b097a6:
+
+  hwmon: (da9055) Fix chan_mux[DA9055_ADC_ADCIN3] setting (2012-12-05 10:55:55 -0800)
 
 ----------------------------------------------------------------
-
-First batch of InfiniBand/RDMA changes for the 3.8 merge window:
- - A good chunk of Bart Van Assche's SRP fixes
- - UAPI disintegration from David Howells
- - mlx4 support for "64-byte CQE" hardware feature from Or Gerlitz
- - Other miscellaneous fixes
+New driver: DA9055
+Added/improved support for new chips in existing drivers: Z650/670, N550/570,
+ADS7830, AMD 16h family
 
 ----------------------------------------------------------------
-Alan Cox (2):
-      IB/ipath: Remove unreachable code
-      RDMA/amsol1100: Fix missing break
+Ashish Jangam (1):
+      hwmon: DA9055 HWMON driver
 
-Bart Van Assche (14):
-      IB/srp: Increase block layer timeout
-      IB/srp: Eliminate state SRP_TARGET_CONNECTING
-      IB/srp: Keep processing commands during host removal
-      IB/srp: Simplify SCSI error handling
-      IB/srp: Introduce srp_handle_qp_err()
-      IB/srp: Process all error completions
-      IB/srp: Suppress superfluous error messages
-      IB/srp: Introduce the helper function srp_remove_target()
-      IB/srp: Eliminate state SRP_TARGET_DEAD
-      IB/srp: Document sysfs attributes
-      srp_transport: Fix attribute registration
-      srp_transport: Simplify attribute initialization code
-      srp_transport: Document sysfs attributes
-      IB/srp: Allow SRP disconnect through sysfs
+Axel Lin (2):
+      hwmon: da9052: Use da9052_reg_update for rmw operations
+      hwmon: (da9055) Fix chan_mux[DA9055_ADC_ADCIN3] setting
 
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/rdma
+Boris Ostrovsky (1):
+      x86,AMD: Power driver support for AMD's family 16h processors
 
-Ishai Rabinovitz (1):
-      IB/srp: destroy and recreate QP and CQs when reconnecting
+Guenter Roeck (4):
+      hwmon: (coretemp) Drop dependency on PCI for TjMax detection on Atom CPUs
+      hwmon: (coretemp) Use model table instead of if/else to identify CPU models
+      hwmon: (coretemp) Drop N4xx, N5xx, D4xx, D5xx CPUs from tjmax table
+      hwmon: (coretemp) List TjMax for Z650/670 and N550/570
 
-Jack Morgenstein (2):
-      IB/mlx4: Fix spinlock order to avoid lockdep warnings
-      mlx4_core: Fix potential deadlock in mlx4_eq_int()
+Guillaume Roguez (1):
+      hwmon: (ads7828) add support for ADS7830
 
-Julia Lawall (3):
-      RDMA/nes: Use WARN()
-      RDMA/cxgb4: use WARN
-      RDMA/cxgb3: use WARN
+Vivien Didelot (1):
+      hwmon: (ads7828) driver cleanup
 
-Or Gerlitz (1):
-      mlx4: 64-byte CQE/EQE support
+Wei Yongjun (1):
+      hwmon: (ina2xx) use module_i2c_driver to simplify the code
 
-Roland Dreier (4):
-      Merge branches 'cxgb4', 'misc', 'mlx4', 'nes' and 'uapi' into for-next
-      Merge branches 'cma' and 'mlx4' into for-next
-      Merge branch 'srp' into for-next
-      Merge branch 'nes' into for-next
+ Documentation/hwmon/ads7828           |   46 +++--
+ Documentation/hwmon/coretemp          |    2 +
+ Documentation/hwmon/da9055            |   47 +++++
+ drivers/hwmon/Kconfig                 |   19 +-
+ drivers/hwmon/Makefile                |    1 +
+ drivers/hwmon/ads7828.c               |  247 ++++++++++--------------
+ drivers/hwmon/coretemp.c              |   60 +++---
+ drivers/hwmon/da9052-hwmon.c          |   27 +--
+ drivers/hwmon/da9055-hwmon.c          |  336 +++++++++++++++++++++++++++++++++
+ drivers/hwmon/fam15h_power.c          |    4 +
+ drivers/hwmon/ina2xx.c                |   13 +-
+ include/linux/platform_data/ads7828.h |   29 +++
+ 12 files changed, 607 insertions(+), 224 deletions(-)
+ create mode 100644 Documentation/hwmon/da9055
+ create mode 100644 drivers/hwmon/da9055-hwmon.c
+ create mode 100644 include/linux/platform_data/ads7828.h
 
-Tatyana Nikolova (7):
-      RDMA/nes: Fix incorrect address of IP header
-      RDMA/nes: Fix for unlinking skbs from empty list
-      RDMA/nes: Fix for sending fpdus in order to hardware
-      RDMA/nes: Fix for incorrect multicast address in the perfect filter table
-      RDMA/nes: Fix for BUG_ON due to adding already-pending timer
-      RDMA/nes: Fix for terminate timer crash
-      RDMA/nes: Fix for crash when registering zero length MR for CQ
+--bg08WKrSYDhXBjb5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Vu Pham (1):
-      IB/srp: send disconnect request without waiting for CM timewait exit
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-shefty (1):
-      RDMA/cm: Change return value from find_gid_port()
+iQIcBAEBAgAGBQJQxsvaAAoJEMsfJm/On5mBknIP/irp7q0KiK0kUczgTA2Lq5ga
+9N5kbJ3S7T4JuRLgQyPqDzIMgf9qpDk/WXNVcF39vux6t2Ofc+tcTzNbXM7DFXXm
+qUt41j2/6v2o17hpfIXtgEEi2zDJSPFBfnfxf357dvjXj+kq/abpDHY1g6nL5i0g
+lk4M40H9LsQMeQ7/6IDfQvTpjm7dxcFiq9cqm40kiTabWbo+PK0G43I2mfHvyBC7
+TGI5DwywKyVNWgBAZ1HiFexirmnORtFof8YmqOrdxOOuEc5MTiX7wZLiMs6Xx9ZH
+z8MVWIykC6MDex1RIZagnoM1CW1+5STb25iSEfBFFm8/PBSlULnJuMuh4pNgd2KW
+RRtflWvQQQPQ563f8ZMqjWHZ9dNdIsB0YROP6ffNXf4pqD5pMWhJ0mq+6MLGyHJ3
+paN9s7JlYI1tuzIMAryv/vkI+yvnZiVeZhcE13SLgaOpgjSTZy+7MxHzpoLilFJV
+WUvlvQRGpcW+prKBD59d3nU5vAy13proV/yyFGJkil4Wbtj3qRENSSSZ3WvSEJxg
+jxtGyCBJgeiS/8pZm6xdNNoQFmo79pio4TxnacKkoIjmiikm3fkCZyyAJNorZycY
+idqqBquPL0iV9WckE8fBGJQy/7Niv3RgX4Vlg2lIrehIwrUXhYI/wES1Kkmgz1fw
+Do/iwmmvUgnjgZHvjoef
+=VZft
+-----END PGP SIGNATURE-----
 
- Documentation/ABI/stable/sysfs-driver-ib_srp   |  156 ++++++++++++
- Documentation/ABI/stable/sysfs-transport-srp   |   19 ++
- drivers/infiniband/core/cma.c                  |    9 +-
- drivers/infiniband/hw/amso1100/c2_ae.c         |    1 +
- drivers/infiniband/hw/cxgb3/iwch_cm.c          |    6 +-
- drivers/infiniband/hw/cxgb4/cm.c               |    6 +-
- drivers/infiniband/hw/ipath/ipath_init_chip.c  |   10 -
- drivers/infiniband/hw/mlx4/cm.c                |    4 +-
- drivers/infiniband/hw/mlx4/cq.c                |   34 ++-
- drivers/infiniband/hw/mlx4/main.c              |   27 +-
- drivers/infiniband/hw/mlx4/mlx4_ib.h           |    1 +
- drivers/infiniband/hw/mlx4/user.h              |   12 +-
- drivers/infiniband/hw/nes/nes.h                |    1 +
- drivers/infiniband/hw/nes/nes_cm.c             |   32 +--
- drivers/infiniband/hw/nes/nes_hw.c             |    9 +-
- drivers/infiniband/hw/nes/nes_mgt.c            |   42 ++--
- drivers/infiniband/hw/nes/nes_nic.c            |   13 +-
- drivers/infiniband/hw/nes/nes_verbs.c          |    9 +-
- drivers/infiniband/ulp/srp/ib_srp.c            |  314 ++++++++++++++----------
- drivers/infiniband/ulp/srp/ib_srp.h            |   11 +-
- drivers/net/ethernet/mellanox/mlx4/cmd.c       |   11 +-
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    2 +-
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    1 +
- drivers/net/ethernet/mellanox/mlx4/en_rx.c     |    5 +-
- drivers/net/ethernet/mellanox/mlx4/en_tx.c     |    5 +-
- drivers/net/ethernet/mellanox/mlx4/eq.c        |   36 ++-
- drivers/net/ethernet/mellanox/mlx4/fw.c        |   30 ++-
- drivers/net/ethernet/mellanox/mlx4/fw.h        |    1 +
- drivers/net/ethernet/mellanox/mlx4/main.c      |   38 ++-
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1 +
- drivers/scsi/scsi_transport_srp.c              |   51 ++--
- include/linux/mlx4/device.h                    |   21 ++
- include/rdma/Kbuild                            |    6 -
- include/rdma/rdma_netlink.h                    |   36 +--
- include/scsi/scsi_transport_srp.h              |    8 +
- include/uapi/rdma/Kbuild                       |    6 +
- include/{ => uapi}/rdma/ib_user_cm.h           |    0
- include/{ => uapi}/rdma/ib_user_mad.h          |    0
- include/{ => uapi}/rdma/ib_user_sa.h           |    0
- include/{ => uapi}/rdma/ib_user_verbs.h        |    0
- include/uapi/rdma/rdma_netlink.h               |   37 +++
- include/{ => uapi}/rdma/rdma_user_cm.h         |    0
- 42 files changed, 689 insertions(+), 322 deletions(-)
- create mode 100644 Documentation/ABI/stable/sysfs-driver-ib_srp
- create mode 100644 Documentation/ABI/stable/sysfs-transport-srp
- rename include/{ => uapi}/rdma/ib_user_cm.h (100%)
- rename include/{ => uapi}/rdma/ib_user_mad.h (100%)
- rename include/{ => uapi}/rdma/ib_user_sa.h (100%)
- rename include/{ => uapi}/rdma/ib_user_verbs.h (100%)
- create mode 100644 include/uapi/rdma/rdma_netlink.h
- rename include/{ => uapi}/rdma/rdma_user_cm.h (100%)
+--bg08WKrSYDhXBjb5--
