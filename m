@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2LKNXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 08:23:19 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:46771 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab2LKNXS (ORCPT
+	id S1753148Ab2LKNgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 08:36:16 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:48082 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752816Ab2LKNgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 08:23:18 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-0b-50c733c41c03
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [RFC v2] Add mempressure cgroup
-Date: Tue, 11 Dec 2012 14:22:38 +0100
-User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, John Stultz <john.stultz@linaro.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        kernel-team@android.com
-References: <20121210095838.GA21065@lizard>
- <201212101323.09806.b.zolnierkie@samsung.com> <20121210200512.GA499@lizard>
-In-reply-to: <20121210200512.GA499@lizard>
-MIME-version: 1.0
-Content-type: Text/Plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-Message-id: <201212111422.38970.b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAd2jxscDDHY+Yba4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZP95yFPzlrGh4Pp21gXERexcjJ4eEgInErd4HbBC2mMSFe+uB
-	bC4OIYFFjBK9jc+ZIZylTBK3ft1hBaliE7CSmNi+ihHEFhEwkDj4cCkTiC0soCOxfMIUsBoW
-	AVWJhk8LwDaICjhIdE6dADaVWaCLVeLzv9tg64QEKiWurdgA1sApoCUxt6OTBcTmFRCU+DH5
-	HpjNDBRvfrOJEcKWl9i85i0zRI2lxJRbExgnMArMQtIyC0nLLCQtCxiZVzGKphYkFxQnpeca
-	6hUn5haX5qXrJefnbmIEh+AzqR2MKxssDjEKcDAq8fBqaB0LEGJNLCuuzD3EKMHBrCTCGyl0
-	PECINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpiSWp2ampBahFMlomDU6qBceUvnoo3
-	u5P3Nq3U7K7N1OTROJ5X+MNdzWPdWT8Z6SVsj0/22QQI80ave7ya38pd6Lqi2P+UyybbOf3c
-	8h/8/ffU6+0HqYcL0r9tSp9c2//3CF/Z49xzq9uEbPZaKzO8mmknYrnT9vI2pbecN97p737N
-	YVUQ2jxp0Zst2okWPXI3z99bd+K1gBJLcUaioRZzUXEiAKffB5E9AgAA
+	Tue, 11 Dec 2012 08:36:15 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] pinctrl: fix comment mistake
+Date: Tue, 11 Dec 2012 14:35:54 +0100
+Message-ID: <1355232954-16559-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 December 2012 21:05:12 Anton Vorontsov wrote:
-> On Mon, Dec 10, 2012 at 01:23:09PM +0100, Bartlomiej Zolnierkiewicz wrote:
-> > On Monday 10 December 2012 10:58:38 Anton Vorontsov wrote:
-> > 
-> > > +static void consume_memory(void)
-> > > +{
-> > > +	unsigned int i = 0;
-> > > +	unsigned int j = 0;
-> > > +
-> > > +	puts("consuming memory...");
-> > > +
-> > > +	while (1) {
-> > > +		pthread_mutex_lock(&locks[i]);
-> > > +		if (!chunks[i]) {
-> > > +			chunks[i] = malloc(CHUNK_SIZE);
-> > > +			pabort(!chunks[i], 0, "chunks alloc failed");
-> > > +			memset(chunks[i], 0, CHUNK_SIZE);
-> > > +			j++;
-> > > +		}
-> > > +		pthread_mutex_unlock(&locks[i]);
-> > > +
-> > > +		if (j >= num_chunks / 10) {
-> > > +			add_reclaimable(num_chunks / 10);
-> > 
-> > Shouldn't it use j instead of num_chunks / 10 here?
-> 
-> Um.. They should be equal. Or am I missing the point?
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Oh, ok.  You're right.
+This variable pertains to pinctrl handles not muxes
+specifically.
 
-j > num_chunks / 10 condition should never happen and may be removed.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> > > +			printf("added %d reclaimable chunks\n", j);
-> > > +			j = 0;
-> 
-> Here, we reset it.
-> 
-> > > +		}
-> > > +
-> > > +		i = (i + 1) % num_chunks;
-> > > +	}
-> > > +}
-> 
-> Thanks!
-> Anton.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5cdee86..59f5a96 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -700,7 +700,7 @@ static struct pinctrl *create_pinctrl(struct device *dev)
+ 		}
+ 	}
+ 
+-	/* Add the pinmux to the global list */
++	/* Add the pinctrl handle to the global list */
+ 	list_add_tail(&p->node, &pinctrl_list);
+ 
+ 	return p;
+-- 
+1.7.11.3
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung Poland R&D Center
