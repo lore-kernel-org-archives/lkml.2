@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2LKS7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:59:51 -0500
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:59577 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754601Ab2LKS7u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:59:50 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v3] Enable A20 using KBC for some MSI laptops to fix S3 resume
-Date: Tue, 11 Dec 2012 19:59:15 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201210261056.44225.zary@gsystems.sk> <201211052135.20009.linux@rainbow-software.org> <50C6537A.9090303@zytor.com>
-In-Reply-To: <50C6537A.9090303@zytor.com>
-X-KMail-QuotePrefix: > 
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754668Ab2LKTAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 14:00:06 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:47783 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754599Ab2LKTAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 14:00:04 -0500
+Message-ID: <1355252392.2356.131.camel@falcor>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Date: Tue, 11 Dec 2012 13:59:52 -0500
+In-Reply-To: <CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	 <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	 <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	 <1355234914.2356.85.camel@falcor>
+	 <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+	 <1355249884.2356.108.camel@falcor>
+	 <CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212111959.15808.linux@rainbow-software.org>
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121118-5806-0000-0000-00001CD90421
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 December 2012 22:26:18 H. Peter Anvin wrote:
-> On 11/05/2012 12:35 PM, Ondrej Zary wrote:
-> > On Friday 26 October 2012 10:56:44 Ondrej Zary wrote:
-> >> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable
-> >> A20 line but resume code assumes that KBC was used.
-> >> The laptop will not resume from S3 otherwise but powers off after a
-> >> while and then powers on again stuck with a blank screen.
-> >>
-> >> Fix it by enabling A20 using KBC. Affected laptop list and DMI data are
-> >> from bug reports at Ubuntu Launchpad.
-> >>
-> >> Also add kernel parameter to easily activate this quirk on any system.
-> >>
-> >> Only compile tested. The original patch was tested with EX600 and PR200.
-> >>
-> >> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-> >
-> > The bug was marked as RESOLVED CODE_FIX but I wonder what happened to
-> > this patch. Was it applied? Or is someone working on a better way to fix
-> > this problem?
->
-> Sorry, I managed to forget about this.
->
-> Is there any way you could test this patch by any chance?
+On Tue, 2012-12-11 at 13:35 -0500, Eric Paris wrote:
+> On Tue, Dec 11, 2012 at 1:18 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > The appraisal policy is based on the object metadata, such as the uid,
+> > so the result is static and can be cached.  The measurement policy, on
+> > the other hand, is normally based on the subject (eg. who is
+> > reading/executing) the file.  Knowledge of whether the file has been
+> > measured is cached in the iint, but unlike the appraisal policy, not
+> > whether it needs to be measured.  Having the flag on a per inode basis,
+> > doesn't really help.
+> 
+> Can you try again?  Even I can't parse this.  Not sure what to tell
+> you to try again, maybe give us a summary at a high level again and
+> then why this patch is specifically necessary?
 
-I've just tested the patch and it does not work (no change in behavior).
+sigh. The IMA policy contains rules for the original IMA measurement,
+hash auditing, and now for IMA appraisal.  These policies overlap with
+each other, but are not the same.
 
-> I would be a lot happier if this works as a general solution rather than
-> relying on a quirk...
+Although the policy doesn't change, the rules can be dependent on the
+calling process.  For example, the original default 'ima_tcb' policy is
+based, not on the file owner, but on the uid reading/executing the file.
+The 'ima_tcb' policy measures all files read/executed by root.  So we
+cache whether the file has been measured, not if the file needs to be
+measured, because depending on the caller, that changes.  Bottom line,
+we can't say definitively whether or not a file needs to be measured for
+any caller.
 
-As I said before, the BIOS probably breaks on resume before any Linux code is 
-executed. So any fix must be done before suspending.
+Dmitry's patch addresses the issue of eliminating an entire filesystem
+from being appraised, measured, or audited.
 
-I hate quirks too. A general solution would be to always enable A20 using KBC 
-(if KBC is present) but that's probably not acceptable.
+I hope this clarifies the issues a bit better.
 
+Mimi
 
--- 
-Ondrej Zary
+ 
+
