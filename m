@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab2LKWUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:20:33 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57638 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab2LKWUb (ORCPT
+	id S1755012Ab2LKWUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:20:43 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37545 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab2LKWUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:20:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
-Date: Tue, 11 Dec 2012 22:20:03 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shadi Ammouri <shadi@marvell.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
-References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <20121211173819.6f2cf32b@skate> <20121211172916.2668a5be@pyramind.ukuu.org.uk>
-In-Reply-To: <20121211172916.2668a5be@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212112220.04597.arnd@arndb.de>
-X-Provags-ID: V02:K0:6FpX0/TsEUrs5LCXiTZ2+EGFcBZl/6bPj6CRkLK1W8/
- 9lj0WBEpTjSiJavN+QQPLC3BRlobyGBypiHolo1suDoeXmR+Mt
- sBTAIs9c+T04ZQBHqvxieMMGwhS+cvEbOPGwSJ+hNIduZc5GHi
- ZXIwtxmsMtQZ031fJTucKrb4uFTuL4js+YI/VamGg8GLvXx21l
- 0mVbJKh4WdLXmxyMIGhUUvYim1f91aPjmSpgjeJAsmChns1RV1
- RimivsU8rBuIswID48rIblv1n1ETVtfWQeklFJNtjJXPZ8pmMj
- EQcpf1slVHMuub+yoR3EIXAhz+t7EVdyv5bDDTAhwZM6K6pXt6
- gD0rVGEhAvLo8JJuCJGc=
+	Tue, 11 Dec 2012 17:20:32 -0500
+Date: Wed, 12 Dec 2012 09:19:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kees Cook <keescook@google.com>
+Subject: Re: linux-next: recent rebases
+Message-Id: <20121212091945.5ae4dab6e6716fdb4239201e@canb.auug.org.au>
+In-Reply-To: <1355263123.3527.27.camel@localhost>
+References: <20121212084108.de14154ec0e365453617bfd7@canb.auug.org.au>
+	<1355263123.3527.27.camel@localhost>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 December 2012, Alan Cox wrote:
-> The "no I/O space" case really applies to things like the S/390 mainframe
-> which simply have no such concept on the system or the devices. In the
-> ARM case the bus has an I/O space and the bridge glues the processors
-> simpler model to the bridge model.
+--Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-While we are getting slightly offtopic, s390 is actually gaining PCI support
-now: https://patchwork.kernel.org/patch/1740231/ For all I can tell, they
-would theoretically support an I/O space, but none of the supported
-add-on cards use it, so the kernel implementation doesn't need to bother.
+Hi Eric,
 
-One architecture that never has an I/O space is the arch/um, but that is
-special in a lot of ways, e.g. since it also never has MMIO.
+On Tue, 11 Dec 2012 16:58:43 -0500 Eric Paris <eparis@redhat.com> wrote:
+>
+> On Wed, 2012-12-12 at 08:41 +1100, Stephen Rothwell wrote:
+> >=20
+> > fsnotify: rebased to v3.6(!) to resolve a conflict.
+> > 	git://git.infradead.org/users/eparis/notify.git#for-next
+>=20
+> I planned to let it sit in -next until at least next thursday before I
+> sent a pull request.  Thought that fit within the rules...
 
-On ARM, we have platforms that fall into four categories:
+No worries, just noting.  Though you could have just done a merge against
+v3.6 with an explanation in the merge changelog of why it was done.
 
-1. Full PCI or PCMCIA or ISA support with directly mapped I/O space
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-2. No PCI or PCMCIA or ISA support, and consequently no I/O space
+--Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+.
+Content-Type: application/pgp-signature
 
-3. PCI support but no I/O space because of limitations or bugs in
-   the PCI hardware implementation.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-4. ISA-style I/O space that is not offsettable (CONFIG_NO_IOPORT)
-   but still has inb/outb accessors.
+iQIcBAEBCAAGBQJQx7GBAAoJEECxmPOUX5FEjnEP/0eNHq5Rd6URbpGNDY4I33B+
+Yqzz451VuZD+v2HW4cvE0EH8L5y7hkyPqc8PJg7/oZdtOcK2nVlD/HxYqntSi6+M
+5wm5yBhS/MpmD1gpaQAR8P/1BL8qOtZhraCMZHqxcwoKXrlmEIJ5lbzy6hrj6ZHk
+BMxsm4GxwZKJuQFGLvJGS0CKgWorH5FIkSLsqBCFvjVgbuAOMiohegBHNXqqryty
+yQiiCsWB3JpvzmU2TGMDnavlovv/4QRXmtpUfk2N4vwsVjqVejCqzOF7g0+IXjUk
+gbl+oqwL+TTRQbXapR4kIjyxUuqliIAipDJlWzpWh084egGk85mzSs+s+jdPZWRl
+PSZH625G4rL59bILBvBSsq5+0jD9OwKnL7VnSalQXxdZ4U2ohAGbhn8eW7i8vb4d
+Y4b/XtRKhrpbzKVfKOnMAUUykjqd88XxtOBLX/A5YqEuciOiR2KQvLfhJ02AySKV
+TQxKUx2c4HcJHpOz50UAVL8FPGGi813rT7icL0UppcpeiDOk2iJEviwNRotebObt
+uZpLrgUUac+Muu16LZ1uzBL6AzVz93eIo4c3LsFM0h4Asw+UDLcjM5CL67qAabr4
+8pU9MOYiAq5nlnvZyqWzNPUyJJdFup9VUjkZNzP4rKbQ7/iXg97bZisN1BVj+s1l
+IA2cmsQlPKm7A8Sv6FL/
+=WCGl
+-----END PGP SIGNATURE-----
 
-For cases 2 and 3, we can undefine the __io() macro, which leads to
-intentional build errors someone tries to build code that uses the
-inb/outb accessors. One missing piece that I have been working on
-in the past and been meaning to pick up again is a patch set to
-globally rename CONFIG_NO_IOPORT to the more appropriate
-CONFIG_NO_IOPORT_MAP, and introduce a new CONFIG_NO_IOPORT that
-signifies whether inb/outb are supported or not, rather than whether
-you can access the I/O ports through ioport_map() and ioread/iowrite.
-
-	Arnd
+--Signature=_Wed__12_Dec_2012_09_19_45_+1100_7nJRVQJJBvfcCY+.--
