@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab2LKWbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:31:13 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43416 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753570Ab2LKWbM (ORCPT
+	id S1755107Ab2LKWbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:31:51 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37377 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2LKWbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:31:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmMOAPayx1B5LO66/2dsb2JhbABFhU6ycYYQF3OCHgEBBScTHDMIAxQELhQlAyEBEogQu24UjDaDYmEDlgaQSYMH
-Date: Wed, 12 Dec 2012 09:31:09 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: 3.7 XFS lockdep trace
-Message-ID: <20121211223109.GD16353@dastard>
-References: <20121211154207.GA12771@redhat.com>
+	Tue, 11 Dec 2012 17:31:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211154207.GA12771@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121211155025.GB1612@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+	<1353955671-14385-4-git-send-email-mhocko@suse.cz>
+	<CALWz4iwNvRd7AgEiSzd7Gr-7P5oh0uESS5A7rLZ7dZWeTjOzpQ@mail.gmail.com>
+	<20121211155025.GB1612@dhcp22.suse.cz>
+Date: Tue, 11 Dec 2012 14:31:49 -0800
+Message-ID: <CALWz4izk-A-DPCEnCsVMvzjtgL2W2ydcRM1vyKcLhjWtUzTpkg@mail.gmail.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup iterators
+From: Ying Han <yinghan@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 10:42:07AM -0500, Dave Jones wrote:
-> This says rc8+, but it's just missing the Makefile change, so it's still there in 3.7
-> Curious that firefox was the process mentioned here, as ~/.mozilla isn't on xfs.
-> My only xfs partition is /data holding a kernel source tree & .ccache
+On Tue, Dec 11, 2012 at 7:50 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Sun 09-12-12 08:59:54, Ying Han wrote:
+>> On Mon, Nov 26, 2012 at 10:47 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> [...]
+>> > +               /*
+>> > +                * Even if we found a group we have to make sure it is alive.
+>> > +                * css && !memcg means that the groups should be skipped and
+>> > +                * we should continue the tree walk.
+>> > +                * last_visited css is safe to use because it is protected by
+>> > +                * css_get and the tree walk is rcu safe.
+>> > +                */
+>> > +               if (css == &root->css || (css && css_tryget(css)))
+>> > +                       memcg = mem_cgroup_from_css(css);
+>> >
+>> >                 if (reclaim) {
+>> > -                       iter->position = id;
+>> > +                       struct mem_cgroup *curr = memcg;
+>> > +
+>> > +                       if (last_visited)
+>> > +                               css_put(&last_visited->css);
+>> > +
+>> > +                       if (css && !memcg)
+>> > +                               curr = mem_cgroup_from_css(css);
+>>
+>> In this case, the css_tryget() failed which implies the css is on the
+>> way to be removed. (refcnt ==0) If so, why it is safe to call
+>> css_get() directly on it below? It seems not preventing the css to be
+>> removed by doing so.
+>
+> Well, I do not remember exactly but I guess the code is meant to say
+> that we need to store a half-dead memcg because the loop has to be
+> retried. As we are under RCU hood it is just half dead.
+> Now that you brought this up I think this is not safe as well because
+> another thread could have seen the cached value while we tried to retry
+> and his RCU is not protecting the group anymore. The follow up patch
+> fixes this by retrying within the loop. I will bring that part into
+> this patch already and then leave only css clean up in the other patch.
+>
+> Thanks for spotting this Ying!
 
-The fs freeze lockdep annotations have caused some ....  interesting
-lockdep reports.....
+I understand the intention here where we want to move on to the next
+css if the css_tryget() failed. But css_get() won't hold on it in that
+case.
 
-> [30557.776326] 3 locks on stack by firefox/17386:
-> [30557.776571]  #0: blocked:  (&mm->mmap_sem){++++++}, instance: ffff8800a823c308, at: [<ffffffff816ac2b3>] __do_page_fault+0x103/0x4f0
-> [30557.777276]  #1: blocked:  (shrinker_rwsem){++++..}, instance: ffffffff81c49de0, at: [<ffffffff81169ccc>] shrink_slab+0x3c/0x510
-> [30557.777962]  #2: blocked:  (&type->s_umount_key#42){.+.+.+}, instance: ffff8800c4ed5730, at: [<ffffffff811c24c4>] grab_super_passive+0x44/0x90
+I fixed that on my local branch which do the retry after css_tryget()
+failed, just like what you talked about. And I will wait for you fix
+on that.
 
-There's no filesystem specific locks here, and it indicates that
-the shrinkers are involved, so firefox can indeed touch the XFS
-filesystem directly this way...
+--Ying
 
-> [30557.789160]     RECLAIM_FS-ON-W at:
-> [30557.789362]                          [<ffffffff810c8042>] mark_held_locks+0xb2/0x130
-> [30557.789792]                          [<ffffffff810c8795>] lockdep_trace_alloc+0x75/0xd0
-> [30557.790241]                          [<ffffffff811af81a>] kmem_cache_alloc_node_trace+0x3a/0x2e0
-> [30557.790740]                          [<ffffffff81192242>] vm_map_ram+0x2a2/0x7f0
-> [30557.791161]                          [<ffffffffa052a4c3>] _xfs_buf_map_pages+0x73/0x130 [xfs]
-> [30557.791646]                          [<ffffffffa052baeb>] xfs_buf_get_map+0x15b/0x270 [xfs]
-> [30557.792114]                          [<ffffffffa05ada19>] xfs_trans_get_buf_map+0x1d9/0x3b0 [xfs]
-> [30557.792615]                          [<ffffffffa0589f04>] xfs_ialloc_inode_init+0xe4/0x1f0 [xfs]
-
-Oh, that's already fixed in the 3.8- queue.
-
-$ gl -n 1 7c4cebe
-commit 7c4cebe8e02dd0b0e655605442bbe9268db9ed4f
-Author: Dave Chinner <dchinner@redhat.com>
-Date:   Fri Nov 23 14:24:23 2012 +1100
-
-    xfs: inode allocation should use unmapped buffers.
-    
-    Inode buffers do not need to be mapped as inodes are read or written
-    directly from/to the pages underlying the buffer. This fixes a
-    regression introduced by commit 611c994 ("xfs: make XBF_MAPPED the
-    default behaviour").
-....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+>
+>>
+>> > +                       /* make sure that the cached memcg is not removed */
+>> > +                       if (curr)
+>> > +                               css_get(&curr->css);
+>>
+>> --Ying
+> --
+> Michal Hocko
+> SUSE Labs
