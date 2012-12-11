@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab2LKW4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:56:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43857 "EHLO
+	id S1755252Ab2LKW4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:56:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43859 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755201Ab2LKWsk (ORCPT
+	with ESMTP id S1755202Ab2LKWsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Dec 2012 17:48:40 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,11 +15,10 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 20/37] perf buildid-list: We need to check if a file is ELF first
-Date: Tue, 11 Dec 2012 19:48:06 -0300
-Message-Id: <1355266103-17238-21-git-send-email-acme@infradead.org>
+Subject: [PATCH 36/37] perf record: Export the callchain parsing routine and help
+Date: Tue, 11 Dec 2012 19:48:22 -0300
+Message-Id: <1355266103-17238-37-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
 References: <1355266103-17238-1-git-send-email-acme@infradead.org>
@@ -30,19 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-I.e. before we try to use it as a perf.data file by calling
-perf_session__new, otherwise we lose the feature that shows the
-build id for the given ELF file, this one:
-
-[root@sandy redhat-perfdata-mtech-15]# perf buildid-list -i /root/.debug/.build-id/97/54896de655b6ac088ec2bf5113b35c06f72709
-9754896de655b6ac088ec2bf5113b35c06f72709
-[root@sandy redhat-perfdata-mtech-15]# perf buildid-list -i /lib/libc-2.12.so
-38adaeff4f7c21899b13b28c1a2e6c199ca4c744
-[root@sandy redhat-perfdata-mtech-15]#
-
-Regression introduced in:
-
-efad1415 "perf report: Accept fifos as input file"
+Will be used by perf top, that will first setup the symbol system to
+deal with callchains and then call these routines to ask the kernel
+for callchains.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -51,52 +40,65 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3ktgyg83fwpqyfpoj0t2ezp0@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-jg0dh8rmlx7x11e7u7mnasvd@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-buildid-list.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ tools/perf/builtin-record.c |   11 ++++++-----
+ tools/perf/util/callchain.h |    5 +++++
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index a82d99f..4c770d2 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -49,18 +49,16 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
- 	struct perf_session *session;
- 
- 	symbol__elf_init();
--
--	session = perf_session__new(input_name, O_RDONLY, force, false,
--				    &build_id__mark_dso_hit_ops);
--	if (session == NULL)
--		return -1;
--
- 	/*
- 	 * See if this is an ELF file first:
- 	 */
--	if (filename__fprintf_build_id(session->filename, stdout))
-+	if (filename__fprintf_build_id(input_name, stdout))
- 		goto out;
- 
-+	session = perf_session__new(input_name, O_RDONLY, force, false,
-+				    &build_id__mark_dso_hit_ops);
-+	if (session == NULL)
-+		return -1;
- 	/*
- 	 * in pipe-mode, the only way to get the buildids is to parse
- 	 * the record stream. Buildids are stored as RECORD_HEADER_BUILD_ID
-@@ -69,8 +67,8 @@ static int perf_session__list_build_ids(bool force, bool with_hits)
- 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
- 
- 	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
--out:
- 	perf_session__delete(session);
-+out:
- 	return 0;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d035040..028de72 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -868,7 +868,8 @@ static int get_stack_size(char *str, unsigned long *_size)
  }
+ #endif /* LIBUNWIND_SUPPORT */
  
+-static int parse_callchain_opt(const struct option *opt, const char *arg, int unset)
++int record_parse_callchain_opt(const struct option *opt,
++			       const char *arg, int unset)
+ {
+ 	struct perf_record_opts *opts = opt->value;
+ 	char *tok, *name, *saveptr = NULL;
+@@ -973,9 +974,9 @@ static struct perf_record record = {
+ #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
+ 
+ #ifdef LIBUNWIND_SUPPORT
+-static const char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++const char record_callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
+ #else
+-static const char callchain_help[] = CALLCHAIN_HELP "[fp]";
++const char record_callchain_help[] = CALLCHAIN_HELP "[fp]";
+ #endif
+ 
+ /*
+@@ -1020,8 +1021,8 @@ const struct option record_options[] = {
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &record.opts,
+-			     "mode[,dump_size]", callchain_help,
+-			     &parse_callchain_opt, "fp"),
++			     "mode[,dump_size]", record_callchain_help,
++			     &record_parse_callchain_opt, "fp"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index eb34057..3ee9f67 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -143,4 +143,9 @@ static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
+ 	cursor->curr = cursor->curr->next;
+ 	cursor->pos++;
+ }
++
++struct option;
++
++int record_parse_callchain_opt(const struct option *opt, const char *arg, int unset);
++extern const char record_callchain_help[];
+ #endif	/* __PERF_CALLCHAIN_H */
 -- 
 1.7.9.2.358.g22243
 
