@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab2LKRkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:40:10 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60943 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2LKRkI (ORCPT
+	id S1753905Ab2LKRkb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:40:31 -0500
+Received: from mga12.intel.com ([143.182.124.36]:42871 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752953Ab2LKRk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:40:08 -0500
-Date: Tue, 11 Dec 2012 17:45:09 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Yehuda Yitschak <yehuday@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lior Amsalem <alior@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in
- CONFIG_HAS_IOPORT
-Message-ID: <20121211174509.69c8c66e@pyramind.ukuu.org.uk>
-In-Reply-To: <20121211173450.GW14363@n2100.arm.linux.org.uk>
-References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com>
-	<1354917879-32073-2-git-send-email-thomas.petazzoni@free-electrons.com>
-	<201212111043.50627.arnd@arndb.de>
-	<20121211162647.GS14363@n2100.arm.linux.org.uk>
-	<20121211171610.01c2de16@pyramind.ukuu.org.uk>
-	<20121211173450.GW14363@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 12:40:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	<1355234914.2356.85.camel@falcor>
+	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+Date: Tue, 11 Dec 2012 19:40:17 +0200
+Message-ID: <CALLzPKZQ3=qNOxJk-yqDGEzqkcKLoc9tPPD8o9QbJOUOB1nWuQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The problem comes when you end up trying to deal with stuff which
-> uses ioread{8,16} on ioport_map() cookies where it's assumed that
-> adding N to the cookie is the same as adding N to the port address.
+On Tue, Dec 11, 2012 at 6:59 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Dec 11, 2012 at 6:08 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> On Tue, 2012-12-11 at 14:51 +0200, Kasatkin, Dmitry wrote:
+>>> >>
+>>> >> Two months ago I was asking about it on mailing lists.
+>>> >> Suggestion was not to use s_flags, but e.g. s_feature_flags.
+>
+> Quite frankly, this seems stupid.
 
-It's a cookie - this isn't a problem, you can support it via the mapping
-approah. Whether you want to is another question.
+What exactly seems stupid here?
 
-> Thankfully those platforms aren't going to be a part of the single
-> zImage project...
+>
+> Without really knowing the problem space, the sane thing to do would
+> seem to be inode->i_flags. At which point it's
+>
+>  (a) faster to test (no need to dereference inode->i_sb)
+>
+>  (b) matches what the integrity layer does with S_IMA (well, there the
+> logic is reversed: S_IMA means that it has a integrity structure
+> associated with it)
+>
+>  (c) allows you to mark individual inodes as "no checking".
+>
 
-Don't blame you 8)
+There are inode specific objects which IMA uses for such perpose.
+
+> and quite frankly, (c) in particular seems to make sense to me, since
+> it would seem to be rather possible to do things like "I've checked
+> this inode, it had no policies associated with it, I never need to
+> check it again". Clear the flag when policies change or whatever.
+>
+> What's the advantage of making it per-filesystem?
+>
+
+There are different filesystems which are not checked by IMA/EVM,
+such as pseudo-filesystems. For this reason it is good to have a way to
+ignore such filesystems without to much work in IMA code.
+No reason to check policy again and again for every inode on the filesystem
+when the result will always be to ignore the filesystem.
+
+Per-filesystem flag soles this problem.
+
+- Dmitry
+
+
+>             Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
