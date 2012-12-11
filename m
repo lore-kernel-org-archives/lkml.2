@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2LKNh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 08:37:26 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4679 "EHLO
+	id S1753480Ab2LKNhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 08:37:36 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:4706 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab2LKNhY (ORCPT
+	with ESMTP id S1752893Ab2LKNhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 08:37:24 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="13143272"
+	Tue, 11 Dec 2012 08:37:33 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="13143288"
 From: Tanya Brokhman <tlinder@codeaurora.org>
 To: jaxboe@fusionio.com
 Cc: linux-arm-msm@vger.kernel.org, philippedeswert@gmail.com, jengelh@inai.de,
@@ -15,9 +15,9 @@ Cc: linux-arm-msm@vger.kernel.org, philippedeswert@gmail.com, jengelh@inai.de,
         venkat@linaro.org, linux-mmc@vger.kernel.org,
         Tatyana Brokhman <tlinder@codeaurora.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 1/2] block: Add support for reinsert a dispatched req
-Date: Tue, 11 Dec 2012 15:36:54 +0200
-Message-Id: <1355233015-25196-2-git-send-email-tlinder@codeaurora.org>
+Subject: [PATCH v3 2/2] block: Add API for urgent request handling
+Date: Tue, 11 Dec 2012 15:36:55 +0200
+Message-Id: <1355233015-25196-3-git-send-email-tlinder@codeaurora.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1355233015-25196-1-git-send-email-tlinder@codeaurora.org>
 References: <1355233015-25196-1-git-send-email-tlinder@codeaurora.org>
@@ -27,170 +27,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tatyana Brokhman <tlinder@codeaurora.org>
 
-Add support for reinserting a dispatched request back to the
-scheduler's internal data structures.
-This capability is used by the device driver when it chooses to
-interrupt the current request transmission and execute another (more
-urgent) pending request. For example: interrupting long write in order
-to handle pending read. The device driver re-inserts the
-remaining write request back to the scheduler, to be rescheduled
-for transmission later on.
+This patch add support in block & elevator layers for handling
+urgent requests. The decision if a request is urgent or not is taken
+by the scheduler. Urgent request notification is passed to the underlying
+block device driver (eMMC for example). Block device driver may decide to
+interrupt the currently running low priority request to serve the new
+urgent request. By doing so READ latency is greatly reduced in read&write
+collision scenarios.
 
-Add API for verifying whether the current scheduler
-supports reinserting requests mechanism. If reinsert mechanism isn't
-supported by the scheduler, this code path will never be activated.
+Note that if the current scheduler doesn't implement the urgent request
+mechanism, this code path is never activated.
 
 Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 ---
-v3: 
-  - Added some error chaking
-  - In elv_reinsert_request(): update counters only if reinsert succeded
+v3:
+  - Commenting update
+  - Add boolean flag indicating if an urgent request was dispatched,
+    instead of a pointer to the request itself
+  - In elv_completed_request() use test_bit() to verify if the completed
+    request was urgent or not
 v1: Initial version
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index a8b1527..f8f6762 100644
+index f8f6762..eb0f2ae 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -1177,6 +1177,50 @@ void blk_requeue_request(struct request_queue *q, struct request *rq)
- }
- EXPORT_SYMBOL(blk_requeue_request);
- 
-+/**
-+ * blk_reinsert_request() - Insert a request back to the scheduler
-+ * @q:		request queue
-+ * @rq:		request to be inserted
-+ *
-+ * This function inserts the request back to the scheduler as if
-+ * it was never dispatched.
-+ *
-+ * Return: 0 on success, error code on fail
-+ */
-+int blk_reinsert_request(struct request_queue *q, struct request *rq)
-+{
-+	if (unlikely(!rq) || unlikely(!q))
-+		return -EIO;
-+
-+	blk_delete_timer(rq);
-+	blk_clear_rq_complete(rq);
-+	trace_block_rq_requeue(q, rq);
-+
-+	if (blk_rq_tagged(rq))
-+		blk_queue_end_tag(q, rq);
-+
-+	BUG_ON(blk_queued_rq(rq));
-+
-+	return elv_reinsert_request(q, rq);
-+}
-+EXPORT_SYMBOL(blk_reinsert_request);
-+
-+/**
-+ * blk_reinsert_req_sup() - check whether the scheduler supports
-+ *          reinsertion of requests
-+ * @q:		request queue
-+ *
-+ * Returns true if the current scheduler supports reinserting
-+ * request. False otherwise
-+ */
-+bool blk_reinsert_req_sup(struct request_queue *q)
-+{
-+	if (unlikely(!q))
-+		return false;
-+	return q->elevator->type->ops.elevator_reinsert_req_fn ? true : false;
-+}
-+EXPORT_SYMBOL(blk_reinsert_req_sup);
-+
- static void add_acct_request(struct request_queue *q, struct request *rq,
- 			     int where)
+@@ -300,13 +300,26 @@ EXPORT_SYMBOL(blk_sync_queue);
+  * Description:
+  *    See @blk_run_queue. This variant must be called with the queue lock
+  *    held and interrupts disabled.
++ *    Device driver will be notified of an urgent request
++ *    pending under the following conditions:
++ *    1. The driver and the current scheduler support urgent reques handling
++ *    2. There is an urgent request pending in the scheduler
++ *    3. There isn't already an urgent request in flight, meaning previously
++ *       notified urgent request completed (!q->notified_urgent)
+  */
+ void __blk_run_queue(struct request_queue *q)
  {
+ 	if (unlikely(blk_queue_stopped(q)))
+ 		return;
+ 
+-	q->request_fn(q);
++	if (!q->notified_urgent &&
++		q->elevator->type->ops.elevator_is_urgent_fn &&
++		q->urgent_request_fn &&
++		q->elevator->type->ops.elevator_is_urgent_fn(q)) {
++		q->notified_urgent = true;
++		q->urgent_request_fn(q);
++	} else
++		q->request_fn(q);
+ }
+ EXPORT_SYMBOL(__blk_run_queue);
+ 
+@@ -2232,8 +2245,17 @@ struct request *blk_fetch_request(struct request_queue *q)
+ 	struct request *rq;
+ 
+ 	rq = blk_peek_request(q);
+-	if (rq)
++	if (rq) {
++		/*
++		 * Assumption: the next request fetched from scheduler after we
++		 * notified "urgent request pending" - will be the urgent one
++		 */
++		if (q->notified_urgent && !q->dispatched_urgent) {
++			q->dispatched_urgent = true;
++			(void)blk_mark_rq_urgent(rq);
++		}
+ 		blk_start_request(rq);
++	}
+ 	return rq;
+ }
+ EXPORT_SYMBOL(blk_fetch_request);
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index 779bb76..6d594c4 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -100,6 +100,18 @@ void blk_queue_lld_busy(struct request_queue *q, lld_busy_fn *fn)
+ EXPORT_SYMBOL_GPL(blk_queue_lld_busy);
+ 
+ /**
++ * blk_urgent_request() - Set an urgent_request handler function for queue
++ * @q:		queue
++ * @fn:		handler for urgent requests
++ *
++ */
++void blk_urgent_request(struct request_queue *q, request_fn_proc *fn)
++{
++	q->urgent_request_fn = fn;
++}
++EXPORT_SYMBOL(blk_urgent_request);
++
++/**
+  * blk_set_default_limits - reset limits to default values
+  * @lim:  the queue_limits structure to reset
+  *
+diff --git a/block/blk.h b/block/blk.h
+index ca51543..5fba856 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -42,6 +42,7 @@ void blk_add_timer(struct request *);
+  */
+ enum rq_atomic_flags {
+ 	REQ_ATOM_COMPLETE = 0,
++	REQ_ATOM_URGENT = 1,
+ };
+ 
+ /*
+@@ -58,6 +59,16 @@ static inline void blk_clear_rq_complete(struct request *rq)
+ 	clear_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+ }
+ 
++static inline int blk_mark_rq_urgent(struct request *rq)
++{
++	return test_and_set_bit(REQ_ATOM_URGENT, &rq->atomic_flags);
++}
++
++static inline void blk_clear_rq_urgent(struct request *rq)
++{
++	clear_bit(REQ_ATOM_URGENT, &rq->atomic_flags);
++}
++
+ /*
+  * Internal elevator interface
+  */
 diff --git a/block/elevator.c b/block/elevator.c
-index 9edba1b..0ff6c5a 100644
+index 0ff6c5a..2104368 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
-@@ -547,6 +547,41 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
- 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
- }
- 
-+/**
-+ * elv_reinsert_request() - Insert a request back to the scheduler
-+ * @q:		request queue where request should be inserted
-+ * @rq:		request to be inserted
-+ *
-+ * This function returns the request back to the scheduler to be
-+ * inserted as if it was never dispatched
-+ *
-+ * Return: 0 on success, error code on failure
-+ */
-+int elv_reinsert_request(struct request_queue *q, struct request *rq)
-+{
-+	int res;
-+
-+	if (!q->elevator->type->ops.elevator_reinsert_req_fn)
-+		return -EPERM;
-+
-+	res = q->elevator->type->ops.elevator_reinsert_req_fn(q, rq);
-+	if (!res) {
-+		/*
-+		 * it already went through dequeue, we need to decrement the
-+		 * in_flight count again
-+		 */
-+		if (blk_account_rq(rq)) {
-+			q->in_flight[rq_is_sync(rq)]--;
-+			if (rq->cmd_flags & REQ_SORTED)
-+				elv_deactivate_rq(q, rq);
-+		}
-+		rq->cmd_flags &= ~REQ_STARTED;
-+		q->nr_sorted++;
-+	}
-+
-+	return res;
-+}
-+
- void elv_drain_elevator(struct request_queue *q)
+@@ -756,6 +756,11 @@ void elv_completed_request(struct request_queue *q, struct request *rq)
  {
- 	static int printed;
+ 	struct elevator_queue *e = q->elevator;
+ 
++	if (test_bit(REQ_ATOM_URGENT, &rq->atomic_flags)) {
++		q->notified_urgent = false;
++		q->dispatched_urgent = false;
++		blk_clear_rq_urgent(rq);
++	}
+ 	/*
+ 	 * request is released from the driver, io must be done
+ 	 */
 diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1756001..e725303 100644
+index e725303..db5e1bc 100644
 --- a/include/linux/blkdev.h
 +++ b/include/linux/blkdev.h
-@@ -722,6 +722,8 @@ extern struct request *blk_get_request(struct request_queue *, int, gfp_t);
- extern struct request *blk_make_request(struct request_queue *, struct bio *,
- 					gfp_t);
- extern void blk_requeue_request(struct request_queue *, struct request *);
-+extern int blk_reinsert_request(struct request_queue *q, struct request *rq);
-+extern bool blk_reinsert_req_sup(struct request_queue *q);
- extern void blk_add_request_payload(struct request *rq, struct page *page,
- 		unsigned int len);
- extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
+@@ -303,6 +303,7 @@ struct request_queue {
+ 	struct request_list	root_rl;
+ 
+ 	request_fn_proc		*request_fn;
++	request_fn_proc		*urgent_request_fn;
+ 	make_request_fn		*make_request_fn;
+ 	prep_rq_fn		*prep_rq_fn;
+ 	unprep_rq_fn		*unprep_rq_fn;
+@@ -391,6 +392,8 @@ struct request_queue {
+ #endif
+ 
+ 	struct queue_limits	limits;
++	bool			notified_urgent;
++	bool			dispatched_urgent;
+ 
+ 	/*
+ 	 * sg stuff
+@@ -894,6 +897,7 @@ extern struct request_queue *blk_init_queue_node(request_fn_proc *rfn,
+ extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+ extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
+ 						      request_fn_proc *, spinlock_t *);
++extern void blk_urgent_request(struct request_queue *q, request_fn_proc *fn);
+ extern void blk_cleanup_queue(struct request_queue *);
+ extern void blk_queue_make_request(struct request_queue *, make_request_fn *);
+ extern void blk_queue_bounce_limit(struct request_queue *, u64);
 diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index c03af76..f70d05d 100644
+index f70d05d..9b13913 100644
 --- a/include/linux/elevator.h
 +++ b/include/linux/elevator.h
-@@ -22,6 +22,8 @@ typedef void (elevator_bio_merged_fn) (struct request_queue *,
- typedef int (elevator_dispatch_fn) (struct request_queue *, int);
- 
+@@ -24,6 +24,7 @@ typedef int (elevator_dispatch_fn) (struct request_queue *, int);
  typedef void (elevator_add_req_fn) (struct request_queue *, struct request *);
-+typedef int (elevator_reinsert_req_fn) (struct request_queue *,
-+					struct request *);
+ typedef int (elevator_reinsert_req_fn) (struct request_queue *,
+ 					struct request *);
++typedef bool (elevator_is_urgent_fn) (struct request_queue *);
  typedef struct request *(elevator_request_list_fn) (struct request_queue *, struct request *);
  typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
  typedef int (elevator_may_queue_fn) (struct request_queue *, int);
-@@ -47,6 +49,8 @@ struct elevator_ops
- 
+@@ -50,6 +51,7 @@ struct elevator_ops
  	elevator_dispatch_fn *elevator_dispatch_fn;
  	elevator_add_req_fn *elevator_add_req_fn;
-+	elevator_reinsert_req_fn *elevator_reinsert_req_fn;
-+
+ 	elevator_reinsert_req_fn *elevator_reinsert_req_fn;
++	elevator_is_urgent_fn *elevator_is_urgent_fn;
+ 
  	elevator_activate_req_fn *elevator_activate_req_fn;
  	elevator_deactivate_req_fn *elevator_deactivate_req_fn;
- 
-@@ -123,6 +127,7 @@ extern void elv_merged_request(struct request_queue *, struct request *, int);
- extern void elv_bio_merged(struct request_queue *q, struct request *,
- 				struct bio *);
- extern void elv_requeue_request(struct request_queue *, struct request *);
-+extern int elv_reinsert_request(struct request_queue *, struct request *);
- extern struct request *elv_former_request(struct request_queue *, struct request *);
- extern struct request *elv_latter_request(struct request_queue *, struct request *);
- extern int elv_register_queue(struct request_queue *q);
 -- 
 1.7.6
 --
