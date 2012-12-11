@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2LKSUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:20:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60114 "EHLO mail.zytor.com"
+	id S1754424Ab2LKSUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 13:20:38 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56648 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab2LKSUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:20:30 -0500
-Message-ID: <50C7795D.3000404@zytor.com>
-Date: Tue, 11 Dec 2012 10:20:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-References: <3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com> <CAE9FiQXGZYZiH3eUup2UXGWkeqKjsiHk7aMTFJO7xxFkqTpBZA@mail.gmail.com> <50C6AB63.9070008@zytor.com> <CAE9FiQX7sPLXOacoLakaJ1qC5UuSUbrX_g7N-oWmLYg5W-91UA@mail.gmail.com> <50C6D3DF.3030209@zytor.com> <CAE9FiQUiEx=p6wTC5wu_E=ih1CSBaTmw90zsc2=+xu6rMO5usg@mail.gmail.com> <20121211145716.GB8873@liondog.tnic> <CAE9FiQVByBTHwPrtYvVxv4u9QrtN1iN6GH9YaDn3dvmwv5Sg7g@mail.gmail.com> <50C763C2.5020603@zytor.com> <CAE9FiQUzHBb5SiEhfrOg7hFbuD1H1-7aXa0aTjhZ9tNqdrwGqw@mail.gmail.com> <20121211170605.GD28827@liondog.tnic> <CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com> <50C7752C.2000709@zytor.com>
-In-Reply-To: <50C7752C.2000709@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754393Ab2LKSUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 13:20:35 -0500
+Message-ID: <1355249884.2356.108.camel@falcor>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Date: Tue, 11 Dec 2012 13:18:04 -0500
+In-Reply-To: <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	 <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	 <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	 <1355234914.2356.85.camel@falcor>
+	 <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121118-9360-0000-0000-00000DD06DA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 10:02 AM, H. Peter Anvin wrote:
->
-> The more I think about it, the more I think the right answer is the one
-> we have pretty stated all along: if using the 64-bit entry point it is
-> the responsibility of the boot loader to make sure the kernel, the setup
-> data, and the initramfs are all mapped on entry.
->
+On Tue, 2012-12-11 at 08:59 -0800, Linus Torvalds wrote:
+> On Tue, Dec 11, 2012 at 6:08 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Tue, 2012-12-11 at 14:51 +0200, Kasatkin, Dmitry wrote:
+> >> >>
+> >> >> Two months ago I was asking about it on mailing lists.
+> >> >> Suggestion was not to use s_flags, but e.g. s_feature_flags.
+> 
+> Quite frankly, this seems stupid.
+> 
+> Without really knowing the problem space, the sane thing to do would
+> seem to be inode->i_flags. At which point it's
+> 
+>  (a) faster to test (no need to dereference inode->i_sb)
+> 
+>  (b) matches what the integrity layer does with S_IMA (well, there the
+> logic is reversed: S_IMA means that it has a integrity structure
+> associated with it)
+> 
+>  (c) allows you to mark individual inodes as "no checking".
 
-This, in turn, brings up another major problem with the 64-bit entry 
-point: right now it assumes page tables set up the way the current 
-kernels expect them, but the way the kernel expects pages to be laid out 
-on the future is almost guaranteed to change.  We need to formalize the 
-expectations of the page table layout at 64-bit entry, and check to see 
-what the implications of that are.
+The appraisal policy is based on the object metadata, such as the uid,
+so the result is static and can be cached.  The measurement policy, on
+the other hand, is normally based on the subject (eg. who is
+reading/executing) the file.  Knowledge of whether the file has been
+measured is cached in the iint, but unlike the appraisal policy, not
+whether it needs to be measured.  Having the flag on a per inode basis,
+doesn't really help.
 
-In particular, we may need to build a set of scaffolding page tables in 
-the brk when entered from the 64-bit entry point and switch to them a 
-lot sooner.  We wouldn't have to do that when coming from the 16/32-bit 
-entry points since we'd control the layout of those page tables.
+thanks,
 
-Oh how fun...
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Mimi
 
