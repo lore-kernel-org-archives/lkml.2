@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2LKSEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:04:39 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45293 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab2LKSEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:04:38 -0500
+	id S1754277Ab2LKSEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 13:04:45 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10061 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753780Ab2LKSEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 13:04:42 -0500
+Message-ID: <50C775AB.70706@parallels.com>
+Date: Tue, 11 Dec 2012 22:04:27 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <CANc+2y5iLuZG5wPab5Hf0-mAngpkO+72XZR3FK9kgR8-kAKZ1Q@mail.gmail.com>
-References: <CANc+2y5iLuZG5wPab5Hf0-mAngpkO+72XZR3FK9kgR8-kAKZ1Q@mail.gmail.com>
-Date: Tue, 11 Dec 2012 23:34:36 +0530
-Message-ID: <CANc+2y50-AYJcJgeQ8JHJiMjwxg=tbkQ2HQR4=ZZsEthKiWXgw@mail.gmail.com>
-Subject: Fwd: Safely remove option shows with Micro SD Card connected to Linux
- through an Android phone
-From: prasannatsmkumar <prasannatsmkumar@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nautilus-list@gnome.org
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        CRIU <criu@openvz.org>
+CC: "users@openvz.org" <users@openvz.org>
+Subject: [Announce] Checkpoint-restore tool v0.3
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hi!
 
-I connected an Android phone using USB cable to my machine running
-Linux (Linux 3.0, 3.2, 3.5). Mounted the SD card in phone in system
-(phone is just a pass through I guess). When I choose "Safely Remove"
-option in nautilus file manager (gnome's default file manager) I got
-an error saying
+The Linux-v3.7 is out, and it's good time to release the next version
+of the checkpoint-restore tool.
 
-"Error detaching: helper exited with exit code 1: Detaching device /dev/sdb
-USB device: /sys/devices/pci0000:00/0000:00:1d.7/usb1/1-5)
-SYNCHRONIZE CACHE: OK
-STOP UNIT: FAILED: No such file or directory"
+This is mostly bugfix and improvements release, however it's worth
+mentioning some new interesting features
 
-and it goes to unmounted state (yes it should go to and this is not a
-problem). But I am not able to find the reason for the above error
-message pop-up. If I choose "Eject" option then things are fine (I
-think Eject does more than un-mounting the file system).
+  * Proper COW mappings handling
+    Now anonymous private mappings are not COW-ed at restore, but
+    pages that were shared remain such [1]
 
-I think "safely remove" tries to cut the power supply to the device
-but eject does not do that. Is that correct? If the device cannot be
-powered down (due to battery charging) why this option is shown? Is
-kernel exposing such capability to the user space?
+  * Full support for PF_PACKET sockets, thus letting us to C/R the
+    tcpdump tool
 
-I am not sure whether this is the correct place to ask this question.
-If this is not the correct place please direct me to correct place.
+  * The --shell-job option, which makes it possible to dump apps
+    launched from one shell and restore them in another [2]
 
-Note: Previous attempt to send this mail to linux-kernel and linux-usb
-mailing list failed. So resending this again. Please bear with me
-nautilus-list people.
+Some features are still available with the custom kernel, but things
+are eventually getting merged upstream. In particular the 3.7 now has
+support for C/R-ing of LXC containers' network devices, the initial
+support for packet sockets and a couple of fixes for TCP repair code.
 
-Thanks and Regards,
-PrasannaKumar
+
+The v0.3 can be downloaded from
+http://download.openvz.org/criu/crtools-0.3.tar.bz2
+The project home is at http://criu.org
+
+[1] https://plus.google.com/103175467322423551911/posts/bkgqbGTHfSt
+[2] https://plus.google.com/103175467322423551911/posts/AYEu9w5HXiH
+
+Thanks,
+Pavel
