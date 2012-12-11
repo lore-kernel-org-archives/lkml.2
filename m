@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab2LKMKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:10:13 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:43921 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab2LKMKK (ORCPT
+	id S1753095Ab2LKMKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:10:09 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38406 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab2LKMKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:10:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355149273.17101.176.camel@gandalf.local.home>
-References: <CAJd=RBCk0eWQqTk-BX8_=aBdYEQnbnf57dHZdcVbWbVY=33OhQ@mail.gmail.com>
-	<1355149273.17101.176.camel@gandalf.local.home>
-Date: Tue, 11 Dec 2012 20:10:09 +0800
-Message-ID: <CAJd=RBDprA5ruzY6-uQ3L5eSX3Muk8fSpQZbbmsK0oAGwk0WtQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] sched: rt: fix selecting runqueue for task to be pushed
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Dec 2012 07:10:08 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Mack <zonque@gmail.com>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] w1:masters/w1-gpio.c: fix error using "__devinit" and "__devexit"
+Date: Tue, 11 Dec 2012 12:08:54 +0000
+Message-Id: <1355227740-4377-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 10:21 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2012-12-10 at 20:19 +0800, Hillf Danton wrote:
->> When we are trying to push task out, no point to select the last cpu that
->> the given task executed on, which is fixed by selecting target cpu with
->> cache affinity concerned, and with SD_WAKE_AFFINE ignored as we are not
->> handling sleeper.
->
-> I have to ask. Why?
->
-> The check you are skipping is if the task is running on a CPU that is
-> already the lowest CPU priority (lowest_mask returns the CPUs running
-> tasks of the lowest priority in the system).
+w1:masters/w1-gpio.c: fix error using "__devinit" and "__devexit"
 
-Hm ... how do you get the lowest mask for a pushable task iff
-that check makes sense?
+we should use "__devinit" to mark the probe function, "__devexit" to
+mark the remove function, and "__devexit_p" to mark the pointer to the
+remove function.
 
-> Which means that either the
-> task that we are pushing is the same priority or lesser priority than
-> what is running on the other CPUs. Either case, this task wont push out
-> a task on the other CPUs because it's not higher priority than those
-> tasks.
->
-> You just added more work for the same result (no push).
->
-> -- Steve
->
->
+the error was found by the following compilation warning:
+WARNING: drivers/w1/masters/w1-gpio.o(.data+0x0): Section mismatch in
+reference from the variable w1_gpio_driver to the function
+.init.text:w1_gpio_probe()
+The variable w1_gpio_driver references
+the function __init w1_gpio_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/w1/masters/w1-gpio.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index 85b363a..33edc3b 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -72,7 +72,7 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int __init w1_gpio_probe(struct platform_device *pdev)
++static int __devinit w1_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct w1_bus_master *master;
+ 	struct w1_gpio_platform_data *pdata;
+@@ -158,7 +158,7 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
+ 	return err;
+ }
+ 
+-static int __exit w1_gpio_remove(struct platform_device *pdev)
++static int __devexit w1_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct w1_bus_master *master = platform_get_drvdata(pdev);
+ 	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
+@@ -210,7 +210,7 @@ static struct platform_driver w1_gpio_driver = {
+ 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
+ 	},
+ 	.probe = w1_gpio_probe,
+-	.remove	= __exit_p(w1_gpio_remove),
++	.remove	= __devexit_p(w1_gpio_remove),
+ 	.suspend = w1_gpio_suspend,
+ 	.resume = w1_gpio_resume,
+ };
+-- 
+1.7.4.5
+
