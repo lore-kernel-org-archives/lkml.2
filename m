@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab2LKV4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:56:33 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42108 "EHLO e9.ny.us.ibm.com"
+	id S1754882Ab2LKV4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:56:31 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42086 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785Ab2LKV42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:56:28 -0500
+	id S1753406Ab2LKV40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 16:56:26 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -18,218 +18,96 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
         Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 3/8] staging: zsmalloc: add page alloc/free callbacks
-Date: Tue, 11 Dec 2012 15:56:01 -0600
-Message-Id: <1355262966-15281-4-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCH 2/8] staging: zsmalloc: remove unsed pool name
+Date: Tue, 11 Dec 2012 15:56:00 -0600
+Message-Id: <1355262966-15281-3-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121121-7182-0000-0000-000003B6C647
+x-cbid: 12121121-7182-0000-0000-000003B6C632
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows users of zsmalloc to register the
-allocation and free routines used by zsmalloc to obtain
-more pages for the memory pool.  This allows the user
-more control over zsmalloc pool policy and behavior.
+zs_create_pool() currently takes a name argument which is
+never used in any useful way.
 
-If the user does not wish to control this, alloc_page() and
-__free_page() are used by default.
+This patch removes it.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Signed-off-by: Seth Jennnings <sjenning@linux.vnet.ibm.com>
 ---
  drivers/staging/zcache/zcache-main.c     |    2 +-
  drivers/staging/zram/zram_drv.c          |    2 +-
- drivers/staging/zsmalloc/zsmalloc-main.c |   43 ++++++++++++++++++++++--------
- drivers/staging/zsmalloc/zsmalloc.h      |    8 +++++-
- 4 files changed, 41 insertions(+), 14 deletions(-)
+ drivers/staging/zsmalloc/zsmalloc-main.c |    7 +------
+ drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
+ 4 files changed, 4 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 6fa9f9a..e3e533b 100644
+index 674c754..6fa9f9a 100644
 --- a/drivers/staging/zcache/zcache-main.c
 +++ b/drivers/staging/zcache/zcache-main.c
 @@ -982,7 +982,7 @@ int zcache_new_client(uint16_t cli_id)
  		goto out;
  	cli->allocated = 1;
  #ifdef CONFIG_FRONTSWAP
--	cli->zspool = zs_create_pool(GFP_KERNEL);
-+	cli->zspool = zs_create_pool(GFP_KERNEL, NULL);
+-	cli->zspool = zs_create_pool("zcache", GFP_KERNEL);
++	cli->zspool = zs_create_pool(GFP_KERNEL);
  	if (cli->zspool == NULL)
  		goto out;
  	idr_init(&cli->tmem_pools);
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 13d9f6d..0357903 100644
+index 13e9b4b..13d9f6d 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
 @@ -576,7 +576,7 @@ int zram_init_device(struct zram *zram)
  	/* zram devices sort of resembles non-rotational disks */
  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
  
--	zram->mem_pool = zs_create_pool(GFP_KERNEL);
-+	zram->mem_pool = zs_create_pool(GFP_KERNEL, NULL);
+-	zram->mem_pool = zs_create_pool("zram", GFP_KERNEL);
++	zram->mem_pool = zs_create_pool(GFP_KERNEL);
  	if (!zram->mem_pool) {
  		pr_err("Error creating memory pool\n");
  		ret = -ENOMEM;
 diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 5e212c0..825e124 100644
+index 6ff380e..5e212c0 100644
 --- a/drivers/staging/zsmalloc/zsmalloc-main.c
 +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -205,7 +205,7 @@ struct link_free {
- 
- struct zs_pool {
- 	struct size_class size_class[ZS_SIZE_CLASSES];
--	const char *name;
-+	struct zs_ops *ops;
- };
- 
- /*
-@@ -240,6 +240,21 @@ struct mapping_area {
- 	enum zs_mapmode vm_mm; /* mapping mode */
- };
- 
-+/* default page alloc/free ops */
-+struct page *zs_alloc_page(gfp_t flags)
-+{
-+	return alloc_page(flags);
-+}
-+
-+void zs_free_page(struct page *page)
-+{
-+	__free_page(page);
-+}
-+
-+struct zs_ops zs_default_ops = {
-+	.alloc = zs_alloc_page,
-+	.free = zs_free_page
-+};
- 
- /* per-cpu VM mapping areas for zspage accesses that cross page boundaries */
- static DEFINE_PER_CPU(struct mapping_area, zs_map_area);
-@@ -476,7 +491,7 @@ static void reset_page(struct page *page)
- 	reset_page_mapcount(page);
- }
- 
--static void free_zspage(struct page *first_page)
-+static void free_zspage(struct zs_ops *ops, struct page *first_page)
- {
- 	struct page *nextp, *tmp, *head_extra;
- 
-@@ -486,7 +501,7 @@ static void free_zspage(struct page *first_page)
- 	head_extra = (struct page *)page_private(first_page);
- 
- 	reset_page(first_page);
--	__free_page(first_page);
-+	ops->free(first_page);
- 
- 	/* zspage with only 1 system page */
- 	if (!head_extra)
-@@ -495,10 +510,10 @@ static void free_zspage(struct page *first_page)
- 	list_for_each_entry_safe(nextp, tmp, &head_extra->lru, lru) {
- 		list_del(&nextp->lru);
- 		reset_page(nextp);
--		__free_page(nextp);
-+		ops->free(nextp);
- 	}
- 	reset_page(head_extra);
--	__free_page(head_extra);
-+	ops->free(head_extra);
- }
- 
- /* Initialize a newly allocated zspage */
-@@ -550,7 +565,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
- /*
-  * Allocate a zspage for the given size class
-  */
--static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
-+static struct page *alloc_zspage(struct zs_ops *ops, struct size_class *class,
-+				gfp_t flags)
- {
- 	int i, error;
- 	struct page *first_page = NULL, *uninitialized_var(prev_page);
-@@ -570,7 +586,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
- 	for (i = 0; i < class->pages_per_zspage; i++) {
- 		struct page *page;
- 
--		page = alloc_page(flags);
-+		page = ops->alloc(flags);
- 		if (!page)
- 			goto cleanup;
- 
-@@ -602,7 +618,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
- 
- cleanup:
- 	if (unlikely(error) && first_page) {
--		free_zspage(first_page);
-+		free_zspage(ops, first_page);
- 		first_page = NULL;
- 	}
- 
-@@ -796,7 +812,7 @@ fail:
+@@ -796,14 +796,11 @@ fail:
  	return notifier_to_errno(ret);
  }
  
--struct zs_pool *zs_create_pool(gfp_t flags)
-+struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops)
+-struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
++struct zs_pool *zs_create_pool(gfp_t flags)
  {
  	int i, ovhd_size;
  	struct zs_pool *pool;
-@@ -822,6 +838,11 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+ 
+-	if (!name)
+-		return NULL;
+-
+ 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
+ 	pool = kzalloc(ovhd_size, flags);
+ 	if (!pool)
+@@ -825,8 +822,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
  
  	}
  
-+	if (ops)
-+		pool->ops = ops;
-+	else
-+		pool->ops = &zs_default_ops;
-+
+-	pool->name = name;
+-
  	return pool;
  }
  EXPORT_SYMBOL_GPL(zs_create_pool);
-@@ -877,7 +898,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags)
- 
- 	if (!first_page) {
- 		spin_unlock(&class->lock);
--		first_page = alloc_zspage(class, flags);
-+		first_page = alloc_zspage(pool->ops, class, flags);
- 		if (unlikely(!first_page))
- 			return 0;
- 
-@@ -943,7 +964,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
- 	spin_unlock(&class->lock);
- 
- 	if (fullness == ZS_EMPTY)
--		free_zspage(first_page);
-+		free_zspage(pool->ops, first_page);
- }
- EXPORT_SYMBOL_GPL(zs_free);
- 
 diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index 25a4b4d..eb6efb6 100644
+index 907ff03..25a4b4d 100644
 --- a/drivers/staging/zsmalloc/zsmalloc.h
 +++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -14,6 +14,7 @@
- #define _ZS_MALLOC_H_
+@@ -28,7 +28,7 @@ enum zs_mapmode {
  
- #include <linux/types.h>
-+#include <linux/mm_types.h>
- 
- /*
-  * zsmalloc mapping modes
-@@ -26,9 +27,14 @@ enum zs_mapmode {
- 	ZS_MM_WO /* write-only (no copy-in at map time) */
- };
- 
-+struct zs_ops {
-+	struct page * (*alloc)(gfp_t);
-+	void (*free)(struct page *);
-+};
-+
  struct zs_pool;
  
--struct zs_pool *zs_create_pool(gfp_t flags);
-+struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops);
+-struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
++struct zs_pool *zs_create_pool(gfp_t flags);
  void zs_destroy_pool(struct zs_pool *pool);
  
  unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
