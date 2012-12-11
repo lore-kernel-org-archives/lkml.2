@@ -1,127 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab2LKSKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:10:45 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42641 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab2LKSKo (ORCPT
+	id S1754360Ab2LKSNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 13:13:06 -0500
+Received: from mga12.intel.com ([143.182.124.36]:17626 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754295Ab2LKSNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:10:44 -0500
-Date: Tue, 11 Dec 2012 19:10:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Ying Han <yinghan@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
- iterators
-Message-ID: <20121211181037.GH1612@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
- <1353955671-14385-4-git-send-email-mhocko@suse.cz>
- <CALWz4iwNvRd7AgEiSzd7Gr-7P5oh0uESS5A7rLZ7dZWeTjOzpQ@mail.gmail.com>
- <20121211155025.GB1612@dhcp22.suse.cz>
- <20121211161559.GF1612@dhcp22.suse.cz>
+	Tue, 11 Dec 2012 13:13:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211161559.GF1612@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFxh2SH9WcXbb+hD3PtWa4ZTqYNUxvbqZh27vwANuUTE8w@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	<1355234914.2356.85.camel@falcor>
+	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+	<CALLzPKZQ3=qNOxJk-yqDGEzqkcKLoc9tPPD8o9QbJOUOB1nWuQ@mail.gmail.com>
+	<CA+55aFxh2SH9WcXbb+hD3PtWa4ZTqYNUxvbqZh27vwANuUTE8w@mail.gmail.com>
+Date: Tue, 11 Dec 2012 20:12:53 +0200
+Message-ID: <CALLzPKakDLO-_ERScq_cAvAVLFU_5rRSyvoudjba=cFo96c-Mw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 11-12-12 17:15:59, Michal Hocko wrote:
-> On Tue 11-12-12 16:50:25, Michal Hocko wrote:
-> > On Sun 09-12-12 08:59:54, Ying Han wrote:
-> > > On Mon, Nov 26, 2012 at 10:47 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > [...]
-> > > > +               /*
-> > > > +                * Even if we found a group we have to make sure it is alive.
-> > > > +                * css && !memcg means that the groups should be skipped and
-> > > > +                * we should continue the tree walk.
-> > > > +                * last_visited css is safe to use because it is protected by
-> > > > +                * css_get and the tree walk is rcu safe.
-> > > > +                */
-> > > > +               if (css == &root->css || (css && css_tryget(css)))
-> > > > +                       memcg = mem_cgroup_from_css(css);
-> > > >
-> > > >                 if (reclaim) {
-> > > > -                       iter->position = id;
-> > > > +                       struct mem_cgroup *curr = memcg;
-> > > > +
-> > > > +                       if (last_visited)
-> > > > +                               css_put(&last_visited->css);
-> > > > +
-> > > > +                       if (css && !memcg)
-> > > > +                               curr = mem_cgroup_from_css(css);
-> > > 
-> > > In this case, the css_tryget() failed which implies the css is on the
-> > > way to be removed. (refcnt ==0) If so, why it is safe to call
-> > > css_get() directly on it below? It seems not preventing the css to be
-> > > removed by doing so.
-> > 
-> > Well, I do not remember exactly but I guess the code is meant to say
-> > that we need to store a half-dead memcg because the loop has to be
-> > retried. As we are under RCU hood it is just half dead.
-> > Now that you brought this up I think this is not safe as well because
-> > another thread could have seen the cached value while we tried to retry
-> > and his RCU is not protecting the group anymore.
-> 
-> Hmm, thinking about it some more, it _is_ be safe in the end.
-> 
-> We are safe because we are under RCU.
+On Tue, Dec 11, 2012 at 7:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Dec 11, 2012 at 9:40 AM, Kasatkin, Dmitry
+> <dmitry.kasatkin@intel.com> wrote:
+>>>
+>>> Quite frankly, this seems stupid.
+>>
+>> What exactly seems stupid here?
+>
+> What I said. Go back and read it. I gave three reasons. Why do you ask?
+>
+> I'll give one more reason, but you probably won't read *this* email
+> either, will you?
+>
+>> There are different filesystems which are not checked by IMA/EVM,
+>> such as pseudo-filesystems.
+>
+> Did you read my email?
+>
+> There are probably *also* individual that aren't checked by IMA/EVM
+> even on filesystems that *do* check other files.
+>
+> No?
+>
+> And your "pseudo-filesystems" argument is pretty stupid too, since WE
+> ALREADY HAVE A FLAG FOR THAT!
+>
+> Guess where it is? Oh, it's in the place I already mentioned makes
+> more sense. Look for S_PRIVATE in inode->i_flags, and IS_PRIVATE() in
+> users. It's what the other security models already use to avoid
+> bothering calling down to the security layers. The fact that the
+> integrity layer bypasses the normal security layer in
+> ima_file_check(), for example, is no excuse to then make up totally
+> new flags.
 
-And I've just realized that one sentence vanished while I was writing
-this.
+Actually S_PRIVATE does not work work for normal filesystems which IMA
+might want to ignore.
 
-So either we retry (while(!memcg)) and see the half-dead memcg with a
-valid cgroup because we are under rcu so cgroup iterator will find a
-next one. Or we race with somebody else on the iterator and that is
-described bellow.
-
-> And even if somebody else looked
-> at the half-dead memcg from iter->last_visited it cannot disappear
-> because the current one will retry without dropping RCU so the grace
-> period couldn't have been finished.
-> 
-> 		CPU0					CPU1
-> rcu_read_lock()						rcu_read_lock()
-> while(!memcg) {						while(!memcg)
-> [...]
-> spin_lock(&iter->iter_lock)
-> [...]
-> if (css == &root->css ||
-> 		(css && css_tryget(css)))
-> 	memcg = mem_cgroup_from_css(css)
-> [...]
-> if (css && !memcg)
-> 	curr = mem_cgroup_from_css(css)
-> if (curr)
-> 	css_get(curr);
-> spin_unlock(&iter->iter_lock)
-> 							spin_lock(&iter->iter_lock)
-> 							/* sees the half dead memcg but its cgroup is still valid */ 
-> 							[...]
-> 							spin_unlock(&iter->iter_lock)
-> /* we do retry */
-> }
-> rcu_read_unlock()
-> 
-> so the css_get will just helps to prevent from further code obfuscation.
-> 
-> Makes sense? The code gets much simplified later in the series,
-> fortunately.
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
+>
+> So let me repeat: adding a new superblock flag seems STUPID. Why is it
+> in a completely different place than all the other flags that we
+> already have for these kinds of things? Why should we add a new field,
+> when we have existing fields that seem to do exactly this, do it
+> better, and are already used?
+>
+> And don't ask me why without reading this email. OK?
+>
+>                  Linus
