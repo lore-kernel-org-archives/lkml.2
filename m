@@ -1,55 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab2LKMbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:31:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab2LKMby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:31:54 -0500
-From: Nikola Pajkovsky <npajkovs@redhat.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: WARNING: at drivers/gpu/drm/i915/i915_gem.c:3437 i915_gem_object_pin+0x151/0x1a0()
-Date: Tue, 11 Dec 2012 13:31:36 +0100
-Message-ID: <87vcc8vkgn.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (x86_64-pc-linux-gnu)
+	id S1753243Ab2LKMfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:35:08 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58415 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab2LKMfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 07:35:05 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hideki EIRAKU <hdk@igel.co.jp>
+Cc: lethal@linux-sh.org, magnus.damm@gmail.com, linux@arm.linux.org.uk,
+        horms@verge.net.au, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        m.szyprowski@samsung.com, matsu@igel.co.jp, dhobsong@igel.co.jp
+Subject: Re: [PATCH v4 1/2] iommu/shmobile: Add iommu driver for Renesas IPMMU modules
+Date: Tue, 11 Dec 2012 13:36:18 +0100
+Message-ID: <2554755.F1BBa57B5J@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121211.191042.313387652.hdk@igel.co.jp>
+References: <1350290093-998-1-git-send-email-hdk@igel.co.jp> <3581114.cp3kRzV18i@avalon> <20121211.191042.313387652.hdk@igel.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey folks,
+Hi Eiraku-san,
 
-looks like we still have some oops in i915. i915 maintainers do you have
-any ideas what's going on? I will try to trigger that oops later today
-and provide more information.
+On Tuesday 11 December 2012 19:10:42 Hideki EIRAKU wrote:
+> On Mon, 10 Dec 2012 16:55:58 +0100 Laurent Pinchart wrote:
+> > On Monday 15 October 2012 17:34:52 Hideki EIRAKU wrote:
+> >> This is the Renesas IPMMU driver and IOMMU API implementation.
+> >> 
+> >> The IPMMU module supports the MMU function and the PMB function.
+> > 
+> > That sentence make me believe that both MMU and PMB were supported by the
+> > driver, as "module" often refers to Linux kernel modules in this context.
+> > Maybe you could replace "module" by "hardware module".
+> 
+> OK,
+> 
+> >> The MMU function provides address translation by pagetable compatible
+> >> with ARMv6. The PMB function provides address translation including
+> >> tile-linear translation. This patch implements the MMU function.
+> >> 
+> >> The iommu driver does not register a platform driver directly because:
+> >> - the register space of the MMU function and the PMB function
+> >>   have a common register (used for settings flush), so they should
+> >>   ideally have a way to appropriately share this register.
+> >> - the MMU function uses the IOMMU API while the PMB function does not.
+> >> - the two functions may be used independently.
+> >> 
+> >> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
+> >> ---
+> >> 
+> >>  arch/arm/mach-shmobile/Kconfig              |    6 +
+> >>  arch/arm/mach-shmobile/Makefile             |    3 +
+> >>  arch/arm/mach-shmobile/include/mach/ipmmu.h |   16 ++
+> >>  arch/arm/mach-shmobile/ipmmu.c              |  150 ++++++++++++
+> >>  drivers/iommu/Kconfig                       |   56 +++++
+> >>  drivers/iommu/Makefile                      |    1 +
+> >>  drivers/iommu/shmobile-iommu.c              |  352 +++++++++++++++++++++
+> >>  7 files changed, 584 insertions(+), 0 deletions(-)
+> >>  create mode 100644 arch/arm/mach-shmobile/include/mach/ipmmu.h
+> >>  create mode 100644 arch/arm/mach-shmobile/ipmmu.c
+> >>  create mode 100644 drivers/iommu/shmobile-iommu.c
+> > 
+> > What is the reason for splitting the driver in two files ? Can't you put
+> > all the code in drivers/iommu/shmobile-iommu.c ? Storing driver code in
+> > arch/* is discouraged.
+> 
+> The reason is that I described in the above text. The PMB function is
+> completely different from the MMU function but both functions are on
+> the same IPMMU hardware module and sharing the register space. I think
+> that a driver using the PMB part which is not yet released should not
+> depend on the Linux's iommu interface, so I split the driver in two
+> files: the IPMMU platform driver part (in arch/arm/mach-shmobile/) and
+> Linux's iommu part (in drivers/iommu/). For the IPMMU platform driver part,
+> do you have any suggestions other than arch/* where this should go? It is a
+> generic platform device.
 
-[10733.442608] WARNING: at drivers/gpu/drm/i915/i915_gem.c:3437 i915_gem_object_pin+0x151/0x1a0()
-[10733.442612] Hardware name: 4243BQ9
-[10733.442615] Modules linked in: kvm_intel kvm
-[10733.442632] Pid: 1361, comm: X Not tainted 3.7.0 #19
-[10733.442635] Call Trace:
-[10733.442650]  [<ffffffff81095efa>] warn_slowpath_common+0x7a/0xb0
-[10733.442659]  [<ffffffff81095f45>] warn_slowpath_null+0x15/0x20
-[10733.442669]  [<ffffffff814dc041>] i915_gem_object_pin+0x151/0x1a0
-[10733.442679]  [<ffffffff814dc0ea>] i915_gem_object_pin_to_display_plane+0x5a/0x90
-[10733.442689]  [<ffffffff814d80f5>] ? i915_mutex_lock_interruptible+0x35/0xc0
-[10733.442700]  [<ffffffff814ec6b0>] intel_pin_and_fence_fb_obj+0x50/0x130
-[10733.442709]  [<ffffffff814ec9de>] intel_gen6_queue_flip+0x3e/0x160
-[10733.442719]  [<ffffffff814f01f2>] intel_crtc_page_flip+0x1d2/0x370
-[10733.442728]  [<ffffffff814bd633>] drm_mode_page_flip_ioctl+0x273/0x300
-[10733.442738]  [<ffffffff814aba20>] drm_ioctl+0x2d0/0x520
-[10733.442746]  [<ffffffff814bd3c0>] ? drm_mode_gamma_get_ioctl+0x120/0x120
-[10733.442757]  [<ffffffff818d172f>] ? _raw_spin_unlock_irqrestore+0x5f/0x70
-[10733.442768]  [<ffffffff810a4321>] ? del_timer+0x61/0x90
-[10733.442779]  [<ffffffff8111fc34>] ? rcu_cleanup_after_idle+0x24/0x40
-[10733.442829]  [<ffffffff811205b6>] ? rcu_prepare_for_idle+0x1b6/0x300
-[10733.442838]  [<ffffffff81121d89>] ? rcu_user_exit+0x69/0xc0
-[10733.442847]  [<ffffffff8119eafa>] do_vfs_ioctl+0x8a/0x2f0
-[10733.442859]  [<ffffffff810ebfbd>] ? trace_hardirqs_on+0xd/0x10
-[10733.442866]  [<ffffffff8119edf1>] sys_ioctl+0x91/0xa0
-[10733.442876]  [<ffffffff818d8d18>] tracesys+0xe1/0xe6
+I think both parts should go to drivers/iommu/. You can keep the code split 
+across two files, but I think you should register a single platform driver. 
+The IPMMU is a single hardware module, so it should be handled by a single 
+driver. That driver can expose two different APIs (IOMMU and whatever API will 
+be used for PMB), and you can make those APIs selectable as Kconfig options, 
+but they should in my opinion be implemented in a single driver.
+
+> >> + * You should have received a copy of the GNU General Public License
+> >> + * along with this program; if not, write to the Free Software
+> >> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
+> >> USA
+> > 
+> > You can remove this last paragraph, we don't want to patch every file in
+> > the kernel if the FSF moves to a new building :-)
+> 
+> OK, I will remove the paragraph.
+> 
+> >> +	for (dev = ipmmu_devices; dev; dev = dev->archdata.iommu) {
+> >> +		if (arm_iommu_attach_device(dev, iommu_mapping))
+> >> +			pr_err("arm_iommu_attach_device failed\n");
+> >> +	}
+> >> +err:
+> >> +	spin_unlock(&lock_add);
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +void ipmmu_add_device(struct device *dev)
+> >> +{
+> >> +	spin_lock(&lock_add);
+> >> +	dev->archdata.iommu = ipmmu_devices;
+> >> +	ipmmu_devices = dev;
+> > 
+> > That looks a bit hackish to me. I'd like to suggest a different approach,
+> > that would be compatible with supporting multiple IPMMU instances.
+> > 
+> > dev->archdata.iommu should point to a new sh_ipmmu_arch_data structure
+> > that would contain an IPMMU name (const char *) and a pointer to a struct
+> > shmobile_iommu_priv.
+> > 
+> > ipmmu_add_device() would take a new IPMMU name argument, allocate an
+> > sh_ipmmu_arch_data instance dynamically and initialize its name field to
+> > the name passed to the function. The shmobile_iommu_priv pointer would be
+> > set to NULL. No other operation would be performed (you will likely get
+> > rid of the global ipmmu_devices and iommu_mapping variables).
+> > 
+> > Then, the attach_dev operation handler would retrieve the
+> > dev->archdata.iommu pointer, cast that to an sh_ipmmu_arch_data, and
+> > retrieve the IPMMU associated with the name (either by walking a
+> > driver-global list of IPMMUs, or by using driver_find_device()).
+> > 
+> > This mechanism would get rid of several global variables in the driver
+> > (several of them would move to the shmobile_ipmmu_priv structure - which I
+> > would have named shmobile_ipmmu or even sh_ipmmu, but that's up to you)
+> > and add support for several IPMMU instances (there's 3 of them in the
+> > sh7372, even if we only need to support one right now it's still a good
+> > practice to design the driver in a way that multiple instances can be
+> > supported).
+> > 
+> > Could you try to rework the driiver in that direction ? You can have a
+> > look at the OMAP IOMMU driver if you need sample code, and obviously feel
+> > free to contact me if you have any question.
+> 
+> I agree about this is hackish. I don't mean to make an excuse,
+
+And I'm not blaming you :-)
+
+> but I could not find good sample code because no other drivers in the
+> upstream kernel use the arm_iommu_attach_device() API.
+
+This is all pretty new code, so reference implementations are missing, that's 
+true.
+
+> But I will try to modify the driver to support for several IPMMU
+> instances.
+
+Thank you. I can also give it a try if you want, just drop me an e-mail.
 
 -- 
-Nikola
+Regards,
+
+Laurent Pinchart
+
