@@ -1,141 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab2LKHBW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 02:01:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56849 "EHLO
+	id S1752848Ab2LKHDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 02:03:31 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58322 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2LKHBU (ORCPT
+	with ESMTP id S1751223Ab2LKHD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 02:01:20 -0500
-Date: Tue, 11 Dec 2012 08:00:59 +0100
+	Tue, 11 Dec 2012 02:03:29 -0500
+Date: Tue, 11 Dec 2012 08:03:07 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-leds@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] pwm: core: Export of_pwm_request() so client
- drivers can also use it
-Message-ID: <20121211070059.GA8294@avionic-0098.adnet.avionic-design.de>
+Subject: Re: [PATCH v3 1/4] leds: leds-pwm: Convert to use devm_get_pwm
+Message-ID: <20121211070307.GB8294@avionic-0098.adnet.avionic-design.de>
 References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com>
- <1355133637-2784-4-git-send-email-peter.ujfalusi@ti.com>
+ <1355133637-2784-2-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+	protocol="application/pgp-signature"; boundary="OwLcNYc0lM97+oe1"
 Content-Disposition: inline
-In-Reply-To: <1355133637-2784-4-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1355133637-2784-2-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:2fpheBloGYjuxQ6VSdbBnZYwSbp0TQlbBRuuCFT9Fqv
- G2cIZETYdBtJj2OO+lX4+38JQT7NHk4g3payhq8+YOZHrU8jsh
- VnBQdP7WILLW8GqV1rgWNvmmuS0OlmT6JscvE3Hl1pZnhWDalo
- Tv+qK1oZyVuDO+n/MgRHhvzgHqnDDfV6wolo3ILXICqrEoM9at
- H7JtS/+b2KNvF90Ky24Y271mWUEjVDOT3F4cDsIb90GlA6E9oG
- 8BMSmHL+4uvLzrJuor92JK0xAHtXJ8V+/KMMuEo9QL1tOQuLXN
- dErZqhz2jYED7xj4pZ8ELWqyU0Lo4QwVJxki/U/qYgIOacdjQ+
- 5ifKKtuGCBi3ECzyGYYGRusj5fYaPGyYJiZNpy+zoiJo7i72BH
- GVEGbHtuwCs0E25Z6W8MuWOeSylOwu0NgE=
+X-Provags-ID: V02:K0:KP43d8qIEkV8dpU7p4bs7GnZzlBpMa986R/3B1g4KW6
+ YjH2iRPHADcr04l60BBXml8DTzjGFh/++c/DjyqTLPR1KcZzPL
+ BaHH1x/URsl0KolRJjbmvtrDWPOOf3eMtjONR920KiVS1TN3IG
+ 7QL2Lru1k92UhIHknZnfrepg1HY14PXhJ//C3/hWarVUfoR1LK
+ vy3PKl4jYyXiEjEHTXNE5ppwoW9/Eyrbzh2NLtMvGu+pwkw9IW
+ BlXshN5O33xOUyw0EmS7VNlAdU8NYC2wYrlcSohgnxUp4i7cJI
+ 6gP4PFDnyIUTdYnc9LvK2+N2EvGWC9qXguaL8AB3VfWtP9Gdf+
+ ngMZtq7TPgqDB1a/RazS/AhNbhm3zP/U2OiYmLqO4YZJ6YgY4l
+ e216dAN0o/rXjjIiAF/mSQlGpFahyhysmY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---5vNYLRcllDrimb99
+--OwLcNYc0lM97+oe1
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Dec 10, 2012 at 11:00:36AM +0100, Peter Ujfalusi wrote:
-> Allow client driver to use of_pwm_request() to get the pwm they need. This
-> is needed for drivers which handle more than one pwm separately, like
-> leds-pwm driver which have:
-
-Hi Peter,
-
-I really was hoping that we didn't have to export this function, but I
-can't think of any other way to solve the problem at hand either. I'd
-prefer to rename the function to of_pwm_get() at the same time to keep
-consistent with other subsystems that provide similar functionality.
-Also, please use all-caps for PWM in prose. And while at it, you can
-drop the "core:" and "so client drivers can also use it" from the
-subject line.
-
-> pwmleds {
-> 	compatible =3D "pwm-leds";
-> 	kpad {
-> 		label =3D "omap4::keypad";
-> 		pwms =3D <&twl_pwm 0 7812500>;
-> 		max-brightness =3D <127>;
-> 	};
->=20
-> 	charging {
-> 		label =3D "omap4:green:chrg";
-> 		pwms =3D <&twl_pwmled 0 7812500>;
-> 		max-brightness =3D <255>;
-> 	};
-> };
->=20
-> in the dts files.
+On Mon, Dec 10, 2012 at 11:00:34AM +0100, Peter Ujfalusi wrote:
+> Update the driver to use the new API for requesting pwm so we can take
+> advantage of the pwm_lookup table to find the correct pwm to be used for =
+the
+> LED functionality.
+> If the devm_get_pwm fails we fall back to legacy mode to try to get the p=
+wm.
 >=20
 > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 > ---
->  drivers/pwm/core.c  | 2 +-
->  include/linux/pwm.h | 7 +++++++
->  2 files changed, 8 insertions(+), 1 deletion(-)
+>  drivers/leds/leds-pwm.c  | 19 ++++++-------------
+>  include/linux/leds_pwm.h |  2 +-
+>  2 files changed, 7 insertions(+), 14 deletions(-)
 >=20
-> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> index 903138b..3a7ebcc 100644
-> --- a/drivers/pwm/core.c
-> +++ b/drivers/pwm/core.c
-> @@ -486,7 +486,7 @@ static struct pwm_chip *of_node_to_pwmchip(struct dev=
-ice_node *np)
->   * becomes mandatory for devices that look up the PWM device via the con=
-_id
->   * parameter.
->   */
-> -static struct pwm_device *of_pwm_request(struct device_node *np,
-> +struct pwm_device *of_pwm_request(struct device_node *np,
->  					 const char *con_id)
->  {
->  	struct pwm_device *pwm =3D NULL;
-
-This is missing an EXPORT_SYMBOL_GPL.
-
-> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> index 6d661f3..d70ffe3 100644
-> --- a/include/linux/pwm.h
-> +++ b/include/linux/pwm.h
-> @@ -175,6 +175,7 @@ struct pwm_device *of_pwm_xlate_with_flags(struct pwm=
-_chip *pc,
->  		const struct of_phandle_args *args);
+> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+> index 2157524..351257c 100644
+> --- a/drivers/leds/leds-pwm.c
+> +++ b/drivers/leds/leds-pwm.c
+> @@ -67,12 +67,11 @@ static int led_pwm_probe(struct platform_device *pdev)
+>  		cur_led =3D &pdata->leds[i];
+>  		led_dat =3D &leds_data[i];
 > =20
->  struct pwm_device *pwm_get(struct device *dev, const char *consumer);
-> +struct pwm_device *of_pwm_request(struct device_node *np, const char *co=
-n_id);
+> -		led_dat->pwm =3D pwm_request(cur_led->pwm_id,
+> -				cur_led->name);
+> +		led_dat->pwm =3D devm_pwm_get(&pdev->dev, cur_led->name);
+>  		if (IS_ERR(led_dat->pwm)) {
+>  			ret =3D PTR_ERR(led_dat->pwm);
+> -			dev_err(&pdev->dev, "unable to request PWM %d\n",
+> -					cur_led->pwm_id);
+> +			dev_err(&pdev->dev, "unable to request PWM for %s\n",
+> +				cur_led->name);
+>  			goto err;
+>  		}
 
-While at it, maybe rename the con_id parameter as well to match
-pwm_get().
+The commit message says that legacy mode is used as fallback if
+devm_get_pwm() (that should really be devm_pwm_get() btw) fails but I
+don't see where pwm_request() is called.
 
 Thierry
 
---5vNYLRcllDrimb99
+--OwLcNYc0lM97+oe1
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQxtorAAoJEN0jrNd/PrOhcNgP/iJ7T4DBj/cHTTczpOm8huIc
-Q3cw7TWMPn8KDsO26u9DlbsQDT7dwLnyvaP0b5IP4mP8yH5VNWrE3Fm7a7hNhPKA
-8GrfJJXjoUu9bERzuP6ChDNFW93IDRwUVOczENpGe7x9+33Eu3XkImk/caQi3Tpr
-xc5IJ873Gg2JGBIZUPHUvBPnh6Melq/GXZyGWeXUvNDlBgpUdNRSPMdVj3lA2skL
-lZFTKJs2baZ7mnXqQ+LUtOkuOUawJiDhNm2IbtPI2zccgoPfuDZD0WaAHLCK9C8q
-ysPa4d5iU1TwdH/7/lVnTC0gSQIyeRCQ6/HEYyq34+c2+Q2DahmgTU6cCAWdv40o
-wsOSdCBiF0gYPoC4MU+wJlIWcj4sd/uyhVX4UIecrCPEzPKhGJqoezYuNss8IrnN
-6UheWs6kUYHAoZAGnZLZh2EAEsTVFQA7bByixUOhiFBEKnafZeTeAWg4YIpvQb0S
-fjlgHkSc/QyFptV5HRNu7KF4p6q4DeFL958/FTL1pzYKjvFjil3+7z0mbmXCkjbN
-m/4KxIZL+HcFXdJmUw2sjGwnPUMRg5wOpaCO9axOmzw8HgMbfGOnCOt5Oj9FP/Y8
-Y/qmCv24lPZNjz1kryw95nVTkyEfqkkN4p3Zh5GV93J5vdrY1EQ9em7I5FG9Mk3U
-oxD1az+ckzDskKVzAZS2
-=Ei8w
+iQIcBAEBAgAGBQJQxtqrAAoJEN0jrNd/PrOhXCAP/16NmcodkPZtMJg+A8NHuMp9
+dwUAuX3de6qMQijqjF4VCCN9uqeDlxBQRNAICAl1Iif8zkpQApVNKrVPKGLdiGPI
+OPuyrw6QwgQ7rW/e+ndZAdSUePQi5Pq9JZZNwnk2KbfP4e3QXjDo6GObKz5DcKua
+Ur0I9zVfyXyyZsnq6LjzpebpHzp9o3wnHXFh1YPkq94A0XNXgiG2+IHCWhZIoDUz
+swT3ZXPeAF+QW1ZmXmEuHPXP7KsJiZ7VfjkmeNUNFqrMsSe3w/3BF3qvJGYcVRwj
+1oegqil9oDXx/jHi8F0LdyRpFUnPb0cyrZlNQq/0fGrNU0GsHJA6JnhzoZ1HhfR8
+6uQ2zBL9hY3oZm25SEluZ8PknGOXhssQk3NLol+pQdnehA0wCdqtSi8WWDRin1+O
+MmSSaIm4gVXul0KrwARwplxvteYgFIcFuZpojBQ0SjdYntrjih3abQAsyWR9rbVO
+zZ0vFXOLmCXjykW1YhszVE6FozCy2ed+eEcmiU8N0JjbzgsunAQxuSdBmSRrzZZd
+ZcgFgRfPNlNNS+hRp+YkCKq5FCPGD2RNy2jCMxPFecQuW7bwjuZMnt1MGTwXagxu
++pIHKdnKuWcG0zC//6WuSiDe4wlLIXMsWTr8Fbf/ATBUD/8bCxAoJFfM6AD3sILm
+sT5Bq/qM/+Xz+JCavxIE
+=vBuo
 -----END PGP SIGNATURE-----
 
---5vNYLRcllDrimb99--
+--OwLcNYc0lM97+oe1--
