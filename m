@@ -1,92 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab2LKEkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 23:40:47 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56108 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab2LKEkq (ORCPT
+	id S1752752Ab2LKEoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 23:44:04 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:34646 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2LKEoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 23:40:46 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-8d-50c6b94cd2ea
-Date: Tue, 11 Dec 2012 13:40:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-Message-ID: <20121211044044.GC22698@blaptop>
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
- <50AD739A.30804@linaro.org>
- <50B6E1F9.5010301@linaro.org>
- <20121204000042.GB20395@bbox>
- <50BD4A70.9060506@linaro.org>
- <20121204072207.GA9782@blaptop>
- <50BE4B64.6000003@linaro.org>
- <20121205041855.GB9782@blaptop>
- <50C28EB4.6030505@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C28EB4.6030505@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 10 Dec 2012 23:44:01 -0500
+Date: Mon, 10 Dec 2012 23:43:58 -0500 (EST)
+Message-Id: <20121210.234358.788502498079611342.davem@davemloft.net>
+To: abhi.c.pawar@gmail.com
+Cc: amwang@redhat.com, joe@perches.com, jmorris@namei.org, edumazet@google.com,
+        pablo@netfilter.org, kaber@trash.net, coreteam@netfilter.org,
+        yoshfuji@linux-ipv6.org, netfilter-devel@vger.kernel.org,
+        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
+        netfilter@vger.kernel.org, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        nhorman@tuxdriver.com, kuznet@ms2.inr.ac.ru
+Subject: Re: [PATCH RESEND] net: remove obsolete simple_strto<foo>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+kxV1GBxdZKnjqs1bm1qBJE8dGXtOfqP_oYbB-hw5Ga1xE65g@mail.gmail.com>
+References: <1355130748-7828-1-git-send-email-abhi.c.pawar@gmail.com>
+	<20121210.141002.450030380391247897.davem@davemloft.net>
+	<CA+kxV1GBxdZKnjqs1bm1qBJE8dGXtOfqP_oYbB-hw5Ga1xE65g@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 04:49:56PM -0800, John Stultz wrote:
-> On 12/04/2012 08:18 PM, Minchan Kim wrote:
-> >On Tue, Dec 04, 2012 at 11:13:40AM -0800, John Stultz wrote:
-> >>I don't think the problem is when vmas being marked VM_VOLATILE are
-> >>being merged, its that when we mark the vma as *non-volatile*, and
-> >>remove the VM_VOLATILE flag we merge the non-volatile vmas with
-> >>neighboring vmas. So preserving the purged flag during that merge is
-> >>important. Again, the example I used to trigger this was an
-> >>alternating pattern of volatile and non volatile vmas, then marking
-> >>the entire range non-volatile (though sometimes in two overlapping
-> >>passes).
-> >Understood. Thanks.
-> >Below patch solves your problems? It's simple than yours.
-> 
-> Yea, this is nicer then my fix.
-> Although I still need the purged handling in the vma merge code for
-> me to see the behavior I expect in my tests.
-> 
-> I've integrated your patch and repushed my queue here:
-> http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/minchan-anonvol
-> 
-> git://git.linaro.org/people/jstultz/android-dev.git dev/minchan-anonvol
-> 
-> >Anyway, both yours and mine are not right fix.
-> >As I mentioned, locking scheme is broken.
-> >We need anon_vma_lock to handle purged and we should consider fork
-> >case, too.
-> Hrm. I'm sure you're right, as I've not yet fully grasped all the
-> locking rules here.  Could you clarify how it is broken? And why is
-> the anon_vma_lock needed to manage the purged state that is part of
-> the vma itself?
+From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Date: Tue, 11 Dec 2012 06:36:59 +0530
 
-If you don't hold anon->lock, merge/split/fork can race with try_to_unmap
-so vma->[purged|vm_flags] would lose consistency.
+> It looks like there are two occurences of simple_strtoul which has not been
+> removed cleanly from the patch.
+> They are in netpoll.c and debugfs_sta.c
+> I will send the modified corrected clean patch shortly.
 
-> 
-> thanks
-> -john
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+You can't simply send me a replacement patch, since I already applied
+the original one and that patch will not be reverted.
