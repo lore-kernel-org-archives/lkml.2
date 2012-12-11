@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab2LKCgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 21:36:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:2424 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab2LKCeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 21:34:37 -0500
-X-IronPort-AV: E=Sophos;i="4.84,256,1355068800"; 
-   d="scan'208";a="6371868"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
-        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v3 5/5] page_alloc: Bootmem limit with movablecore_map
-Date: Tue, 11 Dec 2012 10:33:27 +0800
-Message-Id: <1355193207-21797-6-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/11 10:33:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/11 10:33:39,
-	Serialize complete at 2012/12/11 10:33:39
+	id S1752090Ab2LKCjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 21:39:18 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49852 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab2LKCjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 21:39:17 -0500
+Message-ID: <50C69CC8.3080107@linux.vnet.ibm.com>
+Date: Tue, 11 Dec 2012 10:39:04 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: TIP tree's master branch failed to boot up
+References: <50C56A13.9040604@linux.vnet.ibm.com> <50C615A3.8090400@zytor.com> <50C698FD.7000503@linux.vnet.ibm.com> <50C69BC8.2030702@zytor.com>
+In-Reply-To: <50C69BC8.2030702@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121102-2000-0000-0000-00000A355D08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch make sure bootmem will not allocate memory from areas that
-may be ZONE_MOVABLE. The map info is from movablecore_map boot option.
+On 12/11/2012 10:34 AM, H. Peter Anvin wrote:
+> On 12/10/2012 06:22 PM, Michael Wang wrote:
+>> On 12/11/2012 01:02 AM, H. Peter Anvin wrote:
+>>> On 12/09/2012 08:50 PM, Michael Wang wrote:
+>>>> Hi, Folks
+>>>>
+>>>> I'm testing with the latest tip tree's master branch 3.7.0-rc8 and
+>>>> failed to boot up my server, it's hung at very beginning and I could not
+>>>> catch any useful log, is there any one else got this problem or I'm the
+>>>> only one?.
+>>>>
+>>>> Regards,
+>>>> Michael Wang
+>>>>
+>>>
+>>> 32 or 64 bits?
+>>
+>> 64 bits.
+>>
+> 
+> Thanks.  We're working on that patchset and have found a bunch of
+> issues, hopefully we can get them resolved very soon.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
----
- include/linux/memblock.h |    1 +
- mm/memblock.c            |   18 +++++++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletions(-)
+I see, let me know if you need more info :)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d452ee1..6e25597 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -42,6 +42,7 @@ struct memblock {
- 
- extern struct memblock memblock;
- extern int memblock_debug;
-+extern struct movablecore_map movablecore_map;
- 
- #define memblock_dbg(fmt, ...) \
- 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 6259055..197c3be 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -101,6 +101,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
- {
- 	phys_addr_t this_start, this_end, cand;
- 	u64 i;
-+	int curr = movablecore_map.nr_map - 1;
- 
- 	/* pump up @end */
- 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
-@@ -114,13 +115,28 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
- 		this_start = clamp(this_start, start, end);
- 		this_end = clamp(this_end, start, end);
- 
--		if (this_end < size)
-+restart:
-+		if (this_end <= this_start || this_end < size)
- 			continue;
- 
-+		for (; curr >= 0; curr--) {
-+			if ((movablecore_map.map[curr].start_pfn << PAGE_SHIFT)
-+			    < this_end)
-+				break;
-+		}
-+
- 		cand = round_down(this_end - size, align);
-+		if (curr >= 0 &&
-+		    cand < movablecore_map.map[curr].end_pfn << PAGE_SHIFT) {
-+			this_end = movablecore_map.map[curr].start_pfn
-+				   << PAGE_SHIFT;
-+			goto restart;
-+		}
-+
- 		if (cand >= this_start)
- 			return cand;
- 	}
-+
- 	return 0;
- }
- 
--- 
-1.7.1
+Regards,
+Michael Wang
+
+> 
+> 	-hpa
+> 
+> 
 
