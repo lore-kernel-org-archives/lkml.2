@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2LKESG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 23:18:06 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46166 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab2LKESE (ORCPT
+	id S1752568Ab2LKEYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 23:24:04 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49851 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2LKEYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 23:18:04 -0500
-Date: Tue, 11 Dec 2012 15:18:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.7
-Message-Id: <20121211151801.6f4b5765299e78b68551adba@canb.auug.org.au>
-In-Reply-To: <CA+55aFw9N4DTgYfrPCzDNYiL4=0-oi5jXuijHf=QVVeeOxFYrg@mail.gmail.com>
-References: <CA+55aFw9N4DTgYfrPCzDNYiL4=0-oi5jXuijHf=QVVeeOxFYrg@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Dec_2012_15_18_01_+1100_T4k2PajfGQQz9GL="
+	Mon, 10 Dec 2012 23:24:02 -0500
+Message-ID: <50C6B530.3030307@linux.vnet.ibm.com>
+Date: Tue, 11 Dec 2012 09:53:12 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-2-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1355127754-8444-2-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121104-4790-0000-0000-000005F83FF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Dec_2012_15_18_01_+1100_T4k2PajfGQQz9GL=
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Alex,
 
-Hi all,
+On 12/10/2012 01:52 PM, Alex Shi wrote:
+> It is impossible to miss a task allowed cpu in a eligible group.
 
-On Mon, 10 Dec 2012 19:59:50 -0800 Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
->
-> Anyway, it's been a somewhat drawn out release despite the 3.7 merge
-> window having otherwise appeared pretty straightforward, and none of
-> the rc's were all that big either. But we're done, and this means that
-> the merge window will close on Christmas eve.
->=20
-> Or rather, I'll probably close it a couple of days early. For obvious
-> reasons. It's the main commercial holiday of the year, after all.
->=20
-> So aim for winter solstice, and no later. Deal? And even then, I might
-> be deep into the gl=C3=B6gg.
+The one thing I am concerned with here is if there is a possibility of
+the task changing its tsk_cpus_allowed() while this code is running.
 
-Hopefully people will submit earlier rather than later as currently there
-are more commits in linux-next than every before ...  Also, please resist
-the usual rebase before submitting frenzy :-(
+i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
+for the task changes,perhaps by the user himself,which might not include
+the cpus in the idle group.After this find_idlest_cpu() is called.I mean
+a race condition in short.Then we might not have an eligible cpu in that
+group right?
 
-See http://neuling.org/linux-next-size.html (double click to see the
-complete history).
+> And since find_idlest_group only return a different group which
+> excludes old cpu, it's also imporissible to find a new cpu same as old
+> cpu.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This I agree with.
 
---Signature=_Tue__11_Dec_2012_15_18_01_+1100_T4k2PajfGQQz9GL=
-Content-Type: application/pgp-signature
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 59e072b..df99456 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3150,11 +3150,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>  		}
+>  
+>  		new_cpu = find_idlest_cpu(group, p, cpu);
+> -		if (new_cpu == -1 || new_cpu == cpu) {
+> -			/* Now try balancing at a lower domain level of cpu */
+> -			sd = sd->child;
+> -			continue;
+> -		}
+>  
+>  		/* Now try balancing at a lower domain level of new_cpu */
+>  		cpu = new_cpu;
+> 
+Regards
+Preeti U Murthy
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQxrP5AAoJEECxmPOUX5FE5A0P/0VGx5dakNljQWe1Qg68QOh0
-ek5PNw67mBloKhpoGi2n0h8IALPXeU0wYF3n3f/0NYS5XMOOSXdz7P+jTRfzUZdx
-JECS9GX6RtGgMl4zQDpNbYMbCOsnR6STPMJFXgtTTgN2STQ2rBAO3drWVxW/fgy8
-ROu50i8B4soR3XkJ9ONEw8TnundGVm90sRtt7fPAEog414G4YovGx1sCo8CRq7qj
-DXyNP0TI/Ade/ghaHsuzOWEvFAfeNIdDU8quNPSUdl2xgMcnADrg7pH5YWYzNobt
-YTuq8C4uZHC9luANpASPX6k9ecTVsXRBj3LHn3J2cVHr6nh4irDV7wAOApsO6BYP
-EhhYx1DpOTmVroJxbyLaSiobtSadU3zPU/7SsoK8rlhVgRRMVDXaOyI/Zi2PiDfz
-pBsbrcz3E8e/F53xhWlkCLgDTRtlgtwEnaTm33ffNU7cQQ36ydNOQIjBcGzVxDnj
-taBrMl3zphgSEsK7nCZJetnAbdkvpUcVEx59SXXQBl3ce75TETPTVY+p7UzO/pV8
-71f5nBWTRnARhll114CjSZNiacM4pO3hloMx56Au0Ade4BbYlCP38vPqbiK3prfQ
-Ax2A7Nf8XW0e4/9q8XGtJg72ALk5XvohHVKf4qKHkfqQxPY6LRwen45N8VDNDI29
-q76CiLuf+SVIzMjmIOdS
-=8IaW
------END PGP SIGNATURE-----
-
---Signature=_Tue__11_Dec_2012_15_18_01_+1100_T4k2PajfGQQz9GL=--
