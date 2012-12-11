@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab2LKF2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:28:09 -0500
-Received: from mga03.intel.com ([143.182.124.21]:49086 "EHLO mga03.intel.com"
+	id S1752235Ab2LKF3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 00:29:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:29328 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998Ab2LKF2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:28:07 -0500
+	id S1751055Ab2LKF3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 00:29:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,256,1355126400"; 
-   d="scan'208";a="229725594"
-Message-ID: <50C6C462.6030808@intel.com>
-Date: Tue, 11 Dec 2012 13:28:02 +0800
+   d="scan'208";a="229725797"
+Message-ID: <50C6C4A9.2090003@intel.com>
+Date: Tue, 11 Dec 2012 13:29:13 +0800
 From: Alex Shi <alex.shi@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
@@ -20,61 +20,98 @@ CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
         paul.gortmaker@windriver.com, akpm@linux-foundation.org,
         paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         pjt@google.com, vincent.guittot@linaro.org
-Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-2-git-send-email-alex.shi@intel.com> <50C6B530.3030307@linux.vnet.ibm.com>
-In-Reply-To: <50C6B530.3030307@linux.vnet.ibm.com>
+Subject: Re: [PATCH 02/18] sched: fix find_idlest_group mess logical
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-3-git-send-email-alex.shi@intel.com> <50C6BFB9.7030405@linux.vnet.ibm.com>
+In-Reply-To: <50C6BFB9.7030405@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 12:23 PM, Preeti U Murthy wrote:
+On 12/11/2012 01:08 PM, Preeti U Murthy wrote:
 > Hi Alex,
 > 
 > On 12/10/2012 01:52 PM, Alex Shi wrote:
->> It is impossible to miss a task allowed cpu in a eligible group.
-> 
-> The one thing I am concerned with here is if there is a possibility of
-> the task changing its tsk_cpus_allowed() while this code is running.
-> 
-> i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
-> for the task changes,perhaps by the user himself,which might not include
-> the cpus in the idle group.After this find_idlest_cpu() is called.I mean
-> a race condition in short.Then we might not have an eligible cpu in that
-> group right?
-
-your worry make sense, but the code handle the situation, in
-select_task_rq(), it will check the cpu allowed again. if the answer is
-no, it will fallback to old cpu.
-> 
->> And since find_idlest_group only return a different group which
->> excludes old cpu, it's also imporissible to find a new cpu same as old
->> cpu.
-> 
-> This I agree with.
-> 
+>> There is 4 situations in the function:
+>> 1, no task allowed group;
+>> 	so min_load = ULONG_MAX, this_load = 0, idlest = NULL
+>> 2, only local group task allowed;
+>> 	so min_load = ULONG_MAX, this_load assigned, idlest = NULL
+>> 3, only non-local task group allowed;
+>> 	so min_load assigned, this_load = 0, idlest != NULL
+>> 4, local group + another group are task allowed.
+>> 	so min_load assigned, this_load assigned, idlest != NULL
+>>
+>> Current logical will return NULL in first 3 kinds of scenarios.
+>> And still return NULL, if idlest group is heavier then the
+>> local group in the 4th situation.
+>>
+>> Actually, I thought groups in situation 2,3 are also eligible to host
+>> the task. And in 4th situation, agree to bias toward local group.
+>> So, has this patch.
+>>
 >> Signed-off-by: Alex Shi <alex.shi@intel.com>
 >> ---
->>  kernel/sched/fair.c |    5 -----
->>  1 files changed, 0 insertions(+), 5 deletions(-)
+>>  kernel/sched/fair.c |   12 +++++++++---
+>>  1 files changed, 9 insertions(+), 3 deletions(-)
 >>
 >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 59e072b..df99456 100644
+>> index df99456..b40bc2b 100644
 >> --- a/kernel/sched/fair.c
 >> +++ b/kernel/sched/fair.c
->> @@ -3150,11 +3150,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>> @@ -2953,6 +2953,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+>>  		  int this_cpu, int load_idx)
+>>  {
+>>  	struct sched_group *idlest = NULL, *group = sd->groups;
+>> +	struct sched_group *this_group = NULL;
+>>  	unsigned long min_load = ULONG_MAX, this_load = 0;
+>>  	int imbalance = 100 + (sd->imbalance_pct-100)/2;
+>>  
+>> @@ -2987,14 +2988,19 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+>>  
+>>  		if (local_group) {
+>>  			this_load = avg_load;
+>> -		} else if (avg_load < min_load) {
+>> +			this_group = group;
+>> +		}
+>> +		if (avg_load < min_load) {
+>>  			min_load = avg_load;
+>>  			idlest = group;
 >>  		}
+>>  	} while (group = group->next, group != sd->groups);
 >>  
->>  		new_cpu = find_idlest_cpu(group, p, cpu);
->> -		if (new_cpu == -1 || new_cpu == cpu) {
->> -			/* Now try balancing at a lower domain level of cpu */
->> -			sd = sd->child;
->> -			continue;
->> -		}
+>> -	if (!idlest || 100*this_load < imbalance*min_load)
+>> -		return NULL;
+>> +	if (this_group && idlest != this_group)
+>> +		/* Bias toward our group again */
+>> +		if (100*this_load < imbalance*min_load)
+>> +			idlest = this_group;
+> 
+> If the idlest group is heavier than this_group(or to put it better if
+> the difference in the loads of the local group and idlest group is less
+> than a threshold,it means there is no point moving the load from the
+> local group) you return NULL,that immediately means this_group is chosen
+> as the candidate group for the task to run,one does not have to
+> explicitly return that.
+
+In situation 4, this_group is not NULL.
+> 
+> Let me explain:
+> find_idlest_group()-if it returns NULL to mark your case4,it means there
+> is no idler group than the group to which this_cpu belongs to, at that
+> level of sched domain.Which is fair enough.
+> 
+> So now the question is under such a circumstance which is the idlest
+> group so far.It is the group containing this_cpu,i.e.this_group.After
+> this sd->child is chosen which is nothing but this_group(sd hierarchy
+> moves towards the cpu it belongs to). Again here the idlest group search
+> begins.
+> 
+>> +
+>>  	return idlest;
+>>  }
 >>  
->>  		/* Now try balancing at a lower domain level of new_cpu */
->>  		cpu = new_cpu;
 >>
 > Regards
 > Preeti U Murthy
