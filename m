@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2LKRv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:51:28 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:41062 "EHLO
+	id S1754120Ab2LKRwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:52:00 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41080 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab2LKRv0 (ORCPT
+	with ESMTP id S1753795Ab2LKRv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:51:26 -0500
-Date: Tue, 11 Dec 2012 12:51:23 -0500 (EST)
-Message-Id: <20121211.125123.1239332621724872493.davem@davemloft.net>
-To: abhi.c.pawar@gmail.com
-Cc: pablo@netfilter.org, kaber@trash.net, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, linville@tuxdriver.com,
-        johannes@sipsolutions.net, amwang@redhat.com, edumazet@google.com,
-        nhorman@tuxdriver.com, joe@perches.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH 2/2] net: remove obsolete simple_strto<foo>
+	Tue, 11 Dec 2012 12:51:58 -0500
+Date: Tue, 11 Dec 2012 12:51:56 -0500 (EST)
+Message-Id: <20121211.125156.1507794854679959729.davem@davemloft.net>
+To: will.deacon@arm.com
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        benh@kernel.crashing.org, arnd@arndb.de, james.hogan@imgtec.com,
+        matthew@mattleach.net, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 04/10] net: smc911x: use io{read,write}*_rep
+ accessors
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1355203852-12749-1-git-send-email-abhi.c.pawar@gmail.com>
-References: <1355203852-12749-1-git-send-email-abhi.c.pawar@gmail.com>
+In-Reply-To: <20121211144949.GD16759@mudshark.cambridge.arm.com>
+References: <1355166762-15133-5-git-send-email-will.deacon@arm.com>
+	<20121210.154705.1773845547652835423.davem@davemloft.net>
+	<20121211144949.GD16759@mudshark.cambridge.arm.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -29,11 +28,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-Date: Tue, 11 Dec 2012 11:00:52 +0530
+From: Will Deacon <will.deacon@arm.com>
+Date: Tue, 11 Dec 2012 14:49:49 +0000
 
-> This patch removes the redundant occurences of simple_strto<foo>
+> On Mon, Dec 10, 2012 at 08:47:05PM +0000, David Miller wrote:
+>> This misses the two uses in smsc911x_tx_writefifo and
+>> smsc911x_rx_readfifo.
 > 
-> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+> Well spotted, updated patch below.
 
-Applied.
+Although I'd like to take credit, the compiler told me :-)
+
+> From b46e33465e755e945136d19938c9a8331cbafce7 Mon Sep 17 00:00:00 2001
+> From: Matthew Leach <matthew@mattleach.net>
+> Date: Tue, 6 Nov 2012 14:51:11 +0000
+> Subject: [PATCH v3] net: smc911x: use io{read,write}*_rep accessors
+> 
+> The {read,write}s{b,w,l} operations are not defined by all
+> architectures and are being removed from the asm-generic/io.h
+> interface.
+> 
+> This patch replaces the usage of these string functions in the smc911x
+> accessors with io{read,write}{8,16,32}_rep calls instead.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Matthew Leach <matthew@mattleach.net>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+
+Applied, thanks.
