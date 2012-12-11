@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab2LKMnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:43:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab2LKMnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:43:06 -0500
-Date: Tue, 11 Dec 2012 14:46:16 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: pmoore@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mprivozn@redhat.com
-Subject: Re: [PATCH net-next rfc 0/2] Allow unpriveledge user to disable
- tuntap queue
-Message-ID: <20121211124616.GC15435@redhat.com>
-References: <1355223827-57290-1-git-send-email-jasowang@redhat.com>
+	id S1753375Ab2LKMnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:43:40 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42780 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2LKMnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 07:43:39 -0500
+Date: Tue, 11 Dec 2012 13:43:32 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: frank.rowand@am.sony.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC][PATCH RT 3/4] sched/rt: Use IPI to trigger RT task push
+ migration instead of pulling
+In-Reply-To: <1355190830.17101.280.camel@gandalf.local.home>
+Message-ID: <alpine.LFD.2.02.1212111326310.3028@ionos>
+References: <20121207235615.206108556@goodmis.org>  <20121208000900.613917378@goodmis.org> <50C682F6.5030709@am.sony.com>  <50C68922.5030203@am.sony.com> <1355190830.17101.280.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355223827-57290-1-git-send-email-jasowang@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 07:03:45PM +0800, Jason Wang wrote:
-> This series is an rfc that tries to solve the issue that the queues of tuntap
-> could not be disabled/enabled by unpriveledged user. This is needed for
-> unpriveledge userspace such as qemu since guest may change the number of queues
-> at any time, qemu needs to configure the tuntap to disable/enable a specific
-> queue.
+On Mon, 10 Dec 2012, Steven Rostedt wrote:
+> On Mon, 2012-12-10 at 17:15 -0800, Frank Rowand wrote:
 > 
-> Instead of introducting new flag/ioctls, this series tries to re-use the current
-> TUNSETQUEUE and IFF_ATTACH_QUEUE/IFF_DETACH_QUEUE. After this change,
-> IFF_DETACH_QUEUE is used to disable a specific queue instead of detaching all
-> its state from tuntap. IFF_ATTACH_QUEUE is used to do: 1) creating new queue to
-> a tuntap device, in this situation, previous DAC check is still done. 2)
-> re-enable the queue previously disabled by IFF_DETACH_QUEUE, in this situation,
-> we can bypass some checking when we do during queue creating (the check need to
-> be done here needs discussion.
+> > I should have also mentioned some previous experience using IPIs to
+> > avoid runq lock contention on wake up.  Someone encountered IPI
+> > storms when using the TTWU_QUEUE feature, thus it defaults to off
+> > for CONFIG_PREEMPT_RT_FULL:
+> > 
+> >   #ifndef CONFIG_PREEMPT_RT_FULL
+> >   /*
+> >    * Queue remote wakeups on the target CPU and process them
+> >    * using the scheduler IPI. Reduces rq->lock contention/bounces.
+> >    */
+> >   SCHED_FEAT(TTWU_QUEUE, true)
+> >   #else
+> >   SCHED_FEAT(TTWU_QUEUE, false)
+> > 
 > 
-> Management software (such as libvirt) then can do:
-> - TUNSETIFF to creating device and queue 0
-> - TUNSETQUEUE to create the rest of queues
-> - Passing them to unpriveledge userspace (such as qemu)
+> Interesting, but I'm wondering if this also does it for every wakeup? If
+> you have 1000 tasks waking up on another CPU, this could potentially
+> send out 1000 IPIs. The number of IPIs here looks to be # of tasks
+> waking up, and perhaps more than that, as there could be multiple
+> instances that try to wake up the same task.
 
-Sorry I find this somewhat confusing.
-Why doesn't management call TUNSETIFF to create all queues -
-seems cleaner, no? Also has the advantage that it works
-without selinux changes.
+Not using the TTWU_QUEUE feature limits the IPIs to a single one,
+which is only sent if the newly woken task preempts the current task
+on the remote cpu and the NEED_RESCHED flag was not yet set.
+ 
+With TTWU_QUEUE you can induce massive latencies just by starting
+hackbench. You get a herd wakeup on CPU0 which then enqueues hundreds
+of tasks to the remote pull list and sends IPIs. The remote CPUs pulls
+the tasks and activate them on their runqueue in hard interrupt
+context. That easiliy can accumulate to hundreds of microseconds when
+you do a mass push of newly woken tasks.
 
-So why don't we simply fix TUNSETQUEUE such that
-1. It only works if already attached to device by TUNSETIFF
-2. It does not attach/detach, instead simply enables/disables the queue
+Of course it avoids fiddling with the remote rq lock, but it becomes
+massivly non deterministic.
 
-This way no new flags, just tweak the semantics of the
-existing ones. Need to do this before 3.8 is out though
-otherwise we'll end up maintaining the old semantics forever.
+> Now this patch set, the # of IPIs is limited to the # of CPUs. If you
+> have 4 CPUs, you'll get a storm of 3 IPIs. That's a big difference.
 
-> Then the unpriveledge userspace can enable and disable a specific queue through
-> IFF_ATTACH_QUEUE and IFF_DETACH_QUEUE.
-> 
-> This is done by introducing a enabled flags were used to notify whether the
-> queue is enabled, and tuntap only send/receive packets when it was enabled.
-> 
-> Please comment, thanks!
-> 
-> Jason Wang (2):
->   tuntap: forbid calling TUNSETQUEUE for a persistent device with no
->     queues
->   tuntap: allow unpriveledge user to enable and disable queues
-> 
->  drivers/net/tun.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 73 insertions(+), 5 deletions(-)
+Yeah, the big difference is that you offload the double lock to the
+IPI. So in the worst case you interrupt the most latency sensitive
+task running on the remote CPU. Not sure if I really like that
+"feature".
+ 
+Thanks,
+
+	tglx
