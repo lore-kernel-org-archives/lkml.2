@@ -1,76 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab2LKWRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:17:19 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:39702 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab2LKWRS (ORCPT
+	id S1754924Ab2LKWRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:17:32 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33818 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab2LKWRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:17:18 -0500
-Date: Tue, 11 Dec 2012 17:17:05 -0500 (EST)
-From: Dave Anderson <anderson@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        JoonSoo Kim <js1304@gmail.com>
-Message-ID: <104724866.46130887.1355264225876.JavaMail.root@redhat.com>
-In-Reply-To: <20121211214859.GG5580@redhat.com>
-Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.187.10]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+	Tue, 11 Dec 2012 17:17:30 -0500
+Date: Wed, 12 Dec 2012 09:15:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Greg KH <greg@kroah.com>,
+        Steven Rostedt <srostedt@redhat.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "N, Mugunthan V" <mugunthanvnm@ti.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: linux-next: some merging notes
+Message-Id: <20121212091552.02c72c8926f9f9147b080d68@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Dec_2012_09_15_52_+1100_Ssu8zmAdj1_utdXl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__12_Dec_2012_09_15_52_+1100_Ssu8zmAdj1_utdXl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Linus,
 
------ Original Message -----
-> On Mon, Dec 10, 2012 at 11:40:47PM +0900, JoonSoo Kim wrote:
-> 
-> [..]
-> > > So without knowing details of both the data structures, I think if vmlist
-> > > is going away, then user space tools should be able to traverse vmap_area_root
-> > > rb tree. I am assuming it is sorted using ->addr field and we should be
-> > > able to get vmalloc area start from there. It will just be a matter of
-> > > exporting right fields to user space (instead of vmlist).
-> > 
-> > There is address sorted list of vmap_area, vmap_area_list.
-> > So we can use it for traversing vmalloc areas if it is necessary.
-> > But, as I mentioned before, kexec write *just* address of vmlist and
-> > offset of vm_struct's address field.  It imply that they don't traverse vmlist,
-> > because they didn't write vm_struct's next field which is needed for traversing.
-> > Without vm_struct's next field, they have no method for traversing.
-> > So, IMHO, assigning dummy vm_struct to vmlist which is implemented by [7/8] is
-> > a safe way to maintain a compatibility of userspace tool. :)
-> 
-> Actually the design of "makedumpfile" and "crash" tool is that they know
-> about kernel data structures and they adopt to changes. So for major
-> changes they keep track of kernel version numbers and if access the
-> data structures accordingly.
-> 
-> Currently we access first element of vmlist to determine start of vmalloc
-> address. True we don't have to traverse the list.
-> 
-> But as you mentioned we should be able to get same information by
-> traversing to left most element of vmap_area_list rb tree. So I think
-> instead of trying to retain vmlist first element just for backward
-> compatibility, I will rather prefer get rid of that code completely
-> from kernel and let user space tool traverse rbtree. Just export
-> minimum needed info for traversal in user space.
+Just some notes about the current state of some of the merges in
+linux-next.
 
-There's no need to traverse the rbtree.  There is a vmap_area_list
-linked list of vmap_area structures that is also sorted by virtual
-address.
+The powerpc tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git#next)
+contains a commit that breaks the building of
+lib/pSeries-reconfig-notifier-error-inject.c.  I applied a patch to
+linux-next to disable CONFIG_PSERIES_RECONFIG_NOTIFIER_ERROR_INJECT.
 
-All that makedumpfile would have to do is to access the first vmap_area
-in the vmap_area_list -- as opposed to the way that it does now, which is
-by accessing the first vm_struct in the to-be-obsoleted vmlist list.
+The virtio tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git#virtio-next)
+has a conflict with the net-next tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git#master)
+that requires the following extra fix up patch:
 
-So it seems silly to keep the dummy "vmlist" around.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 33d6f6f..8afe32d 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -147,7 +147,7 @@ struct padded_vnet_hdr {
+  */
+ static int vq2txq(struct virtqueue *vq)
+ {
+-	return (virtqueue_get_queue_index(vq) - 1) / 2;
++	return (vq->index - 1) / 2;
+ }
+=20
+ static int txq2vq(int txq)
+@@ -157,7 +157,7 @@ static int txq2vq(int txq)
+=20
+ static int vq2rxq(struct virtqueue *vq)
+ {
+-	return virtqueue_get_queue_index(vq) / 2;
++	return vq->index / 2;
+ }
+=20
+ static int rxq2vq(int rxq)
 
-Dave
+The tty tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git#tty-next)
+contains a new driver (SystemBase Multi-2/PCI) that fails to build for
+(at least) the powerpc architecture.  I have applied a patch that
+disables the driver (I made CONFIG_SB105X in
+drivers/staging/sb105x/Kconfig depend on BROKEN).
+
+The arm-soc tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git#for-next)
+(which you will get in pieces) has a merge conflict against the omap_dss2
+tree (git://gitorious.org/linux-omap-dss2/linux.git#for-next) that
+requires the followin fix up patch:
+
+diff --git a/arch/arm/mach-omap2/common.c b/arch/arm/mach-omap2/common.c
+index 5c2fd48..2dabb9e 100644
+--- a/arch/arm/mach-omap2/common.c
++++ b/arch/arm/mach-omap2/common.c
+@@ -16,8 +16,6 @@
+ #include <linux/init.h>
+ #include <linux/platform_data/dsp-omap.h>
+=20
+-#include <plat/vram.h>
+-
+ #include "common.h"
+ #include "omap-secure.h"
+=20
+@@ -32,7 +30,6 @@ int __weak omap_secure_ram_reserve_memblock(void)
+=20
+ void __init omap_reserve(void)
+ {
+-	omap_vram_reserve_sdram_memblock();
+ 	omap_dsp_reserve_sdram_memblock();
+ 	omap_secure_ram_reserve_memblock();
+ 	omap_barrier_reserve_memblock();
+
+Part of the arm-soc tree also requires the following fixup patch due to a
+conflict with the powerpc tree (patch from N, Mugunthan V
+<mugunthanvnm@ti.com>):
+
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index 099e406..5fd5e23 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -192,7 +192,7 @@ static struct device_node * __init omap_get_timer_dt
+(struct of_device_id *match, continue;
+ 		}
+=20
+-		prom_add_property(np, &device_disabled);
++		of_add_property(np, &device_disabled);
+ 		return np;
+ 	}
+=20
+There are also lots of conflicts due to the __dev* annotation removals -
+a lot of which are in the driver-core tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git#drive=
+r-core-next).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__12_Dec_2012_09_15_52_+1100_Ssu8zmAdj1_utdXl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQx7CYAAoJEECxmPOUX5FE//oQAJx10W6rsgKts32Ot1pEK2tR
+AFyz0qsaqF2LraWSQCaj/ogBab3FPwA0snlghtfM52emu7brusLqw1WoULHwAlt2
+Q/R6ZmVAxirzS6ZsX6KbVC1K3T3bzV3oKRnzM4lbwvsRufDuDbsdCZlAOcMyTXKn
+MHCEL0LvmenR6ieZcjTYv9E06B4SFaFaHyvqVU9wsAwe1QE6XpBGMNNuGBLr8l9L
+HT9dJuWqKdzwxnZg8mZ7R6csN6F35/GchTDmgkEen8j6ouDM+3NLcAERH6ks0kaw
+duGLCLPcb9kkYMkSfnmej/NiL6ccbMdjq32zvqUTJwwGGJpoRtZ1HkUM0Y35N75L
+mHlLLe3A/qXhd48ymdH/AT9pTlJb3q/nBMh5eWbVAyg76Ki+rdvC/9tNPlbSjpOI
+6XbA6onHs2eJ+F6aOS/fqWFpHCLINA0VxAmLr3aaaCU29XUwmfLmMghtLKKXoJcj
+9/8OtP9KQ92Ju/LHoeQ6Wzd9gY5+EKUpmgCeLVwO8iLV4Y37E/Wl1uHFjKyjQvZt
+xlHYfsQIEsB7U3PTuE6hdqzSuHDwBCt9UG9ZKrjSatt6QDjdTkKVHKu9TwTGe8FT
+mz5pRD2zOL85r9elvRBa0m2ImqsZeCAZTsQ5lh7yPDShk7xG82tv35prN9HarR28
+mX1/SDhfqlO+CFQZ4TMt
+=+DER
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Dec_2012_09_15_52_+1100_Ssu8zmAdj1_utdXl--
