@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2LKQvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:51:11 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58379 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab2LKQvK (ORCPT
+	id S1754087Ab2LKQwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 11:52:22 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62275 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab2LKQwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:51:10 -0500
-Date: Tue, 11 Dec 2012 16:50:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Lior Amsalem <alior@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>, Yehuda Yitschak <yehuday@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shadi Ammouri <shadi@marvell.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions
-	in CONFIG_HAS_IOPORT
-Message-ID: <20121211165050.GU14363@n2100.arm.linux.org.uk>
-References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <201212111043.50627.arnd@arndb.de> <20121211170338.4859ddf0@skate> <201212111615.03262.arnd@arndb.de> <20121211162325.GR14363@n2100.arm.linux.org.uk> <20121211173819.6f2cf32b@skate>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211173819.6f2cf32b@skate>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 11 Dec 2012 11:52:21 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/1] gpio: add Lynxpoint chipset gpio driver.
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: linus.walleij@linaro.org, mika.westerberg@linux.intel.com,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+In-Reply-To: <50C71BC3.2090006@linux.intel.com>
+References: <1354888899-21907-1-git-send-email-mathias.nyman@linux.intel.com> <1354888899-21907-2-git-send-email-mathias.nyman@linux.intel.com> <20121210230749.7820F3E081F@localhost> <50C71BC3.2090006@linux.intel.com>
+Date: Tue, 11 Dec 2012 16:52:07 +0000
+Message-Id: <20121211165207.C30423E0C3E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 05:38:19PM +0100, Thomas Petazzoni wrote:
-> Russell,
+On Tue, 11 Dec 2012 13:40:51 +0200, Mathias Nyman <mathias.nyman@linux.intel.com> wrote:
+> On 12/11/2012 01:07 AM, Grant Likely wrote:
+> > On Fri,  7 Dec 2012 16:01:39 +0200, Mathias Nyman<mathias.nyman@linux.intel.com>  wrote:
+> >> Add gpio support for Intel Lynxpoint chipset.
+> >> Lynxpoint supports 94 gpio pins which can generate interrupts.
+> >> Driver will fail requests for pins that are marked as owned by ACPI, or
+> >> set in an alternate mode (non-gpio).
+> >>
+> >> Signed-off-by: Mathias Nyman<mathias.nyman@linux.intel.com>
+> >> ---
+> >> +static void lp_gpio_set(struct gpio_chip *chip, unsigned gpio, int value)
+> >> +{
+> >> +	struct lp_gpio *lg = container_of(chip, struct lp_gpio, chip);
+> >> +	unsigned long reg = gpio_reg(chip, gpio, LP_CONFIG1);
+> >> +	unsigned long flags;
+> >> +
+> >> +	spin_lock_irqsave(&lg->lock, flags);
+> >> +
+> >> +	if (value)
+> >> +		outl(inl(reg) | OUT_LVL_BIT, reg);
+> >> +	else
+> >> +		outl(inl(reg)&  ~OUT_LVL_BIT, reg);
+> >> +
+> >> +	spin_unlock_irqrestore(&lg->lock, flags);
+> >> +}
+> >
+> > A *lot* of drivers implement their own GPIO ops like this, and they all
+> > end up looking the same. Please take a look at
+> > drivers/gpio/gpio-generic.c and see if you can use the stock operations
+> > provided there.
+> >
+> > g.
+> >
 > 
-> On Tue, 11 Dec 2012 16:23:25 +0000, Russell King - ARM Linux wrote:
-> 
-> > > * ARCH_VEXPRESS should not select NO_IOPORT. It's generally wrong
-> > >   to select this in combination with ARCH_MULTIPLATFORM, when some
-> > >   of the other platforms you may enable actually have IOPORT mapping
-> > >   support.
-> > 
-> > No.  ARCH_VEXPRESS selects NO_IOPORT because it _does_ _not_ support
-> > PCI/ISA IO space.  That in itself is reasonable, but what isn't
-> > reasonable is the _negative_ logic being used.  Negative logic in
-> > the config system always tends to provoke this kind of sillyness
-> > because you're selecting something to be excluded which another
-> > platform may require.
-> 
-> Could you enlighten my very naive understanding of things about PCI/ISA
-> IO space? On x86, I seem to understand this is the separate address
-> space accessed by the special in/out CPU instructions. Are there ARM
-> platforms with the same sort of things?
-> 
-> As far as I understand, on my ARM Marvell system, everything is
-> memory-mapped, so there isn't such a separate PCI/ISA IO space.
-> 
-> Therefore, why would I need to "select HAVE_IOPORT" simply to be able
-> to build libata-sff.c, that is used for PCI drivers that work fine with
-> purely memory-mapped registers?
+> Look quite similar but turns out the only potential generic ones which 
+> could be used are the bgpio_set() and bgpio_get() funtions. Using them 
+> would require custom pin2mask, write_reg, read_reg, etc functions.
+> bgpio_set_direction
 
-- PCI buses make the distinction between memory accesses and IO accesses.
-- ARM doesn't have IO access instructions; everything is memory mapped.
-- In order to make the two work together, whatever PCI interface provides
-  a way to issue IO accesses via a contiguous memory mapped region.
-- The PCI layer and drivers are written to keep these two spaces separate
-  so that they remain portable across multiple different platforms.
+You would need new write_reg and read_reg, but they'd just become part
+of the library. Ah, but I see now that each GPIO has a separate
+register, and not a bitmask for multiple gpio lines. Fair enough.
 
-Therefore, if you have PCI/ISA drivers that make use of IO space, you need
-to provide the IO space accessors and mapping functions so that these
-drivers can access the IO space on their devices in a platform independent
-manner.
+g.
+
