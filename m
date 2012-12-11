@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2LKD01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 22:26:27 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:16917 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2LKD00 (ORCPT
+	id S1752443Ab2LKD3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 22:29:14 -0500
+Received: from smtp.wow.synacor.com ([64.8.70.55]:55246 "EHLO
+	smtp.mail.wowway.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab2LKD3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 22:26:26 -0500
-Message-ID: <50C6A7BC.8010200@huawei.com>
-Date: Tue, 11 Dec 2012 11:25:48 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 10 Dec 2012 22:29:12 -0500
+X-Spam-Rating: None
+X_CMAE_Category: 0,0 Undefined,Undefined
+X-CNFS-Analysis: v=1.1 cv=CIrd2VtW4t2jO5UNyUYpi19KxaV+yoPbBAtYeYHFuTA= c=1 sm=0 a=c8qTiYX8uCAA:10 a=nDghuxUhq_wA:10 a=kj9zAlcOel0A:10 a=pGLkceISAAAA:8 a=f7kJgRzcEiAnLtOiHm0A:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=zsaeSSr3pazHFAQJU9uUyg==:117
+X-CM-Score: 0
+Authentication-Results: smtp01.wow.synacor.com smtp.mail=set@squish.homelinux.org; spf=neutral
+Date: Mon, 10 Dec 2012 22:29:10 -0500
+From: Paul Thompson <set.mailinglist@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix Irq Subsystem menu
+Message-ID: <20121211032910.GA8203@squish.home.loc>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
-        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <wency@cn.fujitsu.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-References: <50C1AD6D.7010709@huawei.com> <20121207141102.4fda582d.akpm@linux-foundation.org> <20121210083342.GA31670@hacker.(null)> <50C5A62A.6030401@huawei.com> <1355136423.1700.2.camel@kernel.cn.ibm.com> <50C5C4A2.2070002@huawei.com> <20121210153805.GS16230@one.firstfloor.org> <50C6997C.1080702@huawei.com> <20121211024522.GA10505@localhost> <20121211025857.GX16230@one.firstfloor.org>
-In-Reply-To: <20121211025857.GX16230@one.firstfloor.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/11 10:58, Andi Kleen wrote:
+	Hi;
 
->> That sounds like overkill. There are not so many free pages in a
->> typical server system.
-> 
-> As Fengguang said -- memory error handling is tricky. Lots of things
-> could be done in theory, but they all have a cost in testing and 
-> maintenance. 
-> 
-> In general they are only worth doing if the situation is common and
-> represents a significant percentage of the total pages of a relevant server
-> workload.
-> 
-> -Andi
-> 
+	In menuconfig, General setup -> Irq subsystem contains two
+possible menu-items. Sometimes, neither menu-item exists. This
+patch prevents the Irq susystem menu from appearing at all unless it
+will contain at least one menu-item, preventing a confusing, empty menu.
 
-Hi Andi and Fengguang,
+--- linux-3.7-rc8/kernel/irq/Kconfig.orig	2012-12-05 20:59:00.963707538 -0500
++++ linux-3.7-rc8/kernel/irq/Kconfig	2012-12-05 21:00:18.454788693 -0500
+@@ -3,7 +3,6 @@ config HAVE_GENERIC_HARDIRQS
+ 	bool
+ 
+ if HAVE_GENERIC_HARDIRQS
+-menu "IRQ subsystem"
+ #
+ # Interrupt subsystem related configuration options
+ #
+@@ -56,6 +55,13 @@ config GENERIC_IRQ_CHIP
+ config IRQ_DOMAIN
+ 	bool
+ 
++# Support forced irq threading
++config IRQ_FORCED_THREADING
++       bool
++
++menu "IRQ subsystem"
++	depends on ( IRQ_DOMAIN && DEBUG_FS ) || MAY_HAVE_SPARSE_IRQ
++
+ config IRQ_DOMAIN_DEBUG
+ 	bool "Expose hardware/virtual IRQ mapping via debugfs"
+ 	depends on IRQ_DOMAIN && DEBUG_FS
+@@ -66,10 +72,6 @@ config IRQ_DOMAIN_DEBUG
+ 
+ 	  If you don't know what this means you don't need it.
+ 
+-# Support forced irq threading
+-config IRQ_FORCED_THREADING
+-       bool
+-
+ config SPARSE_IRQ
+ 	bool "Support sparse irq numbering" if MAY_HAVE_SPARSE_IRQ
+ 	---help---
 
-"There are not so many free pages in a typical server system", sorry I don't
-quite understand it.
-
-buffered_rmqueue()
-	prep_new_page()
-		check_new_page()
-			bad_page()
-
-If we alloc 2^10 pages and one of them is a poisoned page, then the whole 4M
-memory will be dropped.
-
-Thanks,
-Xishi Qiu
+Signed-off-by: Paul Thompson <set.mailinglist@gmail.com>
 
