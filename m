@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab2LKIKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 03:10:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421Ab2LKIKu convert rfc822-to-8bit (ORCPT
+	id S1753143Ab2LKILU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 03:11:20 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59001 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2LKILT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 03:10:50 -0500
-Date: Tue, 11 Dec 2012 10:10:24 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH] x86/kexec: crash_vmclear_local_vmcss needs __rcu
-Message-ID: <20121211081024.GC11016@redhat.com>
-References: <50C18168.305@cn.fujitsu.com>
- <20121210203014.GB2402@amt.cnet>
- <50C6E927.9040605@cn.fujitsu.com>
+	Tue, 11 Dec 2012 03:11:19 -0500
+X-AuditID: 9c93016f-b7b86ae000003a75-ef-50c6eaa5144b
+Date: Tue, 11 Dec 2012 17:11:17 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mike Hommey <mh@glandium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v3] Support volatile range for anon vma
+Message-ID: <20121211081117.GH22698@blaptop>
+References: <1355193255-7217-1-git-send-email-minchan@kernel.org>
+ <20121211024104.GA10523@blaptop>
+ <20121211071742.GA26598@glandium.org>
+ <20121211073744.GF22698@blaptop>
+ <20121211075950.GA27103@glandium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <50C6E927.9040605@cn.fujitsu.com>
+In-Reply-To: <20121211075950.GA27103@glandium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 04:04:55PM +0800, Zhang Yanfei wrote:
-> 于 2012年12月11日 04:30, Marcelo Tosatti 写道:
-> > On Fri, Dec 07, 2012 at 01:40:56PM +0800, Zhang Yanfei wrote:
-> >> This removes the sparse warning:
-> >> arch/x86/kernel/crash.c:49:32: sparse: incompatible types in comparison expression (different address spaces)
-> >>
-> >> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> >> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> >> ---
-> >>  arch/x86/include/asm/kexec.h |    4 +++-
-> >>  arch/x86/kernel/crash.c      |    4 ++--
-> >>  2 files changed, 5 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-> >> index 28feeba..16882cd 100644
-> >> --- a/arch/x86/include/asm/kexec.h
-> >> +++ b/arch/x86/include/asm/kexec.h
-> >> @@ -163,7 +163,9 @@ struct kimage_arch {
-> >>  };
-> >>  #endif
-> >>  
-> >> -extern void (*crash_vmclear_loaded_vmcss)(void);
-> >> +extern void __rcu (*crash_vmclear_loaded_vmcss)(void);
-> >> +#define vmclear_func_rcu(vmclear_func) \
-> >> +	((void (*)(void)) rcu_dereference(vmclear_func))
-> >>  
-> >>  #endif /* __ASSEMBLY__ */
-> >>  
-> >> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-> >> index 2f6b8e8..50ce1d6 100644
-> >> --- a/arch/x86/kernel/crash.c
-> >> +++ b/arch/x86/kernel/crash.c
-> >> @@ -38,7 +38,7 @@ int in_crash_kexec;
-> >>   *
-> >>   * protected by rcu.
-> >>   */
-> >> -void (*crash_vmclear_loaded_vmcss)(void) = NULL;
-> >> +void __rcu (*crash_vmclear_loaded_vmcss)(void) = NULL;
+On Tue, Dec 11, 2012 at 08:59:50AM +0100, Mike Hommey wrote:
+> On Tue, Dec 11, 2012 at 04:37:44PM +0900, Minchan Kim wrote:
+> > On Tue, Dec 11, 2012 at 08:17:42AM +0100, Mike Hommey wrote:
+> > > On Tue, Dec 11, 2012 at 11:41:04AM +0900, Minchan Kim wrote:
+> > > > - What's the madvise(addr, length, MADV_VOLATILE)?
+> > > > 
+> > > >   It's a hint that user deliver to kernel so kernel can *discard*
+> > > >   pages in a range anytime.
+> > > > 
+> > > > - What happens if user access page(ie, virtual address) discarded
+> > > >   by kernel?
+> > > > 
+> > > >   The user can see zero-fill-on-demand pages as if madvise(DONTNEED).
+> > > 
+> > > What happened to getting SIGBUS?
 > > 
-> > Isnt this (__rcu AS tag) sufficient? After all, sparse is complaining
-> > about namespaces.
-> > 
-> > Creating a #define to cast seems excessive.
-> > 
-> > 
+> > I thought it could force for user to handle signal.
+> > If user can receive signal, what can he do?
+> > Maybe he can call madivse(NOVOLATILE) in my old version but I removed it
+> > in this version so user don't need handle signal handling.
 > 
-> I am not very familiar with the rcu.
-> Adding __rcu tag could solve the problem. But it imported another warning
-> when I try to assign rcu_dereference(crash_vmclear_loaded_vmcss) to
-> do_vmclear_operation:
-> 
-> arch/x86/kernel/crash.c:49:30: warning: incorrect type in assignment (different modifiers)
-> arch/x86/kernel/crash.c:49:30:    expected void ( *do_vmclear_operation )( ... )
-> arch/x86/kernel/crash.c:49:30:    got void ( [noderef] *<noident> )( ... )
-> arch/x86/kernel/crash.c:49:30: warning: incorrect type in assignment (different modifiers)
-> arch/x86/kernel/crash.c:49:30:    expected void ( *do_vmclear_operation )( ... )
-> arch/x86/kernel/crash.c:49:30:    got void ( [noderef] *<noident> )( ... )
-> 
-> So I made the #define to cast its type.
-> 
-> If you have any suggestion, that'll be helpful.
-> 
-Try to use typedef.
+> NOVOLATILE and signal throwing are two different and not necessarily
+> related needs. We (Mozilla) could probably live without NOVOLATILE,
+> but certainly not without signal throwing.
 
---
-			Gleb.
+What's shortcoming if we don't provide signal handling?
+Could you explain how you want to signal in your allocator?
+
+It could be very helpful to improve this patch.
+Thanks for the input.
+
+> 
+> Mike
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
