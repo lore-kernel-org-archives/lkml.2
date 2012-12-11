@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2LKRCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:02:22 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:54943 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753404Ab2LKRCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:02:21 -0500
-Date: Tue, 11 Dec 2012 12:02:20 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <zihan@huawei.com>, <Lin.Lei@huawei.com>, <greg@kroah.com>,
-        <neil.yi@huawei.com>, <wangyuhua@huawei.com>
-Subject: Re: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage
- devices
-In-Reply-To: <fdcfdf1db48.b48fdcfdf1d@huawei.com>
-Message-ID: <Pine.LNX.4.44L0.1212111155220.1372-100000@iolanthe.rowland.org>
+	id S1754078Ab2LKRDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:03:19 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:36173 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236Ab2LKRDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 12:03:18 -0500
+Date: Tue, 11 Dec 2012 18:03:15 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Takashi Iwai <tiwai@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50
+ [snd_hda_intel] returns -11
+Message-ID: <20121211170315.GC28827@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Takashi Iwai <tiwai@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012, fangxiaozhi 00110321 wrote:
+Hi guys,
 
-> From: fangxiaozhi <huananhu@huawei.com>
-> 
-> To optimize the match rules for the Huawei USB storage devices. Avoid to load USB storage driver for modem interface with Huawei devices.
-> 
-> Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-> 
-> ---------------------------------------------------------------------------------
-> diff -uprN linux-3.7_bak/drivers/usb/storage/initializers.c linux-3.7/drivers/usb/storage/initializers.c
-> --- linux-3.7_bak/drivers/usb/storage/initializers.c	2012-12-11 09:56:11.000000000 +0800
-> +++ linux-3.7/drivers/usb/storage/initializers.c	2012-12-11 15:33:24.000000000 +0800
-> @@ -93,14 +93,20 @@ int usb_stor_ucr61s2b_init(struct us_dat
->  }
->  
->  /* This places the HUAWEI E220 devices in multi-port mode */
-> -int usb_stor_huawei_e220_init(struct us_data *us)
-> +int usb_stor_huawei_init(struct us_data *us)
+I've got the message tagged "HERE" in dmesg running 3.7 (of course, this
+is a new message):
 
-If this routine is no longer meant for E220 devices, shouldn't the 
-comment be changed?
+...
+[   27.444441] input: ACPI Virtual Keyboard Device as /devices/virtual/input/input14
+[   29.550494] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50 [snd_hda_intel] returns -11	<-- HERE
+[   29.610630] powernow-k8: this CPU is not supported anymore, using acpi-cpufreq instead.
+[   29.676307] acpi-cpufreq: overriding BIOS provided _PSD data
+[   32.575161] Program wdm tried to access /dev/mem between 100000->104000.
+[   34.242866] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50 [snd_hda_intel] returns -11	<-- HERE
+[ 1502.142636] usbcore: registered new interface driver usblp
+[ 1988.970449] Program wdm tried to access /dev/mem between 100000->104000.
+[ 1988.994976] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50 [snd_hda_intel] returns -11	<-- HERE
 
->  {
->  	int result;
-> +	struct usb_interface_descriptor *idesc = NULL;
->  
-> -	result = usb_stor_control_msg(us, us->send_ctrl_pipe,
-> -				      USB_REQ_SET_FEATURE,
-> -				      USB_TYPE_STANDARD | USB_RECIP_DEVICE,
-> -				      0x01, 0x0, NULL, 0x0, 1000);
-> -	US_DEBUGP("Huawei mode set result is %d\n", result);
-> +	idesc = &us->pusb_intf->cur_altsetting->desc;
-> +	if (NULL != idesc ) {
-> +		if ( (0x0000 == idesc->bInterfaceNumber)) {
+Thanks.
 
-You could write:
+-- 
+Regards/Gruss,
+    Boris.
 
-	if (idesc != NULL && idesc->bInterfaceNumber == 0) {
-
-> +			result = usb_stor_control_msg(us, us->send_ctrl_pipe,
-> +					USB_REQ_SET_FEATURE,
-> +					USB_TYPE_STANDARD | USB_RECIP_DEVICE,
-> +					0x01, 0x0, NULL, 0x0, 1000);
-> +			US_DEBUGP("Huawei mode set result is %d\n", result);
-> +		}
-> +	}
->  	return 0;
->  }
-
-> --- linux-3.7_bak/drivers/usb/storage/unusual_devs.h	2012-12-11 09:56:11.000000000 +0800
-> +++ linux-3.7/drivers/usb/storage/unusual_devs.h	2012-12-11 15:34:29.000000000 +0800
-> @@ -1527,335 +1527,335 @@ UNUSUAL_DEV(  0x1210, 0x0003, 0x0100, 0x
->  /* Reported by fangxiaozhi <huananhu@huawei.com>
->   * This brings the HUAWEI data card devices into multi-port mode
->   */
-> -UNUSUAL_DEV(  0x12d1, 0x1001, 0x0000, 0x0000,
-> +HW_UNUSUAL_DEV(  0x12d1, 0x1001, 0x08, 0x06, 0x50,
-
-Where does the name "HW_UNUSUAL_DEV" come from?  You should use a 
-better name, something that indicates what it is for.  And bear in mind 
-that this new macro could be used for other devices, not just Huawei's.
-Maybe something like UNUSUAL_DEV_INTF.
-
-Alan Stern
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
