@@ -1,139 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2LKOAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:00:54 -0500
-Received: from relay.parallels.com ([195.214.232.42]:34401 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab2LKOAx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:00:53 -0500
-Message-ID: <50C73C60.8060405@parallels.com>
-Date: Tue, 11 Dec 2012 18:00:00 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753595Ab2LKOBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:01:15 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55728 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752472Ab2LKOBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 09:01:13 -0500
+Date: Tue, 11 Dec 2012 15:01:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC fixes for 3.8
+Message-ID: <20121211140108.GC4303@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-edac <linux-edac@vger.kernel.org>,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
-References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org>
-In-Reply-To: <20121210202842.GB17350@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.20.135]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.12.2012 00:28, J. Bruce Fields пишет:
-> On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
->> NFSd does lookup. Lookup is done starting from current->fs->root.
->> NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
->> unshared) root.
->> So we have to swap root to those, which process, started NFSd, has. Because
->> that process can be in a container with it's own root.
->
-> This doesn't sound right to me.
->
-> Which lookups exactly do you see being done relative to
-> current->fs->root ?
->
+Hi Linus,
 
-Ok, you are right. I was mistaken here.
-This is not a exactly lookup, but d_path() problem in svc_export_request().
-I.e. without root swapping, d_path() will give not local export path (like "/export")
-but something like this "/root/containers_root/export".
+please pull the 'for-linus' branch below to receive the following
+changes to EDAC:
 
-> --b.
->
->>
->> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->> ---
->>   fs/nfsd/netns.h  |    1 +
->>   fs/nfsd/nfssvc.c |   33 ++++++++++++++++++++++++++++++++-
->>   2 files changed, 33 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
->> index abfc97c..5c423c6 100644
->> --- a/fs/nfsd/netns.h
->> +++ b/fs/nfsd/netns.h
->> @@ -101,6 +101,7 @@ struct nfsd_net {
->>   	struct timeval nfssvc_boot;
->>
->>   	struct svc_serv *nfsd_serv;
->> +	struct path	root;
->>   };
->>
->>   extern int nfsd_net_id;
->> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
->> index cee62ab..177bb60 100644
->> --- a/fs/nfsd/nfssvc.c
->> +++ b/fs/nfsd/nfssvc.c
->> @@ -392,6 +392,7 @@ int nfsd_create_serv(struct net *net)
->>
->>   	set_max_drc();
->>   	do_gettimeofday(&nn->nfssvc_boot);		/* record boot time */
->> +	get_fs_root(current->fs, &nn->root);
->>   	return 0;
->>   }
->>
->> @@ -426,8 +427,10 @@ void nfsd_destroy(struct net *net)
->>   	if (destroy)
->>   		svc_shutdown_net(nn->nfsd_serv, net);
->>   	svc_destroy(nn->nfsd_serv);
->> -	if (destroy)
->> +	if (destroy) {
->> +		path_put(&nn->root);
->>   		nn->nfsd_serv = NULL;
->> +	}
->>   }
->>
->>   int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
->> @@ -533,6 +536,25 @@ out:
->>   	return error;
->>   }
->>
->> +/*
->> + * This function is actually slightly modified set_fs_root()<F9>
->> + */
->> +static void nfsd_swap_root(struct net *net)
->> +{
->> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
->> +	struct fs_struct *fs = current->fs;
->> +	struct path old_root;
->> +
->> +	path_get(&nn->root);
->> +	spin_lock(&fs->lock);
->> +	write_seqcount_begin(&fs->seq);
->> +	old_root = fs->root;
->> +	fs->root = nn->root;
->> +	write_seqcount_end(&fs->seq);
->> +	spin_unlock(&fs->lock);
->> +	if (old_root.dentry)
->> +		path_put(&old_root);
->> +}
->>
->>   /*
->>    * This is the NFS server kernel thread
->> @@ -559,6 +581,15 @@ nfsd(void *vrqstp)
->>   	current->fs->umask = 0;
->>
->>   	/*
->> +	 * We have to swap NFSd kthread's fs->root.
->> +	 * Why so? Because NFSd can be started in container, which has it's own
->> +	 * root.
->> +	 * And so what? NFSd lookup files, and lookup start from
->> +	 * current->fs->root.
->> +	 */
->> +	nfsd_swap_root(net);
->> +
->> +	/*
->>   	 * thread is spawned with all signals set to SIG_IGN, re-enable
->>   	 * the ones that will bring down the thread
->>   	 */
->>
+* EDAC core error path fix, from Denis Kirjanov.
 
+* Generalization of AMD MCE bank names and some minor error reporting
+improvements.
+
+* EDAC core cleanups and simplifications, from Wei Yongjun.
+
+* amd64_edac fixes for sysfs-reported values, from Josh Hunt.
+
+* some heavy amd64_edac error reporting path shaving, leading to
+removing a bunch of code.
+
+* amd64_edac error injection method improvements.
+
+* EDAC core cleanups and fixes.
+
+Thanks.
+
+The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
+
+  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
+
+are available in the git repository at:
+
+  ssh://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
+
+for you to fetch changes up to 3bfe5aae8edd8436d26cddfeab783492d8950821:
+
+  EDAC, pci_sysfs: Use for_each_pci_dev to simplify the code (2012-12-04 08:27:39 +0100)
+
+----------------------------------------------------------------
+Borislav Petkov (19):
+      EDAC: Respect operational state in edac_pci.c
+      EDAC: Boundary-check edac_debug_level
+      EDAC: Remove useless assignment of error type
+      EDAC: Handle empty msg strings when reporting errors
+      amd64_edac: Small fixlets and cleanups
+      amd64_edac: Cleanup error injection code
+      amd64_edac: Improve error injection
+      amd64_edac: Do not check whether error address is valid
+      amd64_edac: Reorganize error reporting path
+      amd64_edac: Fix K8 chip select reporting
+      amd64_edac: Use DBAM_DIMM macro
+      amd64_edac: Fix csrows size and pages computation
+      EDAC: Add memory controller flags
+      EDAC: Pass mci parent
+      EDAC: Fix csrow size reported in sysfs
+      MCE, AMD: Remove functional unit references
+      MCE, AMD: Dump CPU f/m/s triple with the error
+      MCE, AMD: Report decoded error type first
+      MCE, AMD: Dump error status
+
+Denis Kirjanov (1):
+      EDAC: Handle error path in edac_mc_sysfs_init() properly
+
+Josh Hunt (1):
+      EDAC: Fix mc size reported in sysfs
+
+Wei Yongjun (3):
+      EDAC, Calxeda highbank: Convert to use simple_open()
+      EDAC: Convert to use simple_open()
+      EDAC, pci_sysfs: Use for_each_pci_dev to simplify the code
+
+ drivers/edac/Kconfig            |   8 +-
+ drivers/edac/amd64_edac.c       | 297 +++++++++++++++-------------------------
+ drivers/edac/amd64_edac.h       |  59 ++++++--
+ drivers/edac/amd64_edac_inj.c   | 128 ++++++++---------
+ drivers/edac/edac_mc.c          |  51 +++----
+ drivers/edac/edac_mc_sysfs.c    |  39 ++++--
+ drivers/edac/edac_module.c      |  27 +++-
+ drivers/edac/edac_pci.c         |   3 +-
+ drivers/edac/edac_pci_sysfs.c   |  12 +-
+ drivers/edac/highbank_mc_edac.c |   8 +-
+ drivers/edac/mce_amd.c          | 254 ++++++++++++++++++----------------
+ drivers/edac/mce_amd.h          |  11 +-
+ include/linux/edac.h            |   3 +
+ 13 files changed, 454 insertions(+), 446 deletions(-)
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
