@@ -1,162 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab2LKINA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 03:13:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33048 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753036Ab2LKIM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 03:12:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,256,1355126400"; 
-   d="scan'208";a="179293309"
-Message-ID: <1355213572.7216.140.camel@yhuang-dev>
-Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent
- in D3cold
-From: Huang Ying <ying.huang@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Date: Tue, 11 Dec 2012 16:12:52 +0800
-In-Reply-To: <1354244049.29553.97.camel@yhuang-dev>
-References: <20121122003904.262382971@linuxfoundation.org>
-	 <20121122003904.516735571@linuxfoundation.org>
-	 <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
-	 <1353640177.28789.21.camel@yhuang-dev>
-	 <1353656862.28789.57.camel@yhuang-dev> <20121130020104.GJ13478@kroah.com>
-	 <1354244049.29553.97.camel@yhuang-dev>
+	id S1752119Ab2LKIX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 03:23:26 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33598 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2LKIXZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 03:23:25 -0500
+Message-ID: <1355214199.7387.3.camel@phoenix>
+Subject: [PATCH] mfd: vexpress-config: Export __vexpress_config_func_get and
+ vexpress_config_func_put
+From: Axel Lin <axel.lin@ingics.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Pawel Moll <pawel.moll@arm.com>, linux-kernel@vger.kernel.org
+Date: Tue, 11 Dec 2012 16:23:19 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-30 at 10:54 +0800, Huang Ying wrote:
-> On Thu, 2012-11-29 at 18:01 -0800, Greg Kroah-Hartman wrote:
-> > On Fri, Nov 23, 2012 at 03:47:42PM +0800, Huang Ying wrote:
-> > > On Fri, 2012-11-23 at 11:09 +0800, Huang Ying wrote:
-> > > > On Fri, 2012-11-23 at 02:35 +0000, Ben Hutchings wrote:
-> > > > > On Wed, 2012-11-21 at 16:39 -0800, Greg Kroah-Hartman wrote:
-> > > > > > 3.0-stable review patch.  If anyone has any objections, please let me know.
-> > > > > > 
-> > > > > > ------------------
-> > > > > > 
-> > > > > > From: Huang Ying <ying.huang@intel.com>
-> > > > > > 
-> > > > > > commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
-> > > > > > 
-> > > > > > If a PCI device and its parents are put into D3cold, unbinding the
-> > > > > > device will trigger deadlock as follow:
-> > > > > > 
-> > > > > > - driver_unbind
-> > > > > >   - device_release_driver
-> > > > > >     - device_lock(dev)				<--- previous lock here
-> > > > > >     - __device_release_driver
-> > > > > >       - pm_runtime_get_sync
-> > > > > >         ...
-> > > > > >           - rpm_resume(dev)
-> > > > > >             - rpm_resume(dev->parent)
-> > > > > >               ...
-> > > > > >                 - pci_pm_runtime_resume
-> > > > > >                   ...
-> > > > > >                   - pci_set_power_state
-> > > > > >                     - __pci_start_power_transition
-> > > > > >                       - pci_wakeup_bus(dev->parent->subordinate)
-> > > > > >                         - pci_walk_bus
-> > > > > >                           - device_lock(dev)	<--- deadlock here
-> > > > > > 
-> > > > > > 
-> > > > > > If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
-> > > > > > Device_lock in pci_walk_bus is introduced in commit:
-> > > > > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
-> > > > > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
-> > > > > > said device_lock is added to pci_walk_bus because:
-> > > > > > 
-> > > > > >   Some error handling functions call pci_walk_bus. For example, PCIe
-> > > > > >   aer. Here we lock the device, so the driver wouldn't detach from the
-> > > > > >   device, as the cb might call driver's callback function.
-> > > > > > 
-> > > > > > So I fixed the deadlock as follows:
-> > > > > > 
-> > > > > > - remove device_lock from pci_walk_bus
-> > > > > > - add device_lock into callback if callback will call driver's callback
-> > > > > > 
-> > > > > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
-> > > > > > device lock.
-> > > > > [...]
-> > > > > 
-> > > > > What about eeh_report_error() in
-> > > > > arch/powerpc/platforms/pseries/eeh_driver.c?
-> > > > 
-> > > > En...  Because pci_walk_bus() invocation is removed in 3.7, so this
-> > > > patch is only valid for 3.7.  We need another version for 3.6.
-> > > 
-> > > Here is the patch for 3.6.  I have no powerpc machine, so build test
-> > > only.
-> > > 
-> > > Subject: [BUGFIX] PCI/PM: Fix deadlock when unbind device if its parent in D3cold
-> > > 
-> > > If a PCI device and its parents are put into D3cold, unbinding the
-> > > device will trigger deadlock as follow:
-> > > 
-> > > - driver_unbind
-> > >   - device_release_driver
-> > >     - device_lock(dev)				<--- previous lock here
-> > >     - __device_release_driver
-> > >       - pm_runtime_get_sync
-> > >         ...
-> > >           - rpm_resume(dev)
-> > >             - rpm_resume(dev->parent)
-> > >               ...
-> > >                 - pci_pm_runtime_resume
-> > >                   ...
-> > >                   - pci_set_power_state
-> > >                     - __pci_start_power_transition
-> > >                       - pci_wakeup_bus(dev->parent->subordinate)
-> > >                         - pci_walk_bus
-> > >                           - device_lock(dev)	<--- dead lock here
-> > > 
-> > > 
-> > > If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
-> > > Device_lock in pci_walk_bus is introduced in commit:
-> > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
-> > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
-> > > said device_lock is added to pci_walk_bus because:
-> > > 
-> > >   Some error handling functions call pci_walk_bus. For example, PCIe
-> > >   aer. Here we lock the device, so the driver wouldn't detach from the
-> > >   device, as the cb might call driver's callback function.
-> > > 
-> > > So I fixed the dead lock as follow:
-> > > 
-> > > - remove device_lock from pci_walk_bus
-> > > - add device_lock into callback if callback will call driver's callback
-> > > 
-> > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
-> > > device lock.
-> > > 
-> > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > Cc: Zhang Yanmin <yanmin.zhang@intel.com>
-> > > ---
-> > >  arch/powerpc/platforms/pseries/eeh_driver.c |   51 ++++++++++++++++++----------
-> > 
-> > Due to me applying a power pci patch,
-> > feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc in Linus's tree to 3.6-stable,
-> > this patch doesn't apply here anymore.
-> > 
-> > Because that patch is in the tree, is it now just safe to take your
-> > original, unmodified, version of this patch for 3.6-stable?
-> 
-> No.  My original version does not work.  I need to rebase my patch on
-> this patch.  Which tree should I base?
+This fixes below build error:
 
-Which tree should I base the patch on?
+  Building modules, stage 2.
+  MODPOST 17 modules
+ERROR: "__vexpress_config_func_get" [drivers/regulator/vexpress.ko] undefined!
+ERROR: "vexpress_config_func_put" [drivers/regulator/vexpress.ko] undefined!
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-Best Regards,
-Huang Ying
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/mfd/vexpress-config.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+index fae15d8..e6b8cbc 100644
+--- a/drivers/mfd/vexpress-config.c
++++ b/drivers/mfd/vexpress-config.c
+@@ -142,6 +142,7 @@ struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+ 
+ 	return func;
+ }
++EXPORT_SYMBOL_GPL(__vexpress_config_func_get);
+ 
+ void vexpress_config_func_put(struct vexpress_config_func *func)
+ {
+@@ -149,6 +150,7 @@ void vexpress_config_func_put(struct vexpress_config_func *func)
+ 	of_node_put(func->bridge->node);
+ 	kfree(func);
+ }
++EXPORT_SYMBOL_GPL(vexpress_config_func_put);
+ 
+ 
+ struct vexpress_config_trans {
+-- 
+1.7.9.5
+
 
 
