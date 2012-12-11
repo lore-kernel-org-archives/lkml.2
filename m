@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab2LKILU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 03:11:20 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59001 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2LKILT (ORCPT
+	id S1753131Ab2LKIL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 03:11:56 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42223 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2LKILy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 03:11:19 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-ef-50c6eaa5144b
-Date: Tue, 11 Dec 2012 17:11:17 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mike Hommey <mh@glandium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arun Sharma <asharma@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v3] Support volatile range for anon vma
-Message-ID: <20121211081117.GH22698@blaptop>
-References: <1355193255-7217-1-git-send-email-minchan@kernel.org>
- <20121211024104.GA10523@blaptop>
- <20121211071742.GA26598@glandium.org>
- <20121211073744.GF22698@blaptop>
- <20121211075950.GA27103@glandium.org>
+	Tue, 11 Dec 2012 03:11:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211075950.GA27103@glandium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <504C9EFCA2D0054393414C9CB605C37F1BFC3555@SJEXCHMB06.corp.ad.broadcom.com>
+References: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com>
+ <1354925658-24115-2-git-send-email-joseph.gasparakis@intel.com>
+ <CAMAG_ee6xW4EnzPFt=_5+NL2+LuyUjxd52Xc242inYm2+Yhg7g@mail.gmail.com> <504C9EFCA2D0054393414C9CB605C37F1BFC3555@SJEXCHMB06.corp.ad.broadcom.com>
+From: saeed bishara <saeed.bishara@gmail.com>
+Date: Tue, 11 Dec 2012 10:11:33 +0200
+Message-ID: <CAMAG_efu-skGsJiTDR5gQ09kJ1Y7OtJ3P-ii1QEX6ZpyUm-d4Q@mail.gmail.com>
+Subject: Re: [PATCH v4 1/5] net: Add support for hardware-offloaded encapsulation
+To: Dmitry Kravkov <dmitry@broadcom.com>
+Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
+        "gospo@redhat.com" <gospo@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 08:59:50AM +0100, Mike Hommey wrote:
-> On Tue, Dec 11, 2012 at 04:37:44PM +0900, Minchan Kim wrote:
-> > On Tue, Dec 11, 2012 at 08:17:42AM +0100, Mike Hommey wrote:
-> > > On Tue, Dec 11, 2012 at 11:41:04AM +0900, Minchan Kim wrote:
-> > > > - What's the madvise(addr, length, MADV_VOLATILE)?
-> > > > 
-> > > >   It's a hint that user deliver to kernel so kernel can *discard*
-> > > >   pages in a range anytime.
-> > > > 
-> > > > - What happens if user access page(ie, virtual address) discarded
-> > > >   by kernel?
-> > > > 
-> > > >   The user can see zero-fill-on-demand pages as if madvise(DONTNEED).
-> > > 
-> > > What happened to getting SIGBUS?
-> > 
-> > I thought it could force for user to handle signal.
-> > If user can receive signal, what can he do?
-> > Maybe he can call madivse(NOVOLATILE) in my old version but I removed it
-> > in this version so user don't need handle signal handling.
-> 
-> NOVOLATILE and signal throwing are two different and not necessarily
-> related needs. We (Mozilla) could probably live without NOVOLATILE,
-> but certainly not without signal throwing.
+On Mon, Dec 10, 2012 at 9:58 PM, Dmitry Kravkov <dmitry@broadcom.com> wrote:
+>> -----Original Message-----
+>> From: saeed bishara [mailto:saeed.bishara@gmail.com]
+>> Sent: Monday, December 10, 2012 12:04 PM
+>> To: Joseph Gasparakis
+>> Cc: davem@davemloft.net; shemminger@vyatta.com; chrisw@sous-sol.org;
+>> gospo@redhat.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> Dmitry Kravkov; bhutchings@solarflare.com; Peter P Waskiewicz Jr; Alexander
+>> Duyck
+>> Subject: Re: [PATCH v4 1/5] net: Add support for hardware-offloaded
+>> encapsulation
+>>
+>> > +static inline struct iphdr *inner_ip_hdr(const struct sk_buff *skb)
+>> > +{
+>> > +       return (struct iphdr *)skb_inner_network_header(skb);
+>> > +}
+>>
+>> Hi,
+>> I'm a little bit bothered because of those inner_ functions, what
+>> about the following approach:
+>> 1. the skb will have a new state, that state can be outer (normal
+>> mode) and inner.
+>> 2. when you change the state to inner, all the helper functions such
+>> as ip_hdr will return the innter header.
+>>
+>> that's ofcourse the API side. the implementation may still use the
+>> fields you added to the skb.
+>>
+>> what you think?
+>> saeed
+>
+> Some drivers will probably need both inner_ and other_ in same flow, switching between two states will consume cpu cycles.
+from performance perspective, I'm not sure the switching is worse, it
+may be better as it reduces code size. please have a look at patch
+2/5, with switching you can avoid doing the following change -> less
+code, less if-else.
+-                               skb_set_transport_header(skb,
+-                                       skb_checksum_start_offset(skb));
++                               if (skb->encapsulation)
++                                       skb_set_inner_transport_header(skb,
++                                               skb_checksum_start_offset(skb));
++                               else
++                                       skb_set_transport_header(skb,
++                                               skb_checksum_start_offset(skb));
+                                if (!(features & NETIF_F_ALL_CSUM) &&
 
-What's shortcoming if we don't provide signal handling?
-Could you explain how you want to signal in your allocator?
-
-It could be very helpful to improve this patch.
-Thanks for the input.
-
-> 
-> Mike
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+I think also that from (stack) maintenance perspective, less code is better.
