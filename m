@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab2LKOQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:16:56 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26715 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab2LKOQz (ORCPT
+	id S1753741Ab2LKORr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:17:47 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43834 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab2LKORq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:16:55 -0500
-X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DhgVYC8l6PEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=PwOMEcHXvqEA:10 a=jMLkpBkaKqqricricgYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355235413.17101.293.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH RT 3/4] sched/rt: Use IPI to trigger RT task push
- migration instead of pulling
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: frank.rowand@am.sony.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Tue, 11 Dec 2012 09:16:53 -0500
-In-Reply-To: <1355234577.17101.288.camel@gandalf.local.home>
-References: <20121207235615.206108556@goodmis.org>
-	 <20121208000900.613917378@goodmis.org> <50C682F6.5030709@am.sony.com>
-	 <50C68922.5030203@am.sony.com>
-	 <1355190830.17101.280.camel@gandalf.local.home>
-	 <alpine.LFD.2.02.1212111326310.3028@ionos>
-	 <1355234577.17101.288.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 09:17:46 -0500
+Date: Tue, 11 Dec 2012 06:17:40 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] workqueue changes for v3.8
+Message-ID: <20121211141740.GC7084@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 09:02 -0500, Steven Rostedt wrote:
+Hello, Linus.
 
-> Currently, what we have is a huge contention on both the pulled CPU rq
-> lock. We've measured over 500us latencies due to it. This hurts even the
-> CPU that has the overloaded task, as the contention is on its lock.
+Please pull from the following branch to receive workqueue changes for
+v3.8.  Nothing exciting.  Just two trivial changes.
 
-The 500us latency was one of the max ones I saw, and I believe it was
-combined with the load balancer going off at the same time as the pulls
-were happening. I've seen larger latencies with limited function tracing
-enabled and the load balancer was very involved.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.8
 
-As I believe we have users that would very much want this in, and if you
-are still not sure you like this "feature" I can make it into a
-SCHED_FEAT() like TTWU_QUEUE. Then you can keep this off and the big
-boxes can enable them.
+Thanks.
 
-Maybe enable the feature by default if the box has more than 16 cpus?
+----------------------------------------------------------------
+Joonsoo Kim (2):
+      workqueue: trivial fix for return statement in work_busy()
+      workqueue: add WARN_ON_ONCE() on CPU number to wq_worker_waking_up()
 
--- Steve
+ kernel/workqueue.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 084aa47..ae9a056 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -739,8 +739,10 @@ void wq_worker_waking_up(struct task_struct *task, unsigned int cpu)
+ {
+ 	struct worker *worker = kthread_data(task);
+ 
+-	if (!(worker->flags & WORKER_NOT_RUNNING))
++	if (!(worker->flags & WORKER_NOT_RUNNING)) {
++		WARN_ON_ONCE(worker->pool->gcwq->cpu != cpu);
+ 		atomic_inc(get_pool_nr_running(worker->pool));
++	}
+ }
+ 
+ /**
+@@ -3485,7 +3487,7 @@ unsigned int work_busy(struct work_struct *work)
+ 	unsigned int ret = 0;
+ 
+ 	if (!gcwq)
+-		return false;
++		return 0;
+ 
+ 	spin_lock_irqsave(&gcwq->lock, flags);
+ 
