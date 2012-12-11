@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab2LKK0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 05:26:47 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:47490 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab2LKK0q (ORCPT
+	id S1753117Ab2LKKaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 05:30:14 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:37095 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab2LKKaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 05:26:46 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-1e-50c70a64b5f3
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+	Tue, 11 Dec 2012 05:30:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <50C65AC6.9050904@oracle.com>
+References: <CANN689EzEDuYFdcM3=ir=UZgOhiNeKNpc_ydP8vH00f0nM6PXw@mail.gmail.com>
+	<CA+1xoqfu=hw--46Ae+VrP8Xt7Rdozv5TtPvGvhcJr94VVmJQ_A@mail.gmail.com>
+	<CA+1xoqdtvq7WQf_1EoGjBo9Rjd1YHS4eSqQX2o-nnYNoMuCzzg@mail.gmail.com>
+	<CANN689Gy3nLBasBea-nqkK7zTC4XuhUKH=FmOTcq_pKWPi_xmw@mail.gmail.com>
+	<50C65AC6.9050904@oracle.com>
+Date: Tue, 11 Dec 2012 12:30:09 +0200
+X-Google-Sender-Auth: mMG4966uRU3ByxLirmArnMFqJiU
+Message-ID: <CAOJsxLFNYgkNnoqNGe010_1qY80BxXEZEsfkOKvgLD167nMLkA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] remove kvm's use of augmented rbtree
+From: Pekka Enberg <penberg@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linaro-mm-sig@lists.linaro.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [GIT PULL] CMA and DMA-mapping updates for v3.8
-Date: Tue, 11 Dec 2012 11:26:28 +0100
-Message-id: <1355221589-26538-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBJMWRmVeSWpSXmKPExsVy+t9jAd0UruMBBp9PqFtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M61PXsRUc4a6YcSmmgXETZxcjB4eEgInEzh9sXYycQKaYxIV7
-	64FsLg4hgUWMEk+PbWCBcFYwSTTfXcACUsUmYCjR9bYLrENEwEji84srrCBFzAK7GSVW7J7I
-	CpIQFrCQOPVyHTuIzSKgKvF901+wOK+Ah8ScOb8ZITYrSMyZZDOBkXsBI8MqRtHUguSC4qT0
-	XEO94sTc4tK8dL3k/NxNjGD/PZPawbiyweIQowAHoxIPr4bWsQAh1sSy4srcQ4wSHMxKIryl
-	uUAh3pTEyqrUovz4otKc1OJDjNIcLErivM0eKQFCAumJJanZqakFqUUwWSYOTqkGxtU5rHdj
-	C3g7TC4ufhIdr33TYYrqn4ftz4KnOr0p83oWO1Hw4eozArm7k1UWe65ovfln8r9TPZvEErZs
-	a1rRX7evfo7wZK2n6/JdFr30U1a+m6P6vThwB5fQJ9amwO3pPhZ7fBdqnXz/8OQyUykB4zO6
-	alUVM2QV3N4nx/Fsesd3f8O617eKBJVYijMSDbWYi4oTAXuoS4vbAQAA
+        Asias He <asias.hejun@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Dec 10, 2012 at 11:57 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 12/10/2012 04:50 PM, Michel Lespinasse wrote:
+>> On Mon, Dec 10, 2012 at 8:22 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>>> Ping?
+>>
+>> Hey Sasha,
+>>
+>> There seems to have been some confusion here. After your last message,
+>> I expected *you* to take the patches and push them towards kvm tree.
+>> But, I guess you were waiting for Pekka's reply first ? Or did you
+>> expect me to go push the patches ?
+>>
+>> If it helps, I could push this through Andrew's -mm tree; however I
+>> think it would make the most sense if these could reach linus's tree
+>> through a kvm merge rather than through Andrew's -mm...
+>
+> Ah, no, Pekka is the one taking care of the KVM tools tree, so I'm we're waiting
+> for him to take a look at the patches and take them if they look fine to him :)
 
-I would like to ask for pulling another set of Contiguous Memory Allocator and
-DMA-mapping framework updates for v3.8.
-
-The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
-
-  Linux 3.7 (2012-12-10 19:30:57 -0800)
-
-are available in the git repository at:
-
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.8
-
-for you to fetch changes up to 4009793e15d44469da1547a46ab129cc08ffa503:
-
-  drivers: cma: represent physical addresses as phys_addr_t (2012-12-11 09:28:09 +0100)
-
-----------------------------------------------------------------
-
-This pull request consists only of two patches. First fixes long standing
-issue with dmapools (the code predates current GIT history), which forced all
-allocations to use GFP_ATOMIC flag, ignoring the flags passed by the caller.
-The second patch changes CMA code to correctly use phys_addr_t type what
-enables support for LPAE systems.
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
-Patch summary:
-
-Marek Szyprowski (1):
-      mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
-
-Vitaly Andrianov (1):
-      drivers: cma: represent physical addresses as phys_addr_t
-
- drivers/base/dma-contiguous.c  |   24 ++++++++++--------------
- include/linux/dma-contiguous.h |    4 ++--
- mm/dmapool.c                   |   31 +++++++------------------------
- 3 files changed, 19 insertions(+), 40 deletions(-)
+Applied, thanks guys!
