@@ -1,123 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2LKF7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:59:53 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:57234 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab2LKF7v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:59:51 -0500
-X-Originating-IP: 108.223.40.66
-Date: Mon, 10 Dec 2012 21:59:54 -0800
-From: Guenter Roeck <groeck-dsl@sbcglobal.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon updates for 3.8-rc1
-Message-ID: <20121211055954.GA2621@roeck-us.net>
+	id S1752503Ab2LKG1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 01:27:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:61129 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab2LKG1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 01:27:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,256,1355126400"; 
+   d="scan'208";a="255602228"
+From: "Xu, Dongxiao" <dongxiao.xu@intel.com>
+To: Jan Beulich <JBeulich@suse.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
+ for map_sg hook
+Thread-Topic: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
+ for map_sg hook
+Thread-Index: Ac3XaIzprqGxeKpdR6GzVMagEkgdpA==
+Date: Tue, 11 Dec 2012 06:27:38 +0000
+Message-ID: <40776A41FC278F40B59438AD47D147A90FEBE725@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBB6S5KW010691
 
+> -----Original Message-----
+> From: Jan Beulich [mailto:JBeulich@suse.com]
+> Sent: Thursday, December 06, 2012 9:38 PM
+> To: Xu, Dongxiao
+> Cc: xen-devel@lists.xen.org; konrad.wilk@oracle.com;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
+> for map_sg hook
+> 
+> >>> On 06.12.12 at 14:08, Dongxiao Xu <dongxiao.xu@intel.com> wrote:
+> > While mapping sg buffers, checking to cross page DMA buffer is also
+> > needed. If the guest DMA buffer crosses page boundary, Xen should
+> > exchange contiguous memory for it.
+> >
+> > Besides, it is needed to backup the original page contents and copy it
+> > back after memory exchange is done.
+> >
+> > This fixes issues if device DMA into software static buffers, and in
+> > case the static buffer cross page boundary which pages are not
+> > contiguous in real hardware.
+> >
+> > Signed-off-by: Dongxiao Xu <dongxiao.xu@intel.com>
+> > Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
+> > ---
+> >  drivers/xen/swiotlb-xen.c |   47
+> > ++++++++++++++++++++++++++++++++++++++++++++-
+> >  1 files changed, 46 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> > index 58db6df..e8f0cfb 100644
+> > --- a/drivers/xen/swiotlb-xen.c
+> > +++ b/drivers/xen/swiotlb-xen.c
+> > @@ -461,6 +461,22 @@ xen_swiotlb_sync_single_for_device(struct device
+> > *hwdev, dma_addr_t dev_addr,  }
+> > EXPORT_SYMBOL_GPL(xen_swiotlb_sync_single_for_device);
+> >
+> > +static bool
+> > +check_continguous_region(unsigned long vstart, unsigned long order)
+> 
+> check_continguous_region(unsigned long vstart, unsigned int order)
+> 
+> But - why do you need to do this check order based in the first place? Checking
+> the actual length of the buffer should suffice.
 
---bg08WKrSYDhXBjb5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks, the word "continguous" is mistyped in the function, it should be "contiguous".
+°°°°
+check_contiguous_region() function is used to check whether pages are contiguous in hardware.
+The length only indicates whether the buffer crosses page boundary. If buffer crosses pages and they are not contiguous in hardware, we do need to exchange memory in Xen.
 
-Hi Linus,
+> 
+> > +{
+> > +	unsigned long prev_ma = xen_virt_to_bus((void *)vstart);
+> > +	unsigned long next_ma;
+> 
+> phys_addr_t or some such for both of them.
 
-Please pull hwmon updates for Linux 3.8-rc1 from signed tag:
+Thanks.
+Should be dma_addr_t?
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+> 
+> > +	int i;
+> 
+> unsigned long
+
+Thanks.
+
+> 
+> > +
+> > +	for (i = 1; i < (1 << order); i++) {
+> 
+> 1UL
+
+Thanks.
+
+> 
+> > +		next_ma = xen_virt_to_bus((void *)(vstart + i * PAGE_SIZE));
+> > +		if (next_ma != prev_ma + PAGE_SIZE)
+> > +			return false;
+> > +		prev_ma = next_ma;
+> > +	}
+> > +	return true;
+> > +}
+> > +
+> >  /*
+> >   * Map a set of buffers described by scatterlist in streaming mode for
+> DMA.
+> >   * This is the scatter-gather version of the above
+> > xen_swiotlb_map_page @@ -489,7 +505,36 @@
+> > xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist
+> > *sgl,
+> >
+> >  	for_each_sg(sgl, sg, nelems, i) {
+> >  		phys_addr_t paddr = sg_phys(sg);
+> > -		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
+> > +		unsigned long vstart, order;
+> > +		dma_addr_t dev_addr;
+> > +
+> > +		/*
+> > +		 * While mapping sg buffers, checking to cross page DMA buffer
+> > +		 * is also needed. If the guest DMA buffer crosses page
+> > +		 * boundary, Xen should exchange contiguous memory for it.
+> > +		 * Besides, it is needed to backup the original page contents
+> > +		 * and copy it back after memory exchange is done.
+> > +		 */
+> > +		if (range_straddles_page_boundary(paddr, sg->length)) {
+> > +			vstart = (unsigned long)__va(paddr & PAGE_MASK);
+> > +			order = get_order(sg->length + (paddr & ~PAGE_MASK));
+> > +			if (!check_continguous_region(vstart, order)) {
+> > +				unsigned long buf;
+> > +				buf = __get_free_pages(GFP_KERNEL, order);
+> > +				memcpy((void *)buf, (void *)vstart,
+> > +					PAGE_SIZE * (1 << order));
+> > +				if (xen_create_contiguous_region(vstart, order,
+> > +						fls64(paddr))) {
+> > +					free_pages(buf, order);
+> > +					return 0;
+> > +				}
+> > +				memcpy((void *)vstart, (void *)buf,
+> > +					PAGE_SIZE * (1 << order));
+> > +				free_pages(buf, order);
+> > +			}
+> > +		}
+> > +
+> > +		dev_addr = xen_phys_to_bus(paddr);
+> >
+> >  		if (swiotlb_force ||
+> >  		    !dma_capable(hwdev, dev_addr, sg->length) ||
+> 
+> How about swiotlb_map_page() (for the compound page case)?
+
+Yes! This should also need similar handling.
+
+One thing needs further consideration is that, the above approach introduces two memory copies, which has race condition that, when we are exchanging/copying pages, dom0 may visit other elements right in the pages.
+
+One choice is to move the memory copy in hypervisor, which requires us to modify the XENMEM_exchange hypercall and add certain flags indicating whether the exchange needs memory copying.
+
+Or another choice to solve this issue in driver side to avoid DMA into such static buffers? This is easy to modify one driver but may have difficulties to monitor so many device drivers.
 
 Thanks,
-Guenter
-------
+Dongxiao
 
-The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
+> 
+> Jan
 
-  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 44f751cee1b4baef9e3b49c6bd954f8b12b097a6:
-
-  hwmon: (da9055) Fix chan_mux[DA9055_ADC_ADCIN3] setting (2012-12-05 10:55:55 -0800)
-
-----------------------------------------------------------------
-New driver: DA9055
-Added/improved support for new chips in existing drivers: Z650/670, N550/570,
-ADS7830, AMD 16h family
-
-----------------------------------------------------------------
-Ashish Jangam (1):
-      hwmon: DA9055 HWMON driver
-
-Axel Lin (2):
-      hwmon: da9052: Use da9052_reg_update for rmw operations
-      hwmon: (da9055) Fix chan_mux[DA9055_ADC_ADCIN3] setting
-
-Boris Ostrovsky (1):
-      x86,AMD: Power driver support for AMD's family 16h processors
-
-Guenter Roeck (4):
-      hwmon: (coretemp) Drop dependency on PCI for TjMax detection on Atom CPUs
-      hwmon: (coretemp) Use model table instead of if/else to identify CPU models
-      hwmon: (coretemp) Drop N4xx, N5xx, D4xx, D5xx CPUs from tjmax table
-      hwmon: (coretemp) List TjMax for Z650/670 and N550/570
-
-Guillaume Roguez (1):
-      hwmon: (ads7828) add support for ADS7830
-
-Vivien Didelot (1):
-      hwmon: (ads7828) driver cleanup
-
-Wei Yongjun (1):
-      hwmon: (ina2xx) use module_i2c_driver to simplify the code
-
- Documentation/hwmon/ads7828           |   46 +++--
- Documentation/hwmon/coretemp          |    2 +
- Documentation/hwmon/da9055            |   47 +++++
- drivers/hwmon/Kconfig                 |   19 +-
- drivers/hwmon/Makefile                |    1 +
- drivers/hwmon/ads7828.c               |  247 ++++++++++--------------
- drivers/hwmon/coretemp.c              |   60 +++---
- drivers/hwmon/da9052-hwmon.c          |   27 +--
- drivers/hwmon/da9055-hwmon.c          |  336 +++++++++++++++++++++++++++++++++
- drivers/hwmon/fam15h_power.c          |    4 +
- drivers/hwmon/ina2xx.c                |   13 +-
- include/linux/platform_data/ads7828.h |   29 +++
- 12 files changed, 607 insertions(+), 224 deletions(-)
- create mode 100644 Documentation/hwmon/da9055
- create mode 100644 drivers/hwmon/da9055-hwmon.c
- create mode 100644 include/linux/platform_data/ads7828.h
-
---bg08WKrSYDhXBjb5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQxsvaAAoJEMsfJm/On5mBknIP/irp7q0KiK0kUczgTA2Lq5ga
-9N5kbJ3S7T4JuRLgQyPqDzIMgf9qpDk/WXNVcF39vux6t2Ofc+tcTzNbXM7DFXXm
-qUt41j2/6v2o17hpfIXtgEEi2zDJSPFBfnfxf357dvjXj+kq/abpDHY1g6nL5i0g
-lk4M40H9LsQMeQ7/6IDfQvTpjm7dxcFiq9cqm40kiTabWbo+PK0G43I2mfHvyBC7
-TGI5DwywKyVNWgBAZ1HiFexirmnORtFof8YmqOrdxOOuEc5MTiX7wZLiMs6Xx9ZH
-z8MVWIykC6MDex1RIZagnoM1CW1+5STb25iSEfBFFm8/PBSlULnJuMuh4pNgd2KW
-RRtflWvQQQPQ563f8ZMqjWHZ9dNdIsB0YROP6ffNXf4pqD5pMWhJ0mq+6MLGyHJ3
-paN9s7JlYI1tuzIMAryv/vkI+yvnZiVeZhcE13SLgaOpgjSTZy+7MxHzpoLilFJV
-WUvlvQRGpcW+prKBD59d3nU5vAy13proV/yyFGJkil4Wbtj3qRENSSSZ3WvSEJxg
-jxtGyCBJgeiS/8pZm6xdNNoQFmo79pio4TxnacKkoIjmiikm3fkCZyyAJNorZycY
-idqqBquPL0iV9WckE8fBGJQy/7Niv3RgX4Vlg2lIrehIwrUXhYI/wES1Kkmgz1fw
-Do/iwmmvUgnjgZHvjoef
-=VZft
------END PGP SIGNATURE-----
-
---bg08WKrSYDhXBjb5--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
