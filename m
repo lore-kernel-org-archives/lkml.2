@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab2LKVbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:31:38 -0500
-Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:59741 "EHLO
-	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442Ab2LKVbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:31:37 -0500
-X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 16:31:36 EST
-Date: Wed, 12 Dec 2012 01:25:56 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers/w1/masters/mxc_w1.c: use devm_ functions
-Message-ID: <20121211212555.GA15333@ioremap.net>
-References: <1354835724-26945-2-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354835724-26945-2-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754762Ab2LKVgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:36:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44022 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab2LKVgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 16:36:46 -0500
+Date: Tue, 11 Dec 2012 13:36:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: dingel@linux.vnet.ibm.com
+Cc: David Rientjes <rientjes@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] remove unused code from do_wp_page
+Message-Id: <20121211133645.64a712d7.akpm@linux-foundation.org>
+In-Reply-To: <1355237090-52434-1-git-send-email-dingel@linux.vnet.ibm.com>
+References: <1355237090-52434-1-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, 11 Dec 2012 15:44:50 +0100
+dingel@linux.vnet.ibm.com wrote:
 
-On Fri, Dec 07, 2012 at 12:15:24AM +0100, Julia Lawall (Julia.Lawall@lip6.fr) wrote:
-> +	mdev = devm_kzalloc(&pdev->dev, sizeof(struct mxc_w1_device),
-> +			    GFP_KERNEL);
->  	if (!mdev)
->  		return -ENOMEM;
->  
-> -	mdev->clk = clk_get(&pdev->dev, NULL);
-> -	if (IS_ERR(mdev->clk)) {
-> -		err = PTR_ERR(mdev->clk);
-> -		goto failed_clk;
-> -	}
-> +	mdev->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (IS_ERR(mdev->clk))
-> +		return PTR_ERR(mdev->clk);
->  
->  	mdev->clkdiv = (clk_get_rate(mdev->clk) / 1000000) - 1;
->  
-> -	res = request_mem_region(res->start, resource_size(res),
-> -				"mxc_w1");
-> -	if (!res) {
-> -		err = -EBUSY;
-> -		goto failed_req;
-> -	}
-> -
-> -	mdev->regs = ioremap(res->start, resource_size(res));
-> -	if (!mdev->regs) {
-> -		dev_err(&pdev->dev, "Cannot map mxc_w1 registers\n");
-> -		goto failed_ioremap;
-> -	}
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	mdev->regs = devm_request_and_ioremap(&pdev->dev, res);
-> +	if (!mdev->regs)
-> +		return -EBUSY;
+> From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+> 
+> page_mkwrite is initalized with zero and only set once, from that point exists no way to get to the oom or oom_free_new labels.
+> 
+> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+> ---
+>  mm/memory.c | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 221fc9f..c322708 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2795,10 +2795,6 @@ oom_free_new:
+>  	page_cache_release(new_page);
+>  oom:
+>  	if (old_page) {
+> -		if (page_mkwrite) {
+> -			unlock_page(old_page);
+> -			page_cache_release(old_page);
+> -		}
+>  		page_cache_release(old_page);
+>  	}
+>  	return VM_FAULT_OOM;
 
-I suppose mdev will be automatically freed, but who will release
-mdev->clk and other private members of mdev structure?
+I hope you've checked all this carefully, including the "goto reuse"
+and "goto gotten" paths.  I *think* it's OK, but geeze. And the oom path
+surely gets very little testing.
 
--- 
-	Evgeniy Polyakov
+do_wp_page() has become truly awful.  I'm wondering if we should
+actually leave that code in there in case something changes in the
+future and it becomes necessary.
+
+With my compiler version this patch actually increases the size of
+memory.o's text by 7 bytes.  Odd.
+
+Ho hum.  You should also have done this:
+
+--- a/mm/memory.c~mm-memoryc-remove-unused-code-from-do_wp_page-fix
++++ a/mm/memory.c
+@@ -2780,9 +2780,8 @@ unlock:
+ oom_free_new:
+ 	page_cache_release(new_page);
+ oom:
+-	if (old_page) {
++	if (old_page)
+ 		page_cache_release(old_page);
+-	}
+ 	return VM_FAULT_OOM;
+ 
+ unwritable_page:
+_
+
