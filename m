@@ -1,79 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab2LKVTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:19:07 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40894 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab2LKVTE (ORCPT
+	id S1753922Ab2LKVVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:21:00 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37438 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753110Ab2LKVU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:19:04 -0500
+	Tue, 11 Dec 2012 16:20:58 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-keystone@list.ti.com>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH - v2] spi: davinci: add OF support for the spi controller
+Date: Tue, 11 Dec 2012 16:20:39 -0500
+Message-ID: <1355260839-29865-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1355259259.30831.13.camel@wall-e>
-References: <1355242260-28762-1-git-send-email-stefani@seibold.net>
- <50C78927.6080302@linaro.org> <1355259259.30831.13.camel@wall-e>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Dec 2012 13:18:42 -0800
-Message-ID: <CALCETrVAhncj7R7pCTBqn9erC_fKoWzaO-PFBdf=d6-wQJCzTg@mail.gmail.com>
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-To: Stefani Seibold <stefani@seibold.net>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com, aarcange@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 12:54 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> Am Dienstag, den 11.12.2012, 11:27 -0800 schrieb John Stultz:
->> On 12/11/2012 08:11 AM, stefani@seibold.net wrote:
->> > From: Stefani Seibold <stefani@seibold.net>
->> >
->> > This small patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
->> > and vdso_time() support to the VDSO for x86 32-bit kernels.
->> >
->> > The reason to do this was to get a fast reliable time stamp. Many developers
->> > uses TSC to get a fast time time stamp, without knowing the pitfalls. VDSO
->> > time functions a fast and reliable way, because the kernel knows the best time
->> > source and the P- and C-state of the CPU.
->> Very cool. There have been similar implementations of this patch over
->> the years, but they were all bit more hackish then this.
->>
-> Thanks, i think it is not more hackish than the x86 64 code.
->
->>
->> > For x86 the vclock_gettime.c currently supports only the HPET and TSC timer,
->> > the ACPI timer should be easily to add with an other patch.
->> Although the ACPI PM timer requires port-io which would need tweaking to
->> allow normal users to access it. And I'm not sure if the performance
->> would be much improved, as the port-io probably dominates the
->> performance cost.
->>
->
-> It was only an idea. I think it would be easy to give the ioperm read
-> for the ACPI Timer without breaking anything.
+This adds OF support to DaVinci SPI controller to configure platform
+data through device bindings. Also replaces clk_enable() with
+of clk_prepare_enable() as well as clk_disable() with
+clk_disable_unprepare().
 
-I think you'll have to be careful not to make context switches slower
-if you do this.  IIRC ioperm bitmaps live in the task structure (the
-i386 thing, not task_struct) and require extra slow instructions.
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Reviewed-by : Grant Likely <grant.likely@secretlab.ca>
+---
+ - Change log
+ - v2 - changed the compatibility strings to include soc name
+      -  changed ti,davinci-num-cs to num-cs
+   v1 - removed attribute for spi version. instead, compatibility string is
+         modified to include version info.
+      - pdata ptr in davinci_spi_platform_data is replaced with struct itself.
+      - spi_davinci_get_pdata() now populates the pdata in the above structure
+         with parsed values from DT bindings.
+      - rebased to v3.7 rc7 of linux-next
+      - replaces clk_* APIs with their prepare/unprepare version
+ .../devicetree/bindings/spi/spi-davinci.txt        |   51 ++++++++++
+ drivers/spi/spi-davinci.c                          |  102 +++++++++++++++++---
+ 2 files changed, 139 insertions(+), 14 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-davinci.txt
 
-I still think we should do TSC only.
+diff --git a/Documentation/devicetree/bindings/spi/spi-davinci.txt b/Documentation/devicetree/bindings/spi/spi-davinci.txt
+new file mode 100644
+index 0000000..8cb3fee
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi-davinci.txt
+@@ -0,0 +1,51 @@
++Davinci SPI controller device bindings
++
++Required properties:
++- #address-cells: number of cells required to define a chip select
++	address on the SPI bus. Should be set to 1.
++- #size-cells: should be zero.
++- compatible:
++	- "ti,dm644x-spi" for SPI used similar to that on DM644x SoC family
++	- "ti,da8xx-spi" for SPI used similar to that on DA8xx SoC family
++- reg: Offset and length of SPI controller register space
++- num-cs: Number of chip selects
++- ti,davinci-spi-intr-line: interrupt line used to connect the SPI
++	IP to the interrupt controller withn the SoC. Possible values
++	are 0 and 1. Manual says one of the two possible interrupt
++	lines can be tied to the interrupt controller. Set this
++	based on a specifc SoC configuration.
++- interrupts: interrupt number offset at the irq parent
++- clocks: spi clk phandle
++
++Example of a NOR flash slave device (n25q032) connected to DaVinci
++SPI controller device over the SPI bus.
++
++spi0:spi@20BF0000 {
++	#address-cells			= <1>;
++	#size-cells			= <0>;
++	compatible			= "ti,dm644x-spi";
++	reg				= <0x20BF0000 0x1000>;
++	num-cs				= <4>;
++	ti,davinci-spi-intr-line	= <0>;
++	interrupts			= <338>;
++	clocks				= <&clkspi>;
++
++	flash: n25q032@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "st,m25p32";
++		spi-max-frequency = <25000000>;
++		reg = <0>;
++
++		partition@0 {
++			label = "u-boot-spl";
++			reg = <0x0 0x80000>;
++			read-only;
++		};
++
++		partition@1 {
++			label = "test";
++			reg = <0x80000 0x380000>;
++		};
++	};
++};
+diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
+index 147dfa8..e5d8489 100644
+--- a/drivers/spi/spi-davinci.c
++++ b/drivers/spi/spi-davinci.c
+@@ -28,6 +28,8 @@
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/edma.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/spi_bitbang.h>
+ #include <linux/slab.h>
+@@ -135,7 +137,7 @@ struct davinci_spi {
+ 	int			dma_rx_chnum;
+ 	int			dma_tx_chnum;
+ 
+-	struct davinci_spi_platform_data *pdata;
++	struct davinci_spi_platform_data pdata;
+ 
+ 	void			(*get_rx)(u32 rx_data, struct davinci_spi *);
+ 	u32			(*get_tx)(struct davinci_spi *);
+@@ -213,7 +215,7 @@ static void davinci_spi_chipselect(struct spi_device *spi, int value)
+ 	bool gpio_chipsel = false;
+ 
+ 	dspi = spi_master_get_devdata(spi->master);
+-	pdata = dspi->pdata;
++	pdata = &dspi->pdata;
+ 
+ 	if (pdata->chip_sel && chip_sel < pdata->num_chipselect &&
+ 				pdata->chip_sel[chip_sel] != SPI_INTERN_CS)
+@@ -392,7 +394,7 @@ static int davinci_spi_setup(struct spi_device *spi)
+ 	struct davinci_spi_platform_data *pdata;
+ 
+ 	dspi = spi_master_get_devdata(spi->master);
+-	pdata = dspi->pdata;
++	pdata = &dspi->pdata;
+ 
+ 	/* if bits per word length is zero then set it default 8 */
+ 	if (!spi->bits_per_word)
+@@ -534,7 +536,7 @@ static int davinci_spi_bufs(struct spi_device *spi, struct spi_transfer *t)
+ 	struct scatterlist sg_rx, sg_tx;
+ 
+ 	dspi = spi_master_get_devdata(spi->master);
+-	pdata = dspi->pdata;
++	pdata = &dspi->pdata;
+ 	spicfg = (struct davinci_spi_config *)spi->controller_data;
+ 	if (!spicfg)
+ 		spicfg = &davinci_spi_default_cfg;
+@@ -758,6 +760,70 @@ rx_dma_failed:
+ 	return r;
+ }
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id davinci_spi_of_match[] = {
++	{
++		.compatible = "ti,dm644x-spi",
++	},
++	{
++		.compatible = "ti,da8xx-spi",
++		.data = (void *)SPI_VERSION_2,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, davini_spi_of_match);
++
++/**
++ * spi_davinci_get_pdata - Get platform data from DTS binding
++ * @pdev: ptr to platform data
++ * @dspi: ptr to driver data
++ *
++ * Parses and populates pdata in dspi from device tree bindings.
++ *
++ * NOTE: Not all platform data params are supported currently.
++ */
++static int spi_davinci_get_pdata(struct platform_device *pdev,
++			struct davinci_spi *dspi)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct davinci_spi_platform_data *pdata;
++	unsigned int num_cs, intr_line = 0;
++	const struct of_device_id *match;
++
++	pdata = &dspi->pdata;
++
++	pdata->version = SPI_VERSION_1;
++	match = of_match_device(of_match_ptr(davinci_spi_of_match),
++				&pdev->dev);
++	if (!match)
++		return -ENODEV;
++
++	/* match data has the SPI version number for SPI_VERSION_2 */
++	if (match->data == (void *)SPI_VERSION_2)
++		pdata->version = SPI_VERSION_2;
++
++	/*
++	 * default num_cs is 1 and all chipsel are internal to the chip
++	 * indicated by chip_sel being NULL. GPIO based CS is not
++	 * supported yet in DT bindings.
++	 */
++	num_cs = 1;
++	of_property_read_u32(node, "num-cs", &num_cs);
++	pdata->num_chipselect = num_cs;
++	of_property_read_u32(node, "ti,davinci-spi-intr-line", &intr_line);
++	pdata->intr_line = intr_line;
++	return 0;
++}
++#else
++#define davinci_spi_of_match NULL
++static struct davinci_spi_platform_data
++	*spi_davinci_get_pdata(struct platform_device *pdev,
++		struct davinci_spi *dspi)
++{
++	return -ENODEV;
++}
++#endif
++
+ /**
+  * davinci_spi_probe - probe function for SPI Master Controller
+  * @pdev: platform_device structure which contains plateform specific data
+@@ -780,12 +846,6 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
+ 	int i = 0, ret = 0;
+ 	u32 spipc0;
+ 
+-	pdata = pdev->dev.platform_data;
+-	if (pdata == NULL) {
+-		ret = -ENODEV;
+-		goto err;
+-	}
+-
+ 	master = spi_alloc_master(&pdev->dev, sizeof(struct davinci_spi));
+ 	if (master == NULL) {
+ 		ret = -ENOMEM;
+@@ -800,6 +860,19 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
+ 		goto free_master;
+ 	}
+ 
++	if (pdev->dev.platform_data) {
++		pdata = pdev->dev.platform_data;
++		dspi->pdata = *pdata;
++	} else {
++		/* update dspi pdata with that from the DT */
++		ret = spi_davinci_get_pdata(pdev, dspi);
++		if (ret < 0)
++			goto free_master;
++	}
++
++	/* pdata in dspi is now updated and point pdata to that */
++	pdata = &dspi->pdata;
++
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (r == NULL) {
+ 		ret = -ENOENT;
+@@ -807,7 +880,6 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	dspi->pbase = r->start;
+-	dspi->pdata = pdata;
+ 
+ 	mem = request_mem_region(r->start, resource_size(r), pdev->name);
+ 	if (mem == NULL) {
+@@ -843,8 +915,9 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		goto put_master;
+ 	}
+-	clk_enable(dspi->clk);
++	clk_prepare_enable(dspi->clk);
+ 
++	master->dev.of_node = pdev->dev.of_node;
+ 	master->bus_num = pdev->id;
+ 	master->num_chipselect = pdata->num_chipselect;
+ 	master->setup = davinci_spi_setup;
+@@ -927,7 +1000,7 @@ free_dma:
+ 	dma_release_channel(dspi->dma_rx);
+ 	dma_release_channel(dspi->dma_tx);
+ free_clk:
+-	clk_disable(dspi->clk);
++	clk_disable_unprepare(dspi->clk);
+ 	clk_put(dspi->clk);
+ put_master:
+ 	spi_master_put(master);
+@@ -963,7 +1036,7 @@ static int __devexit davinci_spi_remove(struct platform_device *pdev)
+ 
+ 	spi_bitbang_stop(&dspi->bitbang);
+ 
+-	clk_disable(dspi->clk);
++	clk_disable_unprepare(dspi->clk);
+ 	clk_put(dspi->clk);
+ 	spi_master_put(master);
+ 	free_irq(dspi->irq, dspi);
+@@ -978,6 +1051,7 @@ static struct platform_driver davinci_spi_driver = {
+ 	.driver = {
+ 		.name = "spi_davinci",
+ 		.owner = THIS_MODULE,
++		.of_match_table = davinci_spi_of_match,
+ 	},
+ 	.probe = davinci_spi_probe,
+ 	.remove = __devexit_p(davinci_spi_remove),
+-- 
+1.7.9.5
 
->> Could you expand a bit as to why a compat layer isn't possible? It seems
->> we could easily convert the vsyscall_gtod_data to a more explicit
->> arch-neutral size. Or is it the actual data page mapping?
->>
->
-> This could be done in a subsequent patch. First i want not change to
-> much, to make the review easier. Converting the vsyscall_gtod_data to
-> arch neutral is not so easy, because the size of time_t, timezone and
-> timespec differs. So currently 32 bit programs running under a 64 bit
-> kernel will not get a VDSO with time functions. But real 32 bit kernel
-> will provide it.
->
->
-
-How would you address the vvar page in 32-bit userspace on a 64-bit
-kernel?  Would you map it low for 32-bit tasks or play descriptor
-games?
-
---Andy
