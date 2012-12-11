@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab2LKRkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:40:31 -0500
-Received: from mga12.intel.com ([143.182.124.36]:42871 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752953Ab2LKRk3 (ORCPT
+	id S1753760Ab2LKRmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:42:20 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50542 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457Ab2LKRmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:40:29 -0500
+	Tue, 11 Dec 2012 12:42:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-	<1355234914.2356.85.camel@falcor>
-	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-Date: Tue, 11 Dec 2012 19:40:17 +0200
-Message-ID: <CALLzPKZQ3=qNOxJk-yqDGEzqkcKLoc9tPPD8o9QbJOUOB1nWuQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
+In-Reply-To: <CACxGe6sL6p2_9n3yPip=h_ZHK3g7CjjnMpwGdQ6wiE7HrdRnTQ@mail.gmail.com>
+References: <CACxGe6sL6p2_9n3yPip=h_ZHK3g7CjjnMpwGdQ6wiE7HrdRnTQ@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 11 Dec 2012 17:41:57 +0000
+X-Google-Sender-Auth: fhboeKxMNb5nOYQ2vS4qqDeq-ho
+Message-ID: <CACxGe6smjuSa-WYcEiy5DOqH_5wHz0X0d1hGJS82fdEF5fqSTg@mail.gmail.com>
+Subject: Fwd: [GIT PULL] irqdomain changes for v3.8
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 6:59 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Dec 11, 2012 at 6:08 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> On Tue, 2012-12-11 at 14:51 +0200, Kasatkin, Dmitry wrote:
->>> >>
->>> >> Two months ago I was asking about it on mailing lists.
->>> >> Suggestion was not to use s_flags, but e.g. s_feature_flags.
->
-> Quite frankly, this seems stupid.
+It helps when I CC the mailing list.  :-/
 
-What exactly seems stupid here?
+---------- Forwarded message ----------
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, Dec 11, 2012 at 5:34 PM
+Subject: [GIT PULL] irqdomain changes for v3.8
+To: Linus Torvalds <torvalds@linux-foundation.org>
 
->
-> Without really knowing the problem space, the sane thing to do would
-> seem to be inode->i_flags. At which point it's
->
->  (a) faster to test (no need to dereference inode->i_sb)
->
->  (b) matches what the integrity layer does with S_IMA (well, there the
-> logic is reversed: S_IMA means that it has a integrity structure
-> associated with it)
->
->  (c) allows you to mark individual inodes as "no checking".
->
+Hi Linus.
 
-There are inode specific objects which IMA uses for such perpose.
+This is all the irqdomain changes I have for v3.8. Please pull.
 
-> and quite frankly, (c) in particular seems to make sense to me, since
-> it would seem to be rather possible to do things like "I've checked
-> this inode, it had no policies associated with it, I never need to
-> check it again". Clear the flag when policies change or whatever.
->
-> What's the advantage of making it per-filesystem?
->
+g.
 
-There are different filesystems which are not checked by IMA/EVM,
-such as pseudo-filesystems. For this reason it is good to have a way to
-ignore such filesystems without to much work in IMA code.
-No reason to check policy again and again for every inode on the filesystem
-when the result will always be to ignore the filesystem.
+The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
 
-Per-filesystem flag soles this problem.
+  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
 
-- Dmitry
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 tags/irqdomain-for-linus
+
+for you to fetch changes up to 023bba36387de704b3ea2a69bf9f9ed2301cfbcc:
+
+  irqdomain: update documentation (2012-12-05 23:52:10 +0000)
+
+----------------------------------------------------------------
+irqdomain changes for Linux v3.8
+
+Trivial changes to irqdomain. An update to the documentation and make
+one of the error paths not quite so obnoxious.
+
+----------------------------------------------------------------
+Linus Walleij (2):
+      irqdomain: stop screaming about preallocated irqdescs
+      irqdomain: update documentation
+
+ Documentation/IRQ-domain.txt |   34 +++++++++++++++++++++++++++++++++-
+ kernel/irq/irqdomain.c       |    4 ++--
+ 2 files changed, 35 insertions(+), 3 deletions(-)
 
 
->             Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
