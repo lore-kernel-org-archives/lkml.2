@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab2LKREw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 12:04:52 -0500
-Received: from mga03.intel.com ([143.182.124.21]:7481 "EHLO mga03.intel.com"
+	id S1754123Ab2LKRGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 12:06:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46959 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab2LKREv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 12:04:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,260,1355126400"; 
-   d="scan'208";a="229995075"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pstore fixes for 3.8 merge window
-Date: Tue, 11 Dec 2012 09:04:50 -0800
-Message-Id: <50c767b243957db9@agluck-desk.sc.intel.com>
+	id S1753728Ab2LKRGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 12:06:08 -0500
+Date: Tue, 11 Dec 2012 18:06:06 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+Message-ID: <20121211170605.GD28827@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	"Yu, Fenghua" <fenghua.yu@intel.com>,
+	"mingo@kernel.org" <mingo@kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"tglx@linutronix.de" <tglx@linutronix.de>,
+	"hpa@linux.intel.com" <hpa@linux.intel.com>,
+	"linux-tip-commits@vger.kernel.org" <linux-tip-commits@vger.kernel.org>
+References: <3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com>
+ <CAE9FiQXGZYZiH3eUup2UXGWkeqKjsiHk7aMTFJO7xxFkqTpBZA@mail.gmail.com>
+ <50C6AB63.9070008@zytor.com>
+ <CAE9FiQX7sPLXOacoLakaJ1qC5UuSUbrX_g7N-oWmLYg5W-91UA@mail.gmail.com>
+ <50C6D3DF.3030209@zytor.com>
+ <CAE9FiQUiEx=p6wTC5wu_E=ih1CSBaTmw90zsc2=+xu6rMO5usg@mail.gmail.com>
+ <20121211145716.GB8873@liondog.tnic>
+ <CAE9FiQVByBTHwPrtYvVxv4u9QrtN1iN6GH9YaDn3dvmwv5Sg7g@mail.gmail.com>
+ <50C763C2.5020603@zytor.com>
+ <CAE9FiQUzHBb5SiEhfrOg7hFbuD1H1-7aXa0aTjhZ9tNqdrwGqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUzHBb5SiEhfrOg7hFbuD1H1-7aXa0aTjhZ9tNqdrwGqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
+On Tue, Dec 11, 2012 at 09:00:55AM -0800, Yinghai Lu wrote:
+> ok, then next question is how early it should be.
+> 
+> before early_cpu_init/early_identify_cpu
+> 
+> or just before check_bugs/identify_cpu
 
-  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
+Read the code. It's in x86_64_start_kernel on 64-bit.
 
-are available in the git repository at:
+-- 
+Regards/Gruss,
+    Boris.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git tags/please-pull-pstore_mevent
-
-for you to fetch changes up to f94ec0c0594ef73ab3a2f1f32735aca8ddaf65e2:
-
-  efi_pstore: Add a format check for an existing variable name at erasing time (2012-11-26 16:08:37 -0800)
-
-----------------------------------------------------------------
-Patch series to allow EFI variable backend to pstore
-to hold multiple records.
-
-----------------------------------------------------------------
-Seiji Aguchi (7):
-      efi_pstore: Check remaining space with QueryVariableInfo() before writing data
-      efi_pstore: Add a logic erasing entries to an erase callback
-      efi_pstore: Remove a logic erasing entries from a write callback to hold multiple logs
-      efi_pstore: Add ctime to argument of erase callback
-      efi_pstore: Add a sequence counter to a variable name
-      efi_pstore: Add a format check for an existing variable name at reading time
-      efi_pstore: Add a format check for an existing variable name at erasing time
-
- drivers/acpi/apei/erst.c   |   16 ++---
- drivers/firmware/efivars.c |  163 +++++++++++++++++++++++++++++++-------------
- fs/pstore/inode.c          |    7 +-
- fs/pstore/internal.h       |    2 +-
- fs/pstore/platform.c       |   13 ++--
- fs/pstore/ram.c            |    9 ++-
- include/linux/efi.h        |    1 +
- include/linux/pstore.h     |    6 +-
- 8 files changed, 144 insertions(+), 73 deletions(-)
+Sent from a fat crate under my desk. Formatting is fine.
+--
