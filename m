@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab2LKFbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:31:33 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42874 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab2LKFba (ORCPT
+	id S1752813Ab2LKFs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 00:48:56 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:35012 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab2LKFsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:31:30 -0500
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        Abhijit Pawar <abhi.c.pawar@gmail.com>
-Subject: [PATCH 2/2] net: remove obsolete simple_strto<foo>
-Date: Tue, 11 Dec 2012 11:00:52 +0530
-Message-Id: <1355203852-12749-1-git-send-email-abhi.c.pawar@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 11 Dec 2012 00:48:54 -0500
+Message-ID: <50C6C930.90206@in.ibm.com>
+Date: Tue, 11 Dec 2012 11:18:32 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: benh@kernel.crashing.org, Kumar Gala <galak@kernel.crashing.org>
+CC: "Suzuki K. Poulose" <suzuki@in.ibm.com>, bigeasy@linutronix.de,
+        oleg@redhat.com, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, anton@redhat.com, mingo@elte.hu
+Subject: Re: [PATCH v2 1/4] kprobes/powerpc: Do not disable External interrupts
+ during single step
+References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150720.7727.91582.stgit@suzukikp>
+In-Reply-To: <20121203150720.7727.91582.stgit@suzukikp>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121105-5490-0000-0000-000002A0F7A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the redundant occurences of simple_strto<foo>
+On 12/03/2012 08:37 PM, Suzuki K. Poulose wrote:
+> From: Suzuki K. Poulose <suzuki@in.ibm.com>
+>
+> External/Decrement exceptions have lower priority than the Debug Exception.
+> So, we don't have to disable the External interrupts before a single step.
+> However, on BookE, Critical Input Exception(CE) has higher priority than a
+> Debug Exception. Hence we mask them.
+>
+> Signed-off-by: 	Suzuki K. Poulose <suzuki@in.ibm.com>
+> Cc:		Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Cc:		Ananth N Mavinakaynahalli <ananth@in.ibm.com>
+> Cc:		Kumar Gala <galak@kernel.crashing.org>
+> Cc:		linuxppc-dev@ozlabs.org
+> ---
+>   arch/powerpc/kernel/kprobes.c |   10 +++++-----
+>   1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
+> index e88c643..4901b34 100644
+> --- a/arch/powerpc/kernel/kprobes.c
+> +++ b/arch/powerpc/kernel/kprobes.c
+> @@ -104,13 +104,13 @@ void __kprobes arch_remove_kprobe(struct kprobe *p)
+>
+>   static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
+>   {
+> -	/* We turn off async exceptions to ensure that the single step will
+> -	 * be for the instruction we have the kprobe on, if we dont its
+> -	 * possible we'd get the single step reported for an exception handler
+> -	 * like Decrementer or External Interrupt */
+> -	regs->msr &= ~MSR_EE;
+>   	regs->msr |= MSR_SINGLESTEP;
+>   #ifdef CONFIG_PPC_ADV_DEBUG_REGS
+> +	/*
+> +	 * We turn off Critical Input Exception(CE) to ensure that the single
+> +	 * step will be for the instruction we have the probe on; if we don't,
+> +	 * it is possible we'd get the single step reported for CE.
+> +	 */
+>   	regs->msr &= ~MSR_CE;
+>   	mtspr(SPRN_DBCR0, mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
+>   #ifdef CONFIG_PPC_47x
+>
 
-Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
----
- net/core/netpoll.c                |    1 -
- net/mac80211/debugfs_sta.c        |    1 -
- net/netfilter/nf_conntrack_core.c |    1 -
- 3 files changed, 0 insertions(+), 3 deletions(-)
+Ben, Kumar,
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 12c129f..3151acf 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -706,7 +706,6 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 		*delim = 0;
- 		if (*cur == ' ' || *cur == '\t')
- 			np_info(np, "warning: whitespace is not allowed\n");
--		np->remote_port = simple_strtol(cur, NULL, 10);
- 		if (kstrtou16(cur, 10, &np->remote_port))
- 			goto parse_failed;
- 		cur = delim;
-diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
-index 0dedb4b..6fb1168 100644
---- a/net/mac80211/debugfs_sta.c
-+++ b/net/mac80211/debugfs_sta.c
-@@ -220,7 +220,6 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
- 	} else
- 		return -EINVAL;
- 
--	tid = simple_strtoul(buf, NULL, 0);
- 	ret = kstrtoul(buf, 0, &tid);
- 	if (ret)
- 		return ret;
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index 37d9e62..08cdc71 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1422,7 +1422,6 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
- 	if (!nf_conntrack_htable_size)
- 		return param_set_uint(val, kp);
- 
--	hashsize = simple_strtoul(val, NULL, 0);
- 	rc = kstrtouint(val, 0, &hashsize);
- 	if (rc)
- 		return rc;
--- 
-1.7.7.6
+Could you please review this patch ?
+
+
+Thanks
+Suzuki
 
