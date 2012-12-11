@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab2LKMKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 07:10:09 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:38406 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab2LKMKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 07:10:08 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Mack <zonque@gmail.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] w1:masters/w1-gpio.c: fix error using "__devinit" and "__devexit"
-Date: Tue, 11 Dec 2012 12:08:54 +0000
-Message-Id: <1355227740-4377-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.4.5
+	id S1753262Ab2LKMKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 07:10:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22609 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610Ab2LKMKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 07:10:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,259,1355126400"; 
+   d="scan'208";a="260464110"
+Message-ID: <50C722AC.3080806@intel.com>
+Date: Tue, 11 Dec 2012 20:10:20 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Alex Shi <lkml.alex@gmail.com>
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into
+ LB and power awareness scheduling
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com>
+In-Reply-To: <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-w1:masters/w1-gpio.c: fix error using "__devinit" and "__devexit"
+On 12/11/2012 08:51 AM, Alex Shi wrote:
+> On Mon, Dec 10, 2012 at 4:22 PM, Alex Shi <alex.shi@intel.com> wrote:
+>> This patchset base on tip/sched/core tree temporary, since it is more
+>> steady than tip/master. and it's easy to rebase on tip/master.
+>>
+>> It includes 3 parts changes.
+>>
+>> 1, simplified fork, patch 1~4, that simplified the fork/exec/wake log in
+>> find_idlest_group and select_task_rq_fair. it can increase 10+%
+>> hackbench process and thread performance on our 4 sockets SNB EP machine.
+>>
+>> 2, enable load average into LB, patch 5~9, that using load average in
+>> load balancing, with a runnable load value industrialization bug fix and
+>> new fork task load contrib enhancement.
+>>
+>> 3, power awareness scheduling, patch 10~18,
+>> Defined 2 new power aware policy balance and
+>> powersaving, and then try to spread or shrink tasks on CPU unit
+>> according the different scheduler policy. That can save much power when
+>> task number in system is no more then cpu number.
+> 
+> tried with sysbench fileio test rndrw mode, with half thread of LCPU number,
+> performance is similar, power can save about 5~10 Watts on 2 sockets SNB EP
+> and NHM EP boxes.
 
-we should use "__devinit" to mark the probe function, "__devexit" to
-mark the remove function, and "__devexit_p" to mark the pointer to the
-remove function.
+Another testing of parallel compress with pigz on Linus' git tree.
+results show we get much better performance/power with powersaving and
+balance policy:
 
-the error was found by the following compilation warning:
-WARNING: drivers/w1/masters/w1-gpio.o(.data+0x0): Section mismatch in
-reference from the variable w1_gpio_driver to the function
-.init.text:w1_gpio_probe()
-The variable w1_gpio_driver references
-the function __init w1_gpio_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+testing command:
+#pigz -k -c  -p$x -r linux* &> /dev/null
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/w1/masters/w1-gpio.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+On a NHM EP box
+         powersaving               balance   	         performance
+x = 4    166.516 /88 68           170.515 /82 71         165.283 /103 58
+x = 8    173.654 /61 94           177.693 /60 93         172.31 /76 76
 
-diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index 85b363a..33edc3b 100644
---- a/drivers/w1/masters/w1-gpio.c
-+++ b/drivers/w1/masters/w1-gpio.c
-@@ -72,7 +72,7 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int __init w1_gpio_probe(struct platform_device *pdev)
-+static int __devinit w1_gpio_probe(struct platform_device *pdev)
- {
- 	struct w1_bus_master *master;
- 	struct w1_gpio_platform_data *pdata;
-@@ -158,7 +158,7 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
- 	return err;
- }
- 
--static int __exit w1_gpio_remove(struct platform_device *pdev)
-+static int __devexit w1_gpio_remove(struct platform_device *pdev)
- {
- 	struct w1_bus_master *master = platform_get_drvdata(pdev);
- 	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
-@@ -210,7 +210,7 @@ static struct platform_driver w1_gpio_driver = {
- 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
- 	},
- 	.probe = w1_gpio_probe,
--	.remove	= __exit_p(w1_gpio_remove),
-+	.remove	= __devexit_p(w1_gpio_remove),
- 	.suspend = w1_gpio_suspend,
- 	.resume = w1_gpio_resume,
- };
--- 
-1.7.4.5
+On a 2 sockets SNB EP box.
+         powersaving               balance   	         performance
+x = 4    190.995 /149 35          200.6 /129 38          208.561 /135 35
+x = 8    197.969 /108 46          208.885 /103 46        213.96 /108 43
+x = 16   205.163 /76 64           212.144 /91 51         229.287 /97 44
+
+data format is: 166.516 /88 68
+        166.516: avagerage Watts
+        88: seconds(compress time)
+        68:  scaled performance/power = 1000000 / time / power
+
 
