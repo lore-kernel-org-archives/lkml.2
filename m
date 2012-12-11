@@ -1,102 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab2LKWHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:07:05 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:47808 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754155Ab2LKWHD (ORCPT
+	id S1754820Ab2LKWJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:09:50 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45785 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753627Ab2LKWJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:07:03 -0500
-Date: Wed, 12 Dec 2012 00:06:56 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, LDOC <linux-doc@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Chris MacGregor <chris@cybermato.com>, Rob Landley <rob@landley.net>,
-        Jeongtae Park <jtp.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH RFC v2] media: v4l2-ctrl: Add gain controls
-Message-ID: <20121211220656.GD3747@valkosipuli.retiisi.org.uk>
-References: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com>
- <CA+V-a8t+KxCYunkrT715zQks=5HOrFk2PSM2Ss_kTj4iXg=PJg@mail.gmail.com>
- <20121206095431.GA2887@valkosipuli.retiisi.org.uk>
- <201212110956.43081.hverkuil@xs4all.nl>
+	Tue, 11 Dec 2012 17:09:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmMOALqux1B5LO66/2dsb2JhbABFhU6ycYYQF3OCHgEBBAE6HCMFCwgDDgouFCUDIROICwW7bxSMNoNiYQOWBpBJgwc
+Date: Wed, 12 Dec 2012 09:09:44 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121211220944.GB16353@dastard>
+References: <20121207011628.GB16373@gmail.com>
+ <50C22923.90102@redhat.com>
+ <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
+ <20121207190306.GB14972@shiny>
+ <20121208001705.GO27172@dastard>
+ <20121210173739.GA1359@thunk.org>
+ <1355162759.2704.50.camel@menhir>
+ <20121210181328.GB7516@thunk.org>
+ <20121210182053.GC7516@thunk.org>
+ <1355228163.2721.32.camel@menhir>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201212110956.43081.hverkuil@xs4all.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1355228163.2721.32.camel@menhir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On Tue, Dec 11, 2012 at 09:56:42AM +0100, Hans Verkuil wrote:
-...
-> > > > If I set both V4L2_CID_GAIN_RED and V4L2_CID_RED_OFFSET, how are they supposed
-> > > > to interact? Or are they mutually exclusive?
-> > > >
-> > > > And if I set both V4L2_CID_GAIN_OFFSET and V4L2_CID_RED_OFFSET, how are they supposed
-> > > > to interact?
-> > > >
-> > > > This questions should be answered in the documentation...
-> > > >
-> > > I haven’t worked on the hardware which supports both, What is the general
-> > > behaviour when the hardware supports both per color component and global
-> > > and both of them are set ? That could be helpful for me to document.
+On Tue, Dec 11, 2012 at 12:16:03PM +0000, Steven Whitehouse wrote:
+> On Mon, 2012-12-10 at 13:20 -0500, Theodore Ts'o wrote:
+> > A sentence or two got chopped out during an editing pass.  Let me try
+> > that again so it's a bit clearer what I was trying to say....
 > > 
-> > I'd guess most of the time only either one is supported,
-> 
-> Are you talking about GAIN_RED vs GAIN_RED_OFFSET or GAIN_OFFSET vs RED_OFFSET?
-> Or both?
-
-Per-component vs. global controls.
-
-Few devices support both; AFAIR on SMIA the user can choose which one to
-use, but the driver implements neither currently.
-
-> > and when someone
-> > thinks of supporting both on the same device, we can start thinking of the
-> > interaction of per-component and global ones. That may be hardware specific
-> > as well, so standardising it might not be possible.
+> > Sure, but if the block device supports WRITE_SAME or persistent
+> > discard, then presumably fallocate() should do this automatically all
+> > the time, and not require a flag to request this behavior.  The only
+> > reason why you might not is if the WRITE_SAME is more costly.  That is
+> > when a seek plus writing 1MB does take more time than the amount of
+> > disk time fraction that it consumes if you compare it to a seek plus
+> > writing 4k or 32k.
 > > 
-> > I think it'd be far more important to know which unit is it. Many such
-> > controls are indeed fixed point values but the location of the point varies.
-> > For unstance, u16,u16 and u8,u8 aren't uncommon. We currently have no way to
-> > tell this to the user space. This isn't in any way specific to gain or
-> > offset controls, though.
-> 
-> There are no standardized units for gain at the moment, and I don't really see
-> that happening any time soon. Fixed point isn't supported at all as a control
-> type, so that will have to be converted to an integer anyway.
+> Well there are two cases here I think....
 
-Do you think it'd require a new control type? There might be many; some
-devices use funny fixed point values, such as u8.u5. I guess you could use
-step for those, sure.
+/me nods
 
-For instance, some sensors natively use lines to tell the exposure value
-(and in low level sensors control the granularity really matters, so lines
-it should be) whereas some SoC ones could use µs instead.
+> The other case is ext4/XFS type case where the metadata does support
+> "these blocks are allocated but zero" which means that the metadata
+> needs to be changed twice. Once to "these blocks are allocated but zero"
+> at fallocate time and again to "these blocks have valid content" at
+> write time. As I understand the issue, the problem is that this second
+> metadata change is what is causing the performance issue.
 
-This is about units and prefixes IMO. Fixed point is just a prefix, such as
-milli or micro, but instead of being a power of ten it's a power of two.
+Apparently so ;)
 
-This would also allow telling the user about a gain control that e.g. the
-value 0x100 means "no gain".
+> > Ext4 currently uses a threshold of 32k for this break point (below
+> > that, we will use sb_issue_zeroout; above that, we will break apart an
+> > uninitialized extent when writing into a preallocated region).  It may
+> > be that 32k is too low, especailly for certain types of devices (i.e.,
+> > SSD's versus RAID 5, where it should be aligned on a RAID strip,
+> > etc.).  More of an issue might be that there will be some disagreement
+> > about whether people want to the system to automatically tune for
+> > average throughput vs 99.9 percentile latency.
+> > 
+> > Regardless, this is actually something which I think the file system
+> > should try to do automatically if at all possible, via some kind of
+> > auto-tuning hueristic, instead of using an explicit fallocate(2) flag.
+> > (See, I don't propose using a new fallocate flag for everything.  :-)
 
-I think someone should write an RFC about this. :-)
+Preallocation is primarily there for the application to optimise
+file layout when the filesystem heuristics fail to do the right
+thing.  IOWs, we should not be adding heuristics to "tune" fallocate
+behaviour automatically because a) we are guaranteed to get
+heuristics wrong for some applications, and b) fallocate is for
+direct application control and hence avoid filesystem hueristic
+based problems.
 
+> It sounds like it might well be worth experimenting with the thresholds
+> as you suggest, 32k is really pretty small. I guess that the real
+> question here is what is the cost of the metadata change (to say what is
+> written and what remains unwritten) vs. simply zeroing out the unwritten
+> blocks in the extent when the write occurs.
+
+Exactly my concern. 32k is a range that is arbitrary, and if it
+cannot be changed to suit your workload then if it sucks....  Given
+that fallocate is supposed to allow applications to avoid such
+allocation heuristics if they are sub-optimal, this fixed
+"zero-around" range seems like a bad
+model to follow.
+
+If I implement a zero-around for direct IO on unwritten extents for
+XFS, I'll use the per-inode extent granularity hint that is held in
+the inode to determine the range to write zeros to.  That will
+enable us to have a per-file configurable allocation/unwritten
+extent conversion granularity and hence bound the maximum size of
+the extent tree for a given workload+data set.
+
+The real problem is that to do zero-around efficiently, the zeroing
+needs to be done as part of the direct IO submission process. That
+code only supports block size zeroing rather than arbitrary ranges,
+and it's already very messy because of the rat's nest of
+micro-optimisations.
+
+However, doing the zero-around as part of IO submission would
+certainly remove a significant amount of the ongoing extent
+conversion overhead from the workloads Chris has pointed out as
+troublesome...
+
+> There are likely to be a number of factors affecting that, and the
+> answer doesn't appear straightforward,
+
+Right, which is where making it per-file configurable makes sense.
+
+Cheers,
+
+Dave.
 -- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+Dave Chinner
+david@fromorbit.com
