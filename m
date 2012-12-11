@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab2LKFa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:30:28 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63517 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab2LKFa0 (ORCPT
+	id S1752770Ab2LKFbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 00:31:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42874 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab2LKFba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:30:26 -0500
-Message-ID: <50C6C4D1.6070607@gmail.com>
-Date: Tue, 11 Dec 2012 10:59:53 +0530
+	Tue, 11 Dec 2012 00:31:30 -0500
 From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: abhi.c.pawar@gmail.com, pablo@netfilter.org, kaber@trash.net,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        linville@tuxdriver.com, johannes@sipsolutions.net, amwang@redhat.com,
-        edumazet@google.com, nhorman@tuxdriver.com, joe@perches.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH RESEND RESEND] net: remove obsolete simple_strto<foo>
-References: <1355196860-10708-1-git-send-email-abhi.c.pawar@gmail.com> <20121210.234923.94776338088489257.davem@davemloft.net>
-In-Reply-To: <20121210.234923.94776338088489257.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
+        Abhijit Pawar <abhi.c.pawar@gmail.com>
+Subject: [PATCH 2/2] net: remove obsolete simple_strto<foo>
+Date: Tue, 11 Dec 2012 11:00:52 +0530
+Message-Id: <1355203852-12749-1-git-send-email-abhi.c.pawar@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 10:19 AM, David Miller wrote:
-> From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-> Date: Tue, 11 Dec 2012 09:04:20 +0530
-> 
->> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
->>
->> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
-> 
-> You can't submit replacement patches for ones which I have already
-> applied.
-> 
-> Patches I apply are permanently applied, and therefore you must submit
-> changes relative the ones I've applied already.
-> 
-I am sorry to create this confusion. I have created and sent the new
-patch which you can apply over the old one to fix the issues.
+This patch removes the redundant occurences of simple_strto<foo>
 
+Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+---
+ net/core/netpoll.c                |    1 -
+ net/mac80211/debugfs_sta.c        |    1 -
+ net/netfilter/nf_conntrack_core.c |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 12c129f..3151acf 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -706,7 +706,6 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 		*delim = 0;
+ 		if (*cur == ' ' || *cur == '\t')
+ 			np_info(np, "warning: whitespace is not allowed\n");
+-		np->remote_port = simple_strtol(cur, NULL, 10);
+ 		if (kstrtou16(cur, 10, &np->remote_port))
+ 			goto parse_failed;
+ 		cur = delim;
+diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
+index 0dedb4b..6fb1168 100644
+--- a/net/mac80211/debugfs_sta.c
++++ b/net/mac80211/debugfs_sta.c
+@@ -220,7 +220,6 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
+ 	} else
+ 		return -EINVAL;
+ 
+-	tid = simple_strtoul(buf, NULL, 0);
+ 	ret = kstrtoul(buf, 0, &tid);
+ 	if (ret)
+ 		return ret;
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index 37d9e62..08cdc71 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1422,7 +1422,6 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
+ 	if (!nf_conntrack_htable_size)
+ 		return param_set_uint(val, kp);
+ 
+-	hashsize = simple_strtoul(val, NULL, 0);
+ 	rc = kstrtouint(val, 0, &hashsize);
+ 	if (rc)
+ 		return rc;
 -- 
--
-Abhijit
+1.7.7.6
+
