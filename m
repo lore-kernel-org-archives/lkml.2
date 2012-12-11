@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab2LKOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:39:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752867Ab2LKOj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:39:27 -0500
-Date: Tue, 11 Dec 2012 09:29:42 -0500
-From: Dave Jones <davej@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: livelock in __writeback_inodes_wb ?
-Message-ID: <20121211142942.GA1943@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-	linux-fsdevel@vger.kernel.org
-References: <20121128145515.GA26564@redhat.com>
- <20121211082327.GA15706@localhost>
+	id S1753744Ab2LKOl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:41:56 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:51947 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab2LKOlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 09:41:55 -0500
+Date: Tue, 11 Dec 2012 09:41:39 -0500 (EST)
+From: Dave Anderson <anderson@redhat.com>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        Vivek Goyal <vgoyal@redhat.com>
+Message-ID: <1672785544.45808556.1355236899164.JavaMail.root@redhat.com>
+In-Reply-To: <CAAmzW4NHO=y=utmK_at+JxvyYMd4O_7W_6n541GEA0aeDfukyw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211082327.GA15706@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.187.10]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 04:23:27PM +0800, Fengguang Wu wrote:
- > On Wed, Nov 28, 2012 at 09:55:15AM -0500, Dave Jones wrote:
- > > We had a user report the soft lockup detector kicked after 22
- > > seconds of no progress, with this trace..
- > 
- > Where is the original report? The reporter may help provide some clues
- > on the workload that triggered the bug.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=880949 
 
- > The bug reporter should know best whether there are heavy IO.
- > 
- > However I suspect it's not directly caused by heavy IO: we will
- > release &wb->list_lock before each __writeback_single_inode() call,
- > which starts writeback IO for each inode.
- > 
- > > Should there be something in this loop periodically poking
- > > the watchdog perhaps ?
- > 
- > It seems we failed to release &wb->list_lock in wb_writeback() for
- > long time (dozens of seconds). That is, the inode_sleep_on_writeback()
- > is somehow not called. However it's not obvious to me how come this
- > can happen..
+----- Original Message -----
 
-Right, it seems that we only drop the lock when there is more work to do.
-And if there is no work to do, then we would have bailed from the loop.
+> > Can we get the same information from this rb-tree of vmap_area? Is
+> > ->va_start field communication same information as vmlist was
+> > communicating? What's the difference between vmap_area_root and vmlist.
+> 
+> Thanks for comment.
+> 
+> Yes. vmap_area's va_start field represent same information as vm_struct's addr.
+> vmap_area_root is data structure for fast searching an area.
+> vmap_area_list is address sorted list, so we can use it like as vmlist.
+> 
+> There is a little difference vmap_area_list and vmlist.
+> vmlist is lack of information about some areas in vmalloc address space.
+> For example, vm_map_ram() allocate area in vmalloc address space,
+> but it doesn't make a link with vmlist. To provide full information
+> about vmalloc address space, using vmap_area_list is more adequate.
+> 
+> > So without knowing details of both the data structures, I think if vmlist
+> > is going away, then user space tools should be able to traverse vmap_area_root
+> > rb tree. I am assuming it is sorted using ->addr field and we should be
+> > able to get vmalloc area start from there. It will just be a matter of
+> > exporting right fields to user space (instead of vmlist).
+> 
+> There is address sorted list of vmap_area, vmap_area_list.
+> So we can use it for traversing vmalloc areas if it is necessary.
+> But, as I mentioned before, kexec write *just* address of vmlist and
+> offset of vm_struct's address field.  It imply that they don't traverse vmlist,
+> because they didn't write vm_struct's next field which is needed for traversing.
+> Without vm_struct's next field, they have no method for traversing.
+> So, IMHO, assigning dummy vm_struct to vmlist which is implemented by [7/8] is
+> a safe way to maintain a compatibility of userspace tool. :)
 
-mysterious.
+Why bother keeping vmlist around?  kdump's makedumpfile command would not
+even need to traverse the vmap_area rbtree, because it could simply look
+at the first vmap_area in the sorted vmap_area_list, correct?
 
-	Dave
+Dave Anderson
+
 
