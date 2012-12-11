@@ -1,107 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab2LKB4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:56:09 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35298 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2LKB4G (ORCPT
+	id S1752368Ab2LKCDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 21:03:21 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:43560 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2LKCDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:56:06 -0500
-Message-ID: <50C692B2.3010602@linaro.org>
-Date: Mon, 10 Dec 2012 17:56:02 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Heinz Wiesinger <HMWiesinger@gmx.at>
-CC: Greg KH <gregkh@linuxfoundation.org>, Jonathan Nieder <jrnieder@gmail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
-        Janne Boman <janne.m.boman@gmail.com>, rtc-linux@googlegroups.com
-Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the hardware
- (v2)
-References: <20120330195823.GA31857@kroah.com> <2740175.6ysWXbEv9n@callisto> <50BE423F.1010301@linaro.org> <3675504.Gue7S6K4ie@callisto>
-In-Reply-To: <3675504.Gue7S6K4ie@callisto>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Dec 2012 21:03:19 -0500
+Date: Tue, 11 Dec 2012 03:03:13 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Xishi Qiu <qiuxishi@huawei.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        Vyacheslav.Dubeyko@huawei.com, Borislav Petkov <bp@alien8.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, wency@cn.fujitsu.com
+Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
+Message-ID: <20121211020313.GV16230@one.firstfloor.org>
+References: <50C1AD6D.7010709@huawei.com> <20121207141102.4fda582d.akpm@linux-foundation.org> <20121210083342.GA31670@hacker.(null)> <50C5A62A.6030401@huawei.com> <1355136423.1700.2.camel@kernel.cn.ibm.com> <50C5C4A2.2070002@huawei.com> <20121210153805.GS16230@one.firstfloor.org> <1355190540.1933.4.camel@kernel.cn.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355190540.1933.4.camel@kernel.cn.ibm.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2012 03:10 AM, Heinz Wiesinger wrote:
-> On Tuesday 04 December 2012 10:34:39 John Stultz wrote:
->> On 12/04/2012 02:34 AM, Heinz Wiesinger wrote:
->>> On Monday 03 December 2012 15:14:12 you wrote:
->>>> On 11/05/2012 02:55 PM, Heinz Wiesinger wrote:
->>>>> On Monday 05 November 2012 11:13:31 Greg KH wrote:
->>>>>> On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
->>>>>>> Hi,
->>>>>>>
->>>>>>> In March, Greg KH wrote:
->>>>>>>> 3.2-stable review patch.  If anyone has any objections, please let me
->>>>>>>> know.
->>>>>>> Sorry, I'm a little late.  This seems to be causing spurious wakeups
->>>>>>> after shutdown on some systems just like v1 did. :/
->>>>>>>
->>>>>>> Janne Boman reports[1], using an HP EliteBook 8530w:
->>>>>>> | I'm unable to shutdown my system via normal means. The system
->>>>>>> | completes the shutdown process, all hardware lights are off, but
->>>>>>> | then
->>>>>>> | somehow it restarts.
->>>>>>>
->>>>>>> Based on a quick web search, Heinz Wiesinger, using the same model,
->>>>>>>
->>>>>>> ran into the same problem and bisected it to this patch:
->>>>>>>      https://bugzilla.kernel.org/show_bug.cgi?id=44261
->>>>>>>
->>>>>>> Janne confirmed the same by testing kernels closely based on 3.2.13
->>>>>>> and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
->>>>>>> now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
->>>>>>> was also affected.
->>>>>> So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
->>>>>> if this is still an issue in Linus's tree would be the best thing to do
->>>>>> first.
->>>>> I checked 3.7-rc4 and the issue is still there. Should I still test the
->>>>> other versions as well? I can do so but it might take a bit.
->>>>>
->>>>> If you need anything else, I'll be happy to help wherever I can.
->>>> Hey Heinz,
->>>>
->>>>      Sorry for being slow to respond to this, I was on leave when it
->>>>
->>>> arrived, and it got buried under other items.
->>>>
->>>> This is peculiar.  I'm guessing something quirky with your hardware is
->>>> causing the alarm irq to trigger shortly after we supposedly disable it.
->>>> Could you send me your dmesg and kernel config?
->>>>
->>>> After that I'll likely have to send you some debugging instructions
->>>> (commenting out various lines) to try to figure out what exactly is
->>>> triggering it.
->>>>
->>>> Sorry for the trouble!
->>> Hey John,
->>>
->>> Don't worry, I know how it is to be busy.
->>>
->>> For the dmesg/kernel config is it fine if I send you the one from 3.7-rc4
->>> or should I update to a more recent version?
->> 3.7-rc4 is fine.
->>
->>> I've also now seen this behaviour on another notebook with completely
->>> different hardware (Asus VX1). I can send you dmesg output from that one
->>> too if you want. Kernel config should be almost identical, but it's
->>> running 3.2.29 still.
->> Yea, dmesg there would be good as well.
-> Hey John,
->
-> Sorry for the delay. I was quite busy this week myself.
-> Please find the kernel config and dmesg output attached.
+> IIUC, soft offlining will isolate and migrate hwpoisoned page, and this
+> page will not be accessed by memory management subsystem until unpoison,
+> correct?
 
-Thanks for the details!
+No, soft offlining can still allow accesses for some time. It'll never kill
+anything.
 
-Quick test: Does the issue persist if you boot with hpet=disable?
+Hard tries much harder and will kill.
 
-thanks
--john
+In some cases (unshrinkable kernel allocation) they end up doing the same
+because there isn't any other alternative though. However these are
+expected to only apply to a small percentage of pages in a typical
+system.
 
+-Andi
