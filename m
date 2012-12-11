@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab2LKFZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 00:25:10 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:57350 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab2LKFZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 00:25:09 -0500
-Date: Tue, 11 Dec 2012 16:25:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20121211162507.41aae7985ee91d4e185556d4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Dec_2012_16_25_07_+1100_vdG1seLKfsjiydmj"
+	id S1752113Ab2LKF2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 00:28:09 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49086 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab2LKF2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 00:28:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,256,1355126400"; 
+   d="scan'208";a="229725594"
+Message-ID: <50C6C462.6030808@intel.com>
+Date: Tue, 11 Dec 2012 13:28:02 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-2-git-send-email-alex.shi@intel.com> <50C6B530.3030307@linux.vnet.ibm.com>
+In-Reply-To: <50C6B530.3030307@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Dec_2012_16_25_07_+1100_vdG1seLKfsjiydmj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/11/2012 12:23 PM, Preeti U Murthy wrote:
+> Hi Alex,
+> 
+> On 12/10/2012 01:52 PM, Alex Shi wrote:
+>> It is impossible to miss a task allowed cpu in a eligible group.
+> 
+> The one thing I am concerned with here is if there is a possibility of
+> the task changing its tsk_cpus_allowed() while this code is running.
+> 
+> i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
+> for the task changes,perhaps by the user himself,which might not include
+> the cpus in the idle group.After this find_idlest_cpu() is called.I mean
+> a race condition in short.Then we might not have an eligible cpu in that
+> group right?
 
-Hi Andrew,
+your worry make sense, but the code handle the situation, in
+select_task_rq(), it will check the cpu allowed again. if the answer is
+no, it will fallback to old cpu.
+> 
+>> And since find_idlest_group only return a different group which
+>> excludes old cpu, it's also imporissible to find a new cpu same as old
+>> cpu.
+> 
+> This I agree with.
+> 
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  kernel/sched/fair.c |    5 -----
+>>  1 files changed, 0 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 59e072b..df99456 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3150,11 +3150,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>>  		}
+>>  
+>>  		new_cpu = find_idlest_cpu(group, p, cpu);
+>> -		if (new_cpu == -1 || new_cpu == cpu) {
+>> -			/* Now try balancing at a lower domain level of cpu */
+>> -			sd = sd->child;
+>> -			continue;
+>> -		}
+>>  
+>>  		/* Now try balancing at a lower domain level of new_cpu */
+>>  		cpu = new_cpu;
+>>
+> Regards
+> Preeti U Murthy
+> 
 
-Today's linux-next merge of the akpm tree got a conflict in
-include/linux/gfp.h between commit caf491916b1c ("Revert "revert "Revert
-"mm: remove __GFP_NO_KSWAPD""" and associated damage") from Linus' tree
-and commit "mm: add a reminder comment for __GFP_BITS_SHIFT" from the
-akpm tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/gfp.h
-index 976a8e3,c0fb4d8..0000000
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@@ -30,11 -30,11 +30,12 @@@ struct vm_area_struct
-  #define ___GFP_HARDWALL		0x20000u
-  #define ___GFP_THISNODE		0x40000u
-  #define ___GFP_RECLAIMABLE	0x80000u
- -#define ___GFP_NOTRACK		0x100000u
- -#define ___GFP_OTHER_NODE	0x200000u
- -#define ___GFP_WRITE		0x400000u
- -#define ___GFP_KMEMCG		0x800000u
- +#define ___GFP_NOTRACK		0x200000u
- +#define ___GFP_NO_KSWAPD	0x400000u
- +#define ___GFP_OTHER_NODE	0x800000u
- +#define ___GFP_WRITE		0x1000000u
- +#define ___GFP_KMEMCG		0x2000000u
-+ /* If the above are modified, __GFP_BITS_SHIFT may need updating */
- =20
-  /*
-   * GFP bitmasks..
-
---Signature=_Tue__11_Dec_2012_16_25_07_+1100_vdG1seLKfsjiydmj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQxsOzAAoJEECxmPOUX5FEpdAP/1MgqZLwMXJfJxHv6KETsnaZ
-WJcI03xvl2W2LcMgX6y1DspVZJg6VEQ+0AfenkG7c4B0sEeLkeEe/lTm/xusxXa4
-CVnqGPKu2mlsPm9g5J8tGW+oTGsOYGhl0jqd01FzpwrRduv0epmZJOD7Vn3JyPrb
-nA05/8DEhHH/j8c1CFg/WAftMSy5a68egJyhzmv1S+EZs4ka7AAbXjDDPASo3NHV
-UkG1qwt1v/9nwi5B2SkpubUNPMO8TeSnWb/Ma2PPlL5LjiielK3R/qgoiuD/Egng
-dElmR1tXh44E6TDxkiexgN7r+/vsP36rVjFFQjn+ZaFAI8EhZOdYIWnWuQf2wzFd
-7zLGCYnehLK1lKdtp0iFSxZYCbXjQB+e89fXbydasD3mZO0qBrp4ABNBSi5xl5S5
-NTmHL2r2WcGOQV/rU2ThSBLzUjVnsh/iK4csZvZEYvQqU1Z8FRBkwIPg6ES72xjo
-cdKytEChzLfbDCtHM6xc1AiUSWTbiPog+uwMrUm3G7wbqu5bLh14OJ8N2Gt/ajyV
-i6syjEPMegCE5+hgru4MO4CciJ2TbKNFfIZyZa6pzB7FcrkEPzZjD97YRnk/o1bW
-aRqgpHJF2x6omRyDyCvbnrzR5wSVbiOPdXBCdZS5Y+VOHYClj6kI3m5jq+Ee3wcI
-xG2zKfmLrd52S78KmDkz
-=iogl
------END PGP SIGNATURE-----
-
---Signature=_Tue__11_Dec_2012_16_25_07_+1100_vdG1seLKfsjiydmj--
+-- 
+Thanks
+    Alex
