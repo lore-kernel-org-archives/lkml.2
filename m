@@ -1,121 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab2LKAwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 19:52:23 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:22334 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751612Ab2LKAwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 19:52:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArMOAMmCxlB5LO66/2dsb2JhbABFDoVAsxeGCRdzgh4BAQQBOhwoCwgDGC4UJQMhARKICwWoO5AiFIwrIYQiA5JTgzKQSYI1UoFR
-Date: Tue, 11 Dec 2012 11:52:17 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121211005217.GR15784@dastard>
-References: <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121208001705.GO27172@dastard>
- <20121210173739.GA1359@thunk.org>
+	id S1752332Ab2LKA5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 19:57:15 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:53666 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751528Ab2LKA5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 19:57:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+Date: Tue, 11 Dec 2012 02:02:14 +0100
+Message-ID: <38722368.Fl8pJoLSRi@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAE9FiQWZ8WaAJm8ayU+woVRqNLdSRtPS4=gpsrJovmzrUG6FNw@mail.gmail.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <54207850.t6nmM83CdM@vostro.rjw.lan> <CAE9FiQWZ8WaAJm8ayU+woVRqNLdSRtPS4=gpsrJovmzrUG6FNw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210173739.GA1359@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 12:37:39PM -0500, Theodore Ts'o wrote:
-> On Sat, Dec 08, 2012 at 11:17:05AM +1100, Dave Chinner wrote:
-> > I wouldn't recommend XFS_IOC_ALLOCSP as a user-friendly interface.
-> > The concept, however, implemented by a new fallocate()
-> > flag (say FALLOC_FL_WRITE_ZEROS) so that the filesystem knows that
-> > the application considers unwritten extents undesirable is exactly
-> > the sort of thing that we should be considering implementing.
+On Monday, December 10, 2012 03:14:32 PM Yinghai Lu wrote:
+> On Mon, Dec 10, 2012 at 3:09 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, December 10, 2012 11:47:27 PM Rafael J. Wysocki wrote:
+> >> On Monday, December 10, 2012 09:07:06 AM Yinghai Lu wrote:
+> >> > On Mon, Dec 10, 2012 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > > On Sunday, December 09, 2012 09:34:42 PM Yinghai Lu wrote:
+> >> > >>
+> >> > >> Can we expand the BUS_ADD_* concept to other devices instead of just
+> >> > >> acpi_device?
+> >> > >>
+> >> > >> aka we should let struct device has this add_type field.
+> >> > >
+> >> > > Having done that in ACPI to cover our use case here, we can try to move it
+> >> > > into struct device if there are use cases beyond ACPI that can't be covered
+> >> > > by using deferred driver probing.
+> >> >
+> >> > pci device for hotplug have same problem. need to delay driver attach
+> >> > for them too.
+> >>
+> >> OK, I'll take a look.  Any pointers to speed that up?
+> >>
+> >> > also BUS_ADD_MATCH and BUS_ADD_START are duplicated.
+> >>
+> >> Not at the moment, they do different things as code goes.
+> >>
+> >> > old add are separated to adding all devices to tree and then matching
+> >> > work to load the drivers.
+> >> >
+> >> > so _START is not needed anymore, only user.start in pci_root driver
+> >> > should be removed.
+> >> > code in .start could be moved .add without problem.
+> >>
+> >> Yes, I'm going to do that as the next step.  I didn't want this particular
+> >> patchset to grow too big.  I'll post another one on top of it if people
+> >> don't have problems with this one.
+> >
+> > By the way, can you please remind me where you wanted to put the
+> > pci_bus_add_devices() and why?
+> >
 > 
-> What's the point of using a new flag like this (or XFS's
-> XFS_IOC_ALLOCSP) for writing zeros during preallocation as oppoised to
-> simply doing a fallocate() followed by zeroing the data via a O_DIRECT
-> write system call?
-
-There is no window where stale data is exposed to userspace, which
-is what you have to do if you are doing zeroing from userspace. If
-the system crashes after allocation but before zeroing, how do you
-recover that? The filesystem can ensure the allocation transactions
-are not committed until the allocated extents are zeroed....
-
-> > Indeed, if the filesystem is on something with WRITE_SAME or
-> > discards to zero, no data would need to be written, you wouldn't
-> > have any unwritten extent overhead, and no stale data exposure.
+> please check my for-pci-next branch at
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-next
 > 
-> And if you have a storage device which supports WRITE_SAME or
-> persistent discards, you can do this automatically at preallocation
-> time without needing a new fallocate(2) flag.
+> that includes delay loading acpi driver and pci driver.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=8c031eabbdc83dd4d93933b82d96b55d038bcb64
+>  PCI: prepare to use device drivers_autoprobe to delay attach drivers
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=40a12dc8942a8ed02bfbf75ee1ffbfbdf1511b45
+> PCI: Use device_add for device and bus early
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=8af9b4c250091c30afedeb2e7f14fca06997c811
+> ACPI: add drivers_autoprobe in struct acpi_device
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=ae498e157e9dc8794932562b2f885ddc3a1a229a
+>  ACPI: use device drivers_autoprobe to delay loading acpi drivers
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=6bee785b563a0b0e311e188321b1160593d5e6ee
+>  PCI, ACPI: Remove not used acpi_pci_root_start()
+> 
+> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=f467a1cd18a07a250be8527b94612fd4a654fbd1
+> ACPI: remove acpi_op_start workaround
 
-Because there are cases where unwritten extents are preferrable or
-WRITE_SAME functionality is unavailable.
+OK, thanks for the pointers.  I actually see more differences between our
+patchsets.  For one example, you seem to have left the parent->ops.bind()
+stuff in acpi_add_single_object() which calls it even drivers_autoprobe is
+set.  Is that the case, or am I missing anything?
 
-Indeed, if we take the case of file-per-frame, uncompressed
-real-time video ingest, I'm going to be wanting to use unwritten
-extents to preallocate files in a known pattern with as little
-latency as possible. If we are talking about 4k uncompressed video,
-that's a data rate of 1.2GB/s for 24fps, and studios are now
-shooting in 48fps in 3D, which gives a real-time data rate of
-roughly 5GB/s.  This has an acceptible IO latency *per-frame* of
-roughly 10-20ms, which we can do easily with unwritten extents. We
-can preallocate thousands of files, look at their layout via fiemap
-and select the order in which we write to them based on where they
-were allocated.
+Rafael
 
-There is no way in hell that WRITE_SAME can be used for these sorts
-of workloads, because preallocation then places a load on the storage
-device that affects the latency of the real-time data stream.
-Unwritten extent conversion is an after-the-fact overhead in these
-cases that doesn't impact on the data stream throughput or latency.
 
-IOWs, there are clear cases where discard optimisations will be
-actively harmful to the workload using preallocation for performance
-reasons. Hence, I'm not about to make the existing fallocate code in
-XFS stop using unwritten extents by default even if the underlying
-device supports WRITE_SAME.
-
-> I certainly don't
-> oppose adding such optimizations to ext4 or any other file system (I'm
-> not entirely convinced that it's worth it to do this optimization at
-> the VFS level), but it doesn't help for storage devices that don't
-> support this feature.
-
-Sure, this optimisation is a per-filesystem decision. ext4 is
-unlikely to be used in the sorts of high end enviroments we see XFS
-being used in, so it might make sense for you to make it use
-WRITE_SAME by default if it is supported.
-
-This, however, does not change the fact that there are existing
-applications using fallocate that absolutely do not want
-preallocation to use WRITE_SAME semantics. It's not an optimisation
-if it breaks a significant portion of your userbase's applications.
-Hence adding a flag to allow applications to specify they want
-WRITE_SAME preallocation behaviour rather than unwritten extents
-makes sense.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
