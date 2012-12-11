@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab2LKDso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 22:48:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35070 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752253Ab2LKDsn (ORCPT
+	id S1752710Ab2LKDuz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 22:50:55 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37724 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab2LKDuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 22:48:43 -0500
-Date: Tue, 11 Dec 2012 12:48:37 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>, amit.kachhap@gmail.com,
-        Thomas Abraham <thomas.abraham@linaro.org>, kgene.kim@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 3/4] regulator: s5m8767: Fix to work even if no DVS gpio
- present
-Message-ID: <20121211034836.GD9097@opensource.wolfsonmicro.com>
-References: <1355143782-15133-1-git-send-email-amit.daniel@samsung.com>
- <1355143782-15133-4-git-send-email-amit.daniel@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355143782-15133-4-git-send-email-amit.daniel@samsung.com>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Dec 2012 22:50:54 -0500
+From: renmx@cn.fujitsu.com
+To: chenhanxiao@cn.fujitsu.com
+Cc: renmx@cn.fujitsu.com, JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pan Dayu <pandy.fnst@cn.fujitsu.com>
+Subject: [PATCH] lpfc: init: fix misspelling word in mailbox command waiting comments
+Date: Tue, 11 Dec 2012 11:53:38 +0800
+Message-Id: <1355198018-17112-1-git-send-email-renmx@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+To: james.smart@emulex.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 06:19:41PM +0530, Amit Daniel Kachhap wrote:
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+From: Ren Mingxin <renmx@cn.fujitsu.com>
 
-Applied, thanks.
+Correct misspelling of "outstanding" in mailbox command waiting comments.
+
+Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
+Signed-off-by: Pan Dayu <pandy.fnst@cn.fujitsu.com>
+---
+ drivers/scsi/lpfc/lpfc_init.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index 7dc4218..8533160 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -2566,7 +2566,7 @@ lpfc_block_mgmt_io(struct lpfc_hba *phba, int mbx_action)
+ 	}
+ 	spin_unlock_irqrestore(&phba->hbalock, iflag);
+ 
+-	/* Wait for the outstnading mailbox command to complete */
++	/* Wait for the outstanding mailbox command to complete */
+ 	while (phba->sli.mbox_active) {
+ 		/* Check active mailbox complete status every 2ms */
+ 		msleep(2);
+-- 
+1.7.1
+
