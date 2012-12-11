@@ -1,51 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab2LKEZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 23:25:11 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37462 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab2LKEZJ (ORCPT
+	id S1752649Ab2LKEey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 23:34:54 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59015 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab2LKEex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 23:25:09 -0500
+	Mon, 10 Dec 2012 23:34:53 -0500
+X-AuditID: 9c930197-b7bd3ae000003f1c-de-50c6b7ebe08b
+Date: Tue, 11 Dec 2012 13:34:51 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+Message-ID: <20121211043451.GB22698@blaptop>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <50AD739A.30804@linaro.org>
+ <50B6E1F9.5010301@linaro.org>
+ <20121204000042.GB20395@bbox>
+ <50BD4A70.9060506@linaro.org>
+ <20121204072207.GA9782@blaptop>
+ <50BE4B64.6000003@linaro.org>
+ <20121205070110.GC9782@blaptop>
+ <50C287CE.5070404@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1355146956-6009-2-git-send-email-ciminaghi@gnudd.com>
-References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
-	<1355146956-6009-2-git-send-email-ciminaghi@gnudd.com>
-Date: Tue, 11 Dec 2012 09:55:08 +0530
-Message-ID: <CAJe_ZhfE9-kvB9s5=VZ5tgzXa7GsQj_1rt232aCsrfJ-KiTP1g@mail.gmail.com>
-Subject: Re: [PATCH v4 1/7] DMA: PL330: use prefix in reg names to build under x86
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: will.deacon@arm.com, linux@arm.linux.org.uk, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org, rubini@gnudd.com,
-        wim@iguana.be, cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C287CE.5070404@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 December 2012 19:12, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
-> From: Alessandro Rubini <rubini@gnudd.com>
->
->     This driver would not compile if ARM_AMBA is selected under x86,
->     because "CS" and "DS" are already defined there.  But AMBA
->     is used in the x86 world by a PCI-to-AMBA bridge, to be submitted.
->
->     The patch just adds the "PL330_" prefix to all registers,
->     so it can be built by randomconfig after ARM_AMBA appears within x86.
->     No other technical changes have been performed.
->     The patch was build-tested only.
->
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> [Davide Ciminaghi <ciminaghi@gnudd.com>: only registers prefixed]
-> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
-> ---
+On Fri, Dec 07, 2012 at 04:20:30PM -0800, John Stultz wrote:
+> On 12/04/2012 11:01 PM, Minchan Kim wrote:
+> >Hi John,
+> >
+> >On Tue, Dec 04, 2012 at 11:13:40AM -0800, John Stultz wrote:
+> >>
+> >>I don't think the problem is when vmas being marked VM_VOLATILE are
+> >>being merged, its that when we mark the vma as *non-volatile*, and
+> >>remove the VM_VOLATILE flag we merge the non-volatile vmas with
+> >>neighboring vmas. So preserving the purged flag during that merge is
+> >>important. Again, the example I used to trigger this was an
+> >>alternating pattern of volatile and non volatile vmas, then marking
+> >>the entire range non-volatile (though sometimes in two overlapping
+> >>passes).
+> >If I understand correctly, you mean following as.
+> >
+> >chunk1 = mmap(8M)
+> >chunk2 = chunk1 + 2M;
+> >chunk3 = chunk2 + 2M
+> >chunk4 = chunk3 + 2M
+> >
+> >madvise(chunk1, 2M, VOLATILE);
+> >madvise(chunk4, 2M, VOLATILE);
+> >
+> >/*
+> >  * V : volatile vma
+> >  * N : non volatile vma
+> >  * So Now vma is VNVN.
+> >  */
+> >And chunk4 is purged.
+> >
+> >int ret = madvise(chunk1, 8M, NOVOLATILE);
+> >ASSERT(ret == 1);
+> >/* And you expect VNVN->N ?*/
+> >
+> >Right?
+> 
+> Yes. That's exactly right.
+> 
+> >If so, why should non-volatile function semantic allow it which cross over
+> >non-volatile areas in a range? I would like to fail such case because
+> >in case of MADV_REMOVE, it fails in the middle of operation if it encounter
+> >VM_LOCKED.
+> >
+> >What do you think about it?
+> Right, so I think this issue is maybe a problematic part of the VMA
+> based approach.  While marking an area as nonvolatile twice might
+> not make a lot of sense, I think userland applications would not
+> appreciate the constraint that madvise(VOLATILE/NONVOLATILE) calls
+> be made in perfect pairs of identical sizes.
+> 
+> For instance, if a browser has rendered a web page, but the page is
+> so large that only a sliding window/view of that page is visible at
+> one time, it may want to mark the regions not currently in the view
+> as volatile.   So it would be nice (albeit naive) for that
+> application that when the view location changed, it would just mark
+> the new region as non-volatile, and any region not in the current
+> view as volatile.  This would be easier then trying to calculate the
+> diff of the old view region boundaries vs the new and modifying only
+> the ranges that changed. Granted, doing so might be more efficient,
+> but I'm not sure we can be sure every similar case would be more
+> efficient.
+> 
+> So in my mind, double-clearing a flag should be allowed (as well as
+> double-setting), as well as allowing for setting/clearing
+> overlapping regions.
 
- Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+It might and as you said, it's not matched by normal madvise opearation.
+So if user really want it, we might need another interface like new
+system call like mlock.
 
-Thanks.
+Although we can implement it, what I has a concern is mmap_sem hold time.
+For VMA approach, we need exclusive mmap_sem and it ends up preventing
+concurrent page fault handling so it would mitigate anon volatile's goal
+for user-space allocators. So I would like to avoid more works with
+exclusive mmap_sem as far as possible.
+
+Of course, you can argue that if we don't support such semantic,
+user can call madvise(NOVOATILE) several time with several ranges
+so it could be more bad. Right. But I suggest for plumbers to implement
+range management smart and let's leave kernel implementation simple/fast.
+
+I'm not solid. If user really want such semantic, I can support it with
+new system call.
+
+Frankly speaking, I would like to remove madvise(NOVOLATILE) call.
+If you already saw my patch just I sent morning, you can guess what it is.
+The problem of anon volatile with madvise(NOVOLATILE) is that time delay
+between allocator allocats a free chunk and user really access the memory.
+Normally, when allocator return free chunk to customer, allocator should
+call madvise(NOVOLATILE) but user could access the memory long time after.
+So during that time difference, that pages could be swap out.
+So I decide to remove madvise(NOVOLATILE) and it's handled at first
+page fault.
+
+Yeb. The same rule couldn't applied to tmpfs volatile and it does needs
+NOVOLATILE semantic. Hmm,, I am biasing to new system call.
+
+int mvolatile(const void *addr, size_t len, int mode);
+int munvolatile(const void *addr, size_t len;
+
+If someone call mvolatile with AUTO mode, it would work as my anon volatile
+while in MANUAL mode, user must call munvolatile before using.
+It might meet your and mine goal. But adding new system call is last resort. :)
+
+> 
+> Aside from if the behavior should be allowed or not, the error mode
+> of madvise is problematic as well, since failures can happen mid way
+> through the operation, leaving the vmas in the range specified
+> inconsistent. Since usually its only advisory, such inconsistent
+> states aren't really problematic, and repeating the last action is
+> probably fine.
+
+True.
+
+> 
+> The problem with NOVOLATILE's  purged state, with vmas, is that if
+> we hit an error mid-way through, its hard to figure out what the
+> state of the pages are for the range specified. Some of them could
+> have been purged and set to non-volatile, while some may not be
+> purged, and still left volatile. You can't just repeat the last
+> action and get a sane result (as we lose the purged flag state).
+
+Agreed.
+
+> 
+> With my earlier fallocate implementations, I tried to avoid this by
+> making any memory allocations that might be required before making
+> any state changes, so there wasn't a chance for a partial failure
+> from -ENOMEM.  (It was also simpler because in my own range
+> management code there were only volatile ranges,  non-volatility was
+> simply the absence of a volatile range. With vmas we have to manage
+> both volatile and nonvolatile vmas).  I'm not sure how this could be
+> done with the vma method other then by maybe reworking the
+> merge/split logic, but I'm wary of mucking with that too much as I
+> know its performance sensitive.
+> 
+> Your thoughts?  Am I just being too set in my way of thinking here?
+
+Your claim makes sense. Two option.
+
+1) Go separate way with each interface. (madvise vs fadvise or fallocate)
+2) A new system call to unify them.
+
+Hmm, I would like to wait more inputs from user-space allocator guys
+because they might ask requirement which is similar to you.
+
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
