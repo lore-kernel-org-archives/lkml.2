@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2LKOl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:41:56 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:51947 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab2LKOlz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:41:55 -0500
-Date: Tue, 11 Dec 2012 09:41:39 -0500 (EST)
-From: Dave Anderson <anderson@redhat.com>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        Vivek Goyal <vgoyal@redhat.com>
-Message-ID: <1672785544.45808556.1355236899164.JavaMail.root@redhat.com>
-In-Reply-To: <CAAmzW4NHO=y=utmK_at+JxvyYMd4O_7W_6n541GEA0aeDfukyw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
+	id S1753801Ab2LKOno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:43:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753334Ab2LKOnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 09:43:42 -0500
+Date: Tue, 11 Dec 2012 09:43:36 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Zhao Shuai <zhaoshuai@freebsd.org>, axboe@kernel.dk, ctalbott@google.com,
+        rni@google.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: performance drop after using blkcg
+Message-ID: <20121211144336.GB5580@redhat.com>
+References: <CAFVn34SxqAJe_4P-WT8MOiG-kmKKD7ge96zoHXQuGqHWPgAt+A@mail.gmail.com>
+ <20121211142518.GA5580@redhat.com>
+ <20121211142742.GE7084@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.187.10]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211142742.GE7084@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-
-> > Can we get the same information from this rb-tree of vmap_area? Is
-> > ->va_start field communication same information as vmlist was
-> > communicating? What's the difference between vmap_area_root and vmlist.
+On Tue, Dec 11, 2012 at 06:27:42AM -0800, Tejun Heo wrote:
+> On Tue, Dec 11, 2012 at 09:25:18AM -0500, Vivek Goyal wrote:
+> > In general, do not use blkcg on faster storage. In current form it
+> > is at best suitable for single rotational SATA/SAS disk. I have not
+> > been able to figure out how to provide fairness without group idling.
 > 
-> Thanks for comment.
-> 
-> Yes. vmap_area's va_start field represent same information as vm_struct's addr.
-> vmap_area_root is data structure for fast searching an area.
-> vmap_area_list is address sorted list, so we can use it like as vmlist.
-> 
-> There is a little difference vmap_area_list and vmlist.
-> vmlist is lack of information about some areas in vmalloc address space.
-> For example, vm_map_ram() allocate area in vmalloc address space,
-> but it doesn't make a link with vmlist. To provide full information
-> about vmalloc address space, using vmap_area_list is more adequate.
-> 
-> > So without knowing details of both the data structures, I think if vmlist
-> > is going away, then user space tools should be able to traverse vmap_area_root
-> > rb tree. I am assuming it is sorted using ->addr field and we should be
-> > able to get vmalloc area start from there. It will just be a matter of
-> > exporting right fields to user space (instead of vmlist).
-> 
-> There is address sorted list of vmap_area, vmap_area_list.
-> So we can use it for traversing vmalloc areas if it is necessary.
-> But, as I mentioned before, kexec write *just* address of vmlist and
-> offset of vm_struct's address field.  It imply that they don't traverse vmlist,
-> because they didn't write vm_struct's next field which is needed for traversing.
-> Without vm_struct's next field, they have no method for traversing.
-> So, IMHO, assigning dummy vm_struct to vmlist which is implemented by [7/8] is
-> a safe way to maintain a compatibility of userspace tool. :)
+> I think cfq is just the wrong approach for faster non-rotational
+> devices.  We should be allocating iops instead of time slices.
 
-Why bother keeping vmlist around?  kdump's makedumpfile command would not
-even need to traverse the vmap_area rbtree, because it could simply look
-at the first vmap_area in the sorted vmap_area_list, correct?
+I think if one sets slice_idle=0 and group_idle=0 in CFQ, for all practical
+purposes it should become and IOPS based group scheduling.
 
-Dave Anderson
+For group accounting then CFQ uses number of requests from each cgroup
+and uses that information to schedule groups.
 
+I have not been able to figure out the practical benefits of that
+approach. At least not for the simple workloads I played with. This
+approach will not work for simple things like trying to improve dependent
+read latencies in presence of heavery writers. That's the single biggest
+use case CFQ solves, IMO.
 
+And that happens because we stop writes and don't let them go to device
+and device is primarily dealing with reads. If some process is doing
+dependent reads and we want to improve read latencies, then either
+we need to stop flow of writes or devices are good and they always
+prioritize READs over WRITEs. If devices are good then we probably
+don't even need blkcg.
+
+So yes, iops based appraoch is fine just that number of cases where you
+will see any service differentiation should significantly less.
+
+Thanks
+Vivek
