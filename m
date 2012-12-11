@@ -1,85 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2LKOJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:09:18 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37703 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab2LKOJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:09:13 -0500
-Message-ID: <1355234940.2356.86.camel@falcor>
-Subject: Re: [PATCH 1/2] vfs: new super block feature flags attribute
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: viro@zeniv.linux.org.uk, fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Dec 2012 09:09:00 -0500
-In-Reply-To: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
-References: <a88c4edfd91ba518cd1094b94a7a5cd59a003c78.1353588575.git.dmitry.kasatkin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121114-5806-0000-0000-00001CD48486
+	id S1753665Ab2LKONO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:13:14 -0500
+Received: from relay.parallels.com ([195.214.232.42]:36660 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab2LKONN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 09:13:13 -0500
+Message-ID: <50C73F58.1080005@parallels.com>
+Date: Tue, 11 Dec 2012 18:12:40 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org> <50C73C60.8060405@parallels.com>
+In-Reply-To: <50C73C60.8060405@parallels.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.20.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-22 at 14:49 +0200, Dmitry Kasatkin wrote:
-> This patch introduces new super block attribute flag s_feature_flags
-> and SF_IMA_DISABLED flag. This flag will be used by Integrity Measurement
-> Architecture (IMA). Name suggested by Bruce Fields.
+11.12.2012 18:00, Stanislav Kinsbursky пишет:
+> 11.12.2012 00:28, J. Bruce Fields пишет:
+>> On Thu, Dec 06, 2012 at 06:34:47PM +0300, Stanislav Kinsbursky wrote:
+>>> NFSd does lookup. Lookup is done starting from current->fs->root.
+>>> NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
+>>> unshared) root.
+>>> So we have to swap root to those, which process, started NFSd, has. Because
+>>> that process can be in a container with it's own root.
+>>
+>> This doesn't sound right to me.
+>>
+>> Which lookups exactly do you see being done relative to
+>> current->fs->root ?
+>>
+>
+> Ok, you are right. I was mistaken here.
+> This is not a exactly lookup, but d_path() problem in svc_export_request().
+> I.e. without root swapping, d_path() will give not local export path (like "/export")
+> but something like this "/root/containers_root/export".
+>
 
-The patch looks good.  The patch description should reflect the
-discussion with Al https://lkml.org/lkml/2012/9/19/9, explanining 'why'
-a new flag is needed.
+We, actually, can do it less in less aggressive way.
+I.e. instead root swap and current svc_export_request() implementation:
 
-> Certain file system types and partitions will never be measured or
-> appraised by IMA depending on the policy. For example, pseudo file
-> systems are never measured and appraised. In current implementation
-> policy will be checked again and again. It happens thousands times
-> per second. That is absolute waste of CPU and may be battery resources.
-> 
-> IMA will set the SF_IMA_DISABLED flag when file system will not be measured
-> and appraised and test this flag during subsequent calls to skip policy search.
+void svc_export_request(...)
+{
+	<snip>
+         pth = d_path(&exp->ex_path, *bpp, *blen);
+	<snip>
+}
 
-This explanation belongs in the subsequent patch, which makes use of the
-flag.
+we can do something like this:
 
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+void svc_export_request(...)
+{
+	struct nfsd_net *nn = ...
+	<snip>
+	spin_lock(&dcache_lock);
+         pth = __d_path(&exp->ex_path, &nn->root, *bpp, *blen);
+	spin_unlock(&dcache_lock);
+	<snip>
+}
+
+>> --b.
+>>
+>>>
+>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>>> ---
+>>>   fs/nfsd/netns.h  |    1 +
+>>>   fs/nfsd/nfssvc.c |   33 ++++++++++++++++++++++++++++++++-
+>>>   2 files changed, 33 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+>>> index abfc97c..5c423c6 100644
+>>> --- a/fs/nfsd/netns.h
+>>> +++ b/fs/nfsd/netns.h
+>>> @@ -101,6 +101,7 @@ struct nfsd_net {
+>>>       struct timeval nfssvc_boot;
+>>>
+>>>       struct svc_serv *nfsd_serv;
+>>> +    struct path    root;
+>>>   };
+>>>
+>>>   extern int nfsd_net_id;
+>>> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+>>> index cee62ab..177bb60 100644
+>>> --- a/fs/nfsd/nfssvc.c
+>>> +++ b/fs/nfsd/nfssvc.c
+>>> @@ -392,6 +392,7 @@ int nfsd_create_serv(struct net *net)
+>>>
+>>>       set_max_drc();
+>>>       do_gettimeofday(&nn->nfssvc_boot);        /* record boot time */
+>>> +    get_fs_root(current->fs, &nn->root);
+>>>       return 0;
+>>>   }
+>>>
+>>> @@ -426,8 +427,10 @@ void nfsd_destroy(struct net *net)
+>>>       if (destroy)
+>>>           svc_shutdown_net(nn->nfsd_serv, net);
+>>>       svc_destroy(nn->nfsd_serv);
+>>> -    if (destroy)
+>>> +    if (destroy) {
+>>> +        path_put(&nn->root);
+>>>           nn->nfsd_serv = NULL;
+>>> +    }
+>>>   }
+>>>
+>>>   int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
+>>> @@ -533,6 +536,25 @@ out:
+>>>       return error;
+>>>   }
+>>>
+>>> +/*
+>>> + * This function is actually slightly modified set_fs_root()<F9>
+>>> + */
+>>> +static void nfsd_swap_root(struct net *net)
+>>> +{
+>>> +    struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+>>> +    struct fs_struct *fs = current->fs;
+>>> +    struct path old_root;
+>>> +
+>>> +    path_get(&nn->root);
+>>> +    spin_lock(&fs->lock);
+>>> +    write_seqcount_begin(&fs->seq);
+>>> +    old_root = fs->root;
+>>> +    fs->root = nn->root;
+>>> +    write_seqcount_end(&fs->seq);
+>>> +    spin_unlock(&fs->lock);
+>>> +    if (old_root.dentry)
+>>> +        path_put(&old_root);
+>>> +}
+>>>
+>>>   /*
+>>>    * This is the NFS server kernel thread
+>>> @@ -559,6 +581,15 @@ nfsd(void *vrqstp)
+>>>       current->fs->umask = 0;
+>>>
+>>>       /*
+>>> +     * We have to swap NFSd kthread's fs->root.
+>>> +     * Why so? Because NFSd can be started in container, which has it's own
+>>> +     * root.
+>>> +     * And so what? NFSd lookup files, and lookup start from
+>>> +     * current->fs->root.
+>>> +     */
+>>> +    nfsd_swap_root(net);
+>>> +
+>>> +    /*
+>>>        * thread is spawned with all signals set to SIG_IGN, re-enable
+>>>        * the ones that will bring down the thread
+>>>        */
+>>>
+>
+>
 
 
-> ---
->  include/linux/fs.h |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index b33cfc9..0bef2b2 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1321,6 +1321,8 @@ struct super_block {
-> 
->  	/* Being remounted read-only */
->  	int s_readonly_remount;
-> +
-> +	unsigned long s_feature_flags;
->  };
-> 
->  /* superblock cache pruning functions */
-> @@ -1746,6 +1748,8 @@ struct super_operations {
-> 
->  #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
-> 
-
-Comment needed here before the start of the feature flag definitions.
-
-> +#define SF_IMA_DISABLED		0x0001
-> +
->  extern void __mark_inode_dirty(struct inode *, int);
->  static inline void mark_inode_dirty(struct inode *inode)
->  {
-
-thanks,
-
-Mimi
-
+-- 
+Best regards,
+Stanislav Kinsbursky
