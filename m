@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab2LKUQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 15:16:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41850 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753034Ab2LKUQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 15:16:52 -0500
-Date: Tue, 11 Dec 2012 21:16:47 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?RnLDqWTDqXJpYyBMLiBXLg==?= Meunier <fredlwm@fredlwm.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: soft lockup with 3.7.0 but not 3.6.10
-Message-ID: <20121211201647.GD8873@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	=?utf-8?B?RnLDqWTDqXJpYyBMLiBXLg==?= Meunier <fredlwm@fredlwm.net>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20121211213636.GA19943@pervalidus>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121211213636.GA19943@pervalidus>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754717Ab2LKUYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 15:24:07 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:45718 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753176Ab2LKUYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 15:24:06 -0500
+Message-ID: <1355257444.24219.7.camel@joe-AO722>
+Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
+From: Joe Perches <joe@perches.com>
+To: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jason Baron <jbaron@redhat.com>,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-wireless@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Dec 2012 12:24:04 -0800
+In-Reply-To: <20121211201250.GA19675@kroah.com>
+References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com>
+	 <1353263740.28214.2.camel@joe-AO722> <20121120160845.GB31176@redhat.com>
+	 <3645415.mrRzvuvPFK@lx-vladimir> <20121211193646.GS15974@pogo>
+	 <20121211200831.GD11815@redhat.com> <20121211201250.GA19675@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 07:36:36PM -0200, Frédéric L. W. Meunier wrote:
-> While compiling MPlayer git on 3.7.0, I noticed the attached messages. I 
-> then compiled 3.6.10, without any message being printed by the kernel, 
-> and thought it could be due to MPlayer being compiled on tmpfs, while 
-> the kernel on ext4. But compiling MPlayer on ext4 didn't change 
-> anything.
+On Tue, 2012-12-11 at 12:12 -0800, Greg KH wrote:
+> On Tue, Dec 11, 2012 at 03:08:31PM -0500, Jason Baron wrote:
+> > On Tue, Dec 11, 2012 at 11:36:46AM -0800, Luis R. Rodriguez wrote:
+> > > On Tue, Dec 04, 2012 at 11:28:26AM +0200, Vladimir Kondratiev wrote:
+> > > > Hi Jason,
+> > > > 
+> > > > Do you have any update on the status for patches below?
+> > > > Where is it now? When do you expect it to merge? 3.8?
+> > > > I am waiting for this to merge before I can go on
+> > > > with my driver.
+> > > 
+> > > *poke*
+> > > 
+> > >   Luis
+> > 
+> > Hi Luis,
+> > 
+> > Yes, I posted this patch, along with 2 others last week for Greg to
+> > pull. I believe these are too late for the 3.8 merge window. Perhaps,
+> > Greg can comment. Here's a link to the post:
+> > 
+> > http://marc.info/?l=linux-kernel&m=135474417810281&w=2
 > 
-> I booted on 3.6.10 and couldn't reproduce it.
+> Yes it's too late, these will go into linux-next after 3.8-rc1 is out.
 > 
-> According to 'free', swap isn't used at all during the compilation.
+> thanks,
 > 
-> I'm also attaching my .config.
+> greg k-h
 > 
-> It's an Athlon 64 X2 Dual Core Processor 4000+ with 2Gb of DDR2.
 
-What family is that? Can you give /proc/cpuinfo?
+Vladimir, sorry about this.
 
-> Dec 11 16:02:15 pervalidus kernel: [11260.096015] BUG: soft lockup - CPU#1 stuck for 22s! [cc1:20906]
+I suggest you prefix/rename and include these functions directly into
+your driver and later after 3.9 is out you could again rename the
+local calls to the now generic kernel functions and delete the local
+ones.
 
-Hmm, this says that gcc gets stuck at some point. Is this always
-reproducible on 3.7?
+Your driver is for new hardware, so even now it should be able to
+go into 3.8.
 
-What about using another version of gcc, can you repro it then too?
+cheers, Joe
 
-It would be interesting to know where all those cc1 processes get stuck.
-Can you break into them with gdb and dump the code around RIP everytime
-those tasks gets stuck? Try doing a couple of them to see whether it is
-repeatable.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
