@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2LKJyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 04:54:41 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45497 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab2LKJyj (ORCPT
+	id S1752729Ab2LKJ6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 04:58:52 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:6512 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752136Ab2LKJ6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 04:54:39 -0500
-Date: Tue, 11 Dec 2012 09:54:33 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 06/12] ARM: ux500: Set correct MMCI regulator voltages in
- the ux5x0 Device Tree
-Message-ID: <20121211095433.GK9362@gmail.com>
-References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
- <1355129761-8088-7-git-send-email-lee.jones@linaro.org>
- <CACRpkdZJFbHSwowKnfWyXLckVePHrC6o2CtDJaFb+dXTkNYPjw@mail.gmail.com>
- <CAPDyKFo6KhshYJfSvodPK4e7zC25etz0G8fV4jnAssZX3BDZBg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPDyKFo6KhshYJfSvodPK4e7zC25etz0G8fV4jnAssZX3BDZBg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Dec 2012 04:58:51 -0500
+X-IronPort-AV: E=Sophos;i="4.84,258,1355094000"; 
+   d="scan'208";a="165432955"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: kernel-janitors@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to devm_kfree
+Date: Tue, 11 Dec 2012 11:58:45 +0100
+Message-Id: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012, Ulf Hansson wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> On 11 December 2012 10:17, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Mon, Dec 10, 2012 at 9:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> >> The voltages for the MMCI GPIO controlled voltage regulation differ
-> >> depending on who you believe and where you pick the information up
-> >> from. More recent internal code suggests that the true upper voltage
-> >> from the shifter is actually v3.3, instead of the previously
-> >> indicated v2.9. Let's mirror that change in the Device Tree file.
-> 
-> This is wrong. The value should be 2.9V nothing else!
+The function at91_dt_node_to_map is ultimately called by the function
+pinctrl_get, which is an exported function.  Since it is possible that this
+function is not called from within a probe function, for safety, the kfree
+is converted to a devm_kfree, to both free the data and remove it from the
+device in a failure situation.
 
-Don't panic. I'm already on this. :)
+A newline is added in the call to devm_kfree to avoid exceeding the 80
+character limit.
 
-> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> >
-> > Yours,
-> > Linus Walleij
-> 
-> Kind regards
-> Ulf Hansson
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+---
+ drivers/pinctrl/pinctrl-at91.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+index c5e7571..0da8a5f 100644
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -255,7 +255,8 @@ static int at91_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 	}
+ 
+ 	map_num += grp->npins;
+-	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num, GFP_KERNEL);
++	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
++			       GFP_KERNEL);
+ 	if (!new_map)
+ 		return -ENOMEM;
+ 
+@@ -265,7 +266,7 @@ static int at91_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 	/* create mux map */
+ 	parent = of_get_parent(np);
+ 	if (!parent) {
+-		kfree(new_map);
++		devm_kfree(pctldev->dev, new_map);
+ 		return -EINVAL;
+ 	}
+ 	new_map[0].type = PIN_MAP_TYPE_MUX_GROUP;
+
