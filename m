@@ -1,101 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2LKW5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:57:36 -0500
-Received: from mga06.intel.com ([134.134.136.21]:39500 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754622Ab2LKW5e (ORCPT
+	id S1755172Ab2LKWsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:48:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43755 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781Ab2LKWse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:57:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACLa4psVpx8YPcgiQs0FETg8d+zLcjivnks_So6Dpii48pDNBQ@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-	<1355234914.2356.85.camel@falcor>
-	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-	<1355249884.2356.108.camel@falcor>
-	<CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
-	<1355252392.2356.131.camel@falcor>
-	<CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
-	<1355255320.2356.148.camel@falcor>
-	<CACLa4psVpx8YPcgiQs0FETg8d+zLcjivnks_So6Dpii48pDNBQ@mail.gmail.com>
-Date: Wed, 12 Dec 2012 00:57:21 +0200
-Message-ID: <CALLzPKbqAa7-vJnXbYFbkaD5NVW=6wHQQMDc_Ww==p1hwQ1EJg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Dec 2012 17:48:34 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/37] perf tools: Don't check configuration on make clean
+Date: Tue, 11 Dec 2012 19:47:50 -0300
+Message-Id: <1355266103-17238-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
+References: <1355266103-17238-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 10:08 PM, Eric Paris <eparis@parisplace.org> wrote:
-> S_PRIVATE is totally unacceptable as it has a meaning across all LSMs,
-> not just IMA.
->
-> S_NOSEC means 'this is not setuid or setgid and we don't need to do
-> those checks on modify'
->
-> You are going to need to use a S_NOIMA.
->
-> Of Dmitry's 90,000 fewer policy lookups using the per sb flag, how
-> many of them are the same inode over and over again which would be
-> circumvented using S_NOIMA per inode flag?
->
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-IIRC those were only newly instantiated inodes.
+Current perf build process checks various system configuration on
+invocation to make.  But this is not needed just for cleaning.
 
-For new inodes, S_NOIMA would not be set and used at that point.
-IMA must do the policy search and then would set the S_NOIMA.
+To do that, move some of python related variables out of conditional
+since 'clean' target needs them.  Normal path should not be affected by
+this.
 
-For subsequent calls, S_NOIMA makes sense.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1352867990-658-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/Makefile |    2 ++
+ tools/perf/Makefile               |   28 ++++++++++++++++------------
+ 2 files changed, 18 insertions(+), 12 deletions(-)
 
-If we would have the SB flag like MS_NOIMA, then we could replicate sb
-flag to inode S_NOIMA flag,
-in similar way as inode_has_no_xattr() does:
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index ef6d22e..f6e5901 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -222,10 +222,12 @@ install-pdf: pdf
+ #install-html: html
+ #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
+ 
++ifneq ($(MAKECMDGOALS),clean)
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
+ 
+ -include $(OUTPUT)PERF-VERSION-FILE
++endif
+ 
+ #
+ # Determine "include::" file references in asciidoc files.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 8fca560..08da9fc 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -153,6 +153,7 @@ INSTALL = install
+ # explicitly what architecture to check for. Fix this up for yours..
+ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ 
++ifneq ($(MAKECMDGOALS),clean)
+ -include config/feature-tests.mak
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+@@ -206,6 +207,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ 	BASIC_CFLAGS += -I.
+ endif
++endif # MAKECMDGOALS != clean
+ 
+ # Guard against environment variables
+ BUILTIN_OBJS =
+@@ -230,11 +232,19 @@ endif
+ LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+ TE_LIB := -L$(TE_PATH) -ltraceevent
+ 
++export LIBTRACEEVENT
++
++# python extension build directories
++PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
++PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
++PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
++export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
++
++python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
++
+ PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
+ PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
+ 
+-export LIBTRACEEVENT
+-
+ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
+ 	  --quiet build_ext; \
+@@ -514,6 +524,7 @@ PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
+ #
+ # Platform specific tweaks
+ #
++ifneq ($(MAKECMDGOALS),clean)
+ 
+ # We choose to avoid "if .. else if .. else .. endif endif"
+ # because maintaining the nesting to match is a pain.  If
+@@ -703,7 +714,7 @@ disable-python = $(eval $(disable-python_code))
+ define disable-python_code
+   BASIC_CFLAGS += -DNO_LIBPYTHON
+   $(if $(1),$(warning No $(1) was found))
+-  $(warning Python support won't be built)
++  $(warning Python support will not be built)
+ endef
+ 
+ override PYTHON := \
+@@ -711,19 +722,10 @@ override PYTHON := \
+ 
+ ifndef PYTHON
+   $(call disable-python,python interpreter)
+-  python-clean :=
+ else
+ 
+   PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+ 
+-  # python extension build directories
+-  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
+-  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
+-  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
+-  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
+-
+-  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
+-
+   ifdef NO_LIBPYTHON
+     $(call disable-python)
+   else
+@@ -839,6 +841,8 @@ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
+ 
++endif # MAKECMDGOALS != clean
++
+ # Shell quote (do not use $(call) to accommodate ancient setups);
+ 
+ ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+-- 
+1.7.9.2.358.g22243
 
-static inline void inode_has_no_xattr(struct inode *inode)
-{
-	if (!is_sxid(inode->i_mode) && (inode->i_sb->s_flags & MS_NOSEC))
-		inode->i_flags |= S_NOSEC;
-}
-
-Then later there is no need to dereference inode->i_sb...
-
-Can we reach conclusion about it?
-Will we have SB flag?
-if yes, then where, s_flags, or in some other field like s_feature_flags?
-if not, then we can stop this discussion...
-
-- Dmitry
-
->
->
-> On Tue, Dec 11, 2012 at 2:48 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> On Tue, 2012-12-11 at 11:10 -0800, Linus Torvalds wrote:
->>
->>> Anyway, the whole "you can do it at file granularity" isn't the bulk
->>> of my argument (the "we already have the field that makes sense" is).
->>> But my point is that per-inode is not only the logically more
->>> straightforward place to do it, it's also the much more flexible place
->>> to do it. Because it *allows* for things like that.
->>
->> Ok. To summarize, S_IMA indicates that there is a rule and that the iint
->> was allocated.  To differentiate between 'haven't looked/don't know' and
->> 'definitely not', we need another bit.  For this, you're suggesting
->> using IS_PRIVATE()?  Hopefully, I misunderstood.
->>
->> thanks,
->>
->> Mimi
->>
->>
->>
