@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab2LKBUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:20:54 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64463 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2LKBUx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:20:53 -0500
+	id S1752240Ab2LKBV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 20:21:26 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:49294 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab2LKBVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 20:21:25 -0500
+Date: Tue, 11 Dec 2012 02:21:12 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
+Message-ID: <20121211012112.GA11273@local>
+References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
-References: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
-Date: Tue, 11 Dec 2012 10:20:51 +0900
-X-Google-Sender-Auth: aeFbTayZoil2B9Y2jSbwdyuvxXo
-Message-ID: <CAJ0PZbTTDdAXJ378R7CDO2=spx7WF_RpztG5ch7iFZWx-v3N2Q@mail.gmail.com>
-Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver for Exynos5250.
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Abhilash Kesavan <a.kesavan@samsung.com>
-Cc: kyungmin.park@samsung.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, kgene.kim@samsung.com,
-        jhbird.choi@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 5:42 PM, Abhilash Kesavan <a.kesavan@samsung.com> wrote:
-> Exynos5-bus device devfreq driver monitors PPMU counters and
-> adjusts operating frequencies and voltages with OPP. ASV should
-> be used to provide appropriate voltages as per the speed group
-> of the SoC rather than using a constant 1.025V.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Cc: Jonghwan Choi <jhbird.choi@samsung.com>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
+On Thu, Nov 29, 2012 at 05:40:00PM +0000, Cong Ding wrote:
+> In version 1, I forgot to modify the same bug in the first loop.
+> 
+> we have to call kobject_put() to clean up the kobject after function
+> kobject_init(), kobject_add(), or kobject_uevent() is called.
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
 
-I've got a few general comments and questions on your patch.
+Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
 
 > ---
-> This code is based on Jonghwan Choi's <jhbird.choi@samsung.com> devfreq work
-> for Exynos5250. This requires corresponding machine specific changes which
-> will be posted once the driver is reviewed.
->
->  drivers/devfreq/Kconfig        |   10 +
->  drivers/devfreq/Makefile       |    1 +
->  drivers/devfreq/exynos5_bus.c  |  595 ++++++++++++++++++++++++++++++++++++++++
->  drivers/devfreq/exynos5_ppmu.c |  395 ++++++++++++++++++++++++++
->  drivers/devfreq/exynos5_ppmu.h |   26 ++
->  drivers/devfreq/exynos_ppmu.c  |   56 ++++
->  drivers/devfreq/exynos_ppmu.h  |   79 ++++++
->  7 files changed, 1162 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/devfreq/exynos5_bus.c
->  create mode 100644 drivers/devfreq/exynos5_ppmu.c
->  create mode 100644 drivers/devfreq/exynos5_ppmu.h
->  create mode 100644 drivers/devfreq/exynos_ppmu.c
->  create mode 100644 drivers/devfreq/exynos_ppmu.h
-
-I understand that Exynos PPMU drivers seem not to be used (at least in
-mainline Linux) widely and it'd be convinent for a bus driver to have
-ppmu driver located in the same source directory.
-
-However, I don't feel very comfortable to have ppmu drivers explicitly
-landing in devfreq directory. Would it be possible to place them
-somewhere else? (in drivers/misc, arch/arm/mach-exynos, or somewhere
-appropriate?) If PPMU drivers really have nowhere to relocate, they
-may be located along with its sole user (exynos5_bus.c) anyway.
-
-
-> +
-> +struct exynos5_bus_int_handle {
-> +       struct list_head node;
-> +       struct delayed_work work;
-> +       bool boost;
-> +       bool poll;
-> +       unsigned long min;
-> +};
-
-It appears that "boost" is something may be handled by per-dev QoS.
-It looks like that you are reimplementing the pm-qos infrastructure in
-the driver.
-
-Could you please implement this w/ per-dev QoS?
-Or explain why this is required instead of per-dev PM-QoS?
-
-
-
-Cheers,
-MyungJoo
-
-
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+>  drivers/uio/uio.c |   16 ++++++++++------
+>  1 files changed, 10 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index 5110f36..79774d3 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -291,10 +291,10 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+>  		mem->map = map;
+>  		ret = kobject_add(&map->kobj, idev->map_dir, "map%d", mi);
+>  		if (ret)
+> -			goto err_map;
+> +			goto err_map_kobj;
+>  		ret = kobject_uevent(&map->kobj, KOBJ_ADD);
+>  		if (ret)
+> -			goto err_map;
+> +			goto err_map_kobj;
+>  	}
+>  
+>  	for (pi = 0; pi < MAX_UIO_PORT_REGIONS; pi++) {
+> @@ -317,23 +317,27 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+>  		ret = kobject_add(&portio->kobj, idev->portio_dir,
+>  							"port%d", pi);
+>  		if (ret)
+> -			goto err_portio;
+> +			goto err_portio_kobj;
+>  		ret = kobject_uevent(&portio->kobj, KOBJ_ADD);
+>  		if (ret)
+> -			goto err_portio;
+> +			goto err_portio_kobj;
+>  	}
+>  
+>  	return 0;
+>  
+>  err_portio:
+> -	for (pi--; pi >= 0; pi--) {
+> +	pi--;
+> +err_portio_kobj:
+> +	for (; pi >= 0; pi--) {
+>  		port = &idev->info->port[pi];
+>  		portio = port->portio;
+>  		kobject_put(&portio->kobj);
+>  	}
+>  	kobject_put(idev->portio_dir);
+>  err_map:
+> -	for (mi--; mi>=0; mi--) {
+> +	mi--;
+> +err_map_kobj:
+> +	for (; mi >= 0; mi--) {
+>  		mem = &idev->info->mem[mi];
+>  		map = mem->map;
+>  		kobject_put(&map->kobj);
+> -- 
+> 1.7.4.5
+> 
+> 
