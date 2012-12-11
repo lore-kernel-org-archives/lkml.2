@@ -1,209 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab2LKIzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 03:55:33 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55846 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab2LKIzc (ORCPT
+	id S1752567Ab2LKI5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 03:57:19 -0500
+Received: from ams-iport-4.cisco.com ([144.254.224.147]:61572 "EHLO
+	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2LKI5S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 03:55:32 -0500
-Date: Tue, 11 Dec 2012 09:55:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] irq/core change for v3.8
-Message-ID: <20121211085526.GA21716@gmail.com>
+	Tue, 11 Dec 2012 03:57:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="10326589"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH RFC v2] media: v4l2-ctrl: Add gain controls
+Date: Tue, 11 Dec 2012 09:56:42 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, LDOC <linux-doc@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Chris MacGregor <chris@cybermato.com>, Rob Landley <rob@landley.net>,
+        Jeongtae Park <jtp.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com> <CA+V-a8t+KxCYunkrT715zQks=5HOrFk2PSM2Ss_kTj4iXg=PJg@mail.gmail.com> <20121206095431.GA2887@valkosipuli.retiisi.org.uk>
+In-Reply-To: <20121206095431.GA2887@valkosipuli.retiisi.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201212110956.43081.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu 6 December 2012 10:54:32 Sakari Ailus wrote:
+> Hi Prabhakar and Hans,
+> 
+> On Thu, Dec 06, 2012 at 10:24:18AM +0530, Prabhakar Lad wrote:
+> > Hi Hans,
+> > 
+> > On Wed, Dec 5, 2012 at 5:38 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> > > (resend without HTML formatting)
+> > >
+> > > On Wed 5 December 2012 12:49:29 Prabhakar Lad wrote:
+> > >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> > >>
+> > >> add support for per color component digital/analog gain controls
+> > >> and also their corresponding offset.
+> > >
+> > > Some obvious questions below...
+> > >
+> > >>
+> > >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> > >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> > >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > >> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > >> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > >> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> > >> Cc: Hans de Goede <hdegoede@redhat.com>
+> > >> Cc: Chris MacGregor <chris@cybermato.com>
+> > >> Cc: Rob Landley <rob@landley.net>
+> > >> Cc: Jeongtae Park <jtp.park@samsung.com>
+> > >> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> > >> ---
+> > >>  Changes for v2:
+> > >>  1: Fixed review comments pointed by Laurent.
+> > >>  2: Rebased on latest tree.
+> > >>
+> > >>  Documentation/DocBook/media/v4l/controls.xml |   54 ++++++++++++++++++++++++++
+> > >>  drivers/media/v4l2-core/v4l2-ctrls.c         |   11 +++++
+> > >>  include/uapi/linux/v4l2-controls.h           |   11 +++++
+> > >>  3 files changed, 76 insertions(+), 0 deletions(-)
+> > >>
+> > >> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> > >> index 7fe5be1..847a9bb 100644
+> > >> --- a/Documentation/DocBook/media/v4l/controls.xml
+> > >> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> > >> @@ -4543,6 +4543,60 @@ interface and may change in the future.</para>
+> > >>           specific test patterns can be used to test if a device is working
+> > >>           properly.</entry>
+> > >>         </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_RED</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_RED</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_BLUE</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_BLUE</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="descr"> Some capture/sensor devices have
+> > >> +         the capability to set per color component digital/analog gain values.</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_OFFSET</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_BLUE_OFFSET</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_RED_OFFSET</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GREEN_OFFSET</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GREEN_RED_OFFSET</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="id"><constant>V4L2_CID_GREEN_BLUE_OFFSET</constant></entry>
+> > >> +         <entry>integer</entry>
+> > >> +       </row>
+> > >> +       <row>
+> > >> +         <entry spanname="descr"> Some capture/sensor devices have the
+> > >> +         capability to set per color component digital/analog gain offset values.
+> > >> +         V4L2_CID_GAIN_OFFSET is the global gain offset and the rest are per
+> > >> +         color component gain offsets.</entry>
+> > >
+> > > If I set both V4L2_CID_GAIN_RED and V4L2_CID_RED_OFFSET, how are they supposed
+> > > to interact? Or are they mutually exclusive?
+> > >
+> > > And if I set both V4L2_CID_GAIN_OFFSET and V4L2_CID_RED_OFFSET, how are they supposed
+> > > to interact?
+> > >
+> > > This questions should be answered in the documentation...
+> > >
+> > I haven’t worked on the hardware which supports both, What is the general
+> > behaviour when the hardware supports both per color component and global
+> > and both of them are set ? That could be helpful for me to document.
+> 
+> I'd guess most of the time only either one is supported,
 
-Please pull the latest irq-core-for-linus git tree from:
+Are you talking about GAIN_RED vs GAIN_RED_OFFSET or GAIN_OFFSET vs RED_OFFSET?
+Or both?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-core-for-linus
+> and when someone
+> thinks of supporting both on the same device, we can start thinking of the
+> interaction of per-component and global ones. That may be hardware specific
+> as well, so standardising it might not be possible.
+> 
+> I think it'd be far more important to know which unit is it. Many such
+> controls are indeed fixed point values but the location of the point varies.
+> For unstance, u16,u16 and u8,u8 aren't uncommon. We currently have no way to
+> tell this to the user space. This isn't in any way specific to gain or
+> offset controls, though.
 
-   HEAD: 04aa530ec04f61875b99c12721162e2964e3318c genirq: Always force thread affinity
+There are no standardized units for gain at the moment, and I don't really see
+that happening any time soon. Fixed point isn't supported at all as a control
+type, so that will have to be converted to an integer anyway.
 
-Affinity fixes and a nested threaded IRQ handling fix.
+Prabhakar, which of these controls are actually supported by your hardware?
 
- Thanks,
+Regards,
 
-	Ingo
-
------------------->
-Sankara Muthukrishnan (1):
-      irq: Set CPU affinity right on thread creation
-
-Thomas Gleixner (2):
-      genirq: Provide means to retrigger parent
-      genirq: Always force thread affinity
-
-
- include/linux/irq.h     |  9 +++++++++
- include/linux/irqdesc.h |  3 +++
- kernel/irq/chip.c       |  1 +
- kernel/irq/manage.c     | 41 +++++++++++++++++++++++++++++++++++++++--
- kernel/irq/resend.c     |  8 ++++++++
- 5 files changed, 60 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 216b0ba..526f10a 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -392,6 +392,15 @@ static inline void irq_move_masked_irq(struct irq_data *data) { }
- 
- extern int no_irq_affinity;
- 
-+#ifdef CONFIG_HARDIRQS_SW_RESEND
-+int irq_set_parent(int irq, int parent_irq);
-+#else
-+static inline int irq_set_parent(int irq, int parent_irq)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Built-in IRQ handlers for various IRQ types,
-  * callable via desc->handle_irq()
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 0ba014c..623325e 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -11,6 +11,8 @@
- struct irq_affinity_notify;
- struct proc_dir_entry;
- struct module;
-+struct irq_desc;
-+
- /**
-  * struct irq_desc - interrupt descriptor
-  * @irq_data:		per irq and chip data passed down to chip functions
-@@ -65,6 +67,7 @@ struct irq_desc {
- #ifdef CONFIG_PROC_FS
- 	struct proc_dir_entry	*dir;
- #endif
-+	int			parent_irq;
- 	struct module		*owner;
- 	const char		*name;
- } ____cacheline_internodealigned_in_smp;
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 57d86d0..3aca9f2 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -272,6 +272,7 @@ void handle_nested_irq(unsigned int irq)
- 
- 	raw_spin_lock_irq(&desc->lock);
- 
-+	desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
- 	kstat_incr_irqs_this_cpu(irq, desc);
- 
- 	action = desc->action;
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 4c69326..35c70c9 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -616,6 +616,22 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
- 	return ret;
- }
- 
-+#ifdef CONFIG_HARDIRQS_SW_RESEND
-+int irq_set_parent(int irq, int parent_irq)
-+{
-+	unsigned long flags;
-+	struct irq_desc *desc = irq_get_desc_lock(irq, &flags, 0);
-+
-+	if (!desc)
-+		return -EINVAL;
-+
-+	desc->parent_irq = parent_irq;
-+
-+	irq_put_desc_unlock(desc, flags);
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Default primary interrupt handler for threaded interrupts. Is
-  * assigned as primary handler when request_threaded_irq is called
-@@ -716,6 +732,7 @@ static void
- irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- {
- 	cpumask_var_t mask;
-+	bool valid = true;
- 
- 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
- 		return;
-@@ -730,10 +747,18 @@ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- 	}
- 
- 	raw_spin_lock_irq(&desc->lock);
--	cpumask_copy(mask, desc->irq_data.affinity);
-+	/*
-+	 * This code is triggered unconditionally. Check the affinity
-+	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
-+	 */
-+	if (desc->irq_data.affinity)
-+		cpumask_copy(mask, desc->irq_data.affinity);
-+	else
-+		valid = false;
- 	raw_spin_unlock_irq(&desc->lock);
- 
--	set_cpus_allowed_ptr(current, mask);
-+	if (valid)
-+		set_cpus_allowed_ptr(current, mask);
- 	free_cpumask_var(mask);
- }
- #else
-@@ -833,6 +858,8 @@ static int irq_thread(void *data)
- 	init_task_work(&on_exit_work, irq_thread_dtor);
- 	task_work_add(current, &on_exit_work, false);
- 
-+	irq_thread_check_affinity(desc, action);
-+
- 	while (!irq_wait_for_interrupt(action)) {
- 		irqreturn_t action_ret;
- 
-@@ -936,6 +963,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		 */
- 		get_task_struct(t);
- 		new->thread = t;
-+		/*
-+		 * Tell the thread to set its affinity. This is
-+		 * important for shared interrupt handlers as we do
-+		 * not invoke setup_affinity() for the secondary
-+		 * handlers as everything is already set up. Even for
-+		 * interrupts marked with IRQF_NO_BALANCE this is
-+		 * correct as we want the thread to move to the cpu(s)
-+		 * on which the requesting code placed the interrupt.
-+		 */
-+		set_bit(IRQTF_AFFINITY, &new->thread_flags);
- 	}
- 
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
-diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
-index 6454db7..9065107 100644
---- a/kernel/irq/resend.c
-+++ b/kernel/irq/resend.c
-@@ -74,6 +74,14 @@ void check_irq_resend(struct irq_desc *desc, unsigned int irq)
- 		if (!desc->irq_data.chip->irq_retrigger ||
- 		    !desc->irq_data.chip->irq_retrigger(&desc->irq_data)) {
- #ifdef CONFIG_HARDIRQS_SW_RESEND
-+			/*
-+			 * If the interrupt has a parent irq and runs
-+			 * in the thread context of the parent irq,
-+			 * retrigger the parent.
-+			 */
-+			if (desc->parent_irq &&
-+			    irq_settings_is_nested_thread(desc))
-+				irq = desc->parent_irq;
- 			/* Set it pending and activate the softirq: */
- 			set_bit(irq, irqs_resend);
- 			tasklet_schedule(&resend_tasklet);
+	Hans
