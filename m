@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab2LKV6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:58:00 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45203 "EHLO e7.ny.us.ibm.com"
+	id S1754919Ab2LKV6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:58:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851Ab2LKV4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:56:31 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 4/8] staging: zsmalloc: make CLASS_DELTA relative to PAGE_SIZE
-Date: Tue, 11 Dec 2012 15:56:02 -0600
-Message-Id: <1355262966-15281-5-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121121-5806-0000-0000-00001CDC5AFC
+	id S1753531Ab2LKV6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 16:58:53 -0500
+Message-ID: <1355263123.3527.27.camel@localhost>
+Subject: Re: linux-next: recent rebases
+From: Eric Paris <eparis@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kees Cook <keescook@google.com>
+Date: Tue, 11 Dec 2012 16:58:43 -0500
+In-Reply-To: <20121212084108.de14154ec0e365453617bfd7@canb.auug.org.au>
+References: <20121212084108.de14154ec0e365453617bfd7@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now ZS_SIZE_CLASS_DELTA is hardcoded to be 16.  This
-creates 254 classes for systems with 4k pages. However, on
-PPC64 with 64k pages, it creates 4095 classes which is far
-too many.
+On Wed, 2012-12-12 at 08:41 +1100, Stephen Rothwell wrote:
+> Hi Linus,
+> 
+> I am not sure how much you care about this, but here is a list of the
+> trees in linux-next that have been rebased in the last day (i.e. since I
+> fetched the trees for next-20121211):
+> 
+> fsnotify: rebased to v3.6(!) to resolve a conflict.
+> 	git://git.infradead.org/users/eparis/notify.git#for-next
 
-This patch makes ZS_SIZE_CLASS_DELTA relative to PAGE_SIZE
-so that regardless of the page size, there will be the same
-number of classes.
-
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zsmalloc/zsmalloc-main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 825e124..3543047 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -141,7 +141,7 @@
-  *  ZS_MIN_ALLOC_SIZE and ZS_SIZE_CLASS_DELTA must be multiple of ZS_ALIGN
-  *  (reason above)
-  */
--#define ZS_SIZE_CLASS_DELTA	16
-+#define ZS_SIZE_CLASS_DELTA	(PAGE_SIZE >> 8)
- #define ZS_SIZE_CLASSES		((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / \
- 					ZS_SIZE_CLASS_DELTA + 1)
- 
--- 
-1.7.9.5
+I planned to let it sit in -next until at least next thursday before I
+sent a pull request.  Thought that fit within the rules...
 
