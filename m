@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab2LKTnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 14:43:07 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52412 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab2LKTnG (ORCPT
+	id S1754654Ab2LKTsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 14:48:55 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34320 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab2LKTsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 14:43:06 -0500
-Message-ID: <50C78CC0.3060601@gmail.com>
-Date: Tue, 11 Dec 2012 20:42:56 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Cong Ding <dinggnu@gmail.com>
-CC: Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <syrjala@sci.fi>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1:masters/w1-gpio.c: fix error using "__devinit" and
- "__devexit"
-References: <1355227740-4377-1-git-send-email-dinggnu@gmail.com>
-In-Reply-To: <1355227740-4377-1-git-send-email-dinggnu@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Dec 2012 14:48:54 -0500
+Message-ID: <1355255320.2356.148.camel@falcor>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>,
+        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Date: Tue, 11 Dec 2012 14:48:40 -0500
+In-Reply-To: <CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	 <CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	 <CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	 <1355234914.2356.85.camel@falcor>
+	 <CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+	 <1355249884.2356.108.camel@falcor>
+	 <CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
+	 <1355252392.2356.131.camel@falcor>
+	 <CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121119-7408-0000-0000-00000AF1135D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.12.2012 13:08, Cong Ding wrote:
-> w1:masters/w1-gpio.c: fix error using "__devinit" and "__devexit"
-> 
-> we should use "__devinit" to mark the probe function, "__devexit" to
-> mark the remove function, and "__devexit_p" to mark the pointer to the
-> remove function.
+On Tue, 2012-12-11 at 11:10 -0800, Linus Torvalds wrote:
 
-Nope. CONFIG_HOTPLUG is going away as an option, so you should rather
-kill all the __dev* annotations.
+> Anyway, the whole "you can do it at file granularity" isn't the bulk
+> of my argument (the "we already have the field that makes sense" is).
+> But my point is that per-inode is not only the logically more
+> straightforward place to do it, it's also the much more flexible place
+> to do it. Because it *allows* for things like that.
+
+Ok. To summarize, S_IMA indicates that there is a rule and that the iint
+was allocated.  To differentiate between 'haven't looked/don't know' and
+'definitely not', we need another bit.  For this, you're suggesting
+using IS_PRIVATE()?  Hopefully, I misunderstood.
+
+thanks,
+
+Mimi
 
 
-Thanks,
-Daniel
-
-
-> the error was found by the following compilation warning:
-> WARNING: drivers/w1/masters/w1-gpio.o(.data+0x0): Section mismatch in
-> reference from the variable w1_gpio_driver to the function
-> .init.text:w1_gpio_probe()
-> The variable w1_gpio_driver references
-> the function __init w1_gpio_probe()
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-> 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->  drivers/w1/masters/w1-gpio.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-> index 85b363a..33edc3b 100644
-> --- a/drivers/w1/masters/w1-gpio.c
-> +++ b/drivers/w1/masters/w1-gpio.c
-> @@ -72,7 +72,7 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> -static int __init w1_gpio_probe(struct platform_device *pdev)
-> +static int __devinit w1_gpio_probe(struct platform_device *pdev)
->  {
->  	struct w1_bus_master *master;
->  	struct w1_gpio_platform_data *pdata;
-> @@ -158,7 +158,7 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
->  	return err;
->  }
->  
-> -static int __exit w1_gpio_remove(struct platform_device *pdev)
-> +static int __devexit w1_gpio_remove(struct platform_device *pdev)
->  {
->  	struct w1_bus_master *master = platform_get_drvdata(pdev);
->  	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
-> @@ -210,7 +210,7 @@ static struct platform_driver w1_gpio_driver = {
->  		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
->  	},
->  	.probe = w1_gpio_probe,
-> -	.remove	= __exit_p(w1_gpio_remove),
-> +	.remove	= __devexit_p(w1_gpio_remove),
->  	.suspend = w1_gpio_suspend,
->  	.resume = w1_gpio_resume,
->  };
-> 
 
