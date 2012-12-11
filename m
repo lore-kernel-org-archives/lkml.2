@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab2LKDe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 22:34:56 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43056 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab2LKDey (ORCPT
+	id S1752565Ab2LKDhC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 22:37:02 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:43684 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab2LKDhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 22:34:54 -0500
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        Abhijit Pawar <abhi.c.pawar@gmail.com>
-Subject: [PATCH RESEND RESEND] net: remove obsolete simple_strto<foo>
-Date: Tue, 11 Dec 2012 09:04:20 +0530
-Message-Id: <1355196860-10708-1-git-send-email-abhi.c.pawar@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 10 Dec 2012 22:37:01 -0500
+Date: Tue, 11 Dec 2012 04:36:59 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        Vyacheslav.Dubeyko@huawei.com, Borislav Petkov <bp@alien8.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, wency@cn.fujitsu.com,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
+Message-ID: <20121211033659.GA16230@one.firstfloor.org>
+References: <20121207141102.4fda582d.akpm@linux-foundation.org> <20121210083342.GA31670@hacker.(null)> <50C5A62A.6030401@huawei.com> <1355136423.1700.2.camel@kernel.cn.ibm.com> <50C5C4A2.2070002@huawei.com> <20121210153805.GS16230@one.firstfloor.org> <50C6997C.1080702@huawei.com> <20121211024522.GA10505@localhost> <20121211025857.GX16230@one.firstfloor.org> <50C6A7BC.8010200@huawei.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C6A7BC.8010200@huawei.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replace the obsolete simple_strto<foo> with kstrto<foo>
+> "There are not so many free pages in a typical server system", sorry I don't
+> quite understand it.
 
-Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
----
- net/core/netpoll.c                 |    6 ++++--
- net/ipv4/netfilter/ipt_CLUSTERIP.c |    9 +++++++--
- net/mac80211/debugfs_sta.c         |    4 +++-
- net/netfilter/nf_conntrack_core.c  |    6 ++++--
- 4 files changed, 18 insertions(+), 7 deletions(-)
+Linux tries to keep most memory in caches. As Linus says "free memory is
+bad memory"
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 77a0388..3151acf 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -674,7 +674,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 		if ((delim = strchr(cur, '@')) == NULL)
- 			goto parse_failed;
- 		*delim = 0;
--		np->local_port = simple_strtol(cur, NULL, 10);
-+		if (kstrtou16(cur, 10, &np->local_port))
-+			goto parse_failed;
- 		cur = delim;
- 	}
- 	cur++;
-@@ -705,7 +706,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 		*delim = 0;
- 		if (*cur == ' ' || *cur == '\t')
- 			np_info(np, "warning: whitespace is not allowed\n");
--		np->remote_port = simple_strtol(cur, NULL, 10);
-+		if (kstrtou16(cur, 10, &np->remote_port))
-+			goto parse_failed;
- 		cur = delim;
- 	}
- 	cur++;
-diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-index fe5daea..75e33a7 100644
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -661,6 +661,7 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
- #define PROC_WRITELEN	10
- 	char buffer[PROC_WRITELEN+1];
- 	unsigned long nodenum;
-+	int rc;
- 
- 	if (size > PROC_WRITELEN)
- 		return -EIO;
-@@ -669,11 +670,15 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
- 	buffer[size] = 0;
- 
- 	if (*buffer == '+') {
--		nodenum = simple_strtoul(buffer+1, NULL, 10);
-+		rc = kstrtoul(buffer+1, 10, &nodenum);
-+		if (rc)
-+			return rc;
- 		if (clusterip_add_node(c, nodenum))
- 			return -ENOMEM;
- 	} else if (*buffer == '-') {
--		nodenum = simple_strtoul(buffer+1, NULL,10);
-+		rc = kstrtoul(buffer+1, 10, &nodenum);
-+		if (rc)
-+			return rc;
- 		if (clusterip_del_node(c, nodenum))
- 			return -ENOENT;
- 	} else
-diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
-index 49a1c70..6fb1168 100644
---- a/net/mac80211/debugfs_sta.c
-+++ b/net/mac80211/debugfs_sta.c
-@@ -220,7 +220,9 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
- 	} else
- 		return -EINVAL;
- 
--	tid = simple_strtoul(buf, NULL, 0);
-+	ret = kstrtoul(buf, 0, &tid);
-+	if (ret)
-+		return ret;
- 
- 	if (tid >= IEEE80211_NUM_TIDS)
- 		return -EINVAL;
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index af17516..08cdc71 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1409,7 +1409,7 @@ EXPORT_SYMBOL_GPL(nf_ct_alloc_hashtable);
- 
- int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
- {
--	int i, bucket;
-+	int i, bucket, rc;
- 	unsigned int hashsize, old_size;
- 	struct hlist_nulls_head *hash, *old_hash;
- 	struct nf_conntrack_tuple_hash *h;
-@@ -1422,7 +1422,9 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
- 	if (!nf_conntrack_htable_size)
- 		return param_set_uint(val, kp);
- 
--	hashsize = simple_strtoul(val, NULL, 0);
-+	rc = kstrtouint(val, 0, &hashsize);
-+	if (rc)
-+		return rc;
- 	if (!hashsize)
- 		return -EINVAL;
- 
--- 
-1.7.7.6
+>
+> buffered_rmqueue()
+> 	prep_new_page()
+> 		check_new_page()
+> 			bad_page()
+> 
+> If we alloc 2^10 pages and one of them is a poisoned page, then the whole 4M
+> memory will be dropped.
 
+prep_new_page() is only called on whatever is allocated.
+MAX_ORDER is much smaller than 2^10
+
+If you allocate a large order page then yes the complete page is
+dropped. This is today generally true in hwpoison. It would be one
+possible area of improvement (probably mostly if 1GB pages become
+more common than they are today)
+
+It's usually not a problem because usually most allocations are
+small order and systems have generally very few memory errors,
+and even the largest MAX_ORDER pages are a small fraction of the 
+total memory.
+
+If you lose larger amounts of memory usually you quickly hit something
+that HWPoison cannot handle.
+
+-Andi
