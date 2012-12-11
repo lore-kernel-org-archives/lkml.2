@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2LKBxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:53:54 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9213 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2LKBxx (ORCPT
+	id S1752303Ab2LKB4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 20:56:09 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35298 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2LKB4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:53:53 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DhgVYC8l6PEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=PwOMEcHXvqEA:10 a=fh3e-8mvBssT78kFxY0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355190830.17101.280.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH RT 3/4] sched/rt: Use IPI to trigger RT task push
- migration instead of pulling
-From: Steven Rostedt <rostedt@goodmis.org>
-To: frank.rowand@am.sony.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Mon, 10 Dec 2012 20:53:50 -0500
-In-Reply-To: <50C68922.5030203@am.sony.com>
-References: <20121207235615.206108556@goodmis.org>
-	 <20121208000900.613917378@goodmis.org> <50C682F6.5030709@am.sony.com>
-	 <50C68922.5030203@am.sony.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Mon, 10 Dec 2012 20:56:06 -0500
+Message-ID: <50C692B2.3010602@linaro.org>
+Date: Mon, 10 Dec 2012 17:56:02 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Heinz Wiesinger <HMWiesinger@gmx.at>
+CC: Greg KH <gregkh@linuxfoundation.org>, Jonathan Nieder <jrnieder@gmail.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
+        Janne Boman <janne.m.boman@gmail.com>, rtc-linux@googlegroups.com
+Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the hardware
+ (v2)
+References: <20120330195823.GA31857@kroah.com> <2740175.6ysWXbEv9n@callisto> <50BE423F.1010301@linaro.org> <3675504.Gue7S6K4ie@callisto>
+In-Reply-To: <3675504.Gue7S6K4ie@callisto>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-10 at 17:15 -0800, Frank Rowand wrote:
+On 12/08/2012 03:10 AM, Heinz Wiesinger wrote:
+> On Tuesday 04 December 2012 10:34:39 John Stultz wrote:
+>> On 12/04/2012 02:34 AM, Heinz Wiesinger wrote:
+>>> On Monday 03 December 2012 15:14:12 you wrote:
+>>>> On 11/05/2012 02:55 PM, Heinz Wiesinger wrote:
+>>>>> On Monday 05 November 2012 11:13:31 Greg KH wrote:
+>>>>>> On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> In March, Greg KH wrote:
+>>>>>>>> 3.2-stable review patch.  If anyone has any objections, please let me
+>>>>>>>> know.
+>>>>>>> Sorry, I'm a little late.  This seems to be causing spurious wakeups
+>>>>>>> after shutdown on some systems just like v1 did. :/
+>>>>>>>
+>>>>>>> Janne Boman reports[1], using an HP EliteBook 8530w:
+>>>>>>> | I'm unable to shutdown my system via normal means. The system
+>>>>>>> | completes the shutdown process, all hardware lights are off, but
+>>>>>>> | then
+>>>>>>> | somehow it restarts.
+>>>>>>>
+>>>>>>> Based on a quick web search, Heinz Wiesinger, using the same model,
+>>>>>>>
+>>>>>>> ran into the same problem and bisected it to this patch:
+>>>>>>>      https://bugzilla.kernel.org/show_bug.cgi?id=44261
+>>>>>>>
+>>>>>>> Janne confirmed the same by testing kernels closely based on 3.2.13
+>>>>>>> and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
+>>>>>>> now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
+>>>>>>> was also affected.
+>>>>>> So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
+>>>>>> if this is still an issue in Linus's tree would be the best thing to do
+>>>>>> first.
+>>>>> I checked 3.7-rc4 and the issue is still there. Should I still test the
+>>>>> other versions as well? I can do so but it might take a bit.
+>>>>>
+>>>>> If you need anything else, I'll be happy to help wherever I can.
+>>>> Hey Heinz,
+>>>>
+>>>>      Sorry for being slow to respond to this, I was on leave when it
+>>>>
+>>>> arrived, and it got buried under other items.
+>>>>
+>>>> This is peculiar.  I'm guessing something quirky with your hardware is
+>>>> causing the alarm irq to trigger shortly after we supposedly disable it.
+>>>> Could you send me your dmesg and kernel config?
+>>>>
+>>>> After that I'll likely have to send you some debugging instructions
+>>>> (commenting out various lines) to try to figure out what exactly is
+>>>> triggering it.
+>>>>
+>>>> Sorry for the trouble!
+>>> Hey John,
+>>>
+>>> Don't worry, I know how it is to be busy.
+>>>
+>>> For the dmesg/kernel config is it fine if I send you the one from 3.7-rc4
+>>> or should I update to a more recent version?
+>> 3.7-rc4 is fine.
+>>
+>>> I've also now seen this behaviour on another notebook with completely
+>>> different hardware (Asus VX1). I can send you dmesg output from that one
+>>> too if you want. Kernel config should be almost identical, but it's
+>>> running 3.2.29 still.
+>> Yea, dmesg there would be good as well.
+> Hey John,
+>
+> Sorry for the delay. I was quite busy this week myself.
+> Please find the kernel config and dmesg output attached.
 
-> I should have also mentioned some previous experience using IPIs to
-> avoid runq lock contention on wake up.  Someone encountered IPI
-> storms when using the TTWU_QUEUE feature, thus it defaults to off
-> for CONFIG_PREEMPT_RT_FULL:
-> 
->   #ifndef CONFIG_PREEMPT_RT_FULL
->   /*
->    * Queue remote wakeups on the target CPU and process them
->    * using the scheduler IPI. Reduces rq->lock contention/bounces.
->    */
->   SCHED_FEAT(TTWU_QUEUE, true)
->   #else
->   SCHED_FEAT(TTWU_QUEUE, false)
-> 
+Thanks for the details!
 
-Interesting, but I'm wondering if this also does it for every wakeup? If
-you have 1000 tasks waking up on another CPU, this could potentially
-send out 1000 IPIs. The number of IPIs here looks to be # of tasks
-waking up, and perhaps more than that, as there could be multiple
-instances that try to wake up the same task.
+Quick test: Does the issue persist if you boot with hpet=disable?
 
-Now this patch set, the # of IPIs is limited to the # of CPUs. If you
-have 4 CPUs, you'll get a storm of 3 IPIs. That's a big difference.
-
-Now we could even add a flag, and do a test_and_set on it, and send out
-an IPI iff the flag wasn't set before. Have the target CPU clear the
-flag and then do the pushing. This would limit even further the IPIs
-needed to be sent. I didn't add this yet, because I wanted to test the
-current code first, and only add this if there is an issue with too many
-IPIs.
-
--- Steve
-
+thanks
+-john
 
