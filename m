@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab2LKWsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:48:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43755 "EHLO
+	id S1755271Ab2LKW6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:58:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43763 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781Ab2LKWse (ORCPT
+	with ESMTP id S1753800Ab2LKWsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:48:34 -0500
+	Tue, 11 Dec 2012 17:48:35 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/37] perf tools: Don't check configuration on make clean
-Date: Tue, 11 Dec 2012 19:47:50 -0300
-Message-Id: <1355266103-17238-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/37] perf tools: Fix mmap limitations on 32-bit
+Date: Tue, 11 Dec 2012 19:47:53 -0300
+Message-Id: <1355266103-17238-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
 References: <1355266103-17238-1-git-send-email-acme@infradead.org>
@@ -24,131 +24,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: David Miller <davem@davemloft.net>
 
-Current perf build process checks various system configuration on
-invocation to make.  But this is not needed just for cleaning.
+This is a suggested patch to fix the bug I reported at:
 
-To do that, move some of python related variables out of conditional
-since 'clean' target needs them.  Normal path should not be affected by
-this.
+	http://marc.info/?l=linux-kernel&m=135033028924652&w=2
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
+Essentially, there is a hard requirement that when perf analyzes a
+trace, it must have the entire thing mmap()'d.
+
+Therefore the scheme used on 32-bit where we have a fixed (8) number of
+32MB mmaps, and cycle through them, simply does not work.
+
+One of the reasons this requirement exists is because the iterators
+maintain references to perf entry objects and those references don't
+just simply go away when this mmap code decides to cycle an old mmap
+area out and reuse it.  At this point, those entry pointers now point to
+garbage resulting in unpredictable behavior and crashes.
+
+It is better to try to mmap() as much as we can and if we do actually
+run into address space limitations, the failure of the mmap() call will
+indicate that and stop processing.
+
+I noticed that perf_session->mmap_window is set to a constant in one
+location, and only used in one other location.  So I got rid of it
+altogether.
+
+So we adjust the size of the mmaps[] array to the maximum we could need.
+On 64-bit we only need one slot.  On 32-bit we could need up to 128 (128
+* 32MB == 4GB).
+
+I've verified that this allows a large (~600MB) perf.data file to be
+analyzed properly with a 32-bit perf binary, which previously was not
+possible.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352867990-658-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/20121110.141219.582924082787523608.davem@davemloft.net
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/Makefile |    2 ++
- tools/perf/Makefile               |   28 ++++++++++++++++------------
- 2 files changed, 18 insertions(+), 12 deletions(-)
+ tools/perf/util/session.c |   25 ++++++++++++++-----------
+ tools/perf/util/session.h |    1 -
+ 2 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-index ef6d22e..f6e5901 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -222,10 +222,12 @@ install-pdf: pdf
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d5fb607..aa5e582 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -128,15 +128,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 		goto out;
  
-+ifneq ($(MAKECMDGOALS),clean)
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) $(OUTPUT)PERF-VERSION-FILE
+ 	memcpy(self->filename, filename, len);
+-	/*
+-	 * On 64bit we can mmap the data file in one go. No need for tiny mmap
+-	 * slices. On 32bit we use 32MB.
+-	 */
+-#if BITS_PER_LONG == 64
+-	self->mmap_window = ULLONG_MAX;
+-#else
+-	self->mmap_window = 32 * 1024 * 1024ULL;
+-#endif
+ 	self->machines = RB_ROOT;
+ 	self->repipe = repipe;
+ 	INIT_LIST_HEAD(&self->ordered_samples.samples);
+@@ -1386,6 +1377,18 @@ fetch_mmaped_event(struct perf_session *session,
+ 	return event;
+ }
  
- -include $(OUTPUT)PERF-VERSION-FILE
-+endif
- 
- #
- # Determine "include::" file references in asciidoc files.
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8fca560..08da9fc 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -153,6 +153,7 @@ INSTALL = install
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
- 
-+ifneq ($(MAKECMDGOALS),clean)
- -include config/feature-tests.mak
- 
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
-@@ -206,6 +207,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
- 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
- 	BASIC_CFLAGS += -I.
- endif
-+endif # MAKECMDGOALS != clean
- 
- # Guard against environment variables
- BUILTIN_OBJS =
-@@ -230,11 +232,19 @@ endif
- LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
- TE_LIB := -L$(TE_PATH) -ltraceevent
- 
-+export LIBTRACEEVENT
++/*
++ * On 64bit we can mmap the data file in one go. No need for tiny mmap
++ * slices. On 32bit we use 32MB.
++ */
++#if BITS_PER_LONG == 64
++#define MMAP_SIZE ULLONG_MAX
++#define NUM_MMAPS 1
++#else
++#define MMAP_SIZE (32 * 1024 * 1024ULL)
++#define NUM_MMAPS 128
++#endif
 +
-+# python extension build directories
-+PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
-+PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
-+PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
-+export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
-+
-+python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
-+
- PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
- PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
+ int __perf_session__process_events(struct perf_session *session,
+ 				   u64 data_offset, u64 data_size,
+ 				   u64 file_size, struct perf_tool *tool)
+@@ -1393,7 +1396,7 @@ int __perf_session__process_events(struct perf_session *session,
+ 	u64 head, page_offset, file_offset, file_pos, progress_next;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+ 	size_t	mmap_size;
+-	char *buf, *mmaps[8];
++	char *buf, *mmaps[NUM_MMAPS];
+ 	union perf_event *event;
+ 	uint32_t size;
  
--export LIBTRACEEVENT
--
- $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
-@@ -514,6 +524,7 @@ PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
- #
- # Platform specific tweaks
- #
-+ifneq ($(MAKECMDGOALS),clean)
+@@ -1408,7 +1411,7 @@ int __perf_session__process_events(struct perf_session *session,
  
- # We choose to avoid "if .. else if .. else .. endif endif"
- # because maintaining the nesting to match is a pain.  If
-@@ -703,7 +714,7 @@ disable-python = $(eval $(disable-python_code))
- define disable-python_code
-   BASIC_CFLAGS += -DNO_LIBPYTHON
-   $(if $(1),$(warning No $(1) was found))
--  $(warning Python support won't be built)
-+  $(warning Python support will not be built)
- endef
+ 	progress_next = file_size / 16;
  
- override PYTHON := \
-@@ -711,19 +722,10 @@ override PYTHON := \
+-	mmap_size = session->mmap_window;
++	mmap_size = MMAP_SIZE;
+ 	if (mmap_size > file_size)
+ 		mmap_size = file_size;
  
- ifndef PYTHON
-   $(call disable-python,python interpreter)
--  python-clean :=
- else
- 
-   PYTHON_WORD := $(call shell-wordify,$(PYTHON))
- 
--  # python extension build directories
--  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
--  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
--  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
--  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
--
--  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
--
-   ifdef NO_LIBPYTHON
-     $(call disable-python)
-   else
-@@ -839,6 +841,8 @@ ifdef ASCIIDOC8
- 	export ASCIIDOC8
- endif
- 
-+endif # MAKECMDGOALS != clean
-+
- # Shell quote (do not use $(call) to accommodate ancient setups);
- 
- ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index cea133a..c18fabd 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -30,7 +30,6 @@ struct ordered_samples {
+ struct perf_session {
+ 	struct perf_header	header;
+ 	unsigned long		size;
+-	unsigned long		mmap_window;
+ 	struct machine		host_machine;
+ 	struct rb_root		machines;
+ 	struct perf_evlist	*evlist;
 -- 
 1.7.9.2.358.g22243
 
