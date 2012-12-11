@@ -1,140 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab2LKHNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 02:13:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51176 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2LKHNF (ORCPT
+	id S1752947Ab2LKHQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 02:16:57 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:45834 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab2LKHQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 02:13:05 -0500
-Date: Tue, 11 Dec 2012 08:12:53 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] leds: leds-pwm: Preparing the driver for device
- tree support
-Message-ID: <20121211071253.GC8294@avionic-0098.adnet.avionic-design.de>
-References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com>
- <1355133637-2784-3-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GPJrCs/72TxItFYR"
-Content-Disposition: inline
-In-Reply-To: <1355133637-2784-3-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:mOBI/HM1Hvvme7qPTOl60A/mO8HhHRjppqr+zrdDT5Q
- XbZQU1l2/fFgreyCsuvY5G9aLyKVPDzvkpn78gYafYcMQ48XN4
- 5yMIHTTsOLYGDFZYtu/AQXJWxv/om4F/zrxAsVn/ki5Y7E3g8+
- +zLcIxW7C2wVSxdnCAhlE77R72OyNbcZL6kK5Hwo/CqcumdH3G
- zigWYS8ccRKGgTyFcXde2e4EE/GMaz0cAUDz7zW+0k8vCeHsFB
- cajfb8pbj5swEYw60LKRANeG6oSu6p6Fqd3H9n8nT88HBSf1o3
- nene2G/nQumsfKUQfoDqD/JtQ2Ru+R/HvXxYFSOWV2zD8G6rjk
- o0jMCEKPFR6b+vZ7046pJP8SixOCBsUe17UqreLsomUUotDj+0
- LVfpnmGRVLQWtDC4R7PMqiZAgpgqiIJkkY=
+	Tue, 11 Dec 2012 02:16:55 -0500
+X-AuditID: cbfec7f4-b7f6d6d000001620-a1-50c6dde554df
+Message-id: <50C6DDDC.7070208@samsung.com>
+Date: Tue, 11 Dec 2012 08:16:44 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: lp3971: Convert to get_voltage_sel
+References: <1355140012.6601.1.camel@phoenix>
+In-reply-to: <1355140012.6601.1.camel@phoenix>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4Nd2nd48FGGxcr2JxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyNr+4w1hwRKqi/+A+tgbGp6JdjJwcEgImEldftTFD2GISF+6t
+	Z+ti5OIQEljKKDFl3TEWCGcJk8TSSTvAqngFtCSuLD7GCmKzCKhKNJ9sZQSx2QQMJbredrGB
+	2KICvhLTfl1jgqgXlPgx+R4LiC0ioCSx6v5lMJtZoEDizf037CC2sICbxNHWx2DzhQR0JXY0
+	fgbr5RTQkzg4fz1UvZnEo5Z1zBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tTS4oTkrP
+	NdQrTswtLs1L10vOz93ECAnBLzsYFx+zOsQowMGoxMOroXUsQIg1say4MvcQowQHs5IIb2ku
+	UIg3JbGyKrUoP76oNCe1+BAjEwenVANj/OSJK6J5FBfEcHry8UTXTf7plf/IRiRV+pVBfMi1
+	F+m3NVLu/U7ke5sn+X/FYyZhjVubmHf/M93PmzvB8UaHdqds8EGf4COz2Nk8mBxadewnLy1N
+	3vqhdca6h2LPZ269Lv59Ra7eUxl369JjSmFTL0xvmN37WOfPK/14jklO7Ir3kkK5175TYinO
+	SDTUYi4qTgQAZq8onx8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---GPJrCs/72TxItFYR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/10/2012 12:46 PM, Axel Lin wrote:
+> regulator_list_voltage_table() returns -EINVAL if selector >= n_voltages.
+> Thus we don't need to check if reg is greater than BUCK_TARGET_VOL_MAX_IDX in
+> lp3971_dcdc_get_voltage_sel.
+>
+> BUCK_TARGET_VOL_MIN_IDX and BUCK_TARGET_VOL_MAX_IDX are not used, remove them.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-On Mon, Dec 10, 2012 at 11:00:35AM +0100, Peter Ujfalusi wrote:
-> In order to be able to add device tree support for leds-pwm driver we need
-> to rearrange the data structures used by the drivers.
->=20
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+
 > ---
->  drivers/leds/leds-pwm.c | 39 +++++++++++++++++++++++----------------
->  1 file changed, 23 insertions(+), 16 deletions(-)
->=20
-> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-> index 351257c..02f0c0c 100644
-> --- a/drivers/leds/leds-pwm.c
-> +++ b/drivers/leds/leds-pwm.c
-> @@ -30,6 +30,11 @@ struct led_pwm_data {
->  	unsigned int		period;
->  };
-> =20
-> +struct led_pwm_priv {
-> +	int num_leds;
-> +	struct led_pwm_data leds[];
-> +};
+>   drivers/regulator/lp3971.c |   22 ++++++----------------
+>   1 file changed, 6 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+> index 5f68ff1..9cb2c0f 100644
+> --- a/drivers/regulator/lp3971.c
+> +++ b/drivers/regulator/lp3971.c
+> @@ -73,8 +73,6 @@ static const unsigned int buck_voltage_map[] = {
+>   };
+>
+>   #define BUCK_TARGET_VOL_MASK 0x3f
+> -#define BUCK_TARGET_VOL_MIN_IDX 0x01
+> -#define BUCK_TARGET_VOL_MAX_IDX 0x19
+>
+>   #define LP3971_BUCK_RAMP_REG(x)	(buck_base_addr[x]+2)
+>
+> @@ -140,7 +138,7 @@ static int lp3971_ldo_disable(struct regulator_dev *dev)
+>   	return lp3971_set_bits(lp3971, LP3971_LDO_ENABLE_REG, mask, 0);
+>   }
+>
+> -static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
+> +static int lp3971_ldo_get_voltage_sel(struct regulator_dev *dev)
+>   {
+>   	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+>   	int ldo = rdev_get_id(dev) - LP3971_LDO1;
+> @@ -149,7 +147,7 @@ static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
+>   	reg = lp3971_reg_read(lp3971, LP3971_LDO_VOL_CONTR_REG(ldo));
+>   	val = (reg >> LDO_VOL_CONTR_SHIFT(ldo)) & LDO_VOL_CONTR_MASK;
+>
+> -	return dev->desc->volt_table[val];
+> +	return val;
+>   }
+>
+>   static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
+> @@ -168,7 +166,7 @@ static struct regulator_ops lp3971_ldo_ops = {
+>   	.is_enabled = lp3971_ldo_is_enabled,
+>   	.enable = lp3971_ldo_enable,
+>   	.disable = lp3971_ldo_disable,
+> -	.get_voltage = lp3971_ldo_get_voltage,
+> +	.get_voltage_sel = lp3971_ldo_get_voltage_sel,
+>   	.set_voltage_sel = lp3971_ldo_set_voltage_sel,
+>   };
+>
+> @@ -201,24 +199,16 @@ static int lp3971_dcdc_disable(struct regulator_dev *dev)
+>   	return lp3971_set_bits(lp3971, LP3971_BUCK_VOL_ENABLE_REG, mask, 0);
+>   }
+>
+> -static int lp3971_dcdc_get_voltage(struct regulator_dev *dev)
+> +static int lp3971_dcdc_get_voltage_sel(struct regulator_dev *dev)
+>   {
+>   	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+>   	int buck = rdev_get_id(dev) - LP3971_DCDC1;
+>   	u16 reg;
+> -	int val;
+>
+>   	reg = lp3971_reg_read(lp3971, LP3971_BUCK_TARGET_VOL1_REG(buck));
+>   	reg &= BUCK_TARGET_VOL_MASK;
+>
+> -	if (reg <= BUCK_TARGET_VOL_MAX_IDX)
+> -		val = buck_voltage_map[reg];
+> -	else {
+> -		val = 0;
+> -		dev_warn(&dev->dev, "chip reported incorrect voltage value.\n");
+> -	}
+> -
+> -	return val;
+> +	return reg;
+>   }
+>
+>   static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
+> @@ -249,7 +239,7 @@ static struct regulator_ops lp3971_dcdc_ops = {
+>   	.is_enabled = lp3971_dcdc_is_enabled,
+>   	.enable = lp3971_dcdc_enable,
+>   	.disable = lp3971_dcdc_disable,
+> -	.get_voltage = lp3971_dcdc_get_voltage,
+> +	.get_voltage_sel = lp3971_dcdc_get_voltage_sel,
+>   	.set_voltage_sel = lp3971_dcdc_set_voltage_sel,
+>   };
+>
+>
 
-I think you want leds[0] here. Otherwise your structure is too large by
-sizeof(struct led_pwm_data *).
 
-> +
->  static void led_pwm_set(struct led_classdev *led_cdev,
->  	enum led_brightness brightness)
->  {
-> @@ -47,25 +52,29 @@ static void led_pwm_set(struct led_classdev *led_cdev,
->  	}
->  }
-> =20
-> +static inline int sizeof_pwm_leds_priv(int num_leds)
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-Perhaps this should return size_t?
-
-> +{
-> +	return sizeof(struct led_pwm_priv) +
-> +		      (sizeof(struct led_pwm_data) * num_leds);
-> +}
-> +
->  static int led_pwm_probe(struct platform_device *pdev)
->  {
->  	struct led_pwm_platform_data *pdata =3D pdev->dev.platform_data;
-> -	struct led_pwm *cur_led;
-> -	struct led_pwm_data *leds_data, *led_dat;
-> +	struct led_pwm_priv *priv;
->  	int i, ret =3D 0;
-> =20
->  	if (!pdata)
->  		return -EBUSY;
-> =20
-> -	leds_data =3D devm_kzalloc(&pdev->dev,
-> -			sizeof(struct led_pwm_data) * pdata->num_leds,
-> -				GFP_KERNEL);
-> -	if (!leds_data)
-> +	priv =3D devm_kzalloc(&pdev->dev, sizeof_pwm_leds_priv(pdata->num_leds),
-> +			    GFP_KERNEL);
-
-I'm not sure if sizeof_pwm_leds_priv() requires to be a separate
-function. You could make it shorter by doing something like:
-
-	size_t extra =3D sizeof(*led_dat) * pdata->num_leds;
-
-	priv =3D devm_kzalloc(&pdev->dev, sizeof(*priv) + extra, GFP_KERNEL);
-
-But that's really just a matter of taste, so no further objections if
-you want to keep the inline function.
-
-Thierry
-
---GPJrCs/72TxItFYR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQxtz1AAoJEN0jrNd/PrOhUU4P+gLJHgWtDm0s/NCnexXBdCrf
-vzMxNBFgJ2yE8onyjjY7xBmb1gcPNZrjM92lTyy87mz6USNcq9EI5nNFzgZysGUQ
-NxsEOlYD2EZ3FNi/9cdhq3T9EOR+G57HetqCvimoOdl7ZMGZ8DDKOADk/Wx25juX
-lHotDE6l9Fcv8z4ObUZR3Nvr0SCU+4pal+q19qHWmeGjVFatB8zStqpNDBpv00ta
-i3Q1TFOeDe7+WZhnMdL9vX5P5Lumlly1idZCd0s70mqJPB54eZId4qiKz2xWyOnl
-Jgl0I8bifWCmRLBobEcwYtynHAnRoxni+JfkXxRp9jju2Sa7EtsQOJ+fxhLOLZ1O
-pLoBcqNvhOPzWjn2lqacamp29ioHkyOR9ZxI/sa5d+7YWlujBMMqErIHcd2PknHb
-Y6j4XdQM9Oyp2xiw4T7DIlt1VaNXqkEL7dD4+GjpH3AUSN6vRyr5sppvBJiqkaqR
-Cr2Avy+64Hwnwnbq9wSi27t/rXmhFeQBbNqiCQ2cQRiKJQiGHf84JqbWMlBuqx/z
-0oTQQwGhy7WdRuyObep2+t0ir0ZPT7ZH+XsMym/Ha8b5MyHqToMUdj08DiLDPylq
-C700jKySZhoFHR0yWM4d1X0NJHb0uBlz2W6tckiY3k5L2148qhlBKK8xnVLZNDi3
-dLhVV8MIKcZ66NwLvumq
-=NODy
------END PGP SIGNATURE-----
-
---GPJrCs/72TxItFYR--
