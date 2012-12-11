@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab2LKIpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 03:45:15 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58329 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab2LKIpO (ORCPT
+	id S1752637Ab2LKIp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 03:45:27 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60156 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab2LKIpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 03:45:14 -0500
-X-AuditID: 9c930179-b7b25ae0000031c2-de-50c6f29857c6
-Date: Tue, 11 Dec 2012 17:45:12 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mike Hommey <mh@glandium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arun Sharma <asharma@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v3] Support volatile range for anon vma
-Message-ID: <20121211084512.GI22698@blaptop>
-References: <1355193255-7217-1-git-send-email-minchan@kernel.org>
- <20121211024104.GA10523@blaptop>
- <20121211071742.GA26598@glandium.org>
- <20121211073744.GF22698@blaptop>
- <20121211075950.GA27103@glandium.org>
- <20121211081117.GH22698@blaptop>
- <20121211082903.GA27441@glandium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211082903.GA27441@glandium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 11 Dec 2012 03:45:25 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RFC 03/13] OF: define of_*_cmp() macros also if CONFIG_OF isn't set
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>, g.liakhovetski@gmx.de,
+        linux-media@vger.kernel.org
+Cc: rob.herring@calxeda.com, thomas.abraham@linaro.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, kyungmin.park@samsung.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1355168499-5847-4-git-send-email-s.nawrocki@samsung.com>
+References: <1355168499-5847-1-git-send-email-s.nawrocki@samsung.com> <1355168499-5847-4-git-send-email-s.nawrocki@samsung.com>
+Date: Tue, 11 Dec 2012 08:45:09 +0000
+Message-Id: <20121211084509.2DEE83E076D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 09:29:03AM +0100, Mike Hommey wrote:
-> On Tue, Dec 11, 2012 at 05:11:17PM +0900, Minchan Kim wrote:
-> > On Tue, Dec 11, 2012 at 08:59:50AM +0100, Mike Hommey wrote:
-> > > On Tue, Dec 11, 2012 at 04:37:44PM +0900, Minchan Kim wrote:
-> > > > On Tue, Dec 11, 2012 at 08:17:42AM +0100, Mike Hommey wrote:
-> > > > > On Tue, Dec 11, 2012 at 11:41:04AM +0900, Minchan Kim wrote:
-> > > > > > - What's the madvise(addr, length, MADV_VOLATILE)?
-> > > > > > 
-> > > > > >   It's a hint that user deliver to kernel so kernel can *discard*
-> > > > > >   pages in a range anytime.
-> > > > > > 
-> > > > > > - What happens if user access page(ie, virtual address) discarded
-> > > > > >   by kernel?
-> > > > > > 
-> > > > > >   The user can see zero-fill-on-demand pages as if madvise(DONTNEED).
-> > > > > 
-> > > > > What happened to getting SIGBUS?
-> > > > 
-> > > > I thought it could force for user to handle signal.
-> > > > If user can receive signal, what can he do?
-> > > > Maybe he can call madivse(NOVOLATILE) in my old version but I removed it
-> > > > in this version so user don't need handle signal handling.
-> > > 
-> > > NOVOLATILE and signal throwing are two different and not necessarily
-> > > related needs. We (Mozilla) could probably live without NOVOLATILE,
-> > > but certainly not without signal throwing.
-> > 
-> > What's shortcoming if we don't provide signal handling?
-> > Could you explain how you want to signal in your allocator?
+On Mon, 10 Dec 2012 20:41:29 +0100, Sylwester Nawrocki <s.nawrocki@samsung.com> wrote:
+> From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 > 
-> The main use case we have for signals is not an allocator. We're
-> currently using ashmem to decompress libraries on Android. We would like
-> to use volatile memory for that instead, so that unused pages can be
-> discarded. With NOVOLATILE, or when getting zero-filled pages, that just
-> doesn't pan out: you may well be jumping in the volatile memory from
-> anywhere, and you can't check the status of the page you're jumping into
-> before jumping. Thus you need to be signaled when reaching a discarded
-> page.
+> of_*_cmp() macros do not depend on any OF functions and can be defined also
+> if CONFIG_OF isn't set. Also include linux/string.h, required by those
+> macros.
 
-It seems you are saying about tmpfs-based volatile ranges.
-As I mentioned in John's thread, some interface to pin memory
-as ashmem's term is needed for tmpfs-based volatile ranges.
-But in case of allocator, we might not need it so this patch which
-for considering allocator usecase removed SIGBUS.
-If user allocator guys ask such interface, it wouldn't be a problem
-for unifying both usecases but if they don't want due to by
-performance, I don't want to add it. If so, there are two choices.
+Patch looks fine, but I'd like to know the situation where you found
+this problem. Again, anything calling these of_ helpers is probably
+CONFIG_OF specific code.
 
-1) Go separate way with each interface.
-   (madvise for anon vs fadvise or fallocate for tmpfs)
-2) A new system call to unify them.
+I've resisted doing a blanket add of these helpers outside of CONFIG_OF
+exactly because it helps identify CONFIG_OF code that should be compiled
+out when CONFIG_OF=n
+
+g.
 
 > 
-> Mike
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+>  include/linux/of.h |   15 ++++++++-------
+>  1 file changed, 8 insertions(+), 7 deletions(-)
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 9ba8cf1..38d4b1a 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -85,6 +85,14 @@ static inline struct device_node *of_node_get(struct device_node *node)
+>  static inline void of_node_put(struct device_node *node) { }
+>  #endif /* !CONFIG_OF_DYNAMIC */
+>  
+> +/* Default string compare functions, Allow arch asm/prom.h to override */
+> +#if !defined(of_compat_cmp)
+> +#include <linux/string.h>
+> +#define of_compat_cmp(s1, s2, l)	strcasecmp((s1), (s2))
+> +#define of_prop_cmp(s1, s2)		strcmp((s1), (s2))
+> +#define of_node_cmp(s1, s2)		strcasecmp((s1), (s2))
+> +#endif
+> +
+>  #ifdef CONFIG_OF
+>  
+>  /* Pointer for first entry in chain of all nodes. */
+> @@ -143,13 +151,6 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
+>  #define OF_ROOT_NODE_SIZE_CELLS_DEFAULT 1
+>  #endif
+>  
+> -/* Default string compare functions, Allow arch asm/prom.h to override */
+> -#if !defined(of_compat_cmp)
+> -#define of_compat_cmp(s1, s2, l)	strcasecmp((s1), (s2))
+> -#define of_prop_cmp(s1, s2)		strcmp((s1), (s2))
+> -#define of_node_cmp(s1, s2)		strcasecmp((s1), (s2))
+> -#endif
+> -
+>  /* flag descriptions */
+>  #define OF_DYNAMIC	1 /* node and properties were allocated via kmalloc */
+>  #define OF_DETACHED	2 /* node has been detached from the device tree */
+> -- 
+> 1.7.9.5
+> 
 
 -- 
-Kind regards,
-Minchan Kim
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
