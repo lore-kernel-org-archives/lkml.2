@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab2LKJHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 04:07:15 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:54139 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab2LKJHN (ORCPT
+	id S1752562Ab2LKJJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 04:09:01 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65118 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab2LKJI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 04:07:13 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
+	Tue, 11 Dec 2012 04:08:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1212110958110.2091@hadrien>
+References: <alpine.DEB.2.02.1212081643590.1984@hadrien>
+	<CACRpkdY_znNHckam+PsysddCib2PP-6Lk4OM8_v34BX+p4pu-A@mail.gmail.com>
+	<alpine.DEB.2.02.1212110958110.2091@hadrien>
+Date: Tue, 11 Dec 2012 10:08:57 +0100
+Message-ID: <CACRpkdb-yzpg2SJ--ksjM8TDu1cuCxMCn1cHj9OPQQt7DsjHeQ@mail.gmail.com>
 Subject: Re: question about drivers/pinctrl/pinctrl-at91.c
-To: Julia Lawall <julia.lawall@lip6.fr>, plagnioj@jcrosoft.com,
-        linus.walleij@linaro.org, rob.herring@calxeda.com,
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: plagnioj@jcrosoft.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
-In-Reply-To: <alpine.DEB.2.02.1212081643590.1984@hadrien>
-References: <alpine.DEB.2.02.1212081643590.1984@hadrien>
-Date: Tue, 11 Dec 2012 09:06:59 +0000
-Message-Id: <20121211090659.DAC4C3E076D@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 8 Dec 2012 16:52:42 +0100 (CET), Julia Lawall <julia.lawall@lip6.fr> wrote:
-> The function at91_dt_node_to_map in drivers/pinctrl/pinctrl-at91.c 
-> contains the following code:
-> 
->         new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num, GFP_KERNEL);
->          if (!new_map)
->                  return -ENOMEM;
-> 
->          *map = new_map;
->          *num_maps = map_num;
-> 
->          /* create mux map */
->          parent = of_get_parent(np);
->          if (!parent) {
->                  kfree(new_map);
->                  return -EINVAL;
->          }
-> 
-> This is clearly not correct, because the combination of devm_kzalloc and 
-> kfree risks creating a double free.  But I am not sure how best to fix it. 
-> Is the data structure intended to normally exist until the driver's remove 
-> function is called?  If so, perhaps the devm_kzalloc is OK.  If I just 
-> remove the kfree, then the structure will persist until the remove 
-> function is called, even though there was an error, which is perhaps not 
-> good.  So I could change the kfree to devm_kfree?
+On Tue, Dec 11, 2012 at 10:04 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+> On Tue, 11 Dec 2012, Linus Walleij wrote:
 
-Hi Julia,
+>> I was under the impression that if you exit the probe function
+>> with a negative value anything allocated with devm_* was freed
+>> immediately, that is atleast how it's described in
+>> Documentation/driver-model/devres.txt
+>> atleast that seems to be the intetion with the whole thing.
+>
+> That is true, but I wasn't sure taht this function was part of the probe
+> function.  Its only reference is in:
+>
+> static struct pinctrl_ops at91_pctrl_ops = {
+>         .get_groups_count       = at91_get_groups_count,
+>         .get_group_name         = at91_get_group_name,
+>         .get_group_pins         = at91_get_group_pins,
+>         .pin_dbg_show           = at91_pin_dbg_show,
+>         .dt_node_to_map         = at91_dt_node_to_map,
+>         .dt_free_map            = at91_dt_free_map,
+> };
+>
+> Working backwards, one possible call site is pinctrl_get, which is an
+> exported function.  Is it safe to assume that it will always be called
+> from within a probe function?
 
-I don't have that file in my tree. Is it in linux-next? (I'm too lazy to
-go and look)
+Aha sorry I got it all backwards :-(
 
-Yes, devm_kfree() is the right thing to call, but I'd be tempted to just
-drop the free entirely. If it fails there is something wrong and it will
-get cleaned up when the probe returns a fail code... but look at the
-code; if failing there is a valid way for the driver to operate, then
-doing the cleanup is the right thing....
+Well, yes in that case it's devm_kfree() for sure.
 
-Alternately the of_get_parent() call could simply be moved above the
-devm_kzalloc() and then the issue becomes moot.  :-)
+Thanks!
 
-g.
-
+Yours,
+Linus Walleij
