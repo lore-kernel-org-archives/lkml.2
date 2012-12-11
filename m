@@ -1,76 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2LKJEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 04:04:20 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37586 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab2LKJEM (ORCPT
+	id S1752614Ab2LKJGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 04:06:37 -0500
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:50254 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2LKJGe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 04:04:12 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 2/3] mtd: devices: elm: Add support for ELM error correction
-To: "Philip, Avinash" <avinashphilip@ti.com>, dwmw2@infradead.org,
-        artem.bityutskiy@linux.intel.com, afzal@ti.com, tony@atomide.com,
-        broonie@opensource.wolfsonmicro.com, rmk+kernel@arm.linux.org.uk,
-        gregkh@linuxfoundation.org
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, ivan.djelic@parrot.com,
-        "Philip, Avinash" <avinashphilip@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-In-Reply-To: <1354189595-12784-3-git-send-email-avinashphilip@ti.com>
-References: <1354189595-12784-1-git-send-email-avinashphilip@ti.com> <1354189595-12784-3-git-send-email-avinashphilip@ti.com>
-Date: Tue, 11 Dec 2012 09:03:56 +0000
-Message-Id: <20121211090356.8D3D93E076D@localhost>
+	Tue, 11 Dec 2012 04:06:34 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6922"; a="78979148"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH RFC v2] media: v4l2-ctrl: Add gain controls
+Date: Tue, 11 Dec 2012 10:05:59 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, LDOC <linux-doc@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Chris MacGregor <chris@cybermato.com>, Rob Landley <rob@landley.net>,
+        Jeongtae Park <jtp.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com> <20121206095431.GA2887@valkosipuli.retiisi.org.uk> <201212110956.43081.hverkuil@xs4all.nl>
+In-Reply-To: <201212110956.43081.hverkuil@xs4all.nl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201212111005.59210.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 17:16:33 +0530, "Philip, Avinash" <avinashphilip@ti.com> wrote:
-> The ELM hardware module can be used to speedup BCH 4/8/16 ECC scheme
-> error correction.
-> For now only 4 & 8 bit support is added
+On Tue 11 December 2012 09:56:42 Hans Verkuil wrote:
+> On Thu 6 December 2012 10:54:32 Sakari Ailus wrote:
+> > Hi Prabhakar and Hans,
+> > 
+> > On Thu, Dec 06, 2012 at 10:24:18AM +0530, Prabhakar Lad wrote:
+> > > Hi Hans,
+> > > 
+> > > On Wed, Dec 5, 2012 at 5:38 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> > > > (resend without HTML formatting)
+> > > >
+> > > > On Wed 5 December 2012 12:49:29 Prabhakar Lad wrote:
+> > > >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> > > >>
+> > > >> add support for per color component digital/analog gain controls
+> > > >> and also their corresponding offset.
+> > > >
+> > > > Some obvious questions below...
+> > > >
+> > > >>
+> > > >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> > > >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> > > >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > >> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > > >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > >> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > >> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> > > >> Cc: Hans de Goede <hdegoede@redhat.com>
+> > > >> Cc: Chris MacGregor <chris@cybermato.com>
+> > > >> Cc: Rob Landley <rob@landley.net>
+> > > >> Cc: Jeongtae Park <jtp.park@samsung.com>
+> > > >> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> > > >> ---
+> > > >>  Changes for v2:
+> > > >>  1: Fixed review comments pointed by Laurent.
+> > > >>  2: Rebased on latest tree.
+> > > >>
+> > > >>  Documentation/DocBook/media/v4l/controls.xml |   54 ++++++++++++++++++++++++++
+> > > >>  drivers/media/v4l2-core/v4l2-ctrls.c         |   11 +++++
+> > > >>  include/uapi/linux/v4l2-controls.h           |   11 +++++
+> > > >>  3 files changed, 76 insertions(+), 0 deletions(-)
+> > > >>
+> > > >> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> > > >> index 7fe5be1..847a9bb 100644
+> > > >> --- a/Documentation/DocBook/media/v4l/controls.xml
+> > > >> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> > > >> @@ -4543,6 +4543,60 @@ interface and may change in the future.</para>
+> > > >>           specific test patterns can be used to test if a device is working
+> > > >>           properly.</entry>
+> > > >>         </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_RED</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_RED</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_BLUE</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_BLUE</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="descr"> Some capture/sensor devices have
+> > > >> +         the capability to set per color component digital/analog gain values.</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GAIN_OFFSET</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_BLUE_OFFSET</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_RED_OFFSET</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GREEN_OFFSET</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GREEN_RED_OFFSET</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="id"><constant>V4L2_CID_GREEN_BLUE_OFFSET</constant></entry>
+> > > >> +         <entry>integer</entry>
+> > > >> +       </row>
+> > > >> +       <row>
+> > > >> +         <entry spanname="descr"> Some capture/sensor devices have the
+> > > >> +         capability to set per color component digital/analog gain offset values.
+> > > >> +         V4L2_CID_GAIN_OFFSET is the global gain offset and the rest are per
+> > > >> +         color component gain offsets.</entry>
+> > > >
+> > > > If I set both V4L2_CID_GAIN_RED and V4L2_CID_RED_OFFSET, how are they supposed
+> > > > to interact? Or are they mutually exclusive?
+> > > >
+> > > > And if I set both V4L2_CID_GAIN_OFFSET and V4L2_CID_RED_OFFSET, how are they supposed
+> > > > to interact?
+> > > >
+> > > > This questions should be answered in the documentation...
+> > > >
+> > > I haven’t worked on the hardware which supports both, What is the general
+> > > behaviour when the hardware supports both per color component and global
+> > > and both of them are set ? That could be helpful for me to document.
+> > 
+> > I'd guess most of the time only either one is supported,
 > 
-> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> ---
-> Changes since v2:
-> 	- Remove __devinit & __devexit annotations
+> Are you talking about GAIN_RED vs GAIN_RED_OFFSET or GAIN_OFFSET vs RED_OFFSET?
+> Or both?
+
+I guess GAIN_RED + GAIN_RED_OFFSET is fine as a combination after reading up on it
+a bit. It's the global vs per-component that's the problem. After thinking about
+it some more I'd say it should be either one or the other, with a possible control
+to switch between the two if both modes are supported. It gets very messy otherwise.
+
+Regards,
+
+	Hans
+
 > 
-> Changes since v1:
-> 	- Change build attribute to CONFIG_MTD_NAND_OMAP_BCH
-> 	- Reduced indentation using by passing elm_info , offset
-> 	  to elm_read & elm_write
-> 	- Removed syndrome manipulation functions.
+> > and when someone
+> > thinks of supporting both on the same device, we can start thinking of the
+> > interaction of per-component and global ones. That may be hardware specific
+> > as well, so standardising it might not be possible.
+> > 
+> > I think it'd be far more important to know which unit is it. Many such
+> > controls are indeed fixed point values but the location of the point varies.
+> > For unstance, u16,u16 and u8,u8 aren't uncommon. We currently have no way to
+> > tell this to the user space. This isn't in any way specific to gain or
+> > offset controls, though.
 > 
-> :000000 100644 0000000... b88ee83... A	Documentation/devicetree/bindings/mtd/elm.txt
-> :100644 100644 395733a... 369a194... M	drivers/mtd/devices/Makefile
-> :000000 100644 0000000... d2667f3... A	drivers/mtd/devices/elm.c
-> :000000 100644 0000000... d4fce31... A	include/linux/platform_data/elm.h
->  Documentation/devicetree/bindings/mtd/elm.txt |   17 +
->  drivers/mtd/devices/Makefile                  |    4 +-
->  drivers/mtd/devices/elm.c                     |  418 +++++++++++++++++++++++++
->  include/linux/platform_data/elm.h             |   54 ++++
->  4 files changed, 493 insertions(+), 1 deletions(-)
+> There are no standardized units for gain at the moment, and I don't really see
+> that happening any time soon. Fixed point isn't supported at all as a control
+> type, so that will have to be converted to an integer anyway.
 > 
-> diff --git a/Documentation/devicetree/bindings/mtd/elm.txt b/Documentation/devicetree/bindings/mtd/elm.txt
-> new file mode 100644
-> index 0000000..b88ee83
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mtd/elm.txt
-> @@ -0,0 +1,17 @@
-> +Error location module
-> +
-> +Required properties:
-> +- compatible: Must be "ti,elm"
-
-Compatible string is too generic. Need to specify a specific SoC here.
-ie: "ti,omap3430-elm"
-
-Otherwise the binding looks fine. I haven't reviewed the code though.
-
-g.
-
+> Prabhakar, which of these controls are actually supported by your hardware?
+> 
+> Regards,
+> 
+> 	Hans
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
