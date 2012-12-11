@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab2LKEsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 23:48:22 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:34684 "EHLO
+	id S1752834Ab2LKEt1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 23:49:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:34712 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab2LKEsU (ORCPT
+	with ESMTP id S1751625Ab2LKEt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 23:48:20 -0500
-Date: Mon, 10 Dec 2012 23:48:17 -0500 (EST)
-Message-Id: <20121210.234817.805113114715558868.davem@davemloft.net>
+	Mon, 10 Dec 2012 23:49:26 -0500
+Date: Mon, 10 Dec 2012 23:49:23 -0500 (EST)
+Message-Id: <20121210.234923.94776338088489257.davem@davemloft.net>
 To: abhi.c.pawar@gmail.com
 Cc: pablo@netfilter.org, kaber@trash.net, kuznet@ms2.inr.ac.ru,
         jmorris@namei.org, yoshfuji@linux-ipv6.org, linville@tuxdriver.com,
@@ -17,12 +17,10 @@ Cc: pablo@netfilter.org, kaber@trash.net, kuznet@ms2.inr.ac.ru,
         linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
         netfilter@vger.kernel.org, coreteam@netfilter.org,
         linux-wireless@vger.kernel.org
-Subject: Re: [PATCH RESEND] net: remove obsolete simple_strto<foo>
+Subject: Re: [PATCH RESEND RESEND] net: remove obsolete simple_strto<foo>
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <50C6A995.1020908@gmail.com>
-References: <1355130748-7828-1-git-send-email-abhi.c.pawar@gmail.com>
-	<20121210.141002.450030380391247897.davem@davemloft.net>
-	<50C6A995.1020908@gmail.com>
+In-Reply-To: <1355196860-10708-1-git-send-email-abhi.c.pawar@gmail.com>
+References: <1355196860-10708-1-git-send-email-abhi.c.pawar@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -32,27 +30,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-Date: Tue, 11 Dec 2012 09:03:41 +0530
+Date: Tue, 11 Dec 2012 09:04:20 +0530
 
-> On 12/11/2012 12:40 AM, David Miller wrote:
->> From: Abhijit Pawar <abhi.c.pawar@gmail.com>
->> Date: Mon, 10 Dec 2012 14:42:28 +0530
->> 
->>> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
->>>
->>> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
->> 
->> Applied.
->> 
-> Hi David,
-> It seems that there are occurences of simple_strto* still present in the
-> couple of files which are not yet removed correctly by this patch. I
-> will send a modified patch shortly. Please revert this commit and use
-> the newly sent patch to merge with the tree.
+> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
+> 
+> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
 
-Again, you cannot send "modified" patches.
+You can't submit replacement patches for ones which I have already
+applied.
 
-When I say I've applied your patch, that cannot be undone.
-
-You must therefore send me fixup patches relative to the ones
-I've applied already.
+Patches I apply are permanently applied, and therefore you must submit
+changes relative the ones I've applied already.
