@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab2LKAuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 19:50:05 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:21161
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751470Ab2LKAuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 19:50:03 -0500
-X-Forefront-Antispam-Report: CIP:160.33.194.228;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail01v.am.sony.com;RD:mail01.sonyusa.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI1432Izz1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h1155h)
-Message-ID: <50C682F6.5030709@am.sony.com>
-Date: Mon, 10 Dec 2012 16:48:54 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC][PATCH RT 3/4] sched/rt: Use IPI to trigger RT task push
- migration instead of pulling
-References: <20121207235615.206108556@goodmis.org> <20121208000900.613917378@goodmis.org>
-In-Reply-To: <20121208000900.613917378@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	id S1752191Ab2LKAv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 19:51:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:28827 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab2LKAv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 19:51:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,254,1355126400"; 
+   d="scan'208";a="229645149"
+Message-ID: <1355187084.7216.102.camel@yhuang-dev>
+Subject: Re: [PATCH v2 2/3] llist: add a safe version of llist_for_each_entry
+From: Huang Ying <ying.huang@intel.com>
+To: Roger Pau Monne <roger.pau@citrix.com>
+Cc: linux-kernel@vger.kernel.org, Konrad Rzeszutek Wilk <konrad@kernel.org>
+Date: Tue, 11 Dec 2012 08:51:24 +0800
+In-Reply-To: <1355160290-22180-2-git-send-email-roger.pau@citrix.com>
+References: <1355160290-22180-1-git-send-email-roger.pau@citrix.com>
+	 <1355160290-22180-2-git-send-email-roger.pau@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/12 15:56, Steven Rostedt wrote:
-> When debugging the latencies on a 40 core box, where we hit 300 to
-> 500 microsecond latencies, I found there was a huge contention on the
-> runqueue locks.
+On Mon, 2012-12-10 at 18:24 +0100, Roger Pau Monne wrote:
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Huang Ying <ying.huang@intel.com>
+> Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+> ---
+>  include/linux/llist.h |   27 +++++++++++++++++++++++++++
+>  1 files changed, 27 insertions(+), 0 deletions(-)
 > 
-> Investigating it further, running ftrace, I found that it was due to
-> the pulling of RT tasks.
-> 
-> The test that was run was the following:
-> 
->  cyclictest --numa -p95 -m -d0 -i100
-> 
-> This created a thread on each CPU, that would set its wakeup in interations
-> of 100 microseconds. The -d0 means that all the threads had the same
-> interval (100us). Each thread sleeps for 100us and wakes up and measures
-> its latencies.
-> 
-> What happened was another RT task would be scheduled on one of the CPUs
-> that was running our test, when the other CPUS test went to sleep and
-> scheduled idle. This cause the "pull" operation to execute on all
-> these CPUs. Each one of these saw the RT task that was overloaded on
-> the CPU of the test that was still running, and each one tried
-> to grab that task in a thundering herd way.
-> 
-> To grab the task, each thread would do a double rq lock grab, grabbing
-> its own lock as well as the rq of the overloaded CPU. As the sched
-> domains on this box was rather flat for its size, I saw up to 12 CPUs
-> block on this lock at once. This caused a ripple affect with the
-> rq locks. As these locks were blocked, any wakeups on these CPUs
-> would also block on these locks, and the wait time escalated.
-> 
-> I've tried various methods to lesson the load, but things like an
-> atomic counter to only let one CPU grab the task wont work, because
-> the task may have a limited affinity, and we may pick the wrong
-> CPU to take that lock and do the pull, to only find out that the
-> CPU we picked isn't in the task's affinity.
+> diff --git a/include/linux/llist.h b/include/linux/llist.h
+> index a5199f6..f611cd8 100644
+> --- a/include/linux/llist.h
+> +++ b/include/linux/llist.h
+> @@ -125,6 +125,33 @@ static inline void init_llist_head(struct llist_head *list)
+>  	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
+>  
+>  /**
+> + * llist_for_each_entry_safe - safely iterate over some deleted entries of
+> + *                             lock-less list of given type
+> + * @pos:	the type * to use as a loop cursor.
+> + * @n:		the &struct llist_node to use as a temporary loop cursor
+> + * @node:	the fist entry of deleted list entries.
+> + * @member:	the name of the llist_node with the struct.
+> + *
+> + * In general, some entries of the lock-less list can be traversed
+> + * safely only after being removed from list, so start with an entry
+> + * instead of list head.
+> + *
+> + * If being used on entries deleted from lock-less list directly, the
+> + * traverse order is from the newest to the oldest added entry.  If
+> + * you want to traverse from the oldest to the newest, you must
+> + * reverse the order by yourself before traversing.
+> + *
+> + * n is used to store a reference to the next item llist_node, so
+> + * pos can be freed while iterating.
+> + */
+> +#define llist_for_each_entry_safe(pos, n, node, member)		\
+> +	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
+> +	     (n) = (pos)->member.next;					\
 
-You are saying that the pulling CPU might not be in the pulled task's
-affinity?  But isn't that checked:
+If node == NULL, (pos)->member.next will trigger NULL reference.
 
-  pull_rt_task()
-     pick_next_highest_task_rt()
-        pick_rt_task()
-           if ( ... || cpumask_test_cpu(cpu, tsk_cpus_allowed(p) ...
+Best Regards,
+Huang Ying
 
-> 
-> Instead of doing the PULL, I now have the CPUs that want the pull to
-> send over an IPI to the overloaded CPU, and let that CPU pick what
-> CPU to push the task to. No more need to grab the rq lock, and the
-> push/pull algorithm still works fine.
+> +	     &(pos)->member != NULL;					\
+> +	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
+> +	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
+> +
+> +/**
+>   * llist_empty - tests whether a lock-less list is empty
+>   * @head:	the list to test
+>   *
 
-That gives me the opposite of a warm fuzzy feeling.  Processing an IPI
-on the overloaded CPU is not free (I'm being ARM-centric), and this is
-putting more load on the already overloaded CPU.
-
-I do recognize that you have actual measurements below that show goodness
-for the pathological case you debugged.  I'm still mulling this all over...
-
-> 
-> With this patch, the latency dropped to just 150us over a 20 hour run.
-> Without the patch, the huge latencies would trigger in seconds.
-
--Frank
 
