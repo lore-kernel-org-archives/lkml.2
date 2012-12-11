@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab2LKCZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 21:25:37 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48875 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2LKCZh (ORCPT
+	id S1752521Ab2LKC0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 21:26:14 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44665 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab2LKC0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 21:25:37 -0500
-Message-ID: <50C6997C.1080702@huawei.com>
-Date: Tue, 11 Dec 2012 10:25:00 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 10 Dec 2012 21:26:10 -0500
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
-        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <wency@cn.fujitsu.com>, <fengguang.wu@intel.com>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-References: <50C1AD6D.7010709@huawei.com> <20121207141102.4fda582d.akpm@linux-foundation.org> <20121210083342.GA31670@hacker.(null)> <50C5A62A.6030401@huawei.com> <1355136423.1700.2.camel@kernel.cn.ibm.com> <50C5C4A2.2070002@huawei.com> <20121210153805.GS16230@one.firstfloor.org>
-In-Reply-To: <20121210153805.GS16230@one.firstfloor.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+In-Reply-To: <8119513.v7VrlzcaZC@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+	<CAE9FiQWZ8WaAJm8ayU+woVRqNLdSRtPS4=gpsrJovmzrUG6FNw@mail.gmail.com>
+	<38722368.Fl8pJoLSRi@vostro.rjw.lan>
+	<8119513.v7VrlzcaZC@vostro.rjw.lan>
+Date: Mon, 10 Dec 2012 18:26:08 -0800
+X-Google-Sender-Auth: x1PMoNOHtCXBwqbC7D3s1jw_O4w
+Message-ID: <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/10 23:38, Andi Kleen wrote:
+On Mon, Dec 10, 2012 at 5:28 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>
+>> OK, thanks for the pointers.  I actually see more differences between our
+>> patchsets.  For one example, you seem to have left the parent->ops.bind()
+>> stuff in acpi_add_single_object() which calls it even drivers_autoprobe is
+>> set.
+>
+> Sorry, that should have been "which calls it even when drivers_autoprobe is
+> not set".  I need to be more careful.
+>
 
->> It is another topic, I mean since the page is poisoned, so why not isolate it
->> from page buddy alocator in soft_offline_page() rather than in check_new_page().
->> I find soft_offline_page() only migrate the page and mark HWPoison, the poisoned
->> page is still managed by page buddy alocator.
-> 
-> Doing it in check_new_page is the only way if the page is currently
-> allocated by someone. Since that's not uncommon it's simplest to always
-> do it this way.
-> 
-> -Andi
-> 
+oh,  Jiang Liu had one patch to remove that workaround.
 
-Hi Andi,
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=b40dba80c2b8395570d8357e6b3f417c27c84504
 
-The poisoned page is isolated in check_new_page, however the whole buddy block will
-be dropped, it seems to be a waste of memory.
+ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
 
-Can we separate the poisoned page from the buddy block, then *only* drop the poisoned
-page?
+Maybe you can review that patches in my for-pci-next2...
+those are ACPI related anyway.
+
+those patches have been there for a while, and Bjorn did not have time
+to digest them.
+
+or you prefer I resend updated version as huge whole patchset?
 
 Thanks
-Xishi Qiu
 
-
+Yinghai
