@@ -1,68 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab2LKODt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 09:03:49 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47135 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2LKODr (ORCPT
+	id S1753592Ab2LKOF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 09:05:26 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:56076 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab2LKOFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 09:03:47 -0500
-Message-ID: <50C73CE5.1080201@linux.vnet.ibm.com>
-Date: Tue, 11 Dec 2012 19:32:13 +0530
+	Tue, 11 Dec 2012 09:05:25 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>, tglx@linutronix.de, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org,
-        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
-        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+Subject: [RFC PATCH v4 0/9] CPU hotplug: stop_machine()-free CPU hotplug
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        oleg@redhat.com
+Cc: sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
+        srivatsa.bhat@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
         xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121209191437.GA2816@redhat.com> <50C4EB79.5050203@linux.vnet.ibm.com> <20121209202234.GA5793@redhat.com> <50C564ED.9090803@linux.vnet.ibm.com> <20121210172410.GA28479@redhat.com> <50C73192.9010905@linux.vnet.ibm.com> <20121211134758.GA7084@htj.dyndns.org>
-In-Reply-To: <20121211134758.GA7084@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 11 Dec 2012 19:33:49 +0530
+Message-ID: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121114-4790-0000-0000-000005FA8A63
+x-cbid: 12121114-6102-0000-0000-000002B2F29D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 07:17 PM, Tejun Heo wrote:
-> Hello, Srivatsa.
-> 
-> On Tue, Dec 11, 2012 at 06:43:54PM +0530, Srivatsa S. Bhat wrote:
->> This approach (of using synchronize_sched()) also looks good. It is simple,
->> yet effective, but unfortunately inefficient at the writer side (because
->> he'll have to wait for a full synchronize_sched()).
-> 
-> While synchornize_sched() is heavier on the writer side than the
-> originally posted version, it doesn't stall the whole machine and
-> wouldn't introduce latencies to others.  Shouldn't that be enough?
-> 
+Hi,
 
-Short answer: Yes. But we can do better, with almost comparable code
-complexity. So I'm tempted to try that out.
+This patchset removes CPU hotplug's dependence on stop_machine() from the CPU
+offline path and provides an alternative (set of APIs) to preempt_disable() to
+prevent CPUs from going offline, which can be invoked from atomic context.
 
-Long answer:
-Even in the synchronize_sched() approach, we still have to identify the
-readers who need to be converted to use the new get/put_online_cpus_atomic()
-APIs and convert them. Then, if we can come up with a scheme such that
-the writer has to wait only for those readers to complete, then why not?
+This is an RFC patchset with only a few call-sites of preempt_disable()
+converted to the new APIs for now, and the main goal is to get feedback on the
+design of the new atomic APIs and see if it serves as a viable replacement for
+stop_machine()-free CPU hotplug. A brief description of the algorithm is
+available in the "Changes in vN" section.
 
-If such a scheme ends up becoming too complicated, then I agree, we
-can use synchronize_sched() itself. (That's what I meant by saying that
-we'll use this as a fallback).
+Overview of the patches:
+-----------------------
 
-But even in this scheme which uses synchronize_sched(), we are
-already half-way through (we already use 2 types of sync schemes -
-counters and rwlocks). Just a little more logic can get rid of the
-unnecessary full-wait too.. So why not give it a shot?
+Patch 1 introduces the new APIs that can be used from atomic context, to
+prevent CPUs from going offline.
 
-Regards,
+Patch 2 is a cleanup; it converts preprocessor macros to static inline
+functions.
+
+Patches 3 to 8 convert various call-sites to use the new APIs.
+
+Patch 9 is the one which actually removes stop_machine() from the CPU
+offline path.
+
+Changes in v4:
+--------------
+  The synchronization scheme has been simplified quite a bit, which makes it
+  look a lot less complex than before. Some highlights:
+
+* Implicit ACKs:
+
+  The earlier design required the readers to explicitly ACK the writer's
+  signal. The new design uses implicit ACKs instead. The reader switching
+  over to rwlock implicitly tells the writer to stop waiting for that reader.
+
+* No atomic operations:
+
+  Since we got rid of explicit ACKs, we no longer have the need for a reader
+  and a writer to update the same counter. So we can get rid of atomic ops
+  too.
+
+Changes in v3:
+--------------
+* Dropped the _light() and _full() variants of the APIs. Provided a single
+  interface: get/put_online_cpus_atomic().
+
+* Completely redesigned the synchronization mechanism again, to make it
+  fast and scalable at the reader-side in the fast-path (when no hotplug
+  writers are active). This new scheme also ensures that there is no
+  possibility of deadlocks due to circular locking dependency.
+  In summary, this provides the scalability and speed of per-cpu rwlocks
+  (without actually using them), while avoiding the downside (deadlock
+  possibilities) which is inherent in any per-cpu locking scheme that is
+  meant to compete with preempt_disable()/enable() in terms of flexibility.
+
+  The problem with using per-cpu locking to replace preempt_disable()/enable
+  was explained here:
+  https://lkml.org/lkml/2012/12/6/290
+
+  Basically we use per-cpu counters (for scalability) when no writers are
+  active, and then switch to global rwlocks (for lock-safety) when a writer
+  becomes active. It is a slightly complex scheme, but it is based on
+  standard principles of distributed algorithms.
+
+Changes in v2:
+-------------
+* Completely redesigned the synchronization scheme to avoid using any extra
+  cpumasks.
+
+* Provided APIs for 2 types of atomic hotplug readers: "light" (for
+  light-weight) and "full". We wish to have more "light" readers than
+  the "full" ones, to avoid indirectly inducing the "stop_machine effect"
+  without even actually using stop_machine().
+
+  And the patches show that it _is_ generally true: 5 patches deal with
+  "light" readers, whereas only 1 patch deals with a "full" reader.
+
+  Also, the "light" readers happen to be in very hot paths. So it makes a
+  lot of sense to have such a distinction and a corresponding light-weight
+  API.
+
+Links to previous versions:
+v3: https://lkml.org/lkml/2012/12/7/287
+v2: https://lkml.org/lkml/2012/12/5/322
+v1: https://lkml.org/lkml/2012/12/4/88
+
+Comments and suggestions welcome!
+
+--
+ Paul E. McKenney (1):
+      cpu: No more __stop_machine() in _cpu_down()
+
+Srivatsa S. Bhat (8):
+      CPU hotplug: Provide APIs to prevent CPU offline from atomic context
+      CPU hotplug: Convert preprocessor macros to static inline functions
+      smp, cpu hotplug: Fix smp_call_function_*() to prevent CPU offline properly
+      smp, cpu hotplug: Fix on_each_cpu_*() to prevent CPU offline properly
+      sched, cpu hotplug: Use stable online cpus in try_to_wake_up() & select_task_rq()
+      kick_process(), cpu-hotplug: Prevent offlining of target CPU properly
+      yield_to(), cpu-hotplug: Prevent offlining of other CPUs properly
+      kvm, vmx: Add atomic synchronization with CPU Hotplug
+
+
+  arch/x86/kvm/vmx.c  |    8 +-
+ include/linux/cpu.h |    8 +-
+ kernel/cpu.c        |  206 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/core.c |   22 +++++
+ kernel/smp.c        |   63 ++++++++++------
+ 5 files changed, 273 insertions(+), 34 deletions(-)
+
+
+
+Thanks,
 Srivatsa S. Bhat
+IBM Linux Technology Center
 
