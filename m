@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab2LKBO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Dec 2012 20:14:56 -0500
-Received: from plane.gmane.org ([80.91.229.3]:51334 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402Ab2LKBOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Dec 2012 20:14:55 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Woody Wu <narkewoody@gmail.com>
-Subject: Re: Serial8250 doesn't populate in /proc/iomem?
-Date: Tue, 11 Dec 2012 01:10:49 +0000 (UTC)
-Message-ID: <slrnkcd1uq.28d.narkewoody@zuhnb712.local.com>
-References: <slrnkcb00b.77o.narkewoody@zuhnb712.local.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751977Ab2LKBQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Dec 2012 20:16:24 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:11881
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751402Ab2LKBQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Dec 2012 20:16:22 -0500
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI1432Izz1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h1155h)
+Message-ID: <50C68922.5030203@am.sony.com>
+Date: Mon, 10 Dec 2012 17:15:14 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC][PATCH RT 3/4] sched/rt: Use IPI to trigger RT task push
+ migration instead of pulling
+References: <20121207235615.206108556@goodmis.org> <20121208000900.613917378@goodmis.org> <50C682F6.5030709@am.sony.com>
+In-Reply-To: <50C682F6.5030709@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 59.37.26.98
-User-Agent: slrn/0.9.9p1 (Linux)
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-10, Woody Wu <narkewoody@gmail.com> wrote:
-> Hi, list
->
-> I found some io memory information is lost from /dev/iomem and want to
-> find out why.
->
-> I have a 2.6.16 kernel running on a ARM board (Samsung S3C2410). From
-> the kernel log, I see 16 8250 serial ports were detected, and each of
-> thoese ports has a memory address:
->
-> Serial: 8250/16550 driver $Revision: 1.90 $ 16 ports, IRQ sharing enabled
-> serial8250: tts0 at MMIO 0xe1400000 (irq = 16) is a 16550A
-> serial8250: tts1 at MMIO 0xe1400008 (irq = 16) is a 16550A
-> serial8250: tts2 at MMIO 0xe1400010 (irq = 17) is a 16550A
-> serial8250: tts3 at MMIO 0xe1400018 (irq = 17) is a 16550A
-> serial8250: tts4 at MMIO 0xe1400020 (irq = 18) is a 16550A
-> serial8250: tts5 at MMIO 0xe1400028 (irq = 18) is a 16550A
-> serial8250: tts6 at MMIO 0xe1400030 (irq = 19) is a 16550A
-> serial8250: tts7 at MMIO 0xe1400038 (irq = 19) is a 16550A
-> serial8250: tts8 at MMIO 0xe1400040 (irq = 48) is a 16550A
-> serial8250: tts9 at MMIO 0xe1400048 (irq = 48) is a 16550A
-> serial8250: tts10 at MMIO 0xe1400050 (irq = 49) is a 16550A
-> serial8250: tts11 at MMIO 0xe1400058 (irq = 49) is a 16550A
-> serial8250: tts12 at MMIO 0xe1400060 (irq = 60) is a 16550A
-> serial8250: tts13 at MMIO 0xe1400068 (irq = 60) is a 16550A
-> serial8250: tts14 at MMIO 0xe1400070 (irq = 61) is a 16550A
-> serial8250: tts15 at MMIO 0xe1400078 (irq = 61) is a 16550A
->
-> I can read/write these serial ports from /dev/ttys*, in other words,
-> they do exist.  I also can find the driver info from /proc/devices:
->
-> Character devices:                                               
->
->   ...
->   4 /dev/vc/0
->   4 tty
->   4 tts
->   5 /dev/tty
->   5 /dev/console
->   5 /dev/ptmx
->   7 vcs
->   ...
->
-> The problem is, I don't understand why there is no information about
-> these ports in /proc/iomem file. The 'iomem' file now contains:
->
-> 11000000-11000ffe : AX88796B
-> 19000000-19000ffe : AX88796B
-> 30000000-33ffffff : System RAM
->   3001c000-301e826b : Kernel text
->   301ea000-302234a3 : Kernel data
-> 49000000-490fffff : s3c2410-ohci
->   49000000-490fffff : ohci_hcd
-> 4e000000-4e0fffff : s3c2410-nand
->   4e000000-4e0fffff : s3c2410-nand
-> 50000000-50003fff : s3c2410-uart.0
->   50000000-500000ff : s3c2410-uart
-> 50004000-50007fff : s3c2410-uart.1
->   50004000-500040ff : s3c2410-uart
-> 50008000-5000bfff : s3c2410-uart.2
->   50008000-500080ff : s3c2410-uart
-> 53000000-530fffff : s3c2410-wdt
-> 54000000-540fffff : s3c2410-i2c
-> 5a000000-5a0fffff : s3c2410-sdi
->   5a000000-5a0fffff : mmci-s3c2410
->
-> You see, there is no serial8250 informations.
->
-> Can anyone here please tell me how this can happen?  Does it mean the
-> serial8250 driver don't populate or register in the /proc/iomem?
->
->
+On 12/10/12 16:48, Frank Rowand wrote:
+> On 12/07/12 15:56, Steven Rostedt wrote:
+>> When debugging the latencies on a 40 core box, where we hit 300 to
+>> 500 microsecond latencies, I found there was a huge contention on the
+>> runqueue locks.
+>>
+>> Investigating it further, running ftrace, I found that it was due to
+>> the pulling of RT tasks.
+>>
+>> The test that was run was the following:
+>>
+>>  cyclictest --numa -p95 -m -d0 -i100
+>>
+>> This created a thread on each CPU, that would set its wakeup in interations
+>> of 100 microseconds. The -d0 means that all the threads had the same
+>> interval (100us). Each thread sleeps for 100us and wakes up and measures
+>> its latencies.
+>>
+>> What happened was another RT task would be scheduled on one of the CPUs
+>> that was running our test, when the other CPUS test went to sleep and
+>> scheduled idle. This cause the "pull" operation to execute on all
+>> these CPUs. Each one of these saw the RT task that was overloaded on
+>> the CPU of the test that was still running, and each one tried
+>> to grab that task in a thundering herd way.
+>>
+>> To grab the task, each thread would do a double rq lock grab, grabbing
+>> its own lock as well as the rq of the overloaded CPU. As the sched
+>> domains on this box was rather flat for its size, I saw up to 12 CPUs
+>> block on this lock at once. This caused a ripple affect with the
+>> rq locks. As these locks were blocked, any wakeups on these CPUs
+>> would also block on these locks, and the wait time escalated.
+>>
+>> I've tried various methods to lesson the load, but things like an
+>> atomic counter to only let one CPU grab the task wont work, because
+>> the task may have a limited affinity, and we may pick the wrong
+>> CPU to take that lock and do the pull, to only find out that the
+>> CPU we picked isn't in the task's affinity.
+> 
+> You are saying that the pulling CPU might not be in the pulled task's
+> affinity?  But isn't that checked:
+> 
+>   pull_rt_task()
+>      pick_next_highest_task_rt()
+>         pick_rt_task()
+>            if ( ... || cpumask_test_cpu(cpu, tsk_cpus_allowed(p) ...
+> 
+>>
+>> Instead of doing the PULL, I now have the CPUs that want the pull to
+>> send over an IPI to the overloaded CPU, and let that CPU pick what
+>> CPU to push the task to. No more need to grab the rq lock, and the
+>> push/pull algorithm still works fine.
+> 
+> That gives me the opposite of a warm fuzzy feeling.  Processing an IPI
+> on the overloaded CPU is not free (I'm being ARM-centric), and this is
+> putting more load on the already overloaded CPU.
 
-Could someone help me? Thanks!
+I should have also mentioned some previous experience using IPIs to
+avoid runq lock contention on wake up.  Someone encountered IPI
+storms when using the TTWU_QUEUE feature, thus it defaults to off
+for CONFIG_PREEMPT_RT_FULL:
+
+  #ifndef CONFIG_PREEMPT_RT_FULL
+  /*
+   * Queue remote wakeups on the target CPU and process them
+   * using the scheduler IPI. Reduces rq->lock contention/bounces.
+   */
+  SCHED_FEAT(TTWU_QUEUE, true)
+  #else
+  SCHED_FEAT(TTWU_QUEUE, false)
+
+-Frank
 
 
--- 
-woody
-I can't go back to yesterday - because I was a different person then.
 
