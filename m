@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab2LKV4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 16:56:35 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45255 "EHLO e7.ny.us.ibm.com"
+	id S1755060Ab2LKV4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 16:56:42 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60424 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918Ab2LKV4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 16:56:33 -0500
+	id S1754785Ab2LKV4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 16:56:36 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -18,103 +18,144 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
         Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 5/8] debugfs: add get/set for atomic types
-Date: Tue, 11 Dec 2012 15:56:03 -0600
-Message-Id: <1355262966-15281-6-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCH 1/8] staging: zsmalloc: add gfp flags to zs_create_pool
+Date: Tue, 11 Dec 2012 15:55:59 -0600
+Message-Id: <1355262966-15281-2-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121121-5806-0000-0000-00001CDC5B11
+x-cbid: 12121121-9360-0000-0000-00000DD32078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs currently lack the ability to create attributes
-that set/get atomic_t values.
+zs_create_pool() currently takes a gfp flags argument
+that is used when growing the memory pool.  However
+it is not used in allocating the metadata for the pool
+itself.  That is currently hardcoded to GFP_KERNEL.
 
-This patch adds support for this through a new
-debugfs_create_atomic_t() function.
+zswap calls zs_create_pool() at swapon time which is done
+in atomic context, resulting in a "might sleep" warning.
+
+This patch changes the meaning of the flags argument in
+zs_create_pool() to mean the flags for the metadata allocation,
+and adds a flags argument to zs_malloc that will be used for
+memory pool growth if required.
 
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- fs/debugfs/file.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/debugfs.h |    2 ++
- 2 files changed, 44 insertions(+)
+ drivers/staging/zcache/zcache-main.c     |    4 ++--
+ drivers/staging/zram/zram_drv.c          |    4 ++--
+ drivers/staging/zsmalloc/zsmalloc-main.c |    9 +++------
+ drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
+ 4 files changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index c5ca6ae..fa26d5b 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -21,6 +21,7 @@
- #include <linux/debugfs.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/atomic.h>
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 52b43b7..674c754 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -711,7 +711,7 @@ static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
  
- static ssize_t default_read_file(struct file *file, char __user *buf,
- 				 size_t count, loff_t *ppos)
-@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- }
- EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 	BUG_ON(!irqs_disabled());
+ 	BUG_ON(chunks >= NCHUNKS);
+-	handle = zs_malloc(pool, size);
++	handle = zs_malloc(pool, size, ZCACHE_GFP_MASK);
+ 	if (!handle)
+ 		goto out;
+ 	atomic_inc(&zv_curr_dist_counts[chunks]);
+@@ -982,7 +982,7 @@ int zcache_new_client(uint16_t cli_id)
+ 		goto out;
+ 	cli->allocated = 1;
+ #ifdef CONFIG_FRONTSWAP
+-	cli->zspool = zs_create_pool("zcache", ZCACHE_GFP_MASK);
++	cli->zspool = zs_create_pool("zcache", GFP_KERNEL);
+ 	if (cli->zspool == NULL)
+ 		goto out;
+ 	idr_init(&cli->tmem_pools);
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index fb4a7c9..13e9b4b 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -336,7 +336,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		clen = PAGE_SIZE;
+ 	}
  
-+static int debugfs_atomic_t_set(void *data, u64 val)
-+{
-+	atomic_set((atomic_t *)data, val);
-+	return 0;
-+}
-+static int debugfs_atomic_t_get(void *data, u64 *val)
-+{
-+	*val = atomic_read((atomic_t *)data);
-+	return 0;
-+}
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-+			debugfs_atomic_t_set, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
-+
-+/**
-+ * debugfs_create_atomic_t - create a debugfs file that is used to read and
-+ * write an atomic_t value
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @value: a pointer to the variable that the file should read to and write
-+ *         from.
-+ */
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				 struct dentry *parent, atomic_t *value)
-+{
-+	/* if there are no write bits set, make read only */
-+	if (!(mode & S_IWUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_ro);
-+	/* if there are no read bits set, make write only */
-+	if (!(mode & S_IRUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_wo);
-+
-+	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+-	handle = zs_malloc(zram->mem_pool, clen);
++	handle = zs_malloc(zram->mem_pool, clen, GFP_NOIO | __GFP_HIGHMEM);
+ 	if (!handle) {
+ 		pr_info("Error allocating memory for compressed "
+ 			"page: %u, size=%zu\n", index, clen);
+@@ -576,7 +576,7 @@ int zram_init_device(struct zram *zram)
+ 	/* zram devices sort of resembles non-rotational disks */
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
  
- static ssize_t read_file_bool(struct file *file, char __user *user_buf,
- 			      size_t count, loff_t *ppos)
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index 66c434f..51fea70 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
- 				  struct dentry *parent, u64 *value);
- struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- 				     struct dentry *parent, size_t *value);
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				     struct dentry *parent, atomic_t *value);
- struct dentry *debugfs_create_bool(const char *name, umode_t mode,
- 				  struct dentry *parent, u32 *value);
+-	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
++	zram->mem_pool = zs_create_pool("zram", GFP_KERNEL);
+ 	if (!zram->mem_pool) {
+ 		pr_err("Error creating memory pool\n");
+ 		ret = -ENOMEM;
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 09a9d35..6ff380e 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -205,8 +205,6 @@ struct link_free {
  
+ struct zs_pool {
+ 	struct size_class size_class[ZS_SIZE_CLASSES];
+-
+-	gfp_t flags;	/* allocation flags used when growing pool */
+ 	const char *name;
+ };
+ 
+@@ -807,7 +805,7 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+ 		return NULL;
+ 
+ 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
+-	pool = kzalloc(ovhd_size, GFP_KERNEL);
++	pool = kzalloc(ovhd_size, flags);
+ 	if (!pool)
+ 		return NULL;
+ 
+@@ -827,7 +825,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
+ 
+ 	}
+ 
+-	pool->flags = flags;
+ 	pool->name = name;
+ 
+ 	return pool;
+@@ -863,7 +860,7 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
+  * otherwise 0.
+  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
+  */
+-unsigned long zs_malloc(struct zs_pool *pool, size_t size)
++unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags)
+ {
+ 	unsigned long obj;
+ 	struct link_free *link;
+@@ -885,7 +882,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 
+ 	if (!first_page) {
+ 		spin_unlock(&class->lock);
+-		first_page = alloc_zspage(class, pool->flags);
++		first_page = alloc_zspage(class, flags);
+ 		if (unlikely(!first_page))
+ 			return 0;
+ 
+diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
+index de2e8bf..907ff03 100644
+--- a/drivers/staging/zsmalloc/zsmalloc.h
++++ b/drivers/staging/zsmalloc/zsmalloc.h
+@@ -31,7 +31,7 @@ struct zs_pool;
+ struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
+ void zs_destroy_pool(struct zs_pool *pool);
+ 
+-unsigned long zs_malloc(struct zs_pool *pool, size_t size);
++unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
+ void zs_free(struct zs_pool *pool, unsigned long obj);
+ 
+ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
 -- 
 1.7.9.5
 
