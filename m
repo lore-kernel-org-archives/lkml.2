@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab2LKSJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 13:09:13 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:42610 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab2LKSJL convert rfc822-to-8bit (ORCPT
+	id S1754316Ab2LKSJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 13:09:31 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65105 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab2LKSJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 13:09:11 -0500
-Date: Tue, 11 Dec 2012 10:07:55 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 3.7.0
-Message-ID: <20121211100755.3ffb030c@nehalam.linuxnetplumber.net>
-Organization: Vyatta
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Dec 2012 13:09:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxh2SH9WcXbb+hD3PtWa4ZTqYNUxvbqZh27vwANuUTE8w@mail.gmail.com>
+References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
+	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
+	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
+	<1355234914.2356.85.camel@falcor>
+	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
+	<CALLzPKZQ3=qNOxJk-yqDGEzqkcKLoc9tPPD8o9QbJOUOB1nWuQ@mail.gmail.com>
+	<CA+55aFxh2SH9WcXbb+hD3PtWa4ZTqYNUxvbqZh27vwANuUTE8w@mail.gmail.com>
+Date: Tue, 11 Dec 2012 13:09:25 -0500
+Message-ID: <CACLa4pt698L4+BFSErV_rrmosmU-ELYZcmSBR8JqtYBTN35z9g@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ima: policy search speedup
+From: Eric Paris <eparis@parisplace.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just in time for the holidays, an update to iproute2 for v3.7 kernel.
-In addition to lots of build and documentation fixes, this
-version includes support for tcp_metrics and vxlan
-documentation and minor bugfixes,
+On Tue, Dec 11, 2012 at 12:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-If you have been sitting on changes to iproute2 that are in
-net-next for 3.8 merge window, please submit them now.
+> And your "pseudo-filesystems" argument is pretty stupid too, since WE
+> ALREADY HAVE A FLAG FOR THAT!
+>
+> Guess where it is? Oh, it's in the place I already mentioned makes
+> more sense. Look for S_PRIVATE in inode->i_flags, and IS_PRIVATE() in
+> users. It's what the other security models already use to avoid
+> bothering calling down to the security layers. The fact that the
+> integrity layer bypasses the normal security layer in
+> ima_file_check(), for example, is no excuse to then make up totally
+> new flags.
 
-Iproute2 package is available at:
-  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.7.0.tar.gz
+IS_PRIVATE() is not used by and darn well better not be used by, all
+psuedo filesystems like procfs which IMA may want to ignore.  LSMs
+like to do control on them.  I thought S_PRIVATE was really only used
+by the anon_inode and reiserfs's really crazy ass internal inodes.  I
+could always be wrong.
 
-You can download the source from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+I don't know if I agree with dmitry but let me explain what's going on here.
 
-Stay Warm!
+Lets say the user accesses an inode in procfs.  Without this patch one
+would search the ima policy and find a rule that says 'if this inode
+is on procfs we don't care.'  We can then cache that in the struct
+inode like you say and move along.  If another inode on procfs is
+opened we will have the same policy search and the same per inode 'i
+don't give a crap' marking.  This absolutely works you are right.  But
+we search the IMA policy for every inode.
 
----
+With Dmitry's patch we can instead search the IMA policy one time and
+mark the whole superblock as 'i don't give a crap' if IMA policy says
+we don't care about that fstype.  When the second procfs inode is
+opened we instead look at the per superblock 'who gives a crap' and
+never search the IMA policy.  So we save all future policy searches.
 
-Andreas Henriksson (2):
-      iproute2: avoid errors from double-installing manpages
-      iproute2: drop libresolv
-
-Julian Anastasov (1):
-      iproute2: add support for tcp_metrics
-
-Matt Burgess (1):
-      iproute2-3.6.0 assumes presence of iptables
-
-Mike Frysinger (1):
-      allow pkg-config to be customized
-
-Nicolas Dichtel (4):
-      iproute2: inform user when a neighbor is removed
-      ip/ip6tunnel: fix help for TCLASS
-      ip/ip6tunnel: reset encap limit flag on change
-      ip/ip6tunnel: fix update of tclass and flowlabel
-
-Or Gerlitz (1):
-      iplink: Added support for the kernel IPoIB RTNL ops
-
-Pavel Emelyanov (4):
-      ss: Rename some tcp- names into inet-
-      ss: Split inet_show_netlink into parts
-      ss: Support sock-diag
-      ss: Get udp sockets info via sock-diag
-
-Petr Písař (1):
-      iproute2: List interfaces without net address by default
-
-Petr Sabata (1):
-      iproute2: ss - change default filter to include all socket types
-
-Rostislav Lisovy (1):
-      tc: add canid ematch to ematch_map
-
-Stephen Hemminger (12):
-      vxlan support
-      bridge: manage VXLAN based forwarding tables
-      l2tp: remove references to old bridge utils
-      Update headers to 3.7-pre-rc
-      vxlan: add support for port range
-      vxlan: only send group address if defined
-      Update kernel headers to 3.7-rc1
-      iplink: add vxlan to man page
-      bridge: remove trailing whitespace
-      bridge: use rta_getattr_xxx wrappers
-      man: fix incorrect use of "it's"
-      v3.7.0
-
-Vincent Bernat (1):
-      ip: fix "ip -6 route add ... nexthop"
-
-Wookey (1):
-      configure: respect $CC environment var override
-
+I'd say this patch would only be a good idea if there is a real
+performance hit which is measurable in a real work situation.  Not,
+'look how much faster it is to access proc inodes' microbenchmark,
+since noone is actually going to do that, but some results of a useful
+benchmark you care about.  Maybe Dmitry gave those numbers and I
+missed them?  Otherwise, stick with per inode like Linus wants...
