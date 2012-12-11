@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2LKWsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 17:48:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43841 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab2LKWsj (ORCPT
+	id S1755352Ab2LKWtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 17:49:46 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53878
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755282Ab2LKWss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 17:48:39 -0500
+	Tue, 11 Dec 2012 17:48:48 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/37] perf hists: Link hist entry pairs to leader
-Date: Tue, 11 Dec 2012 19:47:58 -0300
-Message-Id: <1355266103-17238-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/37] perf hists: Fix period symbol_conf.field_sep display
+Date: Tue, 11 Dec 2012 19:47:55 -0300
+Message-Id: <1355266103-17238-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1355266103-17238-1-git-send-email-acme@infradead.org>
 References: <1355266103-17238-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Current hists__match/link() link a leader to its pair, so if multiple
-pairs were linked, the leader will lose pointer to previous pairs since
-it was overwritten.  Fix it by making leader the list head.
+Currently we don't properly display hist data with symbol_conf.field_sep
+separator. We need to display either space or separator.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1354171126-14387-8-git-send-email-namhyung@kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/tip-cyggwys0bz5kqdowwvfd8h72@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/ui/hist.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index d2bc05c..82df1b2 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -785,7 +785,7 @@ void hists__match(struct hists *leader, struct hists *other)
- 		pair = hists__find_entry(other, pos);
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 0a5281f..6e639b5 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -472,11 +472,15 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 		return 0;
  
- 		if (pair)
--			hist_entry__add_pair(pos, pair);
-+			hist_entry__add_pair(pair, pos);
- 	}
- }
+ 	perf_hpp__for_each_format(fmt) {
++		/*
++		 * If there's no field_sep, we still need
++		 * to display initial '  '.
++		 */
+ 		if (!sep || !first) {
+ 			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+ 			advance_hpp(hpp, ret);
++		} else
+ 			first = false;
+-		}
  
-@@ -806,7 +806,7 @@ int hists__link(struct hists *leader, struct hists *other)
- 			pair = hists__add_dummy_entry(leader, pos);
- 			if (pair == NULL)
- 				return -1;
--			hist_entry__add_pair(pair, pos);
-+			hist_entry__add_pair(pos, pair);
- 		}
- 	}
- 
+ 		if (color && fmt->color)
+ 			ret = fmt->color(hpp, he);
 -- 
 1.7.9.2.358.g22243
 
