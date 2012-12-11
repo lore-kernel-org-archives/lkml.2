@@ -1,139 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2LKQPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 11:15:31 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:58991 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab2LKQPa convert rfc822-to-8bit (ORCPT
+	id S1753563Ab2LKQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 11:16:09 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53001 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab2LKQQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 11:15:30 -0500
-Date: Tue, 11 Dec 2012 16:15:20 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 patches for 3.8-rc1
-Message-ID: <20121211161520.GB16071@arm.com>
+	Tue, 11 Dec 2012 11:16:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
+Date: Tue, 11 Dec 2012 16:15:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Yinghai Lu <yinghai@kernel.org>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com> <201212111043.50627.arnd@arndb.de> <20121211170338.4859ddf0@skate>
+In-Reply-To: <20121211170338.4859ddf0@skate>
 MIME-Version: 1.0
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 Dec 2012 16:15:26.0806 (UTC) FILETIME=[BB311F60:01CDD7BA]
-X-MC-Unique: 112121116152808701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212111615.03262.arnd@arndb.de>
+X-Provags-ID: V02:K0:njgB6vSPz4J45eq+c48rs/ZkuDUy1fCsimZ6eaiV6G7
+ Cb7yT1FgG8cbxKXF5dgpd/vl1Cr3rZ+eaJEccGxbbe8LIHIT1f
+ NpJPvcQWzyUtK5tS9G8+h96q/CfvGBKRxYUkeHW/rT5nTDoS/x
+ +3jWLx1GHXcGLdb+G1BEu6dlBT4lInOG+INsNwtaFoG2+C0fqD
+ fU/n5vYjdw+7J3lviLCokWehEUj0FHvy9cbMFP0bfbbWzkrljs
+ bvs+Nju68HlVGkpTNtkqsdaIrAFqGoZLFDT4GGEnhcoew5YxN8
+ gOGauu1TynCvuAAJXdI600WlLoQ9twYSBjgUVvZ79A34iXA1Ae
+ ZK8qtF4nNnZBQ83Lec88=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tuesday 11 December 2012, Thomas Petazzoni wrote:
+> On Tue, 11 Dec 2012 10:43:49 +0000, Arnd Bergmann wrote:
+> > On Friday 07 December 2012, Thomas Petazzoni wrote:
+> > > The pcim_*() functions are used by the libata-sff subsystem, and this
+> > > subsystem is used for many SATA drivers on ARM platforms that do not
+> > > necessarily have I/O ports.
+> > 
+> > I think this one is wrong as the CONFIG_HAS_IOPORT does not refer to the
+> > presence of PIO ports but to whether or not they provide an ioport_map
+> > function. If there is no ioport_map(), devm_pci_iomap will fail to link
+> > as far as I can tell.
+> 
+> The problem is that on ARCH_MULTI_V7, ARCH_VEXPRESS is forcefully
+> enabled. And ARCH_VEXPRESS selects NO_IOPORT.. so you don't have the
+> pcim_*() functions, and therefore libata-sff.c (needed for many SATA
+> drivers) will not build. How do you solve this?
 
-Please pull the following arm64 patches for 3.8-rc1. Thanks.
+What you describe here are probable two bugs, and we should fix both:
 
-The following changes since commit 77b67063bb6bce6d475e910d3b886a606d0d91f7:
+* ARCH_VEXPRESS should not select NO_IOPORT. It's generally wrong
+  to select this in combination with ARCH_MULTIPLATFORM, when some
+  of the other platforms you may enable actually have IOPORT mapping
+  support.
 
-  Linux 3.7-rc5 (2012-11-11 13:44:33 +0100)
+* We should not unconditionally select ARCH_VEXPRESS from ARCH_MULTIPLATFORM.
+  There is no reason why we would enable that platform for building
+  a kernel that runs on only one other platform.
 
-are available in the git repository at:
+> I'm not sure which devm_pci_iomap() you're referring to since my patch
+> makes only the pcim_iomap_table(), pcim_iomap(), pcim_iounmap(),
+> pcim_iomap_regions(), pcim_iomap_regions_request_all() and
+> pcim_iounmap_regions() available under CONFIG_PCI instead of CONFIG_PCI
+> && CONFIG_HAS_IOPORT.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-for-linus
+Sorry, I meant pcim_iomap.
 
-for you to fetch changes up to d19766ec52218007d45888860dd40a24bb7f6651:
+> So maybe you were referring to pcim_iomap(). I haven't checked in
+> details, but I guess it builds because ioport_map() is implemented in
+> arch/arm/mm/iomap.c.
 
-  arm64: Update the MAINTAINERS entry (2012-12-11 13:58:05 +0000)
+Right. If an ioport_map function is provided for a given platform,
+we should also set HAVE_IOPORT and vice versa. This is probably
+fallout of the io.h conversion for multiplatform.
 
-----------------------------------------------------------------
-Main AArch64 changes:
-- Generic execve, kernel_thread, fork/vfork/clone.
-- Preparatory patches for KVM support (initialising EL2 mode for later
-  installing KVM support, hypervisor stub).
-- Signal handling corner case fix (alternative signal stack set up for a
-  SEGV handler, which is raised in response to RLIMIT_STACK being
-  reached).
-- Sub-nanosecond timer error fix.
-
-----------------------------------------------------------------
-Al Viro (3):
-      arm64: get rid of fork/vfork/clone wrappers
-      Merge commit '6ba1bc826d160fe4f32bcb188687dcca4bdfaf3d' into arch-arm64
-      arm64: compat for clock_adjtime(2) is miswired
-
-Alexander Shiyan (1):
-      ARM64: Remove incorrect Kconfig symbol HAVE_SPARSE_IRQ
-
-Catalin Marinas (12):
-      arm64: Use generic kernel_thread() implementation
-      arm64: Use generic kernel_execve() implementation
-      arm64: Use generic sys_execve() implementation
-      Merge tag 'v3.7-rc5' into execve
-      arm64: Make the user fault reporting more specific
-      Merge branch 'execve' into upstream
-      Merge remote-tracking branch 'viro/arch-arm64' into execve
-      Merge branch 'execve' into upstream
-      arm64: Include the clkdev.h generic header
-      arm64: Convert empty flush_cache_{mm,page} functions to static inline
-      arm64: Make !dirty ptes read-only
-      arm64: Update the MAINTAINERS entry
-
-Deepak Saxena (1):
-      arm64: Force use of common clk at architecture level
-
-Marc Zyngier (7):
-      arm64: expand register mapping between AArch32 and AArch64
-      arm64: add AArch32 execution modes to ptrace.h
-      arm64: move vector entry macro to assembler.h
-      arm64: record boot mode when entering the kernel
-      arm64: add hypervisor stub
-      arm64: hyp: initialize vttbr_el2 to zero
-      arm64: move FP-SIMD save/restore code to a macro
-
-Tekkaman Ninja (1):
-      Documentation: Fixes a word in Documentation/arm64/memory.txt
-
-Will Deacon (10):
-      arm64: mm: update max_dma32 before calculating size of NORMAL zone
-      arm64: signal: push the unwinding prologue on the signal stack
-      arm64: signal: align return types for compat and native setup_return
-      arm64: signal: return struct rt_sigframe from get_sigframe
-      arm64: signal: let the compiler inline compat_get_sigframe
-      arm64: vdso: fix clocksource mask when extracting bottom 56 bits
-      arm64: vdso: check sequence counter even for coarse realtime operations
-      arm64: vdso: rework __do_get_tspec register allocation and return shift
-      arm64: vdso: defer shifting of nanosecond component of timespec
-      arm64: generic timer: use virtual counter instead of physical at EL0
-
- Documentation/arm64/memory.txt        |   2 +-
- MAINTAINERS                           |   2 +
- arch/arm64/Kconfig                    |   4 +-
- arch/arm64/include/asm/Kbuild         |   1 +
- arch/arm64/include/asm/arm_generic.h  |   8 +--
- arch/arm64/include/asm/assembler.h    |   8 +++
- arch/arm64/include/asm/cacheflush.h   |  11 +++-
- arch/arm64/include/asm/fpsimdmacros.h |  64 ++++++++++++++++++++
- arch/arm64/include/asm/pgtable.h      |   2 +
- arch/arm64/include/asm/processor.h    |   5 --
- arch/arm64/include/asm/ptrace.h       |  31 +++++++++-
- arch/arm64/include/asm/syscalls.h     |  14 ++---
- arch/arm64/include/asm/unistd.h       |   1 +
- arch/arm64/include/asm/unistd32.h     |  10 ++--
- arch/arm64/include/asm/virt.h         |  54 +++++++++++++++++
- arch/arm64/kernel/Makefile            |   3 +-
- arch/arm64/kernel/entry-fpsimd.S      |  43 +-------------
- arch/arm64/kernel/entry.S             |  21 ++-----
- arch/arm64/kernel/head.S              |  33 +++++++++-
- arch/arm64/kernel/hyp-stub.S          | 109 ++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/process.c           |  83 ++++++++++----------------
- arch/arm64/kernel/signal.c            |  49 +++++++--------
- arch/arm64/kernel/signal32.c          |  20 +++----
- arch/arm64/kernel/sys.c               |  76 +-----------------------
- arch/arm64/kernel/sys32.S             |  19 ------
- arch/arm64/kernel/sys_compat.c        |  38 ++----------
- arch/arm64/kernel/vdso.c              |   2 +-
- arch/arm64/kernel/vdso/gettimeofday.S | 100 ++++++++++++++++---------------
- arch/arm64/mm/fault.c                 |  13 +++-
- arch/arm64/mm/flush.c                 |   9 ---
- arch/arm64/mm/init.c                  |   4 +-
- drivers/clocksource/arm_generic.c     |   2 +-
- 32 files changed, 473 insertions(+), 368 deletions(-)
- create mode 100644 arch/arm64/include/asm/fpsimdmacros.h
- create mode 100644 arch/arm64/include/asm/virt.h
- create mode 100644 arch/arm64/kernel/hyp-stub.S
-
+	Arnd
