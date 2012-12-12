@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2LLTg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:36:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18451 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754212Ab2LLTg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:36:58 -0500
-Date: Wed, 12 Dec 2012 20:36:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
-	offline from atomic context
-Message-ID: <20121212193646.GA29395@redhat.com>
-References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212180248.GA24882@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755113Ab2LLTj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:39:27 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2761 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab2LLTjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 14:39:22 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=jJ7Cow1ZuacA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VNbI9rDQBQUA:10 a=-wnBujlOT7k6EHvpfdEA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121212193920.366926749@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 12 Dec 2012 14:27:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: [RFC][PATCH RT 1/4 v2] sched/rt: Fix push_rt_task() to have the same checks as the caller did
+References: <20121212192733.221810086@goodmis.org>
+Content-Disposition: inline; filename=fix-push-rt-task-check.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12, Oleg Nesterov wrote:
->
-> On 12/12, Srivatsa S. Bhat wrote:
-> >
-> > On 12/12/2012 10:47 PM, Oleg Nesterov wrote:
-> > >
-> > > Why it needs to be per-cpu? It can be global and __read_mostly to avoid
-> > > the false-sharing. OK, perhaps to put reader_percpu_refcnt/writer_signal
-> > > into a single cacheline...
-> >
-> > Even I realized this (that we could use a global) after posting out the
-> > series.. But do you think that it would be better to retain the per-cpu
-> > variant itself, due to the cache effects?
->
-> I don't really know, up to you. This was the question ;)
+Currently, the push_rt_task() only pushes the task if it is lower
+priority than the currently running task.
 
-But perhaps there is another reason to make it per-cpu...
+But this is not the only check. If the currently running task is also
+pinned, we may want to push as well, and we do this check when we wake
+up a task, but then we are guaranteed to fail pushing the task because
+the internal checks may fail.
 
-It seems we can avoid cpu_hotplug.active_writer == current check in
-get/put.
+Make the check the same as the wakeup checks. We could remove the
+check in the wake up and just let the push_rt_task() do the work,
+but this makes the wake up exit this check on the likely case that
+"ok_to_push_task()" will fail, and that we don't need to do the
+iterative loop of checks on the pushable task list.
 
-take_cpu_down() can clear this_cpu(writer_signal) right after it takes
-hotplug_rwlock for writing. It runs with irqs and preemption disabled,
-nobody else will ever look at writer_signal on its CPU.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Oleg.
+Index: linux-rt.git/kernel/sched/rt.c
+===================================================================
+--- linux-rt.git.orig/kernel/sched/rt.c
++++ linux-rt.git/kernel/sched/rt.c
+@@ -1615,6 +1615,15 @@ static struct task_struct *pick_next_pus
+ 	return p;
+ }
+ 
++static int ok_to_push_task(struct task_struct *p, struct task_struct *curr)
++{
++	return p->nr_cpus_allowed > 1 &&
++		rt_task(curr) &&
++		(curr->migrate_disable ||
++		 curr->nr_cpus_allowed < 2 ||
++		 curr->prio <= p->prio);
++}
++
+ /*
+  * If the current CPU has more than one RT task, see if the non
+  * running task can migrate over to a CPU that is running a task
+@@ -1649,7 +1658,7 @@ retry:
+ 	 * higher priority than current. If that's the case
+ 	 * just reschedule current.
+ 	 */
+-	if (unlikely(next_task->prio < rq->curr->prio)) {
++	if (!ok_to_push_task(next_task, rq->curr)) {
+ 		resched_task(rq->curr);
+ 		return 0;
+ 	}
+@@ -1814,10 +1823,7 @@ static void task_woken_rt(struct rq *rq,
+ 	if (!task_running(rq, p) &&
+ 	    !test_tsk_need_resched(rq->curr) &&
+ 	    has_pushable_tasks(rq) &&
+-	    p->nr_cpus_allowed > 1 &&
+-	    rt_task(rq->curr) &&
+-	    (rq->curr->nr_cpus_allowed < 2 ||
+-	     rq->curr->prio <= p->prio))
++	    ok_to_push_task(p, rq->curr))
+ 		push_rt_tasks(rq);
+ }
+ 
 
