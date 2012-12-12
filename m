@@ -1,84 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2LMGO7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 01:14:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58969 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab2LMGO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 01:14:58 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1355378005.24283.11.camel@wall-e>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 12 Dec 2012 22:14:25 -0800
-To: Stefani Seibold <stefani@seibold.net>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
-        john.stultz@linaro.org, luto@amacapital.net
-Message-ID: <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>
+	id S1753202Ab2LMGPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 01:15:45 -0500
+Received: from [193.140.216.150] ([193.140.216.150]:52472 "EHLO
+	akademik.hacettepe.edu.tr" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753020Ab2LMGPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 01:15:44 -0500
+X-Greylist: delayed 43654 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Dec 2012 01:15:44 EST
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Message-id: <0MEX004CG8595Q90@akd-lh.hacettepe.edu.tr>
+Reply-to: dr.tony.brown@hotmail.co.uk
+From: MASTER CARD INDIA <erkan@burotime.com>
+Subject: Xmas Bonus
+Date: Wed, 12 Dec 2012 21:58:34 +0800
+X-Priority: 3
+X-MSMail-priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is too late for 3.8 anyway, so there is time to make it work correctly before tge 3.9 merge window anyway.  After this merge window is over I may pull tjis into a testing branch, but compat support is a precondition.
-
-The vdso is only optional if you build in backwards compatibility anyway, and software has a right to expect a specific numeric kernel version to export a single ABI.
-
-Stefani Seibold <stefani@seibold.net> wrote:
-
->Am Mittwoch, den 12.12.2012, 15:34 -0800 schrieb H. Peter Anvin:
->> On 12/12/2012 12:19 PM, stefani@seibold.net wrote:
->> > diff --git a/arch/x86/vdso/vdso32/vclock_gettime.c
->b/arch/x86/vdso/vdso32/vclock_gettime.c
->> > new file mode 100644
->> > index 0000000..c9a1909
->> > --- /dev/null
->> > +++ b/arch/x86/vdso/vdso32/vclock_gettime.c
->> > @@ -0,0 +1,7 @@
->> > +/*
->> > + * since vgtod layout differs between X86_64 and x86_32, it is not
->possible to
->> > + * provide a 32 bit vclock with a 64 bit kernel
->> > + */
->> > +#ifdef CONFIG_X86_32
->> > +#include "../vclock_gettime.c"
->> > +#endif
->> 
->> This is where this goes fail.  Sorry, it is not acceptable to
->introduce 
->> an ABI on x86-32 without providing it also on x86-64 in compatibility
->mode.
->> 
->> I also don't believe it is not possible... it might require some more
->
->> cleverness; perhaps we need to do the 32-bit vgtod in such a way that
->it 
->> *is* compatible with 64 bits.
->> 
->
->The comment is ambiguous:
->
->Since vgtod layout differs between X86_64 and x86_32 AND the vgtod is
->not inside the accessible address space of a 32 bit program, it is
->CURRENTLY not possible to provide a 32 bit vclock with a 64 bit kernel
->
->As i understand VDSO it is an alternativ way, so if there is no support
->for it, there must be a fall back to the system call interface in the
->program or lib, which tries to use it.
->
->So there is no drawback for 32 bit programs running on a 64 bit kernel.
->
->
->I think this feature is not so important and can implemented in a
->subsequent patch, because a 64 bit kernel system mostly runs 64 bit
->programs. Let us fix this things step by step.
->
->- Stefani
-
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+MasterCard India have just awarded your email ID the sum of One Million Pounds,Email us now for instructions: dr.tony.brown@hotmail.co.uk
