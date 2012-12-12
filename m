@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab2LLGUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 01:20:24 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:59320 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab2LLGUW (ORCPT
+	id S1751598Ab2LLGYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 01:24:46 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:57714 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750819Ab2LLGYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 01:20:22 -0500
-X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Dec 2012 01:20:22 EST
-Message-ID: <50C820AF.8050804@ozlabs.ru>
-Date: Wed, 12 Dec 2012 17:14:07 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 12 Dec 2012 01:24:45 -0500
+Message-ID: <50C8228B.7040702@marvell.com>
+Date: Wed, 12 Dec 2012 14:22:03 +0800
+From: Qing Xu <qingx@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
-References: <1354636299.1809.431.camel@bling.home>  <1354865750-8104-1-git-send-email-aik@ozlabs.ru> <1354901926.3224.96.camel@bling.home>
-In-Reply-To: <1354901926.3224.96.camel@bling.home>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 0/7] mfd: update on max8925 for DT support
+References: <1352187305-9660-1-git-send-email-qingx@marvell.com> <CAN1soZzAZ9Od_5jC0ZFdw03c5P9Q+gJQswTwp0M1YWM_ti+9xw@mail.gmail.com> <50B6F8AC.6050307@marvell.com> <CAN1soZzTYjU9nEe1hQWAwz2R0GRfvaQ7HyaMZ3uNxtBV0X14uA@mail.gmail.com>
+In-Reply-To: <CAN1soZzTYjU9nEe1hQWAwz2R0GRfvaQ7HyaMZ3uNxtBV0X14uA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Dec 2012 06:21:40.0532 (UTC) FILETIME=[F2B0DF40:01CDD830]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/12 04:38, Alex Williamson wrote:
->> +static int __init tce_iommu_init(void)
->> +{
->> +	struct pci_dev *pdev = NULL;
->> +	struct iommu_table *tbl;
->> +	struct iommu_group *grp;
->> +
->> +	/* Allocate and initialize IOMMU groups */
->> +	for_each_pci_dev(pdev) {
->> +		tbl = get_iommu_table_base(&pdev->dev);
->> +		if (!tbl)
->> +			continue;
->> +
->> +		/* Skip already initialized */
->> +		if (tbl->it_group)
->> +			continue;
->> +
->> +		grp = iommu_group_alloc();
->> +		if (IS_ERR(grp)) {
->> +			pr_info("tce_vfio: cannot create new IOMMU group, ret=%ld\n",
->> +					PTR_ERR(grp));
->> +			return PTR_ERR(grp);
->> +		}
->> +		tbl->it_group = grp;
->> +		iommu_group_set_iommudata(grp, tbl, group_release);
+On 12/04/2012 03:11 PM, Haojian Zhuang wrote:
+> On Thu, Nov 29, 2012 at 1:54 PM, Qing Xu <qingx@marvell.com> wrote:
+>> On 11/23/2012 05:09 PM, Haojian Zhuang wrote:
+>>> On Tue, Nov 6, 2012 at 3:35 PM, Qing Xu <qingx@marvell.com> wrote:
+>>>> From: Qing Xu <qingx@marvell.com>
+>>>>
+>>>> 1. add irqdomain for max8925, it is necessary for dt support
+>>>> 2. bug fix in max8925 mfd devices'irq base and device registry failure
+>>>> 3. support DT for max8925 mfd devices
+>>>>
+>>>> Qing Xu (7):
+>>>>     mfd: max8925: add irqdomain for dt
+>>>>     mfd: max8925: fix mfd device register failure
+>>>>     mfd: max8925: fix onkey driver irq base
+>>>>     mfd: max8925: support dt for power supply
+>>>>     mfd: max8925: support dt for regulator
+>>>>     mfd: max8925: support dt for backlight
+>>>>     mfd: max8925: add dts
+>>>>
+>>>>    arch/arm/boot/dts/mmp2-brownstone.dts |  166
+>>>> +++++++++++++++++++++++++++++++++
+>>>>    arch/arm/boot/dts/mmp2.dtsi           |    4 +-
+>>>>    drivers/input/misc/max8925_onkey.c    |    3 -
+>>>>    drivers/mfd/max8925-core.c            |  107 +++++++++++++--------
+>>>>    drivers/mfd/max8925-i2c.c             |   32 ++++++-
+>>>>    drivers/power/max8925_power.c         |   57 ++++++++++-
+>>>>    drivers/regulator/max8925-regulator.c |   35 +++++++-
+>>>>    drivers/video/backlight/max8925_bl.c  |   31 ++++++-
+>>>>    include/linux/mfd/max8925.h           |   12 ++-
+>>>>    9 files changed, 389 insertions(+), 58 deletions(-)
+>>>>
+>>> No document on devicetree binding?
+>> I added a new patch of "Documentation: add docs for max8925 dt",
+>> please help to review, thanks a lot!
+> Acked.
 >
-> BTW, groups have a name property that shows up in sysfs that can be set
-> with iommu_group_set_name().  IIRC, this was a feature David requested
-> for PEs.  It'd be nice if it was used for PEs...  Thanks,
+> Samuel,
+> How do you think about this patch series? From my view, it's ok.
+>
+> Best Regards
+> Haojian
 
 
 
-But what would I put there?... IOMMU ID is more than enough at the moment 
-and struct iommu_table does not have anything what would have made sense to 
-show in the sysfs...
+Samuel,
+
+Do you have any comments on these patches? Could they be merged?
+
+Thanks a lot!
+Qing
 
 
--- 
-Alexey
