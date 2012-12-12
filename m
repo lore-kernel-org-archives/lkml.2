@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab2LLOfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:35:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31069 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317Ab2LLOe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:34:59 -0500
-Message-ID: <1355322875.3224.201.camel@bling.home>
-Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Date: Wed, 12 Dec 2012 07:34:35 -0700
-In-Reply-To: <50C820AF.8050804@ozlabs.ru>
-References: <1354636299.1809.431.camel@bling.home>
-	  <1354865750-8104-1-git-send-email-aik@ozlabs.ru>
-	 <1354901926.3224.96.camel@bling.home> <50C820AF.8050804@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754490Ab2LLOfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:35:25 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51483 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab2LLOfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 09:35:00 -0500
+Message-ID: <50C89608.7050908@gmail.com>
+Date: Wed, 12 Dec 2012 22:34:48 +0800
+From: Yijing Wang <wangyijing0307@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 5/6] ACPI: Replace struct acpi_bus_ops with enum type
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <CAE9FiQXYPPcRZZBFGrqcV--0-UixMH1f+q4WdovErthsLhxn7A@mail.gmail.com> <50C74C92.1040405@gmail.com> <2093499.q2b9fD3smR@vostro.rjw.lan>
+In-Reply-To: <2093499.q2b9fD3smR@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 17:14 +1100, Alexey Kardashevskiy wrote:
-> On 08/12/12 04:38, Alex Williamson wrote:
-> >> +static int __init tce_iommu_init(void)
-> >> +{
-> >> +	struct pci_dev *pdev = NULL;
-> >> +	struct iommu_table *tbl;
-> >> +	struct iommu_group *grp;
-> >> +
-> >> +	/* Allocate and initialize IOMMU groups */
-> >> +	for_each_pci_dev(pdev) {
-> >> +		tbl = get_iommu_table_base(&pdev->dev);
-> >> +		if (!tbl)
-> >> +			continue;
-> >> +
-> >> +		/* Skip already initialized */
-> >> +		if (tbl->it_group)
-> >> +			continue;
-> >> +
-> >> +		grp = iommu_group_alloc();
-> >> +		if (IS_ERR(grp)) {
-> >> +			pr_info("tce_vfio: cannot create new IOMMU group, ret=%ld\n",
-> >> +					PTR_ERR(grp));
-> >> +			return PTR_ERR(grp);
-> >> +		}
-> >> +		tbl->it_group = grp;
-> >> +		iommu_group_set_iommudata(grp, tbl, group_release);
-> >
-> > BTW, groups have a name property that shows up in sysfs that can be set
-> > with iommu_group_set_name().  IIRC, this was a feature David requested
-> > for PEs.  It'd be nice if it was used for PEs...  Thanks,
+于 2012-12-12 2:30, Rafael J. Wysocki 写道:
+> Hi Gerry,
 > 
+> On Tuesday, December 11, 2012 11:09:06 PM Jiang Liu wrote:
+>> Hi Rafael,
+>> 	I have worked out a patch set to clean up ACPI/PCI related notifications,
+>> please refer to
+>> http://www.spinics.net/lists/linux-pci/msg17822.html
+>> 	The patchset doesn't apply cleanly to Bjorn's latest pci-next tree. I will
+>> help to rebase it if needed.
 > 
+> I have reviewed the patches and I think they make sense overall.  However,
+> the statement that acpi_pci_bind()/acpi_pci_unbind() are used to maintain
+> PCI-ACPI binding relationships is quite inaccurate, because all what these
+> functions do is to (1) add/remove ACPI PM notifiers to/from PCI devices and
+> (2) retrieve the _PRT information for bridges from ACPI tables.  In fact,
+> the *binding* itself is managed by the code in drivers/acpi/glue.c.
 > 
-> But what would I put there?... IOMMU ID is more than enough at the moment 
-> and struct iommu_table does not have anything what would have made sense to 
-> show in the sysfs...
+> Also, please have a look at my suggestion in the last reply to Yinghai:
+> 
+> http://marc.info/?l=linux-pci&m=135522965707752&w=2
+> 
+> In fact, I think we can go even further than that.  Namely, if we populate the
+> ACPI handle of the device in pci_scan_device(), then we can just move the PM
+> notifier and wakeup setup to platform_pci_wakeup_init(), where it should be
+> (we'll also need to add a corresponding _exit() function, then, but that'll be
+> much cleaner anyway).
+> 
+> Then, the remaining thing would be to ensure that _PRT entries are parsed
+> as appropriate somewhere around pci_init_capabilities().
+> 
+> Also, I wonder if you can help test the $subject patchset on a system with
+> hardware PCI hotplug (preferably on top of the linux-pm.git/master branch)?
+> 
+Hi Rafael,
+   We are doing test for this series patches, I will send out the test result as soon.
 
-I believe David mentioned that PEs had user visible names.  Perhaps they
-match an enclosure location or something.  Group numbers are rather
-arbitrary and really have no guarantee of persistence.  Thanks,
+Thanks!
+Yijing
 
-Alex
 
 
