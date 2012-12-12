@@ -1,152 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2LLQiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 11:38:19 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56092 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab2LLQiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 11:38:16 -0500
-Message-ID: <50C8B2E9.5050700@gmail.com>
-Date: Thu, 13 Dec 2012 00:38:01 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754811Ab2LLQiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 11:38:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754256Ab2LLQit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 11:38:49 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jan Kara <jack@suse.cz>, Shaohua Li <shli@kernel.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Read starvation by sync writes
+References: <20121210221222.GA25700@quack.suse.cz>
+	<CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com>
+	<20121212101108.GC18885@quack.suse.cz> <50C8A07B.6040508@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 12 Dec 2012 11:38:01 -0500
+In-Reply-To: <50C8A07B.6040508@kernel.dk> (Jens Axboe's message of "Wed, 12
+	Dec 2012 16:19:23 +0100")
+Message-ID: <x49vcc7kyza.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH 1/6] ACPI: Separate adding ACPI device objects from probing
- ACPI drivers
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <4002729.BbipMAJtM0@vostro.rjw.lan>
-In-Reply-To: <4002729.BbipMAJtM0@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2012 07:00 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Currently, as soon as an ACPI device node object (struct acpi_device)
-snip
-  
-> @@ -1600,48 +1608,77 @@ static acpi_status acpi_bus_check_add(ac
->  	 * We may already have an acpi_device from a previous enumeration.  If
->  	 * so, we needn't add it again, but we may still have to start it.
->  	 */
-> -	device = NULL;
->  	acpi_bus_get_device(handle, &device);
->  	if (ops->acpi_op_add && !device) {
-> -		acpi_add_single_object(&device, handle, type, sta, ops);
-> -		/* Is the device a known good platform device? */
-> -		if (device
-> -		    && !acpi_match_device_ids(device, acpi_platform_device_ids))
-> -			acpi_create_platform_device(device);
-> -	}
-> +		struct acpi_bus_ops add_ops = *ops;
->  
-> -	if (!device)
-> -		return AE_CTRL_DEPTH;
-> -
-> -	if (ops->acpi_op_start && !(ops->acpi_op_add)) {
-> -		status = acpi_start_single_object(device);
-> -		if (ACPI_FAILURE(status))
-> +		add_ops.acpi_op_match = 0;
-> +		acpi_add_single_object(&device, handle, type, sta, &add_ops);
-> +		if (!device)
->  			return AE_CTRL_DEPTH;
-> +
-> +		device->bus_ops.acpi_op_match = 1;
->  	}
->  
->  	if (!*return_value)
->  		*return_value = device;
-> +
->  	return AE_OK;
->  }
->  
-> +static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
-> +					void *context, void **not_used)
-> +{
-> +	struct acpi_bus_ops *ops = context;
-> +	struct acpi_device *device;
-> +	acpi_status status = AE_OK;
-> +
-> +	if (acpi_bus_get_device(handle, &device))
-> +		return AE_CTRL_DEPTH;
-> +
-> +	if (ops->acpi_op_add) {
-> +		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
-> +			/* This is a known good platform device. */
-> +			acpi_create_platform_device(device);
-> +		} else {
-> +			int ret = device_attach(&device->dev);
-> +			acpi_hot_add_bind(device);
-> +			if (ret)
-> +				status = AE_CTRL_DEPTH;
-> +		}
-> +	} else if (ops->acpi_op_start) {
-> +		if (ACPI_FAILURE(acpi_start_single_object(device)))
-> +			status = AE_CTRL_DEPTH;
-> +	}
-> +	return status;
-> +}
-> +
->  static int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
->  			 struct acpi_device **child)
->  {
-> -	acpi_status status;
->  	void *device = NULL;
-> +	acpi_status status;
-> +	int ret = 0;
->  
->  	status = acpi_bus_check_add(handle, 0, ops, &device);
-> -	if (ACPI_SUCCESS(status))
-> +	if (ACPI_FAILURE(status)) {
-> +		ret = -ENODEV;
-> +		goto out;
-> +	}
-> +
-> +	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> +			    acpi_bus_check_add, NULL, ops, &device);
-> +	if (device)
->  		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> -				    acpi_bus_check_add, NULL, ops, &device);
-> +				    acpi_bus_probe_start, NULL, ops, NULL);
-Hi Rafael,
-	Should we call acpi_bus_probe_start for the top device corresponding to 
-"handle" too here?
+Jens Axboe <axboe@kernel.dk> writes:
 
-> +	else
-> +		ret = -ENODEV;
->  
-> + out:
->  	if (child)
->  		*child = device;
->  
-> -	if (device)
-> -		return 0;
-> -	else
-> -		return -ENODEV;
-> +	return ret;
->  }
->  
->  /*
-> @@ -1752,6 +1789,7 @@ static int acpi_bus_scan_fixed(void)
->  	memset(&ops, 0, sizeof(ops));
->  	ops.acpi_op_add = 1;
->  	ops.acpi_op_start = 1;
-> +	ops.acpi_op_match = 1;
->  
->  	/*
->  	 * Enumerate all fixed-feature devices.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> On 2012-12-12 11:11, Jan Kara wrote:
+>> On Wed 12-12-12 10:55:15, Shaohua Li wrote:
+>>> 2012/12/11 Jan Kara <jack@suse.cz>:
+>>>>   Hi,
+>>>>
+>>>>   I was looking into IO starvation problems where streaming sync writes (in
+>>>> my case from kjournald but DIO would look the same) starve reads. This is
+>>>> because reads happen in small chunks and until a request completes we don't
+>>>> start reading further (reader reads lots of small files) while writers have
+>>>> plenty of big requests to submit. Both processes end up fighting for IO
+>>>> requests and writer writes nr_batching 512 KB requests while reader reads
+>>>> just one 4 KB request or so. Here the effect is magnified by the fact that
+>>>> the drive has relatively big queue depth so it usually takes longer than
+>>>> BLK_BATCH_TIME to complete the read request. The net result is it takes
+>>>> close to two minutes to read files that can be read under a second without
+>>>> writer load. Without the big drive's queue depth, results are not ideal but
+>>>> they are bearable - it takes about 20 seconds to do the reading. And for
+>>>> comparison, when writer and reader are not competing for IO requests (as it
+>>>> happens when writes are submitted as async), it takes about 2 seconds to
+>>>> complete reading.
+>>>>
+>>>> Simple reproducer is:
+>>>>
+>>>> echo 3 >/proc/sys/vm/drop_caches
+>>>> dd if=/dev/zero of=/tmp/f bs=1M count=10000 &
+>>>> sleep 30
+>>>> time cat /etc/* 2>&1 >/dev/null
+>>>> killall dd
+>>>> rm /tmp/f
+>>>>
+>>>>   The question is how can we fix this? Two quick hacks that come to my mind
+>>>> are remove timeout from the batching logic (is it that important?) or
+>>>> further separate request allocation logic so that reads have their own
+>>>> request pool. More systematic fix would be to change request allocation
+>>>> logic to always allow at least a fixed number of requests per IOC. What do
+>>>> people think about this?
+>>>
+>>> As long as queue depth > workload iodepth, there is little we can do
+>>> to prioritize tasks/IOC. Because throttling a task/IOC means queue
+>>> will be idle. We don't want to idle a queue (especially for SSD), so
+>>> we always push as more requests as possible to the queue, which
+>>> will break any prioritization. As far as I know we always have such
+>>> issue in CFQ for big queue depth disk.
+>>   Yes, I understand that. But actually big queue depth on its own doesn't
+>> make the problem really bad (at least for me). When the reader doesn't have
+>> to wait for free IO requests, it progresses at a reasonable speed. What
+>> makes it really bad is that big queue depth effectively disallows any use
+>> of ioc_batching() mode for the reader and thus it blocks in request
+>> allocation for every single read request unlike writer which always uses
+>> its full batch (32 requests).
+>
+> I agree. This isn't about scheduling, we haven't even reached that part
+> yet. Back when we split the queues into read vs write, this problem
+> obviously wasn't there. Now we have sync writes and reads, both eating
+> from the same pool. The io scheduler can impact this a bit by forcing
+> reads to must allocate (Jan, which io scheduler are you using?). CFQ
+> does this when it's expecting a request from this process queue.
+>
+> Back in the day, we used to have one list. To avoid a similar problem,
+> we reserved the top of the list for reads. With the batching, it's a bit
+> more complicated. If we make the request allocation (just that, not the
+> scheduling) be read vs write instead of sync vs async, then we have the
+> same issue for sync vs buffered writes.
+>
+> How about something like the below? Due to the nature of sync reads, we
+> should allow a much longer timeout. The batch is really tailored towards
+> writes at the moment. Also shrink the batch count, 32 is pretty large...
 
+Does batching even make sense for dependent reads?  I don't think it
+does.  Assuming you disagree, then you'll have to justify that fixed
+time value of 2 seconds.  The amount of time between dependent reads
+will vary depending on other I/O sent to the device, the properties of
+the device, the I/O scheduler, and so on.  If you do stick 2 seconds in
+there, please comment it.  Maybe it's time we started keeping track of
+worst case Q->C time?  That could be used to tell worst case latency,
+and adjust magic timeouts like this one.
+
+I'm still thinking about how we might solve this in a cleaner way.
+
+Cheers,
+Jeff
