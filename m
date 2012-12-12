@@ -1,148 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab2LLBMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:12:00 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2646 "EHLO mms1.broadcom.com"
+	id S1754679Ab2LLBQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:16:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50024 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753486Ab2LLBL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:11:58 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Stephen Hurd" <shurd@broadcom.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] 8250/16?50: Add support for Broadcom TruManage
- redirected serial port
-Thread-Topic: [PATCH] 8250/16?50: Add support for Broadcom TruManage
- redirected serial port
-Thread-Index: Ac3X/4FKNqFbK6eQTReu1x6E0ZsPbAABcioQ
-Date: Wed, 12 Dec 2012 01:11:47 +0000
-Message-ID: <156984479488CD49A184F5CAB4AF934606FF55F8@IRVEXCHMB14.corp.ad.broadcom.com>
-Accept-Language: en-CA, en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.208.64]
+	id S1754446Ab2LLBQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 20:16:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,263,1355126400"; 
+   d="scan'208";a="256119226"
+Message-ID: <50C7DA60.7070808@intel.com>
+Date: Wed, 12 Dec 2012 09:14:08 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-X-WSS-ID: 7CD906D51QK19503914-01-01
-Content-Type: multipart/mixed;
- boundary=_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_
+To: Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Alex Shi <lkml.alex@gmail.com>, rob@landley.net, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        vincent.guittot@linaro.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into
+ LB and power awareness scheduling
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com> <50C722AC.3080806@intel.com> <20121211154819.GC8873@liondog.tnic> <50C75935.1040004@linux.intel.com> <20121211161320.GA28827@liondog.tnic>
+In-Reply-To: <20121211161320.GA28827@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/12/2012 12:13 AM, Borislav Petkov wrote:
+> On Tue, Dec 11, 2012 at 08:03:01AM -0800, Arjan van de Ven wrote:
+>> On 12/11/2012 7:48 AM, Borislav Petkov wrote:
+>>> On Tue, Dec 11, 2012 at 08:10:20PM +0800, Alex Shi wrote:
+>>>> Another testing of parallel compress with pigz on Linus' git tree.
+>>>> results show we get much better performance/power with powersaving and
+>>>> balance policy:
+>>>>
+>>>> testing command:
+>>>> #pigz -k -c  -p$x -r linux* &> /dev/null
+>>>>
+>>>> On a NHM EP box
+>>>>          powersaving               balance   	         performance
+>>>> x = 4    166.516 /88 68           170.515 /82 71         165.283 /103 58
+>>>> x = 8    173.654 /61 94           177.693 /60 93         172.31 /76 76
+>>>
+>>> This looks funny: so "performance" is eating less watts than
+>>> "powersaving" and "balance" on NHM. Could it be that the average watts
+>>> measurements on NHM are not correct/precise..? On SNB they look as
+>>> expected, according to your scheme.
+>>
+>> well... it's not always beneficial to group or to spread out
+>> it depends on cache behavior mostly which is best
+> 
+> Let me try to understand what this means: so "performance" above with
+> 8 threads means that those threads are spread out across more than one
+> socket, no?
+> 
+> If so, this would mean that you have a smaller amount of tasks on each
+> socket, thus the smaller wattage.
+> 
+> The "powersaving" method OTOH fills up the one socket up to the brim,
+> thus the slightly higher consumption due to all threads being occupied.
+> 
 
---_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: quoted-printable
-
-It appears that the modification to include/uapi/linux/serial_core.h is exc=
-luded by the dontdiff filters.  I've attached an updated patch including it=
-.
-
-
-Stephen Hurd
-Senior Staff Engineer - Software Development
-Broadcom Corporation
-949-926-8039
-shurd@broadcom.com =20
+As Arjan said we know the performance increase should be due to the
+cache sharing in LLC.
+As to power consumption value between powersaving and performance, when
+we burn 2 socket CPU, the cpu load is not 100%, so some LCPU still has
+time to go idle or to run with low frequency, that also can save some
+power.
+That's just generalise situation, as to different hardware, different
+CPU, they may has different tuning in CPU packages, core, uncore part
+etc. So as to different benchmark, the result are also different.
 
 
---_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_
-Content-Type: application/octet-stream;
- name=brcm-trumanage-uart.patch
-Content-Description: brcm-trumanage-uart.patch
-Content-Disposition: attachment;
- filename=brcm-trumanage-uart.patch;
- size=4703;
- creation-date="Wed, 12 Dec 2012 01:08:45 GMT";
- modification-date="Wed, 12 Dec 2012 01:08:45 GMT"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwLmMg
-bGludXgtMy43L2RyaXZlcnMvdHR5L3NlcmlhbC84MjUwLzgyNTAuYwotLS0gbGludXgtMy43Lm9y
-aWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5jCTIwMTItMTItMTAgMTk6MzA6NTcuMDAw
-MDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5j
-CTIwMTItMTItMTEgMTU6NTY6NDAuNjg2MzQzOTU5IC0wODAwCkBAIC0yOTAsNiArMjkwLDEyIEBA
-IHN0YXRpYyBjb25zdCBzdHJ1Y3Qgc2VyaWFsODI1MF9jb25maWcgdWEKIAkJCQkgIFVBUlRfRkNS
-X1JfVFJJR18wMCB8IFVBUlRfRkNSX1RfVFJJR18wMCwKIAkJLmZsYWdzCQk9IFVBUlRfQ0FQX0ZJ
-Rk8sCiAJfSwKKwlbUE9SVF9CUkNNX1RSVU1BTkFHRV0gPSB7CisJCS5uYW1lCQk9ICJUcnVNYW5h
-Z2UiLAorCQkuZmlmb19zaXplCT0gMSwKKwkJLnR4X2xvYWRzegk9IDEwMjQsCisJCS5mbGFncwkJ
-PSBVQVJUX0NBUF9IRklGTywKKwl9LAogCVtQT1JUXzgyNTBfQ0lSXSA9IHsKIAkJLm5hbWUJCT0g
-IkNJUiBwb3J0IgogCX0KQEAgLTE0NDEsNiArMTQ0NywxMSBAQCB2b2lkIHNlcmlhbDgyNTBfdHhf
-Y2hhcnMoc3RydWN0IHVhcnRfODI1CiAJCXBvcnQtPmljb3VudC50eCsrOwogCQlpZiAodWFydF9j
-aXJjX2VtcHR5KHhtaXQpKQogCQkJYnJlYWs7CisJCWlmICh1cC0+Y2FwYWJpbGl0aWVzICYgVUFS
-VF9DQVBfSEZJRk8pIHsKKwkJCWlmICgoc2VyaWFsX3BvcnRfaW4ocG9ydCwgVUFSVF9MU1IpICYg
-Qk9USF9FTVBUWSkKKwkJCQkJIT0gQk9USF9FTVBUWSkKKwkJCQlicmVhazsKKwkJfQogCX0gd2hp
-bGUgKC0tY291bnQgPiAwKTsKIAogCWlmICh1YXJ0X2NpcmNfY2hhcnNfcGVuZGluZyh4bWl0KSA8
-IFdBS0VVUF9DSEFSUykKZGlmZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJp
-YWwvODI1MC84MjUwLmggbGludXgtMy43L2RyaXZlcnMvdHR5L3NlcmlhbC84MjUwLzgyNTAuaAot
-LS0gbGludXgtMy43Lm9yaWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5oCTIwMTItMTIt
-MTAgMTk6MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2Vy
-aWFsLzgyNTAvODI1MC5oCTIwMTItMTItMTEgMTQ6NTc6NDguNjQxNjEzNjc2IC0wODAwCkBAIC00
-MCw2ICs0MCw3IEBAIHN0cnVjdCBzZXJpYWw4MjUwX2NvbmZpZyB7CiAjZGVmaW5lIFVBUlRfQ0FQ
-X0FGRQkoMSA8PCAxMSkJLyogTUNSLWJhc2VkIGh3IGZsb3cgY29udHJvbCAqLwogI2RlZmluZSBV
-QVJUX0NBUF9VVUUJKDEgPDwgMTIpCS8qIFVBUlQgbmVlZHMgSUVSIGJpdCA2IHNldCAoWHNjYWxl
-KSAqLwogI2RlZmluZSBVQVJUX0NBUF9SVE9JRQkoMSA8PCAxMykJLyogVUFSVCBuZWVkcyBJRVIg
-Yml0IDQgc2V0IChYc2NhbGUsIFRlZ3JhKSAqLworI2RlZmluZSBVQVJUX0NBUF9IRklGTwkoMSA8
-PCAxNCkJLyogVUFSVCBoYXMgYSAiaGlkZGVuIiBGSUZPICovCiAKICNkZWZpbmUgVUFSVF9CVUdf
-UVVPVAkoMSA8PCAwKQkvKiBVQVJUIGhhcyBidWdneSBxdW90IExTQiAqLwogI2RlZmluZSBVQVJU
-X0JVR19UWEVOCSgxIDw8IDEpCS8qIFVBUlQgaGFzIGJ1Z2d5IFRYIElJUiBzdGF0dXMgKi8KZGlm
-ZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5j
-IGxpbnV4LTMuNy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCi0tLSBsaW51eC0z
-Ljcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCTIwMTItMTItMTAgMTk6
-MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgy
-NTAvODI1MF9wY2kuYwkyMDEyLTEyLTExIDE1OjU4OjEwLjk1ODM0MDA3NyAtMDgwMApAQCAtMTA4
-NSw2ICsxMDg1LDE3IEBAIHBjaV9vbWVnYXBjaV9zZXR1cChzdHJ1Y3Qgc2VyaWFsX3ByaXZhdGUK
-IAlyZXR1cm4gc2V0dXBfcG9ydChwcml2LCBwb3J0LCAyLCBpZHggKiA4LCAwKTsKIH0KIAorc3Rh
-dGljIGludAorcGNpX2JyY21fdHJ1bWFuYWdlX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAq
-cHJpdiwKKwkJICAgICAgY29uc3Qgc3RydWN0IHBjaXNlcmlhbF9ib2FyZCAqYm9hcmQsCisJCSAg
-ICAgIHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGludCBpZHgpCit7CisJaW50IHJldCA9IHBjaV9k
-ZWZhdWx0X3NldHVwKHByaXYsIGJvYXJkLCBwb3J0LCBpZHgpOworCXBvcnQtPnR5cGUgPSBQT1JU
-X0JSQ01fVFJVTUFOQUdFOworCXBvcnQtPmZsYWdzID0gKHBvcnQtPmZsYWdzIHwgVVBGX0ZJWEVE
-X1BPUlQgfCBVUEZfRklYRURfVFlQRSk7CisJcmV0dXJuIHJldDsKK30KKwogc3RhdGljIGludCBz
-a2lwX3R4X2VuX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAqcHJpdiwKIAkJCWNvbnN0IHN0
-cnVjdCBwY2lzZXJpYWxfYm9hcmQgKmJvYXJkLAogCQkJc3RydWN0IHVhcnRfODI1MF9wb3J0ICpw
-b3J0LCBpbnQgaWR4KQpAQCAtMTIxMyw2ICsxMjI0LDcgQEAgcGNpX3djaF9jaDM1M19zZXR1cChz
-dHJ1Y3Qgc2VyaWFsX3ByaXZhdAogI2RlZmluZSBQQ0lfVkVORE9SX0lEX0FHRVNUQVIJCTB4NTM3
-MgogI2RlZmluZSBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NQkweDY4NzIKICNkZWZpbmUgUENJ
-X1ZFTkRPUl9JRF9BU0lYCQkweDk3MTAKKyNkZWZpbmUgUENJX0RFVklDRV9JRF9CUk9BRENPTV9U
-UlVNQU5BR0UgMHgxNjBhCiAKIC8qIFVua25vd24gdmVuZG9ycy9jYXJkcyAtIHRoaXMgc2hvdWxk
-IG5vdCBiZSBpbiBsaW51eC9wY2lfaWRzLmggKi8KICNkZWZpbmUgUENJX1NVQkRFVklDRV9JRF9V
-TktOT1dOXzB4MTU4NAkweDE1ODQKQEAgLTE3ODgsNiArMTgwMCwxNyBAQCBzdGF0aWMgc3RydWN0
-IHBjaV9zZXJpYWxfcXVpcmsgcGNpX3NlcmlhCiAJCS5zZXR1cAkJPSBwY2lfYXNpeF9zZXR1cCwK
-IAl9LAogCS8qCisJICogQnJvYWRjb20gVHJ1TWFuYWdlIChOZXRYdHJlbWUpCisJICovCisJewor
-CQkudmVuZG9yCQk9IFBDSV9WRU5ET1JfSURfQlJPQURDT00sCisJCS5kZXZpY2UJCT0gUENJX0RF
-VklDRV9JRF9CUk9BRENPTV9UUlVNQU5BR0UsCisJCS5zdWJ2ZW5kb3IJPSBQQ0lfQU5ZX0lELAor
-CQkuc3ViZGV2aWNlCT0gUENJX0FOWV9JRCwKKwkJLnNldHVwCQk9IHBjaV9icmNtX3RydW1hbmFn
-ZV9zZXR1cCwKKwl9LAorCisJLyoKIAkgKiBEZWZhdWx0ICJtYXRjaCBldmVyeXRoaW5nIiB0ZXJt
-aW5hdG9yIGVudHJ5CiAJICovCiAJewpAQCAtMTk3NSw2ICsxOTk4LDcgQEAgZW51bSBwY2lfYm9h
-cmRfbnVtX3QgewogCXBibl9jZTQxMDBfMV8xMTUyMDAsCiAJcGJuX29tZWdhcGNpLAogCXBibl9O
-RVRNT1M5OTAwXzJzXzExNTIwMCwKKwlwYm5fYnJjbV90cnVtYW5hZ2UsCiB9OwogCiAvKgpAQCAt
-MjY3NCw2ICsyNjk4LDEyIEBAIHN0YXRpYyBzdHJ1Y3QgcGNpc2VyaWFsX2JvYXJkIHBjaV9ib2Fy
-ZHMKIAkJLm51bV9wb3J0cwk9IDIsCiAJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCiAJfSwKKwlbcGJu
-X2JyY21fdHJ1bWFuYWdlXSA9IHsKKwkJLmZsYWdzCQk9IEZMX0JBU0UwLAorCQkubnVtX3BvcnRz
-CT0gMSwKKwkJLnJlZ19zaGlmdAk9IDIsCisJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCisJfSwKIH07
-CiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgcGNpX2RldmljZV9pZCBibGFja2xpc3RbXSA9IHsKQEAg
-LTQyMzgsNiArNDI2OCwxMyBAQCBzdGF0aWMgc3RydWN0IHBjaV9kZXZpY2VfaWQgc2VyaWFsX3Bj
-aV90CiAJCXBibl9vbWVnYXBjaSB9LAogCiAJLyoKKwkgKiBCcm9hZGNvbSBUcnVNYW5hZ2UKKwkg
-Ki8KKwl7CVBDSV9WRU5ET1JfSURfQlJPQURDT00sIFBDSV9ERVZJQ0VfSURfQlJPQURDT01fVFJV
-TUFOQUdFLAorCQlQQ0lfQU5ZX0lELCBQQ0lfQU5ZX0lELCAwLCAwLAorCQlwYm5fYnJjbV90cnVt
-YW5hZ2UgfSwKKworCS8qCiAJICogQWdlU3RhciBhcy1wcnMyLTAwOQogCSAqLwogCXsJUENJX1ZF
-TkRPUl9JRF9BR0VTVEFSLCBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NSwKZGlmZiAtdXByTiBs
-aW51eC0zLjcub3JpZy9pbmNsdWRlL3VhcGkvbGludXgvc2VyaWFsX2NvcmUuaCBsaW51eC0zLjcv
-aW5jbHVkZS91YXBpL2xpbnV4L3NlcmlhbF9jb3JlLmgKLS0tIGxpbnV4LTMuNy5vcmlnL2luY2x1
-ZGUvdWFwaS9saW51eC9zZXJpYWxfY29yZS5oCTIwMTItMTItMTAgMTk6MzA6NTcuMDAwMDAwMDAw
-IC0wODAwCisrKyBsaW51eC0zLjcvaW5jbHVkZS91YXBpL2xpbnV4L3NlcmlhbF9jb3JlLmgJMjAx
-Mi0xMi0xMSAxNTowMDowNy4wMDU2MTg0NDAgLTA4MDAKQEAgLTQ5LDcgKzQ5LDggQEAKICNkZWZp
-bmUgUE9SVF9YUjE3RDE1WAkyMQkvKiBFeGFyIFhSMTdEMTV4IFVBUlQgKi8KICNkZWZpbmUgUE9S
-VF9MUEMzMjIwCTIyCS8qIE5YUCBMUEMzMnh4IFNvQyAiU3RhbmRhcmQiIFVBUlQgKi8KICNkZWZp
-bmUgUE9SVF84MjUwX0NJUgkyMwkvKiBDSVIgaW5mcmFyZWQgcG9ydCwgaGFzIGl0cyBvd24gZHJp
-dmVyICovCi0jZGVmaW5lIFBPUlRfTUFYXzgyNTAJMjMJLyogbWF4IHBvcnQgSUQgKi8KKyNkZWZp
-bmUgUE9SVF9CUkNNX1RSVU1BTkFHRQkyNAorI2RlZmluZSBQT1JUX01BWF84MjUwCTI0CS8qIG1h
-eCBwb3J0IElEICovCiAKIC8qCiAgKiBBUk0gc3BlY2lmaWMgdHlwZSBudW1iZXJzLiAgVGhlc2Ug
-YXJlIG5vdCBjdXJyZW50bHkgZ3VhcmFudGVlZAo=
-
---_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_--
+> Is that it?
+> 
+> Thanks.
+> 
 
