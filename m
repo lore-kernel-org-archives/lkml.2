@@ -1,339 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab2LLKB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 05:01:57 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:51500 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab2LLKBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 05:01:55 -0500
-X-Spam-Score: -100.8
-Message-ID: <50C85644.7020203@asianux.com>
-Date: Wed, 12 Dec 2012 18:02:44 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753796Ab2LLKDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 05:03:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55047 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987Ab2LLKDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 05:03:45 -0500
+Date: Wed, 12 Dec 2012 10:03:38 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Automatic NUMA Balancing V11
+Message-ID: <20121212100338.GS1009@suse.de>
 MIME-Version: 1.0
-To: omar.ramirez@ti.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] drivers/staging/tidspbridge: pr_err and pr_debug
- for uninitialized buffer (name buf not initialized).
-References: <50C852E9.5020107@asianux.com>
-In-Reply-To: <50C852E9.5020107@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年12月12日 17:48, Chen Gang 写道:
-> Hello Omar Ramirez Luna:
-> 
->   in drivers/staging/tidspbridge/core/io_sm.c:
->     it is for function dump_dsp_stack.
->     "char name[256]" is not initialized.  (line 1898)
->     name is as out buf for node_find_addr (line 2021..2024, 2066..2071, 2098..2103)
->       if node_find_addr fails, pr_err may cause issue (name may not be initialized)
+Hi Linus,
 
-  oh sorry, pr_err no issue (it is my fault).
+This is a pull request for "Automatic NUMA Balancing V11". The list
+of changes since commit f4a75d2eb7b1e2206094b901be09adb31ba63681:
 
-> 
->   in drivers/staging/tidspbridge/rmgr/node.c:
->     function node_find_addr can be called by dump_dsp_stack.
->     param sym_name is as out buf which may be not initialized.
->     so pr_debug may cause issue (print sym_name).
-> 
->   in drivers/staging/tidspbridge/rmgr/nldr.c:
->     function nldr_find_addr can be called by node_find_addr 
->     param sym_name is as out buf which may be not initialized.
->     so pr_debug may cause issue (print sym_name).
-> 
+  Linux 3.7-rc6 (2012-11-16 17:42:40 -0800)
 
-  but they are still have issue. 
-  I find by code review, please help check whether this suggestion is valid.
+are available in the git repository at:
 
-  thanks.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git balancenuma-v11
 
->   please help checking, thanks.
-> 
-> gchen.
-> 
-> 
-> in drivers/staging/tidspbridge/rmgr/nldr.c:
-> 
-> 1798 int nldr_find_addr(struct nldr_nodeobject *nldr_node, u32 sym_addr,
-> 1799                         u32 offset_range, void *offset_output, char *sym_name)
-> 1800 {
-> 1801         int status = 0;
-> 1802         bool status1 = false;
-> 1803         s32 i = 0;
-> 1804         struct lib_node root = { NULL, 0, NULL };
-> 1805         pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__, (u32) nldr_node,
-> 1806                         sym_addr, offset_range, (u32) offset_output, sym_name);
-> 1807 
->  ...
-> 
-> 
-> in drivers/staging/tidspbridge/rmgr/node.c:
-> 
-> 3009 int node_find_addr(struct node_mgr *node_mgr, u32 sym_addr,
-> 3010                 u32 offset_range, void *sym_addr_output, char *sym_name)
-> 3011 {
-> 3012         struct node_object *node_obj;
-> 3013         int status = -ENOENT;
-> 3014 
-> 3015         pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__,
-> 3016                         (unsigned int) node_mgr,
-> 3017                         sym_addr, offset_range,
-> 3018                         (unsigned int) sym_addr_output, sym_name);
-> 3019 
-> 3020         list_for_each_entry(node_obj, &node_mgr->node_list, list_elem) {
-> 3021                 status = nldr_find_addr(node_obj->nldr_node_obj, sym_addr,
-> 3022                         offset_range, sym_addr_output, sym_name);
-> 3023                 if (!status)
-> 3024                         break;
-> 3025         }
-> 3026 
-> 3027         return status;
-> 3028 }
-> 
-> 
-> 
-> 
-> in drivers/staging/tidspbridge/core/io_sm.c:
-> 
-> 1892 int dump_dsp_stack(struct bridge_dev_context *bridge_context)
-> 1893 {
-> 1894         int status = 0;
-> 1895         struct cod_manager *code_mgr;
-> 1896         struct node_mgr *node_mgr;
-> 1897         u32 trace_begin;
-> 1898         char name[256];
-> 1899         struct {
-> 1900                 u32 head[2];
-> 1901                 u32 size;
-> 1902         } mmu_fault_dbg_info;
-> 1903         u32 *buffer;
-> 1904         u32 *buffer_beg;
-> 1905         u32 *buffer_end;
-> 1906         u32 exc_type;
-> 1907         u32 dyn_ext_base;
-> 1908         u32 i;
-> 1909         u32 offset_output;
-> 1910         u32 total_size;
-> 1911         u32 poll_cnt;
-> 1912         const char *dsp_regs[] = {"EFR", "IERR", "ITSR", "NTSR",
-> 1913                                 "IRP", "NRP", "AMR", "SSR",
-> 1914                                 "ILC", "RILC", "IER", "CSR"};
-> 1915         const char *exec_ctxt[] = {"Task", "SWI", "HWI", "Unknown"};
-> 1916         struct bridge_drv_interface *intf_fxns;
-> 1917         struct dev_object *dev_object = bridge_context->dev_obj;
-> 1918 
-> 1919         status = dev_get_cod_mgr(dev_object, &code_mgr);
-> 1920         if (!code_mgr) {
-> 1921                 pr_debug("%s: Failed on dev_get_cod_mgr.\n", __func__);
-> 1922                 status = -EFAULT;
-> 1923         }
-> 1924 
-> 1925         if (!status) {
-> 1926                 status = dev_get_node_manager(dev_object, &node_mgr);
-> 1927                 if (!node_mgr) {
-> 1928                         pr_debug("%s: Failed on dev_get_node_manager.\n",
-> 1929                                                                 __func__);
-> 1930                         status = -EFAULT;
-> 1931                 }
-> 1932         }
-> 1933 
-> 1934         if (!status) {
-> 1935                 /* Look for SYS_PUTCBEG/SYS_PUTCEND: */
-> 1936                 status =
-> 1937                         cod_get_sym_value(code_mgr, COD_TRACEBEG, &trace_begin);
-> 1938                 pr_debug("%s: trace_begin Value 0x%x\n",
-> 1939                         __func__, trace_begin);
-> 1940                 if (status)
-> 1941                         pr_debug("%s: Failed on cod_get_sym_value.\n",
-> 1942                                                                 __func__);
-> 1943         }
-> 1944         if (!status)
-> 1945                 status = dev_get_intf_fxns(dev_object, &intf_fxns);
-> 1946         /*
-> 1947          * Check for the "magic number" in the trace buffer.  If it has
-> 1948          * yet to appear then poll the trace buffer to wait for it.  Its
-> 1949          * appearance signals that the DSP has finished dumping its state.
-> 1950          */
-> 1951         mmu_fault_dbg_info.head[0] = 0;
-> 1952         mmu_fault_dbg_info.head[1] = 0;
-> 1953         if (!status) {
-> 1954                 poll_cnt = 0;
-> 1955                 while ((mmu_fault_dbg_info.head[0] != MMU_FAULT_HEAD1 ||
-> 1956                         mmu_fault_dbg_info.head[1] != MMU_FAULT_HEAD2) &&
-> 1957                         poll_cnt < POLL_MAX) {
-> 1958 
-> 1959                         /* Read DSP dump size from the DSP trace buffer... */
-> 1960                         status = (*intf_fxns->brd_read)(bridge_context,
-> 1961                                 (u8 *)&mmu_fault_dbg_info, (u32)trace_begin,
-> 1962                                 sizeof(mmu_fault_dbg_info), 0);
-> 1963 
-> 1964                         if (status)
-> 1965                                 break;
-> 1966 
-> 1967                         poll_cnt++;
-> 1968                 }
-> 1969 
-> 1970                 if (mmu_fault_dbg_info.head[0] != MMU_FAULT_HEAD1 &&
-> 1971                         mmu_fault_dbg_info.head[1] != MMU_FAULT_HEAD2) {
-> 1972                         status = -ETIME;
-> 1973                         pr_err("%s:No DSP MMU-Fault information available.\n",
-> 1974                                                         __func__);
-> 1975                 }
-> 1976         }
-> 1977 
-> 1978         if (!status) {
-> 1979                 total_size = mmu_fault_dbg_info.size;
-> 1980                 /* Limit the size in case DSP went crazy */
-> 1981                 if (total_size > MAX_MMU_DBGBUFF)
-> 1982                         total_size = MAX_MMU_DBGBUFF;
-> 1983 
-> 1984                 buffer = kzalloc(total_size, GFP_ATOMIC);
-> 1985                 if (!buffer) {
-> 1986                         status = -ENOMEM;
-> 1987                         pr_debug("%s: Failed to "
-> 1988                                 "allocate stack dump buffer.\n", __func__);
-> 1989                         goto func_end;
-> 1990                 }
-> 1991 
-> 1992                 buffer_beg = buffer;
-> 1993                 buffer_end =  buffer + total_size / 4;
-> 1994 
-> 1994 
-> 1995                 /* Read bytes from the DSP trace buffer... */
-> 1996                 status = (*intf_fxns->brd_read)(bridge_context,
-> 1997                                 (u8 *)buffer, (u32)trace_begin,
-> 1998                                 total_size, 0);
-> 1999                 if (status) {
-> 2000                         pr_debug("%s: Failed to Read Trace Buffer.\n",
-> 2001                                                                 __func__);
-> 2002                         goto func_end;
-> 2003                 }
-> 2004 
-> 2005                 pr_err("\nAproximate Crash Position:\n"
-> 2006                         "--------------------------\n");
-> 2007 
-> 2008                 exc_type = buffer[3];
-> 2009                 if (!exc_type)
-> 2010                         i = buffer[79];         /* IRP */
-> 2011                 else
-> 2012                         i = buffer[80];         /* NRP */
-> 2013 
-> 2014                 status =
-> 2015                     cod_get_sym_value(code_mgr, DYNEXTBASE, &dyn_ext_base);
-> 2016                 if (status) {
-> 2017                         status = -EFAULT;
-> 2018                         goto func_end;
-> 2019                 }
-> 2020 
-> 2021                 if ((i > dyn_ext_base) && (node_find_addr(node_mgr, i,
-> 2022                         0x1000, &offset_output, name) == 0))
-> 2023                         pr_err("0x%-8x [\"%s\" + 0x%x]\n", i, name,
-> 2024                                                         i - offset_output);
-> 2025                 else
-> 2026                         pr_err("0x%-8x [Unable to match to a symbol.]\n", i);
-> 2027 
-> 2028                 buffer += 4;
-> 2029 
-> 2030                 pr_err("\nExecution Info:\n"
-> 2031                         "---------------\n");
-> 2032 
-> 2033                 if (*buffer < ARRAY_SIZE(exec_ctxt)) {
-> 2034                         pr_err("Execution context \t%s\n",
-> 2035                                 exec_ctxt[*buffer++]);
-> 2036                 } else {
-> 2037                         pr_err("Execution context corrupt\n");
-> 2038                         kfree(buffer_beg);
-> 2039                         return -EFAULT;
-> 2040                 }
-> 2041                 pr_err("Task Handle\t\t0x%x\n", *buffer++);
-> 2042                 pr_err("Stack Pointer\t\t0x%x\n", *buffer++);
-> 2043                 pr_err("Stack Top\t\t0x%x\n", *buffer++);
-> 2044                 pr_err("Stack Bottom\t\t0x%x\n", *buffer++);
-> 2045                 pr_err("Stack Size\t\t0x%x\n", *buffer++);
-> 2046                 pr_err("Stack Size In Use\t0x%x\n", *buffer++);
-> 2047 
-> 2048                 pr_err("\nCPU Registers\n"
-> 2049                         "---------------\n");
-> 2050 
-> 2051                 for (i = 0; i < 32; i++) {
-> 2052                         if (i == 4 || i == 6 || i == 8)
-> 2053                                 pr_err("A%d 0x%-8x [Function Argument %d]\n",
-> 2054                                                         i, *buffer++, i-3);
-> 2055                         else if (i == 15)
-> 2056                                 pr_err("A15 0x%-8x [Frame Pointer]\n",
-> 2057                                                                 *buffer++);
-> 2058                         else
-> 2059                                 pr_err("A%d 0x%x\n", i, *buffer++);
-> 2060                 }
-> 2061 
-> 2062                 pr_err("\nB0 0x%x\n", *buffer++);
-> 2063                 pr_err("B1 0x%x\n", *buffer++);
-> 2064                 pr_err("B2 0x%x\n", *buffer++);
-> 2065 
-> 2066                 if ((*buffer > dyn_ext_base) && (node_find_addr(node_mgr,
-> 2067                         *buffer, 0x1000, &offset_output, name) == 0))
-> 2068 
-> 2069                         pr_err("B3 0x%-8x [Function Return Pointer:"
-> 2070                                 " \"%s\" + 0x%x]\n", *buffer, name,
-> 2071                                 *buffer - offset_output);
-> 2072                 else
-> 2073                         pr_err("B3 0x%-8x [Function Return Pointer:"
-> 2074                                 "Unable to match to a symbol.]\n", *buffer);
-> 2075 
-> 2076                 buffer++;
-> 2077 
-> 2078                 for (i = 4; i < 32; i++) {
-> 2079                         if (i == 4 || i == 6 || i == 8)
-> 2080                                 pr_err("B%d 0x%-8x [Function Argument %d]\n",
-> 2081                                                         i, *buffer++, i-2);
-> 2082                         else if (i == 14)
-> 2083                                 pr_err("B14 0x%-8x [Data Page Pointer]\n",
-> 2084                                                                 *buffer++);
-> 2085                         else
-> 2086                                 pr_err("B%d 0x%x\n", i, *buffer++);
-> 2087                 }
-> 2088 
-> 2089                 pr_err("\n");
-> 2090 
-> 2091                 for (i = 0; i < ARRAY_SIZE(dsp_regs); i++)
-> 2092                         pr_err("%s 0x%x\n", dsp_regs[i], *buffer++);
-> 2093 
-> 2094                 pr_err("\nStack:\n"
-> 2095                         "------\n");
-> 2096 
-> 2097                 for (i = 0; buffer < buffer_end; i++, buffer++) {
-> 2098                         if ((*buffer > dyn_ext_base) && (
-> 2099                                 node_find_addr(node_mgr, *buffer , 0x600,
-> 2100                                 &offset_output, name) == 0))
-> 2101                                 pr_err("[%d] 0x%-8x [\"%s\" + 0x%x]\n",
-> 2102                                         i, *buffer, name,
-> 2103                                         *buffer - offset_output);
-> 2104                         else
-> 2105                                 pr_err("[%d] 0x%x\n", i, *buffer);
-> 2106                 }
-> 2107                 kfree(buffer_beg);
-> 2108         }
-> 2109 func_end:
-> 2110         return status;
-> 2111 }
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+for you to fetch changes up to 4fc3f1d66b1ef0d7b8dc11f4ff1cc510f78b37d6:
 
+  mm/rmap, migration: Make rmap_walk_anon() and try_to_unmap_anon() more scalable (2012-12-11 14:43:00 +0000)
+
+There are three implementations for NUMA balancing, this tree (balancenuma),
+numacore which has been developed in tip/master and autonuma which is in
+aa.git. In almost all respects balancenuma is the dumbest of the three
+because its main impact is on the VM side with no attempt to be smart
+about scheduling.  In the interest of getting the ball rolling, it would
+be desirable to see this much merged for 3.8 with the view to building
+scheduler smarts on top and adapting the VM where required for 3.9.
+
+The most recent set of comparisons available from different people are
+
+mel:    https://lkml.org/lkml/2012/12/9/108
+mingo:  https://lkml.org/lkml/2012/12/7/331
+tglx:   https://lkml.org/lkml/2012/12/10/437
+srikar: https://lkml.org/lkml/2012/12/10/397
+
+The results are a mixed bag. In my own tests, balancenuma does reasonably
+well. It's dumb as rocks and does not regress against mainline. On the
+other hand, Ingo's tests shows that balancenuma is incapable of converging
+for this workloads driven by perf which is bad but is potentially explained
+by the lack of scheduler smarts. Thomas' results show balancenuma improves
+on mainline but falls far short of numacore or autonuma. Srikar's results
+indicate we all suffer on a large machine with imbalanced node sizes.
+
+My own testing showed that recent numacore results have improved
+dramatically, particularly in the last week but not universally.  We've
+butted heads heavily on system CPU usage and high levels of migration even
+when it shows that overall performance is better. There are also cases
+where it regresses. Of interest is that for specjbb in some configurations
+it will regress for lower numbers of warehouses and show gains for higher
+numbers which is not reported by the tool by default and sometimes missed
+in treports. Recently I reported for numacore that the JVM was crashing
+with NullPointerExceptions but currently it's unclear what the source of
+this problem is. Initially I thought it was in how numacore batch handles
+PTEs but I'm no longer think this is the case. It's possible numacore is
+just able to trigger it due to higher rates of migration.
+
+These reports were quite late in the cycle so I/we would like to start
+with this tree as it contains much of the code we can agree on and has
+not changed significantly over the last 2-3 weeks.
+
+Thanks.
+
+Andrea Arcangeli (5):
+      mm: numa: define _PAGE_NUMA
+      mm: numa: pte_numa() and pmd_numa()
+      mm: numa: Support NUMA hinting page faults from gup/gup_fast
+      mm: numa: split_huge_page: transfer the NUMA type from the pmd to the pte
+      mm: numa: Structures for Migrate On Fault per NUMA migration rate limiting
+
+Hillf Danton (2):
+      mm: numa: split_huge_page: Transfer last_nid on tail page
+      mm: numa: migrate: Set last_nid on newly allocated page
+
+Ingo Molnar (3):
+      mm: Optimize the TLB flush of sys_mprotect() and change_protection() users
+      mm/rmap: Convert the struct anon_vma::mutex to an rwsem
+      mm/rmap, migration: Make rmap_walk_anon() and try_to_unmap_anon() more scalable
+
+Lee Schermerhorn (3):
+      mm: mempolicy: Add MPOL_NOOP
+      mm: mempolicy: Check for misplaced page
+      mm: mempolicy: Add MPOL_MF_LAZY
+
+Mel Gorman (26):
+      mm: Check if PTE is already allocated during page fault
+      mm: compaction: Move migration fail/success stats to migrate.c
+      mm: migrate: Add a tracepoint for migrate_pages
+      mm: compaction: Add scanned and isolated counters for compaction
+      mm: numa: Create basic numa page hinting infrastructure
+      mm: migrate: Drop the misplaced pages reference count if the target node is full
+      mm: mempolicy: Use _PAGE_NUMA to migrate pages
+      mm: mempolicy: Implement change_prot_numa() in terms of change_protection()
+      mm: mempolicy: Hide MPOL_NOOP and MPOL_MF_LAZY from userspace for now
+      sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
+      mm: numa: Add pte updates, hinting and migration stats
+      mm: numa: Migrate on reference policy
+      mm: numa: Migrate pages handled during a pmd_numa hinting fault
+      mm: numa: Rate limit the amount of memory that is migrated between nodes
+      mm: numa: Rate limit setting of pte_numa if node is saturated
+      sched: numa: Slowly increase the scanning period as NUMA faults are handled
+      mm: numa: Introduce last_nid to the page frame
+      mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
+      mm: sched: Adapt the scanning rate if a NUMA hinting fault does not migrate
+      mm: sched: numa: Control enabling and disabling of NUMA balancing
+      mm: sched: numa: Control enabling and disabling of NUMA balancing if !SCHED_DEBUG
+      mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node
+      mm: numa: Add THP migration for the NUMA working set scanning fault case.
+      mm: numa: Add THP migration for the NUMA working set scanning fault case build fix
+      mm: numa: Account for failed allocations and isolations as migration failures
+      mm: migrate: Account a transhuge page properly when rate limiting
+
+Peter Zijlstra (6):
+      mm: Count the number of pages affected in change_protection()
+      mm: mempolicy: Make MPOL_LOCAL a real policy
+      mm: migrate: Introduce migrate_misplaced_page()
+      mm: numa: Add fault driven placement and migration
+      mm: sched: numa: Implement constant, per task Working Set Sampling (WSS) rate
+      mm: sched: numa: Implement slow start for working set sampling
+
+Rik van Riel (5):
+      x86: mm: only do a local tlb flush in ptep_set_access_flags()
+      x86: mm: drop TLB flush from ptep_set_access_flags
+      mm,generic: only flush the local TLB in ptep_set_access_flags
+      x86/mm: Introduce pte_accessible()
+      mm: Only flush the TLB when clearing an accessible pte
+
+ Documentation/kernel-parameters.txt  |    3 +
+ arch/sh/mm/Kconfig                   |    1 +
+ arch/x86/Kconfig                     |    2 +
+ arch/x86/include/asm/pgtable.h       |   17 +-
+ arch/x86/include/asm/pgtable_types.h |   20 ++
+ arch/x86/mm/pgtable.c                |    8 +-
+ include/asm-generic/pgtable.h        |  110 +++++++++++
+ include/linux/huge_mm.h              |   16 +-
+ include/linux/hugetlb.h              |    8 +-
+ include/linux/mempolicy.h            |    8 +
+ include/linux/migrate.h              |   47 ++++-
+ include/linux/mm.h                   |   39 ++++
+ include/linux/mm_types.h             |   31 ++++
+ include/linux/mmzone.h               |   13 ++
+ include/linux/rmap.h                 |   33 ++--
+ include/linux/sched.h                |   27 +++
+ include/linux/vm_event_item.h        |   12 +-
+ include/linux/vmstat.h               |    8 +
+ include/trace/events/migrate.h       |   51 +++++
+ include/uapi/linux/mempolicy.h       |   15 +-
+ init/Kconfig                         |   45 +++++
+ kernel/fork.c                        |    3 +
+ kernel/sched/core.c                  |   71 +++++--
+ kernel/sched/fair.c                  |  227 +++++++++++++++++++++++
+ kernel/sched/features.h              |   11 ++
+ kernel/sched/sched.h                 |   12 ++
+ kernel/sysctl.c                      |   45 ++++-
+ mm/compaction.c                      |   15 +-
+ mm/huge_memory.c                     |  108 ++++++++++-
+ mm/hugetlb.c                         |   10 +-
+ mm/internal.h                        |    7 +-
+ mm/ksm.c                             |    6 +-
+ mm/memcontrol.c                      |    7 +-
+ mm/memory-failure.c                  |    7 +-
+ mm/memory.c                          |  199 +++++++++++++++++++-
+ mm/memory_hotplug.c                  |    3 +-
+ mm/mempolicy.c                       |  283 +++++++++++++++++++++++++---
+ mm/migrate.c                         |  337 +++++++++++++++++++++++++++++++++-
+ mm/mmap.c                            |   10 +-
+ mm/mprotect.c                        |  135 +++++++++++---
+ mm/mremap.c                          |    2 +-
+ mm/page_alloc.c                      |   10 +-
+ mm/pgtable-generic.c                 |    9 +-
+ mm/rmap.c                            |   66 +++----
+ mm/vmstat.c                          |   16 +-
+ 45 files changed, 1940 insertions(+), 173 deletions(-)
+ create mode 100644 include/trace/events/migrate.h
 
 -- 
-Chen Gang
-
-Asianux Corporation
+Mel Gorman
+SUSE Labs
