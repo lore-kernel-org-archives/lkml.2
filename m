@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2LLJKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:10:21 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33623 "EHLO comal.ext.ti.com"
+	id S1752838Ab2LLJKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:10:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab2LLJKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:10:18 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v4 6/7] leds: leds-pwm: Simplify cleanup code
-Date: Wed, 12 Dec 2012 10:04:51 +0100
-Message-ID: <1355303092-15523-7-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752387Ab2LLJKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:10:30 -0500
+Date: Wed, 12 Dec 2012 20:10:16 +1100
+From: NeilBrown <neilb@suse.de>
+To: =?utf-8?Q?Ond=C5=99ej_B=C3=ADlka?= <neleai@seznam.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] AES instead of SHA1 for /dev/urandom
+Message-ID: <20121212201016.5342ce32@notabene.brown>
+In-Reply-To: <20121212085815.GA3151@domone.kolej.mff.cuni.cz>
+References: <20121212020354.GA30879@domone.kolej.mff.cuni.cz>
+	<20121212130826.7940b428@notabene.brown>
+	<20121212085815.GA3151@domone.kolej.mff.cuni.cz>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/cm/RLB08c9K4EYNf.rS5H4m"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code looks more nicer if we use:
+--Sig_/cm/RLB08c9K4EYNf.rS5H4m
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-while (i--)
+On Wed, 12 Dec 2012 09:58:16 +0100 Ond=C5=99ej B=C3=ADlka <neleai@seznam.cz=
+> wrote:
 
-instead:
-if (i > 0)
-	for (i = i - 1; i >= 0; i--)
+> On Wed, Dec 12, 2012 at 01:08:26PM +1100, NeilBrown wrote:
+> > On Wed, 12 Dec 2012 03:03:54 +0100 Ond=C5=99ej B=C3=ADlka <neleai@sezna=
+m.cz> wrote:
+> >=20
+> > > I consider to speed-up /dev/urandom on recent intel processors by
+> > > using hardware aes. Same for accelerated aes crypto.
+> > >=20
+> > > Would you accept a patch if I wrote it?
+> >=20
+> > Have you read  https://lwn.net/Articles/525459  ?
+> >=20
+> Yes
+> > In particular the paragraph containing:
+> >=20
+> >    A member of the audience asked why the kernel couldn't just do away =
+with
+> >    the existing system and use the HWRNG directly.
+> >=20
+> > Does that answer your question in any way?
+> >=20
+> No as AES is a HWRNG about as much as horse is type of automobile.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/leds/leds-pwm.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Yes, of course.  Thanks.
 
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index c767837..46f4e44 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -104,10 +104,8 @@ static int led_pwm_probe(struct platform_device *pdev)
- 	return 0;
- 
- err:
--	if (i > 0) {
--		for (i = i - 1; i >= 0; i--)
--			led_classdev_unregister(&priv->leds[i].cdev);
--	}
-+	while (i--)
-+		led_classdev_unregister(&priv->leds[i].cdev);
- 
- 	return ret;
- }
--- 
-1.8.0
+NeilBrown
 
+--Sig_/cm/RLB08c9K4EYNf.rS5H4m
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUMhJ+Dnsnt1WYoG5AQKpYxAAldSDNnY1vz/XprtYz4cEsFRUhjfv3E/c
+/nhlWHc1hJE/TALp4ULfV3AH5wL05YkCP9xR6p3jM31mwisJoSqOGXr0gb+bxdtV
+nxosHUiNU4611iKRoGPo8t9cMSLiCHrmbBuFX7aEEU7DJ8niunR8i0nqk9qgoabp
+zLQ2nyOfwWO4mWSJC0rwtjPQWuGhKcvrtXkdFzG64f/6MZtRIEttBmtD7gGZV7Tf
+MUzabkFZ9w3yL6ZeMIignqoYqv8DVPv/YiOkHlbCHC4xQWUOB42EEFjW+VyliuJJ
+glB7p96uhVDjCESzMLC9KEzcjYLcBnOKy9qCFdJZpazDV2ol2nnLYIQ2QxeULkGh
+9qZzaVcDvTGDRyURIQBCLehsIHshhv9WrT5r0PL9LTMiCMRzEokkFZAid3hC7GoK
+rclRM48m8HpPLDDInwAy46rGsJpKl4LYPKEHG0JAKo/UQety6UEeee2XPTmBiyw7
+2NQMPhwRCvf4Atg/JWnDw8zYAHhwsQnaXki+J4MADGDtQhjm9VmpzXchrQqG3N+6
+VLbIhkq9Cgavy5rHeBgery9gi3aKSLBqUtc2dXdK1LMspbJ7SkSb5QU8eBLk23jt
+2R2jrgCN9xstr4Sq/SggvEoeUiZUfaF0vGi8rJKhaUm5KCD1dmCRJABK7Vfo4fKs
+z/kcmL6h/OQ=
+=p6rG
+-----END PGP SIGNATURE-----
+
+--Sig_/cm/RLB08c9K4EYNf.rS5H4m--
