@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab2LLX1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 18:27:17 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:24652 "EHLO
+	id S1755367Ab2LLX10 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 18:27:26 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:24706 "EHLO
 	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab2LLX1P (ORCPT
+	with ESMTP id S1755346Ab2LLX1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 18:27:15 -0500
+	Wed, 12 Dec 2012 18:27:22 -0500
 From: Toshi Kani <toshi.kani@hp.com>
 To: rjw@sisk.pl, lenb@kernel.org, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org
@@ -15,9 +15,9 @@ Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
         wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH 04/11] mm: Add memory hotplug handlers
-Date: Wed, 12 Dec 2012 16:17:16 -0700
-Message-Id: <1355354243-18657-5-git-send-email-toshi.kani@hp.com>
+Subject: [RFC PATCH 06/11] ACPI: Add ACPI resource hotplug handler
+Date: Wed, 12 Dec 2012 16:17:18 -0700
+Message-Id: <1355354243-18657-7-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
 References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
@@ -25,139 +25,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added memory hotplug handlers.  mm_add_execute() onlines requested
-memory ranges for hot-add and online operations, and mm_del_execute()
-offlines them for hot-delete and offline operations.  They are also
-used for rollback as well.
+Added ACPI resource handler for hotplug operations.  The handler,
+acpi_set_hp_device(), sets device resource information to a hotplug
+request, which is then used by the CPU and memory handlers.
+For setting the device resource information, acpi_scan_hp_devices()
+walks the acpi_device tree from a target device, and calls .resource
+of ACPI drivers.
 
-mm_del_validate() fails a request if a requested memory range is
-non-movable for delete.  This check can be removed if we should
-attempt to delete such range anyway (but can cause a rollback).
+For hot-add, acpi_set_hp_device() is called right after the ACPI bus
+handler so that it can walk through new acpi_device objects.  For 
+hot-delete, it is called at the begging of the validate phase so that
+other validate handlers can use the device resource information for
+their validations.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- mm/memory_hotplug.c | 97 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 97 insertions(+)
+ drivers/acpi/Makefile      |  1 +
+ drivers/acpi/bus.c         |  1 +
+ drivers/acpi/hp_resource.c | 86 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/internal.h    |  1 +
+ include/acpi/acpi_bus.h    |  4 +++
+ 5 files changed, 93 insertions(+)
+ create mode 100644 drivers/acpi/hp_resource.c
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index e4eeaca..107a39d 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -29,6 +29,7 @@
- #include <linux/suspend.h>
- #include <linux/mm_inline.h>
- #include <linux/firmware-map.h>
-+#include <linux/hotplug.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -45,6 +46,9 @@ static void generic_online_page(struct page *page);
- 
- static online_page_callback_t online_page_callback = generic_online_page;
- 
-+static int mm_add_execute(struct hp_request *req, int rollback);
-+static int mm_del_execute(struct hp_request *req, int rollback);
-+
- DEFINE_MUTEX(mem_hotplug_mutex);
- 
- void lock_memory_hotplug(void)
-@@ -1055,3 +1059,96 @@ int remove_memory(u64 start, u64 size)
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 2a4502b..6ef20f1 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -34,6 +34,7 @@ acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+ acpi-y				+= bus.o glue.o
+ acpi-y				+= scan.o
+ acpi-y				+= resource.o
++acpi-y				+= hp_resource.o
+ acpi-y				+= processor_core.o
+ acpi-y				+= ec.o
+ acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index 341db34..808d6e9 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -1236,6 +1236,7 @@ static int __init acpi_init(void)
+ 	acpi_sleep_proc_init();
+ 	acpi_wakeup_device_init();
+ 	acpi_hp_init();
++	acpi_hp_res_init();
+ 	return 0;
  }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- EXPORT_SYMBOL_GPL(remove_memory);
+ 
+diff --git a/drivers/acpi/hp_resource.c b/drivers/acpi/hp_resource.c
+new file mode 100644
+index 0000000..7073feb
+--- /dev/null
++++ b/drivers/acpi/hp_resource.c
+@@ -0,0 +1,86 @@
++/*
++ * hp_resource.c - Setup hot-plug device resource information
++ *
++ * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
++ *	Toshi Kani <toshi.kani@hp.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+static int mm_add_execute(struct hp_request *req, int rollback)
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/list.h>
++#include <linux/hotplug.h>
++#include <linux/acpi.h>
++
++#include "internal.h"
++
++static int
++acpi_set_hp_device(struct acpi_device *device, struct hp_request *req)
 +{
-+	struct hp_device *hp_dev;
-+	struct hp_memory *hp_mem;
 +	int ret;
 +
-+	if (rollback)
-+		return mm_del_execute(req, 0);
++	if (!device->driver) {
++		dev_dbg(&device->dev, "driver not bound\n");
++		return 0;
++	}
 +
-+	list_for_each_entry(hp_dev, &req->dev_list, list) {
-+		if (hp_dev->class != HP_CLS_MEMORY)
-+			continue;
++	if (!device->driver->ops.resource)
++		return 0;
 +
-+		hp_mem = &hp_dev->data.mem;
-+
-+		ret = add_memory(hp_mem->node,
-+				hp_mem->start_addr, hp_mem->length);
-+		if (ret)
-+			return ret;
++	ret = device->driver->ops.resource(device, req);
++	if (ret) {
++		dev_err(&device->dev, "ops.resource failed (%d)\n", ret);
++		return -EINVAL;
 +	}
 +
 +	return 0;
 +}
 +
-+static int mm_del_validate(struct hp_request *req, int rollback)
++static int
++acpi_scan_hp_devices(struct acpi_device *device, struct hp_request *req)
 +{
-+	struct hp_device *hp_dev;
-+	struct hp_memory *hp_mem;
-+	unsigned long start_pfn, nr_pages;
++	struct acpi_device *child = NULL;
++
++	if (acpi_set_hp_device(device, req))
++		return 0;
++
++	list_for_each_entry(child, &device->children, node)
++		acpi_scan_hp_devices(child, req);
++
++	return 0;
++}
++
++static int acpi_set_hp_resources(struct hp_request *req, int rollback)
++{
++	acpi_handle handle = (acpi_handle) req->handle;
++	struct acpi_device *device = NULL;
 +
 +	if (rollback)
 +		return 0;
 +
-+	list_for_each_entry(hp_dev, &req->dev_list, list) {
-+		if (hp_dev->class != HP_CLS_MEMORY)
-+			continue;
++	/* only handle hot-plug operation */
++	if (!hp_is_hotplug_op(req->operation))
++		return 0;
 +
-+		hp_mem = &hp_dev->data.mem;
-+		start_pfn = hp_mem->start_addr >> PAGE_SHIFT;
-+		nr_pages = PAGE_ALIGN(hp_mem->length) >> PAGE_SHIFT;
-+
-+		/*
-+		 * Check if this memory range is removable.  This check can
-+		 * be removed if we should attempt to delete a non-movable
-+		 * range.
-+		 */
-+		if (is_mem_section_removable(start_pfn, nr_pages)) {
-+			pr_info("Memory [%#010llx-%#010llx] not removable\n",
-+				hp_mem->start_addr,
-+				hp_mem->start_addr + hp_mem->length-1);
-+			return -EINVAL;
-+		}
++	if (acpi_bus_get_device(handle, &device)) {
++		acpi_handle_err(handle, "acpi_bus_get_device failed\n");
++		return -EINVAL;
 +	}
 +
++	acpi_scan_hp_devices(device, req);
++
 +	return 0;
 +}
 +
-+static int mm_del_execute(struct hp_request *req, int rollback)
++void __init acpi_hp_res_init(void)
 +{
-+	struct hp_device *hp_dev;
-+	struct hp_memory *hp_mem;
-+	int ret;
-+
-+	if (rollback)
-+		return mm_add_execute(req, 0);
-+
-+	list_for_each_entry(hp_dev, &req->dev_list, list) {
-+		if (hp_dev->class != HP_CLS_MEMORY)
-+			continue;
-+
-+		hp_mem = &hp_dev->data.mem;
-+
-+		ret = remove_memory(hp_mem->start_addr, hp_mem->length);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
++	hp_register_handler(HP_ADD_EXECUTE, acpi_set_hp_resources,
++				HP_ACPI_RES_ADD_EXECUTE_ORDER);
++	hp_register_handler(HP_DEL_VALIDATE, acpi_set_hp_resources,
++				HP_ACPI_RES_DEL_VALIDATE_ORDER);
 +}
-+
-+static int __init mm_hp_init(void)
-+{
-+	hp_register_handler(HP_ADD_EXECUTE, mm_add_execute,
-+				HP_MEM_ADD_EXECUTE_ORDER);
-+	hp_register_handler(HP_DEL_VALIDATE, mm_del_validate,
-+				HP_MEM_DEL_VALIDATE_ORDER);
-+	hp_register_handler(HP_DEL_EXECUTE, mm_del_execute,
-+				HP_MEM_DEL_EXECUTE_ORDER);
-+
-+	return 0;
-+}
-+module_init(mm_hp_init);
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index 3c407cd..7aff137 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -26,6 +26,7 @@
+ int init_acpi_device_notify(void);
+ int acpi_scan_init(void);
+ int acpi_sysfs_init(void);
++void acpi_hp_res_init(void);
+ 
+ #ifdef CONFIG_DEBUG_FS
+ extern struct dentry *acpi_debugfs_dir;
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 7ced5dc..10031a8 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -27,6 +27,7 @@
+ #define __ACPI_BUS_H__
+ 
+ #include <linux/device.h>
++#include <linux/hotplug.h>
+ 
+ #include <acpi/acpi.h>
+ 
+@@ -94,6 +95,8 @@ typedef int (*acpi_op_start) (struct acpi_device * device);
+ typedef int (*acpi_op_bind) (struct acpi_device * device);
+ typedef int (*acpi_op_unbind) (struct acpi_device * device);
+ typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
++typedef int (*acpi_op_resource) (struct acpi_device *device,
++			struct hp_request *hp_req);
+ 
+ struct acpi_bus_ops {
+ 	u32 acpi_op_add:1;
+@@ -107,6 +110,7 @@ struct acpi_device_ops {
+ 	acpi_op_bind bind;
+ 	acpi_op_unbind unbind;
+ 	acpi_op_notify notify;
++	acpi_op_resource resource;
+ };
+ 
+ #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
 -- 
 1.7.11.7
 
