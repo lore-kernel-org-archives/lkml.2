@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab2LLIBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 03:01:12 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55000 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab2LLIBJ convert rfc822-to-8bit (ORCPT
+	id S1751422Ab2LLIC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 03:02:56 -0500
+Received: from popelka.ms.mff.cuni.cz ([195.113.20.131]:37674 "EHLO
+	popelka.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab2LLICy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 03:01:09 -0500
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Porter, Matt" <mporter@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dill, Russ" <russ.dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] da8xx: Allow use by am33xx based devices
-Thread-Topic: [PATCH] da8xx: Allow use by am33xx based devices
-Thread-Index: AQHNtst6Rx118OokEEubqhCbxHb81pfS2xNQgDjGJ3CABls9AIACrBEAgABmn1A=
-Date: Wed, 12 Dec 2012 08:00:56 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EBADC10@DBDE01.ent.ti.com>
-References: <1351698968-3965-1-git-send-email-panto@antoniou-consulting.com>
- <A73F36158E33644199EB82C5EC81C7BC3EA1452B@DBDE01.ent.ti.com>
- <50C5A50E.4070602@ti.com>
- <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
-In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Dec 2012 03:02:54 -0500
+Date: Wed, 12 Dec 2012 09:58:16 +0100
+From: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] AES instead of SHA1 for /dev/urandom
+Message-ID: <20121212085815.GA3151@domone.kolej.mff.cuni.cz>
+References: <20121212020354.GA30879@domone.kolej.mff.cuni.cz>
+ <20121212130826.7940b428@notabene.brown>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121212130826.7940b428@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 12:50:28, Manjunathappa, Prakash wrote:
-> Hi Vaibhav,
+On Wed, Dec 12, 2012 at 01:08:26PM +1100, NeilBrown wrote:
+> On Wed, 12 Dec 2012 03:03:54 +0100 Ondřej Bílka <neleai@seznam.cz> wrote:
 > 
-> On Mon, Dec 10, 2012 at 14:32:06, Hiremath, Vaibhav wrote:
+> > I consider to speed-up /dev/urandom on recent intel processors by
+> > using hardware aes. Same for accelerated aes crypto.
 > > 
-> > 
-> > On 12/6/2012 1:38 PM, Manjunathappa, Prakash wrote:
-> > > Hi Tomi,
-> > > 
-> > > On Wed, Oct 31, 2012 at 10:52:59, Manjunathappa, Prakash wrote:
-> > >> Hi,
-> > >>
-> > >> On Wed, Oct 31, 2012 at 21:26:08, Pantelis Antoniou wrote:
-> > >>> This driver can be used for AM33xx devices, like the popular beaglebone.
-> > >>>
-> > >>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> > >>> ---
-> > >>>  drivers/video/Kconfig | 2 +-
-> > >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >>>
-> > >>> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> > >>> index 9791d10..e7868d8 100644
-> > >>> --- a/drivers/video/Kconfig
-> > >>> +++ b/drivers/video/Kconfig
-> > >>> @@ -2202,7 +2202,7 @@ config FB_SH7760
-> > >>>  
-> > >>>  config FB_DA8XX
-> > >>>  	tristate "DA8xx/OMAP-L1xx Framebuffer support"
-> > >>> -	depends on FB && ARCH_DAVINCI_DA8XX
-> > >>> +	depends on FB && (ARCH_DAVINCI_DA8XX || SOC_AM33XX)
-> > >>
-> > >> Agreed this is present on da8xx and am33xx, but moving forward for
-> > >> supporting DT, we should be avoiding these dependencies. So instead
-> > >> change this to remove machine dependencies.
-> > >>
-> > > 
-> > > I could be wrong here, having dependency on platform seems to be right.
-> > > Otherwise may lead to build errors for other platforms. 
-> > 
-> > No, it should not result in to build error unless driver uses some
-> > platform specific api's.
-> > 
+> > Would you accept a patch if I wrote it?
 > 
-> Agreed, should not result in build error. But is it ok to show this option
-> on the platforms which do not have this IP?
+> Have you read  https://lwn.net/Articles/525459  ?
 > 
+Yes
+> In particular the paragraph containing:
+> 
+>    A member of the audience asked why the kernel couldn't just do away with
+>    the existing system and use the HWRNG directly.
+> 
+> Does that answer your question in any way?
+> 
+No as AES is a HWRNG about as much as horse is type of automobile.
 
-You can choose to put machine dependency here, as this patch is already 
-doing it. The side-effect of this would be, list may grow and you may have 
-to edit this file everytime.
-
-
-Thanks,
-Vaibhav 
-
+Ondra
