@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495Ab2LLAgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:36:04 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52691 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933166Ab2LLAcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:32:52 -0500
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, Cyril Roelandt <tipecaml@gmail.com>,
-        gregkh@linuxfoundation.org, eduardo.valentin@ti.com,
-        rui.zhang@intel.com, durgadoss.r@intel.com, rjw@sisk.pl,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 1/5] staging: omap-thermal: fix error check in omap_thermal_expose_sensor() and in omap_thermal_register_cpu_cooling().
-Date: Wed, 12 Dec 2012 01:24:50 +0100
-Message-Id: <1355271894-5284-2-git-send-email-tipecaml@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1355271894-5284-1-git-send-email-tipecaml@gmail.com>
-References: <1355271894-5284-1-git-send-email-tipecaml@gmail.com>
+	id S1756446Ab2LLAhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:37:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:12360 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756022Ab2LLAhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 19:37:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,262,1355126400"; 
+   d="scan'208";a="179674903"
+Message-ID: <1355272642.7216.144.camel@yhuang-dev>
+Subject: Re: [PATCH v3] llist: add a safe version of llist_for_each_entry
+From: Huang Ying <ying.huang@intel.com>
+To: Roger Pau Monne <roger.pau@citrix.com>
+Cc: linux-kernel@vger.kernel.org, Konrad Rzeszutek Wilk <konrad@kernel.org>
+Date: Wed, 12 Dec 2012 08:37:22 +0800
+In-Reply-To: <1355225157-23609-1-git-send-email-roger.pau@citrix.com>
+References: <1355187084.7216.102.camel@yhuang-dev>
+	 <1355225157-23609-1-git-send-email-roger.pau@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-12-11 at 12:25 +0100, Roger Pau Monne wrote:
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Huang Ying <ying.huang@intel.com>
+> Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+> ---
+> Changes since v2:
+>  * Allow to pass a NULL node as the first entry of deleted list
+>    entries.
+> ---
+>  include/linux/llist.h |   27 +++++++++++++++++++++++++++
+>  1 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/llist.h b/include/linux/llist.h
+> index a5199f6..4e0aec1 100644
+> --- a/include/linux/llist.h
+> +++ b/include/linux/llist.h
+> @@ -125,6 +125,33 @@ static inline void init_llist_head(struct llist_head *list)
+>  	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
+>  
+>  /**
+> + * llist_for_each_entry_safe - safely iterate over some deleted entries of
+> + *                             lock-less list of given type
+> + * @pos:	the type * to use as a loop cursor.
+> + * @n:		the &struct llist_node to use as a temporary loop cursor
 
-The omap_bandgap_get_sensor_data() function returns ERR_PTR(), so we need to use
-IS_ERR() rather than a NULL check.
+In list_for_each_entry_safe, n is type *, why not follow that?
 
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
----
- drivers/staging/omap-thermal/omap-thermal-common.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Best Regards,
+Huang Ying
 
-diff --git a/drivers/staging/omap-thermal/omap-thermal-common.c b/drivers/staging/omap-thermal/omap-thermal-common.c
-index 61f1070..79a55aa 100644
---- a/drivers/staging/omap-thermal/omap-thermal-common.c
-+++ b/drivers/staging/omap-thermal/omap-thermal-common.c
-@@ -260,7 +260,7 @@ int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
- 
- 	data = omap_bandgap_get_sensor_data(bg_ptr, id);
- 
--	if (!data)
-+	if (IS_ERR(data))
- 		data = omap_thermal_build_data(bg_ptr, id);
- 
- 	if (!data)
-@@ -309,7 +309,7 @@ int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
- 	struct omap_thermal_data *data;
- 
- 	data = omap_bandgap_get_sensor_data(bg_ptr, id);
--	if (!data)
-+	if (IS_ERR(data))
- 		data = omap_thermal_build_data(bg_ptr, id);
- 
- 	if (!data)
--- 
-1.7.10.4
+> + * @node:	the fist entry of deleted list entries.
+> + * @member:	the name of the llist_node with the struct.
+> + *
+> + * In general, some entries of the lock-less list can be traversed
+> + * safely only after being removed from list, so start with an entry
+> + * instead of list head.
+> + *
+> + * If being used on entries deleted from lock-less list directly, the
+> + * traverse order is from the newest to the oldest added entry.  If
+> + * you want to traverse from the oldest to the newest, you must
+> + * reverse the order by yourself before traversing.
+> + *
+> + * n is used to store a reference to the next item llist_node, so
+> + * pos can be freed while iterating.
+> + */
+> +#define llist_for_each_entry_safe(pos, n, node, member)		\
+> +	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
+> +	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL;\
+> +	     &(pos)->member != NULL;					\
+> +	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
+> +	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
+> +
+> +/**
+>   * llist_empty - tests whether a lock-less list is empty
+>   * @head:	the list to test
+>   *
+
 
