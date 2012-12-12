@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2LLWUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 17:20:43 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54802 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab2LLWUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 17:20:42 -0500
+	id S1755560Ab2LLWV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 17:21:58 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59037 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754245Ab2LLWV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 17:21:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] drivers/pinctrl: grab default handles from device core
+Date: Wed, 12 Dec 2012 23:26:59 +0100
+Message-ID: <10768446.F2JLuVrZNU@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CACRpkdbCuTAwqFVWkb7bx7_OAX_0PU8TjjbS879Ui30bdxXkQg@mail.gmail.com>
+References: <1355233246-16694-1-git-send-email-linus.walleij@stericsson.com> <20121211181336.GD25714@kroah.com> <CACRpkdbCuTAwqFVWkb7bx7_OAX_0PU8TjjbS879Ui30bdxXkQg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121212212124.GB31853@spo001.leaseweb.com>
-References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
- <1355146956-6009-4-git-send-email-ciminaghi@gnudd.com> <20121212212124.GB31853@spo001.leaseweb.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 12 Dec 2012 22:20:21 +0000
-X-Google-Sender-Auth: Q9PniDbKL43AEDrC-0d-IWqn-1A
-Message-ID: <CACxGe6vaAAj_HNc5hzFAk-xL+PA=mj9S3DgL1yArjuQ5-e8iSA@mail.gmail.com>
-Subject: Re: [PATCH v4 3/7] watchdog: sp805_wdt depends on ARM
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Davide Ciminaghi <ciminaghi@gnudd.com>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dan Williams <djbw@fb.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, rubini@gnudd.com,
-        Chris Ball <cjb@laptop.org>, David Brown <davidb@codeaurora.org>,
-        Nicolas Pitre <nico@fluxnic.net>, Ben Dooks <ben-linux@fluff.org>,
-        Viresh Kumar <viresh.linux@gmail.com>, rajeev-dlh.kumar@st.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        giancarlo.asnaghi@st.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 9:21 PM, Wim Van Sebroeck <wim@iguana.be> wrote:
-> Hi Davide
->
->> From: Alessandro Rubini <rubini@gnudd.com>
->>
->> The SP805 driver is only used by the Spear machines, and uses
->> writel_relaxed, which is not available on all architectures.
->>
->> The dependency from CONFIG_ARM avoids compilation problems under
->> randomconfig when CONFIG_ARM_AMBA is enabled for x86 builds.
->>
->> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
->> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
->> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
->
-> Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+On Wednesday, December 12, 2012 08:56:41 PM Linus Walleij wrote:
+> On Tue, Dec 11, 2012 at 7:13 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Dec 11, 2012 at 02:40:46PM +0100, Linus Walleij wrote:
+> >> diff --git a/include/linux/device.h b/include/linux/device.h
+> 
+> >> +#ifdef CONFIG_PINCTRL
+> >> +     struct dev_pin_info     pins;
+> >> +#endif
+> >
+> > Can't you just make this a * to the structure, saving a bit of space for
+> > those that don't use this structure?  Ok, it's only saving one pointer,
+> > so it's really not a big deal to me if you don't want to do this, just
+> > asking...
+> 
+> OK I'll look into it.
 
-Point of order. Adding Signed-off-by is only appropriate if you have
-actually "handled" a patch (ie. either applied it to your own git tree
-or you are reposting it). If you're merely stating that you're okay
-with the patch then "Acked-by" is what you should use.
+I wonder if you could use a struct that will be empty if CONFIG_PINCTRL is
+unset instead of using #ifdef around the field like this?  [Kind of along the
+lines of what I did for ACPI.]
 
-Signed-off-by is more properly about asserting that you received the
-patch under licensing terms compatible with the current. See
-Developer's Certificate of Origin in Documentation/SubmittingPatches
-for details.
+Rafael
 
-g.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
