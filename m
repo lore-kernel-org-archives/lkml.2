@@ -1,137 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab2LLAtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:49:05 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50006 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab2LLAtA convert rfc822-to-8bit (ORCPT
+	id S1755515Ab2LLAuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:50:16 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:36670 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab2LLAuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:49:00 -0500
+	Tue, 11 Dec 2012 19:50:13 -0500
+Message-ID: <50C7D490.60409@huawei.com>
+Date: Wed, 12 Dec 2012 08:49:20 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <1355272421.24219.11.camel@kjgkr>
-References: <1355238625-6581-1-git-send-email-linkinjeon@gmail.com>
-	<1355272421.24219.11.camel@kjgkr>
-Date: Wed, 12 Dec 2012 09:48:59 +0900
-Message-ID: <CAKYAXd_ZkJ5DJnQP7rH0DNH501Ty9Hj+2UDJ4thev6M_POHx1g@mail.gmail.com>
-Subject: Re: [PATCH] f2fs: fix up f2fs_get_parent issue to retrieve correct
- parent inode number
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, Jianguo Wu <wujianguo@huawei.com>,
+        <hpa@zytor.com>, <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <rob@landley.net>,
+        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
+        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
+        <lliubbo@gmail.com>, <jaegeuk.hanse@gmail.com>, <tony.luck@intel.com>,
+        <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>  <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>  <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com> <1355225313.1919.1.camel@kernel.cn.ibm.com>
+In-Reply-To: <1355225313.1919.1.camel@kernel.cn.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/12, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> 2012-12-12 (수), 00:10 +0900, Namjae Jeon:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
+On 2012-12-11 19:28, Simon Jeons wrote:
+> On Tue, 2012-12-11 at 11:32 +0800, Tang Chen wrote:
+>> On 12/11/2012 11:07 AM, Jianguo Wu wrote:
+>>> On 2012/12/11 10:33, Tang Chen wrote:
+>>>
+>>>> This patch introduces a new array zone_movable_limit[] to store the
+>>>> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+>>>> The function sanitize_zone_movable_limit() will find out to which
+>>>> node the ranges in movable_map.map[] belongs, and calculates the
+>>>> low boundary of ZONE_MOVABLE for each node.
+> 
+> What's the difference between zone_movable_limit[nid] and
+> zone_movable_pfn[nid]?
+zone_movable_limit[] is a temporary storage for zone_moveable_pfn[].
+It's used to handle a special case if user specifies both movablecore_map
+and movablecore/kernelcore on the kernel command line. 
+
+> 
+>>>>
+>>>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>>>> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+>>>> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
+>>>> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+>>>> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
+>>>> ---
+>>>>   mm/page_alloc.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>   1 files changed, 77 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>>> index 1c91d16..4853619 100644
+>>>> --- a/mm/page_alloc.c
+>>>> +++ b/mm/page_alloc.c
+>>>> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+>>>>   static unsigned long __initdata required_kernelcore;
+>>>>   static unsigned long __initdata required_movablecore;
+>>>>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+>>>> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+>>>>
+>>>>   /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+>>>>   int movable_zone;
+>>>> @@ -4340,6 +4341,77 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+>>>>   	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+>>>>   }
+>>>>
+>>>> +/**
+>>>> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
+>>>> + *
+>>>> + * zone_movable_limit is initialized as 0. This function will try to get
+>>>> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
+>>>> + * assigne them to zone_movable_limit.
+>>>> + * zone_movable_limit[nid] == 0 means no limit for the node.
+>>>> + *
+>>>> + * Note: Each range is represented as [start_pfn, end_pfn)
+>>>> + */
+>>>> +static void __meminit sanitize_zone_movable_limit(void)
+>>>> +{
+>>>> +	int map_pos = 0, i, nid;
+>>>> +	unsigned long start_pfn, end_pfn;
+>>>> +
+>>>> +	if (!movablecore_map.nr_map)
+>>>> +		return;
+>>>> +
+>>>> +	/* Iterate all ranges from minimum to maximum */
+>>>> +	for_each_mem_pfn_range(i, MAX_NUMNODES,&start_pfn,&end_pfn,&nid) {
+>>>> +		/*
+>>>> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
+>>>> +		 * specified by user, just go on to check next range.
+>>>> +		 */
+>>>> +		if (zone_movable_limit[nid])
+>>>> +			continue;
+>>>> +
+>>>> +#ifdef CONFIG_ZONE_DMA
+>>>> +		/* Skip DMA memory. */
+>>>> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA])
+>>>> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
+>>>> +#endif
+>>>> +
+>>>> +#ifdef CONFIG_ZONE_DMA32
+>>>> +		/* Skip DMA32 memory. */
+>>>> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA32])
+>>>> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
+>>>> +#endif
+>>>> +
+>>>> +#ifdef CONFIG_HIGHMEM
+>>>> +		/* Skip lowmem if ZONE_MOVABLE is highmem. */
+>>>> +		if (zone_movable_is_highmem()&&
+>>>
+>>> Hi Tang,
+>>>
+>>> I think zone_movable_is_highmem() is not work correctly here.
+>>> 	sanitize_zone_movable_limit
+>>> 		zone_movable_is_highmem<--using movable_zone here
+>>> 	find_zone_movable_pfns_for_nodes
+>>> 		find_usable_zone_for_movable<--movable_zone is specified here
+>>>
+>>> I think Jiang Liu's patch works fine for highmem, please refer to:
+>>> http://marc.info/?l=linux-mm&m=135476085816087&w=2
 >>
->> Test Case:
->> [NFS Client]
->> ls -lR .
+>> Hi Wu,
 >>
->> [NFS Server]
->> while [ 1 ]
->> do
->> echo 3 > /proc/sys/vm/drop_caches
->> done
+>> Yes, I forgot movable_zone think. Thanks for reminding me. :)
 >>
->> Error on NFS Client: "No such file or directory"
+>> But Liu's patch you just mentioned, I didn't use it because I
+>> don't think we should skip kernelcore when movablecore_map is specified.
+>> If these 2 options are not conflict, we should satisfy them both. :)
 >>
->> When cache is dropped at the server, it results in lookup failure at the
->> NFS client due to non-connection with the parent. The default path is it
->> initiates a lookup by calculating the hash value for the name, even
->> though
->> the hash values stored on the disk for "." and ".." is maintained as
->> zero,
->> which results in failure from find_in_block due to not matching HASH
->> values.
->> Fix up, by using the correct hashing values for these entries and
->> then initiating lookup request.
+>> Of course, I also think Liu's suggestion is wonderful. But I think we
+>> need more discussion on it. :)
 >>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  fs/f2fs/dir.c |    5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
+>> I'll fix it soon.
+>> Thanks. :)
 >>
->> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
->> index b4e24f3..6cf39db 100644
->> --- a/fs/f2fs/dir.c
->> +++ b/fs/f2fs/dir.c
->> @@ -184,7 +184,7 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode
->> *dir,
->>  	int namelen = child->len;
->>  	unsigned long npages = dir_blocks(dir);
->>  	struct f2fs_dir_entry *de = NULL;
->> -	f2fs_hash_t name_hash;
->> +	f2fs_hash_t name_hash = 0;
->>  	unsigned int max_depth;
->>  	unsigned int level;
+>>>
+>>> Thanks,
+>>> Jianguo Wu
+>>>
+>>>> +		    start_pfn<  arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
+>>>> +			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
+>>>> +#endif
+>>>> +
+>>>> +		if (start_pfn>= end_pfn)
+>>>> +			continue;
+>>>> +
+>>>> +		while (map_pos<  movablecore_map.nr_map) {
+>>>> +			if (end_pfn<= movablecore_map.map[map_pos].start_pfn)
+>>>> +				break;
+>>>> +
+>>>> +			if (start_pfn>= movablecore_map.map[map_pos].end_pfn) {
+>>>> +				map_pos++;
+>>>> +				continue;
+>>>> +			}
+>>>> +
+>>>> +			/*
+>>>> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
+>>>> +			 * pfn specified by movablecore_map, or 0, which means
+>>>> +			 * the node has no ZONE_MOVABLE.
+>>>> +			 */
+>>>> +			zone_movable_limit[nid] = max(start_pfn,
+>>>> +					movablecore_map.map[map_pos].start_pfn);
+>>>> +
+>>>> +			break;
+>>>> +		}
+>>>> +	}
+>>>> +}
+>>>> +
+>>>>   #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>>>>   static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+>>>>   					unsigned long zone_type,
+>>>> @@ -4358,6 +4430,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
+>>>>   	return zholes_size[zone_type];
+>>>>   }
+>>>>
+>>>> +static void __meminit sanitize_zone_movable_limit(void)
+>>>> +{
+>>>> +}
+>>>> +
+>>>>   #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>>>>
+>>>>   static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+>>>> @@ -4923,6 +4999,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+>>>>
+>>>>   	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+>>>>   	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+>>>> +	sanitize_zone_movable_limit();
+>>>>   	find_zone_movable_pfns_for_nodes();
+>>>>
+>>>>   	/* Print out the zone ranges */
+>>>
+>>>
+>>>
+>>>
 >>
->> @@ -193,7 +193,8 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode
->> *dir,
->>
->>  	*res_page = NULL;
->>
->> -	name_hash = f2fs_dentry_hash(name, namelen);
->> +	if (strcmp(name, ".") && (strcmp(name, "..")))
->> +		name_hash = f2fs_dentry_hash(name, namelen);
->
-> Got it.
-> For code consistency, could you rewrite the patch like below?
-> Thanks,
-Sure, I will resend the patch at tonight.
-Thanks!
->
-> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> index b4e24f3..e1f66df 100644
-> --- a/fs/f2fs/dir.c
-> +++ b/fs/f2fs/dir.c
-> @@ -540,13 +540,13 @@ int f2fs_make_empty(struct inode *inode, struct
-> inode *parent)
->
->  	de = &dentry_blk->dentry[0];
->  	de->name_len = cpu_to_le16(1);
-> -	de->hash_code = 0;
-> +	de->hash_code = f2fs_dentry_hash(".", 1);
->  	de->ino = cpu_to_le32(inode->i_ino);
->  	memcpy(dentry_blk->filename[0], ".", 1);
->  	set_de_type(de, inode);
->
->  	de = &dentry_blk->dentry[1];
-> -	de->hash_code = 0;
-> +	de->hash_code = f2fs_dentry_hash("..", 2);
->  	de->name_len = cpu_to_le16(2);
->  	de->ino = cpu_to_le32(parent->i_ino);
->  	memcpy(dentry_blk->filename[1], "..", 2);
-> diff --git a/fs/f2fs/hash.c b/fs/f2fs/hash.c
-> index a60f042..30ca4a2 100644
-> --- a/fs/f2fs/hash.c
-> +++ b/fs/f2fs/hash.c
-> @@ -76,6 +76,10 @@ f2fs_hash_t f2fs_dentry_hash(const char *name, int
-> len)
->  	const char *p;
->  	__u32 in[8], buf[4];
->
-> +	/* dot and dotdot dentries should have zero-value hash code */
-> +	if (!memcmp(name, ".", 1) || !memcmp(name, "..", 2))
-> +		return 0;
-> +
->  	/* Initialize the default seed for the hash checksum functions */
->  	buf[0] = 0x67452301;
->  	buf[1] = 0xefcdab89;
-> --
-> 1.8.0.1.250.gb7973fb
->
->
->
-> --
-> Jaegeuk Kim
-> Samsung
->
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+> 
+> .
+> 
+
+
