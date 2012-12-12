@@ -1,170 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2LLN4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 08:56:54 -0500
-Received: from mga07.intel.com ([143.182.124.22]:58179 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753343Ab2LLN4w (ORCPT
+	id S1753992Ab2LLN7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 08:59:46 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50683 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab2LLN7p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 08:56:52 -0500
+	Wed, 12 Dec 2012 08:59:45 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <cooloney@gmail.com>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
+Thread-Topic: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
+Thread-Index: Ac3YcO0CDWQUo8AuS62wk1akhW9wsQ==
+Date: Wed, 12 Dec 2012 13:59:40 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0AAA1@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CACLa4pske6okjDj5mRC1+20VhWZmFt+L6j+Y6e=weA7PvD13yw@mail.gmail.com>
-References: <cover.1353621075.git.dmitry.kasatkin@intel.com>
-	<CALLzPKZKd38QJVPfjdNpAFO9hwmRc1asVGkHby1VGRLm89DKyg@mail.gmail.com>
-	<CALLzPKZgxO9wRNfJPnSY=G6Gjib7MeEXM4D1A1YZsrVmbs1W6A@mail.gmail.com>
-	<1355234914.2356.85.camel@falcor>
-	<CA+55aFwA3isRny9JyqxzjoysHbRhiKpBheeEi6VZrnWokt521A@mail.gmail.com>
-	<1355249884.2356.108.camel@falcor>
-	<CACLa4pvLbrCbivWSNTuxROBf5qDNJZmnFVyQaQ=7qcZRtSfcfg@mail.gmail.com>
-	<1355252392.2356.131.camel@falcor>
-	<CA+55aFwG31fi9=r0Zta2hoo60vdgM61hbh4BC9Rgs8i7S82Haw@mail.gmail.com>
-	<1355255320.2356.148.camel@falcor>
-	<CACLa4psVpx8YPcgiQs0FETg8d+zLcjivnks_So6Dpii48pDNBQ@mail.gmail.com>
-	<CALLzPKbqAa7-vJnXbYFbkaD5NVW=6wHQQMDc_Ww==p1hwQ1EJg@mail.gmail.com>
-	<CACLa4pske6okjDj5mRC1+20VhWZmFt+L6j+Y6e=weA7PvD13yw@mail.gmail.com>
-Date: Wed, 12 Dec 2012 15:56:49 +0200
-Message-ID: <CALLzPKZVJqjiVJ1geXHmmKnhiYxoT8wQYQzqfoXVzu-kh0-FmA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ima: policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 1:02 AM, Eric Paris <eparis@parisplace.org> wrote:
-> Linus made it clear he likes per-inode.  Do a test with per-inode
-> S_NOIMA.  See how that compares to your 100,000 vs 10,000 lookups.
-> Then we can discuss with facts if per sb is worth it or not.  We still
-> don't actually know if 100,000 lookups vs 10,000 lookups really
-> matters, but at least we'll have some facts...
->
+LP5521, LP5523 and L55231 have common features as below.
 
-Hello,
+ Register access via the I2C.
+ Device initialization/de-initialization.
+ Create LED class devices for multiple output channels.
+ Device attributes for user-space interface.
 
-I have done few tests.
-Ratio between lookups is different, but I do not really remember what
-exactly it was.
-Probably I did measurement with directory integrity protection...
+Therefore, this patch-set removes duplicate code for LP5521/5523 driver and
+makes coherent driver structure, named lp55xx.
 
-First test is done using upstream IMA.
+All patches have been tested in LP5521, LP5523 and LP55231 evaluation boards.
 
-IMA-appraisal
-[   59.554072] counter1 - before (inode->i_flags & S_NOIMA): 74586
-[   59.554628] counter2 - after (inode->i_flags & S_NOIMA): 74558
-[   59.555024] counter3 - after (inode->i_sb->s_feature_flags & SF_NOIMA): 52895
+You can also pull from the location below.
+This branch is based on 'for-next' branch of linux-leds.
 
-You can see 3 counters after 55 seconds uptime.
-Counters count entries to the policy search function.
-First counter counts every entry.
-Second counter counts if control passes after inode flag S_NOIMA.
-Third counts if control passes after SB flag SF_NOIMA.
+  https://github.com/milokim/lp55xx.git lp55xx
 
-As you can see, inode flag does not make a difference - just 28
-entries differences.
+Cleanups before adding new driver architecture
+  leds-lp55xx: cleanup init_device() in lp5521/5523
+  leds-lp55xx: cleanup deinit_device() in lp5521/5523
+  leds-lp55xx: cleanup init leds in lp5521/5523
+  leds-lp55xx: cleanup deinit leds in lp5521/5523
+  leds-lp55xx: add device reset function in lp5521/5523
+  leds-lp55xx: do chip specific configuration on device init
 
-But for SB flag, difference is over 22000.
+Replace lp5521, lp5523 driver with new lp55xx driver architecture
+  leds-lp55xx: add new common driver for lp5521/5523
+  leds-lp55xx: replace name of data structure
+  leds-lp55xx: use common lp55xx data structure in _probe()
+  leds-lp55xx: use lp55xx common init function in _probe()
+  leds-lp55xx: use lp55xx common deinit function
+  leds-lp55xx: use lp55xx common led registration function
+  leds-lp55xx: use lp55xx_init_led() common function
+  leds-lp55xx: use lp55xx_set_brightness() for brightness control
+  leds-lp55xx: provide common LED current setting
+  leds-lp55xx: use lp55xx_unregister_leds()
+  leds-lp55xx: fix error condition in lp55xx_register_leds()
+  leds-lp55xx: add new lp55xx_register_sysfs() for FW interface
 
-Directory integrity protection is not really relevant to this discussion,
-because it is under work now,  but with directory integrity protection
-ratio is very different.
+Adding the firmware interface
+  leds-lp55xx: support firmware interface
+  leds-lp55xx: use generic firmware interface
 
-IMA-appraisal with directories
-[   59.999077] counter1 - before (inode->i_flags & S_NOIMA): 198761
-[   59.999078] counter2 - after (inode->i_flags & S_NOIMA): 198728
-[   59.999079] counter3 - after (inode->i_sb->s_feature_flags & SF_NOIMA): 50266
+Cleanups lp5521, lp5523 device attributes
+  leds-lp55xx: support device specific attibutes
+  leds-lp55xx: use common driver function for adding attributes
 
-Again, inode flags does not make a difference.
-SB flag gives ~150 000 less searches.
+Others
+  leds-lp55xx: code refactoring on selftest function
+  leds-lp55xx: add unregister dev attr function
+  leds-lp55xx: clean up _remove()
+  leds-lp55xx: clean up unused data and functions
+  leds-lp55xx: clean up definitions
+  leds-lp55xx: clean up headers
+  leds-lp5521: recovers previous driver patch for return value
+  leds-lp5521/5523: use new lp55xx common header
+  leds-lp5521/5523: add author and copyright description
+  leds-lp55xx: fix problem on removing LED attributes
+  Documentation: leds: update LP55xx family devices
 
-Basically what I want to show is that inode flag has no benefit.
-We need SB flag for that.
+ Documentation/leds/00-INDEX                  |    2 +
+ Documentation/leds/leds-lp5521.txt           |   63 +-
+ Documentation/leds/leds-lp5523.txt           |   27 +-
+ Documentation/leds/leds-lp55xx.txt           |  111 +++
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    8 +-
+ arch/arm/mach-ux500/board-mop500.c           |   14 +-
+ drivers/leds/Kconfig                         |   15 +-
+ drivers/leds/Makefile                        |    1 +
+ drivers/leds/leds-lp5521.c                   |  944 +++++++----------------
+ drivers/leds/leds-lp5523.c                   | 1050 +++++++-------------------
+ drivers/leds/leds-lp55xx-common.c            |  519 +++++++++++++
+ drivers/leds/leds-lp55xx-common.h            |  133 ++++
+ include/linux/leds-lp5521.h                  |   73 --
+ include/linux/leds-lp5523.h                  |   49 --
+ include/linux/platform_data/leds-lp55xx.h    |   87 +++
+ 15 files changed, 1410 insertions(+), 1686 deletions(-)
+ create mode 100644 Documentation/leds/leds-lp55xx.txt
+ create mode 100644 drivers/leds/leds-lp55xx-common.c
+ create mode 100644 drivers/leds/leds-lp55xx-common.h
+ delete mode 100644 include/linux/leds-lp5521.h
+ delete mode 100644 include/linux/leds-lp5523.h
+ create mode 100644 include/linux/platform_data/leds-lp55xx.h
 
-Regarding referencing i_sb, IMA policy search might do it for every rule, like
+-- 
+1.7.9.5
 
-	if ((rule->flags & IMA_FSMAGIC)
-	    && rule->fsmagic != inode->i_sb->s_magic)
-		return false;
+Best Regards,
+Milo
 
-
-So 20k for 55 seconds can be multiplied roughly by the number of rules.
-
-In fact earlier check for (inode->i_sb->s_feature_flags & SF_NOIMA)
-only decreases
-the total number of referencing.
-
-
-- Dmitry
-
-
-> On Tue, Dec 11, 2012 at 5:57 PM, Kasatkin, Dmitry
-> <dmitry.kasatkin@intel.com> wrote:
->> On Tue, Dec 11, 2012 at 10:08 PM, Eric Paris <eparis@parisplace.org> wrote:
->>> S_PRIVATE is totally unacceptable as it has a meaning across all LSMs,
->>> not just IMA.
->>>
->>> S_NOSEC means 'this is not setuid or setgid and we don't need to do
->>> those checks on modify'
->>>
->>> You are going to need to use a S_NOIMA.
->>>
->>> Of Dmitry's 90,000 fewer policy lookups using the per sb flag, how
->>> many of them are the same inode over and over again which would be
->>> circumvented using S_NOIMA per inode flag?
->>>
->>
->> IIRC those were only newly instantiated inodes.
->>
->> For new inodes, S_NOIMA would not be set and used at that point.
->> IMA must do the policy search and then would set the S_NOIMA.
->>
->> For subsequent calls, S_NOIMA makes sense.
->>
->> If we would have the SB flag like MS_NOIMA, then we could replicate sb
->> flag to inode S_NOIMA flag,
->> in similar way as inode_has_no_xattr() does:
->>
->> static inline void inode_has_no_xattr(struct inode *inode)
->> {
->>         if (!is_sxid(inode->i_mode) && (inode->i_sb->s_flags & MS_NOSEC))
->>                 inode->i_flags |= S_NOSEC;
->> }
->>
->> Then later there is no need to dereference inode->i_sb...
->>
->> Can we reach conclusion about it?
->> Will we have SB flag?
->> if yes, then where, s_flags, or in some other field like s_feature_flags?
->> if not, then we can stop this discussion...
->>
->> - Dmitry
->>
->>>
->>>
->>> On Tue, Dec 11, 2012 at 2:48 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>>> On Tue, 2012-12-11 at 11:10 -0800, Linus Torvalds wrote:
->>>>
->>>>> Anyway, the whole "you can do it at file granularity" isn't the bulk
->>>>> of my argument (the "we already have the field that makes sense" is).
->>>>> But my point is that per-inode is not only the logically more
->>>>> straightforward place to do it, it's also the much more flexible place
->>>>> to do it. Because it *allows* for things like that.
->>>>
->>>> Ok. To summarize, S_IMA indicates that there is a rule and that the iint
->>>> was allocated.  To differentiate between 'haven't looked/don't know' and
->>>> 'definitely not', we need another bit.  For this, you're suggesting
->>>> using IS_PRIVATE()?  Hopefully, I misunderstood.
->>>>
->>>> thanks,
->>>>
->>>> Mimi
->>>>
->>>>
->>>>
