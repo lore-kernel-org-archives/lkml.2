@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab2LLDfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 22:35:50 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4467 "EHLO
+	id S1754753Ab2LLDgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 22:36:03 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:4585 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2LLDft (ORCPT
+	with ESMTP id S1753897Ab2LLDgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 22:35:49 -0500
-Message-ID: <50C7FB6A.9030209@huawei.com>
-Date: Wed, 12 Dec 2012 11:35:06 +0800
+	Tue, 11 Dec 2012 22:36:01 -0500
+Message-ID: <50C7FB82.7050802@huawei.com>
+Date: Wed, 12 Dec 2012 11:35:30 +0800
 From: Xishi Qiu <qiuxishi@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ To: WuJianguo <wujianguo@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
         Fengguang Wu <fengguang.wu@intel.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH V4 0/3] MCE: fix an error of mce_bad_pages statistics
+Subject: [PATCH V4 2/3] MCE: fix an error of mce_bad_pages statistics
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.74.196]
@@ -28,39 +28,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we use "/sys/devices/system/memory/soft_offline_page" to offline a
-*free* page, the value of mce_bad_pages will be added, and the page is set
-HWPoison flag, but it is still managed by page buddy alocator.
+There are too many return points randomly intermingled with some
+"goto done" return points. So adjust the function structure, one
+for the success path, the other for the failure path.
+Use atomic_long_inc instead of atomic_long_add.
 
-$ cat /proc/meminfo | grep HardwareCorrupted shows the value.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+---
+ mm/memory-failure.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
 
-If we offline the same page, the value of mce_bad_pages will be added
-*again*, this means the value is incorrect now. Assume the page is
-still free during this short time.
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 3a8b4b2..e513a7b 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1421,12 +1421,13 @@ static int soft_offline_huge_page(struct page *page, int flags)
 
-soft_offline_page()
-	get_any_page()
-		"else if (is_free_buddy_page(p))" branch return 0
-			"goto done";
-				"atomic_long_add(1, &mce_bad_pages);"
+ 	if (PageHWPoison(hpage)) {
+ 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto out;
+ 	}
 
-Changelog:
-V4:
-	-use num_poisoned_pages instead of mce_bad_pages
-	-remove page lock
-V3:
-	-add page lock when set HWPoison flag
-	-adjust the function structure
-V2 and V1:
-	-fix the error
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	if (ret == 0)
+ 		goto done;
 
-Xishi Qiu (3):
-  move-poisoned-page-check-at-the-beginning-of-the-function
-  fix-function-structure
-  use-num_poisoned_pages-instead-of-mce_bad_pages
+@@ -1437,14 +1438,14 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+-		return ret;
++		goto out;
+ 	}
+ done:
+ 	/* keep elevated page count for bad page */
+ 	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
+ 	set_page_hwpoison_huge_page(hpage);
+ 	dequeue_hwpoisoned_huge_page(hpage);
+-
++out:
+ 	return ret;
+ }
 
- fs/proc/meminfo.c   |    2 +-
- include/linux/mm.h  |    2 +-
- mm/memory-failure.c |   76 ++++++++++++++++++++++++++-------------------------
- 3 files changed, 41 insertions(+), 39 deletions(-)
+@@ -1476,24 +1477,28 @@ int soft_offline_page(struct page *page, int flags)
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_trans_head(page);
+
+-	if (PageHuge(page))
+-		return soft_offline_huge_page(page, flags);
++	if (PageHuge(page)) {
++		ret = soft_offline_huge_page(page, flags);
++		goto out;
++	}
+ 	if (PageTransHuge(hpage)) {
+ 		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
+ 			pr_info("soft offline: %#lx: failed to split THP\n",
+ 				pfn);
+-			return -EBUSY;
++			ret = -EBUSY;
++			goto out;
+ 		}
+ 	}
+
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto out;
+ 	}
+
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	if (ret == 0)
+ 		goto done;
+
+@@ -1512,14 +1517,15 @@ int soft_offline_page(struct page *page, int flags)
+ 		 */
+ 		ret = get_any_page(page, pfn, 0);
+ 		if (ret < 0)
+-			return ret;
++			goto out;
+ 		if (ret == 0)
+ 			goto done;
+ 	}
+ 	if (!PageLRU(page)) {
+ 		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
+ 			pfn, page->flags);
+-		return -EIO;
++		ret = -EIO;
++		goto out;
+ 	}
+
+ 	/*
+@@ -1574,12 +1580,12 @@ int soft_offline_page(struct page *page, int flags)
+ 			pfn, ret, page_count(page), page->flags);
+ 	}
+ 	if (ret)
+-		return ret;
++		goto out;
+
+ done:
+ 	/* keep elevated page count for bad page */
+-	atomic_long_add(1, &mce_bad_pages);
++	atomic_long_inc(&mce_bad_pages);
+ 	SetPageHWPoison(page);
+-
++out:
+ 	return ret;
+ }
+-- 
+1.7.1
+
 
