@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab2LLOhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:37:37 -0500
-Received: from mga03.intel.com ([143.182.124.21]:6982 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab2LLOhe convert rfc822-to-8bit (ORCPT
+	id S1754561Ab2LLOiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:38:10 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59034 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2LLOiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:37:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,266,1355126400"; 
-   d="scan'208";a="230515043"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Wen Congyang <wency@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Toshi Kani <toshi.kani@hp.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: RE: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
-Thread-Topic: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
-Thread-Index: AQHN1OydPVBNd0EOSNivpcZOpMzv75gVQkrg
-Date: Wed, 12 Dec 2012 14:37:09 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353A779A@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233539DED4@SHSMSX101.ccr.corp.intel.com>
- <4326596.xCAz7vOgOp@vostro.rjw.lan> <50C2A752.8010709@cn.fujitsu.com>
-In-Reply-To: <50C2A752.8010709@cn.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 12 Dec 2012 09:38:08 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH] f2fs: fix up f2fs_get_parent issue to retrieve correct parent inode number
+Date: Wed, 12 Dec 2012 23:37:57 +0900
+Message-Id: <1355323077-5803-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wen Congyang wrote:
-> At 12/08/2012 06:19 AM, Rafael J. Wysocki Wrote:
->> On Tuesday, December 04, 2012 01:39:54 AM Liu, Jinsong wrote:
->>> Resend it, add Rafael and linux-acpi@vger.kernel.org
->> 
->> I wonder what memory hotplug people think about that.
->> 
->> Thanks,
->> Rafael
->> 
->> 
->>> ===============
->>> From 1d39279e45c54ce531691da5ffe261e7689dd92c Mon Sep 17 00:00:00
->>> 2001 
->>> From: Liu Jinsong <jinsong.liu@intel.com>
->>> Date: Wed, 14 Nov 2012 18:52:06 +0800
->>> Subject: [PATCH] X86/acpi: remove redundant logic of acpi memory
->>> hotadd 
->>> 
->>> When memory hotadd, acpi_memory_enable_device has already been done
->>> at drv->ops.add (acpi_memory_device_add), no need to do it again
->>> at notify callback.
->>> 
->>> At acpi_memory_enable_device, acpi_memory_get_device_resources
->>> is also a redundant action, since it has been done at drv->ops.add.
->>> 
->>> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
->>> ---
->>>  drivers/acpi/acpi_memhotplug.c |   17 -----------------
->>>  1 files changed, 0 insertions(+), 17 deletions(-)
->>> 
->>> diff --git a/drivers/acpi/acpi_memhotplug.c
->>> b/drivers/acpi/acpi_memhotplug.c 
->>> index 24c807f..a6489fd 100644
->>> --- a/drivers/acpi/acpi_memhotplug.c
->>> +++ b/drivers/acpi/acpi_memhotplug.c
->>> @@ -220,15 +220,6 @@ static int acpi_memory_enable_device(struct
->>>  	acpi_memory_device *mem_device) struct acpi_memory_info *info;
->>>  	int node;
->>> 
->>> -
->>> -	/* Get the range from the _CRS */
->>> -	result = acpi_memory_get_device_resources(mem_device);
->>> -	if (result) {
->>> -		printk(KERN_ERR PREFIX "get_device_resources failed\n");
->>> -		mem_device->state = MEMORY_INVALID_STATE;
->>> -		return result;
->>> -	}
->>> -
->>>  	node = acpi_get_node(mem_device->device->handle);  	/*
->>>  	 * Tell the VM there is more memory here...
->>> @@ -357,14 +348,6 @@ static void
->>>  		acpi_memory_device_notify(acpi_handle handle, u32 event, void
->>> *data)  			break; } 
->>> 
->>> -		if (acpi_memory_check_device(mem_device))
->>> -			break;
-> 
-> Hmm, if acpi_memory_check_device() fails, it means the memory device
-> disappears 
-> I don't know if a real hardware uses this way to remove memory device.
-> 
->>> -
->>> -		if (acpi_memory_enable_device(mem_device)) {
->>> -			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
->>> -			break;
->>> -		}
-> 
-> If acpi_memory_get_device() doesn't fail, it means that the device
-> has been managed by this driver, so I think we can do this cleanup.
-> 
-> Thanks
-> Wen Congyang
-> 
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Thanks! any comments from Huawei side, Jiang?
+Test Case:
+[NFS Client]
+ls -lR .
 
+[NFS Server]
+while [ 1 ]
+do
+echo 3 > /proc/sys/vm/drop_caches
+done
+
+Error on NFS Client: "No such file or directory"
+
+When cache is dropped at the server, it results in lookup failure at the
+NFS client due to non-connection with the parent. The default path is it
+initiates a lookup by calculating the hash value for the name, even though
+the hash values stored on the disk for "." and ".." is maintained as zero,
+which results in failure from find_in_block due to not matching HASH values.
+Fix up, by using the correct hashing values for these entries.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/dir.c  |    4 ++--
+ fs/f2fs/hash.c |    4 ++++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index b4e24f3..e1f66df 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -540,13 +540,13 @@ int f2fs_make_empty(struct inode *inode, struct inode *parent)
+ 
+ 	de = &dentry_blk->dentry[0];
+ 	de->name_len = cpu_to_le16(1);
+-	de->hash_code = 0;
++	de->hash_code = f2fs_dentry_hash(".", 1);
+ 	de->ino = cpu_to_le32(inode->i_ino);
+ 	memcpy(dentry_blk->filename[0], ".", 1);
+ 	set_de_type(de, inode);
+ 
+ 	de = &dentry_blk->dentry[1];
+-	de->hash_code = 0;
++	de->hash_code = f2fs_dentry_hash("..", 2);
+ 	de->name_len = cpu_to_le16(2);
+ 	de->ino = cpu_to_le32(parent->i_ino);
+ 	memcpy(dentry_blk->filename[1], "..", 2);
+diff --git a/fs/f2fs/hash.c b/fs/f2fs/hash.c
+index a60f042..30ca4a2 100644
+--- a/fs/f2fs/hash.c
++++ b/fs/f2fs/hash.c
+@@ -76,6 +76,10 @@ f2fs_hash_t f2fs_dentry_hash(const char *name, int len)
+ 	const char *p;
+ 	__u32 in[8], buf[4];
+ 
++	/* dot and dotdot dentries should have zero-value hash code */
++	if (!memcmp(name, ".", 1) || !memcmp(name, "..", 2))
++		return 0;
++
+ 	/* Initialize the default seed for the hash checksum functions */
+ 	buf[0] = 0x67452301;
+ 	buf[1] = 0xefcdab89;
+-- 
+1.7.9.5
 
