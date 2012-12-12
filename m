@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab2LLADo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:03:44 -0500
-Received: from ozlabs.org ([203.10.76.45]:55408 "EHLO ozlabs.org"
+	id S1755270Ab2LLAHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:07:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392Ab2LLADm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:03:42 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: sjur@brendeland.net, "Michael S. Tsirkin" <mst@redhat.com>,
-        linus.walleij@linaro.org, masami.hiramatsu.pt@hitachi.com,
-        ohad@wizery.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: Re: [[PATCH v9 3/3] 1/1] virtio_console: Remove buffers from out_vq at port removal
-In-Reply-To: <20121211041012.GA16297@amit.redhat.com>
-References: <029d7029bc1186fbd2ec74123dc88922b9600660.1352366215.git.amit.shah@redhat.com> <87ip96id3a.fsf@rustcorp.com.au> <20121210055401.GA17187@amit.redhat.com> <871uexec7e.fsf@rustcorp.com.au> <20121211041012.GA16297@amit.redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 12 Dec 2012 10:31:04 +1030
-Message-ID: <87wqwo3zr3.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1754392Ab2LLAHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 19:07:16 -0500
+Message-ID: <1355270816.3224.179.camel@bling.home>
+Subject: Re: [GIT PULL] VFIO updates for v3.8
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        fengguang.wu@intel.com, julia.lawall@lip6.fr, jiang.liu@huawei.com
+Date: Tue, 11 Dec 2012 17:06:56 -0700
+In-Reply-To: <20121212104632.b01520d6015486dd3ae507ef@canb.auug.org.au>
+References: <1355252887.3224.176.camel@bling.home>
+	 <20121212104632.b01520d6015486dd3ae507ef@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit Shah <amit.shah@redhat.com> writes:
+On Wed, 2012-12-12 at 10:46 +1100, Stephen Rothwell wrote:
+> Hi Linus,
+> 
+> On Tue, 11 Dec 2012 12:08:07 -0700 Alex Williamson <alex.williamson@redhat.com> wrote:
+> >
+> > The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
+> > 
+> >   Linux 3.7 (2012-12-10 19:30:57 -0800)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://github.com/awilliam/linux-vfio.git tags/vfio-for-v3.8
+> > 
+> > for you to fetch changes up to a9e3ccfa452c8c5bac49637fe6ece1ac3246d312:
+> > 
+> >   vfio-pci: Enable device before attempting reset (2012-12-11 11:25:37 -0700)
+> 
+> This has been rebased from what was in linux-next yesterday onto v3.7.
 
-> On (Tue) 11 Dec 2012 [09:39:41], Rusty Russell wrote:
->> Amit Shah <amit.shah@redhat.com> writes:
->> 
->> > On (Fri) 16 Nov 2012 [11:22:09], Rusty Russell wrote:
->> >> Amit Shah <amit.shah@redhat.com> writes:
->> >> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
->> >> >
->> >> > Remove buffers from the out-queue when a port is removed. Rproc_serial
->> >> > communicates with remote processors that may crash and leave buffers in
->> >> > the out-queue. The virtio serial ports may have buffers in the out-queue
->> >> > as well, e.g. for non-blocking ports and the host didn't consume them
->> >> > yet.
->> >> >
->> >> > [Amit: Remove WARN_ON for generic ports case.]
->> >> >
->> >> > Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
->> >> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
->> >> 
->> >> I already have this in my pending queue; I've promoted it to my
->> >> virtio-next branch now.
->> >
->> > Rusty, I still see this series in your pending queue, not in
->> > virtio-next.  Did anything change in the meantime?
->> 
->> Hmm:
->> 
->> 40e625ac50f40d87ddba93280d0a503425aa68e9?
->
-> I'm sorry, I meant the remoteproc code, not this patch.
+Is that a bad thing?  I can start tagging from my next branch if that's
+preferred.  Thanks,
 
-Still waiting for v9, AFIACT?
+Alex
 
-Sjur, we're in the merge window now, so it'd be nice to get your latest
-version on top of linux-next (or simply my virtio-next git tree) today.
-
-Thanks,
-Rusty.
