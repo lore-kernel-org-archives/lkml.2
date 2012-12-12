@@ -1,83 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab2LLGYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 01:24:46 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:57714 "EHLO
+	id S1750915Ab2LLGYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 01:24:54 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:40417 "EHLO
 	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750819Ab2LLGYp (ORCPT
+	by vger.kernel.org with ESMTP id S1751754Ab2LLGYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 01:24:45 -0500
-Message-ID: <50C8228B.7040702@marvell.com>
-Date: Wed, 12 Dec 2012 14:22:03 +0800
+	Wed, 12 Dec 2012 01:24:52 -0500
+Message-ID: <50C8234A.4090400@marvell.com>
+Date: Wed, 12 Dec 2012 14:25:14 +0800
 From: Qing Xu <qingx@marvell.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Chao Xie <cxie4@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 0/7] mfd: update on max8925 for DT support
-References: <1352187305-9660-1-git-send-email-qingx@marvell.com> <CAN1soZzAZ9Od_5jC0ZFdw03c5P9Q+gJQswTwp0M1YWM_ti+9xw@mail.gmail.com> <50B6F8AC.6050307@marvell.com> <CAN1soZzTYjU9nEe1hQWAwz2R0GRfvaQ7HyaMZ3uNxtBV0X14uA@mail.gmail.com>
-In-Reply-To: <CAN1soZzTYjU9nEe1hQWAwz2R0GRfvaQ7HyaMZ3uNxtBV0X14uA@mail.gmail.com>
+To: Qing Xu <qingx@marvell.com>
+Cc: Qiao Zhou <zhouqiao@marvell.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mfd: 88pm80x: fix regmap not init before used
+References: <1354513117-20464-1-git-send-email-qingx@marvell.com>
+In-Reply-To: <1354513117-20464-1-git-send-email-qingx@marvell.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Dec 2012 06:21:40.0532 (UTC) FILETIME=[F2B0DF40:01CDD830]
+X-OriginalArrivalTime: 12 Dec 2012 06:24:51.0282 (UTC) FILETIME=[64630320:01CDD831]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2012 03:11 PM, Haojian Zhuang wrote:
-> On Thu, Nov 29, 2012 at 1:54 PM, Qing Xu <qingx@marvell.com> wrote:
->> On 11/23/2012 05:09 PM, Haojian Zhuang wrote:
->>> On Tue, Nov 6, 2012 at 3:35 PM, Qing Xu <qingx@marvell.com> wrote:
->>>> From: Qing Xu <qingx@marvell.com>
->>>>
->>>> 1. add irqdomain for max8925, it is necessary for dt support
->>>> 2. bug fix in max8925 mfd devices'irq base and device registry failure
->>>> 3. support DT for max8925 mfd devices
->>>>
->>>> Qing Xu (7):
->>>>     mfd: max8925: add irqdomain for dt
->>>>     mfd: max8925: fix mfd device register failure
->>>>     mfd: max8925: fix onkey driver irq base
->>>>     mfd: max8925: support dt for power supply
->>>>     mfd: max8925: support dt for regulator
->>>>     mfd: max8925: support dt for backlight
->>>>     mfd: max8925: add dts
->>>>
->>>>    arch/arm/boot/dts/mmp2-brownstone.dts |  166
->>>> +++++++++++++++++++++++++++++++++
->>>>    arch/arm/boot/dts/mmp2.dtsi           |    4 +-
->>>>    drivers/input/misc/max8925_onkey.c    |    3 -
->>>>    drivers/mfd/max8925-core.c            |  107 +++++++++++++--------
->>>>    drivers/mfd/max8925-i2c.c             |   32 ++++++-
->>>>    drivers/power/max8925_power.c         |   57 ++++++++++-
->>>>    drivers/regulator/max8925-regulator.c |   35 +++++++-
->>>>    drivers/video/backlight/max8925_bl.c  |   31 ++++++-
->>>>    include/linux/mfd/max8925.h           |   12 ++-
->>>>    9 files changed, 389 insertions(+), 58 deletions(-)
->>>>
->>> No document on devicetree binding?
->> I added a new patch of "Documentation: add docs for max8925 dt",
->> please help to review, thanks a lot!
-> Acked.
+On 12/03/2012 01:38 PM, Qing Xu wrote:
+> From: Qing Xu <qingx@marvell.com>
 >
-> Samuel,
-> How do you think about this patch series? From my view, it's ok.
+> 1.put the pm800_page_init before 800_init, otherwise power and
+> gpadc regmap handle are not inited before being used.
+> 2.remove regmap exit, as it will be called in driver release
+> 3.add lost "return 0" in probe()
+> 4.update driver's name
 >
-> Best Regards
-> Haojian
-
+> Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
+> Signed-off-by: Qing Xu <qingx@marvell.com>
+> ---
+>   drivers/mfd/88pm800.c |   25 ++++++++++++-------------
+>   drivers/mfd/88pm805.c |    5 +++--
+>   drivers/mfd/88pm80x.c |    2 +-
+>   3 files changed, 16 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+> index ce229ea..73b2c9f 100644
+> --- a/drivers/mfd/88pm800.c
+> +++ b/drivers/mfd/88pm800.c
+> @@ -401,9 +401,6 @@ static void pm800_pages_exit(struct pm80x_chip *chip)
+>   {
+>   	struct pm80x_subchip *subchip;
+>   
+> -	regmap_exit(chip->regmap);
+> -	i2c_unregister_device(chip->client);
+> -
+>   	subchip = chip->subchip;
+>   	if (subchip->power_page) {
+>   		regmap_exit(subchip->regmap_power);
+> @@ -413,6 +410,7 @@ static void pm800_pages_exit(struct pm80x_chip *chip)
+>   		regmap_exit(subchip->regmap_gpadc);
+>   		i2c_unregister_device(subchip->gpadc_page);
+>   	}
+> +	i2c_unregister_device(chip->client);
+>   }
+>   
+>   static int __devinit device_800_init(struct pm80x_chip *chip,
+> @@ -528,25 +526,26 @@ static int __devinit pm800_probe(struct i2c_client *client,
+>   	subchip->gpadc_page_addr = pdata->gpadc_page_addr;
+>   	chip->subchip = subchip;
+>   
+> -	ret = device_800_init(chip, pdata);
+> -	if (ret) {
+> -		dev_err(chip->dev, "%s id 0x%x failed!\n", __func__, chip->id);
+> -		goto err_800_init;
+> -	}
+> -
+>   	ret = pm800_pages_init(chip);
+>   	if (ret) {
+>   		dev_err(&client->dev, "pm800_pages_init failed!\n");
+>   		goto err_page_init;
+>   	}
+>   
+> +	ret = device_800_init(chip, pdata);
+> +	if (ret) {
+> +		dev_err(chip->dev, "%s id 0x%x failed!\n", __func__, chip->id);
+> +		goto err_800_init;
+> +	}
+> +
+>   	if (pdata->plat_config)
+>   		pdata->plat_config(chip, pdata);
+>   
+> -err_page_init:
+> -	mfd_remove_devices(chip->dev);
+> -	device_irq_exit_800(chip);
+> +	return 0;
+> +
+>   err_800_init:
+> +	pm800_pages_exit(chip);
+> +err_page_init:
+>   	devm_kfree(&client->dev, subchip);
+>   err_subchip_alloc:
+>   	pm80x_deinit(client);
+> @@ -571,7 +570,7 @@ static int __devexit pm800_remove(struct i2c_client *client)
+>   
+>   static struct i2c_driver pm800_driver = {
+>   	.driver = {
+> -		.name = "88PM80X",
+> +		.name = "88PM800",
+>   		.owner = THIS_MODULE,
+>   		.pm = &pm80x_pm_ops,
+>   		},
+> diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
+> index c20a311..7878013 100644
+> --- a/drivers/mfd/88pm805.c
+> +++ b/drivers/mfd/88pm805.c
+> @@ -168,7 +168,6 @@ static int __devinit device_irq_init_805(struct pm80x_chip *chip)
+>   	ret =
+>   	    regmap_add_irq_chip(chip->regmap, chip->irq, flags, -1,
+>   				chip->regmap_irq_chip, &chip->irq_data);
+> -
+>   out:
+>   	return ret;
+>   }
+> @@ -256,6 +255,8 @@ static int __devinit pm805_probe(struct i2c_client *client,
+>   	if (pdata->plat_config)
+>   		pdata->plat_config(chip, pdata);
+>   
+> +	return 0;
+> +
+>   err_805_init:
+>   	pm80x_deinit(client);
+>   out_init:
+> @@ -276,7 +277,7 @@ static int __devexit pm805_remove(struct i2c_client *client)
+>   
+>   static struct i2c_driver pm805_driver = {
+>   	.driver = {
+> -		.name = "88PM80X",
+> +		.name = "88PM805",
+>   		.owner = THIS_MODULE,
+>   		.pm = &pm80x_pm_ops,
+>   		},
+> diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
+> index cd0bf52..1adb355 100644
+> --- a/drivers/mfd/88pm80x.c
+> +++ b/drivers/mfd/88pm80x.c
+> @@ -31,7 +31,7 @@ const struct regmap_config pm80x_regmap_config = {
+>   };
+>   EXPORT_SYMBOL_GPL(pm80x_regmap_config);
+>   
+> -int __devinit pm80x_init(struct i2c_client *client,
+> +int pm80x_init(struct i2c_client *client,
+>   				 const struct i2c_device_id *id)
+>   {
+>   	struct pm80x_chip *chip;
 
 
 Samuel,
 
-Do you have any comments on these patches? Could they be merged?
+Could you help to review the patch? Thanks a lot!
 
-Thanks a lot!
 Qing
-
 
