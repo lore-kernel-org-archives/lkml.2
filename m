@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2LLAHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:07:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47234 "EHLO mx1.redhat.com"
+	id S1755401Ab2LLAN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:13:27 -0500
+Received: from ares07.inai.de ([5.9.24.206]:50489 "EHLO ares07.inai.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392Ab2LLAHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:07:16 -0500
-Message-ID: <1355270816.3224.179.camel@bling.home>
-Subject: Re: [GIT PULL] VFIO updates for v3.8
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        fengguang.wu@intel.com, julia.lawall@lip6.fr, jiang.liu@huawei.com
-Date: Tue, 11 Dec 2012 17:06:56 -0700
-In-Reply-To: <20121212104632.b01520d6015486dd3ae507ef@canb.auug.org.au>
-References: <1355252887.3224.176.camel@bling.home>
-	 <20121212104632.b01520d6015486dd3ae507ef@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754006Ab2LLANX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 19:13:23 -0500
+Date: Wed, 12 Dec 2012 01:13:22 +0100 (CET)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Jan Kara <jack@suse.cz>
+cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: Read starvation by sync writes
+In-Reply-To: <20121210221222.GA25700@quack.suse.cz>
+Message-ID: <alpine.LNX.2.01.1212120110470.3666@nerf07.vanv.qr>
+References: <20121210221222.GA25700@quack.suse.cz>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 10:46 +1100, Stephen Rothwell wrote:
-> Hi Linus,
-> 
-> On Tue, 11 Dec 2012 12:08:07 -0700 Alex Williamson <alex.williamson@redhat.com> wrote:
-> >
-> > The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
-> > 
-> >   Linux 3.7 (2012-12-10 19:30:57 -0800)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://github.com/awilliam/linux-vfio.git tags/vfio-for-v3.8
-> > 
-> > for you to fetch changes up to a9e3ccfa452c8c5bac49637fe6ece1ac3246d312:
-> > 
-> >   vfio-pci: Enable device before attempting reset (2012-12-11 11:25:37 -0700)
-> 
-> This has been rebased from what was in linux-next yesterday onto v3.7.
 
-Is that a bad thing?  I can start tagging from my next branch if that's
-preferred.  Thanks,
+On Monday 2012-12-10 23:12, Jan Kara wrote:
+>
+>  I was looking into IO starvation problems where streaming sync writes (in
+>my case from kjournald but DIO would look the same) starve reads. This is
+>because reads happen in small chunks and until a request completes we don't
+>start reading further (reader reads lots of small files) while writers have
+>plenty of big requests to submit. Both processes end up fighting for IO
+>requests and writer writes nr_batching 512 KB requests while reader reads
+>just one 4 KB request or so.[...]
+>Simple reproducer is:
+>
+>echo 3 >/proc/sys/vm/drop_caches
+>dd if=/dev/zero of=/tmp/f bs=1M count=10000 &
+>sleep 30
+>time cat /etc/* 2>&1 >/dev/null
+>killall dd
+>rm /tmp/f
+>
+>  The question is how can we fix this?
 
-Alex
+The ROW scheduler attempts to address it up by prioritizing reads,
+and it works out for me.
 
+ (Mail info.)
+ Date: Tue, 11 Dec 2012 14:41:18
+ From: Tanya Brokhman <tlinder@codeaurora.org>
+ Subject: [PATCH v4 0/2] ROW scheduling Algorithm
