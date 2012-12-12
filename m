@@ -1,47 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab2LLKSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 05:18:53 -0500
-Received: from smtp-out-245.synserver.de ([212.40.185.245]:1113 "EHLO
-	smtp-out-245.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab2LLKSw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 05:18:52 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 3160
-Message-ID: <50C85A0F.3040606@metafoo.de>
-Date: Wed, 12 Dec 2012 11:18:55 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	id S1754109Ab2LLKTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 05:19:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55886 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862Ab2LLKTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 05:19:20 -0500
+Date: Wed, 12 Dec 2012 11:19:17 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: tj@kernel.org, lizefan@huawei.com, aneesh.kumar@linux.vnet.ibm.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, dhillf@gmail.com,
+        Jiang Liu <liuj97@gmail.com>, qiuxishi <qiuxishi@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
+Message-ID: <20121212101917.GD32081@dhcp22.suse.cz>
+References: <50C83F97.3040009@huawei.com>
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 v3] rtc: add rtc-driver for HID sensors of type time
-References: <50C73AFC.1050904@jic23.retrosnub.co.uk> <1355250106-3114-1-git-send-email-holler@ahsoftware.de> <1355250106-3114-4-git-send-email-holler@ahsoftware.de> <50C8539C.1070509@metafoo.de> <50C8591A.3030301@ahsoftware.de>
-In-Reply-To: <50C8591A.3030301@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C83F97.3040009@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 11:14 AM, Alexander Holler wrote:
-> Am 12.12.2012 10:51, schrieb Lars-Peter Clausen:
+On Wed 12-12-12 16:25:59, Jianguo Wu wrote:
+> Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
+> and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
+> system will boot fail.
 > 
->> Looks good, but as I wrote during the last review the __devinits need to go.
->> A few other suggerstions online
+> This failure is caused by following code path:
+> setup_hugepagesz
+> 	hugetlb_add_hstate
+> 		hugetlb_cgroup_file_init
+> 			cgroup_add_cftypes
+> 				kzalloc <--slab is *not available* yet
 > 
-> Oh, have forgotten it. Ok, will make a v4, changing the other few things too.
+> For this path, slab is not available yet, so memory allocated will be
+> failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
 > 
->>> +    case HID_USAGE_SENSOR_TIME_MONTH:
->>> +        time_buf->tm_mon = --*(u8 *)raw_data;
+> So I move hugetlb_cgroup_file_init() into hugetlb_init().
+
+I do not think this is a good idea. hugetlb_init is in __init section as
+well so what guarantees that the slab is initialized by then? Isn't this
+just a good ordering that makes this working?
+Shouldn't this be rather placed in hugetlb_cgroup_create?
+
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  include/linux/hugetlb_cgroup.h |    7 ++-----
+>  mm/hugetlb.c                   |   11 +----------
+>  mm/hugetlb_cgroup.c            |   23 +++++++++++++++++++++--
+>  3 files changed, 24 insertions(+), 17 deletions(-)
 > 
-> Time sensors are sending the month in the range 1-12, not 0-11.
+> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+> index d73878c..5bb9c28 100644
+> --- a/include/linux/hugetlb_cgroup.h
+> +++ b/include/linux/hugetlb_cgroup.h
+> @@ -62,7 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>  					 struct page *page);
+>  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  					   struct hugetlb_cgroup *h_cg);
+> -extern int hugetlb_cgroup_file_init(int idx) __init;
+> +extern void hugetlb_cgroup_file_init(void) __init;
+>  extern void hugetlb_cgroup_migrate(struct page *oldhpage,
+>  				   struct page *newhpage);
+>  
+> @@ -111,10 +111,7 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  	return;
+>  }
+>  
+> -static inline int __init hugetlb_cgroup_file_init(int idx)
+> -{
+> -	return 0;
+> -}
+> +static inline void __init hugetlb_cgroup_file_init() {}
+>  
+>  static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
+>  					  struct page *newhpage)
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 1ef2cd4..a30da48 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1906,14 +1906,12 @@ static int __init hugetlb_init(void)
+>  		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
+>  
+>  	hugetlb_init_hstates();
+> -
+>  	gather_bootmem_prealloc();
+> -
+>  	report_hugepages();
+>  
+>  	hugetlb_sysfs_init();
+> -
+>  	hugetlb_register_all_nodes();
+> +	hugetlb_cgroup_file_init();
+>  
+>  	return 0;
+>  }
+> @@ -1943,13 +1941,6 @@ void __init hugetlb_add_hstate(unsigned order)
+>  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+>  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+>  					huge_page_size(h)/1024);
+> -	/*
+> -	 * Add cgroup control files only if the huge page consists
+> -	 * of more than two normal pages. This is because we use
+> -	 * page[2].lru.next for storing cgoup details.
+> -	 */
+> -	if (order >= HUGETLB_CGROUP_MIN_ORDER)
+> -		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
+>  
+>  	parsed_hstate = h;
+>  }
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index a3f358f..284cb68 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -340,7 +340,7 @@ static char *mem_fmt(char *buf, int size, unsigned long hsize)
+>  	return buf;
+>  }
+>  
+> -int __init hugetlb_cgroup_file_init(int idx)
+> +static void __init __hugetlb_cgroup_file_init(int idx)
+>  {
+>  	char buf[32];
+>  	struct cftype *cft;
+> @@ -382,7 +382,26 @@ int __init hugetlb_cgroup_file_init(int idx)
+>  
+>  	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
+>  
+> -	return 0;
+> +	return;
+> +}
+> +
+> +void __init hugetlb_cgroup_file_init()
+> +{
+> +	struct hstate *h;
+> +	int idx;
+> +
+> +	idx = 0;
+> +	for_each_hstate(h) {
+> +		/*
+> +		 * Add cgroup control files only if the huge page consists
+> +		 * of more than two normal pages. This is because we use
+> +		 * page[2].lru.next for storing cgoup details.
+> +		 */
+> +		if (h->order >= HUGETLB_CGROUP_MIN_ORDER)
+> +			__hugetlb_cgroup_file_init(idx);
+> +
+> +		idx++;
+> +	}
+>  }
+>  
+>  /*
+> -- 1.7.1
 > 
-Ah, sorry, I guess hadn't had enough coffee yet, I read this as -(-(*(u8
-*)raw_data))) and was a bit confused...
+
+-- 
+Michal Hocko
+SUSE Labs
