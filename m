@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab2LLTj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:39:27 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2761 "EHLO
+	id S1755080Ab2LLTj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:39:26 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28729 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab2LLTjW (ORCPT
+	with ESMTP id S1754786Ab2LLTjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Dec 2012 14:39:22 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=jJ7Cow1ZuacA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VNbI9rDQBQUA:10 a=-wnBujlOT7k6EHvpfdEA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=uR51_XVMv30A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=lJNXu2PuPr0A:10 a=7ytzXt4uK6ZxC01KpIsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121212193920.366926749@goodmis.org>
+Message-Id: <20121212192733.221810086@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 12 Dec 2012 14:27:34 -0500
+Date: Wed, 12 Dec 2012 14:27:33 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -23,68 +23,49 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Ingo Molnar <mingo@kernel.org>,
         Frank Rowand <frank.rowand@am.sony.com>,
         Mike Galbraith <bitbucket@online.de>
-Subject: [RFC][PATCH RT 1/4 v2] sched/rt: Fix push_rt_task() to have the same checks as the caller did
-References: <20121212192733.221810086@goodmis.org>
-Content-Disposition: inline; filename=fix-push-rt-task-check.patch
+Subject: [RFC][PATCH RT 0/4 v2] sched/rt: Lower rq lock contention latencies on many CPU boxes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the push_rt_task() only pushes the task if it is lower
-priority than the currently running task.
+This version I rearranged the patches a little so that the IPI patch
+comes last. As the first 3 patches are less controversal, and should
+probably be added now.
 
-But this is not the only check. If the currently running task is also
-pinned, we may want to push as well, and we do this check when we wake
-up a task, but then we are guaranteed to fail pushing the task because
-the internal checks may fail.
+The difference in this version was that I added more comments, but
+more importantly I also added a sched feature called RT_PUSH_IPI.
+When this feature is enabled, it switches the pull logic to send
+an IPI to the RT overloaded CPU to do a push instead of doing  the
+pull locally.
 
-Make the check the same as the wakeup checks. We could remove the
-check in the wake up and just let the push_rt_task() do the work,
-but this makes the wake up exit this check on the likely case that
-"ok_to_push_task()" will fail, and that we don't need to do the
-iterative loop of checks on the pushable task list.
+When the feature is disabled, the push/pull logic stays the same as
+it always has (with rq lock contention).
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Now I've discussed this with Clark, and we noticed that the contention
+didn't show up until we tried it on a 24 CPU machine. On a 16 CPU machine
+it ran fine. Thus, by default, machines with 16 or less CPUs will
+have the RT_PUSH_IPI feature disabled. Machines with 17 or more
+possible CPUs will have the feature enabled at boot up. Note, we haven't
+tried it on a machine with 17 to 23 CPUs.
 
-Index: linux-rt.git/kernel/sched/rt.c
-===================================================================
---- linux-rt.git.orig/kernel/sched/rt.c
-+++ linux-rt.git/kernel/sched/rt.c
-@@ -1615,6 +1615,15 @@ static struct task_struct *pick_next_pus
- 	return p;
- }
- 
-+static int ok_to_push_task(struct task_struct *p, struct task_struct *curr)
-+{
-+	return p->nr_cpus_allowed > 1 &&
-+		rt_task(curr) &&
-+		(curr->migrate_disable ||
-+		 curr->nr_cpus_allowed < 2 ||
-+		 curr->prio <= p->prio);
-+}
-+
- /*
-  * If the current CPU has more than one RT task, see if the non
-  * running task can migrate over to a CPU that is running a task
-@@ -1649,7 +1658,7 @@ retry:
- 	 * higher priority than current. If that's the case
- 	 * just reschedule current.
- 	 */
--	if (unlikely(next_task->prio < rq->curr->prio)) {
-+	if (!ok_to_push_task(next_task, rq->curr)) {
- 		resched_task(rq->curr);
- 		return 0;
- 	}
-@@ -1814,10 +1823,7 @@ static void task_woken_rt(struct rq *rq,
- 	if (!task_running(rq, p) &&
- 	    !test_tsk_need_resched(rq->curr) &&
- 	    has_pushable_tasks(rq) &&
--	    p->nr_cpus_allowed > 1 &&
--	    rt_task(rq->curr) &&
--	    (rq->curr->nr_cpus_allowed < 2 ||
--	     rq->curr->prio <= p->prio))
-+	    ok_to_push_task(p, rq->curr))
- 		push_rt_tasks(rq);
- }
- 
+It is safe to enable or disable this feature at run time, although
+you may cause latencies in doing so, but there shouldn't be any missed
+wakeups or anything else that is serious. The worse that can happen
+is that you miss a pull, and an RT task will stay on its CPU when it
+could have migrated to another CPU that just lowered its priority.
+Well, if you are worried about that, don't change it when you care :-)
+
+The 16 CPUs is just a heuristic, and people may debate it. And perhaps
+you may not like how the push/pull default changes between different
+machines. I could also add a command line switch to force enable/disable
+at boot, and/or I could add a config as well.
+
+Right now, by default <= 16 CPU machines are as it always was, and
+17 or more CPU machines have this new logic enabled. Either one can
+change it at run time via the debugfs directory (unfortunately it's
+not a sysctl).
+
+Comments?
+
+-- Steve
 
