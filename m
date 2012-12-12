@@ -1,136 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab2LLBrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:47:05 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22413 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2LLBrC (ORCPT
+	id S1754744Ab2LLBth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:49:37 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:42030 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593Ab2LLBtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:47:02 -0500
-Date: Wed, 12 Dec 2012 09:45:14 +0800
-From: Liu Bo <bo.li.liu@oracle.com>
-To: Jim Schutt <jaschut@sandia.gov>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
-Subject: Re: 3.7.0-rc8 btrfs locking issue
-Message-ID: <20121212014513.GC12318@liubo>
-Reply-To: bo.li.liu@oracle.com
-References: <50BF7129.90602@sandia.gov>
- <20121209140442.GA14309@liubo.jp.oracle.com>
- <50C7604B.7070203@sandia.gov>
- <20121212013736.GA12318@liubo>
+	Tue, 11 Dec 2012 20:49:36 -0500
+X-Greylist: delayed 686 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 20:49:36 EST
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH] pstore/ram: Fix bounds checks for mem_size, record_size, console_size and ftrace_size
+Date: Tue, 11 Dec 2012 17:49:24 -0800
+Message-Id: <1355276964-2929-1-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.7.7.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212013736.GA12318@liubo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 09:37:37AM +0800, Liu Bo wrote:
-> On Tue, Dec 11, 2012 at 09:33:15AM -0700, Jim Schutt wrote:
-> > On 12/09/2012 07:04 AM, Liu Bo wrote:
-> > > On Wed, Dec 05, 2012 at 09:07:05AM -0700, Jim Schutt wrote:
-> > > Hi Jim,
-> > > 
-> > > Could you please apply the following patch to test if it works?
-> > 
-> > Hi,
-> > 
-> > So far, with your patch applied I've been unable to reproduce
-> > the recursive deadlock.  Thanks a lot for this patch!
-> > This issue has been troubling me for a while.
-> 
-> Hi Jim,
-> 
-> Good news for us :)
-> 
-> > 
-> > I've been trying to learn more about btrfs internals -
-> > if you have the time to answer a couple questions about
-> > your patch, I'd really appreciate it.
-> 
-> See below.
-> 
-> > 
-> > > 
-> > > (It's against 3.7-rc8.)
-> > > 
-> > > diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> > > index 3d3e2c1..100289b 100644
-> > > --- a/fs/btrfs/extent-tree.c
-> > > +++ b/fs/btrfs/extent-tree.c
-> > > @@ -3346,7 +3346,8 @@ u64 btrfs_get_alloc_profile(struct btrfs_root
-> > > *root, int data)
-> > >  
-> > >  	if (data)
-> > >  		flags = BTRFS_BLOCK_GROUP_DATA;
-> > > -	else if (root == root->fs_info->chunk_root)
-> > > +	else if (root == root->fs_info->chunk_root ||
-> > > +		 root == root->fs_info->dev_root)
-> > >  		flags = BTRFS_BLOCK_GROUP_SYSTEM;
-> > >  	else
-> > >  		flags = BTRFS_BLOCK_GROUP_METADATA;
-> > > @@ -3535,6 +3536,7 @@ static u64 get_system_chunk_thresh(struct
-> > > btrfs_root *root, u64 type)
-> > >  		num_dev = 1;	/* DUP or single */
-> > >  
-> > >  	/* metadata for updaing devices and chunk tree */
-> > > +	num_dev = num_dev << 1
-> > 
-> > AFAICS this is doubling the size of the reserve, which
-> > reduces the chance of a recursive do_chunk_alloc(), right?
-> > 
-> 
-> Not like that, we hit the deadlock because updating device tree also
-> uses METADATA chunk, which may be called when we're actually allocating
-> a METADATA chunk, so the patch I sent you makes updating device tree
-> use SYSTEM chunk, which we'll have some code to check if it is enough
-> before allocating a chunk(if not, we'll allocate a SYSTEM chunk first).
-> 
-> Here I double the size just because the worst case of allocating a
-> DATA/METADATA chunk -may- results in
-> 
-> 1)adding a SYSTEM chunk +
-> 2)adding dev extent per chunk stripe +
-> 3)updating chunk stripes's bytes_used
-> 
-> > >  	return btrfs_calc_trans_metadata_size(root, num_dev + 1);
-> > 
-> > btrfs_calc_trans_metadata_size(root, num_items) multiplies its
-> > num_items argument by another factor of three - do you know if
-> > there is there some rationale behind that number, or is it
-> > perhaps also an empirically determined factor?
-> 
-> The height of Btrfs's metadata btree is at most 8,
-> leaf is on 0 level while node is at most on 7 level.
-> 
-> Each btree update may results in COWing a node and its sibling nodes,
-> where the factor of tree comes from
+The bounds check in ramoops_init_prz was incorrect and ramoops_init_przs
+had no check. Additionally, ramoops_init_przs allows record_size to be 0,
+but ramoops_pstore_write_buf would always crash in this case.
 
-s/tree/three/g
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+---
+ fs/pstore/ram.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-> 
-> > 
-> > What I'm wondering about is that if the size of the reserve is
-> > empirically determined, will it need to be increased again
-> > later when machines are more capable, and can handle a higher
-> > load?
-> > 
-> > Do you think it's feasible to modify the locking for
-> > do_chunk_alloc to allow it to recurse without deadlock?
-> 
-> Well, it could be, but IMO it'll bring us complexity, so worse
-> maintainance.
-> 
-> Any questions? Feel free to ask.
-> 
-> thanks,
-> liubo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 1a4f6da..eb3dbff 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -189,7 +189,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+ 					    struct pstore_info *psi)
+ {
+ 	struct ramoops_context *cxt = psi->data;
+-	struct persistent_ram_zone *prz = cxt->przs[cxt->dump_write_cnt];
++	struct persistent_ram_zone *prz;
+ 	size_t hlen;
+ 
+ 	if (type == PSTORE_TYPE_CONSOLE) {
+@@ -226,6 +226,11 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+ 	if (part != 1)
+ 		return -ENOSPC;
+ 
++	if (!cxt->przs)
++		return -ENOSPC;
++
++	prz = cxt->przs[cxt->dump_write_cnt];
++
+ 	hlen = ramoops_write_kmsg_hdr(prz);
+ 	if (size + hlen > prz->buffer_size)
+ 		size = prz->buffer_size - hlen;
+@@ -296,6 +301,11 @@ static int ramoops_init_przs(struct device *dev, struct ramoops_context *cxt,
+ 	if (!cxt->record_size)
+ 		return 0;
+ 
++	if (*paddr + dump_mem_sz - cxt->phys_addr > cxt->size) {
++		dev_err(dev, "no room for dumps\n");
++		return -ENOMEM;
++	}
++
+ 	cxt->max_dump_cnt = dump_mem_sz / cxt->record_size;
+ 	if (!cxt->max_dump_cnt)
+ 		return -ENOMEM;
+@@ -333,8 +343,12 @@ static int ramoops_init_prz(struct device *dev, struct ramoops_context *cxt,
+ 	if (!sz)
+ 		return 0;
+ 
+-	if (*paddr + sz > *paddr + cxt->size)
++	if (*paddr + sz - cxt->phys_addr > cxt->size) {
++		dev_err(dev, "no room for mem region (0x%zx@0x%llx) in (0x%lx@0x%llx)\n",
++			sz, (unsigned long long)*paddr,
++			cxt->size, (unsigned long long)cxt->phys_addr);
+ 		return -ENOMEM;
++	}
+ 
+ 	*prz = persistent_ram_new(*paddr, sz, sig, cxt->ecc_size);
+ 	if (IS_ERR(*prz)) {
+-- 
+1.7.7.3
+
