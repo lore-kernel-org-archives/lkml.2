@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2LLT64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:58:56 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55994 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2LLT6z (ORCPT
+	id S1755085Ab2LLUBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 15:01:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44252 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984Ab2LLUBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:58:55 -0500
+	Wed, 12 Dec 2012 15:01:03 -0500
+Message-ID: <50C8E275.9050308@linaro.org>
+Date: Wed, 12 Dec 2012 21:00:53 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121212115828.GJ4398@game.jcrosoft.org>
-References: <1355233246-16694-1-git-send-email-linus.walleij@stericsson.com>
-	<20121211181336.GD25714@kroah.com>
-	<20121212115828.GJ4398@game.jcrosoft.org>
-Date: Wed, 12 Dec 2012 20:58:54 +0100
-Message-ID: <CACRpkdbWx+EOvwuO4j19gAbVwUKY+xHQSeoAwB4b-NOMiH4twQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/pinctrl: grab default handles from device core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Julius Werner <jwerner@chromium.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Francesco Lavra <francescolavra.fl@gmail.com>,
+        linux-pm@vger.kernel.org, Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>, len.brown@intel.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH] cpuidle - remove the power_specified field in the driver
+References: <1355325801-1317-1-git-send-email-daniel.lezcano@linaro.org> <CAODwPW81fXDNMTvG8juR6iAGFeDV9PXE-65Wp+dAE-mcKYU2nw@mail.gmail.com>
+In-Reply-To: <CAODwPW81fXDNMTvG8juR6iAGFeDV9PXE-65Wp+dAE-mcKYU2nw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 12:58 PM, Jean-Christophe PLAGNIOL-VILLARD
-<plagnioj@jcrosoft.com> wrote:
+On 12/12/2012 07:50 PM, Julius Werner wrote:
+> Thanks again for making this happen, Daniel. I like this version,
+> except for the small nitpick that I still think it would make sense to
+> also turn the loop in menu.c around. How about something like this:
+> 
+>        for (i = drv->state_count - 1; i >= CPUIDLE_DRIVER_STATE_START; i++) {
+>                 struct cpuidle_state *s = &drv->states[i];
+>                 if (!s->disable && s->exit_latency <= latency_req &&
+>                     s->target_residency <= data->predicted_us &&
+>                     s->exit_latency * multiplier <= data->predicted_us) {
+>                         data->last_state_idx = i;
+>                         data->exit_us = s->exit_latency;
+>                         break;
+>                 }
+>         }
 
->> > +#ifdef CONFIG_PINCTRL
->> > +   struct dev_pin_info     pins;
->> > +#endif
+Actually I was planning to do that in a separate patch.
 
-> can do do not put ifdef in the struct as if will force us to put ifdef in the
-> c code too instead of just use a inline function
 
-Oh, I'm just planning to use this from the pinctrl core code itself
-and the code in drivers/base/pinctrl.c (which is only compiled when
-CONFIG_PINCTRL is set) so there is no risk for that right now.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-I would agree if we exposed to drivers, like the dev_pm_ops...
-but that's not the plan right now.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Yours,
-Linus Walleij
