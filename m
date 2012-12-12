@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab2LLSUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:20:43 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:53016 "EHLO
+	id S1755189Ab2LLSUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:20:51 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:57893 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754987Ab2LLSUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:20:40 -0500
+	id S1754926Ab2LLSUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:20:49 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 07/26] ia64: Convert print_symbol to %pSR
-Date: Wed, 12 Dec 2012 10:18:56 -0800
-Message-Id: <90df189c061ddc1580efd32a179a9c409967b1d5.1355335227.git.joe@perches.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH 08/26] m32r: Convert print_symbol to %pSR
+Date: Wed, 12 Dec 2012 10:18:57 -0800
+Message-Id: <df548c6911e1b46a73b9a417efb800d08e0ecf8f.1355335228.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1355335227.git.joe@perches.com>
 References: <cover.1355335227.git.joe@perches.com>
@@ -25,51 +25,26 @@ message interleaving.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/ia64/kernel/process.c |   13 +++++--------
- 1 files changed, 5 insertions(+), 8 deletions(-)
+ arch/m32r/kernel/traps.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
-index 31360cb..f11105a 100644
---- a/arch/ia64/kernel/process.c
-+++ b/arch/ia64/kernel/process.c
-@@ -1,4 +1,4 @@
--/*
-+ /*
-  * Architecture-specific setup.
-  *
-  * Copyright (C) 1998-2003 Hewlett-Packard Co
-@@ -66,7 +66,6 @@ void
- ia64_do_show_stack (struct unw_frame_info *info, void *arg)
- {
- 	unsigned long ip, sp, bsp;
--	char buf[128];			/* don't make it so big that it overflows the stack! */
- 
- 	printk("\nCall Trace:\n");
- 	do {
-@@ -76,11 +75,9 @@ ia64_do_show_stack (struct unw_frame_info *info, void *arg)
- 
- 		unw_get_sp(info, &sp);
- 		unw_get_bsp(info, &bsp);
--		snprintf(buf, sizeof(buf),
--			 " [<%016lx>] %%s\n"
--			 "                                sp=%016lx bsp=%016lx\n",
--			 ip, sp, bsp);
--		print_symbol(buf, ip);
-+		printk(" [<%016lx>] %pSR\n"
-+		       "                                sp=%016lx bsp=%016lx\n",
-+		       ip, (void *)ip, sp, bsp);
- 	} while (unw_unwind(info) >= 0);
+diff --git a/arch/m32r/kernel/traps.c b/arch/m32r/kernel/traps.c
+index 3bcb207..9fe3467 100644
+--- a/arch/m32r/kernel/traps.c
++++ b/arch/m32r/kernel/traps.c
+@@ -132,10 +132,8 @@ static void show_trace(struct task_struct *task, unsigned long *stack)
+ 	printk("Call Trace: ");
+ 	while (!kstack_end(stack)) {
+ 		addr = *stack++;
+-		if (__kernel_text_address(addr)) {
+-			printk("[<%08lx>] ", addr);
+-			print_symbol("%s\n", addr);
+-		}
++		if (__kernel_text_address(addr))
++			printk("[<%08lx>] %pSR\n", addr, (void *)addr);
+ 	}
+ 	printk("\n");
  }
- 
-@@ -116,7 +113,7 @@ show_regs (struct pt_regs *regs)
- 	printk("psr : %016lx ifs : %016lx ip  : [<%016lx>]    %s (%s)\n",
- 	       regs->cr_ipsr, regs->cr_ifs, ip, print_tainted(),
- 	       init_utsname()->release);
--	print_symbol("ip is at %s\n", ip);
-+	printk("ip is at %pSR\n", (void *)ip);
- 	printk("unat: %016lx pfs : %016lx rsc : %016lx\n",
- 	       regs->ar_unat, regs->ar_pfs, regs->ar_rsc);
- 	printk("rnat: %016lx bsps: %016lx pr  : %016lx\n",
 -- 
 1.7.8.112.g3fd21
 
