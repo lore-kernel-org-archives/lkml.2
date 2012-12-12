@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab2LLC7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 21:59:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753763Ab2LLC7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 21:59:48 -0500
-Message-ID: <1355281172.3224.188.camel@bling.home>
-Subject: Re: [GIT PULL] VFIO updates for v3.8
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        fengguang.wu@intel.com, julia.lawall@lip6.fr, jiang.liu@huawei.com
-Date: Tue, 11 Dec 2012 19:59:32 -0700
-In-Reply-To: <20121212114430.cceef241f595a95e16c48874@canb.auug.org.au>
-References: <1355252887.3224.176.camel@bling.home>
-	 <20121212104632.b01520d6015486dd3ae507ef@canb.auug.org.au>
-	 <1355270816.3224.179.camel@bling.home>
-	 <20121212114430.cceef241f595a95e16c48874@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754554Ab2LLDAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 22:00:37 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:51918 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab2LLDAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 22:00:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <201212102208.52347.arnd@arndb.de>
+References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+	<169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
+	<201212102208.52347.arnd@arndb.de>
+Date: Wed, 12 Dec 2012 08:30:35 +0530
+Message-ID: <CAKohpo=FjZuMOC-wuNc3q_FXbk546ttCLr55GkW9AL0Tz-HoBA@mail.gmail.com>
+Subject: Re: [PATCH V3 2/3] dmaengine: dw_dmac: Enhance device tree support
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Sorry for replying late, was too busy with other work yesterday.
 
-On Wed, 2012-12-12 at 11:44 +1100, Stephen Rothwell wrote:
-> Hi Alex,
-> 
-> On Tue, 11 Dec 2012 17:06:56 -0700 Alex Williamson <alex.williamson@redhat.com> wrote:
-> >
-> > Is that a bad thing?  I can start tagging from my next branch if that's
-> > preferred.  Thanks,
-> 
-> Linus has said many times to not rebase before sending a pull request.
-> When you rebase your tree you effectively throw away your testing (since
-> the thing you rebased on top of may have introduced semantic conflicts
-> with the work in your tree).  If you don't rebase your tested tree, any
-> conflicts are then restricted to the actual merge and can be fixed there
-> (or at least the diagnosis will lead there).
-> 
-> So, if I was a maintiner, at the start of the merge window (or just
-> before) I would create a test branch that contained my work plus a
-> *merge* with Linus' tree and do some testing on that and then ask Linus
-> to pull my tree (not the merged version).  It may prove that the test
-> merge with Linus' tree produces an "interesting" syntactic conflict - in
-> this case I would mention that to Linus and put the merged tree somewhere
-> public for him to use as a guide.  (Mind you, this conflict would already
-> have most likely been noted by the linux-next maintainer.)
-> 
-> Also, your testing may have brought to light a semantic conflict, in
-> which case the fix could be supplied to Linus with the pull request, or a
-> well changed logged back merge of Linus' tree containing the fix could be
-> done and Linus asked to pull the result.
+On 11 December 2012 03:38, Arnd Bergmann <arnd@arndb.de> wrote:
+> I'm deeply sorry for the very late complaint on this, but I only now
 
-Thanks for the tip.  I certainly retested after doing the rebase to
-v3.7, but I can see the point.  I'll do as you suggest, a merge on a
-separate branch for testing only and tag what I currently have in my
-next branch.  v2 forthcoming.  Thanks,
+Better late than never :)
 
-Alex
+> noticed this patch as I was seeing build breakage in linux-next
+> because of it.
 
+Oops!! Here is a fix for that
+
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Wed Dec 12 08:28:07 2012 +0530
+
+    ARM: SPEAr1310: Fix CF DMA data
+
+    We need to pass string with device-channel name to dma controller
+instead of dma
+    controller specific dma struct. Fix CF dma data.
+
+    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ arch/arm/mach-spear13xx/spear1310.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-spear13xx/spear1310.c
+b/arch/arm/mach-spear13xx/spear1310.c
+index f65ad5b..54f0e2e 100644
+--- a/arch/arm/mach-spear13xx/spear1310.c
++++ b/arch/arm/mach-spear13xx/spear1310.c
+@@ -36,7 +36,7 @@
+ static struct arasan_cf_pdata cf_pdata = {
+        .cf_if_clk = CF_IF_CLK_166M,
+        .quirk = CF_BROKEN_UDMA,
+-       .dma_priv = &cf_dma_priv,
++       .dma_priv = "cf",
+ };
+
+> Viresh, there are multiple problems with your approach unfortunately:
+>
+> * It does not follow the binding from
+>   Documentation/devicetree/bindings/dma/dma.txt
+
+When i patched it, this patch wasn't there in linux-next/master.
+Probably was getting reviewed somewhere :)
+
+> * It requires slave drivers to know that they are using the dw_dmac
+>   driver and pass a pointer to dw_generic_filter, which is not
+>   generic at all
+>
+> * It requires the dmac node to have information about all slaves
+>
+> There are also some minor issues, such as the naming of DT
+> properties, but the above need to be resolved first.
+
+I saw the binding document and it looks it can be applied to dw_dmac
+too, as there is nothing special for it.
+
+The question is how? We are already late for merge window and this
+one is queued. Supplying a new patch, getting it reviewed/tested and
+being pulled by Linus is not so easy :)
+
+Two ways:
+- Keep it as is, and i will fix it separately and quickly
+- Drop it :(
+
+--
+viresh
