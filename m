@@ -1,140 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab2LLSJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:09:46 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63386 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab2LLSJo (ORCPT
+	id S1754705Ab2LLSNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:13:07 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46874 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab2LLSNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:09:44 -0500
+	Wed, 12 Dec 2012 13:13:05 -0500
+Message-ID: <50C8C8C9.2070605@linux.vnet.ibm.com>
+Date: Wed, 12 Dec 2012 23:41:21 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20121212090652.GB32081@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
-	<1353955671-14385-4-git-send-email-mhocko@suse.cz>
-	<CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
-	<20121211155432.GC1612@dhcp22.suse.cz>
-	<CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
-	<20121212090652.GB32081@dhcp22.suse.cz>
-Date: Wed, 12 Dec 2012 10:09:43 -0800
-Message-ID: <CALWz4iwq+vRN+rreOk7Jg4rHWWBSmNwBW8Kko45E-D8Vi66eQA@mail.gmail.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup iterators
-From: Ying Han <yinghan@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <20121212172431.GA23328@redhat.com>
+In-Reply-To: <20121212172431.GA23328@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121218-8878-0000-0000-000005242B5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 1:06 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Tue 11-12-12 14:36:10, Ying Han wrote:
->> On Tue, Dec 11, 2012 at 7:54 AM, Michal Hocko <mhocko@suse.cz> wrote:
->> > On Sun 09-12-12 11:39:50, Ying Han wrote:
->> >> On Mon, Nov 26, 2012 at 10:47 AM, Michal Hocko <mhocko@suse.cz> wrote:
->> > [...]
->> >> >                 if (reclaim) {
->> >> > -                       iter->position = id;
->> >> > +                       struct mem_cgroup *curr = memcg;
->> >> > +
->> >> > +                       if (last_visited)
->> >> > +                               css_put(&last_visited->css);
->> >                             ^^^^^^^^^^^
->> >                             here
->> >> > +
->> >> > +                       if (css && !memcg)
->> >> > +                               curr = mem_cgroup_from_css(css);
->> >> > +
->> >> > +                       /* make sure that the cached memcg is not removed */
->> >> > +                       if (curr)
->> >> > +                               css_get(&curr->css);
->> >> > +                       iter->last_visited = curr;
->> >>
->> >> Here we take extra refcnt for last_visited, and assume it is under
->> >> target reclaim which then calls mem_cgroup_iter_break() and we leaked
->> >> a refcnt of the target memcg css.
->> >
->> > I think you are not right here. The extra reference is kept for
->> > iter->last_visited and it will be dropped the next time somebody sees
->> > the same zone-priority iter. See above.
->> >
->> > Or have I missed your question?
+On 12/12/2012 10:54 PM, Oleg Nesterov wrote:
+> On 12/12, Oleg Nesterov wrote:
 >>
->> Hmm, question remains.
+>> On 12/11, Srivatsa S. Bhat wrote:
+>>>
+>>> IOW, the hotplug readers just increment/decrement their per-cpu refcounts
+>>> when no writer is active.
 >>
->> My understanding of the mem_cgroup_iter() is that each call path
->> should close the loop itself, in the sense that no *leaked* css refcnt
->> after that loop finished. It is the case for all the caller today
->> where the loop terminates at memcg == NULL, where all the refcnt have
->> been dropped by then.
->
-> Now I am not sure I understand you. mem_cgroup_iter_break will always
-> drop the reference of the last returned memcg. So far so good.
+>> plus cli/sti ;) and increment/decrement are atomic.
+>                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 
+> OOPS, sorry I was going to say "adds mb()".
+> 
 
-Yes, and the patch doesn't change that.
+Ok, got it :)
 
-But if
-> the last memcg got cached in per-zone-priority last_visited then we
-> _have_ to keep a reference to it regardless we broke out of the loop.
-> The last_visited thingy is shared between all parallel reclaimers so we
-> cannot just drop a reference to it.
+> And when I look at get_online_cpus_atomic() again it uses rmb(). This
+> doesn't look correct, we need the full barrier between this_cpu_inc()
+> and writer_active().
+> 
 
-Agree that the last_visited is shared between all the memcgs accessing
-the per-zone-per-iterator.
+Hmm..
 
-Also agree that we don't want to drop reference of it if last_visited
-is cached after the loop.
+> At the same time reader_nested_percpu() can be checked before mb().
+> 
 
-But If i look at the callers of mem_cgroup_iter(), they all look like
-the following:
+I thought that since the increment and the check (reader_nested_percpu)
+act on the same memory location, they will naturally be run in the given
+order, without any need for barriers. Am I wrong?
 
-memcg = mem_cgroup_iter(root, NULL, &reclaim);
-do {
+(I referred Documentation/memory-barriers.txt again to verify this, and
+the second point under the "Guarantees" section looked like it said the
+same thing : "Overlapping loads and stores within a particular CPU will
+appear to be ordered within that CPU").
 
-    // do something
+Regards,
+Srivatsa S. Bhat
 
-    memcg = mem_cgroup_iter(root, memcg, &reclaim);
-} while (memcg);
-
-So we get out of the loop when memcg returns as NULL, where the
-last_visited is cached as NULL as well thus no css_get(). That is what
-I meant by "each reclaim thread closes the loop". If that is true, the
-current implementation of mem_cgroup_iter_break() changes that.
-
-
->
->> One exception is mem_cgroup_iter_break(), where the loop terminates
->> with *leaked* refcnt and that is what the iter_break() needs to clean
->> up. We can not rely on the next caller of the loop since it might
->> never happen.
->
-> Yes, this is true and I already have a half baked patch for that. I
-> haven't posted it yet but it basically checks all node-zone-prio
-> last_visited and removes itself from them on the way out in pre_destroy
-> callback (I just need to cleanup "find a new last_visited" part and will
-> post it).
-
-Not sure whether that or just change the mem_cgroup_iter_break() by
-dropping the refcnt of last_visited.
-
---Ying
->
->> It makes sense to drop the refcnt of last_visited, the same reason as
->> drop refcnt of prev. I don't see why it makes different.
->
-> Because then it might vanish when somebody else wants to access it. If
-> we just did mem_cgroup_get which would be enough to keep only memcg part
-> in memory then what can we do at the time we visit it? css_tryget would
-> tell us "no your buddy is gone", you do not have any links to the tree
-> so you would need to start from the beginning. That is what I have
-> implemented in the first version. Then I've realized that this could
-> make a bigger pressure on the groups created earlier which doesn't seem
-> to be right. With css pinning we are sure that there is a link to a next
-> node in the tree.
->
-> Thanks!
-> --
-> Michal Hocko
-> SUSE Labs
