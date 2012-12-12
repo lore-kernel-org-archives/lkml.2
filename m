@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2LLEEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 23:04:25 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:53549 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab2LLEEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 23:04:23 -0500
-X-Greylist: delayed 3653 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 23:04:23 EST
+	id S1754458Ab2LLEMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 23:12:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754117Ab2LLEMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 23:12:15 -0500
+Date: Wed, 12 Dec 2012 00:11:32 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] kvm: memory slot cleanups, fix, and increase
+Message-ID: <20121212021132.GD2898@amt.cnet>
+References: <20121210171417.10461.20079.stgit@bling.home>
 MIME-Version: 1.0
-In-Reply-To: <001701cdd732$53119410$f934bc30$%choi@samsung.com>
-References: <1355141166-17205-1-git-send-email-a.kesavan@samsung.com>
-	<001701cdd732$53119410$f934bc30$%choi@samsung.com>
-Date: Wed, 12 Dec 2012 08:33:29 +0530
-Message-ID: <CAM4voakRaNU-7=vF1+e8RAu14XP6NKWMmjiCRHgzn14B4SH8rQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] ARM: EXYNOS5: Support Exynos5-bus devfreq driver
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        kgene.kim@samsung.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, rjw@sisk.pl
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 5:29 AM, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> Hi Abhilash Kesavan.
-Hi Mr Choi,
+On Mon, Dec 10, 2012 at 10:32:39AM -0700, Alex Williamson wrote:
+> v2: Update 02/10 to not check userspace_addr when slot is removed.
+>     Yoshikawa-san withdrew objection to increase slot_bitmap prior
+>     to his series to remove slot_bitmap.
+> 
+> This series does away with any kind of complicated resizing of the
+> slot array and simply does a one time increase.  I do compact struct
+> kvm_memory_slot a bit to take better advantage of the space we are
+> using.  This reduces each slot from 64 bytes (x86_64) to 56 bytes.
+> By enforcing the API around valid operations for an unused slot and
+> fields that can be modified runtime, I found and was able to fix a
+> bug in iommu mapping for slots.  The renames enabled me to find the
+> previously posted bug fix for catching slot overlaps.
+> 
+> As mentioned in the series, the primary motivation for increasing
+> memory slots is assigned devices.  With this, I've been able to
+> assign 30 devices to a single VM and could have gone further, but
+> ran out of SRIOV VFs.  Typical devices use anywhere from 2-4 slots
+> and max out at 8 slots.  125 user slots (3 private slots) allows
+> us to support between 28 and 56 typical devices per VM.
+> 
+> Tested on x86_64, compiled on ia64, powerpc, and s390.
+> 
+> Thanks,
+> Alex
 
-Thanks for your comments.
->
->
->> +     /* Change Divider - LEX */
->> +     tmp = __raw_readl(EXYNOS5_CLKDIV_LEX);
->> +
->> +     tmp &= ~(EXYNOS5_CLKDIV_LEX_ATCLK_LEX_MASK |
->> +             EXYNOS5_CLKDIV_LEX_PCLK_LEX_MASK);
->> +
->> +     tmp |= int_freq[div_index].clk_div_lex;
->> +
->> +     __raw_writel(tmp, EXYNOS5_CLKDIV_LEX);
->> +
->
-> I knew that only ATCLK_LEX & PCLK_LEX divider value are in CLKDIV_LEX
-> register. (Others are reserved and value is 0)
-> So, I think
-> "
-> tmp = int_freq[div_index].clk_div_lex;
-> __raw_writel(tmp, EXYNOS5_CLKDIV_LEX);
-> "
-> Is enough.
->
->> +     tmp = __raw_readl(EXYNOS5_CLKDIV_LEX);
->> +
->> +     tmp &= ~(EXYNOS5_CLKDIV_LEX_ATCLK_LEX_MASK |
->> +             EXYNOS5_CLKDIV_LEX_PCLK_LEX_MASK);
-> -> not need.
->
->
->
->> +     while (__raw_readl(EXYNOS5_CLKDIV_STAT_LEX) & 0x110)
->> +             cpu_relax();
->> +
->> +     /* Change Divider - R0X */
->> +     tmp = __raw_readl(EXYNOS5_CLKDIV_R0X);
->> +
->> +     tmp &= ~EXYNOS5_CLKDIV_R0X_PCLK_R0X_MASK;
->> +
->> +     tmp |= int_freq[div_index].clk_div_r0x;
->> +
->> +     __raw_writel(tmp, EXYNOS5_CLKDIV_R0X);
->> +
->
-> Same here
->
->
->> +     while (__raw_readl(EXYNOS5_CLKDIV_STAT_R0X) & 0x10)
->> +             cpu_relax();
->> +
->> +     /* Change Divider - R1X */
->> +     tmp = __raw_readl(EXYNOS5_CLKDIV_R1X);
->> +
->> +     tmp &= ~EXYNOS5_CLKDIV_R1X_PCLK_R1X_MASK;
->> +
->> +     tmp |= int_freq[div_index].clk_div_r1x;
->> +
->> +     __raw_writel(tmp, EXYNOS5_CLKDIV_R1X);
->> +
->
-> Same here
->
->> +     while (__raw_readl(EXYNOS5_CLKDIV_STAT_R1X) & 0x10)
->> +             cpu_relax();
->
-> How about your opinion?
-I have verified the registers against the 5250 User Manual. You are
-right on all counts.
-I will fix them all and re-post.
->
-> thanks
-Regards,
-Abhilash
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+
