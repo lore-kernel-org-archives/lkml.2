@@ -1,73 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab2LLW1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 17:27:25 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54676 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755454Ab2LLW1X convert rfc822-to-8bit (ORCPT
+	id S1755652Ab2LLW1r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 17:27:47 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:18249 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab2LLW1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 17:27:23 -0500
+	Wed, 12 Dec 2012 17:27:45 -0500
+Message-ID: <201212122227.qBCMRiNg000851@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 12 Dec 2012 17:24:39 -0500
+Subject: [PATCH] arch/tile: provide PT_FLAGS_COMPAT value in pt_regs
+To: <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <50C85807.2000609@ti.com>
-References: <1355276466-18295-1-git-send-email-arve@android.com>
-	<50C85807.2000609@ti.com>
-Date: Wed, 12 Dec 2012 14:27:22 -0800
-Message-ID: <CAMP5Xgdj_w_Kdek2WY-k73Od9DRfMpwnBuTfu9WKJFJnQ3VARQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: decompressor: Flush tlb before swiching domain 0 to
- client mode
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, r.sricharan@ti.com,
-        rmk+kernel@arm.linux.org.uk,
-        ARM PORT <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 2:10 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On Wednesday 12 December 2012 02:41 AM, Arve Hjønnevåg wrote:
->>
->> If the bootloader used a page table that is incompatible with domain 0
->> in client mode, then swithing domain 0 to client mode causes a fault
->> if we don't flush the tlb after updating the page table pointer.
->>
->> Signed-off-by: Arve Hjønnevåg <arve@android.com>
->> ---
->>   arch/arm/boot/compressed/head.S |    1 +
->>   1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/boot/compressed/head.S
->> b/arch/arm/boot/compressed/head.S
->> index 90275f0..9c8034c 100644
->> --- a/arch/arm/boot/compressed/head.S
->> +++ b/arch/arm/boot/compressed/head.S
->> @@ -704,6 +704,7 @@ __armv7_mmu_cache_on:
->>                 bic     r6, r6, #1 << 31        @ 32-bit translation
->> system
->>                 bic     r6, r6, #3 << 0         @ use only ttbr0
->>                 mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
->> +               mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
->>                 mcrne   p15, 0, r1, c3, c0, 0   @ load domain access
->> control
->>                 mcrne   p15, 0, r6, c2, c0, 2   @ load ttb control
->>   #endif
->>
-> The TLB's are already flushed few lines above so above patching
-> shouldn't help if it was really dirty TLB entry issue. I suspect that
-> your boot-loader clean-up [1] function may not be taking care of
-> flushing caches which could potetially lead to the issue.
->
-> Have you checked that ?
->
+This flag is set for ptrace GETREGS or PEEKUSER for processes
+that are COMPAT, i.e. 32-bit.  This allows things like strace
+to easily discover what personality to use, for example.
 
-No, the problem is that the mmu is on when that first tlb flush
-happens so the tlb entry for the code that is executing gets reloaded
-from the old page table. This is probably a bootloader bug, but I
-don't have the bootloader source and 3.4 boots with the same
-bootloader.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/include/uapi/asm/ptrace.h |    6 ++++
+ arch/tile/kernel/ptrace.c           |   57 ++++++++++++++++++++++++-----------
+ 2 files changed, 46 insertions(+), 17 deletions(-)
 
+diff --git a/arch/tile/include/uapi/asm/ptrace.h b/arch/tile/include/uapi/asm/ptrace.h
+index c717d0f..0d22088 100644
+--- a/arch/tile/include/uapi/asm/ptrace.h
++++ b/arch/tile/include/uapi/asm/ptrace.h
+@@ -84,5 +84,11 @@ struct pt_regs {
+ #define PTRACE_O_TRACEMIGRATE	0x00010000
+ #define PTRACE_EVENT_MIGRATE	16
+ 
++/*
++ * Flag bits in pt_regs.flags that are part of the ptrace API.
++ * We start our numbering higher up to avoid confusion with the
++ * non-ABI kernel-internal values that use the low 16 bits.
++ */
++#define PT_FLAGS_COMPAT		0x10000  /* process is an -m32 compat process */
+ 
+ #endif /* _UAPI_ASM_TILE_PTRACE_H */
+diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+index e92e405..64ba102 100644
+--- a/arch/tile/kernel/ptrace.c
++++ b/arch/tile/kernel/ptrace.c
+@@ -45,6 +45,41 @@ void ptrace_disable(struct task_struct *child)
+ 	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
+ }
+ 
++/*
++ * Get registers from task and ready the result for userspace.
++ * Note that we localize the API issues to getregs() and putregs() at
++ * some cost in performance, e.g. we need a full pt_regs copy for
++ * PEEKUSR, and two copies for POKEUSR.  But in general we expect
++ * GETREGS/PUTREGS to be the API of choice anyway.
++ */
++static char *getregs(struct task_struct *child, struct pt_regs *uregs)
++{
++	*uregs = *task_pt_regs(child);
++
++	/* Set up flags ABI bits. */
++	uregs->flags = 0;
++#ifdef CONFIG_COMPAT
++	if (task_thread_info(child)->status & TS_COMPAT)
++		uregs->flags |= PT_FLAGS_COMPAT;
++#endif
++
++	return (char *)uregs;
++}
++
++/* Put registers back to task. */
++static void putregs(struct task_struct *child, struct pt_regs *uregs)
++{
++	struct pt_regs *regs = task_pt_regs(child);
++
++	/* Don't allow overwriting the kernel-internal flags word. */
++	uregs->flags = regs->flags;
++
++	/* Only allow setting the ICS bit in the ex1 word. */
++	uregs->ex1 = PL_ICS_EX1(USER_PL, EX1_ICS(uregs->ex1));
++
++	*regs = *uregs;
++}
++
+ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
+@@ -53,14 +88,13 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	long ret = -EIO;
+ 	char *childreg;
+ 	struct pt_regs copyregs;
+-	int ex1_offset;
+ 
+ 	switch (request) {
+ 
+ 	case PTRACE_PEEKUSR:  /* Read register from pt_regs. */
+ 		if (addr >= PTREGS_SIZE)
+ 			break;
+-		childreg = (char *)task_pt_regs(child) + addr;
++		childreg = getregs(child, &copyregs) + addr;
+ #ifdef CONFIG_COMPAT
+ 		if (is_compat_task()) {
+ 			if (addr & (sizeof(compat_long_t)-1))
+@@ -79,17 +113,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	case PTRACE_POKEUSR:  /* Write register in pt_regs. */
+ 		if (addr >= PTREGS_SIZE)
+ 			break;
+-		childreg = (char *)task_pt_regs(child) + addr;
+-
+-		/* Guard against overwrites of the privilege level. */
+-		ex1_offset = PTREGS_OFFSET_EX1;
+-#if defined(CONFIG_COMPAT) && defined(__BIG_ENDIAN)
+-		if (is_compat_task())   /* point at low word */
+-			ex1_offset += sizeof(compat_long_t);
+-#endif
+-		if (addr == ex1_offset)
+-			data = PL_ICS_EX1(USER_PL, EX1_ICS(data));
+-
++		childreg = getregs(child, &copyregs) + addr;
+ #ifdef CONFIG_COMPAT
+ 		if (is_compat_task()) {
+ 			if (addr & (sizeof(compat_long_t)-1))
+@@ -102,11 +126,12 @@ long arch_ptrace(struct task_struct *child, long request,
+ 				break;
+ 			*(long *)childreg = data;
+ 		}
++		putregs(child, &copyregs);
+ 		ret = 0;
+ 		break;
+ 
+ 	case PTRACE_GETREGS:  /* Get all registers from the child. */
+-		if (copy_to_user(datap, task_pt_regs(child),
++		if (copy_to_user(datap, getregs(child, &copyregs),
+ 				 sizeof(struct pt_regs)) == 0) {
+ 			ret = 0;
+ 		}
+@@ -115,9 +140,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	case PTRACE_SETREGS:  /* Set all registers in the child. */
+ 		if (copy_from_user(&copyregs, datap,
+ 				   sizeof(struct pt_regs)) == 0) {
+-			copyregs.ex1 =
+-				PL_ICS_EX1(USER_PL, EX1_ICS(copyregs.ex1));
+-			*task_pt_regs(child) = copyregs;
++			putregs(child, &copyregs);
+ 			ret = 0;
+ 		}
+ 		break;
 -- 
-Arve Hjønnevåg
+1.7.10.3
+
