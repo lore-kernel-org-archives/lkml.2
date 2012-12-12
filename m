@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab2LLQfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 11:35:03 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:1909 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab2LLQfA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 11:35:00 -0500
-Date: Wed, 12 Dec 2012 17:34:44 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: i2c-hid: add mutex protecting open/close race
-Message-ID: <20121212173444.471d5cc6@endymion.delvare>
-In-Reply-To: <1355328736-31418-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1355328736-31418-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754720Ab2LLQhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 11:37:54 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59675 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab2LLQhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 11:37:52 -0500
+Date: Wed, 12 Dec 2012 17:37:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Lin, Mengdong" <mengdong.lin@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50
+ [snd_hda_intel] returns -11
+Message-ID: <20121212163748.GF8760@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Lin, Mengdong" <mengdong.lin@intel.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
+	lkml <linux-kernel@vger.kernel.org>,
+	Linux PM list <linux-pm@vger.kernel.org>
+References: <20121211170315.GC28827@liondog.tnic>
+ <2487425.bAQggRZzC4@vostro.rjw.lan>
+ <20121211175508.GE28827@liondog.tnic>
+ <15066310.xXEWfqCuJc@vostro.rjw.lan>
+ <20121212105143.GA9252@liondog.tnic>
+ <F46914AEC2663F4A9BB62374E5EEF8F829248F@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <F46914AEC2663F4A9BB62374E5EEF8F829248F@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On Wed, Dec 12, 2012 at 03:20:25PM +0000, Lin, Mengdong wrote:
+> I remember I didn't observed repetitive attempts to suspend if the
+> azx_runtime_suspend() returns -EAGAIN.
+>
+> Because the HD-A driver does not implement the runtime idle
+> callback...
 
-On Wed, 12 Dec 2012 17:12:16 +0100, Benjamin Tissoires wrote:
-> We should not enter close function while someone else is in open.
-> This mutex prevents this race.
-> 
-> There is also no need to override the ret value with -EIO in case of
-> a failure of i2c_hid_set_power.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
+It does now :-)
 
-Looks good to me except that you forgot to include <linux/mutex.h> and
-this could cause build failures on some architectures/configs.
-
-Once this is fixed, you can add:
-
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+https://lkml.org/lkml/2012/12/12/128
 
 -- 
-Jean Delvare
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
