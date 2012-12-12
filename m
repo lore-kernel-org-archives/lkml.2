@@ -1,258 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab2LLJLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:11:21 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33122 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab2LLJKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:10:19 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v4 7/7] leds: leds-pwm: Add device tree bindings
-Date: Wed, 12 Dec 2012 10:04:52 +0100
-Message-ID: <1355303092-15523-8-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1752642Ab2LLJNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:13:04 -0500
+Received: from sabertooth02.qualcomm.com ([65.197.215.38]:55394 "EHLO
+	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab2LLJNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:13:00 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6923"; a="11592171"
+X-IronPort-AV: E=McAfee;i="5400,1158,6923"; a="3776879"
+From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+CC: Joe Perches <joe@perches.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-wireless@vger.kernel.org>, Jim Cromie <jim.cromie@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] dynamic_debug: introduce debug_hex_dump()
+Date: Wed, 12 Dec 2012 11:12:55 +0200
+Message-ID: <10591713.1pVYGV5bcJ@lx-vladimir>
+Organization: Qualcomm Atheros
+User-Agent: KMail/4.9.3 (Linux/3.5.0-19-generic; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121211225555.GC15974@pogo>
+References: <1352895463-22851-1-git-send-email-qca_vkondrat@qca.qualcomm.com> <1355257444.24219.7.camel@joe-AO722> <20121211225555.GC15974@pogo>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for device tree booted kernel.
+On Tuesday, December 11, 2012 02:55:55 PM Luis R. Rodriguez wrote:
+> Vladimir, to be clear, you can continue with waiting for the patches
+> to get into 3.9 but that will take a while but given that you want
+> your driver in 3.8 you can fold those routines into your driver as
+> you had before but with a rename by adding a prefix and sumbit that
+> driver and specify it is for 3.8.
+> 
 
-For usage see:
-Documentation/devicetree/bindings/leds/leds-pwm.txt
+I have internally patch that will compensate not merged yet functionality,
+without any rename, see below. I can massage commit message and include it
+with my driver as separate patch to be easier to undo later.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Comments?
+
+>From c4e7254d0cba51c8b43d36a317a1b847fffb18d8 Mon Sep 17 00:00:00 2001
+From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Date: Wed, 21 Nov 2012 13:57:21 +0200
+Subject: [PATCH] [DEBUG] Allow to compile with mainstream kernel
+
+Unless patch for dynamic hexdump merged into mainstream kernel,
+need to provide replacement for the dynamic hexdump functionality
+
+Do not hurt compilation with kernel that have patch above merged.
+
+REMOVE when dynamic hexdump merged into mainstream kernel!!
+
+Change-Id: I6abb8f91ed529ffc84bd9cc21444a59ee15fe456
 ---
- .../devicetree/bindings/leds/leds-pwm.txt          |  48 +++++++++
- drivers/leds/leds-pwm.c                            | 112 +++++++++++++++++----
- 2 files changed, 140 insertions(+), 20 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
+ dbg_hexdump.h |   32 ++++++++++++++++++++++++++++++++
+ wil6210.h     |    2 ++
+ 2 files changed, 34 insertions(+)
+ create mode 100644 dbg_hexdump.h
 
-diff --git a/Documentation/devicetree/bindings/leds/leds-pwm.txt b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+diff --git a/dbg_hexdump.h b/dbg_hexdump.h
 new file mode 100644
-index 0000000..7297107
+index 0000000..7144eed
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/leds/leds-pwm.txt
-@@ -0,0 +1,48 @@
-+LED connected to PWM
++++ b/dbg_hexdump.h
+@@ -0,0 +1,32 @@
++#ifndef DBG_HEXDUMP_H_
++#define DBG_HEXDUMP_H_
 +
-+Required properties:
-+- compatible : should be "pwm-leds".
++#if !defined(print_hex_dump_debug)
++#if defined(CONFIG_DYNAMIC_DEBUG)
++#define dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
++			 groupsize, buf, len, ascii)		\
++do {								\
++	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,		\
++		__builtin_constant_p(prefix_str) ? prefix_str : "hexdump");\
++	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
++		print_hex_dump(KERN_DEBUG, prefix_str,		\
++			       prefix_type, rowsize, groupsize,	\
++			       buf, len, ascii);		\
++} while (0)
 +
-+Each LED is represented as a sub-node of the pwm-leds device.  Each
-+node's name represents the name of the corresponding LED.
++#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,	\
++			     groupsize, buf, len, ascii)	\
++	dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
++			 groupsize, buf, len, ascii)
 +
-+LED sub-node properties:
-+- pwms : PWM property to point to the PWM device (phandle)/port (id) and to
-+  specify the period time to be used: <&phandle id period_ns>;
-+- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
-+  For the pwms and pwm-names property please refer to:
-+  Documentation/devicetree/bindings/pwm/pwm.txt
-+- max-brightness : Maximum brightness possible for the LED
-+- label :  (optional)
-+  see Documentation/devicetree/bindings/leds/common.txt
-+- linux,default-trigger :  (optional)
-+  see Documentation/devicetree/bindings/leds/common.txt
++#define print_hex_dump_bytes(prefix_str, prefix_type, buf, len)	\
++	dynamic_hex_dump(prefix_str, prefix_type, 16, 1, buf, len, true)
++#else /* defined(CONFIG_DYNAMIC_DEBUG) */
++#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,		\
++			     groupsize, buf, len, ascii)		\
++	print_hex_dump(KERN_DEBUG, prefix_str, prefix_type, rowsize,	\
++		       groupsize, buf, len, ascii)
++#endif /* defined(CONFIG_DYNAMIC_DEBUG) */
++#endif /* !defined(print_hex_dump_debug) */
 +
-+Example:
-+
-+twl_pwm: pwm {
-+	/* provides two PWMs (id 0, 1 for PWM1 and PWM2) */
-+	compatible = "ti,twl6030-pwm";
-+	#pwm-cells = <2>;
-+};
-+
-+twl_pwmled: pwmled {
-+	/* provides one PWM (id 0 for Charing indicator LED) */
-+	compatible = "ti,twl6030-pwmled";
-+	#pwm-cells = <2>;
-+};
-+
-+pwmleds {
-+	compatible = "pwm-leds";
-+	kpad {
-+		label = "omap4::keypad";
-+		pwms = <&twl_pwm 0 7812500>;
-+		max-brightness = <127>;
-+	};
-+
-+	charging {
-+		label = "omap4:green:chrg";
-+		pwms = <&twl_pwmled 0 7812500>;
-+		max-brightness = <255>;
-+	};
-+};
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index 46f4e44..a1ea5f6 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -16,6 +16,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/of_platform.h>
- #include <linux/fb.h>
- #include <linux/leds.h>
- #include <linux/err.h>
-@@ -58,46 +59,110 @@ static inline size_t sizeof_pwm_leds_priv(int num_leds)
- 		      (sizeof(struct led_pwm_data) * num_leds);
- }
++#endif /* DBG_HEXDUMP_H_ */
+diff --git a/wil6210.h b/wil6210.h
+index b37c3d2..4797da0 100644
+--- a/wil6210.h
++++ b/wil6210.h
+@@ -21,6 +21,8 @@
+ #include <linux/wireless.h>
+ #include <net/cfg80211.h>
  
--static int led_pwm_probe(struct platform_device *pdev)
-+static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
- {
--	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
-+	struct device_node *node = pdev->dev.of_node;
-+	struct device_node *child;
- 	struct led_pwm_priv *priv;
--	int i, ret = 0;
-+	int count, ret;
++#include "dbg_hexdump.h"
++
+ #define WIL_NAME "wil6210"
  
--	if (!pdata)
--		return -EBUSY;
-+	/* count LEDs in this device, so we know how much to allocate */
-+	count = of_get_child_count(node);
-+	if (!count)
-+		return NULL;
- 
--	priv = devm_kzalloc(&pdev->dev, sizeof_pwm_leds_priv(pdata->num_leds),
-+	priv = devm_kzalloc(&pdev->dev, sizeof_pwm_leds_priv(count),
- 			    GFP_KERNEL);
- 	if (!priv)
--		return -ENOMEM;
-+		return NULL;
- 
--	for (i = 0; i < pdata->num_leds; i++) {
--		struct led_pwm *cur_led = &pdata->leds[i];
--		struct led_pwm_data *led_dat = &priv->leds[i];
-+	for_each_child_of_node(node, child) {
-+		struct led_pwm_data *led_dat = &priv->leds[priv->num_leds];
- 
--		led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
-+		led_dat->cdev.name = of_get_property(child, "label",
-+						     NULL) ? : child->name;
-+
-+		led_dat->pwm = devm_of_pwm_get(&pdev->dev, child, NULL);
- 		if (IS_ERR(led_dat->pwm)) {
--			ret = PTR_ERR(led_dat->pwm);
- 			dev_err(&pdev->dev, "unable to request PWM for %s\n",
--				cur_led->name);
-+				led_dat->cdev.name);
- 			goto err;
- 		}
-+		/* Get the period from PWM core when n*/
-+		led_dat->period = pwm_get_period(led_dat->pwm);
-+
-+		led_dat->cdev.default_trigger = of_get_property(child,
-+						"linux,default-trigger", NULL);
-+		of_property_read_u32(child, "max-brightness",
-+				     &led_dat->cdev.max_brightness);
- 
--		led_dat->cdev.name = cur_led->name;
--		led_dat->cdev.default_trigger = cur_led->default_trigger;
--		led_dat->active_low = cur_led->active_low;
--		led_dat->period = cur_led->pwm_period_ns;
- 		led_dat->cdev.brightness_set = led_pwm_set;
- 		led_dat->cdev.brightness = LED_OFF;
--		led_dat->cdev.max_brightness = cur_led->max_brightness;
- 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
- 
- 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
--		if (ret < 0)
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "failed to register for %s\n",
-+				led_dat->cdev.name);
-+			of_node_put(child);
- 			goto err;
-+		}
-+		priv->num_leds++;
-+	}
-+
-+	return priv;
-+err:
-+	while (priv->num_leds--)
-+		led_classdev_unregister(&priv->leds[priv->num_leds].cdev);
-+
-+	return NULL;
-+}
-+
-+static int led_pwm_probe(struct platform_device *pdev)
-+{
-+	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
-+	struct led_pwm_priv *priv;
-+	int i, ret = 0;
-+
-+	if (pdata && pdata->num_leds) {
-+		priv = devm_kzalloc(&pdev->dev,
-+				    sizeof_pwm_leds_priv(pdata->num_leds),
-+				    GFP_KERNEL);
-+		if (!priv)
-+			return -ENOMEM;
-+
-+		for (i = 0; i < pdata->num_leds; i++) {
-+			struct led_pwm *cur_led = &pdata->leds[i];
-+			struct led_pwm_data *led_dat = &priv->leds[i];
-+
-+			led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
-+			if (IS_ERR(led_dat->pwm)) {
-+				ret = PTR_ERR(led_dat->pwm);
-+				dev_err(&pdev->dev,
-+					"unable to request PWM for %s\n",
-+					cur_led->name);
-+				goto err;
-+			}
-+
-+			led_dat->cdev.name = cur_led->name;
-+			led_dat->cdev.default_trigger = cur_led->default_trigger;
-+			led_dat->active_low = cur_led->active_low;
-+			led_dat->period = cur_led->pwm_period_ns;
-+			led_dat->cdev.brightness_set = led_pwm_set;
-+			led_dat->cdev.brightness = LED_OFF;
-+			led_dat->cdev.max_brightness = cur_led->max_brightness;
-+			led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
-+
-+			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
-+			if (ret < 0)
-+				goto err;
-+		}
-+		priv->num_leds = pdata->num_leds;
-+	} else {
-+		priv = led_pwm_create_of(pdev);
-+		if (!priv)
-+			return -ENODEV;
- 	}
--	priv->num_leds = pdata->num_leds;
- 
- 	platform_set_drvdata(pdev, priv);
- 
-@@ -121,12 +186,19 @@ static int led_pwm_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id of_pwm_leds_match[] = {
-+	{ .compatible = "pwm-leds", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, of_pwm_leds_match);
-+
- static struct platform_driver led_pwm_driver = {
- 	.probe		= led_pwm_probe,
- 	.remove		= led_pwm_remove,
- 	.driver		= {
- 		.name	= "leds_pwm",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(of_pwm_leds_match),
- 	},
- };
- 
+ /**
 -- 
-1.8.0
+1.7.10.4
+
 
