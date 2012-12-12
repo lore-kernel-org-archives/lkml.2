@@ -1,153 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab2LLAcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:32:43 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:1145 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933145Ab2LLAch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:32:37 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Stephen Hurd" <shurd@broadcom.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] 8250/16?50: Add support for Broadcom TruManage
- redirected serial port
-Thread-Topic: [PATCH] 8250/16?50: Add support for Broadcom TruManage
- redirected serial port
-Thread-Index: Ac3X/4FKNqFbK6eQTReu1x6E0ZsPbA==
-Date: Wed, 12 Dec 2012 00:32:22 +0000
-Message-ID: <156984479488CD49A184F5CAB4AF934606FF55E1@IRVEXCHMB14.corp.ad.broadcom.com>
-Accept-Language: en-CA, en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.208.64]
-MIME-Version: 1.0
-X-WSS-ID: 7CD910663R018779183-01-01
-Content-Type: multipart/mixed;
- boundary=_002_156984479488CD49A184F5CAB4AF934606FF55E1IRVEXCHMB14corp_
+	id S1755883Ab2LLAcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:32:55 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43826 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab2LLAcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 19:32:46 -0500
+From: Cyril Roelandt <tipecaml@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, Cyril Roelandt <tipecaml@gmail.com>
+Subject: [PATCH 0/5] Use IS_ERR() rather than a NULL check when necessary.
+Date: Wed, 12 Dec 2012 01:24:49 +0100
+Message-Id: <1355271894-5284-1-git-send-email-tipecaml@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following five patches replace NULL checks by calls to IS_ERR() when
+checking the return values of functions that return ERR_PTR() on error.
 
---_002_156984479488CD49A184F5CAB4AF934606FF55E1IRVEXCHMB14corp_
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: quoted-printable
-
-From: Stephen Hurd <shurd@broadcom.com>
-
-Add support for the UART device present in Broadcom TruManage capable NetXt=
-reme chips (ie: 5761m 5762, and 5725).
-
-This implementation has a hidden transmit FIFO, so running in single-byte i=
-nterrupt mode results in too many interrupts.  The UART_CAP_HFIFO capabilit=
-y was added to track this.  It continues to reload the THR as long as the T=
-HRE and TSRE bits are set in the LSR up to a specified limit (1024 is used =
-here).
-
-Signed-off-by: Stephen Hurd <shurd@broadcom.com>
-
+Regards,
+Cyril Roelandt.
 ---
 
-Patch against linux-2.7 from ftp.kernel.org downloaded Dec-11-2012.
+Cyril Roelandt (5):
+  staging: omap-thermal: fix error check in
+    omap_thermal_expose_sensor() and in
+    omap_thermal_register_cpu_cooling().
+  media: davinci: fix return value check in vpbe_display_reqbufs().
+  c2port: fix return value check in duramar2150_c2port_init().
+  net: sfc: fix return value check in efx_ptp_probe_channel().
+  spi: fix return value check in hspi_probe().
 
-Sorry about the attachment, I'm required to use Outlook.
+ drivers/media/platform/davinci/vpbe_display.c      |    2 +-
+ drivers/misc/c2port/c2port-duramar2150.c           |    2 +-
+ drivers/net/ethernet/sfc/ptp.c                     |    2 +-
+ drivers/spi/spi-sh-hspi.c                          |    2 +-
+ drivers/staging/omap-thermal/omap-thermal-common.c |    4 ++--
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-
-Stephen Hurd
-Senior Staff Engineer - Software Development
-Broadcom Corporation
-949-926-8039
-shurd@broadcom.com =20
-
-
---_002_156984479488CD49A184F5CAB4AF934606FF55E1IRVEXCHMB14corp_
-Content-Type: application/octet-stream;
- name=brcm-trumanage-uart.patch
-Content-Description: brcm-trumanage-uart.patch
-Content-Disposition: attachment;
- filename=brcm-trumanage-uart.patch;
- size=4143;
- creation-date="Tue, 11 Dec 2012 23:58:15 GMT";
- modification-date="Tue, 11 Dec 2012 23:58:15 GMT"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtdXByTiAtWCBsaW51eC0zLjcvRG9jdW1lbnRhdGlvbi9kb250ZGlmZiBsaW51eC0zLjcu
-b3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwLmMgbGludXgtMy43L2RyaXZlcnMvdHR5
-L3NlcmlhbC84MjUwLzgyNTAuYwotLS0gbGludXgtMy43Lm9yaWcvZHJpdmVycy90dHkvc2VyaWFs
-LzgyNTAvODI1MC5jCTIwMTItMTItMTAgMTk6MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51
-eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5jCTIwMTItMTItMTEgMTU6NTY6NDAu
-Njg2MzQzOTU5IC0wODAwCkBAIC0yOTAsNiArMjkwLDEyIEBAIHN0YXRpYyBjb25zdCBzdHJ1Y3Qg
-c2VyaWFsODI1MF9jb25maWcgdWEKIAkJCQkgIFVBUlRfRkNSX1JfVFJJR18wMCB8IFVBUlRfRkNS
-X1RfVFJJR18wMCwKIAkJLmZsYWdzCQk9IFVBUlRfQ0FQX0ZJRk8sCiAJfSwKKwlbUE9SVF9CUkNN
-X1RSVU1BTkFHRV0gPSB7CisJCS5uYW1lCQk9ICJUcnVNYW5hZ2UiLAorCQkuZmlmb19zaXplCT0g
-MSwKKwkJLnR4X2xvYWRzegk9IDEwMjQsCisJCS5mbGFncwkJPSBVQVJUX0NBUF9IRklGTywKKwl9
-LAogCVtQT1JUXzgyNTBfQ0lSXSA9IHsKIAkJLm5hbWUJCT0gIkNJUiBwb3J0IgogCX0KQEAgLTE0
-NDEsNiArMTQ0NywxMSBAQCB2b2lkIHNlcmlhbDgyNTBfdHhfY2hhcnMoc3RydWN0IHVhcnRfODI1
-CiAJCXBvcnQtPmljb3VudC50eCsrOwogCQlpZiAodWFydF9jaXJjX2VtcHR5KHhtaXQpKQogCQkJ
-YnJlYWs7CisJCWlmICh1cC0+Y2FwYWJpbGl0aWVzICYgVUFSVF9DQVBfSEZJRk8pIHsKKwkJCWlm
-ICgoc2VyaWFsX3BvcnRfaW4ocG9ydCwgVUFSVF9MU1IpICYgQk9USF9FTVBUWSkKKwkJCQkJIT0g
-Qk9USF9FTVBUWSkKKwkJCQlicmVhazsKKwkJfQogCX0gd2hpbGUgKC0tY291bnQgPiAwKTsKIAog
-CWlmICh1YXJ0X2NpcmNfY2hhcnNfcGVuZGluZyh4bWl0KSA8IFdBS0VVUF9DSEFSUykKZGlmZiAt
-dXByTiAtWCBsaW51eC0zLjcvRG9jdW1lbnRhdGlvbi9kb250ZGlmZiBsaW51eC0zLjcub3JpZy9k
-cml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwLmggbGludXgtMy43L2RyaXZlcnMvdHR5L3Nlcmlh
-bC84MjUwLzgyNTAuaAotLS0gbGludXgtMy43Lm9yaWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAv
-ODI1MC5oCTIwMTItMTItMTAgMTk6MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcv
-ZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5oCTIwMTItMTItMTEgMTQ6NTc6NDguNjQxNjEz
-Njc2IC0wODAwCkBAIC00MCw2ICs0MCw3IEBAIHN0cnVjdCBzZXJpYWw4MjUwX2NvbmZpZyB7CiAj
-ZGVmaW5lIFVBUlRfQ0FQX0FGRQkoMSA8PCAxMSkJLyogTUNSLWJhc2VkIGh3IGZsb3cgY29udHJv
-bCAqLwogI2RlZmluZSBVQVJUX0NBUF9VVUUJKDEgPDwgMTIpCS8qIFVBUlQgbmVlZHMgSUVSIGJp
-dCA2IHNldCAoWHNjYWxlKSAqLwogI2RlZmluZSBVQVJUX0NBUF9SVE9JRQkoMSA8PCAxMykJLyog
-VUFSVCBuZWVkcyBJRVIgYml0IDQgc2V0IChYc2NhbGUsIFRlZ3JhKSAqLworI2RlZmluZSBVQVJU
-X0NBUF9IRklGTwkoMSA8PCAxNCkJLyogVUFSVCBoYXMgYSAiaGlkZGVuIiBGSUZPICovCiAKICNk
-ZWZpbmUgVUFSVF9CVUdfUVVPVAkoMSA8PCAwKQkvKiBVQVJUIGhhcyBidWdneSBxdW90IExTQiAq
-LwogI2RlZmluZSBVQVJUX0JVR19UWEVOCSgxIDw8IDEpCS8qIFVBUlQgaGFzIGJ1Z2d5IFRYIElJ
-UiBzdGF0dXMgKi8KZGlmZiAtdXByTiAtWCBsaW51eC0zLjcvRG9jdW1lbnRhdGlvbi9kb250ZGlm
-ZiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jIGxpbnV4
-LTMuNy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCi0tLSBsaW51eC0zLjcub3Jp
-Zy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCTIwMTItMTItMTAgMTk6MzA6NTcu
-MDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1
-MF9wY2kuYwkyMDEyLTEyLTExIDE1OjU4OjEwLjk1ODM0MDA3NyAtMDgwMApAQCAtMTA4NSw2ICsx
-MDg1LDE3IEBAIHBjaV9vbWVnYXBjaV9zZXR1cChzdHJ1Y3Qgc2VyaWFsX3ByaXZhdGUKIAlyZXR1
-cm4gc2V0dXBfcG9ydChwcml2LCBwb3J0LCAyLCBpZHggKiA4LCAwKTsKIH0KIAorc3RhdGljIGlu
-dAorcGNpX2JyY21fdHJ1bWFuYWdlX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAqcHJpdiwK
-KwkJICAgICAgY29uc3Qgc3RydWN0IHBjaXNlcmlhbF9ib2FyZCAqYm9hcmQsCisJCSAgICAgIHN0
-cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGludCBpZHgpCit7CisJaW50IHJldCA9IHBjaV9kZWZhdWx0
-X3NldHVwKHByaXYsIGJvYXJkLCBwb3J0LCBpZHgpOworCXBvcnQtPnR5cGUgPSBQT1JUX0JSQ01f
-VFJVTUFOQUdFOworCXBvcnQtPmZsYWdzID0gKHBvcnQtPmZsYWdzIHwgVVBGX0ZJWEVEX1BPUlQg
-fCBVUEZfRklYRURfVFlQRSk7CisJcmV0dXJuIHJldDsKK30KKwogc3RhdGljIGludCBza2lwX3R4
-X2VuX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAqcHJpdiwKIAkJCWNvbnN0IHN0cnVjdCBw
-Y2lzZXJpYWxfYm9hcmQgKmJvYXJkLAogCQkJc3RydWN0IHVhcnRfODI1MF9wb3J0ICpwb3J0LCBp
-bnQgaWR4KQpAQCAtMTIxMyw2ICsxMjI0LDcgQEAgcGNpX3djaF9jaDM1M19zZXR1cChzdHJ1Y3Qg
-c2VyaWFsX3ByaXZhdAogI2RlZmluZSBQQ0lfVkVORE9SX0lEX0FHRVNUQVIJCTB4NTM3MgogI2Rl
-ZmluZSBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NQkweDY4NzIKICNkZWZpbmUgUENJX1ZFTkRP
-Ul9JRF9BU0lYCQkweDk3MTAKKyNkZWZpbmUgUENJX0RFVklDRV9JRF9CUk9BRENPTV9UUlVNQU5B
-R0UgMHgxNjBhCiAKIC8qIFVua25vd24gdmVuZG9ycy9jYXJkcyAtIHRoaXMgc2hvdWxkIG5vdCBi
-ZSBpbiBsaW51eC9wY2lfaWRzLmggKi8KICNkZWZpbmUgUENJX1NVQkRFVklDRV9JRF9VTktOT1dO
-XzB4MTU4NAkweDE1ODQKQEAgLTE3ODgsNiArMTgwMCwxNyBAQCBzdGF0aWMgc3RydWN0IHBjaV9z
-ZXJpYWxfcXVpcmsgcGNpX3NlcmlhCiAJCS5zZXR1cAkJPSBwY2lfYXNpeF9zZXR1cCwKIAl9LAog
-CS8qCisJICogQnJvYWRjb20gVHJ1TWFuYWdlIChOZXRYdHJlbWUpCisJICovCisJeworCQkudmVu
-ZG9yCQk9IFBDSV9WRU5ET1JfSURfQlJPQURDT00sCisJCS5kZXZpY2UJCT0gUENJX0RFVklDRV9J
-RF9CUk9BRENPTV9UUlVNQU5BR0UsCisJCS5zdWJ2ZW5kb3IJPSBQQ0lfQU5ZX0lELAorCQkuc3Vi
-ZGV2aWNlCT0gUENJX0FOWV9JRCwKKwkJLnNldHVwCQk9IHBjaV9icmNtX3RydW1hbmFnZV9zZXR1
-cCwKKwl9LAorCisJLyoKIAkgKiBEZWZhdWx0ICJtYXRjaCBldmVyeXRoaW5nIiB0ZXJtaW5hdG9y
-IGVudHJ5CiAJICovCiAJewpAQCAtMTk3NSw2ICsxOTk4LDcgQEAgZW51bSBwY2lfYm9hcmRfbnVt
-X3QgewogCXBibl9jZTQxMDBfMV8xMTUyMDAsCiAJcGJuX29tZWdhcGNpLAogCXBibl9ORVRNT1M5
-OTAwXzJzXzExNTIwMCwKKwlwYm5fYnJjbV90cnVtYW5hZ2UsCiB9OwogCiAvKgpAQCAtMjY3NCw2
-ICsyNjk4LDEyIEBAIHN0YXRpYyBzdHJ1Y3QgcGNpc2VyaWFsX2JvYXJkIHBjaV9ib2FyZHMKIAkJ
-Lm51bV9wb3J0cwk9IDIsCiAJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCiAJfSwKKwlbcGJuX2JyY21f
-dHJ1bWFuYWdlXSA9IHsKKwkJLmZsYWdzCQk9IEZMX0JBU0UwLAorCQkubnVtX3BvcnRzCT0gMSwK
-KwkJLnJlZ19zaGlmdAk9IDIsCisJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCisJfSwKIH07CiAKIHN0
-YXRpYyBjb25zdCBzdHJ1Y3QgcGNpX2RldmljZV9pZCBibGFja2xpc3RbXSA9IHsKQEAgLTQyMzgs
-NiArNDI2OCwxMyBAQCBzdGF0aWMgc3RydWN0IHBjaV9kZXZpY2VfaWQgc2VyaWFsX3BjaV90CiAJ
-CXBibl9vbWVnYXBjaSB9LAogCiAJLyoKKwkgKiBCcm9hZGNvbSBUcnVNYW5hZ2UKKwkgKi8KKwl7
-CVBDSV9WRU5ET1JfSURfQlJPQURDT00sIFBDSV9ERVZJQ0VfSURfQlJPQURDT01fVFJVTUFOQUdF
-LAorCQlQQ0lfQU5ZX0lELCBQQ0lfQU5ZX0lELCAwLCAwLAorCQlwYm5fYnJjbV90cnVtYW5hZ2Ug
-fSwKKworCS8qCiAJICogQWdlU3RhciBhcy1wcnMyLTAwOQogCSAqLwogCXsJUENJX1ZFTkRPUl9J
-RF9BR0VTVEFSLCBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NSwK
-
---_002_156984479488CD49A184F5CAB4AF934606FF55E1IRVEXCHMB14corp_--
+-- 
+1.7.10.4
 
