@@ -1,56 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab2LLPJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 10:09:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:37646 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab2LLPJu (ORCPT
+	id S1754415Ab2LLPTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 10:19:46 -0500
+Received: from sentry-two.sandia.gov ([132.175.109.14]:47897 "EHLO
+	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab2LLPTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 10:09:50 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-7b-50c89e36fe3d
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Subject: Re: [PATCH 1/4] DMA: PL330: fix locking in pl330_free_chan_resources()
-Date: Wed, 12 Dec 2012 16:08:53 +0100
-User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        rob.herring@calxeda.com, dinguyen@altera.com, pawel.moll@arm.com,
-        t.figa@samsung.com, kyungmin.park@samsung.com,
-        Dan Williams <djbw@fb.com>
-References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
- <201211301159.31098.b.zolnierkie@samsung.com>
- <1354298873.7077.76.camel@vkoul-udesk3>
-In-reply-to: <1354298873.7077.76.camel@vkoul-udesk3>
-MIME-version: 1.0
-Message-id: <201212121608.53648.b.zolnierkie@samsung.com>
-Content-type: Text/Plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jAV2zeScCDJ7dlLS4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq4dsuqYBVzxbmlC1kbGC8zdTFyckgImEhs7PjMDmGL
-	SVy4t56ti5GLQ0hgEaPE5q2TWCGcFiaJ9483M4JUsQlYSUxsXwVmiwhoSzztuwhmCwv4S9ye
-	+48FxGYRUJX49QqkmZNDVMBBonPqBLCpzAJ7mCRmXDmIsKJ/3gKg3RwcnEB3rHiZCtLAKyAo
-	8WPyPRYI21Li2qdfYAuYBbQkmt9sgrLlJTavecs8gVFgFpKWWUjKZiEpW8DIvIpRNLUguaA4
-	KT3XUK84Mbe4NC9dLzk/dxMjOBifSe1gXNlgcYhRgINRiYe34d3xACHWxLLiytxDjBIczEoi
-	vIvqTgQI8aYkVlalFuXHF5XmpBYfYpTmYFES5232SAkQEkhPLEnNTk0tSC2CyTJxcEo1MPZH
-	NHJskd4buuMWz/3Z+1X+vD/3Ru1Kjpb924aDT+skbZV2f5h7pWueYX+Q+crYyJjt9qsL+6Z7
-	n/fsWpcgs3nbsa/JhTeETh0vr7+oVb2/MNM9L25rOG/Ju7ybRkXWyVVegko51Yfv8L14J2cV
-	tfqliHfuAqeXdRlHJh3XDFmZciPh3kkzQyWW4oxEQy3mouJEAL4mbCBCAgAA
+	Wed, 12 Dec 2012 10:19:44 -0500
+X-WSS-ID: 0MEXBWR-0B-0LT-02
+X-M-MSG: 
+X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
+Message-ID: <50C8A075.50601@sandia.gov>
+Date: Wed, 12 Dec 2012 08:19:17 -0700
+From: "Jim Schutt" <jaschut@sandia.gov>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120829
+ Thunderbird/10.0.7
+MIME-Version: 1.0
+To: bo.li.liu@oracle.com
+cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+Subject: Re: 3.7.0-rc8 btrfs locking issue
+References: <50BF7129.90602@sandia.gov>
+ <20121209140442.GA14309@liubo.jp.oracle.com>
+ <50C7604B.7070203@sandia.gov> <20121212013736.GA12318@liubo>
+In-Reply-To: <20121212013736.GA12318@liubo>
+X-TMWD-Spam-Summary: TS=20121212151921; ID=1; SEV=2.3.1;
+ DFV=B2012110920; IFV=NA; AIF=B2012110920; RPD=5.03.0010; ENG=NA;
+ RPDID=7374723D303030312E30413031303230392E35304338413037392E303130353A534346535441543838363133332C73733D312C6667733D30;
+ CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
+X-MMS-Spam-Filter-ID: B2012110920_5.03.0010
+X-WSS-ID: 7CD67FFC43C8310419-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-RSA-Inspected: yes
+X-RSA-Classifications: public
+X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 November 2012 19:07:53 Vinod Koul wrote:
-> On Fri, 2012-11-30 at 11:59 +0100, Bartlomiej Zolnierkiewicz wrote:
-> > > Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-> > 
-> > Vinod/Dan could you please pick this patch for 3.8?  Thanks!
-> I will check and queue it up today
+On 12/11/2012 06:37 PM, Liu Bo wrote:
+> On Tue, Dec 11, 2012 at 09:33:15AM -0700, Jim Schutt wrote:
+>> On 12/09/2012 07:04 AM, Liu Bo wrote:
+>>> On Wed, Dec 05, 2012 at 09:07:05AM -0700, Jim Schutt wrote:
+>>> Hi Jim,
+>>>
+>>> Could you please apply the following patch to test if it works?
+>>
+>> Hi,
+>>
+>> So far, with your patch applied I've been unable to reproduce
+>> the recursive deadlock.  Thanks a lot for this patch!
+>> This issue has been troubling me for a while.
+> 
+> Hi Jim,
+> 
+> Good news for us :)
+> 
+>>
+>> I've been trying to learn more about btrfs internals -
+>> if you have the time to answer a couple questions about
+>> your patch, I'd really appreciate it.
+> 
+> See below.
+> 
+>>
+>>>
+>>> (It's against 3.7-rc8.)
+>>>
+>>> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+>>> index 3d3e2c1..100289b 100644
+>>> --- a/fs/btrfs/extent-tree.c
+>>> +++ b/fs/btrfs/extent-tree.c
+>>> @@ -3346,7 +3346,8 @@ u64 btrfs_get_alloc_profile(struct btrfs_root
+>>> *root, int data)
+>>>  
+>>>  	if (data)
+>>>  		flags = BTRFS_BLOCK_GROUP_DATA;
+>>> -	else if (root == root->fs_info->chunk_root)
+>>> +	else if (root == root->fs_info->chunk_root ||
+>>> +		 root == root->fs_info->dev_root)
+>>>  		flags = BTRFS_BLOCK_GROUP_SYSTEM;
+>>>  	else
+>>>  		flags = BTRFS_BLOCK_GROUP_METADATA;
+>>> @@ -3535,6 +3536,7 @@ static u64 get_system_chunk_thresh(struct
+>>> btrfs_root *root, u64 type)
+>>>  		num_dev = 1;	/* DUP or single */
+>>>  
+>>>  	/* metadata for updaing devices and chunk tree */
+>>> +	num_dev = num_dev << 1
+>>
+>> AFAICS this is doubling the size of the reserve, which
+>> reduces the chance of a recursive do_chunk_alloc(), right?
+>>
+> 
+> Not like that, we hit the deadlock because updating device tree also
+> uses METADATA chunk, which may be called when we're actually allocating
+> a METADATA chunk, so the patch I sent you makes updating device tree
+> use SYSTEM chunk, which we'll have some code to check if it is enough
+> before allocating a chunk(if not, we'll allocate a SYSTEM chunk first).
+> 
+> Here I double the size just because the worst case of allocating a
+> DATA/METADATA chunk -may- results in
+> 
+> 1)adding a SYSTEM chunk +
+> 2)adding dev extent per chunk stripe +
+> 3)updating chunk stripes's bytes_used
+> 
+>>>  	return btrfs_calc_trans_metadata_size(root, num_dev + 1);
+>>
+>> btrfs_calc_trans_metadata_size(root, num_items) multiplies its
+>> num_items argument by another factor of three - do you know if
+>> there is there some rationale behind that number, or is it
+>> perhaps also an empirically determined factor?
+> 
+> The height of Btrfs's metadata btree is at most 8,
+> leaf is on 0 level while node is at most on 7 level.
+> 
+> Each btree update may results in COWing a node and its sibling nodes,
+> where the factor of tree comes from
+> 
+>>
+>> What I'm wondering about is that if the size of the reserve is
+>> empirically determined, will it need to be increased again
+>> later when machines are more capable, and can handle a higher
+>> load?
+>>
+>> Do you think it's feasible to modify the locking for
+>> do_chunk_alloc to allow it to recurse without deadlock?
+> 
+> Well, it could be, but IMO it'll bring us complexity, so worse
+> maintainance.
+> 
+> Any questions? Feel free to ask.
 
-ping?  [ I can't find the patch in slave-dma.git tree. ]
+Your response was very helpful.  Thanks a lot!
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung Poland R&D Center
+-- Jim
+
+> 
+> thanks,
+> liubo
+> 
+> 
+
+
