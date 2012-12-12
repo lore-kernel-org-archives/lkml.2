@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2LLSVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:21:55 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:59943 "EHLO
+	id S1755309Ab2LLSVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:21:46 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39305 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755179Ab2LLSVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:21:53 -0500
+	id S1754503Ab2LLSVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:21:44 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 15/26] unicore32: Convert print_symbol to %pSR
-Date: Wed, 12 Dec 2012 10:19:04 -0800
-Message-Id: <19e6ea369e4455fc447c48f72bd433921bd0a703.1355335228.git.joe@perches.com>
+Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH 14/26] um: Convert print_symbol to %pSR
+Date: Wed, 12 Dec 2012 10:19:03 -0800
+Message-Id: <3d4ff2048cd8a3d928e8021bd6900fa3e2dcbd0d.1355335228.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1355335227.git.joe@perches.com>
 References: <cover.1355335227.git.joe@perches.com>
@@ -24,25 +27,26 @@ message interleaving.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/unicore32/kernel/process.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/um/kernel/sysrq.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index 62bad9f..d17a893 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
-@@ -169,8 +169,9 @@ void __show_regs(struct pt_regs *regs)
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
--	print_symbol("PC is at %s\n", instruction_pointer(regs));
--	print_symbol("LR is at %s\n", regs->UCreg_lr);
-+	printk(KERN_DEFAULT "PC is at %pSR\n",
-+	       (void *)instruction_pointer(regs));
-+	printk(KERN_DEFAULT "LR is at %pSR\n", (void *)regs->UCreg_lr);
- 	printk(KERN_DEFAULT "pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
- 	       "sp : %08lx  ip : %08lx  fp : %08lx\n",
- 		regs->UCreg_pc, regs->UCreg_lr, regs->UCreg_asr,
+diff --git a/arch/um/kernel/sysrq.c b/arch/um/kernel/sysrq.c
+index e562ff8..6fa632c 100644
+--- a/arch/um/kernel/sysrq.c
++++ b/arch/um/kernel/sysrq.c
+@@ -24,10 +24,8 @@ void show_trace(struct task_struct *task, unsigned long * stack)
+ 	while (((long) stack & (THREAD_SIZE-1)) != 0) {
+ 		addr = *stack;
+ 		if (__kernel_text_address(addr)) {
+-			printk(KERN_INFO "%08lx:  [<%08lx>]",
+-			       (unsigned long) stack, addr);
+-			print_symbol(KERN_CONT " %s", addr);
+-			printk(KERN_CONT "\n");
++			printk(KERN_INFO "%08lx:  [<%08lx>] %pSR\n",
++			       (unsigned long)stack, addr, (void *)addr);
+ 		}
+ 		stack++;
+ 	}
 -- 
 1.7.8.112.g3fd21
 
