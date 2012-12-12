@@ -1,220 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2LLAuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:50:16 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36670 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab2LLAuN (ORCPT
+	id S1755714Ab2LLAvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:51:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24915 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab2LLAvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:50:13 -0500
-Message-ID: <50C7D490.60409@huawei.com>
-Date: Wed, 12 Dec 2012 08:49:20 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, Jianguo Wu <wujianguo@huawei.com>,
-        <hpa@zytor.com>, <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <rob@landley.net>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
-        <lliubbo@gmail.com>, <jaegeuk.hanse@gmail.com>, <tony.luck@intel.com>,
-        <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
- keep movable limit for nodes
-References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>  <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>  <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com> <1355225313.1919.1.camel@kernel.cn.ibm.com>
-In-Reply-To: <1355225313.1919.1.camel@kernel.cn.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+	Tue, 11 Dec 2012 19:51:09 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=OufKd6eJi_AA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6vidgQ2l4MoA:10 a=20KFwNOVAAAA:8 a=2-J6K_Kjc2weECRg5QsA:9 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121212005108.153777688@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 11 Dec 2012 19:50:22 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 2/2] Linux 3.2.35-rt53-rc1
+References: <20121212005020.779842209@goodmis.org>
+Content-Disposition: inline; filename=0002-Linux-3.2.35-rt53-rc1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-11 19:28, Simon Jeons wrote:
-> On Tue, 2012-12-11 at 11:32 +0800, Tang Chen wrote:
->> On 12/11/2012 11:07 AM, Jianguo Wu wrote:
->>> On 2012/12/11 10:33, Tang Chen wrote:
->>>
->>>> This patch introduces a new array zone_movable_limit[] to store the
->>>> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
->>>> The function sanitize_zone_movable_limit() will find out to which
->>>> node the ranges in movable_map.map[] belongs, and calculates the
->>>> low boundary of ZONE_MOVABLE for each node.
-> 
-> What's the difference between zone_movable_limit[nid] and
-> zone_movable_pfn[nid]?
-zone_movable_limit[] is a temporary storage for zone_moveable_pfn[].
-It's used to handle a special case if user specifies both movablecore_map
-and movablecore/kernelcore on the kernel command line. 
+From: Steven Rostedt <srostedt@redhat.com>
 
-> 
->>>>
->>>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->>>> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
->>>> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
->>>> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
->>>> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
->>>> ---
->>>>   mm/page_alloc.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>   1 files changed, 77 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>>> index 1c91d16..4853619 100644
->>>> --- a/mm/page_alloc.c
->>>> +++ b/mm/page_alloc.c
->>>> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
->>>>   static unsigned long __initdata required_kernelcore;
->>>>   static unsigned long __initdata required_movablecore;
->>>>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
->>>> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
->>>>
->>>>   /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
->>>>   int movable_zone;
->>>> @@ -4340,6 +4341,77 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
->>>>   	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
->>>>   }
->>>>
->>>> +/**
->>>> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
->>>> + *
->>>> + * zone_movable_limit is initialized as 0. This function will try to get
->>>> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
->>>> + * assigne them to zone_movable_limit.
->>>> + * zone_movable_limit[nid] == 0 means no limit for the node.
->>>> + *
->>>> + * Note: Each range is represented as [start_pfn, end_pfn)
->>>> + */
->>>> +static void __meminit sanitize_zone_movable_limit(void)
->>>> +{
->>>> +	int map_pos = 0, i, nid;
->>>> +	unsigned long start_pfn, end_pfn;
->>>> +
->>>> +	if (!movablecore_map.nr_map)
->>>> +		return;
->>>> +
->>>> +	/* Iterate all ranges from minimum to maximum */
->>>> +	for_each_mem_pfn_range(i, MAX_NUMNODES,&start_pfn,&end_pfn,&nid) {
->>>> +		/*
->>>> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
->>>> +		 * specified by user, just go on to check next range.
->>>> +		 */
->>>> +		if (zone_movable_limit[nid])
->>>> +			continue;
->>>> +
->>>> +#ifdef CONFIG_ZONE_DMA
->>>> +		/* Skip DMA memory. */
->>>> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA])
->>>> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
->>>> +#endif
->>>> +
->>>> +#ifdef CONFIG_ZONE_DMA32
->>>> +		/* Skip DMA32 memory. */
->>>> +		if (start_pfn<  arch_zone_highest_possible_pfn[ZONE_DMA32])
->>>> +			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
->>>> +#endif
->>>> +
->>>> +#ifdef CONFIG_HIGHMEM
->>>> +		/* Skip lowmem if ZONE_MOVABLE is highmem. */
->>>> +		if (zone_movable_is_highmem()&&
->>>
->>> Hi Tang,
->>>
->>> I think zone_movable_is_highmem() is not work correctly here.
->>> 	sanitize_zone_movable_limit
->>> 		zone_movable_is_highmem<--using movable_zone here
->>> 	find_zone_movable_pfns_for_nodes
->>> 		find_usable_zone_for_movable<--movable_zone is specified here
->>>
->>> I think Jiang Liu's patch works fine for highmem, please refer to:
->>> http://marc.info/?l=linux-mm&m=135476085816087&w=2
->>
->> Hi Wu,
->>
->> Yes, I forgot movable_zone think. Thanks for reminding me. :)
->>
->> But Liu's patch you just mentioned, I didn't use it because I
->> don't think we should skip kernelcore when movablecore_map is specified.
->> If these 2 options are not conflict, we should satisfy them both. :)
->>
->> Of course, I also think Liu's suggestion is wonderful. But I think we
->> need more discussion on it. :)
->>
->> I'll fix it soon.
->> Thanks. :)
->>
->>>
->>> Thanks,
->>> Jianguo Wu
->>>
->>>> +		    start_pfn<  arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
->>>> +			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
->>>> +#endif
->>>> +
->>>> +		if (start_pfn>= end_pfn)
->>>> +			continue;
->>>> +
->>>> +		while (map_pos<  movablecore_map.nr_map) {
->>>> +			if (end_pfn<= movablecore_map.map[map_pos].start_pfn)
->>>> +				break;
->>>> +
->>>> +			if (start_pfn>= movablecore_map.map[map_pos].end_pfn) {
->>>> +				map_pos++;
->>>> +				continue;
->>>> +			}
->>>> +
->>>> +			/*
->>>> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
->>>> +			 * pfn specified by movablecore_map, or 0, which means
->>>> +			 * the node has no ZONE_MOVABLE.
->>>> +			 */
->>>> +			zone_movable_limit[nid] = max(start_pfn,
->>>> +					movablecore_map.map[map_pos].start_pfn);
->>>> +
->>>> +			break;
->>>> +		}
->>>> +	}
->>>> +}
->>>> +
->>>>   #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->>>>   static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
->>>>   					unsigned long zone_type,
->>>> @@ -4358,6 +4430,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
->>>>   	return zholes_size[zone_type];
->>>>   }
->>>>
->>>> +static void __meminit sanitize_zone_movable_limit(void)
->>>> +{
->>>> +}
->>>> +
->>>>   #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->>>>
->>>>   static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
->>>> @@ -4923,6 +4999,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
->>>>
->>>>   	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
->>>>   	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
->>>> +	sanitize_zone_movable_limit();
->>>>   	find_zone_movable_pfns_for_nodes();
->>>>
->>>>   	/* Print out the zone ranges */
->>>
->>>
->>>
->>>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
-> 
-> .
-> 
+---
+ localversion-rt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/localversion-rt b/localversion-rt
+index 66a5ed8..2dc212d 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt52
++-rt53-rc1
+-- 
+1.7.10.4
 
 
