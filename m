@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2LLBW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:22:58 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:62646 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2LLBW5 (ORCPT
+	id S1754651Ab2LLB1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:27:14 -0500
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:24431 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab2LLB1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:22:57 -0500
-Message-ID: <1355275366.11924.2.camel@phoenix>
-Subject: [PATCH RFC/RFT] regulator: core: Fix continuous_voltage_range case
- in regulator_can_change_voltage
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Pawel Moll <pawel.moll@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Wed, 12 Dec 2012 09:22:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 11 Dec 2012 20:27:10 -0500
+Date: Wed, 12 Dec 2012 02:27:08 +0100
+From: Christophe TORDEUX <christophe@tordeux.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Tai-hwa Liang <avatar@sentelic.com>,
+        Oskari Saarenmaa <os@ohmu.fi>, Paul Fox <pgf@laptop.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 01/01] Input multitouch: fix horizontal
+ two-finger-scrolling on Sentelic touchpads
+Message-ID: <20121212012708.GB9043@sherka.no-ip.biz>
+References: <20121212012135.GA9043@sherka.no-ip.biz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uZ3hkaAS1mZxFaxD"
+Content-Disposition: inline
+In-Reply-To: <20121212012135.GA9043@sherka.no-ip.biz>
+X-PGP-Key: http://christophe.tordeux.net/data/pgp/c-tor2/pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regulator drivers with continuous_voltage_range flag set allows not setting
-n_voltages. Thus if continuous_voltage_range is set, check the constraint range
-instead.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/core.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+--uZ3hkaAS1mZxFaxD
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 0f65b24..d7448ad 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1885,9 +1885,15 @@ int regulator_can_change_voltage(struct regulator *regulator)
- 	struct regulator_dev	*rdev = regulator->rdev;
- 
- 	if (rdev->constraints &&
--	    rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE &&
--	    (rdev->desc->n_voltages - rdev->desc->linear_min_sel) > 1)
--		return 1;
-+	    (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)) {
-+		if (rdev->desc->n_voltages - rdev->desc->linear_min_sel > 1)
-+			return 1;
-+
-+		if (rdev->desc->continuous_voltage_range &&
-+		    rdev->constraints->min_uV && rdev->constraints->max_uV &&
-+		    rdev->constraints->min_uV != rdev->constraints->max_uV)
-+			return 1;
-+	}
- 
- 	return 0;
- }
--- 
-1.7.9.5
+I am very sorry I forgot to mention that my patch was done against=20
+kernel version 3.7-rc8. I can re-send the original patch with this=20
+information included if required, just ask me.
 
+--uZ3hkaAS1mZxFaxD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQEcBAEBAgAGBQJQx91sAAoJEE/hdwZK2YytOMkH/3NRjJH16AK/1R5+u+KOIpwL
+ZIrHYnQjwRb63j1lQTFM/GtGBSHQ2f1ZCgkZFxIZUQ6JS2h+NFcjcuZtP0th+2nZ
+IosWYOkwnzY0ljMAdtlyXHqBXy6naaOLJfKz4SGjpRWDyK1HbxqX6VlpSfC8Tcbg
+NoUcRUBbw2rAcKd0cWPcbD8+nGKSIB/72vkwQMTgQYtffDejDG25Itzvb2B5npTK
+m1MOW2psUFY3zR51vRC0QAD5kbNzmCKJjh2n+JVMwyg2T6iXqpZW3k02E0qVVxv2
+jqN/9/JfkAug+yy5RGMgHYNavQoCCCsnq2gSJ9+p1LTVtV44xNdu7tG99hjJacA=
+=HY7V
+-----END PGP SIGNATURE-----
+
+--uZ3hkaAS1mZxFaxD--
