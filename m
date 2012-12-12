@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2LLOes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:34:48 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45626 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2LLOer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:34:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAmzW4Ng8S_O4SEoANCWz3jsW3h3ucGSM9=Ld-n9aLuHcdgprw@mail.gmail.com>
-References: <1354033730-850-1-git-send-email-js1304@gmail.com>
-	<CAAmzW4Ng8S_O4SEoANCWz3jsW3h3ucGSM9=Ld-n9aLuHcdgprw@mail.gmail.com>
-Date: Wed, 12 Dec 2012 23:34:46 +0900
-Message-ID: <CAAmzW4Ns_90oYH4gDduz=UZ6_krFnkm1ODPS8eitH26vc0u7zg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] introduce static_vm for ARM-specific static mapped area
-From: JoonSoo Kim <js1304@gmail.com>
-To: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, Joonsoo Kim <js1304@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754396Ab2LLOfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:35:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754317Ab2LLOe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 09:34:59 -0500
+Message-ID: <1355322875.3224.201.camel@bling.home>
+Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Date: Wed, 12 Dec 2012 07:34:35 -0700
+In-Reply-To: <50C820AF.8050804@ozlabs.ru>
+References: <1354636299.1809.431.camel@bling.home>
+	  <1354865750-8104-1-git-send-email-aik@ozlabs.ru>
+	 <1354901926.3224.96.camel@bling.home> <50C820AF.8050804@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/7 JoonSoo Kim <js1304@gmail.com>:
-> 2012/11/28 Joonsoo Kim <js1304@gmail.com>:
->> In current implementation, we used ARM-specific flag, that is,
->> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
->> The purpose of static mapped area is to re-use static mapped area when
->> entire physical address range of the ioremap request can be covered
->> by this area.
->>
->> This implementation causes needless overhead for some cases.
->> For example, assume that there is only one static mapped area and
->> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
->> deciding whether it is matched or not. Moreover, even if there is
->> no static mapped area and vmlist has 300 areas, every time we call
->> ioremap, we check 300 areas in now.
->>
->> If we construct a extra list for static mapped area, we can eliminate
->> above mentioned overhead.
->> With a extra list, if there is one static mapped area,
->> we just check only one area and proceed next operation quickly.
->>
->> In fact, it is not a critical problem, because ioremap is not frequently
->> used. But reducing overhead is better idea.
->>
->> Another reason for doing this work is for removing architecture dependency
->> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
->> structure for vmalloc layer. Some codes for debugging and stat inevitably
->> use vmlist and vmlist_lock. But it is preferable that they are used
->> as least as possible in outside of vmalloc.c
->>
->> Changelog
->> v1->v2:
->>   [2/3]: patch description is improved.
->>   Rebased on v3.7-rc7
->>
->> Joonsoo Kim (3):
->>   ARM: vmregion: remove vmregion code entirely
->>   ARM: static_vm: introduce an infrastructure for static mapped area
->>   ARM: mm: use static_vm for managing static mapped areas
->>
->>  arch/arm/include/asm/mach/static_vm.h |   51 ++++++++
->>  arch/arm/mm/Makefile                  |    2 +-
->>  arch/arm/mm/ioremap.c                 |   69 ++++-------
->>  arch/arm/mm/mm.h                      |   10 --
->>  arch/arm/mm/mmu.c                     |   55 +++++----
->>  arch/arm/mm/static_vm.c               |   97 ++++++++++++++++
->>  arch/arm/mm/vmregion.c                |  205 ---------------------------------
->>  arch/arm/mm/vmregion.h                |   31 -----
->>  8 files changed, 208 insertions(+), 312 deletions(-)
->>  create mode 100644 arch/arm/include/asm/mach/static_vm.h
->>  create mode 100644 arch/arm/mm/static_vm.c
->>  delete mode 100644 arch/arm/mm/vmregion.c
->>  delete mode 100644 arch/arm/mm/vmregion.h
->>
->> --
->> 1.7.9.5
->>
->
-> Hello, Russell.
->
-> Could you review this patchset, please?
-> I send another patchset to mm community on top of this.
-> That one is related to this patchset,
-> so I want to get a review about this patchset :)
->
-> Thanks.
+On Wed, 2012-12-12 at 17:14 +1100, Alexey Kardashevskiy wrote:
+> On 08/12/12 04:38, Alex Williamson wrote:
+> >> +static int __init tce_iommu_init(void)
+> >> +{
+> >> +	struct pci_dev *pdev = NULL;
+> >> +	struct iommu_table *tbl;
+> >> +	struct iommu_group *grp;
+> >> +
+> >> +	/* Allocate and initialize IOMMU groups */
+> >> +	for_each_pci_dev(pdev) {
+> >> +		tbl = get_iommu_table_base(&pdev->dev);
+> >> +		if (!tbl)
+> >> +			continue;
+> >> +
+> >> +		/* Skip already initialized */
+> >> +		if (tbl->it_group)
+> >> +			continue;
+> >> +
+> >> +		grp = iommu_group_alloc();
+> >> +		if (IS_ERR(grp)) {
+> >> +			pr_info("tce_vfio: cannot create new IOMMU group, ret=%ld\n",
+> >> +					PTR_ERR(grp));
+> >> +			return PTR_ERR(grp);
+> >> +		}
+> >> +		tbl->it_group = grp;
+> >> +		iommu_group_set_iommudata(grp, tbl, group_release);
+> >
+> > BTW, groups have a name property that shows up in sysfs that can be set
+> > with iommu_group_set_name().  IIRC, this was a feature David requested
+> > for PEs.  It'd be nice if it was used for PEs...  Thanks,
+> 
+> 
+> 
+> But what would I put there?... IOMMU ID is more than enough at the moment 
+> and struct iommu_table does not have anything what would have made sense to 
+> show in the sysfs...
 
-Hello.
+I believe David mentioned that PEs had user visible names.  Perhaps they
+match an enclosure location or something.  Group numbers are rather
+arbitrary and really have no guarantee of persistence.  Thanks,
 
-Is there anyone to review this patchset?
-Please let me know what I should do in order to take a review :)
+Alex
 
-Thanks.
+
