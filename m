@@ -1,187 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2LLOH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:07:27 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50785 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab2LLOB3 convert rfc822-to-8bit (ORCPT
+	id S1754057Ab2LLOLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:11:00 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50187 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab2LLOK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:01:29 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/33] leds-lp55xx: use lp55xx common deinit function
-Thread-Topic: [PATCH 11/33] leds-lp55xx: use lp55xx common deinit function
-Thread-Index: Ac3YcSwoyJ3e4osiQZy88q3b6Ax2ZA==
-Date: Wed, 12 Dec 2012 14:01:25 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0AB35@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Dec 2012 09:10:59 -0500
 MIME-Version: 1.0
+In-Reply-To: <20121212145631.d03a40fd28d4b59b56009fe1@mxc.nes.nec.co.jp>
+References: <20121211214859.GG5580@redhat.com>
+	<104724866.46130887.1355264225876.JavaMail.root@redhat.com>
+	<20121212145631.d03a40fd28d4b59b56009fe1@mxc.nes.nec.co.jp>
+Date: Wed, 12 Dec 2012 23:10:57 +0900
+Message-ID: <CAAmzW4PGD4QWVuL4zWLeZ3GLyetoD0NO8qgc1Rgfx-CtGS384w@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
+From: JoonSoo Kim <js1304@gmail.com>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Cc: anderson@redhat.com, vgoyal@redhat.com, akpm@linux-foundation.org,
+        rmk+kernel@arm.linux.org.uk, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Two separate de-init functions are merged into one common function.
- And it is used in err_post_init of lp55xx_init_device().
+Hello, Atsushi.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/leds/leds-lp5521.c        |   16 ++++------------
- drivers/leds/leds-lp5523.c        |   16 ++++------------
- drivers/leds/leds-lp55xx-common.c |   15 ++++++++++++---
- drivers/leds/leds-lp55xx-common.h |    3 ++-
- 4 files changed, 22 insertions(+), 28 deletions(-)
+2012/12/12 Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>:
+> Hello,
+>
+> On Tue, 11 Dec 2012 17:17:05 -0500 (EST)
+> Dave Anderson <anderson@redhat.com> wrote:
+>
+>>
+>>
+>> ----- Original Message -----
+>> > On Mon, Dec 10, 2012 at 11:40:47PM +0900, JoonSoo Kim wrote:
+>> >
+>> > [..]
+>> > > > So without knowing details of both the data structures, I think if vmlist
+>> > > > is going away, then user space tools should be able to traverse vmap_area_root
+>> > > > rb tree. I am assuming it is sorted using ->addr field and we should be
+>> > > > able to get vmalloc area start from there. It will just be a matter of
+>> > > > exporting right fields to user space (instead of vmlist).
+>> > >
+>> > > There is address sorted list of vmap_area, vmap_area_list.
+>> > > So we can use it for traversing vmalloc areas if it is necessary.
+>> > > But, as I mentioned before, kexec write *just* address of vmlist and
+>> > > offset of vm_struct's address field.  It imply that they don't traverse vmlist,
+>> > > because they didn't write vm_struct's next field which is needed for traversing.
+>> > > Without vm_struct's next field, they have no method for traversing.
+>> > > So, IMHO, assigning dummy vm_struct to vmlist which is implemented by [7/8] is
+>> > > a safe way to maintain a compatibility of userspace tool. :)
+>> >
+>> > Actually the design of "makedumpfile" and "crash" tool is that they know
+>> > about kernel data structures and they adopt to changes. So for major
+>> > changes they keep track of kernel version numbers and if access the
+>> > data structures accordingly.
+>> >
+>> > Currently we access first element of vmlist to determine start of vmalloc
+>> > address. True we don't have to traverse the list.
+>> >
+>> > But as you mentioned we should be able to get same information by
+>> > traversing to left most element of vmap_area_list rb tree. So I think
+>> > instead of trying to retain vmlist first element just for backward
+>> > compatibility, I will rather prefer get rid of that code completely
+>> > from kernel and let user space tool traverse rbtree. Just export
+>> > minimum needed info for traversal in user space.
+>>
+>> There's no need to traverse the rbtree.  There is a vmap_area_list
+>> linked list of vmap_area structures that is also sorted by virtual
+>> address.
+>>
+>> All that makedumpfile would have to do is to access the first vmap_area
+>> in the vmap_area_list -- as opposed to the way that it does now, which is
+>> by accessing the first vm_struct in the to-be-obsoleted vmlist list.
+>>
+>> So it seems silly to keep the dummy "vmlist" around.
+>
+> I think so, I will modify makedumpfile to get the start address of vmalloc
+> with vmap_area_list if the related symbols are provided as VMCOREINFO like
+> vmlist.
+> BTW, have we to consider other tools ?
+> If it is clear, I think we can get rid of the dummy vmlist.
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index b07784c..99f35b8 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -684,16 +684,6 @@ static void lp5521_unregister_sysfs(struct i2c_client *client)
- 				&lp5521_led_attribute_group);
- }
- 
--static void lp5521_deinit_device(struct lp5521_chip *chip)
--{
--	struct lp5521_platform_data *pdata = chip->pdata;
--
--	if (pdata->enable)
--		pdata->enable(0);
--	if (pdata->release_resources)
--		pdata->release_resources();
--}
--
- static int __devinit lp5521_init_led(struct lp5521_led *led,
- 				struct i2c_client *client,
- 				int chan, struct lp5521_platform_data *pdata)
-@@ -854,7 +844,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- fail2:
- 	lp5521_unregister_leds(old_chip);
- fail1:
--	lp5521_deinit_device(old_chip);
-+	lp55xx_deinit_device(chip);
- err_init:
- 	return ret;
- }
-@@ -862,13 +852,15 @@ err_init:
- static int __devexit lp5521_remove(struct i2c_client *client)
- {
- 	struct lp5521_chip *old_chip = i2c_get_clientdata(client);
-+	struct lp55xx_led *led = i2c_get_clientdata(client);
-+	struct lp55xx_chip *chip = led->chip;
- 
- 	lp5521_run_led_pattern(PATTERN_OFF, old_chip);
- 	lp5521_unregister_sysfs(client);
- 
- 	lp5521_unregister_leds(old_chip);
-+	lp55xx_deinit_device(chip);
- 
--	lp5521_deinit_device(old_chip);
- 	return 0;
- }
- 
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 63e74d2..2f5213d 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -884,16 +884,6 @@ static void lp5523_unregister_leds(struct lp5523_chip *chip)
- 	}
- }
- 
--static void lp5523_deinit_device(struct lp5523_chip *chip)
--{
--	struct lp5523_platform_data *pdata = chip->pdata;
--
--	if (pdata->enable)
--		pdata->enable(0);
--	if (pdata->release_resources)
--		pdata->release_resources();
--}
--
- /* Chip specific configurations */
- static struct lp55xx_device_config lp5523_cfg = {
- 	.reset = {
-@@ -957,7 +947,7 @@ static int __devinit lp5523_probe(struct i2c_client *client,
- fail2:
- 	lp5523_unregister_leds(old_chip);
- fail1:
--	lp5523_deinit_device(old_chip);
-+	lp55xx_deinit_device(chip);
- err_init:
- 	return ret;
- }
-@@ -965,6 +955,8 @@ err_init:
- static int lp5523_remove(struct i2c_client *client)
- {
- 	struct lp5523_chip *old_chip = i2c_get_clientdata(client);
-+	struct lp55xx_led *led = i2c_get_clientdata(client);
-+	struct lp55xx_chip *chip = led->chip;
- 
- 	/* Disable engine mode */
- 	lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
-@@ -972,8 +964,8 @@ static int lp5523_remove(struct i2c_client *client)
- 	lp5523_unregister_sysfs(client);
- 
- 	lp5523_unregister_leds(old_chip);
-+	lp55xx_deinit_device(chip);
- 
--	lp5523_deinit_device(old_chip);
- 	return 0;
- }
- 
-diff --git a/drivers/leds/leds-lp55xx-common.c b/drivers/leds/leds-lp55xx-common.c
-index bf21765..66ba500 100644
---- a/drivers/leds/leds-lp55xx-common.c
-+++ b/drivers/leds/leds-lp55xx-common.c
-@@ -152,11 +152,20 @@ int lp55xx_init_device(struct lp55xx_chip *chip)
- 	return 0;
- 
- err_post_init:
-+	lp55xx_deinit_device(chip);
-+err:
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(lp55xx_init_device);
-+
-+void lp55xx_deinit_device(struct lp55xx_chip *chip)
-+{
-+	struct lp55xx_platform_data *pdata = chip->pdata;
-+
- 	if (pdata->enable)
- 		pdata->enable(0);
-+
- 	if (pdata->release_resources)
- 		pdata->release_resources();
--err:
--	return ret;
- }
--EXPORT_SYMBOL_GPL(lp55xx_init_device);
-+EXPORT_SYMBOL_GPL(lp55xx_deinit_device);
-diff --git a/drivers/leds/leds-lp55xx-common.h b/drivers/leds/leds-lp55xx-common.h
-index ffedc77..908b00a 100644
---- a/drivers/leds/leds-lp55xx-common.h
-+++ b/drivers/leds/leds-lp55xx-common.h
-@@ -84,7 +84,8 @@ extern int lp55xx_read(struct lp55xx_chip *chip, u8 reg, u8 *val);
- extern int lp55xx_update_bits(struct lp55xx_chip *chip, u8 reg,
- 			u8 mask, u8 val);
- 
--/* common device init functions */
-+/* common device init/deinit functions */
- extern int lp55xx_init_device(struct lp55xx_chip *chip);
-+extern void lp55xx_deinit_device(struct lp55xx_chip *chip);
- 
- #endif /* _LEDS_LP55XX_COMMON_H */
--- 
-1.7.9.5
+Good!
+In next spin, I will remove dummy vmlist and export vmap_area_list symbol
+for makedumpfile.
 
+I don't know any other tools.
+If anyone knows it, please let me know.
 
-Best Regards,
-Milo
-
-
+Thanks! Atsushi, Dave and Vivek.
