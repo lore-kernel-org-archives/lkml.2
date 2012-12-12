@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab2LLJAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:00:49 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60833 "EHLO arroyo.ext.ti.com"
+	id S1752678Ab2LLJFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:05:17 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32859 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab2LLJAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:00:48 -0500
-Message-ID: <50C847AC.3030100@ti.com>
-Date: Wed, 12 Dec 2012 10:00:28 +0100
+	id S1751025Ab2LLJFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:05:08 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v3 4/4] leds: leds-pwm: Add device tree bindings
-References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com> <1355133637-2784-5-git-send-email-peter.ujfalusi@ti.com> <20121211072545.GD8294@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121211072545.GD8294@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Subject: [PATCH v4 0/7] leds: leds-pwm: Device tree support
+Date: Wed, 12 Dec 2012 10:04:45 +0100
+Message-ID: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 08:25 AM, Thierry Reding wrote:
->> +static const struct of_device_id of_pwm_leds_match[] = {
->> +	{ .compatible = "pwm-leds", },
->> +	{},
->> +};
-> 
-> Doesn't this cause a compiler warning for !OF builds?
+Hello,
 
-This is not causing any compiler warnings.
+Changes since v3:
+Addressed comments from Thierry Redding:
+- DT binding documentation for leds-pwm updated
+- of_pwm_request() renamed as of_pwm_get()
+- introduction of devm_of_pwm_get()
+- Commit message updates
+- Other comments has been also addressed
+- Acked-by from Grant is not added to the patches since they were modified since
+  v3
+
+Changes since v2:
+- rebased on top of linux-next
+- DT bindings now alligned with Grant's request
+- exporting of_pwm_request() from PWM core to allow clean DT bindings
+- DT binding documentation changed to reflect the changes
+
+Changes since v1:
+- As suggested by Bryan Wu: the legacy pwm_request() has been removed from
+  patch 1
+- Device tree bindings added for leds-pwm driver.
+
+When we boot with Device tree we handle one LED per device to be more aligned
+with PWM core's DT implementation.
+An example of the DT usage is provided in the new DT binding documentation for
+leds-pwm.
+
+Tested on OMAP4 Blaze (SDP), BeagleBoard with legacy and DT boot. On Zoom2 with
+legacy boot.
+
+Regards,
+Peter
+---
+Peter Ujfalusi (7):
+  leds: leds-pwm: Convert to use devm_get_pwm
+  leds: leds-pwm: Preparing the driver for device tree support
+  pwm: Correct parameter name in header for *pwm_get() functions
+  pwm: core: Rename of_pwm_request() to of_pwm_get() and export it
+  pwm: Add devm_of_pwm_get() as exported API for users
+  leds: leds-pwm: Simplify cleanup code
+  leds: leds-pwm: Add device tree bindings
+
+ .../devicetree/bindings/leds/leds-pwm.txt          |  48 +++++++
+ drivers/leds/leds-pwm.c                            | 152 +++++++++++++++------
+ drivers/pwm/core.c                                 |  38 +++++-
+ include/linux/leds_pwm.h                           |   2 +-
+ include/linux/pwm.h                                |  20 ++-
+ 5 files changed, 212 insertions(+), 48 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
 
 -- 
-Péter
+1.8.0
+
