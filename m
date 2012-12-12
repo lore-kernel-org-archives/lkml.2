@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab2LLBth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:49:37 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:42030 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2LLBtg (ORCPT
+	id S1754439Ab2LLByY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:54:24 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33278 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2LLByX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:49:36 -0500
-X-Greylist: delayed 686 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 20:49:36 EST
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH] pstore/ram: Fix bounds checks for mem_size, record_size, console_size and ftrace_size
-Date: Tue, 11 Dec 2012 17:49:24 -0800
-Message-Id: <1355276964-2929-1-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 11 Dec 2012 20:54:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1355258415.30831.2.camel@wall-e>
+References: <1355242260-28762-1-git-send-email-stefani@seibold.net>
+ <CALCETrWDkA8Xkp==okP8xERRSM8tcryRDr_+2RYcSK=vSQV9kQ@mail.gmail.com> <1355258415.30831.2.camel@wall-e>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Dec 2012 17:29:44 -0800
+Message-ID: <CALCETrU6KporkvG8Pgx9jS3P_tPT5yDQE=tSktnn1RwDip-yTg@mail.gmail.com>
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, aarcange@redhat.com,
+        john.stultz@linaro.org, Jeremy Fitzhardinge <jeremy@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bounds check in ramoops_init_prz was incorrect and ramoops_init_przs
-had no check. Additionally, ramoops_init_przs allows record_size to be 0,
-but ramoops_pstore_write_buf would always crash in this case.
+[cc: Jeremy Fitzhardinge -- you wrote some of this]
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
----
- fs/pstore/ram.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+On Tue, Dec 11, 2012 at 12:40 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> Am Dienstag, den 11.12.2012, 11:37 -0800 schrieb Andy Lutomirski:
+>> On Tue, Dec 11, 2012 at 8:11 AM,  <stefani@seibold.net> wrote:
+>> > --- a/arch/x86/vdso/vclock_gettime.c
+>> > +++ b/arch/x86/vdso/vclock_gettime.c
+>> > @@ -59,14 +59,23 @@ notrace static cycle_t vread_tsc(void)
+>> >
+>> >  static notrace cycle_t vread_hpet(void)
+>> >  {
+>> > +#ifdef CONFIG_X86_64
+>> >         return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + 0xf0);
+>> > +#else
+>> > +       return readl(VVAR(vsyscall_hpet) + HPET_COUNTER);
+>> > +#endif
+>> >  }
+>>
+>> Is 0xf0 not equal to HPET_COUNTER?
+>>
+>
+> Yes, but HPET_COUNTER is more readable.
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 1a4f6da..eb3dbff 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -189,7 +189,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 					    struct pstore_info *psi)
- {
- 	struct ramoops_context *cxt = psi->data;
--	struct persistent_ram_zone *prz = cxt->przs[cxt->dump_write_cnt];
-+	struct persistent_ram_zone *prz;
- 	size_t hlen;
- 
- 	if (type == PSTORE_TYPE_CONSOLE) {
-@@ -226,6 +226,11 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 	if (part != 1)
- 		return -ENOSPC;
- 
-+	if (!cxt->przs)
-+		return -ENOSPC;
-+
-+	prz = cxt->przs[cxt->dump_write_cnt];
-+
- 	hlen = ramoops_write_kmsg_hdr(prz);
- 	if (size + hlen > prz->buffer_size)
- 		size = prz->buffer_size - hlen;
-@@ -296,6 +301,11 @@ static int ramoops_init_przs(struct device *dev, struct ramoops_context *cxt,
- 	if (!cxt->record_size)
- 		return 0;
- 
-+	if (*paddr + dump_mem_sz - cxt->phys_addr > cxt->size) {
-+		dev_err(dev, "no room for dumps\n");
-+		return -ENOMEM;
-+	}
-+
- 	cxt->max_dump_cnt = dump_mem_sz / cxt->record_size;
- 	if (!cxt->max_dump_cnt)
- 		return -ENOMEM;
-@@ -333,8 +343,12 @@ static int ramoops_init_prz(struct device *dev, struct ramoops_context *cxt,
- 	if (!sz)
- 		return 0;
- 
--	if (*paddr + sz > *paddr + cxt->size)
-+	if (*paddr + sz - cxt->phys_addr > cxt->size) {
-+		dev_err(dev, "no room for mem region (0x%zx@0x%llx) in (0x%lx@0x%llx)\n",
-+			sz, (unsigned long long)*paddr,
-+			cxt->size, (unsigned long long)cxt->phys_addr);
- 		return -ENOMEM;
-+	}
- 
- 	*prz = persistent_ram_new(*paddr, sz, sig, cxt->ecc_size);
- 	if (IS_ERR(*prz)) {
--- 
-1.7.7.3
+Sorry -- read it backwards.  Can you change the 64-bit one as well?
 
+>
+>> >
+>> >  notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
+>> >  {
+>> >         long ret;
+>> > +#ifdef CONFIG_X86_64
+>> >         asm("syscall" : "=a" (ret) :
+>> >             "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
+>> > +#else
+>> > +       asm("int $0x80" : "=a" (ret) :
+>> > +           "a" (__NR_clock_gettime), "b" (clock), "c" (ts) : "memory");
+>> > +#endif
+>> >         return ret;
+>> >  }
+>>
+>> __kernel_vsyscall is probably much faster if you can figure out how to
+>> call it from here :)
+>>
+>
+> Yes i know. Thats one of my problems, because i cannot call
+> __kernel_vsyscall directly due the relocation. Any idea?
+
+What actually goes wrong?  I think that if calling __kernel_vsyscall
+like a normal symbol doesn't work then it's a bug in the relocation.
+
+What's the point of this relocation?  It appears thoroughly useless in
+the !compat case.
+
+--Andy
