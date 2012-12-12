@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2LLMjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 07:39:32 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:57404 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab2LLMjb (ORCPT
+	id S1753250Ab2LLMrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 07:47:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47247 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab2LLMrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 07:39:31 -0500
+	Wed, 12 Dec 2012 07:47:46 -0500
+Message-ID: <50C87CED.3070705@ti.com>
+Date: Wed, 12 Dec 2012 13:47:41 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAJSP0QXtZ=jMQp6YME4pCO0n90fPqbU7FQzPk4LsVvVjUQkc4Q@mail.gmail.com>
-References: <1354273052-5203-1-git-send-email-laurent.navet@gmail.com>
-	<1354273052-5203-2-git-send-email-laurent.navet@gmail.com>
-	<CAJSP0QXtZ=jMQp6YME4pCO0n90fPqbU7FQzPk4LsVvVjUQkc4Q@mail.gmail.com>
-Date: Wed, 12 Dec 2012 13:39:30 +0100
-Message-ID: <CAH7P7Nh9uecdZfm7nQX59iENndue+HV0E4tR_Fyhj=uFfuNCSg@mail.gmail.com>
-Subject: Re: [Line6linux-devel] [PATCH] staging: line6: pcm.c fix checkpatch issues
-From: Laurent Navet <laurent.navet@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] gpio: twl4030: Correct status reporting for outputs
+References: <1354791127-20545-1-git-send-email-peter.ujfalusi@ti.com> <CACRpkdYZcEpN-BJy=3DPAQL+QgR+EyNeyABtAPE96+2hYxOQwQ@mail.gmail.com> <50C86691.60005@ti.com> <CACxGe6uMabhuKAW6P+Zow3NoviM2NyYGjDh+--r9ndEyiSkdAg@mail.gmail.com>
+In-Reply-To: <CACxGe6uMabhuKAW6P+Zow3NoviM2NyYGjDh+--r9ndEyiSkdAg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping ?
+On 12/12/2012 12:45 PM, Grant Likely wrote:
+> I will take a look at it this week
 
-2012/11/30, Stefan Hajnoczi <stefanha@gmail.com>:
-> Changes are fine.
->
-> In the future, please split changes into individual patches.  For example:
-> Patch 1 - Rename 'rv' to 'ret'
-> Patch 2 - Replace decprecated simple_strtoul() with kstrtoint() in
-> pcm_set_impulse_period()
-> Patch 3 - Realign comment in line6_init_pcm() switch statement
->
-> Keeping patches focussed on doing just one thing makes it easier to
-> revert, bisect, and review them.
->
-> Reviewed-by: Stefan Hajnoczi <stefanha@gmail.com>
->
+Thanks
 
-Should I split patches as suggested by Stefan ?
+> but I cannot pick it up for v3.8 unless it is a regression bug fix from
+> v3.6. It will have to wait for v3.9 and it can be merged into linux-next
+> after the v3.8 merge window closes.
 
-Laurent.
+3.9 is fine. the gpio-twl4030 never reported the output state correctly, I
+just found it out while doing some cleanups around the twl-core and board files.
+
+Thanks,
+Péter
