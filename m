@@ -1,133 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab2LLJRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:17:06 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:36581 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab2LLJRC (ORCPT
+	id S1753114Ab2LLJXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:23:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36712 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab2LLJXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:17:02 -0500
-Date: Wed, 12 Dec 2012 10:16:47 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH 3/4 v2] gpio/mvebu: convert to use
- irq_domain_add_simple()
-Message-ID: <20121212101647.5e9c2159@skate>
-In-Reply-To: <CACRpkdY1wtPSW6Nab0tvcr+CF=Neki1mbZ8EdsHk0xkOTtnL1w@mail.gmail.com>
-References: <1350644042-31793-1-git-send-email-linus.walleij@linaro.org>
-	<20121211162048.6c9206c7@skate>
-	<CACRpkdY1wtPSW6Nab0tvcr+CF=Neki1mbZ8EdsHk0xkOTtnL1w@mail.gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 12 Dec 2012 04:23:06 -0500
+Message-ID: <50C84CF7.7030602@canonical.com>
+Date: Wed, 12 Dec 2012 10:23:03 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Sumit Semwal <sumit.semwal@linaro.org>
+CC: linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linus Walleij,
+Documentation says that code requiring dma-buf should add it to
+select, so inline fallbacks are not going to be used. A link error
+will make it obvious what went wrong, instead of silently doing
+nothing at runtime.
 
-On Wed, 12 Dec 2012 08:56:03 +0100, Linus Walleij wrote:
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Rob Clark <rob.clark@linaro.org>
 
-> > Unfortunately, this creates the following warning at boot time for each
-> > GPIO bank:
-> 
-> Grant has a patch in his irqdomain tree that will turn this warning into
-> a simple pr_info() thing instead. It's not that bad... The immediate
-> problem will soon go away.
+---
+Resubmit since it seemed to have gotten lost last cycle.
 
-Ok.
+ include/linux/dma-buf.h | 99 -------------------------------------------------
+ 1 file changed, 99 deletions(-)
 
-> > Of course, the fix should be to remove the irq_alloc_descs() from the
-> > driver prior to calling irq_domain_add_simple(). But the thing is that
-> > our gpio-mvebu driver uses the
-> > irq_alloc_generic_chip()/irq_setup_generic_chip() infrastructure, which
-> > it seems requires a legacy IRQ domain (it needs the base IRQ number).
-> 
-> Actually it looks like a core infrastructure issue. Sorry for not
-> spotting this in the first place:
-> 
-> First you allocate some descriptors, just any descriptors, with
-> mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
-> 
-> Then you allocate a generic chip using the obtained
-> descriptor base:
-> gc = irq_alloc_generic_chip("mvebu_gpio_irq", 2, mvchip->irqbase,
-> 				    mvchip->membase, handle_level_irq);
-> 
-> Then you set up the generic chip with a nailed down IRQ base number
-> from step 1:
-> irq_setup_generic_chip(gc, IRQ_MSK(ngpios), 0,
-> 			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
-> 
-> This, if I understand it correctly, is done because you have two different
-> chip types on the generic chip: one for high/low level IRQ and another
-> for rising/falling. (Which is a very nice way to use the generic chip!)
-> 
-> Finally set up the IRQ domain:
-> mvchip->domain = irq_domain_add_simple(np, mvchip->chip.ngpio,
-> 				       mvchip->irqbase,
-> 				       &irq_domain_simple_ops,
-> 				       mvchip);
-> 
-> So the problem is that you cannot allocate a generic chip
-> without having a base IRQ at that point, if I understand
-> correctly. If this was not necessary you would not need to
-> allocate descriptors in advance.
-
-Yes that's my understand as well.
-
-> Or rather: the *real* problem, which will face anyone trying
-> to implement a combined edge+level IRQ chip in a driver,
-> is that the generic irqchip does not play well with irqdomain.
-> 
-> Using legacy in this case is clearly wrong, the generic IRQ chip
-> is not one least bit legacy, it's top-of-the-line IRQ handling,
-> using generic code as we want.
-> 
-> However it seems generic chips cannot handle sparse IRQs
-> at all, it requires the descriptors to be allocated before
-> we create and instance of it.
-> 
-> So I see two solutions:
-> 
-> - Fix the generic chip to handle sparse IRQs by patching
->   a lot in kernel/irq/generic-chip.c and allowing to pass
->   something like < 0 for irq base.
-> 
-> - Add something like irq_domain_add_generic() for
->   generic chips and handle the oddities there.
-> 
-> The latter would be a pretty straight-forward wrapper to legacy
-> domain as of now.
-> 
-> Any preference? Or should we just consider generic irqchips
-> a legacy case?
-
-There has been some work in the past to make generic-chip play well
-with irqdomain (by Rob Herring), but apparently, none of that work has
-been merged. See:
-
-Subject: [PATCH v6] irq: add irq_domain support to generic-chip
-Date: Wed,  8 Feb 2012 16:55:22 -0600
-
-Also at:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-February/083897.html
-
-Rob, do you intend to push something like this further? What were the
-blocking points?
-
-Thanks,
-
-Thomas
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index eb48f38..bd2e52c 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -156,7 +156,6 @@ static inline void get_dma_buf(struct dma_buf *dmabuf)
+ 	get_file(dmabuf->file);
+ }
+ 
+-#ifdef CONFIG_DMA_SHARED_BUFFER
+ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+ 							struct device *dev);
+ void dma_buf_detach(struct dma_buf *dmabuf,
+@@ -184,103 +183,5 @@ int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
+ 		 unsigned long);
+ void *dma_buf_vmap(struct dma_buf *);
+ void dma_buf_vunmap(struct dma_buf *, void *vaddr);
+-#else
+-
+-static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+-							struct device *dev)
+-{
+-	return ERR_PTR(-ENODEV);
+-}
+-
+-static inline void dma_buf_detach(struct dma_buf *dmabuf,
+-				  struct dma_buf_attachment *dmabuf_attach)
+-{
+-	return;
+-}
+-
+-static inline struct dma_buf *dma_buf_export(void *priv,
+-					     const struct dma_buf_ops *ops,
+-					     size_t size, int flags)
+-{
+-	return ERR_PTR(-ENODEV);
+-}
+-
+-static inline int dma_buf_fd(struct dma_buf *dmabuf, int flags)
+-{
+-	return -ENODEV;
+-}
+-
+-static inline struct dma_buf *dma_buf_get(int fd)
+-{
+-	return ERR_PTR(-ENODEV);
+-}
+-
+-static inline void dma_buf_put(struct dma_buf *dmabuf)
+-{
+-	return;
+-}
+-
+-static inline struct sg_table *dma_buf_map_attachment(
+-	struct dma_buf_attachment *attach, enum dma_data_direction write)
+-{
+-	return ERR_PTR(-ENODEV);
+-}
+-
+-static inline void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
+-			struct sg_table *sg, enum dma_data_direction dir)
+-{
+-	return;
+-}
+-
+-static inline int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
+-					   size_t start, size_t len,
+-					   enum dma_data_direction dir)
+-{
+-	return -ENODEV;
+-}
+-
+-static inline void dma_buf_end_cpu_access(struct dma_buf *dmabuf,
+-					  size_t start, size_t len,
+-					  enum dma_data_direction dir)
+-{
+-}
+-
+-static inline void *dma_buf_kmap_atomic(struct dma_buf *dmabuf,
+-					unsigned long pnum)
+-{
+-	return NULL;
+-}
+-
+-static inline void dma_buf_kunmap_atomic(struct dma_buf *dmabuf,
+-					 unsigned long pnum, void *vaddr)
+-{
+-}
+-
+-static inline void *dma_buf_kmap(struct dma_buf *dmabuf, unsigned long pnum)
+-{
+-	return NULL;
+-}
+-
+-static inline void dma_buf_kunmap(struct dma_buf *dmabuf,
+-				  unsigned long pnum, void *vaddr)
+-{
+-}
+-
+-static inline int dma_buf_mmap(struct dma_buf *dmabuf,
+-			       struct vm_area_struct *vma,
+-			       unsigned long pgoff)
+-{
+-	return -ENODEV;
+-}
+-
+-static inline void *dma_buf_vmap(struct dma_buf *dmabuf)
+-{
+-	return NULL;
+-}
+-
+-static inline void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
+-{
+-}
+-#endif /* CONFIG_DMA_SHARED_BUFFER */
+ 
+ #endif /* __DMA_BUF_H__ */
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.8.0
+
+
