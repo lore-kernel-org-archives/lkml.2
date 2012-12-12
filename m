@@ -1,189 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab2LLPcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 10:32:46 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:60536 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752276Ab2LLPcn (ORCPT
+	id S1754457Ab2LLPd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 10:33:56 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:36691 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab2LLPdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 10:32:43 -0500
-X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX1+5jsUJDC+5fis7RghxSHCFZznxfPsKcAKJgAD+2L
-	SxEKYwmf2VCOHk
-Message-ID: <50C8A391.3010900@gmx.net>
-Date: Wed, 12 Dec 2012 16:32:33 +0100
-From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] PNP: Simplify setting of resources
-References: <4460434.rhV1bpKLo5@vostro.rjw.lan> <50C75E65.70802@gmx.net> <7930705.OcvDjiPjJD@vostro.rjw.lan>
-In-Reply-To: <7930705.OcvDjiPjJD@vostro.rjw.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 12 Dec 2012 10:33:55 -0500
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: b-cousson@ti.com, tony@atomide.com, grant.likely@secretlab.ca,
+        eballetbo@gmail.com, elezegarcia@gmail.com, ebutera@gmail.com,
+        javier.martinez@collabora.co.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Cc: Matthias Brugger <matthias.bgg@gmail.com>
+Subject: [PATCH] arm: dts: Add uart1 and uart2 to igep boards.
+Date: Wed, 12 Dec 2012 16:33:42 +0100
+Message-Id: <1355326422-12357-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch factors out the setting of PNP resources into one function which is 
-then reused for all PNP resource types.  This makes the code more concise and 
-avoids duplication.  The parameters "type" and "flags" are not used at the
-moment but may be used by follow-up patches.  Placeholders for these patches 
-can be found in the comment lines that contain the "TBD" marker. 
+This patch is a follow-up patch for Javier Martinez effort adding initial
+device tree support to IGEP technology devices. [1]
 
-As the code does not make any changes to the ABI, no regressions are expected.
+It adds uart1 and uart2 bindings to the generic dtsi for the IGEP boards.
 
-NB: While at it, support for bus type resources is added. 
+[1] http://www.spinics.net/lists/linux-omap/msg83409.html
 
-The patch is applied against Linux 3.7 as well as linux-pm.git/master 
-as of 2012-12-12.
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+---
+ arch/arm/boot/dts/omap3-igep.dtsi |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-
-Signed-off-by: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
-
-
-Index: linux/drivers/pnp/interface.c
-===================================================================
---- linux.orig/drivers/pnp/interface.c
-+++ linux/drivers/pnp/interface.c
-@@ -298,6 +298,39 @@ static ssize_t pnp_show_current_resource
- 	return ret;
- }
+diff --git a/arch/arm/boot/dts/omap3-igep.dtsi b/arch/arm/boot/dts/omap3-igep.dtsi
+index 125fe00..c02e3c0 100644
+--- a/arch/arm/boot/dts/omap3-igep.dtsi
++++ b/arch/arm/boot/dts/omap3-igep.dtsi
+@@ -27,6 +27,20 @@
+ };
  
-+static char *pnp_get_resource_value(char *buf,
-+				    unsigned long type,
-+				    resource_size_t *start,
-+				    resource_size_t *end,
-+				    unsigned long *flags)
-+{
-+	if (start)
-+		*start = 0;
-+	if (end)
-+		*end = 0;
-+	if (flags)
-+		*flags = 0;
+ &omap3_pmx_core {
++	uart1_pins: pinmux_uart1_pins {
++		pinctrl-single,pins = <
++			0x152 0x100	/* uart1_rx.uart1_rx INPUT | MODE0 */
++			0x14c 0		/* uart1_tx.uart1_tx OUTPUT | MODE0 */
++		>;
++	};
 +
-+	/* TBD: allow for disabled resources */
++	uart2_pins: pinmux_uart2_pins {
++		pinctrl-single,pins = <
++			0x14a 0x100	/* uart2_rx.uart2_rx INPUT | MODE0 */
++			0x148 0		/* uart2_tx.uart2_tx OUTPUT | MODE0 */
++		>;
++	};
 +
-+	buf = skip_spaces(buf);
-+	if (start) {
-+		*start = simple_strtoull(buf, &buf, 0);
-+		if (end) {
-+			buf = skip_spaces(buf);
-+			if (*buf == '-') {
-+				buf = skip_spaces(buf + 1);
-+				*end = simple_strtoull(buf, &buf, 0);
-+			} else
-+				*end = *start;
-+		}
-+	}
-+
-+	/* TBD: allow for additional flags, e.g., IORESOURCE_WINDOW */
-+
-+	return buf;
-+}
-+
- static ssize_t pnp_set_current_resources(struct device *dmdev,
- 					 struct device_attribute *attr,
- 					 const char *ubuf, size_t count)
-@@ -305,7 +338,6 @@ static ssize_t pnp_set_current_resources
- 	struct pnp_dev *dev = to_pnp_dev(dmdev);
- 	char *buf = (void *)ubuf;
- 	int retval = 0;
--	resource_size_t start, end;
+ 	uart3_pins: pinmux_uart3_pins {
+ 		pinctrl-single,pins = <
+ 			0x16e 0x100	/* uart3_rx.uart3_rx INPUT | MODE0 */
+@@ -77,6 +91,16 @@
+ 	status = "disabled";
+ };
  
- 	if (dev->status & PNP_ATTACHED) {
- 		retval = -EBUSY;
-@@ -349,6 +381,10 @@ static ssize_t pnp_set_current_resources
- 		goto done;
- 	}
- 	if (!strnicmp(buf, "set", 3)) {
-+		resource_size_t start;
-+		resource_size_t end;
-+		unsigned long flags;
++&uart1 {
++       pinctrl-names = "default";
++       pinctrl-0 = <&uart1_pins>;
++};
 +
- 		if (dev->active)
- 			goto done;
- 		buf += 3;
-@@ -357,42 +393,37 @@ static ssize_t pnp_set_current_resources
- 		while (1) {
- 			buf = skip_spaces(buf);
- 			if (!strnicmp(buf, "io", 2)) {
--				buf = skip_spaces(buf + 2);
--				start = simple_strtoul(buf, &buf, 0);
--				buf = skip_spaces(buf);
--				if (*buf == '-') {
--					buf = skip_spaces(buf + 1);
--					end = simple_strtoul(buf, &buf, 0);
--				} else
--					end = start;
--				pnp_add_io_resource(dev, start, end, 0);
--				continue;
--			}
--			if (!strnicmp(buf, "mem", 3)) {
--				buf = skip_spaces(buf + 3);
--				start = simple_strtoul(buf, &buf, 0);
--				buf = skip_spaces(buf);
--				if (*buf == '-') {
--					buf = skip_spaces(buf + 1);
--					end = simple_strtoul(buf, &buf, 0);
--				} else
--					end = start;
--				pnp_add_mem_resource(dev, start, end, 0);
--				continue;
--			}
--			if (!strnicmp(buf, "irq", 3)) {
--				buf = skip_spaces(buf + 3);
--				start = simple_strtoul(buf, &buf, 0);
--				pnp_add_irq_resource(dev, start, 0);
--				continue;
--			}
--			if (!strnicmp(buf, "dma", 3)) {
--				buf = skip_spaces(buf + 3);
--				start = simple_strtoul(buf, &buf, 0);
--				pnp_add_dma_resource(dev, start, 0);
--				continue;
--			}
--			break;
-+				buf = pnp_get_resource_value(buf + 2,
-+							     IORESOURCE_IO,
-+							     &start, &end,
-+							     &flags);
-+				pnp_add_io_resource(dev, start, end, flags);
-+			} else if (!strnicmp(buf, "mem", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_MEM,
-+							     &start, &end,
-+							     &flags);
-+				pnp_add_mem_resource(dev, start, end, flags);
-+			} else if (!strnicmp(buf, "irq", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_IRQ,
-+							     &start, NULL,
-+							     &flags);
-+				pnp_add_irq_resource(dev, start, flags);
-+			} else if (!strnicmp(buf, "dma", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_DMA,
-+							     &start, NULL,
-+							     &flags);
-+				pnp_add_dma_resource(dev, start, flags);
-+			} else if (!strnicmp(buf, "bus", 3)) {
-+				buf = pnp_get_resource_value(buf + 3,
-+							     IORESOURCE_BUS,
-+							     &start, &end,
-+							     NULL);
-+				pnp_add_bus_resource(dev, start, end);
-+			} else
-+				break;
- 		}
- 		mutex_unlock(&pnp_res_mutex);
- 		goto done;
++&uart2 {
++       pinctrl-names = "default";
++       pinctrl-0 = <&uart2_pins>;
++};
++
+ &uart3 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart3_pins>;
+-- 
+1.7.9.5
 
