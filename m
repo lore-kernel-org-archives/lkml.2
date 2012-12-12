@@ -1,148 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab2LLPTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 10:19:46 -0500
-Received: from sentry-two.sandia.gov ([132.175.109.14]:47897 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab2LLPTo (ORCPT
+	id S1754751Ab2LLPTx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 10:19:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48420 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab2LLPTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 10:19:44 -0500
-X-WSS-ID: 0MEXBWR-0B-0LT-02
-X-M-MSG: 
-X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
-Message-ID: <50C8A075.50601@sandia.gov>
-Date: Wed, 12 Dec 2012 08:19:17 -0700
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120829
- Thunderbird/10.0.7
+	Wed, 12 Dec 2012 10:19:49 -0500
+Message-ID: <50C8A07B.6040508@kernel.dk>
+Date: Wed, 12 Dec 2012 16:19:23 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: bo.li.liu@oracle.com
-cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
-Subject: Re: 3.7.0-rc8 btrfs locking issue
-References: <50BF7129.90602@sandia.gov>
- <20121209140442.GA14309@liubo.jp.oracle.com>
- <50C7604B.7070203@sandia.gov> <20121212013736.GA12318@liubo>
-In-Reply-To: <20121212013736.GA12318@liubo>
-X-TMWD-Spam-Summary: TS=20121212151921; ID=1; SEV=2.3.1;
- DFV=B2012110920; IFV=NA; AIF=B2012110920; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230392E35304338413037392E303130353A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
-X-MMS-Spam-Filter-ID: B2012110920_5.03.0010
-X-WSS-ID: 7CD67FFC43C8310419-01-01
-Content-Type: text/plain;
- charset=utf-8
+To: Jan Kara <jack@suse.cz>
+CC: Shaohua Li <shli@kernel.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Read starvation by sync writes
+References: <20121210221222.GA25700@quack.suse.cz> <CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com> <20121212101108.GC18885@quack.suse.cz>
+In-Reply-To: <20121212101108.GC18885@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: public
-X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 06:37 PM, Liu Bo wrote:
-> On Tue, Dec 11, 2012 at 09:33:15AM -0700, Jim Schutt wrote:
->> On 12/09/2012 07:04 AM, Liu Bo wrote:
->>> On Wed, Dec 05, 2012 at 09:07:05AM -0700, Jim Schutt wrote:
->>> Hi Jim,
+On 2012-12-12 11:11, Jan Kara wrote:
+> On Wed 12-12-12 10:55:15, Shaohua Li wrote:
+>> 2012/12/11 Jan Kara <jack@suse.cz>:
+>>>   Hi,
 >>>
->>> Could you please apply the following patch to test if it works?
->>
->> Hi,
->>
->> So far, with your patch applied I've been unable to reproduce
->> the recursive deadlock.  Thanks a lot for this patch!
->> This issue has been troubling me for a while.
-> 
-> Hi Jim,
-> 
-> Good news for us :)
-> 
->>
->> I've been trying to learn more about btrfs internals -
->> if you have the time to answer a couple questions about
->> your patch, I'd really appreciate it.
-> 
-> See below.
-> 
->>
+>>>   I was looking into IO starvation problems where streaming sync writes (in
+>>> my case from kjournald but DIO would look the same) starve reads. This is
+>>> because reads happen in small chunks and until a request completes we don't
+>>> start reading further (reader reads lots of small files) while writers have
+>>> plenty of big requests to submit. Both processes end up fighting for IO
+>>> requests and writer writes nr_batching 512 KB requests while reader reads
+>>> just one 4 KB request or so. Here the effect is magnified by the fact that
+>>> the drive has relatively big queue depth so it usually takes longer than
+>>> BLK_BATCH_TIME to complete the read request. The net result is it takes
+>>> close to two minutes to read files that can be read under a second without
+>>> writer load. Without the big drive's queue depth, results are not ideal but
+>>> they are bearable - it takes about 20 seconds to do the reading. And for
+>>> comparison, when writer and reader are not competing for IO requests (as it
+>>> happens when writes are submitted as async), it takes about 2 seconds to
+>>> complete reading.
 >>>
->>> (It's against 3.7-rc8.)
+>>> Simple reproducer is:
 >>>
->>> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
->>> index 3d3e2c1..100289b 100644
->>> --- a/fs/btrfs/extent-tree.c
->>> +++ b/fs/btrfs/extent-tree.c
->>> @@ -3346,7 +3346,8 @@ u64 btrfs_get_alloc_profile(struct btrfs_root
->>> *root, int data)
->>>  
->>>  	if (data)
->>>  		flags = BTRFS_BLOCK_GROUP_DATA;
->>> -	else if (root == root->fs_info->chunk_root)
->>> +	else if (root == root->fs_info->chunk_root ||
->>> +		 root == root->fs_info->dev_root)
->>>  		flags = BTRFS_BLOCK_GROUP_SYSTEM;
->>>  	else
->>>  		flags = BTRFS_BLOCK_GROUP_METADATA;
->>> @@ -3535,6 +3536,7 @@ static u64 get_system_chunk_thresh(struct
->>> btrfs_root *root, u64 type)
->>>  		num_dev = 1;	/* DUP or single */
->>>  
->>>  	/* metadata for updaing devices and chunk tree */
->>> +	num_dev = num_dev << 1
+>>> echo 3 >/proc/sys/vm/drop_caches
+>>> dd if=/dev/zero of=/tmp/f bs=1M count=10000 &
+>>> sleep 30
+>>> time cat /etc/* 2>&1 >/dev/null
+>>> killall dd
+>>> rm /tmp/f
+>>>
+>>>   The question is how can we fix this? Two quick hacks that come to my mind
+>>> are remove timeout from the batching logic (is it that important?) or
+>>> further separate request allocation logic so that reads have their own
+>>> request pool. More systematic fix would be to change request allocation
+>>> logic to always allow at least a fixed number of requests per IOC. What do
+>>> people think about this?
 >>
->> AFAICS this is doubling the size of the reserve, which
->> reduces the chance of a recursive do_chunk_alloc(), right?
->>
-> 
-> Not like that, we hit the deadlock because updating device tree also
-> uses METADATA chunk, which may be called when we're actually allocating
-> a METADATA chunk, so the patch I sent you makes updating device tree
-> use SYSTEM chunk, which we'll have some code to check if it is enough
-> before allocating a chunk(if not, we'll allocate a SYSTEM chunk first).
-> 
-> Here I double the size just because the worst case of allocating a
-> DATA/METADATA chunk -may- results in
-> 
-> 1)adding a SYSTEM chunk +
-> 2)adding dev extent per chunk stripe +
-> 3)updating chunk stripes's bytes_used
-> 
->>>  	return btrfs_calc_trans_metadata_size(root, num_dev + 1);
->>
->> btrfs_calc_trans_metadata_size(root, num_items) multiplies its
->> num_items argument by another factor of three - do you know if
->> there is there some rationale behind that number, or is it
->> perhaps also an empirically determined factor?
-> 
-> The height of Btrfs's metadata btree is at most 8,
-> leaf is on 0 level while node is at most on 7 level.
-> 
-> Each btree update may results in COWing a node and its sibling nodes,
-> where the factor of tree comes from
-> 
->>
->> What I'm wondering about is that if the size of the reserve is
->> empirically determined, will it need to be increased again
->> later when machines are more capable, and can handle a higher
->> load?
->>
->> Do you think it's feasible to modify the locking for
->> do_chunk_alloc to allow it to recurse without deadlock?
-> 
-> Well, it could be, but IMO it'll bring us complexity, so worse
-> maintainance.
-> 
-> Any questions? Feel free to ask.
+>> As long as queue depth > workload iodepth, there is little we can do
+>> to prioritize tasks/IOC. Because throttling a task/IOC means queue
+>> will be idle. We don't want to idle a queue (especially for SSD), so
+>> we always push as more requests as possible to the queue, which
+>> will break any prioritization. As far as I know we always have such
+>> issue in CFQ for big queue depth disk.
+>   Yes, I understand that. But actually big queue depth on its own doesn't
+> make the problem really bad (at least for me). When the reader doesn't have
+> to wait for free IO requests, it progresses at a reasonable speed. What
+> makes it really bad is that big queue depth effectively disallows any use
+> of ioc_batching() mode for the reader and thus it blocks in request
+> allocation for every single read request unlike writer which always uses
+> its full batch (32 requests).
 
-Your response was very helpful.  Thanks a lot!
+I agree. This isn't about scheduling, we haven't even reached that part
+yet. Back when we split the queues into read vs write, this problem
+obviously wasn't there. Now we have sync writes and reads, both eating
+from the same pool. The io scheduler can impact this a bit by forcing
+reads to must allocate (Jan, which io scheduler are you using?). CFQ
+does this when it's expecting a request from this process queue.
 
--- Jim
+Back in the day, we used to have one list. To avoid a similar problem,
+we reserved the top of the list for reads. With the batching, it's a bit
+more complicated. If we make the request allocation (just that, not the
+scheduling) be read vs write instead of sync vs async, then we have the
+same issue for sync vs buffered writes.
 
-> 
-> thanks,
-> liubo
-> 
-> 
+How about something like the below? Due to the nature of sync reads, we
+should allow a much longer timeout. The batch is really tailored towards
+writes at the moment. Also shrink the batch count, 32 is pretty large...
 
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 473015e..f2fcb74 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -792,7 +792,7 @@ static inline int ioc_batching(struct request_queue *q, struct io_context *ioc)
+ 	 */
+ 	return ioc->nr_batch_requests == q->nr_batching ||
+ 		(ioc->nr_batch_requests > 0
+-		&& time_before(jiffies, ioc->last_waited + BLK_BATCH_TIME));
++		&& time_before(jiffies, ioc->batch_timeout));
+ }
+ 
+ /*
+@@ -801,13 +801,18 @@ static inline int ioc_batching(struct request_queue *q, struct io_context *ioc)
+  * is the behaviour we want though - once it gets a wakeup it should be given
+  * a nice run.
+  */
+-static void ioc_set_batching(struct request_queue *q, struct io_context *ioc)
++static void ioc_set_batching(struct request_queue *q, struct io_context *ioc,
++			     int rw_flags)
+ {
+ 	if (!ioc || ioc_batching(q, ioc))
+ 		return;
+ 
+ 	ioc->nr_batch_requests = q->nr_batching;
+-	ioc->last_waited = jiffies;
++
++	if (rw_flags & REQ_WRITE)
++		ioc->batch_timeout = jiffies + BLK_BATCH_TIME_WRITE;
++	else
++		ioc->batch_timeout = jiffies + BLK_BATCH_TIME_READ;
+ }
+ 
+ static void __freed_request(struct request_list *rl, int sync)
+@@ -926,7 +931,7 @@ static struct request *__get_request(struct request_list *rl, int rw_flags,
+ 			 * requests, others will be blocked.
+ 			 */
+ 			if (!blk_rl_full(rl, is_sync)) {
+-				ioc_set_batching(q, ioc);
++				ioc_set_batching(q, ioc, rw_flags);
+ 				blk_set_rl_full(rl, is_sync);
+ 			} else {
+ 				if (may_queue != ELV_MQUEUE_MUST
+@@ -1012,7 +1017,7 @@ out:
+ 	 * ioc may be NULL here, and ioc_batching will be false. That's
+ 	 * OK, if the queue is under the request limit then requests need
+ 	 * not count toward the nr_batch_requests limit. There will always
+-	 * be some limit enforced by BLK_BATCH_TIME.
++	 * be some limit enforced by BLK_BATCH_TIME_*
+ 	 */
+ 	if (ioc_batching(q, ioc))
+ 		ioc->nr_batch_requests--;
+@@ -1109,7 +1114,7 @@ retry:
+ 	 * to allocate at least one request, and up to a big batch of them
+ 	 * for a small period time.  See ioc_batching, ioc_set_batching
+ 	 */
+-	ioc_set_batching(q, current->io_context);
++	ioc_set_batching(q, current->io_context, rw_flags);
+ 
+ 	spin_lock_irq(q->queue_lock);
+ 	finish_wait(&rl->wait[is_sync], &wait);
+diff --git a/block/blk.h b/block/blk.h
+index 47fdfdd..e8761d4 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -4,10 +4,11 @@
+ #include <linux/idr.h>
+ 
+ /* Amount of time in which a process may batch requests */
+-#define BLK_BATCH_TIME	(HZ/50UL)
++#define BLK_BATCH_TIME_WRITE	(HZ/50UL)
++#define BLK_BATCH_TIME_READ	(2 * HZ)
+ 
+ /* Number of requests a "batching" process may submit */
+-#define BLK_BATCH_REQ	32
++#define BLK_BATCH_REQ	16
+ 
+ extern struct kmem_cache *blk_requestq_cachep;
+ extern struct kobj_type blk_queue_ktype;
+diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
+index df38db2..20b02dc 100644
+--- a/include/linux/iocontext.h
++++ b/include/linux/iocontext.h
+@@ -108,7 +108,7 @@ struct io_context {
+ 	 * For request batching
+ 	 */
+ 	int nr_batch_requests;     /* Number of requests left in the batch */
+-	unsigned long last_waited; /* Time last woken after wait for request */
++	unsigned long batch_timeout;	/* valid until */
+ 
+ 	struct radix_tree_root	icq_tree;
+ 	struct io_cq __rcu	*icq_hint;
+
+
+-- 
+Jens Axboe
 
