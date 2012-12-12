@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2LLSgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:36:36 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39658 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754052Ab2LLSgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:36:35 -0500
-Message-ID: <50C8CEA7.5000402@linux.vnet.ibm.com>
-Date: Wed, 12 Dec 2012 12:36:23 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754804Ab2LLSkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:40:51 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42850 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab2LLSku (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:40:50 -0500
+Date: Wed, 12 Dec 2012 18:40:49 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwysocha@redhat.com
+Subject: Re: [PATCH] vfs: remove unneeded permission check from path_init
+Message-ID: <20121212184049.GO4939@ZenIV.linux.org.uk>
+References: <1355234176-767-1-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 0/8] zswap: compressed swap caching
-References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121218-7182-0000-0000-000003BD4002
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355234176-767-1-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some addition performance metrics regarding the performance
-improvements and I/O reductions that can be achieved using zswap as
-measured by SPECjbb.
+On Tue, Dec 11, 2012 at 08:56:16AM -0500, Jeff Layton wrote:
+> When path_init is called with a valid dfd, that code checks permissions
+> on the open directory fd and returns an error if the check fails. This
+> permission check is redundant, however.
+> 
+> Both callers of path_init immediately call link_path_walk afterward. The
+> first thing that link_path_walk does is to check for exec permissions
+> at the starting point of the path walk.
+> 
+> In most cases, these checks are very quick, but when the dfd is for a
+> file on a NFS mount with the actimeo=0, each permission check goes
+> out onto the wire. The result is 2 identical ACCESS calls.
+> 
+> Given that these codepaths are fairly "hot", I think it makes sense to
+> eliminate the permission check in path_init and simply assume that the
+> caller will eventually check the permissions before proceeding.
 
-http://ibm.co/VCgHvM
+Applied, with one modification to commit message - the second paragraph
+replaced with
 
-Seth
-
+Both callers of path_init immediately call link_path_walk afterward. The
+first thing that link_path_walk does for pathnames that do not consist
+only of slashes is to check for exec permissions at the starting point of
+the path walk.  And this check in path_init() is on the path taken only
+when *name != '/' && *name != '\0'.
