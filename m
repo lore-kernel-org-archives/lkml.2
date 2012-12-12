@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab2LLSYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:24:10 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:48341 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755208Ab2LLSXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:23:09 -0500
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 23/26] mm: Convert print_symbol to %pSR
-Date: Wed, 12 Dec 2012 10:19:12 -0800
-Message-Id: <96a83ddb7f8571afe8b3b3b6e7fc9dc3ff81dda5.1355335228.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.112.g3fd21
-In-Reply-To: <cover.1355335227.git.joe@perches.com>
-References: <cover.1355335227.git.joe@perches.com>
+	id S1754570Ab2LLS2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:28:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab2LLS2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:28:46 -0500
+Date: Wed, 12 Dec 2012 13:28:38 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Durgadoss R <durgadoss.r@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: Thermal: Add a thermal notifier for user space
+Message-ID: <20121212182838.GA7497@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Durgadoss R <durgadoss.r@intel.com>,
+	Zhang Rui <rui.zhang@intel.com>
+References: <20121212180547.F12BE6606F0@gitolite.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121212180547.F12BE6606F0@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new vsprintf extension to avoid any possible
-message interleaving.
+On Wed, Dec 12, 2012 at 06:05:47PM +0000, Linux Kernel wrote:
+ > Gitweb:     http://git.kernel.org/linus/;a=commit;h=1cc807a234cb988d69ba18f6a3a1c68d71e54bed
+ > Commit:     1cc807a234cb988d69ba18f6a3a1c68d71e54bed
+ > Parent:     e151a202a084f9f4310d1aa4398325c56ca95fda
+ > Author:     Durgadoss R <durgadoss.r@intel.com>
+ > AuthorDate: Tue Sep 18 11:05:03 2012 +0530
+ > Committer:  Zhang Rui <rui.zhang@intel.com>
+ > CommitDate: Mon Nov 5 14:00:08 2012 +0800
+ > 
+ >     Thermal: Add a thermal notifier for user space
+ >     
+ >     This patch registers a governor which will let the
+ >     user land manage the platform thermals. Whenever a
+ >     trip happens, this governor just notifies the user
+ >     space using kobj_uevent().
+ >     
+ >     Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+ >     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- mm/memory.c |    8 ++++----
- mm/slab.c   |    8 +++-----
- 2 files changed, 7 insertions(+), 9 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index d81bdd7..a14c194 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -711,11 +711,11 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
- 	 * Choose text because data symbols depend on CONFIG_KALLSYMS_ALL=y
- 	 */
- 	if (vma->vm_ops)
--		print_symbol(KERN_ALERT "vma->vm_ops->fault: %s\n",
--				(unsigned long)vma->vm_ops->fault);
-+		printk(KERN_ALERT "vma->vm_ops->fault: %pSR\n",
-+		       vma->vm_ops->fault);
- 	if (vma->vm_file && vma->vm_file->f_op)
--		print_symbol(KERN_ALERT "vma->vm_file->f_op->mmap: %s\n",
--				(unsigned long)vma->vm_file->f_op->mmap);
-+		printk(KERN_ALERT "vma->vm_file->f_op->mmap: %pSR\n",
-+		       vma->vm_file->f_op->mmap);
- 	dump_stack();
- 	add_taint(TAINT_BAD_PAGE);
- }
-diff --git a/mm/slab.c b/mm/slab.c
-index 23daffa..d23ab4f 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2081,11 +2081,9 @@ static void print_objinfo(struct kmem_cache *cachep, void *objp, int lines)
- 	}
  
- 	if (cachep->flags & SLAB_STORE_USER) {
--		printk(KERN_ERR "Last user: [<%p>]",
--			*dbg_userword(cachep, objp));
--		print_symbol("(%s)",
--				(unsigned long)*dbg_userword(cachep, objp));
--		printk("\n");
-+		printk(KERN_ERR "Last user: [<%p>](%pSR)\n",
-+		       *dbg_userword(cachep, objp),
-+		       *dbg_userword(cachep, objp));
- 	}
- 	realobj = (char *)objp + obj_offset(cachep);
- 	size = cachep->object_size;
--- 
-1.7.8.112.g3fd21
+ > +config USER_SPACE
+ > +	bool "User_space thermal governor"
+ > +	depends on THERMAL
+ > +	help
+ > +	  Enable this to let the user space manage the platform thermals.
+
+This is terribly generic sounding.  Might I suggest THERMAL_USER_SPACE instead ?
+
+	Dave
 
