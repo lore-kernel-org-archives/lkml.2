@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2LLSV2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:21:28 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40412 "EHLO
+	id S1755292Ab2LLSVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:21:38 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55086 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754503Ab2LLSVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:21:25 -0500
+	id S1754503Ab2LLSVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:21:35 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 12/26] s390: Convert print_symbol to %pSR
-Date: Wed, 12 Dec 2012 10:19:01 -0800
-Message-Id: <08ed143e48ebb9f16ae49daa9fb2d90f45c6e2cf.1355335228.git.joe@perches.com>
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH 13/26] sh: Convert print_symbol to %pSR
+Date: Wed, 12 Dec 2012 10:19:02 -0800
+Message-Id: <ff4fd103eea2a7ae666e540053c7d824e173e57f.1355335228.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1355335227.git.joe@perches.com>
 References: <cover.1355335227.git.joe@perches.com>
@@ -26,75 +25,24 @@ message interleaving.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/s390/kernel/traps.c |   28 ++++++++++++++++------------
- 1 files changed, 16 insertions(+), 12 deletions(-)
+ arch/sh/kernel/process_32.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
-index 70ecfc5..f718e12 100644
---- a/arch/s390/kernel/traps.c
-+++ b/arch/s390/kernel/traps.c
-@@ -91,8 +91,9 @@ __show_trace(unsigned long sp, unsigned long low, unsigned long high)
- 		if (sp < low || sp > high - sizeof(*sf))
- 			return sp;
- 		sf = (struct stack_frame *) sp;
--		printk("([<%016lx>] ", sf->gprs[8] & PSW_ADDR_INSN);
--		print_symbol("%s)\n", sf->gprs[8] & PSW_ADDR_INSN);
-+		printk("([<%016lx>] %pSR\n",
-+		       sf->gprs[8] & PSW_ADDR_INSN,
-+		       (void *)(sf->gprs[8] & PSW_ADDR_INSN));
- 		/* Follow the backchain. */
- 		while (1) {
- 			low = sp;
-@@ -102,16 +103,18 @@ __show_trace(unsigned long sp, unsigned long low, unsigned long high)
- 			if (sp <= low || sp > high - sizeof(*sf))
- 				return sp;
- 			sf = (struct stack_frame *) sp;
--			printk(" [<%016lx>] ", sf->gprs[8] & PSW_ADDR_INSN);
--			print_symbol("%s\n", sf->gprs[8] & PSW_ADDR_INSN);
-+			printk(" [<%016lx>] %pSR\n",
-+			       sf->gprs[8] & PSW_ADDR_INSN,
-+			       (void *)(sf->gprs[8] & PSW_ADDR_INSN));
- 		}
- 		/* Zero backchain detected, check for interrupt frame. */
- 		sp = (unsigned long) (sf + 1);
- 		if (sp <= low || sp > high - sizeof(*regs))
- 			return sp;
- 		regs = (struct pt_regs *) sp;
--		printk(" [<%016lx>] ", regs->psw.addr & PSW_ADDR_INSN);
--		print_symbol("%s\n", regs->psw.addr & PSW_ADDR_INSN);
-+		printk(" [<%016lx>] %pSR\n",
-+		       regs->psw.addr & PSW_ADDR_INSN,
-+		       (void *)(regs->psw.addr & PSW_ADDR_INSN));
- 		low = sp;
- 		sp = regs->gprs[15];
- 	}
-@@ -169,8 +172,9 @@ static void show_last_breaking_event(struct pt_regs *regs)
- {
- #ifdef CONFIG_64BIT
- 	printk("Last Breaking-Event-Address:\n");
--	printk(" [<%016lx>] ", regs->args[0] & PSW_ADDR_INSN);
--	print_symbol("%s\n", regs->args[0] & PSW_ADDR_INSN);
-+	printk(" [<%016lx>] %pSR\n",
-+	       regs->args[0] & PSW_ADDR_INSN,
-+	       (void *)(regs->args[0] & PSW_ADDR_INSN));
- #endif
- }
+diff --git a/arch/sh/kernel/process_32.c b/arch/sh/kernel/process_32.c
+index 73eb66f..a0837ba 100644
+--- a/arch/sh/kernel/process_32.c
++++ b/arch/sh/kernel/process_32.c
+@@ -38,8 +38,8 @@ void show_regs(struct pt_regs * regs)
+ 	       (int)strcspn(init_utsname()->version, " "),
+ 	       init_utsname()->version);
  
-@@ -201,10 +205,10 @@ void show_registers(struct pt_regs *regs)
- 	char *mode;
+-	print_symbol("PC is at %s\n", instruction_pointer(regs));
+-	print_symbol("PR is at %s\n", regs->pr);
++	printk("PC is at %pSR\n", (void *)instruction_pointer(regs));
++	printk("PR is at %pSR\n", (void *)regs->pr);
  
- 	mode = user_mode(regs) ? "User" : "Krnl";
--	printk("%s PSW : %p %p",
--	       mode, (void *) regs->psw.mask,
--	       (void *) regs->psw.addr);
--	print_symbol(" (%s)\n", regs->psw.addr & PSW_ADDR_INSN);
-+	printk("%s PSW : %p %p, %pSR\n",
-+	       mode, (void *)regs->psw.mask,
-+	       (void *)regs->psw.addr,
-+	       (void *)(regs->psw.addr & PSW_ADDR_INSN));
- 	printk("           R:%x T:%x IO:%x EX:%x Key:%x M:%x W:%x "
- 	       "P:%x AS:%x CC:%x PM:%x", mask_bits(regs, PSW_MASK_PER),
- 	       mask_bits(regs, PSW_MASK_DAT), mask_bits(regs, PSW_MASK_IO),
+ 	printk("PC  : %08lx SP  : %08lx SR  : %08lx ",
+ 	       regs->pc, regs->regs[15], regs->sr);
 -- 
 1.7.8.112.g3fd21
 
