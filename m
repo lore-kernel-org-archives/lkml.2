@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2LLSmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:42:11 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60336 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab2LLSmK (ORCPT
+	id S1754823Ab2LLSnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:43:55 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2745 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab2LLSnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:42:10 -0500
-Date: Wed, 12 Dec 2012 19:42:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Ying Han <yinghan@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
- iterators
-Message-ID: <20121212184207.GC10374@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
- <1353955671-14385-4-git-send-email-mhocko@suse.cz>
- <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
- <20121211155432.GC1612@dhcp22.suse.cz>
- <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
- <20121212090652.GB32081@dhcp22.suse.cz>
- <CALWz4iwq+vRN+rreOk7Jg4rHWWBSmNwBW8Kko45E-D8Vi66eQA@mail.gmail.com>
- <20121212183446.GB10374@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212183446.GB10374@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Dec 2012 13:43:53 -0500
+X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=AsENIjYenYMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=uCJ6TkGyzrcA:10 a=VwQbUJbxAAAA:8 a=qvmrgIgGuK3iWGooozEA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355337832.17101.339.camel@gandalf.local.home>
+Subject: [v3.0 stable version][PATCH 1/2] ring-buffer: Fix NULL pointer if
+ rb_set_head_page() fails
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Date: Wed, 12 Dec 2012 13:43:52 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-12-12 19:34:46, Michal Hocko wrote:
-> On Wed 12-12-12 10:09:43, Ying Han wrote:
-> [...]
-> > But If i look at the callers of mem_cgroup_iter(), they all look like
-> > the following:
-> > 
-> > memcg = mem_cgroup_iter(root, NULL, &reclaim);
-> > do {
-> > 
-> >     // do something
-> > 
-> >     memcg = mem_cgroup_iter(root, memcg, &reclaim);
-> > } while (memcg);
-> > 
-> > So we get out of the loop when memcg returns as NULL, where the
-> > last_visited is cached as NULL as well thus no css_get(). That is what
-> > I meant by "each reclaim thread closes the loop".
-> 
-> OK
-> 
-> > If that is true, the current implementation of mem_cgroup_iter_break()
-> > changes that.
-> 
-> I do not understand this though. Why should we touch the zone-iter
-> there?  Just consider, if we did that then all the parallel targeted
 
-Bahh, parallel is only confusing here. Say first child triggers a hard
-limit reclaim then root of the hierarchy will be reclaimed first.
-iter_break would reset iter->last_visited. Then B triggers the same
-reclaim but we will start again from root rather than the first child
-because it doesn't know where the other one stopped.
+The function rb_set_head_page() searches the list of ring buffer
+pages for a the page that has the HEAD page flag set. If it does
+not find it, it will do a WARN_ON(), disable the ring buffer and
+return NULL, as this should never happen.
 
-Hope this clarifies it and sorry for all the confusion.
+But if this bug happens to happen, not all callers of this function
+can handle a NULL pointer being returned from it. That needs to be
+fixed.
 
-> reclaimers (! global case) would hammer the first node (root) as they
-> wouldn't continue where the last one finished.
-> 
-> [...]
-> 
-> Thanks!
--- 
-Michal Hocko
-SUSE Labs
+Cc: stable@vger.kernel.org # 3.0+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ring_buffer.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+Index: linux-test.git/kernel/trace/ring_buffer.c
+===================================================================
+--- linux-test.git.orig/kernel/trace/ring_buffer.c
++++ linux-test.git/kernel/trace/ring_buffer.c
+@@ -2926,6 +2926,8 @@ rb_get_reader_page(struct ring_buffer_pe
+ 	 * Splice the empty reader page into the list around the head.
+ 	 */
+ 	reader = rb_set_head_page(cpu_buffer);
++	if (!reader)
++		goto out;
+ 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
+ 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+ 
+
+
+
