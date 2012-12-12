@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2LLV4E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 16:56:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab2LLV4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 16:56:02 -0500
-Message-ID: <50C8FCE0.1060408@redhat.com>
-Date: Wed, 12 Dec 2012 16:53:36 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org> <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755448Ab2LLV5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 16:57:11 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:45915 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168Ab2LLV5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 16:57:09 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 12 Dec 2012 22:56:59 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] MAINTAINERS: adjust for UAPI: firewire
+Message-ID: <20121212225659.7db664fd@stein>
+In-Reply-To: <1355262601-4263-8-git-send-email-cesarb@cesarb.net>
+References: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
+	<1355262601-4263-8-git-send-email-cesarb@cesarb.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 04:43 PM, Johannes Weiner wrote:
-> dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
-> a point of not going for anonymous memory while there is still enough
-> inactive cache around.
->
-> The check was added only for global reclaim, but it is just as useful
-> for memory cgroup reclaim.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ MAINTAINERS | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 386fce6..9722918 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3071,7 +3071,8 @@ W:	http://ieee1394.wiki.kernel.org/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git
+ S:	Maintained
+ F:	drivers/firewire/
+-F:	include/linux/firewire*.h
++F:	include/linux/firewire.h
++F:	include/uapi/linux/firewire*.h
+ F:	tools/firewire/
+ 
+ FIRMWARE LOADER (request_firmware)
+-- 
+
+On Dec 11 Cesar Eduardo Barros wrote:
+> Several headers were moved or split to uapi/.
+> 
+> Acked-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 > ---
->   mm/vmscan.c | 19 ++++++++++---------
->   1 file changed, 10 insertions(+), 9 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 157bb11..3874dcb 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1671,6 +1671,16 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->   		denominator = 1;
->   		goto out;
->   	}
-> +	/*
-> +	 * There is enough inactive page cache, do not reclaim
-> +	 * anything from the anonymous working set right now.
-> +	 */
-> +	if (!inactive_file_is_low(lruvec)) {
-> +		fraction[0] = 0;
-> +		fraction[1] = 1;
-> +		denominator = 1;
-> +		goto out;
-> +	}
->
->   	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
->   		get_lru_size(lruvec, LRU_INACTIVE_ANON);
-> @@ -1688,15 +1698,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->   			fraction[1] = 0;
->   			denominator = 1;
->   			goto out;
-> -		} else if (!inactive_file_is_low_global(zone)) {
-> -			/*
-> -			 * There is enough inactive page cache, do not
-> -			 * reclaim anything from the working set right now.
-> -			 */
-> -			fraction[0] = 0;
-> -			fraction[1] = 1;
-> -			denominator = 1;
-> -			goto out;
->   		}
->   	}
->
->
+>  MAINTAINERS | 160 ++++++++++++++++++++++++++++++++++++++++++++----------------
+>  1 file changed, 118 insertions(+), 42 deletions(-)
 
-I believe the if() block should be moved to AFTER
-the check where we make sure we actually have enough
-file pages.
-
+Cesar, could you fold the firewire hunk into your patch 07/19,
+or add this as another patch to that series?  Thanks.
+-- 
+Stefan Richter
+-=====-===-- ==-- -==--
+http://arcgraph.de/sr/
