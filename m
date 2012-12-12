@@ -1,391 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2LLJoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:44:16 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52734 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab2LLJoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:44:12 -0500
-Message-ID: <50C851E7.8090401@imgtec.com>
-Date: Wed, 12 Dec 2012 09:44:07 +0000
-From: James Hogan <james.hogan@imgtec.com>
+	id S1753185Ab2LLJrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:47:35 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:27063 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab2LLJrc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:47:32 -0500
+X-Spam-Score: -100.8
+Message-ID: <50C852E9.5020107@asianux.com>
+Date: Wed, 12 Dec 2012 17:48:25 +0800
+From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [braindump][RFC] signals and syscall restarts (Re: [PATCH v2
- 19/44] metag: Signal handling)
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-20-git-send-email-james.hogan@imgtec.com> <20121205171609.GW4939@ZenIV.linux.org.uk> <50C07ECE.9070602@imgtec.com> <20121206220955.GZ4939@ZenIV.linux.org.uk> <20121208181458.GD4939@ZenIV.linux.org.uk>
-In-Reply-To: <20121208181458.GD4939@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
+To: omar.ramirez@ti.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] drivers/staging/tidspbridge: pr_err and pr_debug for
+ uninitialized buffer (name buf not initialized).
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_12_12_09_44_09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/12 18:14, Al Viro wrote:
-> On Thu, Dec 06, 2012 at 10:09:55PM +0000, Al Viro wrote:
-> 
->> 	What we need to guarantee is
->> * restarts do not happen on signals caught in interrupts or exceptions
->> * restarts do not happen on signals caught in sigreturn()
+Hello Omar Ramirez Luna:
 
-Since we don't currently have an orig syscall in our pt_regs that
-we can make invalid, is it acceptable to just explicitly exclude
-rt_sigreturn? e.g. using something like this around the switch
-statements that check for -ERESTART*:
+  in drivers/staging/tidspbridge/core/io_sm.c:
+    it is for function dump_dsp_stack.
+    "char name[256]" is not initialized.  (line 1898)
+    name is as out buf for node_find_addr (line 2021..2024, 2066..2071, 2098..2103)
+      if node_find_addr fails, pr_err may cause issue (name may not be initialized)
 
-/*
- * Decide whether a syscall restart should be checked for.
- * This needs to exclude non-syscalls (syscall == -1), and sys_rt_sigreturn.
- */
-static int restartable_syscall(int syscall)
-{
-	return syscall >= 0 && syscall != __NR_rt_sigreturn;
-}
+  in drivers/staging/tidspbridge/rmgr/node.c:
+    function node_find_addr can be called by dump_dsp_stack.
+    param sym_name is as out buf which may be not initialized.
+    so pr_debug may cause issue (print sym_name).
 
->> * restart should happen only once, even if we get through do_signal() many
->> times.
-> 
-> BTW, signal caught in sigreturn is *not* something requiring a narrow
-> race.  It's perfectly normal to have some signals blocked for the
-> duration of signal handler - the signal itself is blocked by default
-> unless you have set SA_NODEFER in sa_flags and there's sa_mask allowing
-> to block an arbitrary set of signals.  Upon return from signal handler
-> we undo that and if any of the temporary blocked signals has arrived
-> while we'd been in the handler (e.g. had been raised by the handler itself),
-> it will be caught as soon as we unblock it, i.e. in sigreturn.
-> 
-> Unfortunately, the testcases are somewhat architecture-dependent.  See, for
-> example, arm one in commit 653d48b22166db2d8b1515ebe6f9f0f7c95dfc86; there
-> might be a way to arrange for asm-free equivalent if one played with -O0,
-> but it's probably not worth the trouble.  That one deals with sigreturn
-> from signal caught in interrupt; sigreturn from signal caught in syscall
-> is a bit trickier.  TBH, I don't understand your syscall calling conventions
-> well enough to cook one up; your restart logics looks really strange.
-> You leave ->DX[0].U0 modified - fair enough, it doesn't seem to be used
-> by syscall entry path - *and* you revert ->DX[0].U1 to the state you
-> used to have on entry.  The thing is, I don't see any place that would
-> have changed it in between; why do you need that
-> 	regs->REG_SYSCALL = orig_syscall;
-> in there at all?
+  in drivers/staging/tidspbridge/rmgr/nldr.c:
+    function nldr_find_addr can be called by node_find_addr 
+    param sym_name is as out buf which may be not initialized.
+    so pr_debug may cause issue (print sym_name).
 
-Yes, this doesn't seem to be necessary. The only other place
-REG_SYSCALL is changed is when it's set to __NR_restart_syscall, in
-which case I presume it never needs to be reset i.e. if a syscall
-returns -ERESTART_RESTARTBLOCK, it either doesn't return a different
--ERESTART* from the restart block callback, or it's acceptable in
-that case to restart sys_restart_syscall rather than the original
-syscall that returned -ERESTART_RESTARTBLOCK. Is that right?
+  please help checking, thanks.
 
-> 
-> BTW, could you (and other folks submitting ports) document the ABI?
-> See e.g. Documentation/frv/kernel-ABI.txt for fairly decent example...
-> 
+gchen.
 
-Good idea, something like below?
 
-Thanks
-James
+in drivers/staging/tidspbridge/rmgr/nldr.c:
 
-Date: Tue, 11 Dec 2012 10:08:26 +0000
-Subject: [PATCH 1/1] metag: add kernel-ABI document
+1798 int nldr_find_addr(struct nldr_nodeobject *nldr_node, u32 sym_addr,
+1799                         u32 offset_range, void *offset_output, char *sym_name)
+1800 {
+1801         int status = 0;
+1802         bool status1 = false;
+1803         s32 i = 0;
+1804         struct lib_node root = { NULL, 0, NULL };
+1805         pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__, (u32) nldr_node,
+1806                         sym_addr, offset_range, (u32) offset_output, sym_name);
+1807 
+ ...
 
-Add a document in Documentation/metag/ describing the Linux ABI for
-metag. It includes an outline of the registers, which ones are special
-in userland and the kernel, the system call ABI, and an overview of the
-calling conventions.
 
-It was suggested that new architecture ports should have some ABI
-documentation available, with Documentation/frv/kernel-ABI.txt
-referenced as a decent example, from which some inspiration was drawn
-for this patch.
+in drivers/staging/tidspbridge/rmgr/node.c:
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
----
- Documentation/metag/00-INDEX       |    2 +
- Documentation/metag/kernel-ABI.txt |  256 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 258 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/metag/kernel-ABI.txt
+3009 int node_find_addr(struct node_mgr *node_mgr, u32 sym_addr,
+3010                 u32 offset_range, void *sym_addr_output, char *sym_name)
+3011 {
+3012         struct node_object *node_obj;
+3013         int status = -ENOENT;
+3014 
+3015         pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__,
+3016                         (unsigned int) node_mgr,
+3017                         sym_addr, offset_range,
+3018                         (unsigned int) sym_addr_output, sym_name);
+3019 
+3020         list_for_each_entry(node_obj, &node_mgr->node_list, list_elem) {
+3021                 status = nldr_find_addr(node_obj->nldr_node_obj, sym_addr,
+3022                         offset_range, sym_addr_output, sym_name);
+3023                 if (!status)
+3024                         break;
+3025         }
+3026 
+3027         return status;
+3028 }
 
-diff --git a/Documentation/metag/00-INDEX b/Documentation/metag/00-INDEX
-index 4fe2e16..4a93a27 100644
---- a/Documentation/metag/00-INDEX
-+++ b/Documentation/metag/00-INDEX
-@@ -6,3 +6,5 @@ coremem.txt
- 	- Documents the core memory interface used by suspend code
- comet/
- 	- Documentation specific to the Comet SoC
-+kernel-ABI.txt
-+	- Documents metag ABI details
-diff --git a/Documentation/metag/kernel-ABI.txt b/Documentation/metag/kernel-ABI.txt
-new file mode 100644
-index 0000000..7b8dee8
---- /dev/null
-+++ b/Documentation/metag/kernel-ABI.txt
-@@ -0,0 +1,256 @@
-+			==========================
-+			KERNEL ABIS FOR METAG ARCH
-+			==========================
-+
-+This document describes the Linux ABIs for the metag architecture, and has the
-+following sections:
-+
-+ (*) Outline of registers
-+ (*) Userland registers
-+ (*) Kernel registers
-+ (*) System call ABI
-+ (*) Calling conventions
-+
-+
-+====================
-+OUTLINE OF REGISTERS
-+====================
-+
-+The main Meta core registers are arranged in units:
-+
-+	UNIT	Type	DESCRIPTION	GP	EXT	PRIV	GLOBAL
-+	=======	=======	===============	=======	=======	=======	=======
-+	CT	Special	Control unit
-+	D0	General	Data unit 0	0-7	8-15	16-31	16-31
-+	D1	General	Data unit 1	0-7	8-15	16-31	16-31
-+	A0	General	Address unit 0	0-3	4-7	 8-15	 8-15
-+	A1	General	Address unit 1	0-3	4-7	 8-15	 8-15
-+	PC	Special	PC unit		0		 1
-+	PORT	Special	Ports
-+	TR	Special	Trigger unit			 0-7
-+	TT	Special	Trace unit			 0-5
-+	FX	General	FP unit			0-15
-+
-+GP registers form part of the main context.
-+
-+Extended context registers (EXT) may not be present on all hardware threads and
-+can be context switched if support is enabled and the appropriate bits are set
-+in e.g. the D0.8 register to indicate what extended state to preserve.
-+
-+Global registers are shared between threads and are privilege protected.
-+
-+See arch/metag/include/asm/metag_regs.h for definitions relating to core
-+registers and the fields and bits they contain. See the TRMs for further details
-+about special registers.
-+
-+Several special registers are preserved in the main context, these are the
-+interesting ones:
-+
-+	REG	(ALIAS)		PURPOSE
-+	=======================	===============================================
-+	CT.1	(TXMODE)	Processor mode bits (particularly for DSP)
-+	CT.2	(TXSTATUS)	Condition flags and LSM_STEP (MGET/MSET step)
-+	CT.3	(TXRPT)		Branch repeat counter
-+	PC.0	(PC)		Program counter
-+
-+Some of the general registers have special purposes in the ABI and therefore
-+have aliases:
-+
-+	D0 REG	(ALIAS)	PURPOSE		D1 REG	(ALIAS)	PURPOSE
-+	===============	===============	===============	=======================
-+	D0.0	(D0Re0)	32bit result	D1.0	(D1Re0)	Top half of 64bit result
-+	D0.1	(D0Ar6)	Argument 6	D1.1	(D1Ar5)	Argument 5
-+	D0.2	(D0Ar4)	Argument 4	D1.2	(D1Ar3)	Argument 3
-+	D0.3	(D0Ar2)	Argument 2	D1.3	(D1Ar1)	Argument 1
-+	D0.4	(D0FrT)	Frame temp	D1.4	(D1RtP)	Return pointer
-+	D0.5		Call preserved	D1.5		Call preserved
-+	D0.6		Call preserved	D1.6		Call preserved
-+	D0.7		Call preserved	D1.7		Call preserved
-+
-+	A0 REG	(ALIAS)	PURPOSE		A1 REG	(ALIAS)	PURPOSE
-+	===============	===============	===============	=======================
-+	A0.0	(A0StP)	Stack pointer	A1.0	(A1GbP)	Global base pointer
-+	A0.1	(A0FrP)	Frame pointer	A1.1	(A1LbP)	Local base pointer
-+	A0.2				A1.2
-+	A0.3				A1.3
-+
-+
-+==================
-+USERLAND REGISTERS
-+==================
-+
-+All the general purpose D0, D1, A0, A1 registers are preserved when entering the
-+kernel (including asynchronous events such as interrupts and timer ticks) except
-+the following which have special purposes in the ABI:
-+
-+	REGISTERS	WHEN	STATUS		PURPOSE
-+	===============	=======	===============	===============================
-+	D0.8		DSP	Preserved	ECH, determines what extended
-+						DSP state to preserve.
-+	A0.0	(A0StP)	ALWAYS	Preserved	Stack >= A0StP may be clobbered
-+						at any time by the creation of a
-+						signal frame.
-+	A1.0	(A1GbP)	SMP	Clobbered	Used as temporary for loading
-+						kernel stack pointer and saving
-+						core context.
-+	A0.15		!SMP	Protected	Stores kernel stack pointer.
-+	A1.15		ALWAYS	Protected	Stores kernel base pointer.
-+
-+On UP A0.15 is used to store the kernel stack pointer for storing the userland
-+context. A0.15 is global between hardware threads though which means it cannot
-+be used on SMP for this purpose. Since no protected local registers are
-+available A1GbP is reserved for use as a temporary to allow a percpu stack
-+pointer to be loaded for storing the rest of the context.
-+
-+
-+================
-+KERNEL REGISTERS
-+================
-+
-+When in the kernel the following registers have special purposes in the ABI:
-+
-+	REGISTERS	WHEN	STATUS		PURPOSE
-+	===============	=======	===============	===============================
-+	A0.0	(A0StP)	ALWAYS	Preserved	Stack >= A0StP may be clobbered
-+						at any time by the creation of
-+						an irq signal frame.
-+	A1.0	(A1GbP)	ALWAYS	Preserved	Reserved (kernel base pointer).
-+
-+
-+===============
-+SYSTEM CALL ABI
-+===============
-+
-+When a system call is made, the following registers are effective:
-+
-+	REGISTERS	CALL			RETURN
-+	===============	=======================	===============================
-+	D0.0	(D0Re0)				Return value (or -errno)
-+	D1.0	(D1Re0)	System call number	Clobbered
-+	D0.1	(D0Ar6)	Syscall arg #6		Preserved
-+	D1.1	(D1Ar5)	Syscall arg #5		Preserved
-+	D0.2	(D0Ar4)	Syscall arg #4		Preserved
-+	D1.2	(D1Ar3)	Syscall arg #3		Preserved
-+	D0.3	(D0Ar2)	Syscall arg #2		Preserved
-+	D1.3	(D1Ar1)	Syscall arg #1		Preserved
-+
-+Due to the limited number of argument registers and some system calls with badly
-+aligned 64-bit arguments, 64-bit values are always packed in consecutive
-+arguments, even if this is contrary to the normal calling conventions (where the
-+two halves would go in a matching pair of data registers).
-+
-+For example fadvise64_64 usually has the signature:
-+
-+	long sys_fadvise64_64(i32 fd, i64 offs, i64 len, i32 advice);
-+
-+But for metag fadvise64_64 is wrapped so that the 64-bit arguments are packed:
-+
-+	long sys_fadvise64_64_metag(i32 fd,      i32 offs_lo,
-+				    i32 offs_hi, i32 len_lo,
-+				    i32 len_hi,  i32 advice)
-+
-+So the arguments are packed in the registers like this:
-+
-+	D0 REG	(ALIAS)	VALUE		D1 REG	(ALIAS)	VALUE
-+	===============	===============	===============	=======================
-+	D0.1	(D0Ar6)	advice		D1.1	(D1Ar5)	hi(len)
-+	D0.2	(D0Ar4)	lo(len)		D1.2	(D1Ar3)	hi(offs)
-+	D0.3	(D0Ar2)	lo(offs)	D1.3	(D1Ar1)	fd
-+
-+
-+===================
-+CALLING CONVENTIONS
-+===================
-+
-+These calling conventions apply to both user and kernel code. The stack grows
-+from low addresses to high addresses in the metag ABI. The stack pointer (A0StP)
-+should always point to the next free address on the stack and should at all
-+times be 64-bit aligned. The following registers are effective at the point of a
-+call:
-+
-+	REGISTERS	CALL			RETURN
-+	===============	=======================	===============================
-+	D0.0	(D0Re0)				32bit return value
-+	D1.0	(D1Re0)				Upper half of 64bit return value
-+	D0.1	(D0Ar6)	32bit argument #6	Clobbered
-+	D1.1	(D1Ar5)	32bit argument #5	Clobbered
-+	D0.2	(D0Ar4)	32bit argument #4	Clobbered
-+	D1.2	(D1Ar3)	32bit argument #3	Clobbered
-+	D0.3	(D0Ar2)	32bit argument #2	Clobbered
-+	D1.3	(D1Ar1)	32bit argument #1	Clobbered
-+	D0.4	(D0FrT)				Clobbered
-+	D1.4	(D1RtP)	Return pointer		Clobbered
-+	D{0-1}.{5-7}				Preserved
-+	A0.0	(A0StP)	Stack pointer		Preserved
-+	A1.0	(A0GbP)				Preserved
-+	A0.1	(A0FrP)	Frame pointer		Preserved
-+	A1.1	(A0LbP)				Preserved
-+	A{0-1},{2-3}				Clobbered
-+
-+64-bit arguments are placed in matching pairs of registers (i.e. the same
-+register number in both D0 and D1 units), with the least significant half in D0
-+and the most significant half in D1, leaving a gap where necessary. Futher
-+arguments are stored on the stack in reverse order (earlier arguments at higher
-+addresses):
-+
-+	ADDRESS		0     1     2     3	4     5     6     7
-+	===============	===== ===== ===== =====	===== ===== ===== =====
-+	A0StP       -->
-+	A0StP-0x08	32bit argument #8	32bit argument #7
-+	A0StP-0x10	32bit argument #10	32bit argument #9
-+
-+Function prologues tend to look a bit like this:
-+
-+	/* If frame pointer in use, move it to frame temp register so it can be
-+	   easily pushed onto stack */
-+	MOV	D0FrT,A0FrP
-+
-+	/* If frame pointer in use, set it to stack pointer */
-+	ADD	A0FrP,A0StP,#0
-+
-+	/* Preserve D0FrT, D1RtP, D{0-1}.{5-7} on stack, incrementing A0StP */
-+	MSETL	[A0StP++],D0FrT,D0.5,D0.6,D0.7
-+
-+	/* Allocate some stack space for local variables */
-+	ADD	A0StP,A0StP,#0x10
-+
-+At this point the stack would look like this:
-+
-+	ADDRESS		0     1     2     3	4     5     6     7
-+	===============	===== ===== ===== =====	===== ===== ===== =====
-+	A0StP       -->
-+	A0StP-0x08
-+	A0StP-0x10
-+	A0StP-0x18	Old D0.7		Old D1.7
-+	A0StP-0x20	Old D0.6		Old D1.6
-+	A0StP-0x28	Old D0.5		Old D1.5
-+	A0FrP       -->	Old A0FrP (frame ptr)	Old D1RtP (return ptr)
-+	A0FrP-0x08	32bit argument #8	32bit argument #7
-+	A0FrP-0x10	32bit argument #10	32bit argument #9
-+
-+Function epilogues tend to differ depending on the use of a frame pointer. An
-+example of a frame pointer epilogue:
-+
-+	/* Restore D0FrT, D1RtP, D{0-1}.{5-7} from stack, incrementing A0FrP */
-+	MGETL	D0FrT,D0.5,D0.6,D0.7,[A0FrP++]
-+	/* Restore stack pointer to where frame pointer was before increment */
-+	SUB	A0StP,A0FrP,#0x20
-+	/* Restore frame pointer from frame temp */
-+	MOV	A0FrP,D0FrT
-+	/* Return to caller via restored return pointer */
-+	MOV	PC,D1RtP
-+
-+If the function hasn't touched the frame pointer, MGETL cannot be safely used
-+with A0StP as it always increments and that would expose the stack to clobbering
-+by interrupts (kernel) or signals (user). Therefore it's common to see the MGETL
-+split into separate GETL instructions:
-+
-+	/* Restore D0FrT, D1RtP, D{0-1}.{5-7} from stack */
-+	GETL	D0FrT,D1RtP,[A0StP+#-0x30]
-+	GETL	D0.5,D1.5,[A0StP+#-0x28]
-+	GETL	D0.6,D1.6,[A0StP+#-0x20]
-+	GETL	D0.7,D1.7,[A0StP+#-0x18]
-+	/* Restore stack pointer */
-+	SUB	A0StP,A0StP,#0x30
-+	/* Return to caller via restored return pointer */
-+	MOV	PC,D1RtP
--- 
-1.7.7.6
+
+
+
+in drivers/staging/tidspbridge/core/io_sm.c:
+
+1892 int dump_dsp_stack(struct bridge_dev_context *bridge_context)
+1893 {
+1894         int status = 0;
+1895         struct cod_manager *code_mgr;
+1896         struct node_mgr *node_mgr;
+1897         u32 trace_begin;
+1898         char name[256];
+1899         struct {
+1900                 u32 head[2];
+1901                 u32 size;
+1902         } mmu_fault_dbg_info;
+1903         u32 *buffer;
+1904         u32 *buffer_beg;
+1905         u32 *buffer_end;
+1906         u32 exc_type;
+1907         u32 dyn_ext_base;
+1908         u32 i;
+1909         u32 offset_output;
+1910         u32 total_size;
+1911         u32 poll_cnt;
+1912         const char *dsp_regs[] = {"EFR", "IERR", "ITSR", "NTSR",
+1913                                 "IRP", "NRP", "AMR", "SSR",
+1914                                 "ILC", "RILC", "IER", "CSR"};
+1915         const char *exec_ctxt[] = {"Task", "SWI", "HWI", "Unknown"};
+1916         struct bridge_drv_interface *intf_fxns;
+1917         struct dev_object *dev_object = bridge_context->dev_obj;
+1918 
+1919         status = dev_get_cod_mgr(dev_object, &code_mgr);
+1920         if (!code_mgr) {
+1921                 pr_debug("%s: Failed on dev_get_cod_mgr.\n", __func__);
+1922                 status = -EFAULT;
+1923         }
+1924 
+1925         if (!status) {
+1926                 status = dev_get_node_manager(dev_object, &node_mgr);
+1927                 if (!node_mgr) {
+1928                         pr_debug("%s: Failed on dev_get_node_manager.\n",
+1929                                                                 __func__);
+1930                         status = -EFAULT;
+1931                 }
+1932         }
+1933 
+1934         if (!status) {
+1935                 /* Look for SYS_PUTCBEG/SYS_PUTCEND: */
+1936                 status =
+1937                         cod_get_sym_value(code_mgr, COD_TRACEBEG, &trace_begin);
+1938                 pr_debug("%s: trace_begin Value 0x%x\n",
+1939                         __func__, trace_begin);
+1940                 if (status)
+1941                         pr_debug("%s: Failed on cod_get_sym_value.\n",
+1942                                                                 __func__);
+1943         }
+1944         if (!status)
+1945                 status = dev_get_intf_fxns(dev_object, &intf_fxns);
+1946         /*
+1947          * Check for the "magic number" in the trace buffer.  If it has
+1948          * yet to appear then poll the trace buffer to wait for it.  Its
+1949          * appearance signals that the DSP has finished dumping its state.
+1950          */
+1951         mmu_fault_dbg_info.head[0] = 0;
+1952         mmu_fault_dbg_info.head[1] = 0;
+1953         if (!status) {
+1954                 poll_cnt = 0;
+1955                 while ((mmu_fault_dbg_info.head[0] != MMU_FAULT_HEAD1 ||
+1956                         mmu_fault_dbg_info.head[1] != MMU_FAULT_HEAD2) &&
+1957                         poll_cnt < POLL_MAX) {
+1958 
+1959                         /* Read DSP dump size from the DSP trace buffer... */
+1960                         status = (*intf_fxns->brd_read)(bridge_context,
+1961                                 (u8 *)&mmu_fault_dbg_info, (u32)trace_begin,
+1962                                 sizeof(mmu_fault_dbg_info), 0);
+1963 
+1964                         if (status)
+1965                                 break;
+1966 
+1967                         poll_cnt++;
+1968                 }
+1969 
+1970                 if (mmu_fault_dbg_info.head[0] != MMU_FAULT_HEAD1 &&
+1971                         mmu_fault_dbg_info.head[1] != MMU_FAULT_HEAD2) {
+1972                         status = -ETIME;
+1973                         pr_err("%s:No DSP MMU-Fault information available.\n",
+1974                                                         __func__);
+1975                 }
+1976         }
+1977 
+1978         if (!status) {
+1979                 total_size = mmu_fault_dbg_info.size;
+1980                 /* Limit the size in case DSP went crazy */
+1981                 if (total_size > MAX_MMU_DBGBUFF)
+1982                         total_size = MAX_MMU_DBGBUFF;
+1983 
+1984                 buffer = kzalloc(total_size, GFP_ATOMIC);
+1985                 if (!buffer) {
+1986                         status = -ENOMEM;
+1987                         pr_debug("%s: Failed to "
+1988                                 "allocate stack dump buffer.\n", __func__);
+1989                         goto func_end;
+1990                 }
+1991 
+1992                 buffer_beg = buffer;
+1993                 buffer_end =  buffer + total_size / 4;
+1994 
+1994 
+1995                 /* Read bytes from the DSP trace buffer... */
+1996                 status = (*intf_fxns->brd_read)(bridge_context,
+1997                                 (u8 *)buffer, (u32)trace_begin,
+1998                                 total_size, 0);
+1999                 if (status) {
+2000                         pr_debug("%s: Failed to Read Trace Buffer.\n",
+2001                                                                 __func__);
+2002                         goto func_end;
+2003                 }
+2004 
+2005                 pr_err("\nAproximate Crash Position:\n"
+2006                         "--------------------------\n");
+2007 
+2008                 exc_type = buffer[3];
+2009                 if (!exc_type)
+2010                         i = buffer[79];         /* IRP */
+2011                 else
+2012                         i = buffer[80];         /* NRP */
+2013 
+2014                 status =
+2015                     cod_get_sym_value(code_mgr, DYNEXTBASE, &dyn_ext_base);
+2016                 if (status) {
+2017                         status = -EFAULT;
+2018                         goto func_end;
+2019                 }
+2020 
+2021                 if ((i > dyn_ext_base) && (node_find_addr(node_mgr, i,
+2022                         0x1000, &offset_output, name) == 0))
+2023                         pr_err("0x%-8x [\"%s\" + 0x%x]\n", i, name,
+2024                                                         i - offset_output);
+2025                 else
+2026                         pr_err("0x%-8x [Unable to match to a symbol.]\n", i);
+2027 
+2028                 buffer += 4;
+2029 
+2030                 pr_err("\nExecution Info:\n"
+2031                         "---------------\n");
+2032 
+2033                 if (*buffer < ARRAY_SIZE(exec_ctxt)) {
+2034                         pr_err("Execution context \t%s\n",
+2035                                 exec_ctxt[*buffer++]);
+2036                 } else {
+2037                         pr_err("Execution context corrupt\n");
+2038                         kfree(buffer_beg);
+2039                         return -EFAULT;
+2040                 }
+2041                 pr_err("Task Handle\t\t0x%x\n", *buffer++);
+2042                 pr_err("Stack Pointer\t\t0x%x\n", *buffer++);
+2043                 pr_err("Stack Top\t\t0x%x\n", *buffer++);
+2044                 pr_err("Stack Bottom\t\t0x%x\n", *buffer++);
+2045                 pr_err("Stack Size\t\t0x%x\n", *buffer++);
+2046                 pr_err("Stack Size In Use\t0x%x\n", *buffer++);
+2047 
+2048                 pr_err("\nCPU Registers\n"
+2049                         "---------------\n");
+2050 
+2051                 for (i = 0; i < 32; i++) {
+2052                         if (i == 4 || i == 6 || i == 8)
+2053                                 pr_err("A%d 0x%-8x [Function Argument %d]\n",
+2054                                                         i, *buffer++, i-3);
+2055                         else if (i == 15)
+2056                                 pr_err("A15 0x%-8x [Frame Pointer]\n",
+2057                                                                 *buffer++);
+2058                         else
+2059                                 pr_err("A%d 0x%x\n", i, *buffer++);
+2060                 }
+2061 
+2062                 pr_err("\nB0 0x%x\n", *buffer++);
+2063                 pr_err("B1 0x%x\n", *buffer++);
+2064                 pr_err("B2 0x%x\n", *buffer++);
+2065 
+2066                 if ((*buffer > dyn_ext_base) && (node_find_addr(node_mgr,
+2067                         *buffer, 0x1000, &offset_output, name) == 0))
+2068 
+2069                         pr_err("B3 0x%-8x [Function Return Pointer:"
+2070                                 " \"%s\" + 0x%x]\n", *buffer, name,
+2071                                 *buffer - offset_output);
+2072                 else
+2073                         pr_err("B3 0x%-8x [Function Return Pointer:"
+2074                                 "Unable to match to a symbol.]\n", *buffer);
+2075 
+2076                 buffer++;
+2077 
+2078                 for (i = 4; i < 32; i++) {
+2079                         if (i == 4 || i == 6 || i == 8)
+2080                                 pr_err("B%d 0x%-8x [Function Argument %d]\n",
+2081                                                         i, *buffer++, i-2);
+2082                         else if (i == 14)
+2083                                 pr_err("B14 0x%-8x [Data Page Pointer]\n",
+2084                                                                 *buffer++);
+2085                         else
+2086                                 pr_err("B%d 0x%x\n", i, *buffer++);
+2087                 }
+2088 
+2089                 pr_err("\n");
+2090 
+2091                 for (i = 0; i < ARRAY_SIZE(dsp_regs); i++)
+2092                         pr_err("%s 0x%x\n", dsp_regs[i], *buffer++);
+2093 
+2094                 pr_err("\nStack:\n"
+2095                         "------\n");
+2096 
+2097                 for (i = 0; buffer < buffer_end; i++, buffer++) {
+2098                         if ((*buffer > dyn_ext_base) && (
+2099                                 node_find_addr(node_mgr, *buffer , 0x600,
+2100                                 &offset_output, name) == 0))
+2101                                 pr_err("[%d] 0x%-8x [\"%s\" + 0x%x]\n",
+2102                                         i, *buffer, name,
+2103                                         *buffer - offset_output);
+2104                         else
+2105                                 pr_err("[%d] 0x%x\n", i, *buffer);
+2106                 }
+2107                 kfree(buffer_beg);
+2108         }
+2109 func_end:
+2110         return status;
+2111 }
+
 
