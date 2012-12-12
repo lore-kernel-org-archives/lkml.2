@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab2LLJKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:10:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53052 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387Ab2LLJKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:10:30 -0500
-Date: Wed, 12 Dec 2012 20:10:16 +1100
-From: NeilBrown <neilb@suse.de>
-To: =?utf-8?Q?Ond=C5=99ej_B=C3=ADlka?= <neleai@seznam.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] AES instead of SHA1 for /dev/urandom
-Message-ID: <20121212201016.5342ce32@notabene.brown>
-In-Reply-To: <20121212085815.GA3151@domone.kolej.mff.cuni.cz>
-References: <20121212020354.GA30879@domone.kolej.mff.cuni.cz>
-	<20121212130826.7940b428@notabene.brown>
-	<20121212085815.GA3151@domone.kolej.mff.cuni.cz>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/cm/RLB08c9K4EYNf.rS5H4m"; protocol="application/pgp-signature"
+	id S1752984Ab2LLJKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:10:48 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:33352 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab2LLJKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:10:45 -0500
+X-IronPort-AV: E=Sophos;i="4.84,265,1355068800"; 
+   d="scan'208";a="6382479"
+Message-ID: <50C849DD.20405@cn.fujitsu.com>
+Date: Wed, 12 Dec 2012 17:09:49 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@huawei.com>, Simon Jeons <simon.jeons@gmail.com>
+CC: Jianguo Wu <wujianguo@huawei.com>, hpa@zytor.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>  <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>  <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com> <1355225313.1919.1.camel@kernel.cn.ibm.com> <50C7D490.60409@huawei.com>
+In-Reply-To: <50C7D490.60409@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/12 17:09:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/12 17:09:54,
+	Serialize complete at 2012/12/12 17:09:54
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cm/RLB08c9K4EYNf.rS5H4m
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On 12/12/2012 08:49 AM, Jiang Liu wrote:
+>>>>> This patch introduces a new array zone_movable_limit[] to store the
+>>>>> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+>>>>> The function sanitize_zone_movable_limit() will find out to which
+>>>>> node the ranges in movable_map.map[] belongs, and calculates the
+>>>>> low boundary of ZONE_MOVABLE for each node.
+>>
+>> What's the difference between zone_movable_limit[nid] and
+>> zone_movable_pfn[nid]?
+> zone_movable_limit[] is a temporary storage for zone_moveable_pfn[].
+> It's used to handle a special case if user specifies both movablecore_map
+> and movablecore/kernelcore on the kernel command line.
+>
+Hi Simon, Liu,
 
-On Wed, 12 Dec 2012 09:58:16 +0100 Ond=C5=99ej B=C3=ADlka <neleai@seznam.cz=
-> wrote:
+Sorry for the late and thanks for your discussion. :)
 
-> On Wed, Dec 12, 2012 at 01:08:26PM +1100, NeilBrown wrote:
-> > On Wed, 12 Dec 2012 03:03:54 +0100 Ond=C5=99ej B=C3=ADlka <neleai@sezna=
-m.cz> wrote:
-> >=20
-> > > I consider to speed-up /dev/urandom on recent intel processors by
-> > > using hardware aes. Same for accelerated aes crypto.
-> > >=20
-> > > Would you accept a patch if I wrote it?
-> >=20
-> > Have you read  https://lwn.net/Articles/525459  ?
-> >=20
-> Yes
-> > In particular the paragraph containing:
-> >=20
-> >    A member of the audience asked why the kernel couldn't just do away =
-with
-> >    the existing system and use the HWRNG directly.
-> >=20
-> > Does that answer your question in any way?
-> >=20
-> No as AES is a HWRNG about as much as horse is type of automobile.
+As Liu said, zone_movable_limit[] is a temporary array for calculation.
 
-Yes, of course.  Thanks.
+If users specified movablecore_map option, zone_movable_limit[] holds
+the lowest pfn of ZONE_MOVABLE limited by movablecore_map option. It is 
+constant, won't change.
 
-NeilBrown
+Please refer to find_zone_movable_pfns_for_nodes() in patch4, you will
+see that zone_moveable_pfn[] will be changed each time kernel area
+increases.
 
---Sig_/cm/RLB08c9K4EYNf.rS5H4m
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+So when kernel area increases on node i, zone_moveable_pfn[i] will
+increase. And if zone_moveable_pfn[i] > zone_movable_limit[i], we should
+stop allocate memory for kernel on node i. Here, I give movablecore_map 
+higher priority than kernelcore/movablecore.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+And also, I tried to use zone_moveable_pfn[] to store limits. But when
+calculating the kernel area, I still have to store the limits in
+temporary variables. I think the code was ugly. So I added an new array.
 
-iQIVAwUBUMhJ+Dnsnt1WYoG5AQKpYxAAldSDNnY1vz/XprtYz4cEsFRUhjfv3E/c
-/nhlWHc1hJE/TALp4ULfV3AH5wL05YkCP9xR6p3jM31mwisJoSqOGXr0gb+bxdtV
-nxosHUiNU4611iKRoGPo8t9cMSLiCHrmbBuFX7aEEU7DJ8niunR8i0nqk9qgoabp
-zLQ2nyOfwWO4mWSJC0rwtjPQWuGhKcvrtXkdFzG64f/6MZtRIEttBmtD7gGZV7Tf
-MUzabkFZ9w3yL6ZeMIignqoYqv8DVPv/YiOkHlbCHC4xQWUOB42EEFjW+VyliuJJ
-glB7p96uhVDjCESzMLC9KEzcjYLcBnOKy9qCFdJZpazDV2ol2nnLYIQ2QxeULkGh
-9qZzaVcDvTGDRyURIQBCLehsIHshhv9WrT5r0PL9LTMiCMRzEokkFZAid3hC7GoK
-rclRM48m8HpPLDDInwAy46rGsJpKl4LYPKEHG0JAKo/UQety6UEeee2XPTmBiyw7
-2NQMPhwRCvf4Atg/JWnDw8zYAHhwsQnaXki+J4MADGDtQhjm9VmpzXchrQqG3N+6
-VLbIhkq9Cgavy5rHeBgery9gi3aKSLBqUtc2dXdK1LMspbJ7SkSb5QU8eBLk23jt
-2R2jrgCN9xstr4Sq/SggvEoeUiZUfaF0vGi8rJKhaUm5KCD1dmCRJABK7Vfo4fKs
-z/kcmL6h/OQ=
-=p6rG
------END PGP SIGNATURE-----
-
---Sig_/cm/RLB08c9K4EYNf.rS5H4m--
+Thanks. :)
