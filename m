@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2LLSNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:13:07 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46874 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847Ab2LLSNF (ORCPT
+	id S1755530Ab2LLSNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:13:37 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55170 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab2LLSNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:13:05 -0500
-Message-ID: <50C8C8C9.2070605@linux.vnet.ibm.com>
-Date: Wed, 12 Dec 2012 23:41:21 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 12 Dec 2012 13:13:36 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <20121212172431.GA23328@redhat.com>
-In-Reply-To: <20121212172431.GA23328@redhat.com>
+In-Reply-To: <1355312753-16514-2-git-send-email-paolo.pisati@canonical.com>
+References: <1355312753-16514-1-git-send-email-paolo.pisati@canonical.com>
+	<1355312753-16514-2-git-send-email-paolo.pisati@canonical.com>
+Date: Wed, 12 Dec 2012 12:13:35 -0600
+Message-ID: <CAOCHtYhgQQX5560+bOHJGJ3EWqrE2JtdUfDNzk_R2Pgkw6c9+w@mail.gmail.com>
+Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
+ original voltage values
+From: Robert Nelson <robertcnelson@gmail.com>
+To: Paolo Pisati <paolo.pisati@canonical.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121218-8878-0000-0000-000005242B5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 10:54 PM, Oleg Nesterov wrote:
-> On 12/12, Oleg Nesterov wrote:
->>
->> On 12/11, Srivatsa S. Bhat wrote:
->>>
->>> IOW, the hotplug readers just increment/decrement their per-cpu refcounts
->>> when no writer is active.
->>
->> plus cli/sti ;) and increment/decrement are atomic.
->                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 
-> OOPS, sorry I was going to say "adds mb()".
-> 
+On Wed, Dec 12, 2012 at 5:45 AM, Paolo Pisati
+<paolo.pisati@canonical.com> wrote:
+> Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+> ---
+>  drivers/regulator/core.c |   16 ++++++++++++++--
+>  1 file changed, 14 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> index e872c8b..c347fd0 100644
+> --- a/drivers/regulator/core.c
+> +++ b/drivers/regulator/core.c
+> @@ -2250,6 +2250,7 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+>  {
+>         struct regulator_dev *rdev = regulator->rdev;
+>         int ret = 0;
+> +       int old_min_uV, old_max_uV;
+>
+>         mutex_lock(&rdev->mutex);
+>
+> @@ -2271,18 +2272,29 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+>         ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
+>         if (ret < 0)
+>                 goto out;
+> +
+> +       /* restore original values in case of error */
+> +       old_min_uV = regulator->min_uV;
+> +       old_max_uV = regulator->max_uV;
+>         regulator->min_uV = min_uV;
+>         regulator->max_uV = max_uV;
+>
+>         ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
+>         if (ret < 0)
+> -               goto out;
+> +               goto out2;
+>
+>         ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
+> -
+> +       if (ret < 0)
+> +               goto out2;
+> +
+>  out:
+>         mutex_unlock(&rdev->mutex);
+>         return ret;
+> +out2:
+> +       regulator->min_uV = old_min_uV;
+> +       regulator->max_uV = old_max_uV;
+> +       mutex_unlock(&rdev->mutex);
+> +       return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(regulator_set_voltage);
+>
+> --
+> 1.7.10.4
 
-Ok, got it :)
+Nice! This fixes the 800Mhz lockup on bootup after a software reset we
+were seeing on the Beagle xM's with v3.7.x/v3.6.x...
 
-> And when I look at get_online_cpus_atomic() again it uses rmb(). This
-> doesn't look correct, we need the full barrier between this_cpu_inc()
-> and writer_active().
-> 
-
-Hmm..
-
-> At the same time reader_nested_percpu() can be checked before mb().
-> 
-
-I thought that since the increment and the check (reader_nested_percpu)
-act on the same memory location, they will naturally be run in the given
-order, without any need for barriers. Am I wrong?
-
-(I referred Documentation/memory-barriers.txt again to verify this, and
-the second point under the "Guarantees" section looked like it said the
-same thing : "Overlapping loads and stores within a particular CPU will
-appear to be ordered within that CPU").
+Tested-by: Robert Nelson <robertcnelson@gmail.com>
 
 Regards,
-Srivatsa S. Bhat
 
+-- 
+Robert Nelson
+http://www.rcn-ee.com/
