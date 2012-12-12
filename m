@@ -1,272 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab2LLLeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 06:34:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46657 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab2LLLeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 06:34:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,265,1355126400"; 
-   d="scan'208";a="261067385"
-From: ville.syrjala@linux.intel.com
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Ingo Molnar" <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jamie Lokier <jamie@shareable.org>
-Subject: [PATCH] x86: Add support for 64bit get_user() on x86-32
-Date: Wed, 12 Dec 2012 13:34:03 +0200
-Message-Id: <1355312043-11467-1-git-send-email-ville.syrjala@linux.intel.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S1752091Ab2LLLmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 06:42:47 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60508 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab2LLLmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 06:42:46 -0500
 MIME-Version: 1.0
+In-Reply-To: <50C85850.7010906@ti.com>
+References: <1354538503-22671-1-git-send-email-javier.martinez@collabora.co.uk>
+ <CAAwP0s2qXuJzwEh-AVORbPApr6XT0JAfsFjrxKDvXArqYk0qXQ@mail.gmail.com> <50C85850.7010906@ti.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Wed, 12 Dec 2012 12:42:25 +0100
+Message-ID: <CAAwP0s3gf16hZi6RVhsi7ee0YW_boPRy9--pukRcKJfMiWFKDg@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] ARM/dts: omap3: Add DT support for IGEP devices
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, grant.likely@secretlab.ca,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Enrico Butera <ebutera@gmail.com>,
+        Matthias Brugger <matthias.bgg@googlemail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+On Wed, Dec 12, 2012 at 11:11 AM, Benoit Cousson <b-cousson@ti.com> wrote:
+> Hi Javier,
+>
+> On 12/12/2012 09:25 AM, Javier Martinez Canillas wrote:
+>> On Mon, Dec 3, 2012 at 1:41 PM, Javier Martinez Canillas
+>> <javier.martinez@collabora.co.uk> wrote:
+>>> IGEP technology devices are TI OMAP3 SoC based industrial embedded
+>>> and computer-on-module boards. This patch-set adds initial device
+>>> tree support for these devices.
+>>>
+>>> The device trees allows to boot from an MMC and are working all the
+>>> components that already have device tree support on OMAP3 SoCs:
+>>>
+>>> - MMC/SD
+>>> - UARTs
+>>> - GPIO LEDs
+>>> - TWL4030 codec audio
+>>> - pinmux/pinconf pinctrl
+>>>
+>>> Some peripheral are still not working such as Flash storage and
+>>> Ethernet but support for these will also be included once the
+>>> OMAP GPMC device tree binding patches land on mainline.
+>>>
+>>> This is a v3 of the patch-set that solves issues pointed out by
+>>> Enric Balletbo and Benoit Cousson.
+>>>
+>>> The patch-set is composed of the following patches:
+>>>
+>>> [PATCH v3 1/3] ARM/dts: omap3: Add generic DT support for IGEP devices
+>>> [PATCH v3 2/3] ARM/dts: omap3: Add support for IGEPv2 board
+>>> [PATCH v3 3/3] ARM/dts: omap3: Add support for IGEP COM Module
+>>>
+>>> Best regards,
+>>> Javier
+>>> --
+>>
+>> Hi Benoit and Tony,
+>>
+>> Any comments on these?
+>
+> Nope, that's fine. I'll applied the series for 3.9.
+>
+> Thanks,
+> Benoit
+>
+>
 
-Implement __get_user_8() for x86-32. It will return the
-64bit result in edx:eax register pair, and ecx is used
-to pass in the address and return the error value.
+Great, thanks a lot for!
 
-For consistency, change the register assignment for all
-other __get_user_x() variants, so that address is passed in
-ecx/rcx, the error value is returned in ecx/rcx, and eax/rax
-contains the actual value.
-
-This is a partial refresh of a patch [1] by Jamie Lokier from
-2004. Only the minimal changes to implement 64bit get_user()
-were picked from the original patch.
-
-[1] http://article.gmane.org/gmane.linux.kernel/198823
-
-Cc: Jamie Lokier <jamie@shareable.org>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
----
- arch/x86/include/asm/uaccess.h  |   17 ++++++--
- arch/x86/kernel/i386_ksyms_32.c |    1 +
- arch/x86/lib/getuser.S          |   82 ++++++++++++++++++++++++++------------
- 3 files changed, 69 insertions(+), 31 deletions(-)
-
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index 7ccf8d1..3f4387e 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -127,7 +127,7 @@ extern int __get_user_bad(void);
- 
- #define __get_user_x(size, ret, x, ptr)		      \
- 	asm volatile("call __get_user_" #size	      \
--		     : "=a" (ret), "=d" (x)	      \
-+		     : "=c" (ret), "=a" (x)	      \
- 		     : "0" (ptr))		      \
- 
- /* Careful: we have to cast the result to the type of the pointer
-@@ -151,8 +151,11 @@ extern int __get_user_bad(void);
-  * On error, the variable @x is set to zero.
-  */
- #ifdef CONFIG_X86_32
--#define __get_user_8(__ret_gu, __val_gu, ptr)				\
--		__get_user_x(X, __ret_gu, __val_gu, ptr)
-+#define __get_user_8(ret, x, ptr)		      \
-+	asm volatile("call __get_user_8"	      \
-+		     : "=c" (ret), "=A" (x)	      \
-+		     : "0" (ptr))		      \
-+
- #else
- #define __get_user_8(__ret_gu, __val_gu, ptr)				\
- 		__get_user_x(8, __ret_gu, __val_gu, ptr)
-@@ -162,6 +165,7 @@ extern int __get_user_bad(void);
- ({									\
- 	int __ret_gu;							\
- 	unsigned long __val_gu;						\
-+	unsigned long long __val_gu8;					\
- 	__chk_user_ptr(ptr);						\
- 	might_fault();							\
- 	switch (sizeof(*(ptr))) {					\
-@@ -175,13 +179,16 @@ extern int __get_user_bad(void);
- 		__get_user_x(4, __ret_gu, __val_gu, ptr);		\
- 		break;							\
- 	case 8:								\
--		__get_user_8(__ret_gu, __val_gu, ptr);			\
-+		__get_user_8(__ret_gu, __val_gu8, ptr);			\
- 		break;							\
- 	default:							\
- 		__get_user_x(X, __ret_gu, __val_gu, ptr);		\
- 		break;							\
- 	}								\
--	(x) = (__typeof__(*(ptr)))__val_gu;				\
-+	if (sizeof(*(ptr)) == 8)					\
-+		(x) = (__typeof__(*(ptr)))__val_gu8;			\
-+	else								\
-+		(x) = (__typeof__(*(ptr)))__val_gu;			\
- 	__ret_gu;							\
- })
- 
-diff --git a/arch/x86/kernel/i386_ksyms_32.c b/arch/x86/kernel/i386_ksyms_32.c
-index 9c3bd4a..0fa6912 100644
---- a/arch/x86/kernel/i386_ksyms_32.c
-+++ b/arch/x86/kernel/i386_ksyms_32.c
-@@ -26,6 +26,7 @@ EXPORT_SYMBOL(csum_partial_copy_generic);
- EXPORT_SYMBOL(__get_user_1);
- EXPORT_SYMBOL(__get_user_2);
- EXPORT_SYMBOL(__get_user_4);
-+EXPORT_SYMBOL(__get_user_8);
- 
- EXPORT_SYMBOL(__put_user_1);
- EXPORT_SYMBOL(__put_user_2);
-diff --git a/arch/x86/lib/getuser.S b/arch/x86/lib/getuser.S
-index 156b9c8..38afef0 100644
---- a/arch/x86/lib/getuser.S
-+++ b/arch/x86/lib/getuser.S
-@@ -14,12 +14,11 @@
- /*
-  * __get_user_X
-  *
-- * Inputs:	%[r|e]ax contains the address.
-- *		The register is modified, but all changes are undone
-- *		before returning because the C code doesn't know about it.
-+ * Inputs:	%[r|e]cx contains the address.
-  *
-- * Outputs:	%[r|e]ax is error code (0 or -EFAULT)
-- *		%[r|e]dx contains zero-extended value
-+ * Outputs:	%[r|e]cx is error code (0 or -EFAULT)
-+ *		%[r|e]ax contains zero-extended value
-+ *		%edx contains the high bits of the value for __get_user_8 on x86-32
-  *
-  *
-  * These functions should not modify any other registers,
-@@ -38,12 +37,12 @@
- 	.text
- ENTRY(__get_user_1)
- 	CFI_STARTPROC
--	GET_THREAD_INFO(%_ASM_DX)
--	cmp TI_addr_limit(%_ASM_DX),%_ASM_AX
-+	GET_THREAD_INFO(%_ASM_AX)
-+	cmp TI_addr_limit(%_ASM_AX),%_ASM_CX
- 	jae bad_get_user
- 	ASM_STAC
--1:	movzb (%_ASM_AX),%edx
--	xor %eax,%eax
-+1:	movzb (%_ASM_CX),%eax
-+	xor %ecx,%ecx
- 	ASM_CLAC
- 	ret
- 	CFI_ENDPROC
-@@ -51,14 +50,14 @@ ENDPROC(__get_user_1)
- 
- ENTRY(__get_user_2)
- 	CFI_STARTPROC
--	add $1,%_ASM_AX
-+	add $1,%_ASM_CX
- 	jc bad_get_user
--	GET_THREAD_INFO(%_ASM_DX)
--	cmp TI_addr_limit(%_ASM_DX),%_ASM_AX
-+	GET_THREAD_INFO(%_ASM_AX)
-+	cmp TI_addr_limit(%_ASM_AX),%_ASM_CX
- 	jae bad_get_user
- 	ASM_STAC
--2:	movzwl -1(%_ASM_AX),%edx
--	xor %eax,%eax
-+2:	movzwl -1(%_ASM_CX),%eax
-+	xor %ecx,%ecx
- 	ASM_CLAC
- 	ret
- 	CFI_ENDPROC
-@@ -66,14 +65,14 @@ ENDPROC(__get_user_2)
- 
- ENTRY(__get_user_4)
- 	CFI_STARTPROC
--	add $3,%_ASM_AX
-+	add $3,%_ASM_CX
- 	jc bad_get_user
--	GET_THREAD_INFO(%_ASM_DX)
--	cmp TI_addr_limit(%_ASM_DX),%_ASM_AX
-+	GET_THREAD_INFO(%_ASM_AX)
-+	cmp TI_addr_limit(%_ASM_AX),%_ASM_CX
- 	jae bad_get_user
- 	ASM_STAC
--3:	mov -3(%_ASM_AX),%edx
--	xor %eax,%eax
-+3:	mov -3(%_ASM_CX),%eax
-+	xor %ecx,%ecx
- 	ASM_CLAC
- 	ret
- 	CFI_ENDPROC
-@@ -82,14 +81,30 @@ ENDPROC(__get_user_4)
- #ifdef CONFIG_X86_64
- ENTRY(__get_user_8)
- 	CFI_STARTPROC
--	add $7,%_ASM_AX
-+	add $7,%_ASM_CX
- 	jc bad_get_user
--	GET_THREAD_INFO(%_ASM_DX)
--	cmp TI_addr_limit(%_ASM_DX),%_ASM_AX
-+	GET_THREAD_INFO(%_ASM_AX)
-+	cmp TI_addr_limit(%_ASM_AX),%_ASM_CX
- 	jae	bad_get_user
- 	ASM_STAC
--4:	movq -7(%_ASM_AX),%_ASM_DX
--	xor %eax,%eax
-+4:	movq -7(%_ASM_CX),%_ASM_AX
-+	xor %ecx,%ecx
-+	ASM_CLAC
-+	ret
-+	CFI_ENDPROC
-+ENDPROC(__get_user_8)
-+#else
-+ENTRY(__get_user_8)
-+	CFI_STARTPROC
-+	add $7,%_ASM_CX
-+	jc bad_get_user_8
-+	GET_THREAD_INFO(%_ASM_AX)
-+	cmp TI_addr_limit(%_ASM_AX),%_ASM_CX
-+	jae	bad_get_user_8
-+	ASM_STAC
-+4:	mov -7(%_ASM_CX),%eax
-+5:	mov -3(%_ASM_CX),%edx
-+	xor %ecx,%ecx
- 	ASM_CLAC
- 	ret
- 	CFI_ENDPROC
-@@ -98,16 +113,31 @@ ENDPROC(__get_user_8)
- 
- bad_get_user:
- 	CFI_STARTPROC
--	xor %edx,%edx
--	mov $(-EFAULT),%_ASM_AX
-+	xor %eax,%eax
-+	mov $(-EFAULT),%_ASM_CX
- 	ASM_CLAC
- 	ret
- 	CFI_ENDPROC
- END(bad_get_user)
- 
-+#ifdef CONFIG_X86_32
-+bad_get_user_8:
-+	CFI_STARTPROC
-+	xor %eax,%eax
-+	xor %edx,%edx
-+	mov $(-EFAULT),%_ASM_CX
-+	ASM_CLAC
-+	ret
-+	CFI_ENDPROC
-+END(bad_get_user_8)
-+#endif
-+
- 	_ASM_EXTABLE(1b,bad_get_user)
- 	_ASM_EXTABLE(2b,bad_get_user)
- 	_ASM_EXTABLE(3b,bad_get_user)
- #ifdef CONFIG_X86_64
- 	_ASM_EXTABLE(4b,bad_get_user)
-+#else
-+	_ASM_EXTABLE(4b,bad_get_user_8)
-+	_ASM_EXTABLE(5b,bad_get_user_8)
- #endif
--- 
-1.7.8.6
-
+Best regards,
+Javier
