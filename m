@@ -1,66 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab2LLVBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 16:01:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55657 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab2LLVBy convert rfc822-to-8bit (ORCPT
+	id S1755228Ab2LLVEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 16:04:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50044 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754169Ab2LLVEh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 16:01:54 -0500
-Date: Wed, 12 Dec 2012 13:01:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Roger Pau =?ISO-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH 2/2] xen-blkfront: implement safe version of
- llist_for_each_entry
-Message-Id: <20121212130152.daf9cf2d.akpm@linux-foundation.org>
-In-Reply-To: <50C61653.70107@citrix.com>
-References: <1354630913-17287-1-git-send-email-roger.pau@citrix.com>
-	<1354630913-17287-2-git-send-email-roger.pau@citrix.com>
-	<20121207202003.GA9462@phenom.dumpdata.com>
-	<50C5D276.6090009@citrix.com>
-	<20121210151533.GE6955@localhost.localdomain>
-	<50C61653.70107@citrix.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Dec 2012 16:04:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,269,1355126400"; 
+   d="scan'208";a="256613778"
+From: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
+To: Alexander Holler <holler@ahsoftware.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: RE: [PATCHi 5/4] hid: iio: rename struct hid_sensor_iio_common to
+ hid_sensor_common
+Thread-Topic: [PATCHi 5/4] hid: iio: rename struct hid_sensor_iio_common to
+ hid_sensor_common
+Thread-Index: AQHN2KgGren2jRu+gUyFIpBQpQH495gVpzLQ
+Date: Wed, 12 Dec 2012 21:04:34 +0000
+Message-ID: <4FA419E87744DF4DAECD5BCE1214B7A91C960CDA@ORSMSX108.amr.corp.intel.com>
+References: <50C8E49C.70106@ahsoftware.de>
+ <1355344082-15038-1-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <1355344082-15038-1-git-send-email-holler@ahsoftware.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Dec 2012 18:05:23 +0100
-Roger Pau Monné <roger.pau@citrix.com> wrote:
+Looks good.
 
-> On 10/12/12 16:15, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Dec 10, 2012 at 01:15:50PM +0100, Roger Pau Monné wrote:
-> >> On 07/12/12 21:20, Konrad Rzeszutek Wilk wrote:
-> >>> On Tue, Dec 04, 2012 at 03:21:53PM +0100, Roger Pau Monne wrote:
-> >>>> Implement a safe version of llist_for_each_entry, and use it in
-> >>>> blkif_free. Previously grants where freed while iterating the list,
-> >>>> which lead to dereferences when trying to fetch the next item.
-> >>>
-> >>> Looks like xen-blkfront is the only user of this llist_for_each_entry.
-> >>>
-> >>> Would it be more prudent to put the macro in the llist.h file?
-> >>
-> >> I'm not able to find out who is the maintainer of llist, should I just
-> >> CC it's author?
-> > 
-> > Sure. I CC-ed akpm here to solicit his input as well. Either way I am
-> > OK wit this being in xen-blkfront but it just seems that it could
-> > be useful in the llist file since that is where the non-safe version
-> > resides.
-> 
-> I'm going to resend this series with llist_for_each_entry_safe added to
-> llist.h in a separated patch. I wouldn't like to delay this series
-> because we cannot get llist_for_each_entry_safe added to llist.h, that's
-> why I've added it to blkfront in the first place.
+-----Original Message-----
+From: Alexander Holler [mailto:holler@ahsoftware.de] 
+Sent: Wednesday, December 12, 2012 12:28 PM
+To: linux-kernel@vger.kernel.org
+Cc: linux-iio@vger.kernel.org; Jonathan Cameron; Lars-Peter Clausen; rtc-linux@googlegroups.com; Alessandro Zummo; Pandruvada, Srinivas; Andrew Morton; Alexander Holler
+Subject: [PATCHi 5/4] hid: iio: rename struct hid_sensor_iio_common to hid_sensor_common
 
-Please include that llist.h patch within the xen merge.  It's just a single
-hunk and won't cause any disruption.
+The structure with common attributes for hid-sensors isn't specific to the iio-subsystem, so rename it to hid_sensor_common.
+
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+
+---
+ drivers/iio/accel/hid-sensor-accel-3d.c            |    2 +-
+ .../iio/common/hid-sensors/hid-sensor-attributes.c |   10 +++++-----
+ .../iio/common/hid-sensors/hid-sensor-trigger.c    |    4 ++--
+ .../iio/common/hid-sensors/hid-sensor-trigger.h    |    2 +-
+ drivers/iio/gyro/hid-sensor-gyro-3d.c              |    2 +-
+ drivers/iio/light/hid-sensor-als.c                 |    2 +-
+ drivers/iio/magnetometer/hid-sensor-magn-3d.c      |    2 +-
+ drivers/rtc/rtc-hid-sensor-time.c                  |    2 +-
+ include/linux/hid-sensor-hub.h                     |   12 ++++++------
+ 9 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
+index 72371aa..2133da8 100644
+--- a/drivers/iio/accel/hid-sensor-accel-3d.c
++++ b/drivers/iio/accel/hid-sensor-accel-3d.c
+@@ -43,7 +43,7 @@ enum accel_3d_channel {
+ 
+ struct accel_3d_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+-	struct hid_sensor_iio_common common_attributes;
++	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info accel[ACCEL_3D_CHANNEL_MAX];
+ 	u32 accel_val[ACCEL_3D_CHANNEL_MAX];
+ };
+diff --git a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
+index 5873f16..75b5473 100644
+--- a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
++++ b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
+@@ -113,7 +113,7 @@ static u32 convert_to_vtf_format(int size, int exp, int val1, int val2)
+ 	return value;
+ }
+ 
+-int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
++int hid_sensor_read_samp_freq_value(struct hid_sensor_common *st,
+ 				int *val1, int *val2)
+ {
+ 	s32 value;
+@@ -140,7 +140,7 @@ int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,  }  EXPORT_SYMBOL(hid_sensor_read_samp_freq_value);
+ 
+-int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
++int hid_sensor_write_samp_freq_value(struct hid_sensor_common *st,
+ 				int val1, int val2)
+ {
+ 	s32 value;
+@@ -168,7 +168,7 @@ int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,  }  EXPORT_SYMBOL(hid_sensor_write_samp_freq_value);
+ 
+-int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
++int hid_sensor_read_raw_hyst_value(struct hid_sensor_common *st,
+ 				int *val1, int *val2)
+ {
+ 	s32 value;
+@@ -190,7 +190,7 @@ int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,  }  EXPORT_SYMBOL(hid_sensor_read_raw_hyst_value);
+ 
+-int hid_sensor_write_raw_hyst_value(struct hid_sensor_iio_common *st,
++int hid_sensor_write_raw_hyst_value(struct hid_sensor_common *st,
+ 					int val1, int val2)
+ {
+ 	s32 value;
+@@ -211,7 +211,7 @@ EXPORT_SYMBOL(hid_sensor_write_raw_hyst_value);
+ 
+ int hid_sensor_parse_common_attributes(struct hid_sensor_hub_device *hsdev,
+ 					u32 usage_id,
+-					struct hid_sensor_iio_common *st)
++					struct hid_sensor_common *st)
+ {
+ 
+ 	sensor_hub_input_get_attribute_info(hsdev,
+diff --git a/drivers/iio/common/hid-sensors/hid-sensor-trigger.c b/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
+index b097b68..58fc108 100644
+--- a/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
++++ b/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
+@@ -31,7 +31,7 @@
+ static int hid_sensor_data_rdy_trigger_set_state(struct iio_trigger *trig,
+ 						bool state)
+ {
+-	struct hid_sensor_iio_common *st = trig->private_data;
++	struct hid_sensor_common *st = trig->private_data;
+ 	int state_val;
+ 
+ 	state_val = state ? 1 : 0;
+@@ -65,7 +65,7 @@ static const struct iio_trigger_ops hid_sensor_trigger_ops = {  };
+ 
+ int hid_sensor_setup_trigger(struct iio_dev *indio_dev, const char *name,
+-				struct hid_sensor_iio_common *attrb)
++				struct hid_sensor_common *attrb)
+ {
+ 	int ret;
+ 	struct iio_trigger *trig;
+diff --git a/drivers/iio/common/hid-sensors/hid-sensor-trigger.h b/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
+index fd98297..9a87314 100644
+--- a/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
++++ b/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
+@@ -20,7 +20,7 @@
+ #define _HID_SENSOR_TRIGGER_H
+ 
+ int hid_sensor_setup_trigger(struct iio_dev *indio_dev, const char *name,
+-				struct hid_sensor_iio_common *attrb);
++				struct hid_sensor_common *attrb);
+ void hid_sensor_remove_trigger(struct iio_dev *indio_dev);
+ 
+ #endif
+diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+index b98cd70..85330ad 100644
+--- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
++++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+@@ -43,7 +43,7 @@ enum gyro_3d_channel {
+ 
+ struct gyro_3d_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+-	struct hid_sensor_iio_common common_attributes;
++	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info gyro[GYRO_3D_CHANNEL_MAX];
+ 	u32 gyro_val[GYRO_3D_CHANNEL_MAX];
+ };
+diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
+index 9610989..051b88c 100644
+--- a/drivers/iio/light/hid-sensor-als.c
++++ b/drivers/iio/light/hid-sensor-als.c
+@@ -38,7 +38,7 @@
+ 
+ struct als_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+-	struct hid_sensor_iio_common common_attributes;
++	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info als_illum;
+ 	u32 illum;
+ };
+diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+index 4957430..5c59044 100644
+--- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
++++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+@@ -43,7 +43,7 @@ enum magn_3d_channel {
+ 
+ struct magn_3d_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+-	struct hid_sensor_iio_common common_attributes;
++	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
+ 	u32 magn_val[MAGN_3D_CHANNEL_MAX];
+ };
+diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
+index 41bc011..8050c5d 100644
+--- a/drivers/rtc/rtc-hid-sensor-time.c
++++ b/drivers/rtc/rtc-hid-sensor-time.c
+@@ -39,7 +39,7 @@ enum hid_time_channel {
+ 
+ struct hid_time_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+-	struct hid_sensor_iio_common common_attributes;
++	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info info[TIME_RTC_CHANNEL_MAX];
+ 	struct rtc_time last_time;
+ 	spinlock_t lock_last_time;
+diff --git a/include/linux/hid-sensor-hub.h b/include/linux/hid-sensor-hub.h index e6265f9..ecefb73 100644
+--- a/include/linux/hid-sensor-hub.h
++++ b/include/linux/hid-sensor-hub.h
+@@ -161,7 +161,7 @@ int sensor_hub_get_feature(struct hid_sensor_hub_device *hsdev, u32 report_id,
+ /* hid-sensor-attributes */
+ 
+ /* Common hid sensor iio structure */
+-struct hid_sensor_iio_common {
++struct hid_sensor_common {
+ 	struct hid_sensor_hub_device *hsdev;
+ 	struct platform_device *pdev;
+ 	unsigned usage_id;
+@@ -185,14 +185,14 @@ static inline int hid_sensor_convert_exponent(int unit_expo)
+ 
+ int hid_sensor_parse_common_attributes(struct hid_sensor_hub_device *hsdev,
+ 					u32 usage_id,
+-					struct hid_sensor_iio_common *st);
+-int hid_sensor_write_raw_hyst_value(struct hid_sensor_iio_common *st,
++					struct hid_sensor_common *st);
++int hid_sensor_write_raw_hyst_value(struct hid_sensor_common *st,
+ 					int val1, int val2);
+-int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
++int hid_sensor_read_raw_hyst_value(struct hid_sensor_common *st,
+ 					int *val1, int *val2);
+-int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
++int hid_sensor_write_samp_freq_value(struct hid_sensor_common *st,
+ 					int val1, int val2);
+-int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
++int hid_sensor_read_samp_freq_value(struct hid_sensor_common *st,
+ 					int *val1, int *val2);
+ 
+ #endif
+--
+1.7.8.6
+
