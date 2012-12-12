@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035Ab2LLHqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 02:46:11 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35164 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab2LLHqK convert rfc822-to-8bit (ORCPT
+	id S1751234Ab2LLH4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 02:56:07 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50316 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab2LLH4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 02:46:10 -0500
-Message-ID: <50C8361B.70901@parallels.com>
-Date: Wed, 12 Dec 2012 11:45:31 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 12 Dec 2012 02:56:06 -0500
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
-References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org> <50C73C60.8060405@parallels.com> <50C73F58.1080005@parallels.com> <20121211145621.GA3336@fieldses.org> <50C74C14.8030807@parallels.com> <20121211152036.GB3336@fieldses.org> <20121211153527.GC3336@fieldses.org>
-In-Reply-To: <20121211153527.GC3336@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.20.135]
+In-Reply-To: <20121211162048.6c9206c7@skate>
+References: <1350644042-31793-1-git-send-email-linus.walleij@linaro.org>
+	<20121211162048.6c9206c7@skate>
+Date: Wed, 12 Dec 2012 08:56:03 +0100
+Message-ID: <CACRpkdY1wtPSW6Nab0tvcr+CF=Neki1mbZ8EdsHk0xkOTtnL1w@mail.gmail.com>
+Subject: Re: [PATCH 3/4 v2] gpio/mvebu: convert to use irq_domain_add_simple()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.12.2012 19:35, J. Bruce Fields пишет:
-> On Tue, Dec 11, 2012 at 10:20:36AM -0500, J. Bruce Fields wrote:
->> On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
->>> I don't really understand, how  mountd's root can be wrong. I.e.
->>> its' always right as I see it. NFSd kthreads have to swap/use
->>> relative path/whatever to communicate with proper mountd.
->>> Or I'm missing something?
->>
->> Ugh, I see the problem: I thought svc_export_request was called at the
->> time mountd does the read, but instead its done at the time nfsd does
->> the upcall.
->>
->> I suspect that's wrong, and we really want this done in the context of
->> the mountd process when it does the read call.  If d_path is called
->> there then we have no problem.
->
-> Right, so I'd be happier if we could modify sunrpc_cache_pipe_upcall to
-> skip calling cache_request and instead delay that until cache_read().  I
-> think that should be possible.
->
+On Tue, Dec 11, 2012 at 4:20 PM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
 
-Hmmm...
-I'm not familiar with mountd to kernel exchange protocol.
-It looks like kernel passes that path string to mountd on upcall.
+> Unfortunately, this creates the following warning at boot time for each
+> GPIO bank:
 
-> --b.
->
+Grant has a patch in his irqdomain tree that will turn this warning into
+a simple pr_info() thing instead. It's not that bad... The immediate
+problem will soon go away.
 
+> Of course, the fix should be to remove the irq_alloc_descs() from the
+> driver prior to calling irq_domain_add_simple(). But the thing is that
+> our gpio-mvebu driver uses the
+> irq_alloc_generic_chip()/irq_setup_generic_chip() infrastructure, which
+> it seems requires a legacy IRQ domain (it needs the base IRQ number).
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Actually it looks like a core infrastructure issue. Sorry for not
+spotting this in the first place:
+
+First you allocate some descriptors, just any descriptors, with
+mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
+
+Then you allocate a generic chip using the obtained
+descriptor base:
+gc = irq_alloc_generic_chip("mvebu_gpio_irq", 2, mvchip->irqbase,
+				    mvchip->membase, handle_level_irq);
+
+Then you set up the generic chip with a nailed down IRQ base number
+from step 1:
+irq_setup_generic_chip(gc, IRQ_MSK(ngpios), 0,
+			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
+
+This, if I understand it correctly, is done because you have two different
+chip types on the generic chip: one for high/low level IRQ and another
+for rising/falling. (Which is a very nice way to use the generic chip!)
+
+Finally set up the IRQ domain:
+mvchip->domain = irq_domain_add_simple(np, mvchip->chip.ngpio,
+				       mvchip->irqbase,
+				       &irq_domain_simple_ops,
+				       mvchip);
+
+So the problem is that you cannot allocate a generic chip
+without having a base IRQ at that point, if I understand
+correctly. If this was not necessary you would not need to
+allocate descriptors in advance.
+
+Or rather: the *real* problem, which will face anyone trying
+to implement a combined edge+level IRQ chip in a driver,
+is that the generic irqchip does not play well with irqdomain.
+
+Using legacy in this case is clearly wrong, the generic IRQ chip
+is not one least bit legacy, it's top-of-the-line IRQ handling,
+using generic code as we want.
+
+However it seems generic chips cannot handle sparse IRQs
+at all, it requires the descriptors to be allocated before
+we create and instance of it.
+
+So I see two solutions:
+
+- Fix the generic chip to handle sparse IRQs by patching
+  a lot in kernel/irq/generic-chip.c and allowing to pass
+  something like < 0 for irq base.
+
+- Add something like irq_domain_add_generic() for
+  generic chips and handle the oddities there.
+
+The latter would be a pretty straight-forward wrapper to legacy
+domain as of now.
+
+Any preference? Or should we just consider generic irqchips
+a legacy case?
+
+Yours,
+Linus Walleij
