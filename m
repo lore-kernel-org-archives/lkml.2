@@ -1,169 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2LLTXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:23:39 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50132 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab2LLTXh (ORCPT
+	id S1754900Ab2LLTYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:24:47 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:39239 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab2LLTYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:23:37 -0500
-Message-ID: <50C8D9AE.5050706@linux.vnet.ibm.com>
-Date: Thu, 13 Dec 2012 03:23:26 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Wed, 12 Dec 2012 14:24:44 -0500
+Date: Wed, 12 Dec 2012 20:24:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121212192441.GD10374@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
+ <20121211155432.GC1612@dhcp22.suse.cz>
+ <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
+ <20121212090652.GB32081@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/5] KVM: MMU: adjust page size early if gfn used as
- page table
-References: <50C5A747.1020105@linux.vnet.ibm.com> <50C5A79F.3020805@linux.vnet.ibm.com> <20121212005723.GA2898@amt.cnet>
-In-Reply-To: <20121212005723.GA2898@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121219-5490-0000-0000-000002A37952
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121212090652.GB32081@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 08:57 AM, Marcelo Tosatti wrote:
-> On Mon, Dec 10, 2012 at 05:13:03PM +0800, Xiao Guangrong wrote:
->> We have two issues in current code:
->> - if target gfn is used as its page table, guest will refault then kvm will use
->>   small page size to map it. We need two #PF to fix its shadow page table
->>
->> - sometimes, say a exception is triggered during vm-exit caused by #PF
->>   (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
->>   by the target gfn before go into page fault path, it will cause infinite
->>   loop:
->>   delete shadow pages shadowed by the gfn -> try to use large page size to map
->>   the gfn -> retry the access ->...
->>
->> To fix these, We can adjust page size early if the target gfn is used as page
->> table
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c         |   13 ++++---------
->>  arch/x86/kvm/paging_tmpl.h |   33 ++++++++++++++++++++++++++++++++-
->>  2 files changed, 36 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 2a3c890..54fc61e 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2380,15 +2380,10 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->>  	if (pte_access & ACC_WRITE_MASK) {
->>
->>  		/*
->> -		 * There are two cases:
->> -		 * - the one is other vcpu creates new sp in the window
->> -		 *   between mapping_level() and acquiring mmu-lock.
->> -		 * - the another case is the new sp is created by itself
->> -		 *   (page-fault path) when guest uses the target gfn as
->> -		 *   its page table.
->> -		 * Both of these cases can be fixed by allowing guest to
->> -		 * retry the access, it will refault, then we can establish
->> -		 * the mapping by using small page.
->> +		 * Other vcpu creates new sp in the window between
->> +		 * mapping_level() and acquiring mmu-lock. We can
->> +		 * allow guest to retry the access, the mapping can
->> +		 * be fixed if guest refault.
->>  		 */
->>  		if (level > PT_PAGE_TABLE_LEVEL &&
->>  		    has_wrprotected_page(vcpu->kvm, gfn, level))
->> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
->> index ec481e9..32d77ff 100644
->> --- a/arch/x86/kvm/paging_tmpl.h
->> +++ b/arch/x86/kvm/paging_tmpl.h
->> @@ -491,6 +491,36 @@ out_gpte_changed:
->>  	return 0;
->>  }
->>
->> + /*
->> + * To see whether the mapped gfn can write its page table in the current
->> + * mapping.
->> + *
->> + * It is the helper function of FNAME(page_fault). When guest uses large page
->> + * size to map the writable gfn which is used as current page table, we should
->> + * force kvm to use small page size to map it because new shadow page will be
->> + * created when kvm establishes shadow page table that stop kvm using large
->> + * page size. Do it early can avoid unnecessary #PF and emulation.
->> + *
->> + * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
->> + * since the PDPT is always shadowed, that means, we can not use large page
->> + * size to map the gfn which is used as PDPT.
->> + */
->> +static bool
->> +FNAME(mapped_gfn_can_write_current_pagetable)(struct guest_walker *walker)
->> +{
->> +	int level;
->> +	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
->> +
->> +	if (!(walker->pte_access & ACC_WRITE_MASK))
->> +		return false;
->> +
->> +	for (level = walker->level; level <= walker->max_level; level++)
->> +		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
->> +			return true;
+On Wed 12-12-12 10:06:52, Michal Hocko wrote:
+> On Tue 11-12-12 14:36:10, Ying Han wrote:
+[...]
+> > One exception is mem_cgroup_iter_break(), where the loop terminates
+> > with *leaked* refcnt and that is what the iter_break() needs to clean
+> > up. We can not rely on the next caller of the loop since it might
+> > never happen.
 > 
-> XOR won't work. Just check with sums and integer comparison, ie.
-> walker->gfn + KVM_PAGES_PER_HPAGE(walker->level).
+> Yes, this is true and I already have a half baked patch for that. I
+> haven't posted it yet but it basically checks all node-zone-prio
+> last_visited and removes itself from them on the way out in pre_destroy
+> callback (I just need to cleanup "find a new last_visited" part and will
+> post it).
 
-It can not work since walker->gfn is not large-page-size aligned. For example,
-guest uses large page size to map 0x123000000 to physical address 0-2M, if
-guest faults on 0x123001000, walker->gfn = 0x1000.
+And a half baked patch - just compile tested
+---
+>From 1c976c079c383175c679e00115aee0ab8e215bf2 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Tue, 11 Dec 2012 21:02:39 +0100
+Subject: [PATCH] NOT READY YET - just compile tested
 
-The code "if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))" is the
-same as "if (walker->gfn & mask == walker->table_gfn[level - 1] & mask)" - if
-any page in the large page area used as page table, we should use 4K page size
-to fix it.
+memcg: remove memcg from the reclaim iterators
 
-In above example, if table_gfn is in the area [0, 2M), kvm is forced to use
-4k page size.
+Now that per-node-zone-priority iterator caches memory cgroups rather
+than their css ids we have to be careful and remove them from the
+iterator when they are on the way out otherwise they might hang for
+unbounded amount of time (until the global reclaim triggers the zone
+under priority to find out the group is dead and let it to find the
+final rest).
 
-> 
-> Moreover, its confusing to have it checked at this level. What about
-> doing at reexecute_instruction?
+This is solved by hooking into mem_cgroup_pre_destroy and checking all
+per-node-zone-priority iterators. If the current memcg is found in
+iter->last_visited then it is replaced by its left sibling or its parent
+otherwise. This guarantees that no group gets more reclaiming than
+necessary and the next iteration will continue seemingly.
 
-Hmm, this patch is trying to fix a bug described in the changelog:
+Spotted-by: Ying Han <yinghan@google.com>
+Not-signed-off-by-yet: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-======
- - sometimes, say a exception is triggered during vm-exit caused by #PF
-   (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
-   by the target gfn before go into page fault path, it will cause infinite
-   loop:
-   delete shadow pages shadowed by the gfn -> try to use large page size to map
-   the gfn -> retry the access ->...
-======
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7134148..286db74 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6213,12 +6213,50 @@ free_out:
+ 	return ERR_PTR(error);
+ }
+ 
++static void mem_cgroup_remove_cached(struct mem_cgroup *memcg)
++{
++	int node, zone;
++
++	for_each_node(node) {
++		struct mem_cgroup_per_node *pn = memcg->info.nodeinfo[node];
++		int prio;
++
++		for (zone = 0; zone < MAX_NR_ZONES; zone++) {
++			struct mem_cgroup_per_zone *mz;
++
++			mz = &pn->zoneinfo[zone];
++			for (prio = 0; prio < DEF_PRIORITY + 1; prio++) {
++				struct mem_cgroup_reclaim_iter *iter;
++
++				iter = &mz->reclaim_iter[prio];
++				rcu_read_lock();
++				spin_lock(&iter->iter_lock);
++				if (iter->last_visited == memcg) {
++					struct cgroup *cgroup, *prev;
++
++					cgroup = memcg->css.cgroup;
++					prev = list_entry_rcu(cgroup->sibling.prev, struct cgroup, sibling);
++					if (&prev->sibling == &prev->parent->children)
++						prev = prev->parent;
++					iter->last_visited = mem_cgroup_from_cont(prev);
++
++					/* TODO can we do this? */
++					css_put(&memcg->css);
++				}
++				spin_unlock(&iter->iter_lock);
++				rcu_read_unlock();
++			}
++		}
++	}
++}
++
+ static void mem_cgroup_pre_destroy(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
++	mem_cgroup_remove_cached(memcg);
+ }
+ 
+ static void mem_cgroup_destroy(struct cgroup *cont)
+-- 
+1.7.10.4
 
-Which is caused by this code:
-
-	if (is_page_fault(intr_info)) {
-		/* EPT won't cause page fault directly */
-		BUG_ON(enable_ept);
-		cr2 = vmcs_readl(EXIT_QUALIFICATION);
-		trace_kvm_page_fault(cr2, error_code);
-
-		if (kvm_event_needs_reinjection(vcpu))
-			kvm_mmu_unprotect_page_virt(vcpu, cr2);
-		return kvm_mmu_page_fault(vcpu, cr2, error_code, NULL, 0);
-	}
-
-This bug is introduced in commit c219346325.
-
-Another way to fix it is doing this change:
-@@ -2395,7 +2395,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
-                 */
-                if (level > PT_PAGE_TABLE_LEVEL &&
-                    has_wrprotected_page(vcpu->kvm, gfn, level))
--                       goto done;
-+                       return 1;
-
-The disadvantage of this way is, it causes unnecessary emulation. For example,
-if 0-2M is mapped in guest and only page 0 used as page table, any write to
-[4K, 2M) will need be emulated.
-
-Your idea?
-
+-- 
+Michal Hocko
+SUSE Labs
