@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab2LLSWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:22:35 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:41834 "EHLO
+	id S1755384Ab2LLSWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:22:43 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55775 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753966Ab2LLSWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:22:32 -0500
+	id S1753966Ab2LLSWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:22:41 -0500
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>, Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 19/26] gfs2: Convert print_symbol to %pSR
-Date: Wed, 12 Dec 2012 10:19:08 -0800
-Message-Id: <9e86924627c3e2fa6e45bd07537115a291db50fe.1355335228.git.joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH 20/26] sysfs: Convert print_symbol to %pSR
+Date: Wed, 12 Dec 2012 10:19:09 -0800
+Message-Id: <0f1ebce9c3792f2d0e8ce794db19f663e41c6475.1355335228.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1355335227.git.joe@perches.com>
 References: <cover.1355335227.git.joe@perches.com>
@@ -24,42 +25,24 @@ message interleaving.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/gfs2/glock.c |    4 ++--
- fs/gfs2/trans.c |    3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ fs/sysfs/file.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 992c5c0..453978b 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1016,11 +1016,11 @@ do_cancel:
- 	return;
- 
- trap_recursive:
--	print_symbol(KERN_ERR "original: %s\n", gh2->gh_ip);
-+	printk(KERN_ERR "original: %pSR\n", (void *)gh2->gh_ip);
- 	printk(KERN_ERR "pid: %d\n", pid_nr(gh2->gh_owner_pid));
- 	printk(KERN_ERR "lock type: %d req lock state : %d\n",
- 	       gh2->gh_gl->gl_name.ln_type, gh2->gh_state);
--	print_symbol(KERN_ERR "new: %s\n", gh->gh_ip);
-+	printk(KERN_ERR "new: %pSR\n", (void *)gh->gh_ip);
- 	printk(KERN_ERR "pid: %d\n", pid_nr(gh->gh_owner_pid));
- 	printk(KERN_ERR "lock type: %d req lock state : %d\n",
- 	       gh->gh_gl->gl_name.ln_type, gh->gh_state);
-diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
-index 4136270..3d8aa7f 100644
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -95,7 +95,8 @@ static void gfs2_log_release(struct gfs2_sbd *sdp, unsigned int blks)
- 
- static void gfs2_print_trans(const struct gfs2_trans *tr)
- {
--	print_symbol(KERN_WARNING "GFS2: Transaction created at: %s\n", tr->tr_ip);
-+	printk(KERN_WARNING "GFS2: Transaction created at: %pSR\n",
-+	       (void *)tr->tr_ip);
- 	printk(KERN_WARNING "GFS2: blocks=%u revokes=%u reserved=%u touched=%d\n",
- 	       tr->tr_blocks, tr->tr_revokes, tr->tr_reserved, tr->tr_touched);
- 	printk(KERN_WARNING "GFS2: Buf %u/%u Databuf %u/%u Revoke %u/%u\n",
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 602f56d..bd7e59b 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -91,8 +91,8 @@ static int fill_read_buffer(struct dentry * dentry, struct sysfs_buffer * buffer
+ 	 * indicate truncated result or overflow in normal use cases.
+ 	 */
+ 	if (count >= (ssize_t)PAGE_SIZE) {
+-		print_symbol("fill_read_buffer: %s returned bad count\n",
+-			(unsigned long)ops->show);
++		printk("fill_read_buffer: %pSR returned bad count\n",
++		       ops->show);
+ 		/* Try to struggle along */
+ 		count = PAGE_SIZE - 1;
+ 	}
 -- 
 1.7.8.112.g3fd21
 
