@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab2LLIc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 03:32:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51806 "EHLO mx2.suse.de"
+	id S1751868Ab2LLIkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 03:40:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10495 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359Ab2LLIc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 03:32:27 -0500
-Date: Wed, 12 Dec 2012 19:32:15 +1100
-From: NeilBrown <neilb@suse.de>
-To: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] block2mtd: throttle writes by calling
- balance_dirty_pages_ratelimited.
-Message-ID: <20121212193215.645da577@notabene.brown>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+	id S1751205Ab2LLIke convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 03:40:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,265,1355126400"; 
+   d="scan'208";a="232681281"
+Message-ID: <1355301621.31620.66.camel@smile>
+Subject: Re: [PATCH V3 2/3] dmaengine: dw_dmac: Enhance device tree support
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 12 Dec 2012 10:40:21 +0200
+In-Reply-To: <CAKohpo=FjZuMOC-wuNc3q_FXbk546ttCLr55GkW9AL0Tz-HoBA@mail.gmail.com>
+References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+	 <169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
+	 <201212102208.52347.arnd@arndb.de>
+	 <CAKohpo=FjZuMOC-wuNc3q_FXbk546ttCLr55GkW9AL0Tz-HoBA@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/BHo7oIwWjoyZBmzX_7tjmjK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/BHo7oIwWjoyZBmzX_7tjmjK
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-12-12 at 08:30 +0530, Viresh Kumar wrote: 
+> > * It requires slave drivers to know that they are using the dw_dmac
+> >   driver and pass a pointer to dw_generic_filter, which is not
+> >   generic at all
+> >
+> > * It requires the dmac node to have information about all slaves
+> >
+> > There are also some minor issues, such as the naming of DT
+> > properties, but the above need to be resolved first.
+> 
+> I saw the binding document and it looks it can be applied to dw_dmac
+> too, as there is nothing special for it.
+> 
+> The question is how? We are already late for merge window and this
+> one is queued. Supplying a new patch, getting it reviewed/tested and
+> being pulled by Linus is not so easy :)
+> 
+> Two ways:
+> - Keep it as is, and i will fix it separately and quickly
+> - Drop it :(
+Will we survive if the patch is in mainline? I mean how big the impact
+of it is?
 
 
-
-If you create a block2mtd device that is larger than main memory,
-and write to all of it, then lots of pages will be dirtied but
-they will never be flushed out as nothing calls any variant of
-balance_dirty_pages.
-
-It would be nice to call set_page_dirty_balance(), but that isn't exported,
-so just call balance_dirty_pages_ratelimited() directly.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/mtd/devices/block2mtd.c b/drivers/mtd/devices/block2mt=
-d.c
-index 681e2ee..2c3e8e7 100644
---- a/drivers/mtd/devices/block2mtd.c
-+++ b/drivers/mtd/devices/block2mtd.c
-@@ -62,6 +62,7 @@ static int _block2mtd_erase(struct block2mtd_dev *dev, lo=
-ff_t to, size_t len)
- 				memset(page_address(page), 0xff, PAGE_SIZE);
- 				set_page_dirty(page);
- 				unlock_page(page);
-+				balance_dirty_pages_ratelimited(mapping);
- 				break;
- 			}
-=20
-@@ -152,6 +153,7 @@ static int _block2mtd_write(struct block2mtd_dev *dev, =
-const u_char *buf,
- 			memcpy(page_address(page) + offset, buf, cpylen);
- 			set_page_dirty(page);
- 			unlock_page(page);
-+			balance_dirty_pages_ratelimited(mapping);
- 		}
- 		page_cache_release(page);
-=20
-
---Sig_/BHo7oIwWjoyZBmzX_7tjmjK
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUMhBDznsnt1WYoG5AQJBfBAAinJKjQolwjfXbnBHu03RZLNT0ktY/2na
-wsldYuD4jOh7z8oSc9pqknejf26ekx2KqDX7RKJ8wU86x3Cv1hOD9UqZOpw84HnR
-SH/7idpXyUJ1BhOgyx5LHnpqwXqRR0Ydy10qyheUVLgFLTFUJf+VQ0PMbTSUpwpi
-wBRvu4V5htzWOjUnFGwdxxZasMIvCx0t4jbbBFrn7SzP0/iRFPtoJBlSTWRaSM/1
-d6BeFbgV90k/wAJSSQ3VQJ7T+393Kb+E7C2cXC1asjk+3q8KJb6vuZdxkMRKLqJB
-b8Q9ojLO1mqEz9nX/T0GhixbirWFiUSJcWIkVT2Wd0Yp0uzsoYzVj0OgVt8rO6Qg
-ngGz3clBtvATDoCPKxFvwaq4TYoXkG4f3JNwNIoGIaNtfORwEFqFv1z2/hVb1JfC
-Yd/E0OEZg3u733ZlPAjx3J4EBAhQdiKemI1p76K9sO5zg0ozgDQPU4EqcHJJLFgh
-ttFk4yNXwOQgERZWSIu0JtNWve98rXZfc0SWZzxDt8UGACv/cI0/H2foejjIyVp8
-4diZOZMLJaXtdrBY8fOzap6q+aHnD4PtkcBfm75X6VPG8i36eqoKJy07vA9F+J9L
-ZbZtQAnxI2ojIZbVLRea6dEzEztraJUuw2mY8HNjkHGOIu/VguFO2IgTC9v5B7Js
-XKU5mv6bYEQ=
-=sWZ/
------END PGP SIGNATURE-----
-
---Sig_/BHo7oIwWjoyZBmzX_7tjmjK--
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
