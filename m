@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab2LLI6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 03:58:40 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45990 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2LLI6j (ORCPT
+	id S1752576Ab2LLI7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 03:59:32 -0500
+Received: from szxga04-in.huawei.com ([119.145.14.67]:56848 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab2LLI7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 03:58:39 -0500
-Date: Wed, 12 Dec 2012 09:56:16 +0100
-From: Benedikt Spranger <b.spranger@linutronix.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Alexander.Frank@eberspaecher.com
-Subject: Re: [PATCH 2/2] uio: do not expose inode to uio open/release hooks
-Message-ID: <20121212095616.357a59e9@mitra.spranger.biz>
-In-Reply-To: <20121212085053.GF2642@local>
-References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
-	<1355267523-19724-3-git-send-email-b.spranger@linutronix.de>
-	<20121211232032.GA24933@kroah.com>
-	<20121212014221.GA2642@local>
-	<20121212044648.GB7224@kroah.com>
-	<20121212085053.GF2642@local>
-Organization: Linutronix GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 12 Dec 2012 03:59:31 -0500
+Date: Wed, 12 Dec 2012 09:59:02 +0100
+From: Claudio Fontana <Claudio.Fontana@huawei.com>
+Subject: [PATCH RESEND 3] ARM: plat-versatile: move secondary CPU startup into
+ cpuinit
+In-reply-to: <50B47C31.2040709@huawei.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Christoffer Dall <c.dall@virtualopensystems.com>
+Message-id: <50C84756.60200@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+References: <50B47C31.2040709@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Wed, 12 Dec 2012 09:50:54 +0100
-schrieb "Hans J. Koch" <hjk@hansjkoch.de>:
 
-> On Tue, Dec 11, 2012 at 08:46:48PM -0800, Greg KH wrote:
-> > Yes, but what does that have to do with this in-kernel, internal api?
-> 
-> Ah, OK. You're right, the commit message is confusing.
-> 
-> Bene, it's enough to say we drop the inode parameter because nobody
-> ever needed it.
-I am fine with that.
+Using __CPUINIT instead of __INIT puts the secondary CPU startup code
+into the "right" section: it will not be freed in hotplug configurations,
+allowing hot-add of cpus, while still getting freed in non-hotplug configs.
 
-> I cannot see why this also helps with the other problem.
-It would help, because we can defer calling the release hook until the
-last mmap user is gone. In this case the inode pointer may not be valid
-anymore.
+Signed-off-by: Claudio Fontana <claudio.fontana@huawei.com>
+Tested-by: Claudio Fontana <claudio.fontana@huawei.com>
 
-Regards
-    Bene
+diff --git a/arch/arm/plat-versatile/headsmp.S b/arch/arm/plat-versatile/headsmp.S
+index dd703ef..19fe180 100644
+--- a/arch/arm/plat-versatile/headsmp.S
++++ b/arch/arm/plat-versatile/headsmp.S
+@@ -11,7 +11,7 @@
+ #include <linux/linkage.h>
+ #include <linux/init.h>
+ 
+-	__INIT
++	__CPUINIT
+ 
+ /*
+  * Realview/Versatile Express specific entry point for secondary CPUs.
+-- 
+1.7.12.1
+
+
