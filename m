@@ -1,211 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2LLQ23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 11:28:29 -0500
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:56585 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab2LLQ21 (ORCPT
+	id S1754729Ab2LLQbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 11:31:18 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:13873
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754603Ab2LLQbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 11:28:27 -0500
-Date: Wed, 12 Dec 2012 09:28:24 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] PCI changes for v3.8
-Message-ID: <20121212162824.GA18122@google.com>
+	Wed, 12 Dec 2012 11:31:16 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1155h)
+X-WSS-ID: 0MEXF7Y-02-CDI-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 2/5] perf, x86: AMD implementation for hardware breakpoint address mask
+Date: Wed, 12 Dec 2012 10:30:40 -0600
+Message-ID: <1355329843-25842-3-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355329843-25842-1-git-send-email-jacob.shin@amd.com>
+References: <1355329843-25842-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit ff8e59bc4ec3f31789a47dce9b6fe44bd7bc5fcc:
+Implement hardware breakpoint address mask for AMD Family 16h (and
+any other future) processors. CPUID feature bit indicates the hardware
+support for DRn_ADDR_MASK MSRs.
 
-  PCI/portdrv: Don't create hotplug slots unless port supports hotplug (2012-11-05 16:59:59 -0700)
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/Kconfig                     |    1 +
+ arch/x86/include/asm/cpufeature.h    |    2 ++
+ arch/x86/include/asm/hw_breakpoint.h |    6 ++++++
+ arch/x86/include/asm/msr-index.h     |    6 ++++++
+ arch/x86/include/asm/processor.h     |    7 +++++++
+ arch/x86/kernel/cpu/amd.c            |   21 +++++++++++++++++++++
+ arch/x86/kernel/hw_breakpoint.c      |    5 +++++
+ 7 files changed, 48 insertions(+)
 
-are available in the git repository at:
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b6538bd..f7b3aa2 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -64,6 +64,7 @@ config X86
+ 	select HAVE_KERNEL_XZ
+ 	select HAVE_KERNEL_LZO
+ 	select HAVE_HW_BREAKPOINT
++	select HAVE_HW_BREAKPOINT_ADDR_MASK
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index da40b1e..c36870c 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -167,6 +167,7 @@
+ #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
+ #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
+ #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
++#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
+ 
+ /*
+  * Auxiliary flags: Linux defined - For features scattered in various
+@@ -312,6 +313,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+ #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+ #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
++#define cpu_has_bpext		boot_cpu_has(X86_FEATURE_BPEXT)
+ 
+ #ifdef CONFIG_X86_64
+ 
+diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
+index 824ca07..c8ecd29 100644
+--- a/arch/x86/include/asm/hw_breakpoint.h
++++ b/arch/x86/include/asm/hw_breakpoint.h
+@@ -13,6 +13,7 @@ struct arch_hw_breakpoint {
+ 	unsigned long	address;
+ 	u8		len;
+ 	u8		type;
++	u32		mask;
+ };
+ 
+ #include <linux/kdebug.h>
+@@ -71,6 +72,11 @@ extern int arch_bp_generic_fields(int x86_len, int x86_type,
+ 
+ extern struct pmu perf_ops_bp;
+ 
++static inline int arch_has_hw_breakpoint_addr_mask(void)
++{
++	return cpu_has_bpext;
++}
++
+ #endif	/* __KERNEL__ */
+ #endif	/* _I386_HW_BREAKPOINT_H */
+ 
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index e400cdb..3b8a5b4 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -154,6 +154,12 @@
+ #define MSR_AMD64_IBSBRTARGET		0xc001103b
+ #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
+ 
++/* Fam 16h MSRs */
++#define MSR_F16H_DR0_ADDR_MASK		0xc0011027
++#define MSR_F16H_DR1_ADDR_MASK		0xc0011019
++#define MSR_F16H_DR2_ADDR_MASK		0xc001101a
++#define MSR_F16H_DR3_ADDR_MASK		0xc001101b
++
+ /* Fam 15h MSRs */
+ #define MSR_F15H_PERF_CTL		0xc0010200
+ #define MSR_F15H_PERF_CTR		0xc0010201
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index e101b38..26a33b4 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -992,8 +992,15 @@ extern bool cpu_has_amd_erratum(const int *);
+ #define AMD_MODEL_RANGE_START(range)	(((range) >> 12) & 0xfff)
+ #define AMD_MODEL_RANGE_END(range)	((range) & 0xfff)
+ 
++extern void set_dr_addr_mask(u32 mask, int dr);
++
+ #else
+ #define cpu_has_amd_erratum(x)	(false)
++
++static inline void set_dr_addr_mask(u32 mask, int dr)
++{
++}
++
+ #endif /* CONFIG_CPU_SUP_AMD */
+ 
+ extern unsigned long arch_align_stack(unsigned long sp);
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 15239ff..5b0f676 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -906,3 +906,24 @@ bool cpu_has_amd_erratum(const int *erratum)
+ }
+ 
+ EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
++
++void set_dr_addr_mask(u32 mask, int dr)
++{
++	if (!cpu_has_bpext)
++		return;
++
++	BUG_ON(dr >= HBP_NUM);
++
++	switch (dr) {
++	case 0:
++		wrmsr(MSR_F16H_DR0_ADDR_MASK, mask, 0);
++		break;
++	case 1:
++	case 2:
++	case 3:
++		wrmsr(MSR_F16H_DR1_ADDR_MASK - 1 + dr, mask, 0);
++		break;
++	default:
++		break;
++	}
++}
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index 02f0763..f8bf2df 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -121,6 +121,8 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
+ 	if (WARN_ONCE(i == HBP_NUM, "Can't find any breakpoint slot"))
+ 		return -EBUSY;
+ 
++	set_dr_addr_mask(info->mask, i);
++
+ 	set_debugreg(info->address, i);
+ 	__this_cpu_write(cpu_debugreg[i], info->address);
+ 
+@@ -163,6 +165,8 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
+ 	*dr7 &= ~__encode_dr7(i, info->len, info->type);
+ 
+ 	set_debugreg(*dr7, 7);
++
++	set_dr_addr_mask(0, i);
+ }
+ 
+ static int get_hbp_len(u8 hbp_len)
+@@ -254,6 +258,7 @@ static int arch_build_bp_info(struct perf_event *bp)
+ 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
+ 
+ 	info->address = bp->attr.bp_addr;
++	info->mask = bp->attr.bp_addr_mask;
+ 
+ 	/* Type */
+ 	switch (bp->attr.bp_type) {
+-- 
+1.7.9.5
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/for-3.8
 
-for you to fetch changes up to 1cb73f8c479e66541fefd3f7fa547b1fa56cdc54:
-
-  Merge branch 'pci/mjg-pci-roms-from-efi' into next (2012-12-10 16:20:12 -0700)
-
-----------------------------------------------------------------
-
-PCI changes for the v3.8 merge window:
-
-  Host bridge hotplug:
-    - Untangle _PRT from struct pci_bus (Bjorn Helgaas)
-    - Request _OSC control before scanning root bus (Taku Izumi)
-    - Assign resources when adding host bridge (Yinghai Lu)
-    - Remove root bus when removing host bridge (Yinghai Lu)
-    - Remove _PRT during hot remove (Yinghai Lu)
-
-  SRIOV
-    - Add sysfs knobs to control numVFs (Don Dutile)
-
-  Power management
-    - Notify devices when power resource turned on (Huang Ying)
-
-  Bug fixes
-    - Work around broken _SEG on HP xw9300 (Bjorn Helgaas)
-    - Keep runtime PM enabled for unbound PCI devices (Huang Ying)
-    - Fix Optimus dual-GPU runtime D3 suspend issue (Dave Airlie)
-    - Fix xen frontend shutdown issue (David Vrabel)
-    - Work around PLX PCI 9050 BAR alignment erratum (Ian Abbott)
-
-  Miscellaneous
-    - Add GPL license for drivers/pci/ioapic (Andrew Cooks)
-    - Add standard PCI-X, PCIe ASPM register #defines (Bjorn Helgaas)
-    - NumaChip remote PCI support (Daniel Blueman)
-    - Fix PCIe Link Capabilities Supported Link Speed definition (Jingoo Han)
-    - Convert dev_printk() to dev_info(), etc (Joe Perches)
-    - Add support for non PCI BAR ROM data (Matthew Garrett)
-    - Add x86 support for host bridge translation offset (Mike Yoknis)
-    - Report success only when every driver supports AER (Vijay Pandarathil)
-
-----------------------------------------------------------------
-Andrew Cooks (1):
-      PCI: Add GPL license for drivers/pci/ioapic module
-
-Bjorn Helgaas (31):
-      ACPI: Pass segment/bus to _PRT add/del so they don't depend on pci_bus
-      PCI/ACPI: Add _PRT interrupt routing info before enumerating devices
-      x86/PCI: Ignore _SEG on HP xw9300
-      Merge branch 'pci/misc' into next
-      Merge branch 'pci/yinghai-for-pci-root-bus-hotplug' into next
-      Merge branch 'pci/taku-prt-cleanup' into next
-      Merge branch 'pci/mike-x86-tra' into next
-      PCI: Use spec names for SR-IOV capability fields
-      PCI: Remove useless "!dev" tests
-      Merge branch 'pci/don-sriov' into next
-      Merge branch 'pci/misc' into next
-      Merge branch 'for-linus' into next
-      Merge branch 'pci/misc' into next
-      Merge branch 'pci/don-sriov' into next
-      Merge branch 'pci/misc' into next
-      Merge branch 'pci/huang-d3cold-fixes' into next
-      PCI: Add and use standard PCI-X Capability register names
-      Merge branch 'pci/mjg-pci-roms-from-efi' into next
-      PCI: Use standard PCIe Capability Link register field names
-      PCI/portdrv: Use PCI Express Capability accessors
-      PCI: Add standard PCIe Capability Link ASPM field names
-      cxgb3: Use standard #defines for PCIe Capability ASPM fields
-      iwlegacy: collapse wrapper for pcie_capability_read_word()
-      iwlegacy: Use standard #defines for PCIe Capability ASPM fields
-      iwlwifi: collapse wrapper for pcie_capability_read_word()
-      iwlwifi: Use standard #defines for PCIe Capability ASPM fields
-      ath9k: Use standard #defines for PCIe Capability ASPM fields
-      Merge branch 'pci/bjorn-pcie-cap' into next
-      Merge branch 'pci/daniel-numachip' into next
-      PCI: Use phys_addr_t for physical ROM address
-      Merge branch 'pci/mjg-pci-roms-from-efi' into next
-
-Daniel J Blueman (1):
-      x86/PCI: Add NumaChip remote PCI support
-
-Dave Airlie (1):
-      PCI: Don't touch card regs after runtime suspend D3
-
-David Vrabel (1):
-      xen-pcifront: Handle backend CLOSED without CLOSING
-
-Donald Dutile (3):
-      PCI: SRIOV control and status via sysfs
-      PCI: Provide method to reduce the number of total VFs supported
-      PCI: SRIOV control and status via sysfs (documentation)
-
-Huang Ying (3):
-      PCI/PM: Add comments for PME poll support for PCIe
-      PCI/ACPI: Notify PCI devices when their power resource is turned on
-      PCI/PM: Keep runtime PM enabled for unbound PCI devices
-
-Ian Abbott (2):
-      PCI: Add workaround for PLX PCI 9050 BAR alignment erratum
-      PCI: Add PLX PCI 9050 workaround for some Meilhaus DAQ cards
-
-Jingoo Han (1):
-      PCI: Fix bit definitions of PCI_EXP_LNKCAP2 register
-
-Joe Perches (1):
-      PCI: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-
-Matthew Garrett (4):
-      EFI: Stash ROMs if they're not in the PCI BAR
-      PCI: Add pcibios_add_device
-      PCI: Add support for non-BAR ROMs
-      x86: Use PCI setup data
-
-Mike Yoknis (1):
-      x86/PCI: Allow x86 platforms to use translation offsets
-
-Taku Izumi (2):
-      PCI: Don't pass pci_dev to pci_ext_cfg_avail()
-      PCI/ACPI: Request _OSC control before scanning PCI root bus
-
-Vijay Mohan Pandarathil (1):
-      PCI/AER: Report success only when every device has AER-aware driver
-
-Yinghai Lu (10):
-      PCI: Separate out pci_assign_unassigned_bus_resources()
-      PCI: Move pci_rescan_bus() back to probe.c
-      PCI: Move out pci_enable_bridges out of assign_unsigned_bus_res
-      PCI/ACPI: Assign unassigned resource for hot-added root bus
-      PCI: Add pci_stop_and_remove_root_bus()
-      PCI/ACPI: Make acpi_pci_root_remove() stop/remove pci root bus
-      PCI/ACPI: Delete host bridge _PRT during hot remove path
-      PCI/ACPI: Remove acpi_root_driver in reverse order
-      PCI: Add pci_device_type to pdev's device struct
-      PCI: Use is_visible() with boot_vga attribute for pci_dev
-
- Documentation/ABI/testing/sysfs-bus-pci    |  34 ++++++
- Documentation/PCI/pci-iov-howto.txt        |  48 +++++++-
- arch/x86/Kconfig                           |   1 +
- arch/x86/boot/compressed/eboot.c           | 118 ++++++++++++++++++++
- arch/x86/include/asm/bootparam.h           |   1 +
- arch/x86/include/asm/numachip/numachip.h   |  19 ++++
- arch/x86/include/asm/pci.h                 |  12 ++
- arch/x86/kernel/apic/apic_numachip.c       |   2 +
- arch/x86/kernel/setup.c                    |   4 -
- arch/x86/pci/Makefile                      |   1 +
- arch/x86/pci/acpi.c                        |  46 +++++++-
- arch/x86/pci/common.c                      |  32 +++++-
- arch/x86/pci/numachip.c                    | 129 ++++++++++++++++++++++
- drivers/acpi/pci_bind.c                    |  12 +-
- drivers/acpi/pci_irq.c                     |  17 ++-
- drivers/acpi/pci_root.c                    | 165 +++++++++++++++------------
- drivers/net/ethernet/chelsio/cxgb3/t3_hw.c |   2 +-
- drivers/net/wireless/ath/ath9k/pci.c       |   8 +-
- drivers/net/wireless/iwlegacy/4965.h       |   4 -
- drivers/net/wireless/iwlegacy/common.c     |  10 +-
- drivers/net/wireless/iwlegacy/common.h     |  12 --
- drivers/net/wireless/iwlwifi/pcie/trans.c  |  20 +---
- drivers/pci/bus.c                          |   5 +
- drivers/pci/ioapic.c                       |   2 +
- drivers/pci/iov.c                          |  87 +++++++++++----
- drivers/pci/irq.c                          |  10 +-
- drivers/pci/pci-driver.c                   |  73 +++++++-----
- drivers/pci/pci-stub.c                     |   2 +-
- drivers/pci/pci-sysfs.c                    | 172 +++++++++++++++++++++++++++--
- drivers/pci/pci.c                          |  48 ++++++--
- drivers/pci/pci.h                          |   8 +-
- drivers/pci/pcie/aer/aerdrv.h              |   5 +-
- drivers/pci/pcie/aer/aerdrv_core.c         |  22 +++-
- drivers/pci/pcie/aspm.c                    |  18 ++-
- drivers/pci/pcie/portdrv_core.c            |   3 +-
- drivers/pci/probe.c                        |  42 +++++--
- drivers/pci/quirks.c                       |  39 +++++++
- drivers/pci/remove.c                       |  36 ++++++
- drivers/pci/rom.c                          |  11 +-
- drivers/pci/setup-bus.c                    |  22 +---
- drivers/pci/xen-pcifront.c                 |   5 +-
- include/acpi/acpi_drivers.h                |   4 +-
- include/linux/efi.h                        |  71 ++++++++++++
- include/linux/pci.h                        |  22 +++-
- include/uapi/linux/pci_regs.h              |  23 +++-
- 45 files changed, 1150 insertions(+), 277 deletions(-)
- create mode 100644 arch/x86/include/asm/numachip/numachip.h
- create mode 100644 arch/x86/pci/numachip.c
