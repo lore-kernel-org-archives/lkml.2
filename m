@@ -1,125 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab2LLTke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:40:34 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63024 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab2LLTka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:40:30 -0500
-Message-ID: <50C8DDAA.5010101@linaro.org>
-Date: Wed, 12 Dec 2012 11:40:26 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755016Ab2LLTmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:42:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4722 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754515Ab2LLTmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 14:42:09 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jan Kara <jack@suse.cz>, Shaohua Li <shli@kernel.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Read starvation by sync writes
+References: <20121210221222.GA25700@quack.suse.cz>
+	<CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com>
+	<20121212101108.GC18885@quack.suse.cz> <50C8A07B.6040508@kernel.dk>
+	<x49vcc7kyza.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 12 Dec 2012 14:41:13 -0500
+In-Reply-To: <x49vcc7kyza.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Wed, 12 Dec 2012 11:38:01 -0500")
+Message-ID: <x49obhzkqhy.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] NTP: Add a CONFIG_RTC_SYSTOHC configuration
-References: <20121212055643.GA18078@obsidianresearch.com>
-In-Reply-To: <20121212055643.GA18078@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 09:56 PM, Jason Gunthorpe wrote:
-> The purpose of this option is to allow ARM/etc systems that rely on the
-> class RTC subsystem to have the same kind of automatic NTP based
-> synchronization that we have on PC platforms. Today ARM does not
-> implement update_persistent_clock and makes extensive use of the
-> class RTC system.
+Jeff Moyer <jmoyer@redhat.com> writes:
+
+>> I agree. This isn't about scheduling, we haven't even reached that part
+>> yet. Back when we split the queues into read vs write, this problem
+>> obviously wasn't there. Now we have sync writes and reads, both eating
+>> from the same pool. The io scheduler can impact this a bit by forcing
+>> reads to must allocate (Jan, which io scheduler are you using?). CFQ
+>> does this when it's expecting a request from this process queue.
+>>
+>> Back in the day, we used to have one list. To avoid a similar problem,
+>> we reserved the top of the list for reads. With the batching, it's a bit
+>> more complicated. If we make the request allocation (just that, not the
+>> scheduling) be read vs write instead of sync vs async, then we have the
+>> same issue for sync vs buffered writes.
+>>
+>> How about something like the below? Due to the nature of sync reads, we
+>> should allow a much longer timeout. The batch is really tailored towards
+>> writes at the moment. Also shrink the batch count, 32 is pretty large...
 >
-> When enabled CONFIG_RTC_SYSTOHC will provide a generic
-> rtc_update_persistent_clock that stores the current time in the RTC
-> and is intended complement the existing CONFIG_RTC_HCTOSYS option that
-> loads the RTC at boot.
+> Does batching even make sense for dependent reads?  I don't think it
+> does.
+
+Having just read the batching code in detail, I'd like to ammend this
+misguided comment.  Batching logic kicks in when you happen to be lucky
+enough to use up the last request.  As such, I'd be surprised if the
+patch you posted helped.  Jens, don't you think the writer is way more
+likely to become the batcher?  I do agree with shrinking the batch count
+to 16, whether or not the rest of the patch goes in.
+
+>  Assuming you disagree, then you'll have to justify that fixed
+> time value of 2 seconds.  The amount of time between dependent reads
+> will vary depending on other I/O sent to the device, the properties of
+> the device, the I/O scheduler, and so on.  If you do stick 2 seconds in
+> there, please comment it.  Maybe it's time we started keeping track of
+> worst case Q->C time?  That could be used to tell worst case latency,
+> and adjust magic timeouts like this one.
 >
-> The option also overrides the call to any platform update_persistent_clock
-> so that the RTC subsystem completely and generically replaces this
-> functionality.
->
-> Tested on ARM kirkwood and PPC405
-So I'm initially mixed on this, as it feels a little redundant (esp 
-given it may override a higher precision arch-specific function). But 
-from the perspective of this being a generic RTC function, instead of an 
-per-arch implementation, it does seem reasonable.
+> I'm still thinking about how we might solve this in a cleaner way.
 
-Some further notes below.
+The way things stand today, you can do a complete end run around the I/O
+scheduler by queueing up enough I/O.  To address that, I think we need
+to move to a request list per io_context as Jan had suggested.  That
+way, we can keep the logic about who gets to submit I/O when in one
+place.
 
+Jens, what do you think?
 
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> ---
->   drivers/rtc/Kconfig   |    8 ++++++++
->   drivers/rtc/Makefile  |    1 +
->   drivers/rtc/systohc.c |   30 ++++++++++++++++++++++++++++++
->   include/linux/time.h  |    1 +
->   kernel/time/ntp.c     |   12 ++++++++++--
->   5 files changed, 50 insertions(+), 2 deletions(-)
->   create mode 100644 drivers/rtc/systohc.c
->
-> I saw on Google an older version of a similar patch to this, but I
-> couldn't find any indication what happened to it. So here is a
-> slightly different take, tested on 3.7.
->
-> I've been running basically this idea buried in PPC platform specific
-> code since 2.6.16..
->
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index 19c03ab..30a866a 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -48,6 +48,14 @@ config RTC_HCTOSYS_DEVICE
->   	  sleep states. Do not specify an RTC here unless it stays powered
->   	  during all this system's supported sleep states.
->
-> +config RTC_SYSTOHC
-> +	bool "Set the RTC time based on NTP synchronization"
-> +	default y
-> +	help
-> +	  If you say yes here, the system time (wall clock) will be stored
-> +          in the RTC specified by RTC_HCTOSYS_DEVICE approximately every 11
-> +  	  minutes if the NTP status is synchronized.
-> +
-Nit: Does this need to depend on RTC_HCTOSYS_DEVICE being set?
+Jan, for now, try bumping nr_requests up really high.  ;-)
 
-Hrm. So on architectures that support GENERIC_CMOS_UPDATE already, this 
-creates a duplicated code path that is slightly different. I'd like to 
-avoid this if possible.  Since you're plugging 
-rtc_update_persistent_clock into the GENERIC_CMOS_UPDATE code, we can't 
-just have this option depend on !GENERIC_CMOS_UPDATE.
-
-So this might need a slightly deeper rework?
-I'd suggest the following:
-1) Convert GENERIC_CMOS_UPDATE into SUPPORTS_UPDATE_PERSISTENT_CLOCK.
-2) Add RTC_SYSTOHC but make it depend on !SUPPORTS_UPDATE_PERSISTENT_CLOCK
-
-
-> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-> index 24174b4..f79ab16 100644
-> --- a/kernel/time/ntp.c
-> +++ b/kernel/time/ntp.c
-> @@ -483,7 +483,15 @@ out:
->   	return leap;
->   }
->
-> -#ifdef CONFIG_GENERIC_CMOS_UPDATE
-> +#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
-> +
-> +/* Only do one, if using CONFIG_RTC_SYSTOHC then the platform function
-> + * might be mapped to the RTC code already. */
-> +#ifdef CONFIG_RTC_SYSTOHC
-> +#define __update_persistent_clock rtc_update_persistent_clock
-> +#else
-> +#define __update_persistent_clock update_persistent_clock
-> +#endif
-Also, maybe this could be simplified, using a weak function that calls 
-rtc_update_persistent_clock by default?
-That way if there is an arch specific implementation, we will prioritize 
-that one with less ifdef logic.
-
-thanks
--john
-
+Cheers,
+Jeff
