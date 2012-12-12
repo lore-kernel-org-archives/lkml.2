@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab2LLVx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 16:53:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58084 "EHLO mx2.suse.de"
+	id S1755479Ab2LLVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 16:54:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58094 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab2LLVx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 16:53:56 -0500
-Date: Wed, 12 Dec 2012 22:53:51 +0100 (CET)
+	id S1755398Ab2LLVyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 16:54:03 -0500
+Date: Wed, 12 Dec 2012 22:53:59 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] trivial
-Message-ID: <alpine.LNX.2.00.1212122213110.19767@pobox.suse.cz>
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1212122206330.19767@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,282 +24,179 @@ Linus,
 
 please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-to receive patches queued in trivial tree.
+to receive updates for HID subsystem.
 
-
-Usual stuff -- comment/printk typo fixes, documentation updates, dead code 
-elimination.
-
+1) Support for HID over I2C bus has been added by Benjamin Tissoires. ACPI 
+   device discovery is still in the works.
+2) Support for Win8 Multitiouch protocol is being added, most work done by 
+   Benjamin Tissoires as well
+3) EIO/ERESTARTSYS is fixed in hiddev/hidraw, fixes by Andrew Duggan and 
+   Jiri Kosina
+4) ION iCade driver added by Bastien Nocera
+5) Support for a couple new Roccat devices has been added by Stefan Achatz
+6) HID sensor hubs are now auto-detected instead of having to list all the 
+   VID/PID combinations in the blacklist array
+7) other random fixes and support for new device IDs
 
 Thanks.
 
-Adam Buchbinder (4):
-      various: Fix spelling of "registered" in comments.
-      eisa: Fix spelling of "asynchronous".
-      Fix misspellings of "whether" in comments.
-      various: Fix spelling of "asynchronous" in comments.
 
-Alan Cox (5):
-      parport: dead code in pp_write
-      iscsi: fix check keys
-      rfkill: error cannot be set here so simplify
-      keys: Fix unreachable code
-      i2400m: debugfs return code is wrong
 
-Anthony G. Basile (1):
-      doc: Remove unnecessary declarations from Documentation/accounting/getdelays.c
+Alan Cox (1):
+      HID: sensor-hub: Remove pointless NULL check
 
-Borislav Petkov (1):
-      krealloc: Fix kernel-doc comment
+Alexander Holler (2):
+      HID: sensors: autodetect USB HID sensor hubs
+      Revert "HID: sensors: add to special driver list"
 
-Cesar Eduardo Barros (1):
-      firmware: use noinline_for_stack
+Andrew Duggan (1):
+      HID: hidraw: fix signaling SIGIO when hidraw reports an event
 
-Chad Reese (1):
-      RapidIO: Fix comment error.
+Bastien Nocera (1):
+      HID: Add driver for ION iCade
 
-Cristian Stoica (1):
-      HOWTO: fix double words typo
+Ben Hutchings (1):
+      HID: Add Apple wireless keyboard 2011 ANSI to special driver list
 
-Hyeonjun Lim (1):
-      doc: Update the name of profiling based on sysfs
+Benjamin Tissoires (31):
+      HID: export hidinput_calc_abs_res
+      HID: round return value of hidinput_calc_abs_res
+      HID: fix unit exponent parsing
+      HID: add usage_index in struct hid_usage.
+      HID: multitouch: support arrays for the split of the touches in a report
+      HID: multitouch: get maxcontacts also from logical_max value
+      HID: multitouch: support T and C for win8 devices
+      HID: multitouch: move ALWAYS_VALID quirk check
+      Input: introduce EV_MSC Timestamp
+      Input: mt: add input_mt_is_used
+      HID: multitouch: add MT_QUIRK_IGNORE_DUPLICATES
+      HID: multitouch: support for hovering devices
+      HID: multitouch: fix Win 8 protocol
+      HID: usbhid: add quirk HID_QUIRK_NOGET to TPV optical touchscreen
+      HID: i2c-hid: introduce HID over i2c specification implementation
+      HID: hid-input: factorize hid_input allocation
+      HID: i2c-hid: change I2C name
+      HID: i2c-hid: enhance Kconfig
+      HID: i2c-hid: fix checkpatch.pl warning
+      HID: i2c-hid: fix i2c_hid_dbg macro
+      HID: i2c-hid: remove unused static declarations
+      HID: i2c-hid: fix return paths
+      HID: i2c-hid: fix error messages
+      HID: i2c-hid: also call i2c_hid_free_buffers in i2c_hid_remove
+      HID: i2c-hid: i2c_hid_get_report may fail
+      HID: i2c-hid: remove unneeded test in i2c_hid_remove
+      HID: i2c-hid: fix memory corruption due to missing hid declaration
+      HID: i2c-hid: reorder allocation/free of buffers
+      HID: i2c-hid: remove extra .irq field in struct i2c_hid
+      HID: i2c-hid: fix i2c_hid_get_raw_report count mismatches
+      HID: i2c-hid: add mutex protecting open/close race
 
-Jesper Juhl (1):
-      gen_init_cpio: remove redundant empty line
+Forest Bond (1):
+      HID: Ignore D-WAV/eGalax devices handled by usbtouchscreen
 
-Jiri Kosina (1):
-      Merge branch 'master' into for-next
+Founder Fang (1):
+      HID: hidraw: fix nonblock read return EAGAIN after device removed
 
-Kees Cook (1):
-      README: document "make olddefconfig"
+Ingo Ruhnke (1):
+      HID: fix incorrect handling of devices with high button count
 
-Liu Bo (1):
-      btrfs: unpin_extent_cache: fix the typo and unnecessary arguements
+Jiri Kosina (5):
+      HID: remove spurious brackets for iCade
+      HID: i2c-hid: fix memory leak during probe
+      HID: hiddev: fix nonblocking read semantics wrt EIO/ERESTARTSYS
+      HID: i2c-hid: remove superfluous include
+      HID: i2c-hid: fix ret_count check
 
-Masanari Iida (14):
-      tty: Fix typo in tty drivers
-      isdn: Fix typo in isdn drivers
-      md: Fix typo in drivers/md
-      qla2xxx: Fix typo in qla2xxx drivers
-      Btrfs: Fix printk and variable name
-      treewide: fix printk typo in multiple drivers
-      treewide: fix typo of "suppport" in various comments
-      treewide: fix typo of "suport" in various comments and Kconfig
-      target: iscsi: fix comment typos in target/iscsi drivers
-      doc: fix quite a few typos within Documentation
-      messages: i2o: Fix typo in messages/i2o
-      wireless: mwifiex: Fix typo in wireless/mwifiex driver
-      treewide: Fix typos in various Kconfig
-      treewide: Fix typos in various drivers
+Johannes Thumshirn (1):
+      HID: apple: Set APPLE_ISO_KEYBOARD at USB_DEVICE_ID_APPLE_GEYSER4_HF_ISO
 
-Nadia Yvette Chambers (1):
-      propagate name change to comments in kernel source
+Lamarque V. Souza (1):
+      HID: hidp: fallback to input session properly if hid is blacklisted
 
-Olaf Hering (1):
-      x86 mtrr: fix comment typo in mtrr_bp_init
+Marco Biscaro (1):
+      HID: add support to novatec wireless mouse
 
-Paul Bolle (2):
-      x86: remove offsets.h from .gitignore and dontdiff
-      radeon: Fix typo and copy/paste error in comments
+Marek Vasut (1):
+      HID: add quirk for Freescale i.MX23 ROM recovery
 
-Sasha Levin (1):
-      alpha: use BUG_ON where possible
+Ortwin Glück (1):
+      HID: add battery quirk for Apple 2009_ISO keyboard
 
-Yacine Belkadi (2):
-      Kernel-doc: Convention: Use a "Return" section to describe return values
-      scripts/kernel-doc: check that non-void fcts describe their return value
+Stefan Achatz (14):
+      HID: roccat: add support for Roccat Lua
+      HID: roccat: allow readout of koneplus sensor register data
+      HID: roccat: add support for KoneXTD
+      HID: roccat: enable Savu device reset
+      HID: roccat: enable Koneplus device reset
+      HID: roccat: Cleanup of koneplus module
+      HID: roccat: cleanup of kovaplus module
+      HID: roccat: cleanup of pyra module
+      HID: roccat: clean up isku driver
+      HID: roccat: add sysfs attr "reset" for Isku
+      HID: roccat: deprecated some Pyra attributes
+      HID: roccat: deprecate some Koneplus attributes
+      HID: roccat: deprecate some Kovaplus attributes
+      HID: roccat: fix wrong attr size for koneplus tcu
 
- Documentation/ABI/testing/dev-kmsg                 |    2 +-
- Documentation/ABI/testing/sysfs-devices-power      |    2 +-
- Documentation/ABI/testing/sysfs-driver-ppi         |    2 +-
- Documentation/ABI/testing/sysfs-profiling          |    6 ++--
- Documentation/HOWTO                                |    2 +-
- Documentation/accounting/getdelays.c               |    1 -
- Documentation/dma-buf-sharing.txt                  |    4 +-
- Documentation/dontdiff                             |    1 -
- .../fault-injection/notifier-error-inject.txt      |    4 +-
- Documentation/hid/uhid.txt                         |    2 +-
- Documentation/hwmon/pmbus                          |    2 +-
- Documentation/input/alps.txt                       |    2 +-
- Documentation/kbuild/modules.txt                   |    2 +-
- Documentation/kernel-doc-nano-HOWTO.txt            |   13 ++++++--
- Documentation/misc-devices/mei/mei-amt-version.c   |    4 +-
- Documentation/video4linux/bttv/Cards               |    2 +-
- Documentation/video4linux/bttv/Sound-FAQ           |    2 +-
- Documentation/vm/frontswap.txt                     |    2 +-
- MAINTAINERS                                        |    2 +-
- README                                             |    4 ++
- arch/alpha/include/asm/mmzone.h                    |    2 +-
- arch/alpha/kernel/pci_iommu.c                      |   12 ++-----
- arch/arm/kernel/kprobes-test.c                     |    2 +-
- arch/arm/mach-netx/xc.c                            |    2 +-
- arch/arm/mach-s3c24xx/include/mach/bast-map.h      |    2 +-
- arch/arm/mach-s3c24xx/include/mach/dma.h           |    2 +-
- arch/arm/mach-s3c24xx/include/mach/vr1000-map.h    |    2 +-
- arch/arm/mach-s3c24xx/pm.c                         |    2 +-
- arch/arm/mach-tegra/Kconfig                        |    2 +-
- arch/arm/plat-s3c24xx/dma.c                        |    2 +-
- arch/blackfin/mach-bf609/Kconfig                   |    2 +-
- arch/blackfin/mm/sram-alloc.c                      |    2 +-
- arch/cris/include/arch-v10/arch/irq.h              |    2 +-
- arch/cris/include/arch-v32/arch/irq.h              |    2 +-
- arch/frv/mm/pgalloc.c                              |    2 +-
- arch/ia64/kvm/kvm-ia64.c                           |    2 +-
- arch/m68k/math-emu/fp_log.c                        |    2 +-
- arch/mips/txx9/generic/pci.c                       |    2 +-
- arch/mn10300/mm/pgtable.c                          |    2 +-
- arch/openrisc/Kconfig                              |    2 +-
- arch/powerpc/include/asm/oprofile_impl.h           |    2 +-
- arch/powerpc/include/asm/pte-hash64-64k.h          |    2 +-
- arch/powerpc/include/asm/smu.h                     |    4 +-
- arch/powerpc/kernel/legacy_serial.c                |    2 +-
- arch/powerpc/kernel/of_platform.c                  |    2 +-
- arch/powerpc/kernel/signal_64.c                    |    2 +-
- arch/powerpc/mm/slice.c                            |    2 +-
- arch/powerpc/platforms/52xx/mpc52xx_gpt.c          |    2 +-
- arch/powerpc/platforms/cell/iommu.c                |    2 +-
- arch/powerpc/platforms/cell/spider-pic.c           |    6 ++--
- arch/powerpc/platforms/powermac/pic.c              |    2 +-
- arch/sh/boards/board-espt.c                        |    2 +-
- arch/x86/boot/.gitignore                           |    1 -
- arch/x86/kernel/cpu/mtrr/main.c                    |    2 +-
- arch/x86/mm/pgtable.c                              |    2 +-
- drivers/acpi/acpica/dsopcode.c                     |    2 +-
- drivers/char/ipmi/ipmi_msghandler.c                |    2 +-
- drivers/char/ipmi/ipmi_si_intf.c                   |    2 +-
- drivers/char/ppdev.c                               |    6 +---
- drivers/eisa/eisa.ids                              |    4 +-
- drivers/firewire/init_ohci1394_dma.c               |    4 +-
- drivers/firewire/ohci.c                            |    2 +-
- drivers/gpio/Kconfig                               |    2 +-
- drivers/gpu/drm/radeon/evergreen.c                 |    2 +-
- drivers/gpu/drm/radeon/ni.c                        |    4 +-
- drivers/gpu/drm/radeon/radeon_ring.c               |    4 +-
- drivers/gpu/drm/radeon/si.c                        |    6 ++--
- drivers/i2c/busses/i2c-nuc900.c                    |    2 +-
- drivers/i2c/busses/i2c-s3c2410.c                   |    4 +-
- drivers/isdn/hardware/mISDN/hfcpci.c               |    2 +-
- drivers/isdn/hardware/mISDN/mISDNisar.c            |    2 +-
- drivers/isdn/hisax/amd7930_fn.c                    |    2 +-
- drivers/isdn/hisax/hfc_pci.c                       |    2 +-
- drivers/isdn/hisax/hfc_sx.c                        |    2 +-
- drivers/isdn/hisax/isar.c                          |    2 +-
- drivers/isdn/pcbit/layer2.c                        |    2 +-
- drivers/md/md.c                                    |    2 +-
- drivers/md/persistent-data/dm-block-manager.c      |    4 +-
- drivers/md/persistent-data/dm-btree.h              |    2 +-
- drivers/md/raid5.c                                 |    2 +-
- drivers/media/dvb-frontends/drxk_hard.c            |    2 +-
- drivers/media/platform/mx2_emmaprp.c               |    2 +-
- drivers/message/i2o/README.ioctl                   |   12 +++---
- drivers/message/i2o/i2o_block.c                    |    2 +-
- drivers/message/i2o/i2o_config.c                   |    2 +-
- drivers/mmc/host/Kconfig                           |    2 +-
- drivers/mtd/maps/plat-ram.c                        |    2 +-
- drivers/mtd/nand/s3c2410.c                         |    2 +-
- drivers/net/bonding/bonding.h                      |    2 +-
- drivers/net/ethernet/8390/ax88796.c                |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c     |    2 +-
- drivers/net/ethernet/intel/e1000/e1000_ethtool.c   |    2 +-
- drivers/net/ethernet/mellanox/mlx4/eq.c            |    2 +-
- drivers/net/ethernet/micrel/ksz884x.c              |    2 +-
- .../myricom/myri10ge/myri10ge_mcp_gen_header.h     |    2 +-
- drivers/net/sungem_phy.c                           |    8 ++--
- drivers/net/wimax/i2400m/debugfs.c                 |    1 +
- drivers/net/wireless/atmel.c                       |    2 +-
- drivers/net/wireless/ipw2x00/ipw2100.h             |    2 +-
- drivers/net/wireless/mwifiex/sta_ioctl.c           |    2 +-
- drivers/net/wireless/mwifiex/usb.c                 |    2 +-
- drivers/net/wireless/zd1211rw/zd_chip.c            |    2 +-
- drivers/regulator/palmas-regulator.c               |    2 +-
- drivers/remoteproc/remoteproc_elf_loader.c         |    4 +-
- drivers/rtc/rtc-isl1208.c                          |    2 +-
- drivers/rtc/rtc-s3c.c                              |    2 +-
- drivers/s390/block/dasd_devmap.c                   |    2 +-
- drivers/scsi/bnx2fc/bnx2fc_hwi.c                   |    2 +-
- drivers/scsi/libsas/sas_expander.c                 |    2 +-
- drivers/scsi/qla2xxx/qla_isr.c                     |    4 +-
- drivers/scsi/qla2xxx/qla_nx.c                      |    4 +-
- drivers/scsi/qla2xxx/qla_target.c                  |   12 +++---
- drivers/scsi/qla2xxx/tcm_qla2xxx.c                 |    2 +-
- drivers/staging/comedi/drivers/usbdux.c            |    2 +-
- drivers/staging/tidspbridge/rmgr/node.c            |    2 +-
- drivers/target/iscsi/iscsi_target_configfs.c       |    2 +-
- drivers/target/iscsi/iscsi_target_erl0.c           |    6 ++--
- drivers/target/iscsi/iscsi_target_parameters.c     |    1 +
- drivers/target/iscsi/iscsi_target_util.c           |    2 +-
- drivers/thermal/Kconfig                            |    2 +-
- drivers/tty/hvc/hvc_opal.c                         |    2 +-
- drivers/tty/hvc/hvc_vio.c                          |    2 +-
- drivers/tty/ipwireless/setup_protocol.h            |    2 +-
- drivers/tty/serial/8250/Kconfig                    |    2 +-
- drivers/tty/serial/bfin_uart.c                     |    2 +-
- drivers/tty/serial/icom.c                          |    2 +-
- drivers/usb/core/driver.c                          |    2 +-
- drivers/usb/gadget/at91_udc.c                      |    2 +-
- drivers/usb/storage/realtek_cr.c                   |    2 +-
- drivers/vhost/tcm_vhost.c                          |    2 +-
- drivers/watchdog/booke_wdt.c                       |    2 +-
- drivers/xen/xen-pciback/pci_stub.c                 |    2 +-
- fs/btrfs/ctree.h                                   |    2 +-
- fs/btrfs/extent-tree.c                             |    2 +-
- fs/btrfs/extent_map.c                              |    3 +-
- fs/btrfs/ordered-data.h                            |    2 +-
- fs/btrfs/volumes.c                                 |    2 +-
- fs/cifs/README                                     |    2 +-
- fs/ext4/ext4.h                                     |    2 +-
- fs/fhandle.c                                       |    4 +-
- fs/hugetlbfs/inode.c                               |    2 +-
- fs/jbd/transaction.c                               |    2 +-
- fs/jbd2/transaction.c                              |    2 +-
- fs/logfs/inode.c                                   |    2 +-
- fs/ncpfs/mmap.c                                    |    2 +-
- fs/notify/fanotify/Kconfig                         |    2 +-
- fs/notify/notification.c                           |    2 +-
- include/linux/dlm.h                                |    2 +-
- include/linux/hash.h                               |    2 +-
- include/linux/ipmi_smi.h                           |    2 +-
- include/linux/lru_cache.h                          |    4 +-
- include/linux/netdevice.h                          |    2 +-
- include/linux/stmmac.h                             |    2 +-
- include/linux/vgaarb.h                             |    4 +-
- include/linux/watchdog.h                           |    2 +-
- include/net/irda/irlmp.h                           |    2 +-
- include/net/sock.h                                 |    2 +-
- kernel/pid.c                                       |    4 +-
- kernel/profile.c                                   |    7 ++--
- kernel/trace/ftrace.c                              |    2 +-
- kernel/trace/trace.c                               |    2 +-
- kernel/trace/trace_functions.c                     |    2 +-
- kernel/trace/trace_irqsoff.c                       |    2 +-
- kernel/trace/trace_sched_wakeup.c                  |    2 +-
- kernel/wait.c                                      |    2 +-
- lib/Kconfig.debug                                  |   10 +++---
- lib/bitmap.c                                       |    2 +-
- mm/hugetlb.c                                       |    2 +-
- mm/memory_hotplug.c                                |    6 ++--
- mm/page_alloc.c                                    |    4 +-
- mm/util.c                                          |    2 +-
- net/can/proc.c                                     |    2 +-
- net/ipv4/tcp_cong.c                                |    2 +-
- net/mac80211/driver-ops.h                          |    2 +-
- net/netfilter/nf_log.c                             |    2 +-
- net/rfkill/core.c                                  |    4 +-
- net/sctp/endpointola.c                             |    2 +-
- net/sctp/sm_statefuns.c                            |    2 +-
- scripts/kernel-doc                                 |   34 ++++++++++++++++++++
- security/keys/process_keys.c                       |    2 -
- sound/core/seq/seq_device.c                        |    2 +-
- sound/pci/emu10k1/emu10k1_patch.c                  |    2 +-
- sound/pci/es1968.c                                 |    2 +-
- sound/pci/ice1712/delta.c                          |    2 +-
- sound/pci/sis7019.c                                |    2 +-
- sound/usb/quirks.c                                 |    2 +-
- tools/perf/Documentation/perf-record.txt           |    2 +-
- usr/gen_init_cpio.c                                |    1 -
- 188 files changed, 280 insertions(+), 247 deletions(-)
+Tushar Behera (1):
+      HID: hiddev: Remove redundant check on unsigned variable
+
+ .../ABI/obsolete/sysfs-driver-hid-roccat-koneplus  |   38 +
+ .../ABI/obsolete/sysfs-driver-hid-roccat-kovaplus  |   66 ++
+ .../ABI/obsolete/sysfs-driver-hid-roccat-pyra      |   73 ++
+ .../ABI/testing/sysfs-driver-hid-roccat-isku       |    8 +
+ .../ABI/testing/sysfs-driver-hid-roccat-koneplus   |   48 +-
+ .../ABI/testing/sysfs-driver-hid-roccat-kovaplus   |   69 +--
+ .../ABI/testing/sysfs-driver-hid-roccat-lua        |    7 +
+ .../ABI/testing/sysfs-driver-hid-roccat-pyra       |   76 +--
+ .../ABI/testing/sysfs-driver-hid-roccat-savu       |    3 +-
+ Documentation/input/event-codes.txt                |   11 +
+ drivers/hid/Kconfig                                |   11 +
+ drivers/hid/Makefile                               |    6 +-
+ drivers/hid/hid-apple.c                            |    3 +-
+ drivers/hid/hid-core.c                             |   61 +-
+ drivers/hid/hid-icade.c                            |  259 ++++++
+ drivers/hid/hid-ids.h                              |   19 +-
+ drivers/hid/hid-input.c                            |   97 ++-
+ drivers/hid/hid-multitouch.c                       |  109 ++-
+ drivers/hid/hid-roccat-isku.c                      |   44 +-
+ drivers/hid/hid-roccat-isku.h                      |   78 +--
+ drivers/hid/hid-roccat-koneplus.c                  |  348 ++-----
+ drivers/hid/hid-roccat-koneplus.h                  |  101 +--
+ drivers/hid/hid-roccat-kovaplus.c                  |  237 +++---
+ drivers/hid/hid-roccat-kovaplus.h                  |   16 +-
+ drivers/hid/hid-roccat-lua.c                       |  227 +++++
+ drivers/hid/hid-roccat-lua.h                       |   29 +
+ drivers/hid/hid-roccat-pyra.c                      |  342 +++----
+ drivers/hid/hid-roccat-pyra.h                      |   24 +-
+ drivers/hid/hid-roccat-savu.c                      |    4 +-
+ drivers/hid/hid-sensor-hub.c                       |   36 +-
+ drivers/hid/hidraw.c                               |   16 +-
+ drivers/hid/i2c-hid/Kconfig                        |   18 +
+ drivers/hid/i2c-hid/Makefile                       |    5 +
+ drivers/hid/i2c-hid/i2c-hid.c                      |  979 ++++++++++++++++++++
+ drivers/hid/usbhid/hid-quirks.c                    |    3 +
+ drivers/hid/usbhid/hiddev.c                        |   10 +-
+ drivers/input/input-mt.c                           |    2 +-
+ include/linux/hid-sensor-ids.h                     |    1 -
+ include/linux/hid.h                                |    6 +
+ include/linux/i2c/i2c-hid.h                        |   35 +
+ include/linux/input/mt.h                           |    6 +
+ include/uapi/linux/input.h                         |    1 +
+ net/bluetooth/hidp/core.c                          |    9 +-
+ 43 files changed, 2491 insertions(+), 1050 deletions(-)
+ create mode 100644 Documentation/ABI/obsolete/sysfs-driver-hid-roccat-kovaplus
+ create mode 100644 Documentation/ABI/obsolete/sysfs-driver-hid-roccat-pyra
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-lua
+ create mode 100644 drivers/hid/hid-icade.c
+ create mode 100644 drivers/hid/hid-roccat-lua.c
+ create mode 100644 drivers/hid/hid-roccat-lua.h
+ create mode 100644 drivers/hid/i2c-hid/Kconfig
+ create mode 100644 drivers/hid/i2c-hid/Makefile
+ create mode 100644 drivers/hid/i2c-hid/i2c-hid.c
+ create mode 100644 include/linux/i2c/i2c-hid.h
 
 -- 
 Jiri Kosina
