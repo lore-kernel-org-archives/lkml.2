@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab2LLLqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 06:46:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:37481 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab2LLLqW (ORCPT
+	id S1752206Ab2LLL6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 06:58:12 -0500
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:38581 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751703Ab2LLL6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 06:46:22 -0500
-From: Paolo Pisati <paolo.pisati@canonical.com>
-To: linux-omap <linux-omap@vger.kernel.org>
-Cc: Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        Paolo Pisati <paolo.pisati@canonical.com>
-Subject: [PATCH] regulator: core: if voltage scaling fails, restore original
-Date: Wed, 12 Dec 2012 12:45:52 +0100
-Message-Id: <1355312753-16514-1-git-send-email-paolo.pisati@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 12 Dec 2012 06:58:11 -0500
+Date: Wed, 12 Dec 2012 12:56:24 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Linus Walleij <linus.walleij@linaro.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to
+ devm_kfree
+Message-ID: <20121212115624.GI4398@game.jcrosoft.org>
+References: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 8164744650439502818
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehinhhfrhgruggvrggurdhorhhgnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehjedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehinhhfrhgruggvrggurdhorhhgnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And after a second look it's clear what's going on:
-
-[...]
-[    5.575744] cpu cpu0: cpufreq-omap: 300 MHz, -1 mV --> 800 MHz, 1325 mV
-[    5.582946] voltdm_scale: No voltage scale API registered for vdd_mpu_iva
-[    5.590332] cpu cpu0: omap_target: unable to scale voltage up.
-[1]
-[    5.596649] notification 1 of frequency transition to 300000 kHz
-[    5.603179] FREQ: 300000 - CPU: 0
-[    5.606597] governor: change or update limits
-[    5.611572] __cpufreq_governor for CPU 0, event 3
-[    5.616699] setting to 800000 kHz because of event 3
-[    5.622039] target for CPU 0: 800000 kHz, relation 1
-[    5.627441] request for target 800000 kHz (relation: 1) for cpu 0
-[    5.634063] target is 2 (800000 kHz, 2)
-[    5.638183] notification 0 of frequency transition to 800000 kHz
-[    5.644775] cpu cpu0: cpufreq-omap: 300 MHz, -1 mV --> 800 MHz, 1325 mV
-[2]
-[hangs here]
-
-first time[1] it tries to ramp up frequency (and thus voltage),
-regulator_set_voltage() returns an error and we exit:
-
-omap-cpufreq.c::omap_target():
-
-	...
-    dev_dbg(mpu_dev, "cpufreq-omap: %u MHz, %ld mV --> %u MHz, %ld mV\n",
-        freqs.old / 1000, volt_old ? volt_old / 1000 : -1,
-        freqs.new / 1000, volt ? volt / 1000 : -1);
-
-    /* scaling up?  scale voltage before frequency */
-    if (mpu_reg && (freqs.new > freqs.old)) {
-        r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
-        if (r < 0) {
-            dev_warn(mpu_dev, "%s: unable to scale voltage up.\n",
-                 __func__);
-            freqs.new = freqs.old;
-            goto done;
-        }
-    }
-
-	ret = clk_set_rate(mpu_clk, freqs.new * 1000);
-	...
-
-but inside regulator_set_voltage(), we save the new regulator voltage before
-actually ramping up:
-
-core.c::regulator_set_voltage():
-	...
-    regulator->min_uV = min_uV;
-    regulator->max_uV = max_uV;
-
-    ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
-    if (ret < 0)
-        goto out2;
-
-    ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);  <-- ERROR!!!
-    if (ret < 0)
-        goto out2;
-	...
-
-
-and by the time we try to change frequency again[2], regulator_set_voltage()
-is a noop because it thinks we are already at the desired voltage:
-
-core.c::regulator_set_voltage():
-
-	...
-    /* If we're setting the same range as last time the change
-     * should be a noop (some cpufreq implementations use the same
-     * voltage for multiple frequencies, for example).
-     */
-    if (regulator->min_uV == min_uV && regulator->max_uV == max_uV)
-        goto out;
-	...
-
-and as a consequence, in omap_target(), we call clk_set_rate() with
-the wrong voltage.
-
-The attached patch restore the original regulator voltage values in case
-of an error.
-
-CCing stable@ since it predates 2.6.38rc1 when the noop optimization was
-introduced:
-
-commit 95a3c23ae620c1b4c499746e70f4034bdc067737
-Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date:   Thu Dec 16 15:49:37 2010 +0000
-
-    regulator: Optimise out noop voltage changes
-
-Paolo Pisati (1):
-  regulator: core: if voltage scaling fails, restore original voltage
-    values
-
- drivers/regulator/core.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
--- 
-1.7.10.4
-
+On 11:58 Tue 11 Dec     , Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> The function at91_dt_node_to_map is ultimately called by the function
+> pinctrl_get, which is an exported function.  Since it is possible that this
+> function is not called from within a probe function, for safety, the kfree
+> is converted to a devm_kfree, to both free the data and remove it from the
+> device in a failure situation.
+> 
+> A newline is added in the call to devm_kfree to avoid exceeding the 80
+> character limit.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/pinctrl/pinctrl-at91.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index c5e7571..0da8a5f 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -255,7 +255,8 @@ static int at91_dt_node_to_map(struct pinctrl_dev *pctldev,
+>  	}
+>  
+>  	map_num += grp->npins;
+> -	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num, GFP_KERNEL);
+> +	new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num,
+> +			       GFP_KERNEL);
+not related please drop
+>  	if (!new_map)
+>  		return -ENOMEM;
+>  
+> @@ -265,7 +266,7 @@ static int at91_dt_node_to_map(struct pinctrl_dev *pctldev,
+>  	/* create mux map */
+>  	parent = of_get_parent(np);
+>  	if (!parent) {
+> -		kfree(new_map);
+> +		devm_kfree(pctldev->dev, new_map);
+ok
+>  		return -EINVAL;
+>  	}
+>  	new_map[0].type = PIN_MAP_TYPE_MUX_GROUP;
+>
+Best Regards,
+J.
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
