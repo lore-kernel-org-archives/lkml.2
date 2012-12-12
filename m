@@ -1,110 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab2LLBKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:10:35 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40005 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab2LLBKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:10:33 -0500
-Date: Tue, 11 Dec 2012 17:10:23 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config
- groups
-Message-ID: <20121212011022.GS22789@localhost>
-Mail-Followup-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-	'Sebastian Andrzej Siewior' <bigeasy@linutronix.de>,
-	'Michal Nazarewicz' <mina86@mina86.com>, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	'Kyungmin Park' <kyungmin.park@samsung.com>,
-	'Felipe Balbi' <balbi@ti.com>,
-	'Greg Kroah-Hartman' <gregkh@linuxfoundation.org>,
-	Marek Szyprowski <m.szyprowski@samsung.com>
-References: <50B39921.6090308@linutronix.de>
- <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com>
- <50B4E364.8030704@linutronix.de>
- <xa1tip8ruia5.fsf@mina86.com>
- <50B5C821.4000406@linutronix.de>
- <xa1ta9u1naik.fsf@mina86.com>
- <50B61695.50207@linutronix.de>
- <20121207231828.GM22789@localhost>
- <001401cdd6cd$788defa0$69a9cee0$%p@samsung.com>
- <000001cdd6e1$1ac24f60$5046ee20$%p@samsung.com>
+	id S1754580Ab2LLBMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:12:00 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:2646 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753486Ab2LLBL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 20:11:58 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Stephen Hurd" <shurd@broadcom.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] 8250/16?50: Add support for Broadcom TruManage
+ redirected serial port
+Thread-Topic: [PATCH] 8250/16?50: Add support for Broadcom TruManage
+ redirected serial port
+Thread-Index: Ac3X/4FKNqFbK6eQTReu1x6E0ZsPbAABcioQ
+Date: Wed, 12 Dec 2012 01:11:47 +0000
+Message-ID: <156984479488CD49A184F5CAB4AF934606FF55F8@IRVEXCHMB14.corp.ad.broadcom.com>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.208.64]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001cdd6e1$1ac24f60$5046ee20$%p@samsung.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 7CD906D51QK19503914-01-01
+Content-Type: multipart/mixed;
+ boundary=_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 03:17:34PM +0100, Andrzej Pietrasiewicz wrote:
-> @Joel in particular: please see my comment in the bottom.
 
-<snip>
+--_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
 
-> I forgot to mention, representing udcs (USB Device Controllers) in
-> configfs is similar to interfaces/endpoints: the user needs to guess
-> what name to use in mkdir, e.g. in:
-> 
-> $ mkdir ....../udcs/s3c-hsotg
+It appears that the modification to include/uapi/linux/serial_core.h is exc=
+luded by the dontdiff filters.  I've attached an updated patch including it=
+.
 
-	Again, discoverability.  Userspace should not need to guess.  So
-some part of the system (configfs, sysfs, procfs, $dontcare) needs to
-know what the available choices are.
 
-> the poor user needs to know that the udc is actually called s3c-hsotg.
-> And after the udc goes away from the system, the s3c-hsotg directory
-> remains in the filesystem until the user deletes it (as nobody else
-> but the user can do it). Again, an attribute like available_udcs in
-> the udcs directory can help. But still, there will be times when
-> its contents will not be consistent with the directories actually
-> present.
+Stephen Hurd
+Senior Staff Engineer - Software Development
+Broadcom Corporation
+949-926-8039
+shurd@broadcom.com =20
 
-	How does the system know there is an s3c-hsotg?  Is this from
-scanning?
 
-> @Joel: Any thoughts about it? Commitable items? E.g. the user creates
-> whatever they want, so the "uncommitted" directory contains "garbage",
-> that is directories which do not have to correspond to anything
-> actually present in the system, but on commiting the gadget's item
-> (group in fact) everything is verified and only "correct" gadgets
-> are actually bound? Then, in the "uncommitted" directory the user
-> can still do whatever they want, but this is not effective until
-> uncommitting the old gadget and committing it again? There is just
-> a tiny issue with committable items: Are they implemented? :O
+--_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_
+Content-Type: application/octet-stream;
+ name=brcm-trumanage-uart.patch
+Content-Description: brcm-trumanage-uart.patch
+Content-Disposition: attachment;
+ filename=brcm-trumanage-uart.patch;
+ size=4703;
+ creation-date="Wed, 12 Dec 2012 01:08:45 GMT";
+ modification-date="Wed, 12 Dec 2012 01:08:45 GMT"
+Content-Transfer-Encoding: base64
 
-	Committable items are not implemented, because everyone uses the
-'enable' pattern:
+ZGlmZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwLmMg
+bGludXgtMy43L2RyaXZlcnMvdHR5L3NlcmlhbC84MjUwLzgyNTAuYwotLS0gbGludXgtMy43Lm9y
+aWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5jCTIwMTItMTItMTAgMTk6MzA6NTcuMDAw
+MDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5j
+CTIwMTItMTItMTEgMTU6NTY6NDAuNjg2MzQzOTU5IC0wODAwCkBAIC0yOTAsNiArMjkwLDEyIEBA
+IHN0YXRpYyBjb25zdCBzdHJ1Y3Qgc2VyaWFsODI1MF9jb25maWcgdWEKIAkJCQkgIFVBUlRfRkNS
+X1JfVFJJR18wMCB8IFVBUlRfRkNSX1RfVFJJR18wMCwKIAkJLmZsYWdzCQk9IFVBUlRfQ0FQX0ZJ
+Rk8sCiAJfSwKKwlbUE9SVF9CUkNNX1RSVU1BTkFHRV0gPSB7CisJCS5uYW1lCQk9ICJUcnVNYW5h
+Z2UiLAorCQkuZmlmb19zaXplCT0gMSwKKwkJLnR4X2xvYWRzegk9IDEwMjQsCisJCS5mbGFncwkJ
+PSBVQVJUX0NBUF9IRklGTywKKwl9LAogCVtQT1JUXzgyNTBfQ0lSXSA9IHsKIAkJLm5hbWUJCT0g
+IkNJUiBwb3J0IgogCX0KQEAgLTE0NDEsNiArMTQ0NywxMSBAQCB2b2lkIHNlcmlhbDgyNTBfdHhf
+Y2hhcnMoc3RydWN0IHVhcnRfODI1CiAJCXBvcnQtPmljb3VudC50eCsrOwogCQlpZiAodWFydF9j
+aXJjX2VtcHR5KHhtaXQpKQogCQkJYnJlYWs7CisJCWlmICh1cC0+Y2FwYWJpbGl0aWVzICYgVUFS
+VF9DQVBfSEZJRk8pIHsKKwkJCWlmICgoc2VyaWFsX3BvcnRfaW4ocG9ydCwgVUFSVF9MU1IpICYg
+Qk9USF9FTVBUWSkKKwkJCQkJIT0gQk9USF9FTVBUWSkKKwkJCQlicmVhazsKKwkJfQogCX0gd2hp
+bGUgKC0tY291bnQgPiAwKTsKIAogCWlmICh1YXJ0X2NpcmNfY2hhcnNfcGVuZGluZyh4bWl0KSA8
+IFdBS0VVUF9DSEFSUykKZGlmZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJp
+YWwvODI1MC84MjUwLmggbGludXgtMy43L2RyaXZlcnMvdHR5L3NlcmlhbC84MjUwLzgyNTAuaAot
+LS0gbGludXgtMy43Lm9yaWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5oCTIwMTItMTIt
+MTAgMTk6MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2Vy
+aWFsLzgyNTAvODI1MC5oCTIwMTItMTItMTEgMTQ6NTc6NDguNjQxNjEzNjc2IC0wODAwCkBAIC00
+MCw2ICs0MCw3IEBAIHN0cnVjdCBzZXJpYWw4MjUwX2NvbmZpZyB7CiAjZGVmaW5lIFVBUlRfQ0FQ
+X0FGRQkoMSA8PCAxMSkJLyogTUNSLWJhc2VkIGh3IGZsb3cgY29udHJvbCAqLwogI2RlZmluZSBV
+QVJUX0NBUF9VVUUJKDEgPDwgMTIpCS8qIFVBUlQgbmVlZHMgSUVSIGJpdCA2IHNldCAoWHNjYWxl
+KSAqLwogI2RlZmluZSBVQVJUX0NBUF9SVE9JRQkoMSA8PCAxMykJLyogVUFSVCBuZWVkcyBJRVIg
+Yml0IDQgc2V0IChYc2NhbGUsIFRlZ3JhKSAqLworI2RlZmluZSBVQVJUX0NBUF9IRklGTwkoMSA8
+PCAxNCkJLyogVUFSVCBoYXMgYSAiaGlkZGVuIiBGSUZPICovCiAKICNkZWZpbmUgVUFSVF9CVUdf
+UVVPVAkoMSA8PCAwKQkvKiBVQVJUIGhhcyBidWdneSBxdW90IExTQiAqLwogI2RlZmluZSBVQVJU
+X0JVR19UWEVOCSgxIDw8IDEpCS8qIFVBUlQgaGFzIGJ1Z2d5IFRYIElJUiBzdGF0dXMgKi8KZGlm
+ZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5j
+IGxpbnV4LTMuNy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCi0tLSBsaW51eC0z
+Ljcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCTIwMTItMTItMTAgMTk6
+MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgy
+NTAvODI1MF9wY2kuYwkyMDEyLTEyLTExIDE1OjU4OjEwLjk1ODM0MDA3NyAtMDgwMApAQCAtMTA4
+NSw2ICsxMDg1LDE3IEBAIHBjaV9vbWVnYXBjaV9zZXR1cChzdHJ1Y3Qgc2VyaWFsX3ByaXZhdGUK
+IAlyZXR1cm4gc2V0dXBfcG9ydChwcml2LCBwb3J0LCAyLCBpZHggKiA4LCAwKTsKIH0KIAorc3Rh
+dGljIGludAorcGNpX2JyY21fdHJ1bWFuYWdlX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAq
+cHJpdiwKKwkJICAgICAgY29uc3Qgc3RydWN0IHBjaXNlcmlhbF9ib2FyZCAqYm9hcmQsCisJCSAg
+ICAgIHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGludCBpZHgpCit7CisJaW50IHJldCA9IHBjaV9k
+ZWZhdWx0X3NldHVwKHByaXYsIGJvYXJkLCBwb3J0LCBpZHgpOworCXBvcnQtPnR5cGUgPSBQT1JU
+X0JSQ01fVFJVTUFOQUdFOworCXBvcnQtPmZsYWdzID0gKHBvcnQtPmZsYWdzIHwgVVBGX0ZJWEVE
+X1BPUlQgfCBVUEZfRklYRURfVFlQRSk7CisJcmV0dXJuIHJldDsKK30KKwogc3RhdGljIGludCBz
+a2lwX3R4X2VuX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAqcHJpdiwKIAkJCWNvbnN0IHN0
+cnVjdCBwY2lzZXJpYWxfYm9hcmQgKmJvYXJkLAogCQkJc3RydWN0IHVhcnRfODI1MF9wb3J0ICpw
+b3J0LCBpbnQgaWR4KQpAQCAtMTIxMyw2ICsxMjI0LDcgQEAgcGNpX3djaF9jaDM1M19zZXR1cChz
+dHJ1Y3Qgc2VyaWFsX3ByaXZhdAogI2RlZmluZSBQQ0lfVkVORE9SX0lEX0FHRVNUQVIJCTB4NTM3
+MgogI2RlZmluZSBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NQkweDY4NzIKICNkZWZpbmUgUENJ
+X1ZFTkRPUl9JRF9BU0lYCQkweDk3MTAKKyNkZWZpbmUgUENJX0RFVklDRV9JRF9CUk9BRENPTV9U
+UlVNQU5BR0UgMHgxNjBhCiAKIC8qIFVua25vd24gdmVuZG9ycy9jYXJkcyAtIHRoaXMgc2hvdWxk
+IG5vdCBiZSBpbiBsaW51eC9wY2lfaWRzLmggKi8KICNkZWZpbmUgUENJX1NVQkRFVklDRV9JRF9V
+TktOT1dOXzB4MTU4NAkweDE1ODQKQEAgLTE3ODgsNiArMTgwMCwxNyBAQCBzdGF0aWMgc3RydWN0
+IHBjaV9zZXJpYWxfcXVpcmsgcGNpX3NlcmlhCiAJCS5zZXR1cAkJPSBwY2lfYXNpeF9zZXR1cCwK
+IAl9LAogCS8qCisJICogQnJvYWRjb20gVHJ1TWFuYWdlIChOZXRYdHJlbWUpCisJICovCisJewor
+CQkudmVuZG9yCQk9IFBDSV9WRU5ET1JfSURfQlJPQURDT00sCisJCS5kZXZpY2UJCT0gUENJX0RF
+VklDRV9JRF9CUk9BRENPTV9UUlVNQU5BR0UsCisJCS5zdWJ2ZW5kb3IJPSBQQ0lfQU5ZX0lELAor
+CQkuc3ViZGV2aWNlCT0gUENJX0FOWV9JRCwKKwkJLnNldHVwCQk9IHBjaV9icmNtX3RydW1hbmFn
+ZV9zZXR1cCwKKwl9LAorCisJLyoKIAkgKiBEZWZhdWx0ICJtYXRjaCBldmVyeXRoaW5nIiB0ZXJt
+aW5hdG9yIGVudHJ5CiAJICovCiAJewpAQCAtMTk3NSw2ICsxOTk4LDcgQEAgZW51bSBwY2lfYm9h
+cmRfbnVtX3QgewogCXBibl9jZTQxMDBfMV8xMTUyMDAsCiAJcGJuX29tZWdhcGNpLAogCXBibl9O
+RVRNT1M5OTAwXzJzXzExNTIwMCwKKwlwYm5fYnJjbV90cnVtYW5hZ2UsCiB9OwogCiAvKgpAQCAt
+MjY3NCw2ICsyNjk4LDEyIEBAIHN0YXRpYyBzdHJ1Y3QgcGNpc2VyaWFsX2JvYXJkIHBjaV9ib2Fy
+ZHMKIAkJLm51bV9wb3J0cwk9IDIsCiAJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCiAJfSwKKwlbcGJu
+X2JyY21fdHJ1bWFuYWdlXSA9IHsKKwkJLmZsYWdzCQk9IEZMX0JBU0UwLAorCQkubnVtX3BvcnRz
+CT0gMSwKKwkJLnJlZ19zaGlmdAk9IDIsCisJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCisJfSwKIH07
+CiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgcGNpX2RldmljZV9pZCBibGFja2xpc3RbXSA9IHsKQEAg
+LTQyMzgsNiArNDI2OCwxMyBAQCBzdGF0aWMgc3RydWN0IHBjaV9kZXZpY2VfaWQgc2VyaWFsX3Bj
+aV90CiAJCXBibl9vbWVnYXBjaSB9LAogCiAJLyoKKwkgKiBCcm9hZGNvbSBUcnVNYW5hZ2UKKwkg
+Ki8KKwl7CVBDSV9WRU5ET1JfSURfQlJPQURDT00sIFBDSV9ERVZJQ0VfSURfQlJPQURDT01fVFJV
+TUFOQUdFLAorCQlQQ0lfQU5ZX0lELCBQQ0lfQU5ZX0lELCAwLCAwLAorCQlwYm5fYnJjbV90cnVt
+YW5hZ2UgfSwKKworCS8qCiAJICogQWdlU3RhciBhcy1wcnMyLTAwOQogCSAqLwogCXsJUENJX1ZF
+TkRPUl9JRF9BR0VTVEFSLCBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NSwKZGlmZiAtdXByTiBs
+aW51eC0zLjcub3JpZy9pbmNsdWRlL3VhcGkvbGludXgvc2VyaWFsX2NvcmUuaCBsaW51eC0zLjcv
+aW5jbHVkZS91YXBpL2xpbnV4L3NlcmlhbF9jb3JlLmgKLS0tIGxpbnV4LTMuNy5vcmlnL2luY2x1
+ZGUvdWFwaS9saW51eC9zZXJpYWxfY29yZS5oCTIwMTItMTItMTAgMTk6MzA6NTcuMDAwMDAwMDAw
+IC0wODAwCisrKyBsaW51eC0zLjcvaW5jbHVkZS91YXBpL2xpbnV4L3NlcmlhbF9jb3JlLmgJMjAx
+Mi0xMi0xMSAxNTowMDowNy4wMDU2MTg0NDAgLTA4MDAKQEAgLTQ5LDcgKzQ5LDggQEAKICNkZWZp
+bmUgUE9SVF9YUjE3RDE1WAkyMQkvKiBFeGFyIFhSMTdEMTV4IFVBUlQgKi8KICNkZWZpbmUgUE9S
+VF9MUEMzMjIwCTIyCS8qIE5YUCBMUEMzMnh4IFNvQyAiU3RhbmRhcmQiIFVBUlQgKi8KICNkZWZp
+bmUgUE9SVF84MjUwX0NJUgkyMwkvKiBDSVIgaW5mcmFyZWQgcG9ydCwgaGFzIGl0cyBvd24gZHJp
+dmVyICovCi0jZGVmaW5lIFBPUlRfTUFYXzgyNTAJMjMJLyogbWF4IHBvcnQgSUQgKi8KKyNkZWZp
+bmUgUE9SVF9CUkNNX1RSVU1BTkFHRQkyNAorI2RlZmluZSBQT1JUX01BWF84MjUwCTI0CS8qIG1h
+eCBwb3J0IElEICovCiAKIC8qCiAgKiBBUk0gc3BlY2lmaWMgdHlwZSBudW1iZXJzLiAgVGhlc2Ug
+YXJlIG5vdCBjdXJyZW50bHkgZ3VhcmFudGVlZAo=
 
-  $ mkdir foo
-  $ echo 1024 >foo/attr1
-  $ echo 2048 >foo/attr2
-  $ echo 1 >foo/enable
+--_002_156984479488CD49A184F5CAB4AF934606FF55F8IRVEXCHMB14corp_--
 
-In o2hb, we don't have an explicit "enable" attribute.  Instead, we
-enable when the block device's file descriptor is stored.  If the other
-attributes aren't set yet, we fail the store.
-
-Joel
-
--- 
-
-Life's Little Instruction Book #451
-
-	"Don't be afraid to say, 'I'm sorry.'"
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
