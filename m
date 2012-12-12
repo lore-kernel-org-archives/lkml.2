@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab2LLKPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 05:15:11 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:53687 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab2LLKPJ (ORCPT
+	id S1754024Ab2LLKQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 05:16:15 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:51722 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab2LLKQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 05:15:09 -0500
-Message-ID: <50C8591A.3030301@ahsoftware.de>
-Date: Wed, 12 Dec 2012 11:14:50 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 12 Dec 2012 05:16:14 -0500
+Date: Wed, 12 Dec 2012 11:16:03 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 0/7] various ste_dma40 fixes
+Message-ID: <20121212101603.GC26515@balto.lan>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
+	Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+References: <1355305041-2338-1-git-send-email-fabio.baltieri@linaro.org>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 v3] rtc: add rtc-driver for HID sensors of type time
-References: <50C73AFC.1050904@jic23.retrosnub.co.uk> <1355250106-3114-1-git-send-email-holler@ahsoftware.de> <1355250106-3114-4-git-send-email-holler@ahsoftware.de> <50C8539C.1070509@metafoo.de>
-In-Reply-To: <50C8539C.1070509@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355305041-2338-1-git-send-email-fabio.baltieri@linaro.org>
+X-Operating-System: Linux balto 3.7.0-rc8-00014-g27d7c2a x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.12.2012 10:51, schrieb Lars-Peter Clausen:
+On Wed, Dec 12, 2012 at 10:37:14AM +0100, Fabio Baltieri wrote:
+> this patch set contains some fixes for the ste_dma40 driver.
 
-> Looks good, but as I wrote during the last review the __devinits need to go.
-> A few other suggerstions online
+Adding DMA maintainers to the thread.  Want me to resend the whole set?
 
-Oh, have forgotten it. Ok, will make a v4, changing the other few things 
-too.
+Thanks,
+Fabio
 
->> +	case HID_USAGE_SENSOR_TIME_MONTH:
->> +		time_buf->tm_mon = --*(u8 *)raw_data;
-
-Time sensors are sending the month in the range 1-12, not 0-11.
-
-Regards,
-
-Alexander
-
+-- 
+Fabio Baltieri
