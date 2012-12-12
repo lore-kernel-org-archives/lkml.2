@@ -1,157 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab2LLI2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 03:28:25 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:8913 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab2LLI2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 03:28:23 -0500
-Message-ID: <50C83F97.3040009@huawei.com>
-Date: Wed, 12 Dec 2012 16:25:59 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: <tj@kernel.org>, <lizefan@huawei.com>, <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Liujiang <jiang.liu@huawei.com>,
-        <dhillf@gmail.com>, Jiang Liu <liuj97@gmail.com>,
-        qiuxishi <qiuxishi@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
-Subject: [PATCH] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+	id S1752011Ab2LLIc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 03:32:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51806 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab2LLIc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 03:32:27 -0500
+Date: Wed, 12 Dec 2012 19:32:15 +1100
+From: NeilBrown <neilb@suse.de>
+To: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] block2mtd: throttle writes by calling
+ balance_dirty_pages_ratelimited.
+Message-ID: <20121212193215.645da577@notabene.brown>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/BHo7oIwWjoyZBmzX_7tjmjK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
-and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
-system will boot fail.
+--Sig_/BHo7oIwWjoyZBmzX_7tjmjK
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This failure is caused by following code path:
-setup_hugepagesz
-	hugetlb_add_hstate
-		hugetlb_cgroup_file_init
-			cgroup_add_cftypes
-				kzalloc <--slab is *not available* yet
 
-For this path, slab is not available yet, so memory allocated will be
-failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
 
-So I move hugetlb_cgroup_file_init() into hugetlb_init().
+If you create a block2mtd device that is larger than main memory,
+and write to all of it, then lots of pages will be dirtied but
+they will never be flushed out as nothing calls any variant of
+balance_dirty_pages.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- include/linux/hugetlb_cgroup.h |    7 ++-----
- mm/hugetlb.c                   |   11 +----------
- mm/hugetlb_cgroup.c            |   23 +++++++++++++++++++++--
- 3 files changed, 24 insertions(+), 17 deletions(-)
+It would be nice to call set_page_dirty_balance(), but that isn't exported,
+so just call balance_dirty_pages_ratelimited() directly.
 
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index d73878c..5bb9c28 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -62,7 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
- 					 struct page *page);
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
--extern int hugetlb_cgroup_file_init(int idx) __init;
-+extern void hugetlb_cgroup_file_init(void) __init;
- extern void hugetlb_cgroup_migrate(struct page *oldhpage,
- 				   struct page *newhpage);
- 
-@@ -111,10 +111,7 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 	return;
- }
- 
--static inline int __init hugetlb_cgroup_file_init(int idx)
--{
--	return 0;
--}
-+static inline void __init hugetlb_cgroup_file_init() {}
- 
- static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
- 					  struct page *newhpage)
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1ef2cd4..a30da48 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1906,14 +1906,12 @@ static int __init hugetlb_init(void)
- 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
- 
- 	hugetlb_init_hstates();
--
- 	gather_bootmem_prealloc();
--
- 	report_hugepages();
- 
- 	hugetlb_sysfs_init();
--
- 	hugetlb_register_all_nodes();
-+	hugetlb_cgroup_file_init();
- 
- 	return 0;
- }
-@@ -1943,13 +1941,6 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
--	/*
--	 * Add cgroup control files only if the huge page consists
--	 * of more than two normal pages. This is because we use
--	 * page[2].lru.next for storing cgoup details.
--	 */
--	if (order >= HUGETLB_CGROUP_MIN_ORDER)
--		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
- 
- 	parsed_hstate = h;
- }
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index a3f358f..284cb68 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -340,7 +340,7 @@ static char *mem_fmt(char *buf, int size, unsigned long hsize)
- 	return buf;
- }
- 
--int __init hugetlb_cgroup_file_init(int idx)
-+static void __init __hugetlb_cgroup_file_init(int idx)
- {
- 	char buf[32];
- 	struct cftype *cft;
-@@ -382,7 +382,26 @@ int __init hugetlb_cgroup_file_init(int idx)
- 
- 	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
- 
--	return 0;
-+	return;
-+}
-+
-+void __init hugetlb_cgroup_file_init()
-+{
-+	struct hstate *h;
-+	int idx;
-+
-+	idx = 0;
-+	for_each_hstate(h) {
-+		/*
-+		 * Add cgroup control files only if the huge page consists
-+		 * of more than two normal pages. This is because we use
-+		 * page[2].lru.next for storing cgoup details.
-+		 */
-+		if (h->order >= HUGETLB_CGROUP_MIN_ORDER)
-+			__hugetlb_cgroup_file_init(idx);
-+
-+		idx++;
-+	}
- }
- 
- /*
--- 1.7.1
+Signed-off-by: NeilBrown <neilb@suse.de>
 
+diff --git a/drivers/mtd/devices/block2mtd.c b/drivers/mtd/devices/block2mt=
+d.c
+index 681e2ee..2c3e8e7 100644
+--- a/drivers/mtd/devices/block2mtd.c
++++ b/drivers/mtd/devices/block2mtd.c
+@@ -62,6 +62,7 @@ static int _block2mtd_erase(struct block2mtd_dev *dev, lo=
+ff_t to, size_t len)
+ 				memset(page_address(page), 0xff, PAGE_SIZE);
+ 				set_page_dirty(page);
+ 				unlock_page(page);
++				balance_dirty_pages_ratelimited(mapping);
+ 				break;
+ 			}
+=20
+@@ -152,6 +153,7 @@ static int _block2mtd_write(struct block2mtd_dev *dev, =
+const u_char *buf,
+ 			memcpy(page_address(page) + offset, buf, cpylen);
+ 			set_page_dirty(page);
+ 			unlock_page(page);
++			balance_dirty_pages_ratelimited(mapping);
+ 		}
+ 		page_cache_release(page);
+=20
+
+--Sig_/BHo7oIwWjoyZBmzX_7tjmjK
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUMhBDznsnt1WYoG5AQJBfBAAinJKjQolwjfXbnBHu03RZLNT0ktY/2na
+wsldYuD4jOh7z8oSc9pqknejf26ekx2KqDX7RKJ8wU86x3Cv1hOD9UqZOpw84HnR
+SH/7idpXyUJ1BhOgyx5LHnpqwXqRR0Ydy10qyheUVLgFLTFUJf+VQ0PMbTSUpwpi
+wBRvu4V5htzWOjUnFGwdxxZasMIvCx0t4jbbBFrn7SzP0/iRFPtoJBlSTWRaSM/1
+d6BeFbgV90k/wAJSSQ3VQJ7T+393Kb+E7C2cXC1asjk+3q8KJb6vuZdxkMRKLqJB
+b8Q9ojLO1mqEz9nX/T0GhixbirWFiUSJcWIkVT2Wd0Yp0uzsoYzVj0OgVt8rO6Qg
+ngGz3clBtvATDoCPKxFvwaq4TYoXkG4f3JNwNIoGIaNtfORwEFqFv1z2/hVb1JfC
+Yd/E0OEZg3u733ZlPAjx3J4EBAhQdiKemI1p76K9sO5zg0ozgDQPU4EqcHJJLFgh
+ttFk4yNXwOQgERZWSIu0JtNWve98rXZfc0SWZzxDt8UGACv/cI0/H2foejjIyVp8
+4diZOZMLJaXtdrBY8fOzap6q+aHnD4PtkcBfm75X6VPG8i36eqoKJy07vA9F+J9L
+ZbZtQAnxI2ojIZbVLRea6dEzEztraJUuw2mY8HNjkHGOIu/VguFO2IgTC9v5B7Js
+XKU5mv6bYEQ=
+=sWZ/
+-----END PGP SIGNATURE-----
+
+--Sig_/BHo7oIwWjoyZBmzX_7tjmjK--
