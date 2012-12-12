@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab2LLCcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 21:32:22 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40022 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab2LLCcV (ORCPT
+	id S1754870Ab2LLCqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 21:46:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2169 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab2LLCqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 21:32:21 -0500
-Message-ID: <1355279182.1532.4.camel@kernel.cn.ibm.com>
-Subject: Re: livelock in __writeback_inodes_wb ?
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org
-Date: Tue, 11 Dec 2012 20:26:22 -0600
-In-Reply-To: <20121211142942.GA1943@redhat.com>
-References: <20121128145515.GA26564@redhat.com>
-	 <20121211082327.GA15706@localhost> <20121211142942.GA1943@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Tue, 11 Dec 2012 21:46:15 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=cU5zP3iA40MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wzXg5rMBBV8A:10 a=s37wLwxS4G2fx1OE9iEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355280374.17101.325.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH] sched: rt: fix selecting runqueue for task to be
+ pushed
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Dec 2012 21:46:14 -0500
+In-Reply-To: <1355277274.17101.323.camel@gandalf.local.home>
+References: <CAJd=RBCk0eWQqTk-BX8_=aBdYEQnbnf57dHZdcVbWbVY=33OhQ@mail.gmail.com>
+	 <1355149273.17101.176.camel@gandalf.local.home>
+	 <CAJd=RBDprA5ruzY6-uQ3L5eSX3Muk8fSpQZbbmsK0oAGwk0WtQ@mail.gmail.com>
+	 <1355277274.17101.323.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 09:29 -0500, Dave Jones wrote:
-> On Tue, Dec 11, 2012 at 04:23:27PM +0800, Fengguang Wu wrote:
->  > On Wed, Nov 28, 2012 at 09:55:15AM -0500, Dave Jones wrote:
->  > > We had a user report the soft lockup detector kicked after 22
->  > > seconds of no progress, with this trace..
->  > 
->  > Where is the original report? The reporter may help provide some clues
->  > on the workload that triggered the bug.
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=880949 
-> 
->  > The bug reporter should know best whether there are heavy IO.
->  > 
->  > However I suspect it's not directly caused by heavy IO: we will
->  > release &wb->list_lock before each __writeback_single_inode() call,
->  > which starts writeback IO for each inode.
->  > 
->  > > Should there be something in this loop periodically poking
->  > > the watchdog perhaps ?
->  > 
->  > It seems we failed to release &wb->list_lock in wb_writeback() for
->  > long time (dozens of seconds). That is, the inode_sleep_on_writeback()
->  > is somehow not called. However it's not obvious to me how come this
->  > can happen..
-> 
-> Right, it seems that we only drop the lock when there is more work to do.
-> And if there is no work to do, then we would have bailed from the loop.
+On Tue, 2012-12-11 at 20:54 -0500, Steven Rostedt wrote:
 
-If no work to do, lock will be dropped after for loop.
+> I'm actually thinking that that test should always fail. The
+> cpupri_find() does a scan of all priorities up to but not including the
+> current task's priority. If cpupri_find() finds a mask, it means that it
+> found CPUs that are running only tasks of lower priority than the task
+> we are checking. Which means, it should never include the task's CPU, as
+> that CPU should have a higher priority than what is being returned by
+> lowest_mask. If it can't find a set of CPUs of lower priority, it should
+> return false, and the find_lowest_rq() should exit.
+> 
+> I'll add a WARN_ON_ONCE() there, and see if I can trigger it. :-/
 
-> 
-> mysterious.
-> 
-> 	Dave
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Ah, for select_task_rq_rt() it can get that CPU, because it's called in
+the wakeup path before the task is added into the CPUs priority. And we
+definitely want the current CPU in that case.
+
+For pushing, the local CPU should never be returned. I'll check to make
+sure that's the case too.
+
+-- Steve
 
 
