@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab2LLMTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 07:19:42 -0500
-Received: from 2.mo3.mail-out.ovh.net ([46.105.75.36]:55808 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751884Ab2LLMTl (ORCPT
+	id S1753317Ab2LLMVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 07:21:49 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51279 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab2LLMVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 07:19:41 -0500
-Date: Wed, 12 Dec 2012 12:58:28 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH] drivers/pinctrl: grab default handles from device core
-Message-ID: <20121212115828.GJ4398@game.jcrosoft.org>
-References: <1355233246-16694-1-git-send-email-linus.walleij@stericsson.com>
- <20121211181336.GD25714@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121211181336.GD25714@kroah.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 8199647547738532726
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehjedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+	Wed, 12 Dec 2012 07:21:48 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH] pinctrl: imx5: fix GPIO_8 pad CAN1_RXCAN configuration
+Date: Wed, 12 Dec 2012 13:21:44 +0100
+Message-Id: <1355314904-10174-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:13 Tue 11 Dec     , Greg Kroah-Hartman wrote:
-> On Tue, Dec 11, 2012 at 02:40:46PM +0100, Linus Walleij wrote:
-> > diff --git a/include/linux/device.h b/include/linux/device.h
-> > index 86ef6ab..dc399ab 100644
-> > --- a/include/linux/device.h
-> > +++ b/include/linux/device.h
-> > @@ -21,6 +21,7 @@
-> >  #include <linux/compiler.h>
-> >  #include <linux/types.h>
-> >  #include <linux/mutex.h>
-> > +#include <linux/pinctrl/devinfo.h>
-> >  #include <linux/pm.h>
-> >  #include <linux/atomic.h>
-> >  #include <linux/ratelimit.h>
-> > @@ -605,6 +606,8 @@ struct device_dma_parameters {
-> >   * @pm_domain:	Provide callbacks that are executed during system suspend,
-> >   * 		hibernation, system resume and during runtime PM transitions
-> >   * 		along with subsystem-level and driver-level callbacks.
-> > + * @pins:	For device pin management.
-> > + *		See Documentation/pinctrl.txt for details.
-> >   * @numa_node:	NUMA node this device is close to.
-> >   * @dma_mask:	Dma mask (if dma'ble device).
-> >   * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
-> > @@ -656,6 +659,10 @@ struct device {
-> >  	struct dev_pm_info	power;
-> >  	struct dev_pm_domain	*pm_domain;
-> >  
-> > +#ifdef CONFIG_PINCTRL
-> > +	struct dev_pin_info	pins;
-> > +#endif
-> 
-> Can't you just make this a * to the structure, saving a bit of space for
-> those that don't use this structure?  Ok, it's only saving one pointer,
-> so it's really not a big deal to me if you don't want to do this, just
-> asking...
-> 
-> Also, this will have to wait until after 3.8-rc1 before I can consider
-> merging it, I'm a bit busy for the next two weeks at the least...
-can do do not put ifdef in the struct as if will force us to put ifdef in the
-c code too instead of just use a inline function
+3 is an invalid value for the CAN1_IPP_IND_CANRX_SELECT_INPUT
+register. Set it to 2, which correctly selects the GPIO_8 pad.
 
-Best Regards,
-J.
-> 
-> thanks,
-> 
-> greg k-h
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/pinctrl/pinctrl-imx53.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinctrl-imx53.c b/drivers/pinctrl/pinctrl-imx53.c
+index 783feb1..e069027 100644
+--- a/drivers/pinctrl/pinctrl-imx53.c
++++ b/drivers/pinctrl/pinctrl-imx53.c
+@@ -1371,7 +1371,7 @@ static struct imx_pin_reg imx53_pin_regs[] = {
+ 	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 0, 0x7F8, 1), /* MX53_PAD_GPIO_8__ESAI1_TX5_RX0 */
+ 	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 1, 0x000, 0), /* MX53_PAD_GPIO_8__GPIO1_8 */
+ 	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 2, 0x000, 0), /* MX53_PAD_GPIO_8__EPIT2_EPITO */
+-	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 3, 0x760, 3), /* MX53_PAD_GPIO_8__CAN1_RXCAN */
++	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 3, 0x760, 2), /* MX53_PAD_GPIO_8__CAN1_RXCAN */
+ 	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 4, 0x880, 5), /* MX53_PAD_GPIO_8__UART2_RXD_MUX */
+ 	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 5, 0x000, 0), /* MX53_PAD_GPIO_8__FIRI_TXD */
+ 	IMX_PIN_REG(MX53_PAD_GPIO_8, 0x6C8, 0x338, 6, 0x000, 0), /* MX53_PAD_GPIO_8__SPDIF_SRCLK */
+-- 
+1.7.10.4
+
