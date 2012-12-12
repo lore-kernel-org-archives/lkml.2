@@ -1,83 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab2LLOOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:14:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59856 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab2LLON7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:13:59 -0500
-Date: Wed, 12 Dec 2012 16:13:58 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] kvm: memory slot cleanups, fix, and increase
-Message-ID: <20121212141358.GR11016@redhat.com>
-References: <20121210171417.10461.20079.stgit@bling.home>
+	id S1754217Ab2LLOVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:21:24 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:56194 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092Ab2LLOVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 09:21:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
+In-Reply-To: <CAGjg+kHTvQe4NBTf41oSanZ9WBvFHsRPFqT4MdW9Sft=pOd5HA@mail.gmail.com>
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+	<CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com>
+	<50C722AC.3080806@intel.com>
+	<20121211154819.GC8873@liondog.tnic>
+	<50C75935.1040004@linux.intel.com>
+	<20121211161320.GA28827@liondog.tnic>
+	<50C76208.107@linux.intel.com>
+	<CAHLCerPy2+-t0mAwn3nEAd2CRMmyqCLVTO3j2zua1P4uDE1BPA@mail.gmail.com>
+	<CAGjg+kHTvQe4NBTf41oSanZ9WBvFHsRPFqT4MdW9Sft=pOd5HA@mail.gmail.com>
+Date: Wed, 12 Dec 2012 15:21:20 +0100
+Message-ID: <CAKfTPtC+=-zvQ=NyVyDto76SfJY=90e4mrkJ0DGH-_PVpBg3EQ@mail.gmail.com>
+Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into LB
+ and power awareness scheduling
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <lkml.alex@gmail.com>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Alex Shi <alex.shi@intel.com>,
+        rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 10:32:39AM -0700, Alex Williamson wrote:
-> v2: Update 02/10 to not check userspace_addr when slot is removed.
->     Yoshikawa-san withdrew objection to increase slot_bitmap prior
->     to his series to remove slot_bitmap.
-> 
-> This series does away with any kind of complicated resizing of the
-> slot array and simply does a one time increase.  I do compact struct
-> kvm_memory_slot a bit to take better advantage of the space we are
-> using.  This reduces each slot from 64 bytes (x86_64) to 56 bytes.
-> By enforcing the API around valid operations for an unused slot and
-> fields that can be modified runtime, I found and was able to fix a
-> bug in iommu mapping for slots.  The renames enabled me to find the
-> previously posted bug fix for catching slot overlaps.
-> 
-> As mentioned in the series, the primary motivation for increasing
-> memory slots is assigned devices.  With this, I've been able to
-> assign 30 devices to a single VM and could have gone further, but
-> ran out of SRIOV VFs.  Typical devices use anywhere from 2-4 slots
-> and max out at 8 slots.  125 user slots (3 private slots) allows
-> us to support between 28 and 56 typical devices per VM.
-> 
-> Tested on x86_64, compiled on ia64, powerpc, and s390.
-> 
-> Thanks,
-> Alex
-> 
-Reviewed-by: Gleb Natapov <gleb@redhat.com>
+On 12 December 2012 14:55, Alex Shi <lkml.alex@gmail.com> wrote:
+>>>>>
+>>>>>
+>>>>> well... it's not always beneficial to group or to spread out
+>>>>> it depends on cache behavior mostly which is best
+>>>>
+>>>>
+>>>> Let me try to understand what this means: so "performance" above with
+>>>> 8 threads means that those threads are spread out across more than one
+>>>> socket, no?
+>>>>
+>>>> If so, this would mean that you have a smaller amount of tasks on each
+>>>> socket, thus the smaller wattage.
+>>>>
+>>>> The "powersaving" method OTOH fills up the one socket up to the brim,
+>>>> thus the slightly higher consumption due to all threads being occupied.
+>>>>
+>>>> Is that it?
+>>>
+>>>
+>>> not sure.
+>>>
+>>> by and large, power efficiency is the same as performance efficiency, with
+>>> some twists.
+>>> or to reword that to be more clear
+>>> if you waste performance due to something that becomes inefficient, you're
+>>> wasting power as well.
+>>> now, you might have some hardware effects that can then save you power...
+>>> but those effects
+>>> then first need to overcome the waste from the performance inefficiency...
+>>> and that almost never happens.
+>>>
+>>> for example, if you have two workloads that each fit barely inside the last
+>>> level cache...
+>>> it's much more efficient to spread these over two sockets... where each has
+>>> its own full LLC
+>>> to use.
+>>> If you'd group these together, both would thrash the cache all the time and
+>>> run inefficient --> bad for power.
+>>>
+>>> now, on the other hand, if you have two threads of a process that share a
+>>> bunch of data structures,
+>>> and you'd spread these over 2 sockets, you end up bouncing data between the
+>>> two sockets a lot,
+>>> running inefficient --> bad for power.
+>>>
+>>
+>> Agree with all of the above. However..
+>>
+>>> having said all this, if you have to tasks that don't have such cache
+>>> effects, the most efficient way
+>>> of running things will be on 2 hyperthreading halves... it's very hard to
+>>> beat the power efficiency of that.
+>>
+>> .. there are alternatives to hyperthreading. On ARM's big.LITTLE
+>> architecture you could simply schedule them on the LITTLE cores. The
+>> big cores just can't beat the power efficiency of the LITTLE ones even
+>> with 'race to halt' that you allude to below. And usecases like mp3
+>> playback simply don't require the kind of performance that the big
+>> cores can offer.
+>>
+>>> But this assumes the tasks don't compete with resources much on the HT
+>>> level, and achieve good scaling.
+>>> and this still has to compete with "race to halt", because if you're done
+>>> quicker, you can put the memory
+>>> in self refresh quicker.
+>>>
+>>> none of this stuff is easy for humans or computer programs to determine
+>>> ahead of time... or sometimes even afterwards.
+>>> heck, even for just performance it's really really hard already, never mind
+>>> adding power.
+>>>
+>>> my personal gut feeling is that we should just optimize this scheduler stuff
+>>> for performance, and that
+>>> we're going to be doing quite well on power already if we achieve that.
+>>
+>> If Linux is to continue to work efficiently on heterogeneous
+>> multi-processing platforms, it needs to provide scheduling mechanisms
+>> that can be exploited as per the demands of the HW architecture.
+>
+> Linus definitely disagree such ideas. :) So, need to summaries the
+> logical beyond all hardware.
+>
+>> example is the "small task packing (and spreading)" for which Vincent
+>> Guittot has posted a patchset[1] earlier and so has Alex now.
+>
+> Sure. I just thought my patchset should handled the 'small task
+> packing' scenario. Could you guy like to have a try?
 
-> ---
-> 
-> Alex Williamson (10):
->       kvm: Restrict non-existing slot state transitions
->       kvm: Check userspace_addr when modifying a memory slot
->       kvm: Fix iommu map/unmap to handle memory slot moves
->       kvm: Minor memory slot optimization
->       kvm: Rename KVM_MEMORY_SLOTS -> KVM_USER_MEM_SLOTS
->       kvm: Make KVM_PRIVATE_MEM_SLOTS optional
->       kvm: struct kvm_memory_slot.user_alloc -> bool
->       kvm: struct kvm_memory_slot.flags -> u32
->       kvm: struct kvm_memory_slot.id -> short
->       kvm: Increase user memory slots on x86 to 125
-> 
-> 
->  arch/ia64/include/asm/kvm_host.h    |    4 --
->  arch/ia64/kvm/kvm-ia64.c            |    8 ++--
->  arch/powerpc/include/asm/kvm_host.h |    6 +--
->  arch/powerpc/kvm/book3s_hv.c        |    2 -
->  arch/powerpc/kvm/powerpc.c          |    4 +-
->  arch/s390/include/asm/kvm_host.h    |    4 --
->  arch/s390/kvm/kvm-s390.c            |    4 +-
->  arch/x86/include/asm/kvm_host.h     |    8 ++--
->  arch/x86/include/asm/vmx.h          |    6 +--
->  arch/x86/kvm/vmx.c                  |    6 +--
->  arch/x86/kvm/x86.c                  |   10 ++---
->  include/linux/kvm_host.h            |   24 +++++++-----
->  virt/kvm/kvm_main.c                 |   72 +++++++++++++++++++++++------------
->  13 files changed, 90 insertions(+), 68 deletions(-)
+Hi Alex,
 
---
-			Gleb.
+Yes, I will do a try with your patchset when i will have some spare time
+
+Vincent
+
+>>
+>> [1] http://lwn.net/Articles/518834/
