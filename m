@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab2LLSXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:23:39 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:56871 "EHLO
+	id S932091Ab2LLSYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:24:10 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:48341 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753966Ab2LLSXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:23:37 -0500
+	id S1755208Ab2LLSXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:23:09 -0500
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 26/26] kallsyms: Remove print_symbol
-Date: Wed, 12 Dec 2012 10:19:15 -0800
-Message-Id: <bc5b83ca73bd82dd4af2e6f81415493f086e5381.1355335228.git.joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH 23/26] mm: Convert print_symbol to %pSR
+Date: Wed, 12 Dec 2012 10:19:12 -0800
+Message-Id: <96a83ddb7f8571afe8b3b3b6e7fc9dc3ff81dda5.1355335228.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1355335227.git.joe@perches.com>
 References: <cover.1355335227.git.joe@perches.com>
@@ -19,74 +21,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is now unused, remove it.
+Use the new vsprintf extension to avoid any possible
+message interleaving.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/kallsyms.h |   18 ------------------
- kernel/kallsyms.c        |   11 -----------
- 2 files changed, 0 insertions(+), 29 deletions(-)
+ mm/memory.c |    8 ++++----
+ mm/slab.c   |    8 +++-----
+ 2 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/kallsyms.h b/include/linux/kallsyms.h
-index 6883e19..b7a60ba 100644
---- a/include/linux/kallsyms.h
-+++ b/include/linux/kallsyms.h
-@@ -39,9 +39,6 @@ extern int sprint_symbol(char *buffer, unsigned long address);
- extern int sprint_symbol_no_offset(char *buffer, unsigned long address);
- extern int sprint_backtrace(char *buffer, unsigned long address);
- 
--/* Look up a kernel symbol and print it to the kernel messages. */
--extern void __print_symbol(const char *fmt, unsigned long address);
--
- int lookup_symbol_name(unsigned long addr, char *symname);
- int lookup_symbol_attrs(unsigned long addr, unsigned long *size, unsigned long *offset, char *modname, char *name);
- 
-@@ -103,23 +100,8 @@ static inline int lookup_symbol_attrs(unsigned long addr, unsigned long *size, u
- 	return -ERANGE;
+diff --git a/mm/memory.c b/mm/memory.c
+index d81bdd7..a14c194 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -711,11 +711,11 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
+ 	 * Choose text because data symbols depend on CONFIG_KALLSYMS_ALL=y
+ 	 */
+ 	if (vma->vm_ops)
+-		print_symbol(KERN_ALERT "vma->vm_ops->fault: %s\n",
+-				(unsigned long)vma->vm_ops->fault);
++		printk(KERN_ALERT "vma->vm_ops->fault: %pSR\n",
++		       vma->vm_ops->fault);
+ 	if (vma->vm_file && vma->vm_file->f_op)
+-		print_symbol(KERN_ALERT "vma->vm_file->f_op->mmap: %s\n",
+-				(unsigned long)vma->vm_file->f_op->mmap);
++		printk(KERN_ALERT "vma->vm_file->f_op->mmap: %pSR\n",
++		       vma->vm_file->f_op->mmap);
+ 	dump_stack();
+ 	add_taint(TAINT_BAD_PAGE);
  }
+diff --git a/mm/slab.c b/mm/slab.c
+index 23daffa..d23ab4f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2081,11 +2081,9 @@ static void print_objinfo(struct kmem_cache *cachep, void *objp, int lines)
+ 	}
  
--/* Stupid that this does nothing, but I didn't create this mess. */
--#define __print_symbol(fmt, addr)
- #endif /*CONFIG_KALLSYMS*/
- 
--/* This macro allows us to keep printk typechecking */
--static __printf(1, 2)
--void __check_printsym_format(const char *fmt, ...)
--{
--}
--
--static inline void print_symbol(const char *fmt, unsigned long addr)
--{
--	__check_printsym_format(fmt, "");
--	__print_symbol(fmt, (unsigned long)
--		       __builtin_extract_return_addr((void *)addr));
--}
--
- static inline void print_ip_sym(unsigned long ip)
- {
- 	printk("[<%p>] %pS\n", (void *) ip, (void *) ip);
-diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 2169fee..6733476 100644
---- a/kernel/kallsyms.c
-+++ b/kernel/kallsyms.c
-@@ -422,17 +422,6 @@ int sprint_backtrace(char *buffer, unsigned long address)
- 	return __sprint_symbol(buffer, address, -1, 1);
- }
- 
--/* Look up a kernel symbol and print it to the kernel messages. */
--void __print_symbol(const char *fmt, unsigned long address)
--{
--	char buffer[KSYM_SYMBOL_LEN];
--
--	sprint_symbol(buffer, address);
--
--	printk(fmt, buffer);
--}
--EXPORT_SYMBOL(__print_symbol);
--
- /* To avoid using get_symbol_offset for every symbol, we carry prefix along. */
- struct kallsym_iter {
- 	loff_t pos;
+ 	if (cachep->flags & SLAB_STORE_USER) {
+-		printk(KERN_ERR "Last user: [<%p>]",
+-			*dbg_userword(cachep, objp));
+-		print_symbol("(%s)",
+-				(unsigned long)*dbg_userword(cachep, objp));
+-		printk("\n");
++		printk(KERN_ERR "Last user: [<%p>](%pSR)\n",
++		       *dbg_userword(cachep, objp),
++		       *dbg_userword(cachep, objp));
+ 	}
+ 	realobj = (char *)objp + obj_offset(cachep);
+ 	size = cachep->object_size;
 -- 
 1.7.8.112.g3fd21
 
