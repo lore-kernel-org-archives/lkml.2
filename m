@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab2LLOCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:02:37 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:47930 "EHLO comal.ext.ti.com"
+	id S1754824Ab2LLOCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:02:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42327 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178Ab2LLOCf convert rfc822-to-8bit (ORCPT
+	id S1754178Ab2LLOCo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:02:35 -0500
+	Wed, 12 Dec 2012 09:02:44 -0500
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <cooloney@gmail.com>
 CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 22/33] leds-lp55xx: use common driver function for adding
- attributes
-Thread-Topic: [PATCH 22/33] leds-lp55xx: use common driver function for
- adding attributes
-Thread-Index: Ac3YcVNDixMZ74mcQdCLaDVTVH/qnA==
-Date: Wed, 12 Dec 2012 14:02:31 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0ABC7@DQHE02.ent.ti.com>
+Subject: [PATCH 24/33] leds-lp55xx: add unregister dev attr function
+Thread-Topic: [PATCH 24/33] leds-lp55xx: add unregister dev attr function
+Thread-Index: Ac3YcVhcl+EwOoJWTnW1rm3wUNZKhg==
+Date: Wed, 12 Dec 2012 14:02:40 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0ABD7@DQHE02.ent.ti.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -30,111 +28,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Use lp55xx_register_sysfs() rather than lp5521_register_sysfs()
- and lp5523_register_sysfs().
+ lp55xx_unregister_sysfs() is used for removing lp55xx device attributes.
+ Chip specific and engine attributes are removed on unloading the driver.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5521.c |   17 +++++++----------
- drivers/leds/leds-lp5523.c |   23 +++++++----------------
- 2 files changed, 14 insertions(+), 26 deletions(-)
+ drivers/leds/leds-lp55xx-common.c |   12 ++++++++++++
+ drivers/leds/leds-lp55xx-common.h |    1 +
+ 2 files changed, 13 insertions(+)
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 16bbba3..c683bf5 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -501,12 +501,6 @@ static const struct attribute_group lp5521_group = {
- 	.attrs = lp5521_attributes,
- };
- 
--static int lp5521_register_sysfs(struct i2c_client *client)
--{
--	struct device *dev = &client->dev;
--	return sysfs_create_group(&dev->kobj, &lp5521_group);
--}
--
- static void lp5521_unregister_sysfs(struct i2c_client *client)
- {
- 	struct device *dev = &client->dev;
-@@ -530,6 +524,7 @@ static struct lp55xx_device_config lp5521_cfg = {
- 	.set_led_current    = lp5521_set_led_current,
- 	.firmware_cb        = lp5521_firmware_loaded,
- 	.run_engine         = lp5521_run_engine,
-+	.dev_attr_group     = &lp5521_group,
- };
- 
- static int __devinit lp5521_probe(struct i2c_client *client,
-@@ -572,13 +567,15 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 	if (ret)
- 		goto err_register_leds;
- 
--	ret = lp5521_register_sysfs(client);
-+	ret = lp55xx_register_sysfs(chip);
- 	if (ret) {
- 		dev_err(&client->dev, "registering sysfs failed\n");
--		goto fail2;
-+		goto err_register_sysfs;
- 	}
--	return ret;
--fail2:
+diff --git a/drivers/leds/leds-lp55xx-common.c b/drivers/leds/leds-lp55xx-common.c
+index 731f826..c0c66ec 100644
+--- a/drivers/leds/leds-lp55xx-common.c
++++ b/drivers/leds/leds-lp55xx-common.c
+@@ -508,3 +508,15 @@ dev_specific_attrs:
+ 		sysfs_create_group(&dev->kobj, cfg->dev_attr_group) : 0;
+ }
+ EXPORT_SYMBOL_GPL(lp55xx_register_sysfs);
 +
-+	return 0;
++void lp55xx_unregister_sysfs(struct lp55xx_chip *chip)
++{
++	struct device *dev = &chip->cl->dev;
++	struct lp55xx_device_config *cfg = chip->cfg;
 +
-+err_register_sysfs:
- 	lp55xx_unregister_leds(led, chip);
- err_register_leds:
- 	lp55xx_deinit_device(chip);
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 92e68e7..d58b06c 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -484,18 +484,6 @@ static const struct attribute_group lp5523_group = {
- 	.attrs = lp5523_attributes,
- };
- 
--static int lp5523_register_sysfs(struct i2c_client *client)
--{
--	struct device *dev = &client->dev;
--	int ret;
--
--	ret = sysfs_create_group(&dev->kobj, &lp5523_group);
--	if (ret < 0)
--		return ret;
--
--	return 0;
--}
--
- static void lp5523_unregister_sysfs(struct i2c_client *client)
- {
- 	struct device *dev = &client->dev;
-@@ -519,6 +507,7 @@ static struct lp55xx_device_config lp5523_cfg = {
- 	.set_led_current    = lp5523_set_led_current,
- 	.firmware_cb        = lp5523_firmware_loaded,
- 	.run_engine         = lp5523_run_engine,
-+	.dev_attr_group     = &lp5523_group,
- };
- 
- static int __devinit lp5523_probe(struct i2c_client *client,
-@@ -561,13 +550,15 @@ static int __devinit lp5523_probe(struct i2c_client *client,
- 	if (ret)
- 		goto err_register_leds;
- 
--	ret = lp5523_register_sysfs(client);
-+	ret = lp55xx_register_sysfs(chip);
- 	if (ret) {
- 		dev_err(&client->dev, "registering sysfs failed\n");
--		goto fail2;
-+		goto err_register_sysfs;
- 	}
--	return ret;
--fail2:
++	if (cfg->dev_attr_group)
++		sysfs_remove_group(&dev->kobj, cfg->dev_attr_group);
 +
-+	return 0;
-+
-+err_register_sysfs:
- 	lp55xx_unregister_leds(led, chip);
- err_register_leds:
- 	lp55xx_deinit_device(chip);
++	sysfs_remove_group(&dev->kobj, &lp55xx_engine_attr_group);
++}
++EXPORT_SYMBOL_GPL(lp55xx_unregister_sysfs);
+diff --git a/drivers/leds/leds-lp55xx-common.h b/drivers/leds/leds-lp55xx-common.h
+index 39f54d2..20586be 100644
+--- a/drivers/leds/leds-lp55xx-common.h
++++ b/drivers/leds/leds-lp55xx-common.h
+@@ -128,5 +128,6 @@ extern void lp55xx_unregister_leds(struct lp55xx_led *led,
+ 
+ /* common device attributes functions */
+ extern int lp55xx_register_sysfs(struct lp55xx_chip *chip);
++extern void lp55xx_unregister_sysfs(struct lp55xx_chip *chip);
+ 
+ #endif /* _LEDS_LP55XX_COMMON_H */
 -- 
 1.7.9.5
 
