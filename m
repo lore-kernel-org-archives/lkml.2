@@ -1,139 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab2LLPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 10:47:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2810 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754052Ab2LLPrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 10:47:15 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: qiuxishi@huawei.com
-Cc: wujianguo@huawei.com, jiang.liu@huawei.com, simon.jeons@gmail.com,
-        Andrew Morton <akpm@linux-foundation.org>, bp@alien8.de,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, liwanp@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 1/3] MCE: fix an error of mce_bad_pages statistics
-Date: Wed, 12 Dec 2012 10:46:23 -0500
-Message-Id: <1355327183-4452-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <50C7FB7D.2060801@huawei.com>
+	id S1754538Ab2LLPuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 10:50:39 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63415 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754314Ab2LLPuh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 10:50:37 -0500
+Message-ID: <50C8A7AE.3030500@gmail.com>
+Date: Wed, 12 Dec 2012 23:50:06 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 1/6] ACPI: Separate adding ACPI device objects from probing
+ ACPI drivers
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <4002729.BbipMAJtM0@vostro.rjw.lan>
+In-Reply-To: <4002729.BbipMAJtM0@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 11:35:25AM +0800, Xishi Qiu wrote:
-> Move poisoned page check at the beginning of the function in order to
-> fix the error.
-
-Thanks for the fix.
-It works fine both on normal pages and hugepages in my testing.
-
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
-Just nitpick below ...
-
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+On 12/10/2012 07:00 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Currently, as soon as an ACPI device node object (struct acpi_device)
+> is created, the driver core attempts to probe ACPI drivers against
+> it.  That leads to some unpleasant side effects, like the fact that
+> the boot code path for ACPI namespace scanning is different from the
+> analogous hot-plug code path (during boot ACPI drivers are not
+> present when ACPI device node objects are registered, so they are
+> guaranteed not to be probed, which is not the case during hot-plug).
+> That, in turn, leads to unnecessary complications in the PCI
+> enumeration algorithm.
+> 
+> Reduce the differences between the boot and hot-plug cases by
+> splitting the ACPI namespace scanning for devices into two passes,
+> such that struct acpi_device objects are registerd in the first
+> patch without probing ACPI drivers and the drivers are probed
+> against them directly in the second pass.  This way ACPI drivers
+> can assume that all of the ACPI device node objects in the given
+> scope will be registered when their .add() routines run and the
+> hot-plug case becomes the same as the boot case from their
+> perspective.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->  mm/memory-failure.c |   38 +++++++++++++++++---------------------
->  1 files changed, 17 insertions(+), 21 deletions(-)
+>  drivers/acpi/scan.c     |   96 +++++++++++++++++++++++++++++++++---------------
+>  include/acpi/acpi_bus.h |    1 
+>  2 files changed, 68 insertions(+), 29 deletions(-)
 > 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 8b20278..3a8b4b2 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1419,18 +1419,17 @@ static int soft_offline_huge_page(struct page *page, int flags)
->  	unsigned long pfn = page_to_pfn(page);
->  	struct page *hpage = compound_head(page);
-> 
-> +	if (PageHWPoison(hpage)) {
-> +		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
-> +		return -EBUSY;
-> +	}
-> +
->  	ret = get_any_page(page, pfn, flags);
->  	if (ret < 0)
->  		return ret;
->  	if (ret == 0)
->  		goto done;
-> 
-> -	if (PageHWPoison(hpage)) {
-> -		put_page(hpage);
-> -		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
-> -		return -EBUSY;
-> -	}
-> -
->  	/* Keep page count to indicate a given hugepage is isolated. */
->  	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
->  				MIGRATE_SYNC);
-> @@ -1441,12 +1440,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
->  		return ret;
->  	}
->  done:
-> -	if (!PageHWPoison(hpage))
-> -		atomic_long_add(1 << compound_trans_order(hpage),
-> -				&mce_bad_pages);
-> +	/* keep elevated page count for bad page */
-> +	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
->  	set_page_hwpoison_huge_page(hpage);
->  	dequeue_hwpoisoned_huge_page(hpage);
-> -	/* keep elevated page count for bad page */
-> +
-
-I think this comment refers to "returning without decrementing page refcount",
-and it's not about mce_bad_pages, so keeping the comment as it is seems good
-for me.
-
->  	return ret;
+> Index: linux/include/acpi/acpi_bus.h
+> ===================================================================
+> --- linux.orig/include/acpi/acpi_bus.h
+> +++ linux/include/acpi/acpi_bus.h
+> @@ -98,6 +98,7 @@ typedef void (*acpi_op_notify) (struct a
+>  struct acpi_bus_ops {
+>  	u32 acpi_op_add:1;
+>  	u32 acpi_op_start:1;
+> +	u32 acpi_op_match:1;
+>  };
+>  
+>  struct acpi_device_ops {
+> Index: linux/drivers/acpi/scan.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/scan.c
+> +++ linux/drivers/acpi/scan.c
+> @@ -494,7 +494,8 @@ static int acpi_bus_match(struct device
+>  	struct acpi_device *acpi_dev = to_acpi_device(dev);
+>  	struct acpi_driver *acpi_drv = to_acpi_driver(drv);
+>  
+> -	return !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
+> +	return acpi_dev->bus_ops.acpi_op_match
+> +		&& !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
 >  }
-> 
-> @@ -1488,6 +1486,11 @@ int soft_offline_page(struct page *page, int flags)
->  		}
->  	}
-> 
-> +	if (PageHWPoison(page)) {
-> +		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-> +		return -EBUSY;
-> +	}
-> +
->  	ret = get_any_page(page, pfn, flags);
->  	if (ret < 0)
->  		return ret;
-> @@ -1519,19 +1522,11 @@ int soft_offline_page(struct page *page, int flags)
->  		return -EIO;
->  	}
-> 
-> -	lock_page(page);
-> -	wait_on_page_writeback(page);
-> -
->  	/*
->  	 * Synchronized using the page lock with memory_failure()
->  	 */
-> -	if (PageHWPoison(page)) {
-> -		unlock_page(page);
-> -		put_page(page);
-> -		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-> -		return -EBUSY;
-> -	}
-> -
-> +	lock_page(page);
-> +	wait_on_page_writeback(page);
->  	/*
->  	 * Try to invalidate first. This should work for
->  	 * non dirty unmapped page cache pages.
-> @@ -1582,8 +1577,9 @@ int soft_offline_page(struct page *page, int flags)
->  		return ret;
-> 
->  done:
-> +	/* keep elevated page count for bad page */
->  	atomic_long_add(1, &mce_bad_pages);
->  	SetPageHWPoison(page);
-> -	/* keep elevated page count for bad page */
-> +
->  	return ret;
->  }
+Hi Rafael,
+	PCI host bridge hotplug has the same requirement to separate device
+enumeration from device driver binding. And VFIO has a similar requirement too.
+Yinghai and I have implemented two different solutions for PCI host bridge
+hotplug but all rejected by Greg. So it would be great if we could promote
+a common mechanism to the device core to temporarily disable binding drivers
+to devices, which could used to support ACPI hotplug, PCI hotplug and VFIO.
+Regards!
+Gerry
 
-Ditto here.
-
-Thanks,
-Naoya
