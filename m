@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab2LLUE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 15:04:57 -0500
-Received: from smtprelay.restena.lu ([158.64.1.62]:42085 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2LLUEz (ORCPT
+	id S1754971Ab2LLUGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 15:06:05 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60113 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab2LLUGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 15:04:55 -0500
-Date: Wed, 12 Dec 2012 21:04:34 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jacek Poplawski <jacekpoplawski@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: "attempt to access beyond end of device" on DVD
-Message-ID: <20121212210434.5cadf42c@neptune.home>
-In-Reply-To: <CAGDELX6CPevOq8EowLu1GUwiS6Yw4vjOz3S2AOewFBbt0pC_dw@mail.gmail.com>
-References: <CAGDELX7f-Ee-V_M8kbDONRFCTBbZM2H_Q17Bk_12r4xw85Wq4Q@mail.gmail.com>
-	<20121212014109.38e18eeb@neptune.home>
-	<CAGDELX6rtztDzQobfaUNB2iZSyxGL9vzu5mM4sG7bDip=SaBag@mail.gmail.com>
-	<20121212020348.0afa77e2@neptune.home>
-	<CAGDELX6L89ux2TXJLnm5aC2zNdSqQDZws+c5-OA0Xbtkt7Nw5g@mail.gmail.com>
-	<CAGDELX6CPevOq8EowLu1GUwiS6Yw4vjOz3S2AOewFBbt0pC_dw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 12 Dec 2012 15:06:02 -0500
+Message-ID: <50C8E3A3.4050106@linux.vnet.ibm.com>
+Date: Thu, 13 Dec 2012 04:05:55 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] KVM: x86: improve reexecute_instruction
+References: <50C5A747.1020105@linux.vnet.ibm.com> <20121211233641.GA14520@amt.cnet>
+In-Reply-To: <20121211233641.GA14520@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121220-1618-0000-0000-00000303DC81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 December 2012 Jacek Poplawski <jacekpoplawski@gmail.com> wrote:
-> OK, I was wrong previously.
+On 12/12/2012 07:36 AM, Marcelo Tosatti wrote:
+> On Mon, Dec 10, 2012 at 05:11:35PM +0800, Xiao Guangrong wrote:
+>> Changelog:
+>> There are some changes from Marcelo and Gleb's review, thank you all!
+>> - access indirect_shadow_pages in the protection of mmu-lock
+>> - fix the issue when unhandleable instruction access on large page
+>> - add a new test case for large page
+>>
+>> The current reexecute_instruction can not well detect the failed instruction
+>> emulation. It allows guest to retry all the instructions except it accesses
+>> on error pfn.
+>>
+>> For example, these cases can not be detected:
+>> - for tdp used
+>>   currently, it refused to retry all instructions. If nested npt is used, the
+>>   emulation may be caused by shadow page, it can be fixed by unshadow the
+>>   shadow page.
+>>
+>> - for shadow mmu
+>>   some cases are nested-write-protect, for example, if the page we want to
+>>   write is used as PDE but it chains to itself. Under this case, we should
+>>   stop the emulation and report the case to userspace.
+>>
+>> There are two test cases based on kvm-unit-test can trigger a infinite loop on
+>> current code (ept = 0), after this patchset, it can report the error to Qemu.
+>>
+>> Subject: [PATCH] access test: test unhandleable instruction
+>>
+>> Test the instruction which can not be handled by kvm
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 > 
-> I don't need to reload sr_mod, I only need to remount DVD.
-> 
-> The reason I was wrong is I was suspecting that DVD remounts itself
-> after eject, but looks like it doesn't. Also it means that the problem
-> is different than 3 years ago, because I am sure I was remounting DVD
-> by hand and now I use some automount feature of Arch Linux / GNOME3.
+> Please submit the test for inclusion. There should be some way to make
+> it fail.. 
 
-What kind of filesystem do you have on your CD/DVDs?
+Yes.
 
-[CCing linux-fsdevel as it seems like it may be a isofs or udf issue]
+But it is not easy. If the test cases run normally, kvm will report a error to Qemu
+then Qemu will exit the vcpu thread after dumping the vcpu state.
 
-Bruno
+We need to do something to let guest can be aware that the error report is triggered.
+I guess we can add a option in Qemu, say '-notify-guest' and allow Qemu to inject #GP
+to guest with a special ERROR_CODE if error is reported.
 
-> On 12/12/12, Jacek Poplawski <jacekpoplawski@gmail.com> wrote:
-> >> Did you check if unbinding drivers or unloading their modules has the
-> >> same effect as rebooting? That might help narrowing the area of code to
-> >> look at.
-> >
-> > You were right.
-> > I unmounted the DVD, then removed module sr_mod, reloaded it, inserted
-> > DVD again and copied missing files, now they are OK.
-> >
-> >
-> >> While at it, please tell us how your CD/DVD drive is connected and which
-> >> controller it's connected to (relevant dmesg parts).
-> >
-> > [    0.893465] ata5.00: ATAPI: Optiarc DVD RW AD-7203S, 1.05, max UDMA/100
-> > [    0.906796] ata5.00: configured for UDMA/100
-> > (...)
-> > [    1.232096] scsi 4:0:0:0: CD-ROM            Optiarc  DVD RW
-> > AD-7203S  1.05 PQ: 0 ANSI: 5
-> > (...)
-> > [  897.871546] sr0: scsi3-mmc drive: 125x/125x writer dvd-ram cd/rw
-> > xa/form2 cdda tray
-> > [  897.871726] sr 4:0:0:0: Attached scsi CD-ROM sr0
-> >
-> > I don't have other devices to test (and haven't tried loop device).
-> >
+> program a timer interrupt and #GP? 
+
+Could you please explain the detail?
+
