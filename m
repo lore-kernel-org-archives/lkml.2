@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab2LLJiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:38:21 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36400 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab2LLJiR (ORCPT
+	id S1753633Ab2LLJi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:38:28 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33604 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab2LLJiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:38:17 -0500
+	Wed, 12 Dec 2012 04:38:23 -0500
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Per Forlin <per.forlin@stericsson.com>,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 2/7] dmaengine: ste_dma40: use writel_relaxed for lcxa
-Date: Wed, 12 Dec 2012 10:37:16 +0100
-Message-Id: <1355305041-2338-3-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 4/7] dmaengine: ste_dma40: limit burst size to 16
+Date: Wed, 12 Dec 2012 10:37:18 +0100
+Message-Id: <1355305041-2338-5-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1355305041-2338-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1355305041-2338-1-git-send-email-fabio.baltieri@linaro.org>
@@ -25,53 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Per Forlin <per.forlin@stericsson.com>
 
-lcpa and lcla are written often and the cache_sync() overhead in writel
-is costly, especially for wlan where every single network packet (in RX
-mode) corresponds to a separate DMA transfer.
+The client is not aware of the maximum burst size in the dma driver.  If
+the size exceeds 16 set max to 16.
 
 Signed-off-by: Per Forlin <per.forlin@stericsson.com>
-Reviewed-by: Narayanan Gopalakrishnan <narayanan.gopalakrishnan@stericsson.com>
-Reviewed-by: Rabin Vincent <rabin.vincent@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/dma/ste_dma40_ll.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/dma/ste_dma40.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index 536e848..c0781ae 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -332,10 +332,10 @@ void d40_log_lli_lcpa_write(struct d40_log_lli_full *lcpa,
- {
- 	d40_log_lli_link(lli_dst, lli_src, next, flags);
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 16c96f5..0b80ee9 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2579,6 +2579,14 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 		return -EINVAL;
+ 	}
  
--	writel(lli_src->lcsp02, &lcpa[0].lcsp0);
--	writel(lli_src->lcsp13, &lcpa[0].lcsp1);
--	writel(lli_dst->lcsp02, &lcpa[0].lcsp2);
--	writel(lli_dst->lcsp13, &lcpa[0].lcsp3);
-+	writel_relaxed(lli_src->lcsp02, &lcpa[0].lcsp0);
-+	writel_relaxed(lli_src->lcsp13, &lcpa[0].lcsp1);
-+	writel_relaxed(lli_dst->lcsp02, &lcpa[0].lcsp2);
-+	writel_relaxed(lli_dst->lcsp13, &lcpa[0].lcsp3);
- }
- 
- void d40_log_lli_lcla_write(struct d40_log_lli *lcla,
-@@ -345,10 +345,10 @@ void d40_log_lli_lcla_write(struct d40_log_lli *lcla,
- {
- 	d40_log_lli_link(lli_dst, lli_src, next, flags);
- 
--	writel(lli_src->lcsp02, &lcla[0].lcsp02);
--	writel(lli_src->lcsp13, &lcla[0].lcsp13);
--	writel(lli_dst->lcsp02, &lcla[1].lcsp02);
--	writel(lli_dst->lcsp13, &lcla[1].lcsp13);
-+	writel_relaxed(lli_src->lcsp02, &lcla[0].lcsp02);
-+	writel_relaxed(lli_src->lcsp13, &lcla[0].lcsp13);
-+	writel_relaxed(lli_dst->lcsp02, &lcla[1].lcsp02);
-+	writel_relaxed(lli_dst->lcsp13, &lcla[1].lcsp13);
- }
- 
- static void d40_log_fill_lli(struct d40_log_lli *lli,
++	if (src_maxburst > 16) {
++		src_maxburst = 16;
++		dst_maxburst = src_maxburst * src_addr_width / dst_addr_width;
++	} else if (dst_maxburst > 16) {
++		dst_maxburst = 16;
++		src_maxburst = dst_maxburst * dst_addr_width / src_addr_width;
++	}
++
+ 	ret = dma40_config_to_halfchannel(d40c, &cfg->src_info,
+ 					  src_addr_width,
+ 					  src_maxburst);
 -- 
 1.7.12.1
 
