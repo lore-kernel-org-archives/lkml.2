@@ -1,129 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab2LLBdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:33:38 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:48744 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab2LLBdg (ORCPT
+	id S1754234Ab2LLBf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:35:56 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:37963 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2LLBfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:33:36 -0500
-Message-ID: <1355276008.1433.1.camel@kernel.cn.ibm.com>
-Subject: Re: [PATCH v3 4/5][RESEND] page_alloc: Make movablecore_map has
- higher priority
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
-        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Date: Tue, 11 Dec 2012 19:33:28 -0600
-In-Reply-To: <1355201817-27230-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1355193207-21797-5-git-send-email-tangchen@cn.fujitsu.com>
-	 <1355201817-27230-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 20:35:55 -0500
+X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 20:35:55 EST
+MIME-Version: 1.0
+Date: Wed, 12 Dec 2012 02:30:00 +0100
+Message-ID: <CA+UmAMHAxYH_USEWSoEocLSTkv7CJaXb5ZyZ_s3X_vjo4R7ZgA@mail.gmail.com>
+Subject: EMAIL ACCOUNT'S UPGRADE !!!
+From: ADMIN <devasenapathy@tnau.ac.in>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 12:56 +0800, Tang Chen wrote:
-> If kernelcore or movablecore is specified at the same time
-> with movablecore_map, movablecore_map will have higher
-> priority to be satisfied.
-> This patch will make find_zone_movable_pfns_for_nodes()
-> calculate zone_movable_pfn[] with the limit from
-> zone_movable_limit[].
-> 
-> change log:
-> Move find_usable_zone_for_movable() to free_area_init_nodes()
-> so that sanitize_zone_movable_limit() in patch 3 could use
-> initialized movable_zone.
-> 
-> Reported-by: Wu Jianguo <wujianguo@huawei.com>
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
-> ---
->  mm/page_alloc.c |   28 +++++++++++++++++++++++++---
->  1 files changed, 25 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 52c368e..00fa67d 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4839,9 +4839,17 @@ static void __init find_zone_movable_pfns_for_nodes(void)
->  		required_kernelcore = max(required_kernelcore, corepages);
->  	}
->  
-> -	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
-> -	if (!required_kernelcore)
-> +	/*
-> +	 * If neither kernelcore/movablecore nor movablecore_map is specified,
-> +	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
-> +	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
-> +	 */
-> +	if (!required_kernelcore) {
-> +		if (movablecore_map.nr_map)
-> +			memcpy(zone_movable_pfn, zone_movable_limit,
-> +				sizeof(zone_movable_pfn));
->  		goto out;
-> +	}
->  
->  	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
->  	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
-> @@ -4871,10 +4879,24 @@ restart:
->  		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
->  			unsigned long size_pages;
->  
-> +			/*
-> +			 * Find more memory for kernelcore in
-> +			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
-> +			 */
->  			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
->  			if (start_pfn >= end_pfn)
->  				continue;
->  
+-- 
+EMAIL ACCOUNT UPGRADE
 
-Hi Chen,
+Your mailbox has exceeded the maximum storage limit of 2.0 GB, which
+is set by the administrator, You Are Currently Running On 2.3GB Due To
+Hidden Files And Folder In Your Mailbox,You may not be able to send or
+receive new email(s) until you re-validate your mailbox. Please click
+the link below to re-validate your mailbox to upgrade space for more
+storage.
 
-> +			if (zone_movable_limit[nid]) {
-> +				end_pfn = min(end_pfn, zone_movable_limit[nid]);
-> +				/* No range left for kernelcore in this node */
-> +				if (start_pfn >= end_pfn) {
-> +					zone_movable_pfn[nid] =
-> +							zone_movable_limit[nid];
-> +					break;
-> +				}
-> +			}
-> +
+CLICK HERE: http://www.futebolbh.com.br/phpformul/use/DoGag/form1.html
 
-Could you explain this part of codes? hard to understand.
-
->  			/* Account for what is only usable for kernelcore */
->  			if (start_pfn < usable_startpfn) {
->  				unsigned long kernel_pages;
-> @@ -4934,12 +4956,12 @@ restart:
->  	if (usable_nodes && required_kernelcore > usable_nodes)
->  		goto restart;
->  
-> +out:
->  	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
->  	for (nid = 0; nid < MAX_NUMNODES; nid++)
->  		zone_movable_pfn[nid] =
->  			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
->  
-> -out:
->  	/* restore the node_state */
->  	node_states[N_HIGH_MEMORY] = saved_node_state;
->  }
-
-
+Your account will remain active after you have successfully confirmed
+your account.
+Copyright 2012 . All rights reserved.
