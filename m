@@ -1,174 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab2LLPX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 10:23:29 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54575 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2LLPX2 (ORCPT
+	id S1754317Ab2LLP3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 10:29:36 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57400 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab2LLP3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 10:23:28 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: rjw@sisk.pl
-Cc: jwerner@chromium.org, francescolavra.fl@gmail.com,
-        linux-pm@vger.kernel.org, deepthi@linux.vnet.ibm.com,
-        g.trinabh@gmail.com, linaro-dev@lists.linaro.org, len.brown@intel.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        snanda@chromium.org
-Subject: [PATCH] cpuidle - remove the power_specified field in the driver
-Date: Wed, 12 Dec 2012 16:23:21 +0100
-Message-Id: <1355325801-1317-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 12 Dec 2012 10:29:35 -0500
+Date: Wed, 12 Dec 2012 12:29:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, namhyung.kim@lge.com
+Subject: Re: [PATCH 1/4] perf hists: Exchange order of comparing items when
+ collapsing hists
+Message-ID: <20121212152926.GA2382@ghostprotocols.net>
+References: <1355128197-18193-1-git-send-email-namhyung@kernel.org>
+ <1355128197-18193-2-git-send-email-namhyung@kernel.org>
+ <20121210134434.GA6416@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210134434.GA6416@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch follows the discussion about reinitializing the power usage
-when a C-state is added/removed.
+Em Mon, Dec 10, 2012 at 02:44:34PM +0100, Jiri Olsa escreveu:
+> On Mon, Dec 10, 2012 at 05:29:54PM +0900, Namhyung Kim wrote:
+> > When comparing entries for collapsing put the given entry first, and then
+> > the iterated entry.  This is not the case of hist_entry__cmp() when called
+> > if given sort keys don't require collapsing.  So change the order for the
+> > sake of consistency.  It will be required for matching and/or linking
+> > multiple hist entries.
 
- https://lkml.org/lkml/2012/10/16/518
+> Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-We realized the power usage field is never filled and when it is
-filled for tegra, the power_specified flag is not set making all these
-values to be resetted when the driver is initialized with the set_power_state
-function.
+Hey,
 
-Julius and I feel this is over-engineered and the power_specified
-flag could be simply removed and continue assuming the states are
-backward sorted.
+Before:
 
-The menu governor select function is simplified as the power is ordered.
-Actually the condition is always true with the current code.
+[root@sandy ~]# perf diff
+# Event 'cycles'
+#
+# Baseline    Delta      Shared Object                              Symbol
+# ........  .......  .................  ..................................
+#
+    17.41%  -17.41%  [kernel.kallsyms]  [k] memset                        
+     0.38%   -0.38%  [kernel.kallsyms]  [k] strlcpy                       
+            +48.19%  [kernel.kallsyms]  [k] __blocking_notifier_call_chain
+            +46.96%  [kernel.kallsyms]  [k] radix_tree_lookup_slot        
+             +4.66%  [kernel.kallsyms]  [k] do_close_on_exec              
+    16.17%  -16.17%  [kernel.kallsyms]  [k] final_putname                 
+     4.17%   -4.17%  [kernel.kallsyms]  [k] shift_arg_pages               
+    30.74%  -30.74%  [kernel.kallsyms]  [k] kfree                         
+    14.93%  -14.93%  [kernel.kallsyms]  [k] unlock_page                   
+     0.03%   +0.15%  [kernel.kallsyms]  [k] native_write_msr_safe         
+    16.17%  -16.17%  libc-2.12.so       [.] _dl_addr                      
 
-The cpuidle_play_dead function is also simplified by doing a reverse lookup
-on the array.
+After:
 
-The set_power_states function is removed as it does no make sense anymore.
+[root@sandy ~]# perf diff
+# Event 'cycles'
+#
+# Baseline    Delta      Shared Object                              Symbol
+# ........  .......  .................  ..................................
+#
+    16.17%  -16.17%  libc-2.12.so       [.] _dl_addr                      
+            +48.19%  [kernel.kallsyms]  [k] __blocking_notifier_call_chain
+    14.93%  -14.93%  [kernel.kallsyms]  [k] unlock_page                   
+    30.74%  -30.74%  [kernel.kallsyms]  [k] kfree                         
+     4.17%   -4.17%  [kernel.kallsyms]  [k] shift_arg_pages               
+    16.17%  -16.17%  [kernel.kallsyms]  [k] final_putname                 
+            +46.96%  [kernel.kallsyms]  [k] radix_tree_lookup_slot        
+             +4.66%  [kernel.kallsyms]  [k] do_close_on_exec              
+     0.03%   +0.15%  [kernel.kallsyms]  [k] native_write_msr_safe         
+     0.38%   -0.38%  [kernel.kallsyms]  [k] strlcpy                       
+    17.41%  -17.41%  [kernel.kallsyms]  [k] memset                        
+[root@sandy ~]#
 
-As a consequence, this patch fix also the bug where on the dynamic C-state
-system, the power fields is not initialized.
+Got inverted.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Julius Werner <jwerner@chromium.org>
----
- drivers/cpuidle/cpuidle.c        |   17 ++++-------------
- drivers/cpuidle/driver.c         |   25 -------------------------
- drivers/cpuidle/governors/menu.c |    8 ++------
- include/linux/cpuidle.h          |    2 +-
- 4 files changed, 7 insertions(+), 45 deletions(-)
+The order was arbitrary, and was arbitrarily reversed, are you guys sure this
+is the only side effect?
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 8df53dd..e1f6860 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -69,24 +69,15 @@ int cpuidle_play_dead(void)
- {
- 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
- 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
--	int i, dead_state = -1;
--	int power_usage = -1;
-+	int i;
- 
- 	if (!drv)
- 		return -ENODEV;
- 
- 	/* Find lowest-power state that supports long-term idle */
--	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
--		struct cpuidle_state *s = &drv->states[i];
--
--		if (s->power_usage < power_usage && s->enter_dead) {
--			power_usage = s->power_usage;
--			dead_state = i;
--		}
--	}
--
--	if (dead_state != -1)
--		return drv->states[dead_state].enter_dead(dev, dead_state);
-+	for (i = drv->state_count - 1; i >= CPUIDLE_DRIVER_STATE_START; i--)
-+		if (drv->states[i].enter_dead)
-+			return drv->states[i].enter_dead(dev, i);
- 
- 	return -ENODEV;
- }
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index 3af841f..bb045f1 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -19,34 +19,9 @@ DEFINE_SPINLOCK(cpuidle_driver_lock);
- static void __cpuidle_set_cpu_driver(struct cpuidle_driver *drv, int cpu);
- static struct cpuidle_driver * __cpuidle_get_cpu_driver(int cpu);
- 
--static void set_power_states(struct cpuidle_driver *drv)
--{
--	int i;
--
--	/*
--	 * cpuidle driver should set the drv->power_specified bit
--	 * before registering if the driver provides
--	 * power_usage numbers.
--	 *
--	 * If power_specified is not set,
--	 * we fill in power_usage with decreasing values as the
--	 * cpuidle code has an implicit assumption that state Cn
--	 * uses less power than C(n-1).
--	 *
--	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
--	 * an power value of -1.  So we use -2, -3, etc, for other
--	 * c-states.
--	 */
--	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
--		drv->states[i].power_usage = -1 - i;
--}
--
- static void __cpuidle_driver_init(struct cpuidle_driver *drv)
- {
- 	drv->refcnt = 0;
--
--	if (!drv->power_specified)
--		set_power_states(drv);
- }
- 
- static int __cpuidle_register_driver(struct cpuidle_driver *drv, int cpu)
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index bd40b94..fe343a0 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -312,7 +312,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- {
- 	struct menu_device *data = &__get_cpu_var(menu_devices);
- 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
--	int power_usage = -1;
- 	int i;
- 	int multiplier;
- 	struct timespec t;
-@@ -383,11 +382,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 		if (s->exit_latency * multiplier > data->predicted_us)
- 			continue;
- 
--		if (s->power_usage < power_usage) {
--			power_usage = s->power_usage;
--			data->last_state_idx = i;
--			data->exit_us = s->exit_latency;
--		}
-+		data->last_state_idx = i;
-+		data->exit_us = s->exit_latency;
- 	}
- 
- 	/* not deepest C-state chosen for low predicted residency */
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 3711b34..24cd103 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -126,9 +126,9 @@ struct cpuidle_driver {
- 	struct module 		*owner;
- 	int                     refcnt;
- 
--	unsigned int		power_specified:1;
- 	/* set to 1 to use the core cpuidle time keeping (for all states). */
- 	unsigned int		en_core_tk_irqen:1;
-+	/* states array must be ordered in decreasing power consumption */
- 	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
- 	int			state_count;
- 	int			safe_state_index;
--- 
-1.7.5.4
+Jiri, IIRC you mentioned that there would be some patch with an --order switch,
+would that allow sorting by the entry that had the biggest change, etc?
 
+Holding on this for now.
+
+- Arnaldo
