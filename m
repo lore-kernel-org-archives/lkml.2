@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab2LLS2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:28:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab2LLS2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:28:46 -0500
-Date: Wed, 12 Dec 2012 13:28:38 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Durgadoss R <durgadoss.r@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: Thermal: Add a thermal notifier for user space
-Message-ID: <20121212182838.GA7497@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Durgadoss R <durgadoss.r@intel.com>,
-	Zhang Rui <rui.zhang@intel.com>
-References: <20121212180547.F12BE6606F0@gitolite.kernel.org>
+	id S1754556Ab2LLS3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:29:41 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:62210 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab2LLS3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:29:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212180547.F12BE6606F0@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrXC9hnBtqHguHh_tXphNutarPYj-nnUA_VAtY9XsfSbpA@mail.gmail.com>
+References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
+ <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
+ <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
+ <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
+ <20121204135445.GA7420@mail.hallyn.com> <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+ <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+ <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com>
+ <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+ <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
+ <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com>
+ <CALCETrXrX7V0uW1XQgUAoror1D1ymZL8_0PxjQRWEoSaXT+phg@mail.gmail.com> <CALCETrXC9hnBtqHguHh_tXphNutarPYj-nnUA_VAtY9XsfSbpA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Dec 2012 10:29:17 -0800
+Message-ID: <CALCETrWa10sLekJZaaRBJOJW8jnNNWNMy0pVTeu5+OvxS6ZY9A@mail.gmail.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 06:05:47PM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=1cc807a234cb988d69ba18f6a3a1c68d71e54bed
- > Commit:     1cc807a234cb988d69ba18f6a3a1c68d71e54bed
- > Parent:     e151a202a084f9f4310d1aa4398325c56ca95fda
- > Author:     Durgadoss R <durgadoss.r@intel.com>
- > AuthorDate: Tue Sep 18 11:05:03 2012 +0530
- > Committer:  Zhang Rui <rui.zhang@intel.com>
- > CommitDate: Mon Nov 5 14:00:08 2012 +0800
- > 
- >     Thermal: Add a thermal notifier for user space
- >     
- >     This patch registers a governor which will let the
- >     user land manage the platform thermals. Whenever a
- >     trip happens, this governor just notifies the user
- >     space using kobj_uevent().
- >     
- >     Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
- >     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+On Sat, Dec 8, 2012 at 3:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> I just tried to search to find actual uses of pI/fI.  Here's what I found:
 
- 
- > +config USER_SPACE
- > +	bool "User_space thermal governor"
- > +	depends on THERMAL
- > +	help
- > +	  Enable this to let the user space manage the platform thermals.
+I downloaded all the Fedora spec files and searched for file
+capabilities.  Assuming I didn't mess up, here's what I found:
 
-This is terribly generic sounding.  Might I suggest THERMAL_USER_SPACE instead ?
+fping.spec:%attr(0755,root,root) %caps(cap_net_raw=ep) %{_sbindir}/fping
+fping.spec:%attr(0755,root,root) %caps(cap_net_raw=ep) %{_sbindir}/fping6
+glibc.spec:%attr(755,root,root) %caps(cap_chown,cap_fowner=pe)
+%{_prefix}/libexec/pt_chown
+gnome-keyring.spec:%attr(0755,root,root) %caps(cap_ipc_lock=ep)
+%{_bindir}/gnome-keyring-daemon
+httpd.spec:%caps(cap_setuid,cap_setgid+pe)
+%attr(510,root,%{suexec_caller}) %{_sbindir}/suexec
+iputils.spec:%attr(0755,root,root) %caps(cap_net_raw=ep) %{_sbindir}/clockdiff
+iputils.spec:%attr(0755,root,root) %caps(cap_net_raw=ep) %{_sbindir}/arping
+iputils.spec:%attr(0755,root,root) %caps(cap_net_raw=ep
+cap_net_admin=ep) %{_bindir}/ping
+iputils.spec:%attr(0755,root,root) %caps(cap_net_raw=ep
+cap_net_admin=ep) %{_bindir}/ping6
+mtr.spec:%attr(0755,root,root) %caps(cap_net_raw=pe) %{_sbindir}/mtr
+policycoreutils.spec:%caps(cap_setpcap,cap_setuid,cap_fowner,cap_dac_override,cap_sys_admin,cap_sys_nice=pe)
+%{_sbindir}/seunshare
+policycoreutils.spec:%attr(0755,root,root)
+%caps(cap_setpcap,cap_audit_write,cap_sys_admin,cap_fowner,cap_chown,cap_dac_override=pe)
+%{_bindir}/newrole
+rpm.spec:- fix double-free on %caps in spec (#877512)
+rsh.spec:%attr(0755,root,root)  %caps(cap_net_bind_service=pe) %{_bindir}/rcp
+rsh.spec:%attr(0755,root,root)  %caps(cap_net_bind_service=pe) %{_bindir}/rlogin
+rsh.spec:%attr(0755,root,root)  %caps(cap_net_bind_service=pe) %{_bindir}/rsh
+systemd.spec:%caps(cap_dac_override,cap_sys_ptrace=pe)
+%{_bindir}/systemd-detect-virt
+wireshark.spec:%attr(0750, root, wireshark)
+%caps(cap_net_raw,cap_net_admin=eip) %{_sbindir}/dumpcap
+xorg-x11-server.spec:%global Xorgperms %attr(0711,root,root)
+%caps(cap_sys_admin,cap_sys_rawio,cap_dac_override=pe)
 
-	Dave
+The only inheritable bit is on dumpcap, and it's not necessary there.
 
+--Andy
