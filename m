@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2LLSkv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:40:51 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42850 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab2LLSku (ORCPT
+	id S1754742Ab2LLSmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:42:11 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60336 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab2LLSmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:40:50 -0500
-Date: Wed, 12 Dec 2012 18:40:49 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwysocha@redhat.com
-Subject: Re: [PATCH] vfs: remove unneeded permission check from path_init
-Message-ID: <20121212184049.GO4939@ZenIV.linux.org.uk>
-References: <1355234176-767-1-git-send-email-jlayton@redhat.com>
+	Wed, 12 Dec 2012 13:42:10 -0500
+Date: Wed, 12 Dec 2012 19:42:07 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121212184207.GC10374@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
+ <20121211155432.GC1612@dhcp22.suse.cz>
+ <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
+ <20121212090652.GB32081@dhcp22.suse.cz>
+ <CALWz4iwq+vRN+rreOk7Jg4rHWWBSmNwBW8Kko45E-D8Vi66eQA@mail.gmail.com>
+ <20121212183446.GB10374@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355234176-767-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <20121212183446.GB10374@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 08:56:16AM -0500, Jeff Layton wrote:
-> When path_init is called with a valid dfd, that code checks permissions
-> on the open directory fd and returns an error if the check fails. This
-> permission check is redundant, however.
+On Wed 12-12-12 19:34:46, Michal Hocko wrote:
+> On Wed 12-12-12 10:09:43, Ying Han wrote:
+> [...]
+> > But If i look at the callers of mem_cgroup_iter(), they all look like
+> > the following:
+> > 
+> > memcg = mem_cgroup_iter(root, NULL, &reclaim);
+> > do {
+> > 
+> >     // do something
+> > 
+> >     memcg = mem_cgroup_iter(root, memcg, &reclaim);
+> > } while (memcg);
+> > 
+> > So we get out of the loop when memcg returns as NULL, where the
+> > last_visited is cached as NULL as well thus no css_get(). That is what
+> > I meant by "each reclaim thread closes the loop".
 > 
-> Both callers of path_init immediately call link_path_walk afterward. The
-> first thing that link_path_walk does is to check for exec permissions
-> at the starting point of the path walk.
+> OK
 > 
-> In most cases, these checks are very quick, but when the dfd is for a
-> file on a NFS mount with the actimeo=0, each permission check goes
-> out onto the wire. The result is 2 identical ACCESS calls.
+> > If that is true, the current implementation of mem_cgroup_iter_break()
+> > changes that.
 > 
-> Given that these codepaths are fairly "hot", I think it makes sense to
-> eliminate the permission check in path_init and simply assume that the
-> caller will eventually check the permissions before proceeding.
+> I do not understand this though. Why should we touch the zone-iter
+> there?  Just consider, if we did that then all the parallel targeted
 
-Applied, with one modification to commit message - the second paragraph
-replaced with
+Bahh, parallel is only confusing here. Say first child triggers a hard
+limit reclaim then root of the hierarchy will be reclaimed first.
+iter_break would reset iter->last_visited. Then B triggers the same
+reclaim but we will start again from root rather than the first child
+because it doesn't know where the other one stopped.
 
-Both callers of path_init immediately call link_path_walk afterward. The
-first thing that link_path_walk does for pathnames that do not consist
-only of slashes is to check for exec permissions at the starting point of
-the path walk.  And this check in path_init() is on the path taken only
-when *name != '/' && *name != '\0'.
+Hope this clarifies it and sorry for all the confusion.
+
+> reclaimers (! global case) would hammer the first node (root) as they
+> wouldn't continue where the last one finished.
+> 
+> [...]
+> 
+> Thanks!
+-- 
+Michal Hocko
+SUSE Labs
