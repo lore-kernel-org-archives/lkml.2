@@ -1,156 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab2LLW1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 17:27:47 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:18249 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab2LLW1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 17:27:45 -0500
-Message-ID: <201212122227.qBCMRiNg000851@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 12 Dec 2012 17:24:39 -0500
-Subject: [PATCH] arch/tile: provide PT_FLAGS_COMPAT value in pt_regs
-To: <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
+	id S1755695Ab2LLW15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 17:27:57 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59054 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755662Ab2LLW1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 17:27:54 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 1/6] ACPI: Separate adding ACPI device objects from probing ACPI drivers
+Date: Wed, 12 Dec 2012 23:32:57 +0100
+Message-ID: <2789050.ITilpEgQsC@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <50C8B2E9.5050700@gmail.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <4002729.BbipMAJtM0@vostro.rjw.lan> <50C8B2E9.5050700@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag is set for ptrace GETREGS or PEEKUSER for processes
-that are COMPAT, i.e. 32-bit.  This allows things like strace
-to easily discover what personality to use, for example.
+On Thursday, December 13, 2012 12:38:01 AM Jiang Liu wrote:
+> On 12/10/2012 07:00 AM, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Currently, as soon as an ACPI device node object (struct acpi_device)
+> snip
+>   
+> > @@ -1600,48 +1608,77 @@ static acpi_status acpi_bus_check_add(ac
+> >  	 * We may already have an acpi_device from a previous enumeration.  If
+> >  	 * so, we needn't add it again, but we may still have to start it.
+> >  	 */
+> > -	device = NULL;
+> >  	acpi_bus_get_device(handle, &device);
+> >  	if (ops->acpi_op_add && !device) {
+> > -		acpi_add_single_object(&device, handle, type, sta, ops);
+> > -		/* Is the device a known good platform device? */
+> > -		if (device
+> > -		    && !acpi_match_device_ids(device, acpi_platform_device_ids))
+> > -			acpi_create_platform_device(device);
+> > -	}
+> > +		struct acpi_bus_ops add_ops = *ops;
+> >  
+> > -	if (!device)
+> > -		return AE_CTRL_DEPTH;
+> > -
+> > -	if (ops->acpi_op_start && !(ops->acpi_op_add)) {
+> > -		status = acpi_start_single_object(device);
+> > -		if (ACPI_FAILURE(status))
+> > +		add_ops.acpi_op_match = 0;
+> > +		acpi_add_single_object(&device, handle, type, sta, &add_ops);
+> > +		if (!device)
+> >  			return AE_CTRL_DEPTH;
+> > +
+> > +		device->bus_ops.acpi_op_match = 1;
+> >  	}
+> >  
+> >  	if (!*return_value)
+> >  		*return_value = device;
+> > +
+> >  	return AE_OK;
+> >  }
+> >  
+> > +static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
+> > +					void *context, void **not_used)
+> > +{
+> > +	struct acpi_bus_ops *ops = context;
+> > +	struct acpi_device *device;
+> > +	acpi_status status = AE_OK;
+> > +
+> > +	if (acpi_bus_get_device(handle, &device))
+> > +		return AE_CTRL_DEPTH;
+> > +
+> > +	if (ops->acpi_op_add) {
+> > +		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+> > +			/* This is a known good platform device. */
+> > +			acpi_create_platform_device(device);
+> > +		} else {
+> > +			int ret = device_attach(&device->dev);
+> > +			acpi_hot_add_bind(device);
+> > +			if (ret)
+> > +				status = AE_CTRL_DEPTH;
+> > +		}
+> > +	} else if (ops->acpi_op_start) {
+> > +		if (ACPI_FAILURE(acpi_start_single_object(device)))
+> > +			status = AE_CTRL_DEPTH;
+> > +	}
+> > +	return status;
+> > +}
+> > +
+> >  static int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
+> >  			 struct acpi_device **child)
+> >  {
+> > -	acpi_status status;
+> >  	void *device = NULL;
+> > +	acpi_status status;
+> > +	int ret = 0;
+> >  
+> >  	status = acpi_bus_check_add(handle, 0, ops, &device);
+> > -	if (ACPI_SUCCESS(status))
+> > +	if (ACPI_FAILURE(status)) {
+> > +		ret = -ENODEV;
+> > +		goto out;
+> > +	}
+> > +
+> > +	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> > +			    acpi_bus_check_add, NULL, ops, &device);
+> > +	if (device)
+> >  		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> > -				    acpi_bus_check_add, NULL, ops, &device);
+> > +				    acpi_bus_probe_start, NULL, ops, NULL);
+> Hi Rafael,
+> 	Should we call acpi_bus_probe_start for the top device corresponding to 
+> "handle" too here?
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/include/uapi/asm/ptrace.h |    6 ++++
- arch/tile/kernel/ptrace.c           |   57 ++++++++++++++++++++++++-----------
- 2 files changed, 46 insertions(+), 17 deletions(-)
+Do you mean separately?  I don't think so.  It will be covered by the namespace
+walking, won't it?
 
-diff --git a/arch/tile/include/uapi/asm/ptrace.h b/arch/tile/include/uapi/asm/ptrace.h
-index c717d0f..0d22088 100644
---- a/arch/tile/include/uapi/asm/ptrace.h
-+++ b/arch/tile/include/uapi/asm/ptrace.h
-@@ -84,5 +84,11 @@ struct pt_regs {
- #define PTRACE_O_TRACEMIGRATE	0x00010000
- #define PTRACE_EVENT_MIGRATE	16
- 
-+/*
-+ * Flag bits in pt_regs.flags that are part of the ptrace API.
-+ * We start our numbering higher up to avoid confusion with the
-+ * non-ABI kernel-internal values that use the low 16 bits.
-+ */
-+#define PT_FLAGS_COMPAT		0x10000  /* process is an -m32 compat process */
- 
- #endif /* _UAPI_ASM_TILE_PTRACE_H */
-diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
-index e92e405..64ba102 100644
---- a/arch/tile/kernel/ptrace.c
-+++ b/arch/tile/kernel/ptrace.c
-@@ -45,6 +45,41 @@ void ptrace_disable(struct task_struct *child)
- 	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
- }
- 
-+/*
-+ * Get registers from task and ready the result for userspace.
-+ * Note that we localize the API issues to getregs() and putregs() at
-+ * some cost in performance, e.g. we need a full pt_regs copy for
-+ * PEEKUSR, and two copies for POKEUSR.  But in general we expect
-+ * GETREGS/PUTREGS to be the API of choice anyway.
-+ */
-+static char *getregs(struct task_struct *child, struct pt_regs *uregs)
-+{
-+	*uregs = *task_pt_regs(child);
-+
-+	/* Set up flags ABI bits. */
-+	uregs->flags = 0;
-+#ifdef CONFIG_COMPAT
-+	if (task_thread_info(child)->status & TS_COMPAT)
-+		uregs->flags |= PT_FLAGS_COMPAT;
-+#endif
-+
-+	return (char *)uregs;
-+}
-+
-+/* Put registers back to task. */
-+static void putregs(struct task_struct *child, struct pt_regs *uregs)
-+{
-+	struct pt_regs *regs = task_pt_regs(child);
-+
-+	/* Don't allow overwriting the kernel-internal flags word. */
-+	uregs->flags = regs->flags;
-+
-+	/* Only allow setting the ICS bit in the ex1 word. */
-+	uregs->ex1 = PL_ICS_EX1(USER_PL, EX1_ICS(uregs->ex1));
-+
-+	*regs = *uregs;
-+}
-+
- long arch_ptrace(struct task_struct *child, long request,
- 		 unsigned long addr, unsigned long data)
- {
-@@ -53,14 +88,13 @@ long arch_ptrace(struct task_struct *child, long request,
- 	long ret = -EIO;
- 	char *childreg;
- 	struct pt_regs copyregs;
--	int ex1_offset;
- 
- 	switch (request) {
- 
- 	case PTRACE_PEEKUSR:  /* Read register from pt_regs. */
- 		if (addr >= PTREGS_SIZE)
- 			break;
--		childreg = (char *)task_pt_regs(child) + addr;
-+		childreg = getregs(child, &copyregs) + addr;
- #ifdef CONFIG_COMPAT
- 		if (is_compat_task()) {
- 			if (addr & (sizeof(compat_long_t)-1))
-@@ -79,17 +113,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 	case PTRACE_POKEUSR:  /* Write register in pt_regs. */
- 		if (addr >= PTREGS_SIZE)
- 			break;
--		childreg = (char *)task_pt_regs(child) + addr;
--
--		/* Guard against overwrites of the privilege level. */
--		ex1_offset = PTREGS_OFFSET_EX1;
--#if defined(CONFIG_COMPAT) && defined(__BIG_ENDIAN)
--		if (is_compat_task())   /* point at low word */
--			ex1_offset += sizeof(compat_long_t);
--#endif
--		if (addr == ex1_offset)
--			data = PL_ICS_EX1(USER_PL, EX1_ICS(data));
--
-+		childreg = getregs(child, &copyregs) + addr;
- #ifdef CONFIG_COMPAT
- 		if (is_compat_task()) {
- 			if (addr & (sizeof(compat_long_t)-1))
-@@ -102,11 +126,12 @@ long arch_ptrace(struct task_struct *child, long request,
- 				break;
- 			*(long *)childreg = data;
- 		}
-+		putregs(child, &copyregs);
- 		ret = 0;
- 		break;
- 
- 	case PTRACE_GETREGS:  /* Get all registers from the child. */
--		if (copy_to_user(datap, task_pt_regs(child),
-+		if (copy_to_user(datap, getregs(child, &copyregs),
- 				 sizeof(struct pt_regs)) == 0) {
- 			ret = 0;
- 		}
-@@ -115,9 +140,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 	case PTRACE_SETREGS:  /* Set all registers in the child. */
- 		if (copy_from_user(&copyregs, datap,
- 				   sizeof(struct pt_regs)) == 0) {
--			copyregs.ex1 =
--				PL_ICS_EX1(USER_PL, EX1_ICS(copyregs.ex1));
--			*task_pt_regs(child) = copyregs;
-+			putregs(child, &copyregs);
- 			ret = 0;
- 		}
- 		break;
+Rafael
+
+
 -- 
-1.7.10.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
