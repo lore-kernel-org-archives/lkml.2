@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab2LLJFV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:05:21 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57911 "EHLO bear.ext.ti.com"
+	id S1752868Ab2LLJGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:06:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33322 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751328Ab2LLJFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:05:12 -0500
+	id S1752616Ab2LLJFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:05:17 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Grant Likely <grant.likely@secretlab.ca>,
         Thierry Reding <thierry.reding@avionic-design.de>
 CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v4 1/7] leds: leds-pwm: Convert to use devm_get_pwm
-Date: Wed, 12 Dec 2012 10:04:46 +0100
-Message-ID: <1355303092-15523-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v4 4/7] pwm: core: Rename of_pwm_request() to of_pwm_get() and export it
+Date: Wed, 12 Dec 2012 10:04:49 +0100
+Message-ID: <1355303092-15523-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com>
@@ -24,85 +24,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the driver to use the new API for requesting pwm so we can take
-advantage of the pwm_lookup table to find the correct pwm to be used for the
-LED functionality.
+Allow client driver to use of_pwm_get() to get the PWM they need. This
+is needed for drivers which handle more than one PWM separately, like
+leds-pwm driver, which have:
+
+pwmleds {
+	compatible = "pwm-leds";
+	kpad {
+		label = "omap4::keypad";
+		pwms = <&twl_pwm 0 7812500>;
+		max-brightness = <127>;
+	};
+
+	charging {
+		label = "omap4:green:chrg";
+		pwms = <&twl_pwmled 0 7812500>;
+		max-brightness = <255>;
+	};
+};
+
+in the dts files.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/leds/leds-pwm.c  | 19 ++++++-------------
- include/linux/leds_pwm.h |  2 +-
- 2 files changed, 7 insertions(+), 14 deletions(-)
+ drivers/pwm/core.c  | 8 ++++----
+ include/linux/pwm.h | 7 +++++++
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index 2157524..351257c 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -67,12 +67,11 @@ static int led_pwm_probe(struct platform_device *pdev)
- 		cur_led = &pdata->leds[i];
- 		led_dat = &leds_data[i];
- 
--		led_dat->pwm = pwm_request(cur_led->pwm_id,
--				cur_led->name);
-+		led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
- 		if (IS_ERR(led_dat->pwm)) {
- 			ret = PTR_ERR(led_dat->pwm);
--			dev_err(&pdev->dev, "unable to request PWM %d\n",
--					cur_led->pwm_id);
-+			dev_err(&pdev->dev, "unable to request PWM for %s\n",
-+				cur_led->name);
- 			goto err;
- 		}
- 
-@@ -86,10 +85,8 @@ static int led_pwm_probe(struct platform_device *pdev)
- 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
- 
- 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
--		if (ret < 0) {
--			pwm_free(led_dat->pwm);
-+		if (ret < 0)
- 			goto err;
--		}
- 	}
- 
- 	platform_set_drvdata(pdev, leds_data);
-@@ -98,10 +95,8 @@ static int led_pwm_probe(struct platform_device *pdev)
- 
- err:
- 	if (i > 0) {
--		for (i = i - 1; i >= 0; i--) {
-+		for (i = i - 1; i >= 0; i--)
- 			led_classdev_unregister(&leds_data[i].cdev);
--			pwm_free(leds_data[i].pwm);
--		}
- 	}
- 
- 	return ret;
-@@ -115,10 +110,8 @@ static int led_pwm_remove(struct platform_device *pdev)
- 
- 	leds_data = platform_get_drvdata(pdev);
- 
--	for (i = 0; i < pdata->num_leds; i++) {
-+	for (i = 0; i < pdata->num_leds; i++)
- 		led_classdev_unregister(&leds_data[i].cdev);
--		pwm_free(leds_data[i].pwm);
--	}
- 
- 	return 0;
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index 903138b..3cb741d 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -471,7 +471,7 @@ static struct pwm_chip *of_node_to_pwmchip(struct device_node *np)
  }
-diff --git a/include/linux/leds_pwm.h b/include/linux/leds_pwm.h
-index 33a0711..a65e964 100644
---- a/include/linux/leds_pwm.h
-+++ b/include/linux/leds_pwm.h
-@@ -7,7 +7,7 @@
- struct led_pwm {
- 	const char	*name;
- 	const char	*default_trigger;
--	unsigned	pwm_id;
-+	unsigned	pwm_id __deprecated;
- 	u8 		active_low;
- 	unsigned 	max_brightness;
- 	unsigned	pwm_period_ns;
+ 
+ /**
+- * of_pwm_request() - request a PWM via the PWM framework
++ * of_pwm_get() - request a PWM via the PWM framework
+  * @np: device node to get the PWM from
+  * @con_id: consumer name
+  *
+@@ -486,8 +486,7 @@ static struct pwm_chip *of_node_to_pwmchip(struct device_node *np)
+  * becomes mandatory for devices that look up the PWM device via the con_id
+  * parameter.
+  */
+-static struct pwm_device *of_pwm_request(struct device_node *np,
+-					 const char *con_id)
++struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
+ {
+ 	struct pwm_device *pwm = NULL;
+ 	struct of_phandle_args args;
+@@ -545,6 +544,7 @@ put:
+ 
+ 	return pwm;
+ }
++EXPORT_SYMBOL_GPL(of_pwm_get);
+ 
+ /**
+  * pwm_add_table() - register PWM device consumers
+@@ -587,7 +587,7 @@ struct pwm_device *pwm_get(struct device *dev, const char *con_id)
+ 
+ 	/* look up via DT first */
+ 	if (IS_ENABLED(CONFIG_OF) && dev && dev->of_node)
+-		return of_pwm_request(dev->of_node, con_id);
++		return of_pwm_get(dev->of_node, con_id);
+ 
+ 	/*
+ 	 * We look up the provider in the static table typically provided by
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index cc908a5..76a1959 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -175,6 +175,7 @@ struct pwm_device *of_pwm_xlate_with_flags(struct pwm_chip *pc,
+ 		const struct of_phandle_args *args);
+ 
+ struct pwm_device *pwm_get(struct device *dev, const char *con_id);
++struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id);
+ void pwm_put(struct pwm_device *pwm);
+ 
+ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
+@@ -213,6 +214,12 @@ static inline struct pwm_device *pwm_get(struct device *dev,
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static inline struct pwm_device *of_pwm_get(struct device_node *np,
++					    const char *con_id)
++{
++	return ERR_PTR(-ENODEV);
++}
++
+ static inline void pwm_put(struct pwm_device *pwm)
+ {
+ }
 -- 
 1.8.0
 
