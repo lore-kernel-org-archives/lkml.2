@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab2LLTj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:39:26 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28729 "EHLO
+	id S1755047Ab2LLTjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:39:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28793 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab2LLTjW (ORCPT
+	with ESMTP id S1754763Ab2LLTjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Dec 2012 14:39:22 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=uR51_XVMv30A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=lJNXu2PuPr0A:10 a=7ytzXt4uK6ZxC01KpIsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=S24oy3bIskwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=5WcL8wYZfTgA:10 a=yY-IUfAz-ee8wHmZXb4A:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121212192733.221810086@goodmis.org>
+Message-Id: <20121212193920.529719829@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 12 Dec 2012 14:27:33 -0500
+Date: Wed, 12 Dec 2012 14:27:35 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -23,49 +23,53 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Ingo Molnar <mingo@kernel.org>,
         Frank Rowand <frank.rowand@am.sony.com>,
         Mike Galbraith <bitbucket@online.de>
-Subject: [RFC][PATCH RT 0/4 v2] sched/rt: Lower rq lock contention latencies on many CPU boxes
+Subject: [RFC][PATCH RT 2/4 v2] sched/rt: Try to migrate task if preempting pinned rt task
+References: <20121212192733.221810086@goodmis.org>
+Content-Disposition: inline; filename=fix-post-sched-push.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version I rearranged the patches a little so that the IPI patch
-comes last. As the first 3 patches are less controversal, and should
-probably be added now.
+If a higher priority task is about to preempt a task that has been
+pinned to a CPU. Try to first see if the higher priority task can
+preempt another task instead.
 
-The difference in this version was that I added more comments, but
-more importantly I also added a sched feature called RT_PUSH_IPI.
-When this feature is enabled, it switches the pull logic to send
-an IPI to the RT overloaded CPU to do a push instead of doing  the
-pull locally.
+That is, a high priority process wakes up on a CPU while a currently
+running task can still migrate, it will miss pushing that high priority
+task to another CPU. If by the time the task schedules, the task
+that it's about to preempt could have changed its affinity and
+is pinned. At this time, it may be better to move the task to another
+CPU if one exists that is currently running a lower priority task
+than the one about to be preempted.
 
-When the feature is disabled, the push/pull logic stays the same as
-it always has (with rq lock contention).
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Now I've discussed this with Clark, and we noticed that the contention
-didn't show up until we tried it on a 24 CPU machine. On a 16 CPU machine
-it ran fine. Thus, by default, machines with 16 or less CPUs will
-have the RT_PUSH_IPI feature disabled. Machines with 17 or more
-possible CPUs will have the feature enabled at boot up. Note, we haven't
-tried it on a machine with 17 to 23 CPUs.
-
-It is safe to enable or disable this feature at run time, although
-you may cause latencies in doing so, but there shouldn't be any missed
-wakeups or anything else that is serious. The worse that can happen
-is that you miss a pull, and an RT task will stay on its CPU when it
-could have migrated to another CPU that just lowered its priority.
-Well, if you are worried about that, don't change it when you care :-)
-
-The 16 CPUs is just a heuristic, and people may debate it. And perhaps
-you may not like how the push/pull default changes between different
-machines. I could also add a command line switch to force enable/disable
-at boot, and/or I could add a config as well.
-
-Right now, by default <= 16 CPU machines are as it always was, and
-17 or more CPU machines have this new logic enabled. Either one can
-change it at run time via the debugfs directory (unfortunately it's
-not a sysctl).
-
-Comments?
-
--- Steve
+Index: linux-rt.git/kernel/sched/rt.c
+===================================================================
+--- linux-rt.git.orig/kernel/sched/rt.c
++++ linux-rt.git/kernel/sched/rt.c
+@@ -1804,8 +1804,22 @@ skip:
+ 
+ static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *p = prev;
++
++	/*
++	 * If we are preempting a pinned task see if we can push
++	 * the higher priority task first.
++	 */
++	if (prev->on_rq && (prev->nr_cpus_allowed <= 1 || prev->migrate_disable) &&
++	    has_pushable_tasks(rq) && rq->rt.highest_prio.next < prev->prio) {
++		p = _pick_next_task_rt(rq);
++
++		if (p != prev && p->nr_cpus_allowed > 1 && push_rt_task(rq))
++			p = _pick_next_task_rt(rq);
++	}
++
+ 	/* Try to pull RT tasks here if we lower this rq's prio */
+-	if (rq->rt.highest_prio.curr > prev->prio)
++	if (rq->rt.highest_prio.curr > p->prio)
+ 		pull_rt_task(rq);
+ }
+ 
 
