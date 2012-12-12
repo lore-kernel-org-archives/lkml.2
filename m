@@ -1,66 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2LLTBB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:01:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51132 "EHLO mail.zytor.com"
+	id S1754826Ab2LLTHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:07:32 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59858 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753949Ab2LLTBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:01:00 -0500
-Message-ID: <50C8D458.4050006@zytor.com>
-Date: Wed, 12 Dec 2012 11:00:40 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754149Ab2LLTHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 14:07:30 -0500
+Date: Wed, 12 Dec 2012 21:00:21 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Nelson <robertcnelson@gmail.com>
+CC: Paolo Pisati <paolo.pisati@canonical.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
+ original voltage values
+Message-ID: <20121212190021.GA29854@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1355312753-16514-1-git-send-email-paolo.pisati@canonical.com>
+ <1355312753-16514-2-git-send-email-paolo.pisati@canonical.com>
+ <CAOCHtYhgQQX5560+bOHJGJ3EWqrE2JtdUfDNzk_R2Pgkw6c9+w@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC GIT PULL] "Nuke 386-DX/SX support" changes for v3.8
-References: <20121211111026.GA26507@gmail.com> <CA+55aFzJX-EKC4Z98+KEaca0V27p8PxqZXiPox=TuuhytUTziw@mail.gmail.com>
-In-Reply-To: <CA+55aFzJX-EKC4Z98+KEaca0V27p8PxqZXiPox=TuuhytUTziw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <CAOCHtYhgQQX5560+bOHJGJ3EWqrE2JtdUfDNzk_R2Pgkw6c9+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 10:04 AM, Linus Torvalds wrote:
-> On Tue, Dec 11, 2012 at 3:10 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>
->> This tree removes ancient-386-CPUs support and thus zaps quite a
->> bit of complexity:
->
-> Btw, I think we should probably at least consider taking this one step
-> further, and remove the dear old FPU emulation support too. Remove
-> CONFIG_MATH_EMULATION and all of arch/x86/math-emu, along with a lot
-> of small special cases.
->
-> Or do people still use the 486SX?
->
-> Now, the math emulation hasn't been all that fundamentally problematic
-> (compared to lack of xadd etc), but it does result in some
-> complexities in exception handling and ptrace (grep for HAVE_HWFP or
-> "hard_math" or a number of other magic things). None of which have
-> likely been tested at all in the last ten years, so who knows if it
-> actually *works* or not.
->
-> Maybe somebody could try booting with "no387". Does it actually work?
->
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It builds and boots, at least.  I'm currently installing Red Hat 4.1 in 
-a VM so I can test to see if it does anything more than that.  It 
-doesn't get in the way the same case the old 386 bits does, so I'm more 
-reluctant to remove it, but it does touch a lot of paths.
+Hi,
 
-There were a *bunch* of embedded 486 clones made, some still in 
-production as far as I know, and I wouldn't be surprised if some of them 
-lacked FPU.  I guess we'll see.
+On Wed, Dec 12, 2012 at 12:13:35PM -0600, Robert Nelson wrote:
+> On Wed, Dec 12, 2012 at 5:45 AM, Paolo Pisati
+> <paolo.pisati@canonical.com> wrote:
+> > Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+> > ---
+> >  drivers/regulator/core.c |   16 ++++++++++++++--
+> >  1 file changed, 14 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> > index e872c8b..c347fd0 100644
+> > --- a/drivers/regulator/core.c
+> > +++ b/drivers/regulator/core.c
+> > @@ -2250,6 +2250,7 @@ int regulator_set_voltage(struct regulator *regul=
+ator, int min_uV, int max_uV)
+> >  {
+> >         struct regulator_dev *rdev =3D regulator->rdev;
+> >         int ret =3D 0;
+> > +       int old_min_uV, old_max_uV;
+> >
+> >         mutex_lock(&rdev->mutex);
+> >
+> > @@ -2271,18 +2272,29 @@ int regulator_set_voltage(struct regulator *reg=
+ulator, int min_uV, int max_uV)
+> >         ret =3D regulator_check_voltage(rdev, &min_uV, &max_uV);
+> >         if (ret < 0)
+> >                 goto out;
+> > +
+> > +       /* restore original values in case of error */
+> > +       old_min_uV =3D regulator->min_uV;
+> > +       old_max_uV =3D regulator->max_uV;
+> >         regulator->min_uV =3D min_uV;
+> >         regulator->max_uV =3D max_uV;
+> >
+> >         ret =3D regulator_check_consumers(rdev, &min_uV, &max_uV);
+> >         if (ret < 0)
+> > -               goto out;
+> > +               goto out2;
+> >
+> >         ret =3D _regulator_do_set_voltage(rdev, min_uV, max_uV);
+> > -
+> > +       if (ret < 0)
+> > +               goto out2;
+> > +
+> >  out:
+> >         mutex_unlock(&rdev->mutex);
+> >         return ret;
+> > +out2:
+> > +       regulator->min_uV =3D old_min_uV;
+> > +       regulator->max_uV =3D old_max_uV;
+> > +       mutex_unlock(&rdev->mutex);
+> > +       return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(regulator_set_voltage);
+> >
+> > --
+> > 1.7.10.4
+>=20
+> Nice! This fixes the 800Mhz lockup on bootup after a software reset we
+> were seeing on the Beagle xM's with v3.7.x/v3.6.x...
+>=20
+> Tested-by: Robert Nelson <robertcnelson@gmail.com>
 
-	-hpa
+if this fixes a boot lockup with older kernel, I believe this deserves a
+Cc: stable@vger.kernel.org.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+--=20
+balbi
 
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQyNRFAAoJEIaOsuA1yqREGOMQAKrdaHEhlkTlu8ZVLk+Awu/5
+3PQ6eaOQwkYWrY6RZ0rMTshEUZvraaJ2Ge3vWTdR5eaIPaDSE3EgDh7JjqosAlu1
+PC6p19mPxUqijsL/ZAWP7oHs5m7xw/5jKlzBaemlel2SOOppSlI5i17aocRVibhB
+vtLrJgdTlUZ5RAxUMOIg3zai6K0P36THLdOC00X+PKbvCg3TeWoR/6/nTgFCXADH
+i/0R81dHRLv7aYKi+vBGmyxplEy8Fv3zovfOInE8sDxjvSLlumWXjwPzjm7R5nJ/
+O+rJWTcEG2UJzv1eaHvKYGWg/rHnHO2Cjc5KJ3G4EDHBfLWpoCfpOnayaNuWj1KA
+asMjTUrQoTZ7eTNqvpsWWZinlqyaxkPtyVNJun5QKObZFeVot7rKOxvdTSqQbtu9
+vcXNHAcTwoLHvlnro+nZrqmSJrLXB4icQJ8GJBJJsmp6fpLT/HRliD8OauOu413I
+JYBKq8NeAWN7RDbxqTJWvHGuykUh6kfPSWaASLPRAMR6jidex4WFSgw0qQZwQQY/
+9dq2JasIPFFoCJKQochmXgGhj6l1SB+PtO+omURB+BhoryphkB5TElOToIk54lNy
+78jAQgRa1qUZeU6RphDX/UKjESF+HGJVpPw50oRQ+XFTWp0S54CkGqsZfsLjlJAa
+3k7Ii23H2kYEtHXl9Rvn
+=7f5T
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
