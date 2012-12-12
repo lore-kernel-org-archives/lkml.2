@@ -1,104 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2LLSTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:19:46 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35419 "EHLO
+	id S1754789Ab2LLSTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:19:37 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:40856 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753966Ab2LLSTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:19:44 -0500
+	id S1753966Ab2LLSTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:19:35 -0500
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>, Rob Landley <rob@landley.net>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH 01/26] vsprintf: Add extension %pSR - print_symbol replacement
-Date: Wed, 12 Dec 2012 10:18:50 -0800
-Message-Id: <7542485752d1a01815a68c900be498a87aabe0b0.1355335227.git.joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>, linux-doc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
+        linux-edac@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, cluster-devel@redhat.com,
+        linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-kernel@zh-kernel.org,
+        linux-alpha@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-c6x-dev@linux-c6x.org, linux-ia64@vger.kernel.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        linux-am33-list@redhat.com, linux@openrisc.net,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org
+Subject: [TRIVIAL PATCH 00/26] treewide: Add and use vsprintf extension %pSR
+Date: Wed, 12 Dec 2012 10:18:49 -0800
+Message-Id: <cover.1355335227.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
-In-Reply-To: <cover.1355335227.git.joe@perches.com>
-References: <cover.1355335227.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-print_symbol takes a long and converts it to a function
-name and offset.  %pS does something similar, but doesn't
-translate the address via __builtin_extract_return_addr.
-%pSR does the translation.
+Remove the somewhat awkward uses of print_symbol and convert all the
+existing uses to a new vsprintf pointer type of %pSR.
 
-This will enable replacing multiple calls like
-	printk(...);
-	printk_symbol(addr);
+print_symbol can be interleaved when it is used in a sequence like:
+
+	printk("something: ...");
+	print_symbol("%s", addr);
 	printk("\n");
-with a single non-interleavable in dmesg
-	printk("... %pSR\n", (void *)addr);
 
-Update documentation too.
+Instead use:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- Documentation/printk-formats.txt |    2 ++
- lib/vsprintf.c                   |   18 +++++++++++++-----
- 2 files changed, 15 insertions(+), 5 deletions(-)
+	printk("something: %pSR\n", (void *)addr);
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index 8ffb274..69a5ca1 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -17,6 +17,8 @@ Symbols/Function Pointers:
- 	%pF	versatile_init+0x0/0x110
- 	%pf	versatile_init
- 	%pS	versatile_init+0x0/0x110
-+	%pSR	versatile_init+0x9/0x110
-+		(with __builtin_extract_return_addr() translation)
- 	%ps	versatile_init
- 	%pB	prev_fn_of_versatile_init+0x88/0x88
- 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index fab33a9..832ff0b 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -534,14 +534,21 @@ char *string(char *buf, char *end, const char *s, struct printf_spec spec)
- 
- static noinline_for_stack
- char *symbol_string(char *buf, char *end, void *ptr,
--		    struct printf_spec spec, char ext)
-+		    struct printf_spec spec, const char *fmt)
- {
--	unsigned long value = (unsigned long) ptr;
-+	unsigned long value;
- #ifdef CONFIG_KALLSYMS
- 	char sym[KSYM_SYMBOL_LEN];
--	if (ext == 'B')
-+#endif
-+
-+	if (fmt[1] == 'R')
-+		ptr = __builtin_extract_return_addr(ptr);
-+	value = (unsigned long)ptr;
-+
-+#ifdef CONFIG_KALLSYMS
-+	if (*fmt == 'B')
- 		sprint_backtrace(sym, value);
--	else if (ext != 'f' && ext != 's')
-+	else if (*fmt != 'f' && *fmt != 's')
- 		sprint_symbol(sym, value);
- 	else
- 		sprint_symbol_no_offset(sym, value);
-@@ -987,6 +994,7 @@ int kptr_restrict __read_mostly;
-  * - 'f' For simple symbolic function names without offset
-  * - 'S' For symbolic direct pointers with offset
-  * - 's' For symbolic direct pointers without offset
-+ * - '[FfSs]R' as above with __builtin_extract_return_addr() translation
-  * - 'B' For backtraced symbolic direct pointers with offset
-  * - 'R' For decoded struct resource, e.g., [mem 0x0-0x1f 64bit pref]
-  * - 'r' For raw struct resource, e.g., [mem 0x0-0x1f flags 0x201]
-@@ -1059,7 +1067,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 	case 'S':
- 	case 's':
- 	case 'B':
--		return symbol_string(buf, end, ptr, spec, *fmt);
-+		return symbol_string(buf, end, ptr, spec, fmt);
- 	case 'R':
- 	case 'r':
- 		return resource_string(buf, end, ptr, spec, fmt);
+Add a new %p[SsFf]R vsprintf extension that can perform the same
+symbol function/address/offset formatting as print_symbol to
+reduce the number and styles of message logging functions.
+
+print_symbol used __builtin_extract_return_addr for those architectures
+like S/390 and SPARC that have offset or masked addressing.
+%p[FfSs]R uses the same gcc __builtin
+
+Joe Perches (26):
+  vsprintf: Add extension %pSR - print_symbol replacement
+  alpha: Convert print_symbol to %pSR
+  arm: Convert print_symbol to %pSR
+  arm64: Convert print_symbol to %pSR
+  avr32: Convert print_symbol to %pSR
+  c6x: Convert print_symbol to %pSR
+  ia64: Convert print_symbol to %pSR
+  m32r: Convert print_symbol to %pSR
+  mn10300: Convert print_symbol to %pSR
+  openrisc: Convert print_symbol to %pSR
+  powerpc: Convert print_symbol to %pSR
+  s390: Convert print_symbol to %pSR
+  sh: Convert print_symbol to %pSR
+  um: Convert print_symbol to %pSR
+  unicore32: Convert print_symbol to %pSR
+  x86: Convert print_symbol to %pSR
+  xtensa: Convert print_symbol to %pSR
+  drivers: base: Convert print_symbol to %pSR
+  gfs2: Convert print_symbol to %pSR
+  sysfs: Convert print_symbol to %pSR
+  irq: Convert print_symbol to %pSR
+  smp_processor_id: Convert print_symbol to %pSR
+  mm: Convert print_symbol to %pSR
+  xtensa: Convert print_symbol to %pSR
+  x86: head_64.S: Use vsprintf extension %pSR not print_symbol
+  kallsyms: Remove print_symbol
+
+ Documentation/filesystems/sysfs.txt         |    4 +-
+ Documentation/printk-formats.txt            |    2 +
+ Documentation/zh_CN/filesystems/sysfs.txt   |    4 +-
+ arch/alpha/kernel/traps.c                   |    8 ++----
+ arch/arm/kernel/process.c                   |    4 +-
+ arch/arm64/kernel/process.c                 |    4 +-
+ arch/avr32/kernel/process.c                 |   25 ++++++-----------------
+ arch/c6x/kernel/traps.c                     |    3 +-
+ arch/ia64/kernel/process.c                  |   13 ++++-------
+ arch/m32r/kernel/traps.c                    |    6 +---
+ arch/mn10300/kernel/traps.c                 |    8 +++---
+ arch/openrisc/kernel/traps.c                |    7 +----
+ arch/powerpc/platforms/cell/spu_callbacks.c |   12 ++++------
+ arch/s390/kernel/traps.c                    |   28 +++++++++++++++-----------
+ arch/sh/kernel/process_32.c                 |    4 +-
+ arch/um/kernel/sysrq.c                      |    6 +---
+ arch/unicore32/kernel/process.c             |    5 ++-
+ arch/x86/kernel/cpu/mcheck/mce.c            |   13 ++++++-----
+ arch/x86/kernel/dumpstack.c                 |    5 +--
+ arch/x86/kernel/head_64.S                   |    4 +-
+ arch/x86/kernel/process_32.c                |    2 +-
+ arch/x86/mm/mmio-mod.c                      |    4 +-
+ arch/x86/um/sysrq_32.c                      |    9 ++-----
+ arch/xtensa/kernel/traps.c                  |    6 +---
+ drivers/base/core.c                         |    4 +-
+ fs/gfs2/glock.c                             |    4 +-
+ fs/gfs2/trans.c                             |    3 +-
+ fs/sysfs/file.c                             |    4 +-
+ include/linux/kallsyms.h                    |   18 -----------------
+ kernel/irq/debug.h                          |   15 ++++++-------
+ kernel/kallsyms.c                           |   11 ----------
+ lib/smp_processor_id.c                      |    2 +-
+ lib/vsprintf.c                              |   18 ++++++++++++----
+ mm/memory.c                                 |    8 +++---
+ mm/slab.c                                   |    8 ++----
+ 35 files changed, 117 insertions(+), 164 deletions(-)
+
 -- 
 1.7.8.112.g3fd21
 
