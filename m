@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2LLVPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 16:15:40 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64876 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2LLVPj (ORCPT
+	id S1755220Ab2LLVTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 16:19:45 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:40665 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab2LLVTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 16:15:39 -0500
-Message-ID: <50C8F3F8.1020102@gmail.com>
-Date: Wed, 12 Dec 2012 15:15:36 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Boojin Kim <boojin.kim@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH 3/3] ARM: MM: Add the workaround of Errata 766421
-References: <001901cdd669$4cd77070$e6865150$%kim@samsung.com>
-In-Reply-To: <001901cdd669$4cd77070$e6865150$%kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Dec 2012 16:19:44 -0500
+Date: Thu, 13 Dec 2012 08:19:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: [GIT PULL] KVM updates for the 3.8 merge window
+Message-Id: <20121213081935.90098f39e6da6ee17e902324@canb.auug.org.au>
+In-Reply-To: <20121212123519.GA11549@amt.cnet>
+References: <20121212123519.GA11549@amt.cnet>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Dec_2012_08_19_35_+1100_XRySf42qdbHnbFer"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2012 06:00 PM, Boojin Kim wrote:
-> This patch adds the workaround of errata 766421 that adds 'dmb' when changing
-> the translation regime after conditions that the errata 766421 may occur.
-> Concretely, Add 'dmb' when changing ASID and secure state for cortex-A15 r0p4.
-> 
-> Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
-> ---
->  arch/arm/Kconfig             |   13 +++++++++++++
->  arch/arm/mach-exynos/Kconfig |    1 +
->  arch/arm/mm/proc-v7-2level.S |    2 ++
->  3 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 93397da..9bd34dd 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1417,6 +1417,19 @@ config ARM_ERRATA_775420
->  	 to deadlock. This workaround puts DSB before executing ISB if
->  	 an abort may occur on cache maintenance.
-> 
-> +config ARM_ERRATA_766421
-> +	bool "ARM errata: Strongly-Ordered/Device load or NC LDREX could return incorrect data"
-> +	depends on CPU_V7
-> +	help
-> +	  This option enables the workaround for the erratum 766421 affecting
-> +	  Cortex-A15 erratum (r0p4).
-> +	  In certain situations, a strongly ordered or device load instruction,
-> +	  or a non-cacheable normal memory load-exclusive instruction could
-> +	  match multiple fill buffers and return incorrect data.
-> +	  This workaround is add DMB instruction when making any change to the
-> +	  translation regime and before doing any new loads/stores/preloads
-> +	  in the new translation regime.
-> +
->  config ARM_ERRATA_773022
->  	bool "ARM errata: incorrect instructions may be executed from loop buffer"
->  	depends on CPU_V7
-> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-> index bb92f4c..4e28e1c 100644
-> --- a/arch/arm/mach-exynos/Kconfig
-> +++ b/arch/arm/mach-exynos/Kconfig
-> @@ -66,6 +66,7 @@ config SOC_EXYNOS5250
->  	select S5P_PM if PM
->  	select S5P_SLEEP if PM
->  	select SAMSUNG_DMADEV
-> +	select ARM_ERRATA_766421
->  	help
->  	  Enable EXYNOS5250 SoC support
-> 
-> diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
-> index fd045e7..c663b2e 100644
-> --- a/arch/arm/mm/proc-v7-2level.S
-> +++ b/arch/arm/mm/proc-v7-2level.S
-> @@ -53,6 +53,8 @@ ENTRY(cpu_v7_switch_mm)
->  #endif
->  #ifdef CONFIG_ARM_ERRATA_754322
->  	dsb
-> +#elif CONFIG_ARM_ERRATA_766421
-> +	dmb
+--Signature=_Thu__13_Dec_2012_08_19_35_+1100_XRySf42qdbHnbFer
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Despite the comments on the 1st patch, this one would still be needed as
-it cannot be done before the kernel runs.
+Hi Marcello, Alexander,
 
-However, if you have 754322 and 766421 enabled, we would have dsb and
-dmb. We do something like this instead:
+On Wed, 12 Dec 2012 10:35:19 -0200 Marcelo Tosatti <mtosatti@redhat.com> wr=
+ote:
+>
+> Please pull from
+>=20
+> git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/kvm-3.8-1=20
+>=20
+> to receive the KVM updates for the 3.8 merge window, including
+> considerable KVM/PPC work, x86 kvmclock vsyscall support, IA32_TSC_ADJUST
+> MSR emulation, amongst others.
 
-#if defined(CONFIG_ARM_ERRATA_754322) || defined(CONFIG_ARM_ERRATA_766421)
-  	dsb
-#endif
+There is a section of this tree (the kvm-ppc tree in linux-next) that has
+been rebased before being merged into this tree.   Alexander, please
+don't do that (especially since it has *not* bee rebased in the kvm-ppc
+tree but more work has been added on top of it :-().
 
-Rob
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->  #endif
->  	mcr	p15, 0, r1, c13, c0, 1		@ set context ID
->  	isb
-> --
-> 1.7.5.4
-> 
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+--Signature=_Thu__13_Dec_2012_08_19_35_+1100_XRySf42qdbHnbFer
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQyPTnAAoJEECxmPOUX5FEGLsP/RweN+TQkBJhMfFoZO/10fJL
+gX2efbsTxqRmrtKGrHQVhlGdUfcG3kRC4dWRquOu7VDyvqjUlQSi5zJqwUSVeH1l
+XrsSAC88gyBGxNdiOUddQ+lh4tmEBfzl+1OOjYzHxC1xcdc8pcNlGU8Rtb7Yk8oa
+QXpep7ddXF4pIIGDTcdolc+QbfYln+pr1DauWcfWbqs/Hbgts+53q7J9Mz7YrtQG
+FCVeBkM4Shu0yoLn6HdLfUub6K16gCzFcqEdmrHVWOI3EWkn0eef9y0xvfI+z8lH
+0DyEakoyZaoFpJaVDU2eS8RXPucZhQ+Z/iNIHlv8DNV95jgWlEE/AN3pqN0QWQ1O
+ib6RneWGQ8q7ZKoNmygs8ESDWw9edEC5dR04Hfah5Dc+h8QnBxCZhWOohGMVx9ua
+6D7gUeD3CeDPxfr0H18U93GR8AeLVPSlEqDeZ9FUZSVqqqMChMR+9/1PiBRZytiG
+/ea5qMyB+QxEZzpPHCxBhwG0uggB7nN5tyghxQNpJKQGWro5nY2Ku6aH/epEvRYH
+d1u2VCOYRyyQX9TeOmdWiX8PlvVqIxAq4c8xqyJJmGxCHtsBLPMKjAgULFto2IWa
+mAyOLjfd8ML21pqb0IvDWzfzjRZCrKc8SbVRPYdWxz4kP92U4LwdPS69x6ieSEPG
+Xy1Gzo+aWkPGGZUN9GMm
+=TYib
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_Dec_2012_08_19_35_+1100_XRySf42qdbHnbFer--
