@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab2LLI7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 03:59:32 -0500
-Received: from szxga04-in.huawei.com ([119.145.14.67]:56848 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab2LLI7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 03:59:31 -0500
-Date: Wed, 12 Dec 2012 09:59:02 +0100
-From: Claudio Fontana <Claudio.Fontana@huawei.com>
-Subject: [PATCH RESEND 3] ARM: plat-versatile: move secondary CPU startup into
- cpuinit
-In-reply-to: <50B47C31.2040709@huawei.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Christoffer Dall <c.dall@virtualopensystems.com>
-Message-id: <50C84756.60200@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-References: <50B47C31.2040709@huawei.com>
+	id S1752317Ab2LLJAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:00:49 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60833 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab2LLJAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 04:00:48 -0500
+Message-ID: <50C847AC.3030100@ti.com>
+Date: Wed, 12 Dec 2012 10:00:28 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] leds: leds-pwm: Add device tree bindings
+References: <1355133637-2784-1-git-send-email-peter.ujfalusi@ti.com> <1355133637-2784-5-git-send-email-peter.ujfalusi@ti.com> <20121211072545.GD8294@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121211072545.GD8294@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/11/2012 08:25 AM, Thierry Reding wrote:
+>> +static const struct of_device_id of_pwm_leds_match[] = {
+>> +	{ .compatible = "pwm-leds", },
+>> +	{},
+>> +};
+> 
+> Doesn't this cause a compiler warning for !OF builds?
 
-Using __CPUINIT instead of __INIT puts the secondary CPU startup code
-into the "right" section: it will not be freed in hotplug configurations,
-allowing hot-add of cpus, while still getting freed in non-hotplug configs.
+This is not causing any compiler warnings.
 
-Signed-off-by: Claudio Fontana <claudio.fontana@huawei.com>
-Tested-by: Claudio Fontana <claudio.fontana@huawei.com>
-
-diff --git a/arch/arm/plat-versatile/headsmp.S b/arch/arm/plat-versatile/headsmp.S
-index dd703ef..19fe180 100644
---- a/arch/arm/plat-versatile/headsmp.S
-+++ b/arch/arm/plat-versatile/headsmp.S
-@@ -11,7 +11,7 @@
- #include <linux/linkage.h>
- #include <linux/init.h>
- 
--	__INIT
-+	__CPUINIT
- 
- /*
-  * Realview/Versatile Express specific entry point for secondary CPUs.
 -- 
-1.7.12.1
-
-
+Péter
