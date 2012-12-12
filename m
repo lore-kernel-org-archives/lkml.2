@@ -1,36 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab2LLBf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 20:35:56 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:37963 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab2LLBfz (ORCPT
+	id S1754447Ab2LLBj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 20:39:29 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51463 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593Ab2LLBj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 20:35:55 -0500
-X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 20:35:55 EST
+	Tue, 11 Dec 2012 20:39:28 -0500
+Date: Wed, 12 Dec 2012 09:37:37 +0800
+From: Liu Bo <bo.li.liu@oracle.com>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+Subject: Re: 3.7.0-rc8 btrfs locking issue
+Message-ID: <20121212013736.GA12318@liubo>
+Reply-To: bo.li.liu@oracle.com
+References: <50BF7129.90602@sandia.gov>
+ <20121209140442.GA14309@liubo.jp.oracle.com>
+ <50C7604B.7070203@sandia.gov>
 MIME-Version: 1.0
-Date: Wed, 12 Dec 2012 02:30:00 +0100
-Message-ID: <CA+UmAMHAxYH_USEWSoEocLSTkv7CJaXb5ZyZ_s3X_vjo4R7ZgA@mail.gmail.com>
-Subject: EMAIL ACCOUNT'S UPGRADE !!!
-From: ADMIN <devasenapathy@tnau.ac.in>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C7604B.7070203@sandia.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-EMAIL ACCOUNT UPGRADE
+On Tue, Dec 11, 2012 at 09:33:15AM -0700, Jim Schutt wrote:
+> On 12/09/2012 07:04 AM, Liu Bo wrote:
+> > On Wed, Dec 05, 2012 at 09:07:05AM -0700, Jim Schutt wrote:
+> > Hi Jim,
+> > 
+> > Could you please apply the following patch to test if it works?
+> 
+> Hi,
+> 
+> So far, with your patch applied I've been unable to reproduce
+> the recursive deadlock.  Thanks a lot for this patch!
+> This issue has been troubling me for a while.
 
-Your mailbox has exceeded the maximum storage limit of 2.0 GB, which
-is set by the administrator, You Are Currently Running On 2.3GB Due To
-Hidden Files And Folder In Your Mailbox,You may not be able to send or
-receive new email(s) until you re-validate your mailbox. Please click
-the link below to re-validate your mailbox to upgrade space for more
-storage.
+Hi Jim,
 
-CLICK HERE: http://www.futebolbh.com.br/phpformul/use/DoGag/form1.html
+Good news for us :)
 
-Your account will remain active after you have successfully confirmed
-your account.
-Copyright 2012 . All rights reserved.
+> 
+> I've been trying to learn more about btrfs internals -
+> if you have the time to answer a couple questions about
+> your patch, I'd really appreciate it.
+
+See below.
+
+> 
+> > 
+> > (It's against 3.7-rc8.)
+> > 
+> > diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+> > index 3d3e2c1..100289b 100644
+> > --- a/fs/btrfs/extent-tree.c
+> > +++ b/fs/btrfs/extent-tree.c
+> > @@ -3346,7 +3346,8 @@ u64 btrfs_get_alloc_profile(struct btrfs_root
+> > *root, int data)
+> >  
+> >  	if (data)
+> >  		flags = BTRFS_BLOCK_GROUP_DATA;
+> > -	else if (root == root->fs_info->chunk_root)
+> > +	else if (root == root->fs_info->chunk_root ||
+> > +		 root == root->fs_info->dev_root)
+> >  		flags = BTRFS_BLOCK_GROUP_SYSTEM;
+> >  	else
+> >  		flags = BTRFS_BLOCK_GROUP_METADATA;
+> > @@ -3535,6 +3536,7 @@ static u64 get_system_chunk_thresh(struct
+> > btrfs_root *root, u64 type)
+> >  		num_dev = 1;	/* DUP or single */
+> >  
+> >  	/* metadata for updaing devices and chunk tree */
+> > +	num_dev = num_dev << 1
+> 
+> AFAICS this is doubling the size of the reserve, which
+> reduces the chance of a recursive do_chunk_alloc(), right?
+> 
+
+Not like that, we hit the deadlock because updating device tree also
+uses METADATA chunk, which may be called when we're actually allocating
+a METADATA chunk, so the patch I sent you makes updating device tree
+use SYSTEM chunk, which we'll have some code to check if it is enough
+before allocating a chunk(if not, we'll allocate a SYSTEM chunk first).
+
+Here I double the size just because the worst case of allocating a
+DATA/METADATA chunk -may- results in
+
+1)adding a SYSTEM chunk +
+2)adding dev extent per chunk stripe +
+3)updating chunk stripes's bytes_used
+
+> >  	return btrfs_calc_trans_metadata_size(root, num_dev + 1);
+> 
+> btrfs_calc_trans_metadata_size(root, num_items) multiplies its
+> num_items argument by another factor of three - do you know if
+> there is there some rationale behind that number, or is it
+> perhaps also an empirically determined factor?
+
+The height of Btrfs's metadata btree is at most 8,
+leaf is on 0 level while node is at most on 7 level.
+
+Each btree update may results in COWing a node and its sibling nodes,
+where the factor of tree comes from
+
+> 
+> What I'm wondering about is that if the size of the reserve is
+> empirically determined, will it need to be increased again
+> later when machines are more capable, and can handle a higher
+> load?
+> 
+> Do you think it's feasible to modify the locking for
+> do_chunk_alloc to allow it to recurse without deadlock?
+
+Well, it could be, but IMO it'll bring us complexity, so worse
+maintainance.
+
+Any questions? Feel free to ask.
+
+thanks,
+liubo
