@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab2LLLmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 06:42:47 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:60508 "EHLO
+	id S1752212Ab2LLLoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 06:44:03 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:54083 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab2LLLmq (ORCPT
+	with ESMTP id S1751208Ab2LLLoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 06:42:46 -0500
+	Wed, 12 Dec 2012 06:44:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <50C85850.7010906@ti.com>
-References: <1354538503-22671-1-git-send-email-javier.martinez@collabora.co.uk>
- <CAAwP0s2qXuJzwEh-AVORbPApr6XT0JAfsFjrxKDvXArqYk0qXQ@mail.gmail.com> <50C85850.7010906@ti.com>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Wed, 12 Dec 2012 12:42:25 +0100
-Message-ID: <CAAwP0s3gf16hZi6RVhsi7ee0YW_boPRy9--pukRcKJfMiWFKDg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] ARM/dts: omap3: Add DT support for IGEP devices
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, grant.likely@secretlab.ca,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Enrico Butera <ebutera@gmail.com>,
-        Matthias Brugger <matthias.bgg@googlemail.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1355280374.17101.325.camel@gandalf.local.home>
+References: <CAJd=RBCk0eWQqTk-BX8_=aBdYEQnbnf57dHZdcVbWbVY=33OhQ@mail.gmail.com>
+	<1355149273.17101.176.camel@gandalf.local.home>
+	<CAJd=RBDprA5ruzY6-uQ3L5eSX3Muk8fSpQZbbmsK0oAGwk0WtQ@mail.gmail.com>
+	<1355277274.17101.323.camel@gandalf.local.home>
+	<1355280374.17101.325.camel@gandalf.local.home>
+Date: Wed, 12 Dec 2012 19:44:00 +0800
+Message-ID: <CAJd=RBBLLtOCwVipcKD3g6xRWgVcfWi1q5m6p4TmwAcgOCh+4Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] sched: rt: fix selecting runqueue for task to be pushed
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 11:11 AM, Benoit Cousson <b-cousson@ti.com> wrote:
-> Hi Javier,
+On Wed, Dec 12, 2012 at 10:46 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2012-12-11 at 20:54 -0500, Steven Rostedt wrote:
 >
-> On 12/12/2012 09:25 AM, Javier Martinez Canillas wrote:
->> On Mon, Dec 3, 2012 at 1:41 PM, Javier Martinez Canillas
->> <javier.martinez@collabora.co.uk> wrote:
->>> IGEP technology devices are TI OMAP3 SoC based industrial embedded
->>> and computer-on-module boards. This patch-set adds initial device
->>> tree support for these devices.
->>>
->>> The device trees allows to boot from an MMC and are working all the
->>> components that already have device tree support on OMAP3 SoCs:
->>>
->>> - MMC/SD
->>> - UARTs
->>> - GPIO LEDs
->>> - TWL4030 codec audio
->>> - pinmux/pinconf pinctrl
->>>
->>> Some peripheral are still not working such as Flash storage and
->>> Ethernet but support for these will also be included once the
->>> OMAP GPMC device tree binding patches land on mainline.
->>>
->>> This is a v3 of the patch-set that solves issues pointed out by
->>> Enric Balletbo and Benoit Cousson.
->>>
->>> The patch-set is composed of the following patches:
->>>
->>> [PATCH v3 1/3] ARM/dts: omap3: Add generic DT support for IGEP devices
->>> [PATCH v3 2/3] ARM/dts: omap3: Add support for IGEPv2 board
->>> [PATCH v3 3/3] ARM/dts: omap3: Add support for IGEP COM Module
->>>
->>> Best regards,
->>> Javier
->>> --
+>> I'm actually thinking that that test should always fail. The
+>> cpupri_find() does a scan of all priorities up to but not including the
+>> current task's priority. If cpupri_find() finds a mask, it means that it
+>> found CPUs that are running only tasks of lower priority than the task
+>> we are checking. Which means, it should never include the task's CPU, as
+>> that CPU should have a higher priority than what is being returned by
+>> lowest_mask. If it can't find a set of CPUs of lower priority, it should
+>> return false, and the find_lowest_rq() should exit.
 >>
->> Hi Benoit and Tony,
->>
->> Any comments on these?
+>> I'll add a WARN_ON_ONCE() there, and see if I can trigger it. :-/
 >
-> Nope, that's fine. I'll applied the series for 3.9.
+> Ah, for select_task_rq_rt() it can get that CPU, because it's called in
+> the wakeup path before the task is added into the CPUs priority. And we
+> definitely want the current CPU in that case.
 >
-> Thanks,
-> Benoit
->
->
+Hm ... the latency of the woken task increases iff we overload its
+runqueue, no?
 
-Great, thanks a lot for!
-
-Best regards,
-Javier
+Hillf
