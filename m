@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2LLQ4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 11:56:14 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7190 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab2LLQ4N (ORCPT
+	id S1754403Ab2LLRAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 12:00:19 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48323 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab2LLRAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 11:56:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 12 Dec 2012 08:54:32 -0800
-Message-ID: <50C8B725.3050602@nvidia.com>
-Date: Wed, 12 Dec 2012 18:56:05 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Dec 2012 12:00:16 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Subject: [PATCH v2] HID: i2c-hid: add mutex protecting open/close race
+Date: Wed, 12 Dec 2012 18:00:02 +0100
+Message-Id: <1355331602-1164-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.12.2012 18:08, Thierry Reding wrote:
-> I've briefly discussed this with Stephen on IRC because I thought I had
-> remembered him objecting to the idea of adding a dummy device just for
-> this purpose. It turns out, however, that what he didn't like was to add
-> a dummy node to the DT just to make this happen, but he has no (strong)
-> objections to a dummy platform device.
-> 
-> While I'm not very happy about that solution, I've been going over it
-> for a week now and haven't come up with any better alternative that
-> doesn't have its own disadvantages. So perhaps we should go ahead and
-> implement that. For the host1x driver this really just means creating a
-> platform device and adding it to the system, with some of the fields
-> tweaked to make things work.
+We should not enter close function while someone else is in open.
+This mutex prevents this race.
 
-This sounds ok. Considering that the DRM driver is a virtual driver,
-attaching it to a virtual device sounds ok -- ish.
+There is also no need to override the ret value with -EIO in case of
+a failure of i2c_hid_set_power.
 
-> Is this something that you can take care of in your patch series? I
-> could also implement this on top of the current driver and then all your
-> patch series would have to do is remove host1x.c from tegra-drm and
-> instantiate the platform device itself.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+---
 
-We're about to post patches for both host1x driver and libdrm. This is
-the last big rock unturned, so let me take a stab at this first. I'd
-like to get the updated patches out tomorrow or on Friday, so I'll try
-to either get it done for that or leave it to the TODO list.
+Changes in v2:
+* add mutex.h
 
-Terje
+Cheers,
+Benjamin
+
+ drivers/hid/i2c-hid/i2c-hid.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 6e1774c..9ef22244 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -33,6 +33,7 @@
+ #include <linux/jiffies.h>
+ #include <linux/kernel.h>
+ #include <linux/hid.h>
++#include <linux/mutex.h>
+ 
+ #include <linux/i2c/i2c-hid.h>
+ 
+@@ -117,6 +118,8 @@ static const struct i2c_hid_cmd hid_set_power_cmd =	{ I2C_HID_CMD(0x08) };
+  * static const struct i2c_hid_cmd hid_set_protocol_cmd = { I2C_HID_CMD(0x07) };
+  */
+ 
++static DEFINE_MUTEX(i2c_hid_open_mut);
++
+ /* The main device structure */
+ struct i2c_hid {
+ 	struct i2c_client	*client;	/* i2c client */
+@@ -641,17 +644,20 @@ static int i2c_hid_open(struct hid_device *hid)
+ {
+ 	struct i2c_client *client = hid->driver_data;
+ 	struct i2c_hid *ihid = i2c_get_clientdata(client);
+-	int ret;
++	int ret = 0;
+ 
++	mutex_lock(&i2c_hid_open_mut);
+ 	if (!hid->open++) {
+ 		ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
+ 		if (ret) {
+ 			hid->open--;
+-			return -EIO;
++			goto done;
+ 		}
+ 		set_bit(I2C_HID_STARTED, &ihid->flags);
+ 	}
+-	return 0;
++done:
++	mutex_unlock(&i2c_hid_open_mut);
++	return ret;
+ }
+ 
+ static void i2c_hid_close(struct hid_device *hid)
+@@ -663,12 +669,14 @@ static void i2c_hid_close(struct hid_device *hid)
+ 	 * data acquistion due to a resumption we no longer
+ 	 * care about
+ 	 */
++	mutex_lock(&i2c_hid_open_mut);
+ 	if (!--hid->open) {
+ 		clear_bit(I2C_HID_STARTED, &ihid->flags);
+ 
+ 		/* Save some power */
+ 		i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
+ 	}
++	mutex_unlock(&i2c_hid_open_mut);
+ }
+ 
+ static int i2c_hid_power(struct hid_device *hid, int lvl)
+-- 
+1.8.0.2
+
