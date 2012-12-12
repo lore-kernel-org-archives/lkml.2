@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab2LLWPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 17:15:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4011 "EHLO
+	id S1755588Ab2LLWQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 17:16:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25576 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab2LLWPo (ORCPT
+	with ESMTP id S1755454Ab2LLWPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 17:15:44 -0500
-X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=oaqKGHf0UX8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=98sBLIZLoo0A:10 a=VwQbUJbxAAAA:8 a=sGyIs58Mxn7LyFXLAVkA:9 a=QEXdDO2ut3YA:10 a=rSP24lmfCNphnO0BzOQA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Wed, 12 Dec 2012 17:15:46 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SZGaZbGaXGsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PJNT0BCdeK0A:10 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=v0JXewxUpQ2rs_XOlaoA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=0AN1HMM1l_kitGY1MbwA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121212221437.245229327@goodmis.org>
+Message-Id: <20121212221544.350555692@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 12 Dec 2012 17:14:37 -0500
+Date: Wed, 12 Dec 2012 17:14:41 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 0/5] [GIT PULL] ktest: fixes and updated for new boot loaders
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Adam Lee <adam8157@gmail.com>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 4/5] ktest: Fix breakage from change of oldnoconfig to olddefconfig
+References: <20121212221437.245229327@goodmis.org>
+Content-Disposition: inline; filename=0004-ktest-Fix-breakage-from-change-of-oldnoconfig-to-old.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Linus,
+Commit fb16d891 "kconfig: replace 'oldnoconfig' with 'olddefconfig', and
+keep the old name", changed ktest's default config update from
+oldnoconfig to olddefconfig without adding oldnoconfig as a backup.
+The make oldnoconfig works much better than its backup of:
+   yes '' | make oldconfig
 
-Please pull the latest ktest-v3.8 tree, which can be found at:
+But due to this change, and the fact that ktest is used to build lots of
+older kernels (and for bisects), it forgoes the oldnoconfig completely.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
-ktest-v3.8
+Cc: Adam Lee <adam8157@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/ktest/ktest.pl |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Head SHA1: a7c85ac16cf29aa0fec5fef2fe26bb09a9e3ee19
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 067337b..6b1e0c5 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -1966,10 +1966,14 @@ sub make_oldconfig {
+=20
+     if (!run_command "$make olddefconfig") {
+ 	# Perhaps olddefconfig doesn't exist in this version of the kernel
+-	# try a yes '' | oldconfig
+-	doprint "olddefconfig failed, trying yes '' | make oldconfig\n";
+-	run_command "yes '' | $make oldconfig" or
+-	    dodie "failed make config oldconfig";
++	# try oldnoconfig
++	doprint "olddefconfig failed, trying make oldnoconfig\n";
++	if (!run_command "$make oldnoconfig") {
++	    doprint "oldnoconfig failed, trying yes '' | make oldconfig\n";
++	    # try a yes '' | oldconfig
++	    run_command "yes '' | $make oldconfig" or
++		dodie "failed make config oldconfig";
++	}
+     }
+ }
+=20
+--=20
+1.7.10.4
 
 
-Steven Rostedt (5):
-      ktest: Add support for grub2
-      ktest: Sync before reboot
-      ktest: Add native support for syslinux boot loader
-      ktest: Fix breakage from change of oldnoconfig to olddefconfig
-      ktest: Test if target machine is up before install
-
-----
- tools/testing/ktest/ktest.pl    |  120 +++++++++++++++++++++++++++++++++++=
-++--
- tools/testing/ktest/sample.conf |   46 ++++++++++++++-
- 2 files changed, 158 insertions(+), 8 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -58,13 +83,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQyQIKAAoJEOdOSU1xswtMLuYH/imIQsn283XWlnSdrILDLuNt
-lrcwcs3K0BfHmC5aGL7vdv8887x3i2Tf1k552MwhX8ettrgHeGk2Q4SZs8KW4lD8
-uljjyZ/LJZ5BBvIqfzNBgRsysQt9+dxN44/l7ybX+IxCZeN2DMMhg5SV7OSxLrLl
-h1UTufck4xc1gEP4/LZvwvfhu76tuuDx98LoFz8gGodw65q8xVDGDMGH4dmYtFCt
-kChBGC17enY2xytoSFmYzJT2kxEgBweTtCWd0bUw4TduVfiBFFgL61TwdmF1kAhC
-wqKHPykzAxeYaDXx8daUVzCZM8IszrstOEYfk537i+6U2HTK4PH/USyR3rzbimA=
-=aNV5
+iQEcBAABAgAGBQJQyQIQAAoJEOdOSU1xswtM2vsIAJMa5Ctjm4CIUDkuKXQFKdxk
+iQXfx0/Z6uBVXLHNpLKpnDhU/gvAyy/Yt0d5P4WAC/srjQJ2oef9RzYoXA7IzgSi
+jbUB4HQwICPTYUdgYuBK7vujWKDthSaffkOkeJTkyYwnmRn/ExDkznKD5JAxaaTz
+pAg+RF8QJ7x1uDLrziLRINokq8BBn2qAOzLK1wSxsE2W75wus0bNG8Gu8PC5kWtG
+e8ReBuPWoTV2Tl0QGDpk+jhM7DoJGPKDYgbGGucZMdwFPgRhCNfAAMXt/qKDfPBF
+zcjWy1gTxCVIVUi4XvY0Xd7D3AEIDZPfAaI0SMF4XIgoTLLXkoTt+GJk7cyIp98=
+=DmC+
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
