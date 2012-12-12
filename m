@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2LLKvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 05:51:47 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49209 "EHLO mail.skyhub.de"
+	id S1753056Ab2LLK5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 05:57:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:6926 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632Ab2LLKvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 05:51:46 -0500
-Date: Wed, 12 Dec 2012 11:51:43 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Takashi Iwai <tiwai@suse.de>, lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mengdong Lin <mengdong.lin@intel.com>
-Subject: Re: pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50
- [snd_hda_intel] returns -11
-Message-ID: <20121212105143.GA9252@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Linux PM list <linux-pm@vger.kernel.org>,
-	Mengdong Lin <mengdong.lin@intel.com>
-References: <20121211170315.GC28827@liondog.tnic>
- <2487425.bAQggRZzC4@vostro.rjw.lan>
- <20121211175508.GE28827@liondog.tnic>
- <15066310.xXEWfqCuJc@vostro.rjw.lan>
+	id S1751632Ab2LLK5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 05:57:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,265,1355126400"; 
+   d="asc'?scan'208";a="262907189"
+Date: Wed, 12 Dec 2012 12:59:13 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 0/2] kernel BUG at mm/huge_memory.c:212!
+Message-ID: <20121212105913.GA14379@otc-wbsnb-06>
+References: <50B52E17.8020205@suse.cz>
+ <1354287821-5925-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <50BCA2E4.8050600@suse.cz>
+ <CAA_GA1dZm7LYe46vdurFf8avbSViPeT2jC_L0A3Oejg97RsmBA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
 Content-Disposition: inline
-In-Reply-To: <15066310.xXEWfqCuJc@vostro.rjw.lan>
+In-Reply-To: <CAA_GA1dZm7LYe46vdurFf8avbSViPeT2jC_L0A3Oejg97RsmBA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 12:44:33AM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, December 11, 2012 06:55:08 PM Borislav Petkov wrote:
-> > On Tue, Dec 11, 2012 at 06:48:23PM +0100, Rafael J. Wysocki wrote:
-> > > Boris, please send the output of "lspci -vvv' from that box.
-> > 
-> > Attached.
-> 
-> So the audio is a Root Complex Integrated Endpoind and there shouldn't be
-> any problems with it related to PCIe ports power management.
-> 
-> It looks like azx_runtime_suspend() is new in 3.7 and it returns -EAGAIN
-> to indicate that it actually can't be suspended (if my understanding the
-> code is correct).  However, it shouldn't do that, because that causes
-> the runtime PM core to repeat the attempts.  It rather should implement
-> a .runtime_idle() callback returning an error code instead.
-> 
-> Those messages are just noise, though.
 
-Adding author of this (b8dfc4624162c0547d7f36a9df48da2d9b4bd58a).
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Wed, Dec 12, 2012 at 01:36:36PM +0800, Bob Liu wrote:
+> On Mon, Dec 3, 2012 at 9:02 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> > On 11/30/2012 04:03 PM, Kirill A. Shutemov wrote:
+> >> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >>
+> >> Hi Jiri,
+> >>
+> >> Sorry for late answer. It took time to reproduce and debug the issue.
+> >>
+> >> Could you test two patches below by thread. I expect it to fix both
+> >> issues: put_huge_zero_page() and Bad rss-counter state.
+> >
+> > Hi, yes, since applying the patches on the last Thu, it didn't recur.
+> >
+> >> Kirill A. Shutemov (2):
+> >>   thp: fix anononymous page accounting in fallback path for COW of HZP
+> >>   thp: avoid race on multiple parallel page faults to the same page
+> >>
+> >>  mm/huge_memory.c | 30 +++++++++++++++++++++++++-----
+> >>  1 file changed, 25 insertions(+), 5 deletions(-)
+> >
+>=20
+> I still saw this bug on 3.7.0-rc8, but it's hard to reproduce it.
+> It appears only once.
 
--- 
-Regards/Gruss,
-    Boris.
+I guess the patch you've posted fixes the issue, right?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+It's useful to enable debug_cow to test fallback path:
+
+echo 1 > /sys/kernel/mm/transparent_hugepage/debug_cow
+
+--=20
+ Kirill A. Shutemov
+
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQyGOBAAoJEAd+omnVudOMFXsQAJb3ToTDx5030zT7udfoM2a7
+kx1lNi/pvufv/C/h09nVN0VYZIQ51TZT16b6/8gPw640E8/0I7GQy6J6e56JImxL
+ZsuXWp0vCOUZMSB1CKg8tRDLCbcqr/wCtuonIrRifC1jDzyW/QCVLaX03focMrgB
+6lIbSu3ZebBukh0STD0hU+/dW4jW1JUyR0FOYNwXJoCNTTx8x7Nhw7VwdlEX2x6Z
++ajEuDcFDX3OrljIaD1YeeJLercpzH1uqzxSFo8ifoyqs4aQTTM7dgL2agfu5swu
+T/2KPA3WbGcRGlBl0+iuIrk1o8sX3SL+CVFp5ZZrXTSD0AOLw1E6sJ/QOfAq4SoH
+BQP1OTQgobePvRWmj+iaqHhJa6yid7YAWBTO+SCVLKY5B07WcvYN/uSMrxNVcnWN
+jH+PKBcUELNp2CoNlW7IMutRL8qtf1MuoIrekmDvpKhLgax8kdq7G8KaHCRlRKBs
+l/Kn5QUp1a2/12gUBD2iMRaBSTMS+SDSdvPWrwfGueqjSFhJ1NrwYpSHu5VSR50z
+qX9DcCWijMWp0f07PhXFeYD+YQ7PyIjSqiqvzvBPHvsckfBC03ltXneDCcdxeoAS
+qTIY87rtP8pqlZ8F9+ivJC1eUmG+doMWlsE0xy8Am71Bw0hGoKMoYgIWpIPrZTQo
+5uwFe82ExxDqce567OoP
+=9kdx
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
