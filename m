@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296Ab2LLHgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 02:36:16 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43785 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2LLHgP (ORCPT
+	id S1751035Ab2LLHqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 02:46:11 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35164 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab2LLHqK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 02:36:15 -0500
+	Wed, 12 Dec 2012 02:46:10 -0500
+Message-ID: <50C8361B.70901@parallels.com>
+Date: Wed, 12 Dec 2012 11:45:31 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <201211301156.08060.b.zolnierkie@samsung.com>
-References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
-	<201210301021.42803.b.zolnierkie@samsung.com>
-	<CAJe_ZhdOt+T65FdkE0SpQ37uGsS8SkFyJ9hHM3B_8S8f7GQAcQ@mail.gmail.com>
-	<201211301156.08060.b.zolnierkie@samsung.com>
-Date: Wed, 12 Dec 2012 13:06:14 +0530
-Message-ID: <CABb+yY0FxsZyBy=scTF31+QMWgHzKf7bNz8vsPowtiMkve7igg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] DMA: PL330: add device tree property for DMA_MEMCPY capability
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>, kgene.kim@samsung.com,
-        pawel.moll@arm.com, vinod.koul@intel.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        kyungmin.park@samsung.com, linux-samsung-soc@vger.kernel.org,
-        dinguyen@altera.com, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [Devel] [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+References: <20121206153204.30693.11408.stgit@localhost.localdomain> <20121206153447.30693.54128.stgit@localhost.localdomain> <20121210202842.GB17350@fieldses.org> <50C73C60.8060405@parallels.com> <50C73F58.1080005@parallels.com> <20121211145621.GA3336@fieldses.org> <50C74C14.8030807@parallels.com> <20121211152036.GB3336@fieldses.org> <20121211153527.GC3336@fieldses.org>
+In-Reply-To: <20121211153527.GC3336@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.20.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 4:26 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
+11.12.2012 19:35, J. Bruce Fields пишет:
+> On Tue, Dec 11, 2012 at 10:20:36AM -0500, J. Bruce Fields wrote:
+>> On Tue, Dec 11, 2012 at 07:07:00PM +0400, Stanislav Kinsbursky wrote:
+>>> I don't really understand, how  mountd's root can be wrong. I.e.
+>>> its' always right as I see it. NFSd kthreads have to swap/use
+>>> relative path/whatever to communicate with proper mountd.
+>>> Or I'm missing something?
+>>
+>> Ugh, I see the problem: I thought svc_export_request was called at the
+>> time mountd does the read, but instead its done at the time nfsd does
+>> the upcall.
+>>
+>> I suspect that's wrong, and we really want this done in the context of
+>> the mountd process when it does the read call.  If d_path is called
+>> there then we have no problem.
+>
+> Right, so I'd be happier if we could modify sunrpc_cache_pipe_upcall to
+> skip calling cache_request and instead delay that until cache_read().  I
+> think that should be possible.
+>
 
-> Thank you for explaining it.  Here is a patch implementing the idea:
->
-> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Subject: [PATCH] DMA: PL330: add peripherals map to the device tree
->
-> Add device tree (DT) property ("peri-map") for storing indices
-> of peripherals connected to DMAC and fix DT nodes of client
-> drivers to use 'dma peripheral id' instead of 'dma request id'.
-> Also instead of setting DMA_MEMCPY capability unconditionally in
-> pl330_probe() do it only when "peri-map" DT property is present
-> (idea from Jassi Brar).  It fixes the issue on ARM EXYNOS
-> platforms using DT where pdma controller erroneously was used
-> for DMA_MEMCPY operations instead of mdma one (it seems to work
-> correctly but at the cost of worse performance).
->
-Sorry, we need to change it as per new generic dma DT bindings
-  http://git.infradead.org/users/vkoul/slave-dma.git/blob/refs/heads/next:/Documentation/devicetree/bindings/dma/dma.txt
+Hmmm...
+I'm not familiar with mountd to kernel exchange protocol.
+It looks like kernel passes that path string to mountd on upcall.
 
-Thanks.
+> --b.
+>
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
