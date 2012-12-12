@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234Ab2LLH4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 02:56:07 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50316 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2LLH4G (ORCPT
+	id S1751410Ab2LLIBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 03:01:12 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55000 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab2LLIBJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 02:56:06 -0500
+	Wed, 12 Dec 2012 03:01:09 -0500
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Porter, Matt" <mporter@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dill, Russ" <russ.dill@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] da8xx: Allow use by am33xx based devices
+Thread-Topic: [PATCH] da8xx: Allow use by am33xx based devices
+Thread-Index: AQHNtst6Rx118OokEEubqhCbxHb81pfS2xNQgDjGJ3CABls9AIACrBEAgABmn1A=
+Date: Wed, 12 Dec 2012 08:00:56 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EBADC10@DBDE01.ent.ti.com>
+References: <1351698968-3965-1-git-send-email-panto@antoniou-consulting.com>
+ <A73F36158E33644199EB82C5EC81C7BC3EA1452B@DBDE01.ent.ti.com>
+ <50C5A50E.4070602@ti.com>
+ <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
+In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20121211162048.6c9206c7@skate>
-References: <1350644042-31793-1-git-send-email-linus.walleij@linaro.org>
-	<20121211162048.6c9206c7@skate>
-Date: Wed, 12 Dec 2012 08:56:03 +0100
-Message-ID: <CACRpkdY1wtPSW6Nab0tvcr+CF=Neki1mbZ8EdsHk0xkOTtnL1w@mail.gmail.com>
-Subject: Re: [PATCH 3/4 v2] gpio/mvebu: convert to use irq_domain_add_simple()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 4:20 PM, Thomas Petazzoni
-<thomas.petazzoni@free-electrons.com> wrote:
+On Wed, Dec 12, 2012 at 12:50:28, Manjunathappa, Prakash wrote:
+> Hi Vaibhav,
+> 
+> On Mon, Dec 10, 2012 at 14:32:06, Hiremath, Vaibhav wrote:
+> > 
+> > 
+> > On 12/6/2012 1:38 PM, Manjunathappa, Prakash wrote:
+> > > Hi Tomi,
+> > > 
+> > > On Wed, Oct 31, 2012 at 10:52:59, Manjunathappa, Prakash wrote:
+> > >> Hi,
+> > >>
+> > >> On Wed, Oct 31, 2012 at 21:26:08, Pantelis Antoniou wrote:
+> > >>> This driver can be used for AM33xx devices, like the popular beaglebone.
+> > >>>
+> > >>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> > >>> ---
+> > >>>  drivers/video/Kconfig | 2 +-
+> > >>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >>>
+> > >>> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+> > >>> index 9791d10..e7868d8 100644
+> > >>> --- a/drivers/video/Kconfig
+> > >>> +++ b/drivers/video/Kconfig
+> > >>> @@ -2202,7 +2202,7 @@ config FB_SH7760
+> > >>>  
+> > >>>  config FB_DA8XX
+> > >>>  	tristate "DA8xx/OMAP-L1xx Framebuffer support"
+> > >>> -	depends on FB && ARCH_DAVINCI_DA8XX
+> > >>> +	depends on FB && (ARCH_DAVINCI_DA8XX || SOC_AM33XX)
+> > >>
+> > >> Agreed this is present on da8xx and am33xx, but moving forward for
+> > >> supporting DT, we should be avoiding these dependencies. So instead
+> > >> change this to remove machine dependencies.
+> > >>
+> > > 
+> > > I could be wrong here, having dependency on platform seems to be right.
+> > > Otherwise may lead to build errors for other platforms. 
+> > 
+> > No, it should not result in to build error unless driver uses some
+> > platform specific api's.
+> > 
+> 
+> Agreed, should not result in build error. But is it ok to show this option
+> on the platforms which do not have this IP?
+> 
 
-> Unfortunately, this creates the following warning at boot time for each
-> GPIO bank:
+You can choose to put machine dependency here, as this patch is already 
+doing it. The side-effect of this would be, list may grow and you may have 
+to edit this file everytime.
 
-Grant has a patch in his irqdomain tree that will turn this warning into
-a simple pr_info() thing instead. It's not that bad... The immediate
-problem will soon go away.
 
-> Of course, the fix should be to remove the irq_alloc_descs() from the
-> driver prior to calling irq_domain_add_simple(). But the thing is that
-> our gpio-mvebu driver uses the
-> irq_alloc_generic_chip()/irq_setup_generic_chip() infrastructure, which
-> it seems requires a legacy IRQ domain (it needs the base IRQ number).
+Thanks,
+Vaibhav 
 
-Actually it looks like a core infrastructure issue. Sorry for not
-spotting this in the first place:
-
-First you allocate some descriptors, just any descriptors, with
-mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
-
-Then you allocate a generic chip using the obtained
-descriptor base:
-gc = irq_alloc_generic_chip("mvebu_gpio_irq", 2, mvchip->irqbase,
-				    mvchip->membase, handle_level_irq);
-
-Then you set up the generic chip with a nailed down IRQ base number
-from step 1:
-irq_setup_generic_chip(gc, IRQ_MSK(ngpios), 0,
-			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
-
-This, if I understand it correctly, is done because you have two different
-chip types on the generic chip: one for high/low level IRQ and another
-for rising/falling. (Which is a very nice way to use the generic chip!)
-
-Finally set up the IRQ domain:
-mvchip->domain = irq_domain_add_simple(np, mvchip->chip.ngpio,
-				       mvchip->irqbase,
-				       &irq_domain_simple_ops,
-				       mvchip);
-
-So the problem is that you cannot allocate a generic chip
-without having a base IRQ at that point, if I understand
-correctly. If this was not necessary you would not need to
-allocate descriptors in advance.
-
-Or rather: the *real* problem, which will face anyone trying
-to implement a combined edge+level IRQ chip in a driver,
-is that the generic irqchip does not play well with irqdomain.
-
-Using legacy in this case is clearly wrong, the generic IRQ chip
-is not one least bit legacy, it's top-of-the-line IRQ handling,
-using generic code as we want.
-
-However it seems generic chips cannot handle sparse IRQs
-at all, it requires the descriptors to be allocated before
-we create and instance of it.
-
-So I see two solutions:
-
-- Fix the generic chip to handle sparse IRQs by patching
-  a lot in kernel/irq/generic-chip.c and allowing to pass
-  something like < 0 for irq base.
-
-- Add something like irq_domain_add_generic() for
-  generic chips and handle the oddities there.
-
-The latter would be a pretty straight-forward wrapper to legacy
-domain as of now.
-
-Any preference? Or should we just consider generic irqchips
-a legacy case?
-
-Yours,
-Linus Walleij
