@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab2LLApo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:45:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45114 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab2LLApn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:45:43 -0500
-Date: Wed, 12 Dec 2012 01:45:34 +0100
-From: Benedikt Spranger <b.spranger@linutronix.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de,
-        Alexander.Frank@eberspaecher.com
-Subject: Re: [PATCH 1/2] uio: add warning to documentation
-Message-ID: <20121212014534.287c8ba8@linutronix.de>
-In-Reply-To: <20121211231816.GA23621@kroah.com>
-References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
- <1355267523-19724-2-git-send-email-b.spranger@linutronix.de>
- <20121211231816.GA23621@kroah.com>
-Organization: Linutronix GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756501Ab2LLAp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:45:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39505 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754646Ab2LLAp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 19:45:56 -0500
+Message-ID: <50C7D3AB.6060508@zytor.com>
+Date: Tue, 11 Dec 2012 16:45:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v4] 8042: Enable A20 using KBC to fix S3 resume on some
+ MSI laptops
+References: <201212112218.06551.linux@rainbow-software.org>
+In-Reply-To: <201212112218.06551.linux@rainbow-software.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012 15:18:16 -0800
-Greg KH <gregkh@linuxfoundation.org> wrote:
+Looks good to me.  Alan/Rafael/Dmitry, OK for me to commit this?
 
-> > -<function>open()</function>, you will probably also want a custom
-> > +<function>release()</function>, you will probably also want a
-> > custom <function>release()</function> function. 
-> That sentance no longer makes sense.
-DUH! will fix...
+	-hpa
 
-> > +</para><para>CAVE: The release hook may be processed, even if a
-> > mmap is aktive.
-> Huh?
-OK, think about a user of uio_pdrv_genirq and you did your
-powermanagement well. The user open the UIO device, do a mmap() and
-close the UIO device. Then he access the given pointer and wonders why
-the system is stuck. It is a bad idea to disable clocks on release
-while a mmap is active.
-
-> > +Disabling clocks or other powermanagement functionality may cause
-> > a system +crash, hangup or other unwanted sideeffects.
-> > +</para><para><emphasis>The mmap() function shall add an extra
-> > reference to the file associated with the file descriptor fildes
-> > which is not removed by a subsequent close() on that file
-> > descriptor. This reference shall be removed when there are no more
-> > mappings to the file.</emphasis></para><para> +<link
-> > xlink:href="http://pubs.opengroup.org/onlinepubs/009695399/functions/mmap.html">IEEE
-> > Std 1003.1, 2004 Edition, mmap()</link>
+On 12/11/2012 01:18 PM, Ondrej Zary wrote:
+> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+> line but resume code assumes that KBC was used.
+> The laptop will not resume from S3 otherwise but powers off after a while
+> and then powers on again stuck with a blank screen.
 > 
-> It's not up to us to document the mmap system call here, you should
-> know how to use it if you write a program with it, right?
-Its not the user of mmap(), it is for the driver programmer. It is a
-bad idea to do every kind of powermanagement function in the release
-hook.
+> Fix it by enabling A20 using KBC in i8042_platform_init for x86.
+> 
+> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> ---
+>  drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+> index d6cc77a..5f306f7 100644
+> --- a/drivers/input/serio/i8042-x86ia64io.h
+> +++ b/drivers/input/serio/i8042-x86ia64io.h
+> @@ -921,6 +921,7 @@ static int __init i8042_platform_init(void)
+>  	int retval;
+>  
+>  #ifdef CONFIG_X86
+> +	u8 a20_on = 0xdf;
+>  	/* Just return if pre-detection shows no i8042 controller exist */
+>  	if (!x86_platform.i8042_detect())
+>  		return -ENODEV;
+> @@ -960,6 +961,14 @@ static int __init i8042_platform_init(void)
+>  
+>  	if (dmi_check_system(i8042_dmi_dritek_table))
+>  		i8042_dritek = true;
+> +
+> +	/*
+> +	 * A20 was already enabled during early kernel init. But some buggy
+> +	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
+> +	 * resume from S3. So we do it here and hope that nothing breaks.
+> +	 */
+> +	i8042_command(&a20_on, 0x10d1);
+> +	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
+>  #endif /* CONFIG_X86 */
+>  
+>  	return retval;
+> 
 
-Regards 
-    Bene
