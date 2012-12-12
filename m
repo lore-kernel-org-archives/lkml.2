@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751063Ab2LLFqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 00:46:07 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42428 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab2LLFqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 00:46:05 -0500
-Date: Tue, 11 Dec 2012 20:49:13 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Benedikt Spranger <b.spranger@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de,
-        Alexander.Frank@eberspaecher.com
-Subject: Re: [PATCH 1/2] uio: add warning to documentation
-Message-ID: <20121212044913.GD7224@kroah.com>
-References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
- <1355267523-19724-2-git-send-email-b.spranger@linutronix.de>
- <20121211231816.GA23621@kroah.com>
- <20121212014534.287c8ba8@linutronix.de>
+	id S1751132Ab2LLFzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 00:55:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:42597 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab2LLFzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 00:55:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,264,1355126400"; 
+   d="scan'208";a="230320652"
+Message-ID: <50C81BB0.1020602@intel.com>
+Date: Wed, 12 Dec 2012 13:52:48 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212014534.287c8ba8@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>, pjt@google.com
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        vincent.guittot@linaro.org
+Subject: Re: [PATCH 07/18] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-8-git-send-email-alex.shi@intel.com> <50C800B5.1080205@linux.vnet.ibm.com>
+In-Reply-To: <50C800B5.1080205@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 01:45:34AM +0100, Benedikt Spranger wrote:
-> On Tue, 11 Dec 2012 15:18:16 -0800
-> Greg KH <gregkh@linuxfoundation.org> wrote:
+On 12/12/2012 11:57 AM, Preeti U Murthy wrote:
+> Hi Alex,
+> On 12/10/2012 01:52 PM, Alex Shi wrote:
+>> They are the base values in load balance, update them with rq runnable
+>> load average, then the load balance will consider runnable load avg
+>> naturally.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  kernel/sched/core.c |    4 ++--
+>>  kernel/sched/fair.c |    4 ++--
+>>  2 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 96fa5f1..0ecb907 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -2487,7 +2487,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>>  void update_idle_cpu_load(struct rq *this_rq)
+>>  {
+>>  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+>> -	unsigned long load = this_rq->load.weight;
+>> +	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
+>>  	unsigned long pending_updates;
+>>  
+>>  	/*
+>> @@ -2537,7 +2537,7 @@ static void update_cpu_load_active(struct rq *this_rq)
+>>  	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+>>  	 */
+>>  	this_rq->last_load_update_tick = jiffies;
+>> -	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+>> +	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
+>>  
+>>  	calc_load_account_active(this_rq);
+>>  }
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 61c8d24..6d893a6 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -2680,7 +2680,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>>  /* Used instead of source_load when we know the type == 0 */
+>>  static unsigned long weighted_cpuload(const int cpu)
+>>  {
+>> -	return cpu_rq(cpu)->load.weight;
+>> +	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
 > 
-> > > -<function>open()</function>, you will probably also want a custom
-> > > +<function>release()</function>, you will probably also want a
-> > > custom <function>release()</function> function. 
-> > That sentance no longer makes sense.
-> DUH! will fix...
+> I was wondering why you have typecasted the cfs.runnable_load_avg to
+> unsigned long.Have you looked into why it was declared as u64 in the
+> first place?
+
+PJT:
+Could we changed the cfs.runnable_load_avg to unsigned long?  since it's
+a unsigned long value multiple a value less then 1.
+
 > 
-> > > +</para><para>CAVE: The release hook may be processed, even if a
-> > > mmap is aktive.
-> > Huh?
-> OK, think about a user of uio_pdrv_genirq and you did your
-> powermanagement well. The user open the UIO device, do a mmap() and
-> close the UIO device. Then he access the given pointer and wonders why
-> the system is stuck. It is a bad idea to disable clocks on release
-> while a mmap is active.
+>>  }
+>>  
+>>  /*
+>> @@ -2727,7 +2727,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>>  	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+>>  
+>>  	if (nr_running)
+>> -		return rq->load.weight / nr_running;
+>> +		return rq->cfs.runnable_load_avg / nr_running;
+> 
+> rq->cfs.runnable_load_avg is u64 type.you will need to typecast it here
+> also right? how does this division work? because the return type is
+> unsigned long.
 
-A UIO user is root and can do lots of bad things if they are foolish,
-are we supposed to enumerate all of them?  :)
+Yes, a clear cast is better.
+>>  
+>>  	return 0;
+>>  }
+>>
+> 
+> Regards
+> Preeti U Murthy
+> 
 
-> > > +Disabling clocks or other powermanagement functionality may cause
-> > > a system +crash, hangup or other unwanted sideeffects.
-> > > +</para><para><emphasis>The mmap() function shall add an extra
-> > > reference to the file associated with the file descriptor fildes
-> > > which is not removed by a subsequent close() on that file
-> > > descriptor. This reference shall be removed when there are no more
-> > > mappings to the file.</emphasis></para><para> +<link
-> > > xlink:href="http://pubs.opengroup.org/onlinepubs/009695399/functions/mmap.html">IEEE
-> > > Std 1003.1, 2004 Edition, mmap()</link>
-> > 
-> > It's not up to us to document the mmap system call here, you should
-> > know how to use it if you write a program with it, right?
-> Its not the user of mmap(), it is for the driver programmer. It is a
-> bad idea to do every kind of powermanagement function in the release
-> hook.
-
-I agree, but how can a driver programmer use that information properly
-here?
-
-greg k-h
