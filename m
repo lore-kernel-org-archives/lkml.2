@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab2LLAjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 19:39:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39434 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab2LLAjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 19:39:02 -0500
-Message-ID: <50C7D1CF.70304@zytor.com>
-Date: Tue, 11 Dec 2012 16:37:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-References: <3E5A0FA7E9CA944F9D5414FEC6C71220470F154E@ORSMSX105.amr.corp.intel.com> <CAE9FiQXGZYZiH3eUup2UXGWkeqKjsiHk7aMTFJO7xxFkqTpBZA@mail.gmail.com> <50C6AB63.9070008@zytor.com> <CAE9FiQX7sPLXOacoLakaJ1qC5UuSUbrX_g7N-oWmLYg5W-91UA@mail.gmail.com> <50C6D3DF.3030209@zytor.com> <CAE9FiQUiEx=p6wTC5wu_E=ih1CSBaTmw90zsc2=+xu6rMO5usg@mail.gmail.com> <20121211145716.GB8873@liondog.tnic> <CAE9FiQVByBTHwPrtYvVxv4u9QrtN1iN6GH9YaDn3dvmwv5Sg7g@mail.gmail.com> <50C763C2.5020603@zytor.com> <CAE9FiQUzHBb5SiEhfrOg7hFbuD1H1-7aXa0aTjhZ9tNqdrwGqw@mail.gmail.com> <20121211170605.GD28827@liondog.tnic> <CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com> <50C76F9E.4080001@zytor.com> <CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com> <50C7C859.60405@zytor.com> <CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+	id S1755379Ab2LLAle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 19:41:34 -0500
+Received: from smtprelay.restena.lu ([158.64.1.62]:38145 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab2LLAld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Dec 2012 19:41:33 -0500
+Date: Wed, 12 Dec 2012 01:41:09 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jacek Poplawski <jacekpoplawski@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: "attempt to access beyond end of device" on DVD
+Message-ID: <20121212014109.38e18eeb@neptune.home>
+In-Reply-To: <CAGDELX7f-Ee-V_M8kbDONRFCTBbZM2H_Q17Bk_12r4xw85Wq4Q@mail.gmail.com>
+References: <CAGDELX7f-Ee-V_M8kbDONRFCTBbZM2H_Q17Bk_12r4xw85Wq4Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 04:27 PM, Yinghai Lu wrote:
-> On Tue, Dec 11, 2012 at 3:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Well, we could invoke it on the bootloader page tables, but as you say
->> it may not be a good idea... depending on how much memory we may be
->> talking about.  One solution -- which I have to admit is starting to
->> sound really good -- is to set up a #PF handler which cycles through a
->> set of page tables and creates a "virtual identity map"... it does have
->> the advantage of making the entire physical address space available
->> without any additional funnies.
-> 
-> so that #PF handler will work before
-> arch/x86/kernel/setup.c::setup_arch/early_trap_init
-> 
-> early_strap_intit will install another handler there for #PF
-> 
-> for 64bit, moving early_ioremap_init ahead is very simple, like attach patch
-> 
-> but for 32 bit looks like it is not that easy.
-> 
+Hello,
 
-For 32 bits, we don't need it, because we can just run this part in
-linear mode.  It also doesn't help us on 32 bits since we are limited by
-virtual address space anyway.
+On Mon, 10 December 2012 Jacek Poplawski <jacekpoplawski@gmail.com> wrote:
+> few years ago I noticed annoying bug on Linux, when I was copying
+> photos from old DVDs I realized that not all files were copied
+> correctly, there were errors on last files on DVD, you could say "well
+> that happens, DVD are faulty", but that's not the real issue
+> 
+> when the problem appears it happens on each DVD I am trying to copy,
+> last files on each disk have errors....
+> 
+> ...until I reboot Linux, then there are no errors at all and full DVD
+> is copied correctly.
+> 
+> Now I needed some files from DVDs and I realized the problem still
+> exists. After at least three years. I verified that reboot helps and I
+> also noticed the problem doesn't exist on Windows 7.
+> 
+> And looks like I wasn't only one who found this:
+> 
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/404472
+> 
+> Problem was reported in 2009 on 2.6.28 and closed in 2012. But I
+> noticed it in last days.
+> 
+> my system is:
+> 
+> Linux version 3.6.8-1-ARCH (tobias@T-POWA-LX) (gcc version 4.7.2 (GCC)
+> ) #1 SMP PREEMPT Mon Nov 26 22:10:40 CET 2012
+> 
+> dmesg:
+> 
+> [ 4017.384169] attempt to access beyond end of device
+> [ 4017.384171] sr0: rw=0, want=8511124, limit=8433216
+> [ 4017.384174] attempt to access beyond end of device
+> [ 4017.384175] sr0: rw=0, want=8510876, limit=8433216
+> 
+> I suspect that people just stopped using CDs and DVDs and that's why
+> nobody was looking on this problem, or maybe the first though was
+> always "that DVD is broken, trash it".
+> 
+> Is there more information I could give you about this issue? Or could
+> you point me to any ways I could debug it? It's fully reproducible on
+> my system.
 
-	-hpa
+Hm, could it be related to some kind of read-ahead? I vaguely remember
+seeing mails about read-ahead and/or end-of-device. Could this be somehow
+related?
 
+See:
+- https://lkml.org/lkml/2012/12/3/497
+- https://lkml.org/lkml/2012/12/3/510
+
+This applies to 3.7-rc but according to the thread it might still
+have some interesting things that could be related to what you are seeing.
+
+When it happens, does ejecting and re-inserting the CDs/DVDs also fix the
+problem or is a full reboot mandatory?
+
+Bruno
