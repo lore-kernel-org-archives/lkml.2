@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab2LLTbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:31:36 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52183 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739Ab2LLTbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:31:35 -0500
+	id S1754857Ab2LLTg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:36:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab2LLTg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 14:36:58 -0500
+Date: Wed, 12 Dec 2012 20:36:46 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121212193646.GA29395@redhat.com>
+References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <50C7A194.7070102@wwwdotorg.org>
-References: <1355234393-17368-1-git-send-email-linus.walleij@stericsson.com>
-	<50C7A194.7070102@wwwdotorg.org>
-Date: Wed, 12 Dec 2012 20:31:33 +0100
-Message-ID: <CACRpkdak+f8Nnyns+jdGsxrzD1839-kdOqySChD9aDG+7KMU7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: add sleep mode management for hogs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Julien Delacou <julien.delacou@stericsson.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121212180248.GA24882@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 10:11 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-
-> Since I assume those function are only supposed to be used by pinctrl
-> drivers themselves, should the prototypes go into drivers/pinctrl/core.h
-> or similar, rather than something in include/linux/pinctrl?
-
-Good point, Julien can you fix this?
-
-Hm, maybe pinctrl_force_sleep()/default() isn't such a good name,
-maybe it should be pinctrl_hogs_sleep()/pinctrl_hogs_default() intead?
-
-> Oh, and don't you need EXPORT_SYMBOL in case the pinctrl driver is a module?
-
-True.
-
-> Aside from that,
+On 12/12, Oleg Nesterov wrote:
 >
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> On 12/12, Srivatsa S. Bhat wrote:
+> >
+> > On 12/12/2012 10:47 PM, Oleg Nesterov wrote:
+> > >
+> > > Why it needs to be per-cpu? It can be global and __read_mostly to avoid
+> > > the false-sharing. OK, perhaps to put reader_percpu_refcnt/writer_signal
+> > > into a single cacheline...
+> >
+> > Even I realized this (that we could use a global) after posting out the
+> > series.. But do you think that it would be better to retain the per-cpu
+> > variant itself, due to the cache effects?
+>
+> I don't really know, up to you. This was the question ;)
 
-Thanks.
+But perhaps there is another reason to make it per-cpu...
 
-Yours,
-Linus Walleij
+It seems we can avoid cpu_hotplug.active_writer == current check in
+get/put.
+
+take_cpu_down() can clear this_cpu(writer_signal) right after it takes
+hotplug_rwlock for writing. It runs with irqs and preemption disabled,
+nobody else will ever look at writer_signal on its CPU.
+
+Oleg.
+
