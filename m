@@ -1,148 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab2LLDg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 22:36:29 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:12876 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab2LLDgH (ORCPT
+	id S1754369Ab2LLD6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 22:58:38 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58890 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2LLD6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 22:36:07 -0500
-Message-ID: <50C7FB85.8040008@huawei.com>
-Date: Wed, 12 Dec 2012 11:35:33 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 11 Dec 2012 22:58:37 -0500
+Message-ID: <50C800B5.1080205@linux.vnet.ibm.com>
+Date: Wed, 12 Dec 2012 09:27:41 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: WuJianguo <wujianguo@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Liujiang <jiang.liu@huawei.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH V4 3/3] MCE: fix an error of mce_bad_pages statistics
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alex Shi <alex.shi@intel.com>
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Subject: Re: [PATCH 07/18] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-8-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1355127754-8444-8-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121203-1618-0000-0000-00000302C00C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since MCE is an x86 concept, and this code is in mm/, it would be
-better to use the name num_poisoned_pages instead of mce_bad_pages.
+Hi Alex,
+On 12/10/2012 01:52 PM, Alex Shi wrote:
+> They are the base values in load balance, update them with rq runnable
+> load average, then the load balance will consider runnable load avg
+> naturally.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/core.c |    4 ++--
+>  kernel/sched/fair.c |    4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 96fa5f1..0ecb907 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2487,7 +2487,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>  void update_idle_cpu_load(struct rq *this_rq)
+>  {
+>  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> -	unsigned long load = this_rq->load.weight;
+> +	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
+>  	unsigned long pending_updates;
+>  
+>  	/*
+> @@ -2537,7 +2537,7 @@ static void update_cpu_load_active(struct rq *this_rq)
+>  	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+>  	 */
+>  	this_rq->last_load_update_tick = jiffies;
+> -	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+> +	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
+>  
+>  	calc_load_account_active(this_rq);
+>  }
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 61c8d24..6d893a6 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2680,7 +2680,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  /* Used instead of source_load when we know the type == 0 */
+>  static unsigned long weighted_cpuload(const int cpu)
+>  {
+> -	return cpu_rq(cpu)->load.weight;
+> +	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- fs/proc/meminfo.c   |    2 +-
- include/linux/mm.h  |    2 +-
- mm/memory-failure.c |   16 ++++++++--------
- 3 files changed, 10 insertions(+), 10 deletions(-)
+I was wondering why you have typecasted the cfs.runnable_load_avg to
+unsigned long.Have you looked into why it was declared as u64 in the
+first place?
 
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 80e4645..c3dac61 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -158,7 +158,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 		vmi.used >> 10,
- 		vmi.largest_chunk >> 10
- #ifdef CONFIG_MEMORY_FAILURE
--		,atomic_long_read(&mce_bad_pages) << (PAGE_SHIFT - 10)
-+		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
- #endif
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 5432a3e..8ccc477 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1653,7 +1653,7 @@ extern int unpoison_memory(unsigned long pfn);
- extern int sysctl_memory_failure_early_kill;
- extern int sysctl_memory_failure_recovery;
- extern void shake_page(struct page *p, int access);
--extern atomic_long_t mce_bad_pages;
-+extern atomic_long_t num_poisoned_pages;
- extern int soft_offline_page(struct page *page, int flags);
+>  }
+>  
+>  /*
+> @@ -2727,7 +2727,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>  	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+>  
+>  	if (nr_running)
+> -		return rq->load.weight / nr_running;
+> +		return rq->cfs.runnable_load_avg / nr_running;
 
- extern void dump_page(struct page *page);
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index e513a7b..ff5e611 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -61,7 +61,7 @@ int sysctl_memory_failure_early_kill __read_mostly = 0;
+rq->cfs.runnable_load_avg is u64 type.you will need to typecast it here
+also right? how does this division work? because the return type is
+unsigned long.
+>  
+>  	return 0;
+>  }
+> 
 
- int sysctl_memory_failure_recovery __read_mostly = 1;
-
--atomic_long_t mce_bad_pages __read_mostly = ATOMIC_LONG_INIT(0);
-+atomic_long_t num_poisoned_pages __read_mostly = ATOMIC_LONG_INIT(0);
-
- #if defined(CONFIG_HWPOISON_INJECT) || defined(CONFIG_HWPOISON_INJECT_MODULE)
-
-@@ -1040,7 +1040,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	}
-
- 	nr_pages = 1 << compound_trans_order(hpage);
--	atomic_long_add(nr_pages, &mce_bad_pages);
-+	atomic_long_add(nr_pages, &num_poisoned_pages);
-
- 	/*
- 	 * We need/can do nothing about count=0 pages.
-@@ -1070,7 +1070,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 			if (!PageHWPoison(hpage)
- 			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
- 			    || (p != hpage && TestSetPageHWPoison(hpage))) {
--				atomic_long_sub(nr_pages, &mce_bad_pages);
-+				atomic_long_sub(nr_pages, &num_poisoned_pages);
- 				return 0;
- 			}
- 			set_page_hwpoison_huge_page(hpage);
-@@ -1128,7 +1128,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	}
- 	if (hwpoison_filter(p)) {
- 		if (TestClearPageHWPoison(p))
--			atomic_long_sub(nr_pages, &mce_bad_pages);
-+			atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		unlock_page(hpage);
- 		put_page(hpage);
- 		return 0;
-@@ -1323,7 +1323,7 @@ int unpoison_memory(unsigned long pfn)
- 			return 0;
- 		}
- 		if (TestClearPageHWPoison(p))
--			atomic_long_sub(nr_pages, &mce_bad_pages);
-+			atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		pr_info("MCE: Software-unpoisoned free page %#lx\n", pfn);
- 		return 0;
- 	}
-@@ -1337,7 +1337,7 @@ int unpoison_memory(unsigned long pfn)
- 	 */
- 	if (TestClearPageHWPoison(page)) {
- 		pr_info("MCE: Software-unpoisoned page %#lx\n", pfn);
--		atomic_long_sub(nr_pages, &mce_bad_pages);
-+		atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		freeit = 1;
- 		if (PageHuge(page))
- 			clear_page_hwpoison_huge_page(page);
-@@ -1442,7 +1442,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	}
- done:
- 	/* keep elevated page count for bad page */
--	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
-+	atomic_long_add(1 << compound_trans_order(hpage), &num_poisoned_pages);
- 	set_page_hwpoison_huge_page(hpage);
- 	dequeue_hwpoisoned_huge_page(hpage);
- out:
-@@ -1584,7 +1584,7 @@ int soft_offline_page(struct page *page, int flags)
-
- done:
- 	/* keep elevated page count for bad page */
--	atomic_long_inc(&mce_bad_pages);
-+	atomic_long_inc(&num_poisoned_pages);
- 	SetPageHWPoison(page);
- out:
- 	return ret;
--- 
-1.7.1
-
+Regards
+Preeti U Murthy
 
