@@ -1,227 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab2LLJva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:51:30 -0500
-Received: from smtp-out-245.synserver.de ([212.40.185.245]:1105 "EHLO
-	smtp-out-245.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab2LLJv2 (ORCPT
+	id S1752907Ab2LLJwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:52:55 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56911 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab2LLJwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:51:28 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16253
-Message-ID: <50C8539C.1070509@metafoo.de>
-Date: Wed, 12 Dec 2012 10:51:24 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	Wed, 12 Dec 2012 04:52:53 -0500
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 v3] rtc: add rtc-driver for HID sensors of type time
-References: <50C73AFC.1050904@jic23.retrosnub.co.uk> <1355250106-3114-1-git-send-email-holler@ahsoftware.de> <1355250106-3114-4-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1355250106-3114-4-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <50C76208.107@linux.intel.com>
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+	<CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com>
+	<50C722AC.3080806@intel.com>
+	<20121211154819.GC8873@liondog.tnic>
+	<50C75935.1040004@linux.intel.com>
+	<20121211161320.GA28827@liondog.tnic>
+	<50C76208.107@linux.intel.com>
+Date: Wed, 12 Dec 2012 15:22:51 +0530
+X-Google-Sender-Auth: Uq-ys9FBPCtt5SWIRRKw7vF0SBs
+Message-ID: <CAHLCerPy2+-t0mAwn3nEAd2CRMmyqCLVTO3j2zua1P4uDE1BPA@mail.gmail.com>
+Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into LB
+ and power awareness scheduling
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Alex Shi <alex.shi@intel.com>,
+        Alex Shi <lkml.alex@gmail.com>, rob@landley.net, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        vincent.guittot@linaro.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 07:21 PM, Alexander Holler wrote:
-> This driver makes the time from HID sensors (hubs) which are offering
-> such available like any other RTC does.
-> 
-> Currently the time can only be read. Setting the time must be done
-> through sending a report, which currently isn't supported by
-> hid-sensor-hub. (I've planned to submit patches.)
-> 
-> It is necessary that all values like year, month etc, are send as
-> 8bit values (1 byte each) and all of them in 1 report. Also the
-> spec HUTRR39b doesn't define the range of the year field, we
-> tread it as 0 - 99 because that's what most RTCs I know about are
-> offering.
-> 
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+On Tue, Dec 11, 2012 at 10:10 PM, Arjan van de Ven
+<arjan@linux.intel.com> wrote:
+> On 12/11/2012 8:13 AM, Borislav Petkov wrote:
+>>
+>> On Tue, Dec 11, 2012 at 08:03:01AM -0800, Arjan van de Ven wrote:
+>>>
+>>> On 12/11/2012 7:48 AM, Borislav Petkov wrote:
+>>>>
+>>>> On Tue, Dec 11, 2012 at 08:10:20PM +0800, Alex Shi wrote:
+>>>>>
+>>>>> Another testing of parallel compress with pigz on Linus' git tree.
+>>>>> results show we get much better performance/power with powersaving and
+>>>>> balance policy:
+>>>>>
+>>>>> testing command:
+>>>>> #pigz -k -c  -p$x -r linux* &> /dev/null
+>>>>>
+>>>>> On a NHM EP box
+>>>>>           powersaving               balance              performance
+>>>>> x = 4    166.516 /88 68           170.515 /82 71         165.283 /103
+>>>>> 58
+>>>>> x = 8    173.654 /61 94           177.693 /60 93         172.31 /76 76
+>>>>
+>>>>
+>>>> This looks funny: so "performance" is eating less watts than
+>>>> "powersaving" and "balance" on NHM. Could it be that the average watts
+>>>> measurements on NHM are not correct/precise..? On SNB they look as
+>>>> expected, according to your scheme.
+>>>
+>>>
+>>> well... it's not always beneficial to group or to spread out
+>>> it depends on cache behavior mostly which is best
+>>
+>>
+>> Let me try to understand what this means: so "performance" above with
+>> 8 threads means that those threads are spread out across more than one
+>> socket, no?
+>>
+>> If so, this would mean that you have a smaller amount of tasks on each
+>> socket, thus the smaller wattage.
+>>
+>> The "powersaving" method OTOH fills up the one socket up to the brim,
+>> thus the slightly higher consumption due to all threads being occupied.
+>>
+>> Is that it?
+>
+>
+> not sure.
+>
+> by and large, power efficiency is the same as performance efficiency, with
+> some twists.
+> or to reword that to be more clear
+> if you waste performance due to something that becomes inefficient, you're
+> wasting power as well.
+> now, you might have some hardware effects that can then save you power...
+> but those effects
+> then first need to overcome the waste from the performance inefficiency...
+> and that almost never happens.
+>
+> for example, if you have two workloads that each fit barely inside the last
+> level cache...
+> it's much more efficient to spread these over two sockets... where each has
+> its own full LLC
+> to use.
+> If you'd group these together, both would thrash the cache all the time and
+> run inefficient --> bad for power.
+>
+> now, on the other hand, if you have two threads of a process that share a
+> bunch of data structures,
+> and you'd spread these over 2 sockets, you end up bouncing data between the
+> two sockets a lot,
+> running inefficient --> bad for power.
+>
 
-Looks good, but as I wrote during the last review the __devinits need to go.
-A few other suggerstions online
+Agree with all of the above. However..
 
-> ---
->  drivers/rtc/Kconfig               |   16 ++
->  drivers/rtc/Makefile              |    1 +
->  drivers/rtc/rtc-hid-sensor-time.c |  284 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 301 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/rtc/rtc-hid-sensor-time.c
-> 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index 19c03ab..7c7b33e 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -1144,4 +1144,20 @@ config RTC_DRV_SNVS
->  	   This driver can also be built as a module, if so, the module
->  	   will be called "rtc-snvs".
->  
-> +comment "HID Sensor RTC drivers"
-> +
-> +config RTC_DRV_HID_SENSOR_TIME
-> +	tristate "HID Sensor Time"
-> +	depends on USB_HID
-> +	select IIO
-> +	select HID_SENSOR_HUB
-> +	select HID_SENSOR_IIO_COMMON
-> +	help
-> +	  Say yes here to build support for the HID Sensors of type Time.
-> +	  This drivers makes such sensors available as RTCs.
-> +
-> +          If this driver is compiled as a module, it will be named
-> +          rtc-hid-sensor-time.
+> having said all this, if you have to tasks that don't have such cache
+> effects, the most efficient way
+> of running things will be on 2 hyperthreading halves... it's very hard to
+> beat the power efficiency of that.
 
-The help text should be indented using one tab followed by two spaces
+.. there are alternatives to hyperthreading. On ARM's big.LITTLE
+architecture you could simply schedule them on the LITTLE cores. The
+big cores just can't beat the power efficiency of the LITTLE ones even
+with 'race to halt' that you allude to below. And usecases like mp3
+playback simply don't require the kind of performance that the big
+cores can offer.
 
-> +
-> +
->  endif # RTC_CLASS
-[...]
-> diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-> new file mode 100644
-> index 0000000..42b7ba1
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-hid-sensor-time.c
-> @@ -0,0 +1,284 @@
-[...]
-> +
-> +/* Channel names for verbose error messages */
-> +static const char *hid_time_channel_names[TIME_RTC_CHANNEL_MAX] = {
+> But this assumes the tasks don't compete with resources much on the HT
+> level, and achieve good scaling.
+> and this still has to compete with "race to halt", because if you're done
+> quicker, you can put the memory
+> in self refresh quicker.
+>
+> none of this stuff is easy for humans or computer programs to determine
+> ahead of time... or sometimes even afterwards.
+> heck, even for just performance it's really really hard already, never mind
+> adding power.
+>
+> my personal gut feeling is that we should just optimize this scheduler stuff
+> for performance, and that
+> we're going to be doing quite well on power already if we achieve that.
 
-const char * const
+If Linux is to continue to work efficiently on heterogeneous
+multi-processing platforms, it needs to provide scheduling mechanisms
+that can be exploited as per the demands of the HW architecture. An
+example is the "small task packing (and spreading)" for which Vincent
+Guittot has posted a patchset[1] earlier and so has Alex now.
 
-> +	"year", "month", "day", "hour", "minute", "second",
-> +};
-> +
-> +/* Callback handler to send event after all samples are received and captured */
-> +static int hid_time_proc_event(struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id, void *priv)
-> +{
-> +	unsigned long flags;
-> +	struct hid_time_state *time_state = platform_get_drvdata(priv);
-> +
-> +	spin_lock_irqsave(&time_state->lock_last_time, flags);
-> +	time_state->last_time = time_state->time_buf;
-> +	spin_unlock_irqrestore(&time_state->lock_last_time, flags);
-> +	complete(&time_state->comp_last_time);
-> +	return 0;
-> +}
-> +
-> +static int hid_time_capture_sample(struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id, size_t raw_len,
-> +				char *raw_data, void *priv)
-> +{
-> +	struct hid_time_state *time_state = platform_get_drvdata(priv);
-> +	struct rtc_time *time_buf = &time_state->time_buf;
-> +
-> +	switch (usage_id) {
-> +	case HID_USAGE_SENSOR_TIME_YEAR:
-> +		time_buf->tm_year = *(u8 *)raw_data;
-> +		if (time_buf->tm_year < 70)
-> +			/* assume we are in 1970...2069 */
-> +			time_buf->tm_year += 100;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_MONTH:
-> +		time_buf->tm_mon = --*(u8 *)raw_data;
-
-What's up with the double minus?
-
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_DAY:
-> +		time_buf->tm_mday = *(u8 *)raw_data;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_HOUR:
-> +		time_buf->tm_hour = *(u8 *)raw_data;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_MINUTE:
-> +		time_buf->tm_min = *(u8 *)raw_data;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_SECOND:
-> +		time_buf->tm_sec = *(u8 *)raw_data;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +
-> +/* small helper, haven't found any other way */
-> +static const char *attrib_name(u32 attrib_id)
-> +{
-> +	unsigned i = 0;
-> +	static const char unknown[] = "unknown";
-> +
-> +	for (; i < TIME_RTC_CHANNEL_MAX; ++i) {
-
-I would put the i = 0 in the for header.
-
-> +		if (hid_time_addresses[i] == attrib_id)
-> +			return hid_time_channel_names[i];
-> +	}
-> +	return unknown; /* should never happen */
-> +}
-> +
-> +static int hid_time_parse_report(struct platform_device *pdev,
-> +				struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id,
-> +				struct hid_time_state *time_state)
-> +{
-> +	int ret, i = 0;
-> +
-> +	for (; i < TIME_RTC_CHANNEL_MAX; ++i) {
-
-Same here
-
-> +		ret = sensor_hub_input_get_attribute_info(hsdev,
-> +				HID_INPUT_REPORT, usage_id,
-> +				hid_time_addresses[i], &time_state->info[i]);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +	/* Check the (needed) attributes for sanity */
-> +	ret = time_state->info[0].report_id; /* use ret as temp. */
-
-As I said last time, report_id instead of ret may be a better name for the
-variable
-
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "bad report ID!\n");
-> +		return -EINVAL;
-> +	}
-> +	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i) {
-> +		if (time_state->info[i].report_id != ret) {
-> +			dev_err(&pdev->dev,
-> +				"not all needed attributes inside the same report!\n");
-> +			return -EINVAL;
-> +		}
-[...]
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-[...]
-> +
-> +static int __devinit hid_time_remove(struct platform_device *pdev)
-> +{
-> +	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-> +	struct hid_time_state *time_state = platform_get_drvdata(pdev);
-> +
-> +	if (!IS_ERR(time_state->rtc))
-
-This will never be false, so you can just run unregister unconditionally
-
-> +		rtc_device_unregister(time_state->rtc);
-> +	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
-> +
-> +	return 0;
-> +}
-
+[1] http://lwn.net/Articles/518834/
