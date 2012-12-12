@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2LLVVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 16:21:50 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:36128 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754383Ab2LLVVt (ORCPT
+	id S1755015Ab2LLV0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 16:26:35 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:45659 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab2LLV0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 16:21:49 -0500
-Date: Wed, 12 Dec 2012 22:21:24 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: jaswinder.singh@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, djbw@fb.com,
-        vinod.koul@intel.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, rubini@gnudd.com, cjb@laptop.org,
-        davidb@codeaurora.org, nico@fluxnic.net, ben-linux@fluff.org,
-        viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Subject: Re: [PATCH v4 3/7] watchdog: sp805_wdt depends on ARM
-Message-ID: <20121212212124.GB31853@spo001.leaseweb.com>
-References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com> <1355146956-6009-4-git-send-email-ciminaghi@gnudd.com>
+	Wed, 12 Dec 2012 16:26:34 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 12 Dec 2012 22:26:18 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire updates post v3.7
+Message-ID: <20121212222618.4344c2f8@stein>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355146956-6009-4-git-send-email-ciminaghi@gnudd.com>
-User-Agent: Mutt/1.4.1i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davide
+Linus,
 
-> From: Alessandro Rubini <rubini@gnudd.com>
-> 
-> The SP805 driver is only used by the Spear machines, and uses
-> writel_relaxed, which is not available on all architectures.
-> 
-> The dependency from CONFIG_ARM avoids compilation problems under
-> randomconfig when CONFIG_ARM_AMBA is enabled for x86 builds.
-> 
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+please pull from the tag "firewire-updates" at
 
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-updates
 
-Kind regards,
-Wim.
+to receive the following IEEE 1394 (FireWire) subsystem changes:
+  - IPv4-over-1394: fixes for broadcast and multicast
+  - SBP-2: allow thin-provisioning related commands
+  - trivia
+Thanks.
 
+Stefan Richter (2):
+      tools/firewire: nosy-dump: check for allocation failure
+      firewire: sbp2: allow WRITE SAME and REPORT SUPPORTED OPERATION CODES
+
+Stephan Gatzka (1):
+      firewire: net: Fix handling of fragmented multicast/broadcast packets.
+
+Wei Yongjun (1):
+      firewire: net: remove unused variable in fwnet_receive_broadcast()
+
+ drivers/firewire/net.c     | 15 +++++++++------
+ drivers/firewire/sbp2.c    |  2 --
+ tools/firewire/nosy-dump.c |  4 ++++
+ 3 files changed, 13 insertions(+), 8 deletions(-)
+-- 
+Stefan Richter
+-=====-===-- ==-- -==--
+http://arcgraph.de/sr/
