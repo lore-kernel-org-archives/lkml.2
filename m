@@ -1,90 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab2LLHUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 02:20:42 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56245 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab2LLHUk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 02:20:40 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-CC: "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Porter, Matt" <mporter@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dill, Russ" <russ.dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] da8xx: Allow use by am33xx based devices
-Thread-Topic: [PATCH] da8xx: Allow use by am33xx based devices
-Thread-Index: AQHNtst6Rx118OokEEubqhCbxHb81pfS2xNQgDjGJ3CABf8JAIADYaQA
-Date: Wed, 12 Dec 2012 07:20:28 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
-References: <1351698968-3965-1-git-send-email-panto@antoniou-consulting.com>
- <A73F36158E33644199EB82C5EC81C7BC3EA1452B@DBDE01.ent.ti.com>
- <50C5A50E.4070602@ti.com>
-In-Reply-To: <50C5A50E.4070602@ti.com>
+	id S1752243Ab2LLHXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 02:23:50 -0500
+Received: from mailgate2.msha.com ([199.21.145.219]:34381 "EHLO
+	mainmailgate02.msha-inc.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751804Ab2LLHXt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 02:23:49 -0500
+X-WSS-ID: 0MEWPUZ-04-1H5-03
+X-M-MSG: 
+From: "Brown, David" <BrownLD2@msha.com>
+To: "info@notice.com" <info@notice.com>
+Subject: Email Quota Warning!
+Thread-Topic: Email Quota Warning!
+Thread-Index: Ac3YOZDObXP6vyI5R8+7oxg7RslYRQ==
+Date: Wed, 12 Dec 2012 07:23:22 +0000
+Message-ID: <DD7EC8D7D2548541A1944C946AA119686BE4562A@BATGIRL.msha-inc.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [199.21.144.47]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vaibhav,
 
-On Mon, Dec 10, 2012 at 14:32:06, Hiremath, Vaibhav wrote:
-> 
-> 
-> On 12/6/2012 1:38 PM, Manjunathappa, Prakash wrote:
-> > Hi Tomi,
-> > 
-> > On Wed, Oct 31, 2012 at 10:52:59, Manjunathappa, Prakash wrote:
-> >> Hi,
-> >>
-> >> On Wed, Oct 31, 2012 at 21:26:08, Pantelis Antoniou wrote:
-> >>> This driver can be used for AM33xx devices, like the popular beaglebone.
-> >>>
-> >>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> >>> ---
-> >>>  drivers/video/Kconfig | 2 +-
-> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>
-> >>> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> >>> index 9791d10..e7868d8 100644
-> >>> --- a/drivers/video/Kconfig
-> >>> +++ b/drivers/video/Kconfig
-> >>> @@ -2202,7 +2202,7 @@ config FB_SH7760
-> >>>  
-> >>>  config FB_DA8XX
-> >>>  	tristate "DA8xx/OMAP-L1xx Framebuffer support"
-> >>> -	depends on FB && ARCH_DAVINCI_DA8XX
-> >>> +	depends on FB && (ARCH_DAVINCI_DA8XX || SOC_AM33XX)
-> >>
-> >> Agreed this is present on da8xx and am33xx, but moving forward for
-> >> supporting DT, we should be avoiding these dependencies. So instead
-> >> change this to remove machine dependencies.
-> >>
-> > 
-> > I could be wrong here, having dependency on platform seems to be right.
-> > Otherwise may lead to build errors for other platforms. 
-> 
-> No, it should not result in to build error unless driver uses some
-> platform specific api's.
-> 
 
-Agreed, should not result in build error. But is it ok to show this option
-on the platforms which do not have this IP?
 
-Thanks,
-Prakash
+
+Your Mailbox Has Exceeded It Storage Limit As Set By Your Administrator, And You Will Not Be Able To Receive New Mails Until You Re-Validate It. To Re-Validate  - > Click Here<https://docs.google.com/a/blsyw.org/spreadsheet/viewform?formkey=dDI3N2lXTklGVFg2QXJjWEFEZS0ybGc6MQ>:
+
+
+---------------------------------------------------------------------
+This message is from Mountain States Health Alliance. The contents contained herein may contain confidential information. If you are not the intended recipient, you are hereby notified that any disclosure, copying, distribution, printing or action taken on the contents is strictly prohibited. If you have received this email in error, please notify the sender immediately and delete this message.
+
+---------------------------------------------------------------------
+
