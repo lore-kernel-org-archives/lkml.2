@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2LLOC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:02:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42343 "EHLO bear.ext.ti.com"
+	id S1754897Ab2LLODF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:03:05 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44483 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754620Ab2LLOCy convert rfc822-to-8bit (ORCPT
+	id S1754620Ab2LLODB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:02:54 -0500
+	Wed, 12 Dec 2012 09:03:01 -0500
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <cooloney@gmail.com>
 CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 26/33] leds-lp55xx: clean up unused data and functions
-Thread-Topic: [PATCH 26/33] leds-lp55xx: clean up unused data and functions
-Thread-Index: Ac3YcV6Vq82K8JHNSO6zry6+2kJcbw==
-Date: Wed, 12 Dec 2012 14:02:50 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0ABE7@DQHE02.ent.ti.com>
+Subject: [PATCH 27/33] leds-lp55xx: clean up definitions
+Thread-Topic: [PATCH 27/33] leds-lp55xx: clean up definitions
+Thread-Index: Ac3YcWLOmfJ67vN3QHWMBaiIw7zXEw==
+Date: Wed, 12 Dec 2012 14:02:57 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0ABEF@DQHE02.ent.ti.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,203 +28,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Old data structures and I2C functions are not used any more.
- Each driver uses the lp55xx common data and functions.
+ Remove unused definitions and change hex values to capital letters
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5521.c |  110 --------------------------------------------
- drivers/leds/leds-lp5523.c |   35 --------------
- 2 files changed, 145 deletions(-)
+ drivers/leds/leds-lp5521.c |   26 +++-----------------
+ drivers/leds/leds-lp5523.c |   56 +++++++-------------------------------------
+ 2 files changed, 12 insertions(+), 70 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 65eaaeb..2132a49 100644
+index 2132a49..af55eb3 100644
 --- a/drivers/leds/leds-lp5521.c
 +++ b/drivers/leds/leds-lp5521.c
-@@ -125,25 +125,6 @@
- #define LP5521_RUN_G			0x08
- #define LP5521_RUN_B			0x02
+@@ -39,18 +39,9 @@
  
--struct lp5521_led {
--	int			id;
--	u8			chan_nr;
--	u8			led_current;
--	u8			max_current;
--	struct led_classdev	cdev;
--	struct work_struct	brightness_work;
--	u8			brightness;
--};
--
--struct lp5521_chip {
--	struct lp5521_platform_data *pdata;
--	struct mutex		lock; /* Serialize control */
--	struct i2c_client	*client;
--	struct lp5521_led	leds[LP5521_MAX_LEDS];
--	u8			num_channels;
--	u8			num_leds;
--};
--
- static inline void lp5521_wait_opmode_done(void)
- {
- 	/* operation mode change needs to be longer than 153 us */
-@@ -163,23 +144,6 @@ static void lp5521_set_led_current(struct lp55xx_led *led, u8 led_current)
- 		led_current);
- }
+ #include "leds-lp55xx-common.h"
  
--static inline int lp5521_write(struct i2c_client *client, u8 reg, u8 value)
--{
--	return i2c_smbus_write_byte_data(client, reg, value);
--}
+-#define LP5521_PROGRAM_LENGTH		32	/* in bytes */
 -
--static int lp5521_read(struct i2c_client *client, u8 reg, u8 *buf)
--{
--	s32 ret;
+-#define LP5521_MAX_LEDS			3	/* Maximum number of LEDs */
+-#define LP5521_MAX_ENGINES		3	/* Maximum number of engines */
 -
--	ret = i2c_smbus_read_byte_data(client, reg);
--	if (ret < 0)
--		return ret;
+-#define LP5521_ENG_MASK_BASE		0x30	/* 00110000 */
+-#define LP5521_ENG_STATUS_MASK		0x07	/* 00000111 */
 -
--	*buf = ret;
--	return 0;
--}
--
- static void lp5521_load_engine(struct lp55xx_chip *chip)
- {
- 	enum lp55xx_engine_index idx = chip->engine_idx;
-@@ -419,80 +383,6 @@ static ssize_t lp5521_selftest(struct device *dev,
- 	return sprintf(buf, "%s\n", ret ? "FAIL" : "OK");
- }
+-#define LP5521_CMD_LOAD			0x15	/* 00010101 */
+-#define LP5521_CMD_RUN			0x2a	/* 00101010 */
+-#define LP5521_CMD_DIRECT		0x3f	/* 00111111 */
+-#define LP5521_CMD_DISABLED		0x00	/* 00000000 */
++#define LP5521_PROGRAM_LENGTH		32
++#define LP5521_MAX_LEDS			3
++#define LP5521_CMD_DIRECT		0x3F
  
--static void lp5521_clear_program_memory(struct i2c_client *cl)
--{
--	int i;
--	u8 rgb_mem[] = {
--		LP5521_REG_R_PROG_MEM,
--		LP5521_REG_G_PROG_MEM,
--		LP5521_REG_B_PROG_MEM,
--	};
+ /* Registers */
+ #define LP5521_REG_ENABLE		0x00
+@@ -62,22 +53,14 @@
+ #define LP5521_REG_G_CURRENT		0x06
+ #define LP5521_REG_B_CURRENT		0x07
+ #define LP5521_REG_CONFIG		0x08
+-#define LP5521_REG_R_CHANNEL_PC		0x09
+-#define LP5521_REG_G_CHANNEL_PC		0x0A
+-#define LP5521_REG_B_CHANNEL_PC		0x0B
+ #define LP5521_REG_STATUS		0x0C
+ #define LP5521_REG_RESET		0x0D
+-#define LP5521_REG_GPO			0x0E
+ #define LP5521_REG_R_PROG_MEM		0x10
+ #define LP5521_REG_G_PROG_MEM		0x30
+ #define LP5521_REG_B_PROG_MEM		0x50
+ 
+-#define LP5521_PROG_MEM_BASE		LP5521_REG_R_PROG_MEM
+-#define LP5521_PROG_MEM_SIZE		0x20
 -
--	for (i = 0; i < ARRAY_SIZE(rgb_mem); i++) {
--		lp5521_write(cl, rgb_mem[i], 0);
--		lp5521_write(cl, rgb_mem[i] + 1, 0);
--	}
--}
+ /* Base register to set LED current */
+ #define LP5521_REG_LED_CURRENT_BASE	LP5521_REG_R_CURRENT
 -
--static void lp5521_write_program_memory(struct i2c_client *cl,
--				u8 base, u8 *rgb, int size)
--{
--	int i;
+ /* Base register to set the brightness */
+ #define LP5521_REG_LED_PWM_BASE		LP5521_REG_R_PWM
+ 
+@@ -96,9 +79,6 @@
+ /* default R channel current register value */
+ #define LP5521_REG_R_CURR_DEFAULT	0xAF
+ 
+-/* Pattern Mode */
+-#define PATTERN_OFF	0
 -
--	if (!rgb || size <= 0)
--		return;
--
--	for (i = 0; i < size; i++)
--		lp5521_write(cl, base + i, *(rgb + i));
--
--	lp5521_write(cl, base + i, 0);
--	lp5521_write(cl, base + i + 1, 0);
--}
--
--static inline struct lp5521_led_pattern *lp5521_get_pattern
--					(struct lp5521_chip *chip, u8 offset)
--{
--	struct lp5521_led_pattern *ptn;
--	ptn = chip->pdata->patterns + (offset - 1);
--	return ptn;
--}
--
--static void lp5521_run_led_pattern(int mode, struct lp5521_chip *chip)
--{
--	struct lp5521_led_pattern *ptn;
--	struct i2c_client *cl = chip->client;
--	int num_patterns = chip->pdata->num_patterns;
--
--	if (mode > num_patterns || !(chip->pdata->patterns))
--		return;
--
--	if (mode == PATTERN_OFF) {
--		lp5521_write(cl, LP5521_REG_ENABLE, LP5521_ENABLE_DEFAULT);
--		usleep_range(1000, 2000);
--		lp5521_write(cl, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
--	} else {
--		ptn = lp5521_get_pattern(chip, mode);
--		if (!ptn)
--			return;
--
--		lp5521_write(cl, LP5521_REG_OP_MODE, LP5521_CMD_LOAD);
--		usleep_range(1000, 2000);
--
--		lp5521_clear_program_memory(cl);
--
--		lp5521_write_program_memory(cl, LP5521_REG_R_PROG_MEM,
--					ptn->r, ptn->size_r);
--		lp5521_write_program_memory(cl, LP5521_REG_G_PROG_MEM,
--					ptn->g, ptn->size_g);
--		lp5521_write_program_memory(cl, LP5521_REG_B_PROG_MEM,
--					ptn->b, ptn->size_b);
--
--		lp5521_write(cl, LP5521_REG_OP_MODE, LP5521_CMD_RUN);
--		usleep_range(1000, 2000);
--		lp5521_write(cl, LP5521_REG_ENABLE, LP5521_ENABLE_RUN_PROGRAM);
--	}
--}
--
- /* device attributes */
- static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
+ /* Reset register value */
+ #define LP5521_RESET			0xFF
  
 diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 63dec47..8affd73 100644
+index 8affd73..60d39b8 100644
 --- a/drivers/leds/leds-lp5523.c
 +++ b/drivers/leds/leds-lp5523.c
-@@ -142,25 +142,6 @@ enum lp5523_chip_id {
- 	LP55231,
- };
+@@ -39,76 +39,38 @@
  
--struct lp5523_led {
--	int			id;
--	u8			chan_nr;
--	u8			led_current;
--	u8			max_current;
--	struct led_classdev     cdev;
--	struct work_struct	brightness_work;
--	u8			brightness;
--};
--
--struct lp5523_chip {
--	struct mutex		lock; /* Serialize control */
--	struct i2c_client	*client;
--	struct lp5523_led	leds[LP5523_MAX_LEDS];
--	struct lp5523_platform_data *pdata;
--	u8			num_channels;
--	u8			num_leds;
--};
--
- static inline void lp5523_wait_opmode_done(void)
- {
- 	usleep_range(1000, 2000);
-@@ -173,22 +154,6 @@ static void lp5523_set_led_current(struct lp55xx_led *led, u8 led_current)
- 		led_current);
- }
+ #include "leds-lp55xx-common.h"
  
--static int lp5523_write(struct i2c_client *client, u8 reg, u8 value)
--{
--	return i2c_smbus_write_byte_data(client, reg, value);
--}
++#define LP5523_PROGRAM_LENGTH		32
++#define LP5523_MAX_LEDS			9
++
++/* Registers */
+ #define LP5523_REG_ENABLE		0x00
+ #define LP5523_REG_OP_MODE		0x01
+-#define LP5523_REG_RATIOMETRIC_MSB	0x02
+-#define LP5523_REG_RATIOMETRIC_LSB	0x03
+ #define LP5523_REG_ENABLE_LEDS_MSB	0x04
+ #define LP5523_REG_ENABLE_LEDS_LSB	0x05
+-#define LP5523_REG_LED_CNTRL_BASE	0x06
+ #define LP5523_REG_LED_PWM_BASE		0x16
+ #define LP5523_REG_LED_CURRENT_BASE	0x26
+ #define LP5523_REG_CONFIG		0x36
+-#define LP5523_REG_CHANNEL1_PC		0x37
+-#define LP5523_REG_CHANNEL2_PC		0x38
+-#define LP5523_REG_CHANNEL3_PC		0x39
+-#define LP5523_REG_STATUS		0x3a
+-#define LP5523_REG_GPO			0x3b
+-#define LP5523_REG_VARIABLE		0x3c
+-#define LP5523_REG_RESET		0x3d
+-#define LP5523_REG_TEMP_CTRL		0x3e
+-#define LP5523_REG_TEMP_READ		0x3f
+-#define LP5523_REG_TEMP_WRITE		0x40
++#define LP5523_REG_STATUS		0x3A
++#define LP5523_REG_RESET		0x3D
+ #define LP5523_REG_LED_TEST_CTRL	0x41
+ #define LP5523_REG_LED_TEST_ADC		0x42
+-#define LP5523_REG_ENG1_VARIABLE	0x45
+-#define LP5523_REG_ENG2_VARIABLE	0x46
+-#define LP5523_REG_ENG3_VARIABLE	0x47
+-#define LP5523_REG_MASTER_FADER1	0x48
+-#define LP5523_REG_MASTER_FADER2	0x49
+-#define LP5523_REG_MASTER_FADER3	0x4a
+-#define LP5523_REG_CH1_PROG_START	0x4c
+-#define LP5523_REG_CH2_PROG_START	0x4d
+-#define LP5523_REG_CH3_PROG_START	0x4e
+-#define LP5523_REG_PROG_PAGE_SEL	0x4f
++#define LP5523_REG_PROG_PAGE_SEL	0x4F
+ #define LP5523_REG_PROG_MEM		0x50
+ 
+-#define LP5523_CMD_LOAD			0x15 /* 00010101 */
+-#define LP5523_CMD_RUN			0x2a /* 00101010 */
+-#define LP5523_CMD_DISABLED		0x00 /* 00000000 */
 -
--static int lp5523_read(struct i2c_client *client, u8 reg, u8 *buf)
--{
--	s32 ret = i2c_smbus_read_byte_data(client, reg);
++/* Bit description in registers */
+ #define LP5523_ENABLE			0x40
+ #define LP5523_AUTO_INC			0x40
+ #define LP5523_PWR_SAVE			0x20
+ #define LP5523_PWM_PWR_SAVE		0x04
+-#define LP5523_CP_1			0x08
+-#define LP5523_CP_1_5			0x10
+ #define LP5523_CP_AUTO			0x18
+-#define LP5523_INT_CLK			0x01
+ #define LP5523_AUTO_CLK			0x02
++
+ #define LP5523_EN_LEDTEST		0x80
+ #define LP5523_LEDTEST_DONE		0x80
+ #define LP5523_RESET			0xFF
 -
--	if (ret < 0)
--		return ret;
+-#define LP5523_DEFAULT_CURRENT		50 /* microAmps */
+-#define LP5523_PROGRAM_LENGTH		32 /* in bytes */
+-#define LP5523_PROGRAM_PAGES		6
+ #define LP5523_ADC_SHORTCIRC_LIM	80
 -
--	*buf = ret;
--	return 0;
--}
+-#define LP5523_MAX_LEDS			9
+-#define LP5523_ENGINES			3
 -
- static int lp5523_post_init_device(struct lp55xx_chip *chip)
- {
- 	int ret;
+-#define LP5523_ENG_MASK_BASE		0x30 /* 00110000 */
+-
+-#define LP5523_ENG_STATUS_MASK          0x07 /* 00000111 */
+-
+-#define LP5523_IRQ_FLAGS                IRQF_TRIGGER_FALLING
+-
+ #define LP5523_EXT_CLK_USED		0x08
+ 
+-#define LED_ACTIVE(mux, led)		(!!(mux & (0x0001 << led)))
+-#define SHIFT_MASK(id)			(((id) - 1) * 2)
+-
+ /* Memory Page Selection */
+ #define LP5523_PAGE_ENG1		0
+ #define LP5523_PAGE_ENG2		1
 -- 
 1.7.9.5
 
