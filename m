@@ -1,127 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750949Ab2LLF1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 00:27:22 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:55567 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2LLF1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 00:27:21 -0500
-Message-ID: <50C81588.20901@linux.vnet.ibm.com>
-Date: Wed, 12 Dec 2012 10:56:32 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1750966Ab2LLF2p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 00:28:45 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:4120 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab2LLF2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 00:28:44 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Stephen Hurd" <shurd@broadcom.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] 8250/16?50: Add support for Broadcom TruManage
+ redirected serial port
+Thread-Topic: [PATCH] 8250/16?50: Add support for Broadcom TruManage
+ redirected serial port
+Thread-Index: Ac3X/4FKNqFbK6eQTReu1x6E0ZsPbAABcioQABhQpwAAD6vfsA==
+Date: Wed, 12 Dec 2012 05:28:35 +0000
+Message-ID: <156984479488CD49A184F5CAB4AF934606FF5627@IRVEXCHMB14.corp.ad.broadcom.com>
+References: <156984479488CD49A184F5CAB4AF934606FF55F8@IRVEXCHMB14.corp.ad.broadcom.com>
+ <20121212044522.GA7224@kroah.com>
+In-Reply-To: <20121212044522.GA7224@kroah.com>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.208.64]
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, vincent.guittot@linaro.org
-Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-2-git-send-email-alex.shi@intel.com> <50C6B530.3030307@linux.vnet.ibm.com> <50C6C462.6030808@intel.com> <50C6D31F.1030408@linux.vnet.ibm.com> <50C71EA9.3060507@intel.com>
-In-Reply-To: <50C71EA9.3060507@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121205-2000-0000-0000-00000A39B0BF
+X-WSS-ID: 7CD6CAD33R018911536-01-01
+Content-Type: multipart/mixed;
+ boundary=_002_156984479488CD49A184F5CAB4AF934606FF5627IRVEXCHMB14corp_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2012 05:23 PM, Alex Shi wrote:
-> On 12/11/2012 02:30 PM, Preeti U Murthy wrote:
->> On 12/11/2012 10:58 AM, Alex Shi wrote:
->>> On 12/11/2012 12:23 PM, Preeti U Murthy wrote:
->>>> Hi Alex,
->>>>
->>>> On 12/10/2012 01:52 PM, Alex Shi wrote:
->>>>> It is impossible to miss a task allowed cpu in a eligible group.
->>>>
->>>> The one thing I am concerned with here is if there is a possibility of
->>>> the task changing its tsk_cpus_allowed() while this code is running.
->>>>
->>>> i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
->>>> for the task changes,perhaps by the user himself,which might not include
->>>> the cpus in the idle group.After this find_idlest_cpu() is called.I mean
->>>> a race condition in short.Then we might not have an eligible cpu in that
->>>> group right?
->>>
->>> your worry make sense, but the code handle the situation, in
->>> select_task_rq(), it will check the cpu allowed again. if the answer is
->>> no, it will fallback to old cpu.
->>>>
->>>>> And since find_idlest_group only return a different group which
->>>>> excludes old cpu, it's also imporissible to find a new cpu same as old
->>>>> cpu.
->>
->> I doubt this will work correctly.Consider the following situation:sched
->> domain begins with sd that encloses both socket1 and socket2
->>
->> cpu0 cpu1  | cpu2 cpu3
->> -----------|-------------
->>  socket1   |  socket2
->>
->> old cpu = cpu1
->>
->> Iteration1:
->> 1.find_idlest_group() returns socket2 to be idlest.
->> 2.task changes tsk_allowed_cpus to 0,1
->> 3.find_idlest_cpu() returns cpu2
->>
->> * without your patch
->>    1.the condition after find_idlest_cpu() returns -1,and sd->child is
->> chosen which happens to be socket1
->>    2.in the next iteration, find_idlest_group() and find_idlest_cpu()
->> will probably choose cpu0 which happens to be idler than cpu1,which is
->> in tsk_allowed_cpu.
-> 
-> Thanks for question Preeti! :)
-> 
-> Yes, with more iteration you has more possibility to get task allowed
-> cpu in select_task_rq_fair. but how many opportunity the situation
-> happened?  how much gain you get here?
-> With LCPU increasing many many iterations cause scalability issue. that
-> is the simplified forking patchset for. and that why 10% performance
-> gain on hackbench process/thread.
-> 
-> and if you insist want not to miss your chance in strf(), the current
-> iteration is still not enough. How you know the idlest cpu is still
-> idlest after this function finished? how to ensure the allowed cpu won't
-> be changed again?
-> 
-> A quick snapshot is enough in balancing here. we still has periodic
-> balacning.
 
-Hmm ok,let me look at this more closely.
-> 
->>
->> * with your patch
->>    1.the condition after find_idlest_cpu() does not exist,therefore
->> a sched domain to which cpu2 belongs to is chosen.this is socket2.(under
->> the for_each_domain() loop).
->>    2.in the next iteration, find_idlest_group() return NULL,because
->> there is no cpu which intersects with tsk_allowed_cpus.
->>    3.in select task rq,the fallback cpu is chosen even when an idle cpu
->> existed.
->>
->> So my concern is though select_task_rq() checks the
->> tsk_allowed_cpus(),you might end up choosing a different path of
->> sched_domains compared to without this patch as shown above.
->>
->> In short without the "if(new_cpu==-1)" condition we might get misled
->> doing unnecessary iterations over the wrong sched domains in
->> select_task_rq_fair().(Think about situations when not all the cpus of
->> socket2 are disallowed by the task,then there will more iterations in
-> 
-> After read the first 4 patches, believe you will find the patchset is
-> trying to reduce iterations, not increase them.
+--_002_156984479488CD49A184F5CAB4AF934606FF5627IRVEXCHMB14corp_
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
 
-Right,sorry about not noticing this.
-> 
->> the wrong path of sched_domains before exit,compared to what is shown
->> above.)
->>
-Regards
-Preeti U Murthy
+From: Stephen Hurd <shurd@broadcom.com>
+
+Add support for the UART device present in Broadcom TruManage capable NetXt=
+reme chips (ie: 5761m 5762, and 5725).
+
+This implementation has a hidden transmit FIFO, so running in single-byte i=
+nterrupt mode results in too many interrupts.  The UART_CAP_HFIFO capabilit=
+y was added to track this.  It continues to reload the THR as long as the T=
+HRE and TSRE bits are set in the LSR up to a specified limit (1024 is used =
+here).
+
+Signed-off-by: Stephen Hurd <shurd@broadcom.com>
+
+---
+
+Patch against linux-2.7 from ftp.kernel.org downloaded Dec-11-2012.
+
+I don't know anybody here off hand who does Linux work nor am I in a positi=
+on to configure the Exchange server.  If this still isn't acceptable, I gue=
+ss I could try emailing this patch around internally and hope it lands with=
+ someone has the appropriate magic available.
+
+
+-- Stephen Hurd
+
+
+--_002_156984479488CD49A184F5CAB4AF934606FF5627IRVEXCHMB14corp_
+Content-Type: text/plain;
+ name=brcm-trumanage-uart-patch.txt
+Content-Description: brcm-trumanage-uart-patch.txt
+Content-Disposition: attachment;
+ filename=brcm-trumanage-uart-patch.txt;
+ size=4703;
+ creation-date="Wed, 12 Dec 2012 01:08:45 GMT";
+ modification-date="Wed, 12 Dec 2012 01:08:45 GMT"
+Content-Transfer-Encoding: base64
+
+ZGlmZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwLmMg
+bGludXgtMy43L2RyaXZlcnMvdHR5L3NlcmlhbC84MjUwLzgyNTAuYwotLS0gbGludXgtMy43Lm9y
+aWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5jCTIwMTItMTItMTAgMTk6MzA6NTcuMDAw
+MDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5j
+CTIwMTItMTItMTEgMTU6NTY6NDAuNjg2MzQzOTU5IC0wODAwCkBAIC0yOTAsNiArMjkwLDEyIEBA
+IHN0YXRpYyBjb25zdCBzdHJ1Y3Qgc2VyaWFsODI1MF9jb25maWcgdWEKIAkJCQkgIFVBUlRfRkNS
+X1JfVFJJR18wMCB8IFVBUlRfRkNSX1RfVFJJR18wMCwKIAkJLmZsYWdzCQk9IFVBUlRfQ0FQX0ZJ
+Rk8sCiAJfSwKKwlbUE9SVF9CUkNNX1RSVU1BTkFHRV0gPSB7CisJCS5uYW1lCQk9ICJUcnVNYW5h
+Z2UiLAorCQkuZmlmb19zaXplCT0gMSwKKwkJLnR4X2xvYWRzegk9IDEwMjQsCisJCS5mbGFncwkJ
+PSBVQVJUX0NBUF9IRklGTywKKwl9LAogCVtQT1JUXzgyNTBfQ0lSXSA9IHsKIAkJLm5hbWUJCT0g
+IkNJUiBwb3J0IgogCX0KQEAgLTE0NDEsNiArMTQ0NywxMSBAQCB2b2lkIHNlcmlhbDgyNTBfdHhf
+Y2hhcnMoc3RydWN0IHVhcnRfODI1CiAJCXBvcnQtPmljb3VudC50eCsrOwogCQlpZiAodWFydF9j
+aXJjX2VtcHR5KHhtaXQpKQogCQkJYnJlYWs7CisJCWlmICh1cC0+Y2FwYWJpbGl0aWVzICYgVUFS
+VF9DQVBfSEZJRk8pIHsKKwkJCWlmICgoc2VyaWFsX3BvcnRfaW4ocG9ydCwgVUFSVF9MU1IpICYg
+Qk9USF9FTVBUWSkKKwkJCQkJIT0gQk9USF9FTVBUWSkKKwkJCQlicmVhazsKKwkJfQogCX0gd2hp
+bGUgKC0tY291bnQgPiAwKTsKIAogCWlmICh1YXJ0X2NpcmNfY2hhcnNfcGVuZGluZyh4bWl0KSA8
+IFdBS0VVUF9DSEFSUykKZGlmZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJp
+YWwvODI1MC84MjUwLmggbGludXgtMy43L2RyaXZlcnMvdHR5L3NlcmlhbC84MjUwLzgyNTAuaAot
+LS0gbGludXgtMy43Lm9yaWcvZHJpdmVycy90dHkvc2VyaWFsLzgyNTAvODI1MC5oCTIwMTItMTIt
+MTAgMTk6MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2Vy
+aWFsLzgyNTAvODI1MC5oCTIwMTItMTItMTEgMTQ6NTc6NDguNjQxNjEzNjc2IC0wODAwCkBAIC00
+MCw2ICs0MCw3IEBAIHN0cnVjdCBzZXJpYWw4MjUwX2NvbmZpZyB7CiAjZGVmaW5lIFVBUlRfQ0FQ
+X0FGRQkoMSA8PCAxMSkJLyogTUNSLWJhc2VkIGh3IGZsb3cgY29udHJvbCAqLwogI2RlZmluZSBV
+QVJUX0NBUF9VVUUJKDEgPDwgMTIpCS8qIFVBUlQgbmVlZHMgSUVSIGJpdCA2IHNldCAoWHNjYWxl
+KSAqLwogI2RlZmluZSBVQVJUX0NBUF9SVE9JRQkoMSA8PCAxMykJLyogVUFSVCBuZWVkcyBJRVIg
+Yml0IDQgc2V0IChYc2NhbGUsIFRlZ3JhKSAqLworI2RlZmluZSBVQVJUX0NBUF9IRklGTwkoMSA8
+PCAxNCkJLyogVUFSVCBoYXMgYSAiaGlkZGVuIiBGSUZPICovCiAKICNkZWZpbmUgVUFSVF9CVUdf
+UVVPVAkoMSA8PCAwKQkvKiBVQVJUIGhhcyBidWdneSBxdW90IExTQiAqLwogI2RlZmluZSBVQVJU
+X0JVR19UWEVOCSgxIDw8IDEpCS8qIFVBUlQgaGFzIGJ1Z2d5IFRYIElJUiBzdGF0dXMgKi8KZGlm
+ZiAtdXByTiBsaW51eC0zLjcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5j
+IGxpbnV4LTMuNy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCi0tLSBsaW51eC0z
+Ljcub3JpZy9kcml2ZXJzL3R0eS9zZXJpYWwvODI1MC84MjUwX3BjaS5jCTIwMTItMTItMTAgMTk6
+MzA6NTcuMDAwMDAwMDAwIC0wODAwCisrKyBsaW51eC0zLjcvZHJpdmVycy90dHkvc2VyaWFsLzgy
+NTAvODI1MF9wY2kuYwkyMDEyLTEyLTExIDE1OjU4OjEwLjk1ODM0MDA3NyAtMDgwMApAQCAtMTA4
+NSw2ICsxMDg1LDE3IEBAIHBjaV9vbWVnYXBjaV9zZXR1cChzdHJ1Y3Qgc2VyaWFsX3ByaXZhdGUK
+IAlyZXR1cm4gc2V0dXBfcG9ydChwcml2LCBwb3J0LCAyLCBpZHggKiA4LCAwKTsKIH0KIAorc3Rh
+dGljIGludAorcGNpX2JyY21fdHJ1bWFuYWdlX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAq
+cHJpdiwKKwkJICAgICAgY29uc3Qgc3RydWN0IHBjaXNlcmlhbF9ib2FyZCAqYm9hcmQsCisJCSAg
+ICAgIHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGludCBpZHgpCit7CisJaW50IHJldCA9IHBjaV9k
+ZWZhdWx0X3NldHVwKHByaXYsIGJvYXJkLCBwb3J0LCBpZHgpOworCXBvcnQtPnR5cGUgPSBQT1JU
+X0JSQ01fVFJVTUFOQUdFOworCXBvcnQtPmZsYWdzID0gKHBvcnQtPmZsYWdzIHwgVVBGX0ZJWEVE
+X1BPUlQgfCBVUEZfRklYRURfVFlQRSk7CisJcmV0dXJuIHJldDsKK30KKwogc3RhdGljIGludCBz
+a2lwX3R4X2VuX3NldHVwKHN0cnVjdCBzZXJpYWxfcHJpdmF0ZSAqcHJpdiwKIAkJCWNvbnN0IHN0
+cnVjdCBwY2lzZXJpYWxfYm9hcmQgKmJvYXJkLAogCQkJc3RydWN0IHVhcnRfODI1MF9wb3J0ICpw
+b3J0LCBpbnQgaWR4KQpAQCAtMTIxMyw2ICsxMjI0LDcgQEAgcGNpX3djaF9jaDM1M19zZXR1cChz
+dHJ1Y3Qgc2VyaWFsX3ByaXZhdAogI2RlZmluZSBQQ0lfVkVORE9SX0lEX0FHRVNUQVIJCTB4NTM3
+MgogI2RlZmluZSBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NQkweDY4NzIKICNkZWZpbmUgUENJ
+X1ZFTkRPUl9JRF9BU0lYCQkweDk3MTAKKyNkZWZpbmUgUENJX0RFVklDRV9JRF9CUk9BRENPTV9U
+UlVNQU5BR0UgMHgxNjBhCiAKIC8qIFVua25vd24gdmVuZG9ycy9jYXJkcyAtIHRoaXMgc2hvdWxk
+IG5vdCBiZSBpbiBsaW51eC9wY2lfaWRzLmggKi8KICNkZWZpbmUgUENJX1NVQkRFVklDRV9JRF9V
+TktOT1dOXzB4MTU4NAkweDE1ODQKQEAgLTE3ODgsNiArMTgwMCwxNyBAQCBzdGF0aWMgc3RydWN0
+IHBjaV9zZXJpYWxfcXVpcmsgcGNpX3NlcmlhCiAJCS5zZXR1cAkJPSBwY2lfYXNpeF9zZXR1cCwK
+IAl9LAogCS8qCisJICogQnJvYWRjb20gVHJ1TWFuYWdlIChOZXRYdHJlbWUpCisJICovCisJewor
+CQkudmVuZG9yCQk9IFBDSV9WRU5ET1JfSURfQlJPQURDT00sCisJCS5kZXZpY2UJCT0gUENJX0RF
+VklDRV9JRF9CUk9BRENPTV9UUlVNQU5BR0UsCisJCS5zdWJ2ZW5kb3IJPSBQQ0lfQU5ZX0lELAor
+CQkuc3ViZGV2aWNlCT0gUENJX0FOWV9JRCwKKwkJLnNldHVwCQk9IHBjaV9icmNtX3RydW1hbmFn
+ZV9zZXR1cCwKKwl9LAorCisJLyoKIAkgKiBEZWZhdWx0ICJtYXRjaCBldmVyeXRoaW5nIiB0ZXJt
+aW5hdG9yIGVudHJ5CiAJICovCiAJewpAQCAtMTk3NSw2ICsxOTk4LDcgQEAgZW51bSBwY2lfYm9h
+cmRfbnVtX3QgewogCXBibl9jZTQxMDBfMV8xMTUyMDAsCiAJcGJuX29tZWdhcGNpLAogCXBibl9O
+RVRNT1M5OTAwXzJzXzExNTIwMCwKKwlwYm5fYnJjbV90cnVtYW5hZ2UsCiB9OwogCiAvKgpAQCAt
+MjY3NCw2ICsyNjk4LDEyIEBAIHN0YXRpYyBzdHJ1Y3QgcGNpc2VyaWFsX2JvYXJkIHBjaV9ib2Fy
+ZHMKIAkJLm51bV9wb3J0cwk9IDIsCiAJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCiAJfSwKKwlbcGJu
+X2JyY21fdHJ1bWFuYWdlXSA9IHsKKwkJLmZsYWdzCQk9IEZMX0JBU0UwLAorCQkubnVtX3BvcnRz
+CT0gMSwKKwkJLnJlZ19zaGlmdAk9IDIsCisJCS5iYXNlX2JhdWQJPSAxMTUyMDAsCisJfSwKIH07
+CiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgcGNpX2RldmljZV9pZCBibGFja2xpc3RbXSA9IHsKQEAg
+LTQyMzgsNiArNDI2OCwxMyBAQCBzdGF0aWMgc3RydWN0IHBjaV9kZXZpY2VfaWQgc2VyaWFsX3Bj
+aV90CiAJCXBibl9vbWVnYXBjaSB9LAogCiAJLyoKKwkgKiBCcm9hZGNvbSBUcnVNYW5hZ2UKKwkg
+Ki8KKwl7CVBDSV9WRU5ET1JfSURfQlJPQURDT00sIFBDSV9ERVZJQ0VfSURfQlJPQURDT01fVFJV
+TUFOQUdFLAorCQlQQ0lfQU5ZX0lELCBQQ0lfQU5ZX0lELCAwLCAwLAorCQlwYm5fYnJjbV90cnVt
+YW5hZ2UgfSwKKworCS8qCiAJICogQWdlU3RhciBhcy1wcnMyLTAwOQogCSAqLwogCXsJUENJX1ZF
+TkRPUl9JRF9BR0VTVEFSLCBQQ0lfREVWSUNFX0lEX0FHRVNUQVJfOTM3NSwKZGlmZiAtdXByTiBs
+aW51eC0zLjcub3JpZy9pbmNsdWRlL3VhcGkvbGludXgvc2VyaWFsX2NvcmUuaCBsaW51eC0zLjcv
+aW5jbHVkZS91YXBpL2xpbnV4L3NlcmlhbF9jb3JlLmgKLS0tIGxpbnV4LTMuNy5vcmlnL2luY2x1
+ZGUvdWFwaS9saW51eC9zZXJpYWxfY29yZS5oCTIwMTItMTItMTAgMTk6MzA6NTcuMDAwMDAwMDAw
+IC0wODAwCisrKyBsaW51eC0zLjcvaW5jbHVkZS91YXBpL2xpbnV4L3NlcmlhbF9jb3JlLmgJMjAx
+Mi0xMi0xMSAxNTowMDowNy4wMDU2MTg0NDAgLTA4MDAKQEAgLTQ5LDcgKzQ5LDggQEAKICNkZWZp
+bmUgUE9SVF9YUjE3RDE1WAkyMQkvKiBFeGFyIFhSMTdEMTV4IFVBUlQgKi8KICNkZWZpbmUgUE9S
+VF9MUEMzMjIwCTIyCS8qIE5YUCBMUEMzMnh4IFNvQyAiU3RhbmRhcmQiIFVBUlQgKi8KICNkZWZp
+bmUgUE9SVF84MjUwX0NJUgkyMwkvKiBDSVIgaW5mcmFyZWQgcG9ydCwgaGFzIGl0cyBvd24gZHJp
+dmVyICovCi0jZGVmaW5lIFBPUlRfTUFYXzgyNTAJMjMJLyogbWF4IHBvcnQgSUQgKi8KKyNkZWZp
+bmUgUE9SVF9CUkNNX1RSVU1BTkFHRQkyNAorI2RlZmluZSBQT1JUX01BWF84MjUwCTI0CS8qIG1h
+eCBwb3J0IElEICovCiAKIC8qCiAgKiBBUk0gc3BlY2lmaWMgdHlwZSBudW1iZXJzLiAgVGhlc2Ug
+YXJlIG5vdCBjdXJyZW50bHkgZ3VhcmFudGVlZAo=
+
+--_002_156984479488CD49A184F5CAB4AF934606FF5627IRVEXCHMB14corp_--
 
