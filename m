@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab2LLSsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 13:48:40 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48511 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2LLSsh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 13:48:37 -0500
-Date: Wed, 12 Dec 2012 10:48:31 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] 8042: Enable A20 using KBC to fix S3 resume on some
- MSI laptops
-Message-ID: <20121212184831.GA10521@core.coreip.homeip.net>
-References: <201212112218.06551.linux@rainbow-software.org>
- <50C7D3AB.6060508@zytor.com>
+	id S1754909Ab2LLSsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 13:48:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19633 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab2LLSss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 13:48:48 -0500
+Date: Wed, 12 Dec 2012 19:48:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121212184849.GA26784@redhat.com>
+References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50C7D3AB.6060508@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50C8CD52.8040808@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 04:45:31PM -0800, H. Peter Anvin wrote:
-> Looks good to me.  Alan/Rafael/Dmitry, OK for me to commit this?
+On 12/13, Srivatsa S. Bhat wrote:
+>
+> On 12/12/2012 11:32 PM, Oleg Nesterov wrote:
+> > And _perhaps_ get_ can avoid it too?
+> >
+> > I didn't really try to think, probably this is not right, but can't
+> > something like this work?
+> >
+> > 	#define XXXX	(1 << 16)
+> > 	#define MASK	(XXXX -1)
+> >
+> > 	void get_online_cpus_atomic(void)
+> > 	{
+> > 		preempt_disable();
+> >
+> > 		// only for writer
+> > 		__this_cpu_add(reader_percpu_refcnt, XXXX);
+> >
+> > 		if (__this_cpu_read(reader_percpu_refcnt) & MASK) {
+> > 			__this_cpu_inc(reader_percpu_refcnt);
+> > 		} else {
+> > 			smp_wmb();
+> > 			if (writer_active()) {
+> > 				...
+> > 			}
+> > 		}
+> >
+> > 		__this_cpu_dec(reader_percpu_refcnt, XXXX);
+> > 	}
+> >
+>
+> Sorry, may be I'm too blind to see, but I didn't understand the logic
+> of how the mask helps us avoid disabling interrupts..
 
-Sure. I hope it won't affect other boxes, otherwise more DMI tables
-will be needed.
+Why do we need cli/sti at all? We should prevent the following race:
 
-Thanks.
+	- the writer already holds hotplug_rwlock, so get_ must not
+	  succeed.
 
-> 
-> 	-hpa
-> 
-> On 12/11/2012 01:18 PM, Ondrej Zary wrote:
-> > Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-> > line but resume code assumes that KBC was used.
-> > The laptop will not resume from S3 otherwise but powers off after a while
-> > and then powers on again stuck with a blank screen.
-> > 
-> > Fix it by enabling A20 using KBC in i8042_platform_init for x86.
-> > 
-> > Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-> > 
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > ---
-> >  drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
-> >  1 files changed, 9 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-> > index d6cc77a..5f306f7 100644
-> > --- a/drivers/input/serio/i8042-x86ia64io.h
-> > +++ b/drivers/input/serio/i8042-x86ia64io.h
-> > @@ -921,6 +921,7 @@ static int __init i8042_platform_init(void)
-> >  	int retval;
-> >  
-> >  #ifdef CONFIG_X86
-> > +	u8 a20_on = 0xdf;
-> >  	/* Just return if pre-detection shows no i8042 controller exist */
-> >  	if (!x86_platform.i8042_detect())
-> >  		return -ENODEV;
-> > @@ -960,6 +961,14 @@ static int __init i8042_platform_init(void)
-> >  
-> >  	if (dmi_check_system(i8042_dmi_dritek_table))
-> >  		i8042_dritek = true;
-> > +
-> > +	/*
-> > +	 * A20 was already enabled during early kernel init. But some buggy
-> > +	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-> > +	 * resume from S3. So we do it here and hope that nothing breaks.
-> > +	 */
-> > +	i8042_command(&a20_on, 0x10d1);
-> > +	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
-> >  #endif /* CONFIG_X86 */
-> >  
-> >  	return retval;
-> > 
-> 
+	- the new reader comes, it increments reader_percpu_refcnt,
+	  but before it checks writer_active() ...
 
--- 
-Dmitry
+	- irq handler does get_online_cpus_atomic() and sees
+	  reader_nested_percpu() == T, so it simply increments
+	  reader_percpu_refcnt and succeeds.
+
+OTOH, why do we need to increment reader_percpu_refcnt the counter
+in advance? To ensure that either we see writer_active() or the
+writer should see reader_percpu_refcnt != 0 (and that is why they
+should write/read in reverse order).
+
+The code above tries to avoid this race using the lower 16 bits
+as a "nested-counter", and the upper bits to avoid the race with
+the writer.
+
+	// only for writer
+	__this_cpu_add(reader_percpu_refcnt, XXXX);
+
+If irq comes and does get_online_cpus_atomic(), it won't be confused
+by __this_cpu_add(XXXX), it will check the lower bits and switch to
+the "slow path".
+
+
+But once again, so far I didn't really try to think. It is quite
+possible I missed something.
+
+Oleg.
+
