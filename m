@@ -1,159 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab2LLJXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 04:23:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36712 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2LLJXG (ORCPT
+	id S1752121Ab2LLJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 04:29:41 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44756 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab2LLJ3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 04:23:06 -0500
-Message-ID: <50C84CF7.7030602@canonical.com>
-Date: Wed, 12 Dec 2012 10:23:03 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Sumit Semwal <sumit.semwal@linaro.org>
-CC: linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH, resend] dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Dec 2012 04:29:38 -0500
+Message-ID: <1355304570.1542.0.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>,
+        hpa@zytor.com, akpm@linux-foundation.org, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Date: Wed, 12 Dec 2012 03:29:30 -0600
+In-Reply-To: <50C849DD.20405@cn.fujitsu.com>
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
+	  <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
+	  <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com>
+	 <1355225313.1919.1.camel@kernel.cn.ibm.com> <50C7D490.60409@huawei.com>
+	 <50C849DD.20405@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation says that code requiring dma-buf should add it to
-select, so inline fallbacks are not going to be used. A link error
-will make it obvious what went wrong, instead of silently doing
-nothing at runtime.
+On Wed, 2012-12-12 at 17:09 +0800, Tang Chen wrote:
+> On 12/12/2012 08:49 AM, Jiang Liu wrote:
+> >>>>> This patch introduces a new array zone_movable_limit[] to store the
+> >>>>> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+> >>>>> The function sanitize_zone_movable_limit() will find out to which
+> >>>>> node the ranges in movable_map.map[] belongs, and calculates the
+> >>>>> low boundary of ZONE_MOVABLE for each node.
+> >>
+> >> What's the difference between zone_movable_limit[nid] and
+> >> zone_movable_pfn[nid]?
+> > zone_movable_limit[] is a temporary storage for zone_moveable_pfn[].
+> > It's used to handle a special case if user specifies both movablecore_map
+> > and movablecore/kernelcore on the kernel command line.
+> >
+> Hi Simon, Liu,
+> 
+> Sorry for the late and thanks for your discussion. :)
+> 
+> As Liu said, zone_movable_limit[] is a temporary array for calculation.
+> 
+> If users specified movablecore_map option, zone_movable_limit[] holds
+> the lowest pfn of ZONE_MOVABLE limited by movablecore_map option. It is 
+> constant, won't change.
+> 
+> Please refer to find_zone_movable_pfns_for_nodes() in patch4, you will
+> see that zone_moveable_pfn[] will be changed each time kernel area
+> increases.
+> 
+> So when kernel area increases on node i, zone_moveable_pfn[i] will
+> increase. And if zone_moveable_pfn[i] > zone_movable_limit[i], we should
+> stop allocate memory for kernel on node i. Here, I give movablecore_map 
+> higher priority than kernelcore/movablecore.
+> 
+> And also, I tried to use zone_moveable_pfn[] to store limits. But when
+> calculating the kernel area, I still have to store the limits in
+> temporary variables. I think the code was ugly. So I added an new array.
+> 
+> Thanks. :)
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Rob Clark <rob.clark@linaro.org>
+Thanks for your clarify. 
 
----
-Resubmit since it seemed to have gotten lost last cycle.
+Enable PAE on x86 32bit kernel, 8G memory, movablecore=6.5G
+> 
+> [    0.000000] 8304MB HIGHMEM available.
+> [    0.000000] 885MB LOWMEM available.
+> [    0.000000]   mapped low ram: 0 - 375fe000
+> [    0.000000]   low ram: 0 - 375fe000
+> [    0.000000] Zone ranges:
+> [    0.000000]   DMA      [mem 0x00010000-0x00ffffff]
+> [    0.000000]   Normal   [mem 0x01000000-0x375fdfff]
+> [    0.000000]   HighMem  [mem 0x375fe000-0x3e5fffff]
+> [    0.000000] Movable zone start for each node
+> [    0.000000] Early memory node ranges
+> [    0.000000]   node   0: [mem 0x00010000-0x0009cfff]
+> [    0.000000]   node   0: [mem 0x00100000-0x1fffffff]
+> [    0.000000]   node   0: [mem 0x20200000-0x3fffffff]
+> [    0.000000]   node   0: [mem 0x40200000-0xb69cbfff]
+> [    0.000000]   node   0: [mem 0xb6a46000-0xb6a47fff]
+> [    0.000000]   node   0: [mem 0xb6b1c000-0xb6cfffff]
+> [    0.000000]   node   0: [mem 0x00000000-0x3e5fffff]
+> [    0.000000] On node 0 totalpages: 2051391
+> [    0.000000] free_area_init_node: node 0, pgdat c0c26a80,
+> node_mem_map
+> f19de200
+> [    0.000000]   DMA zone: 32 pages used for memmap
+> [    0.000000]   DMA zone: 0 pages reserved
+> [    0.000000]   DMA zone: 3949 pages, LIFO batch:0
+> [    0.000000]   Normal zone: 1740 pages used for memmap
+> [    0.000000]   Normal zone: 220466 pages, LIFO batch:31
+> [    0.000000]   HighMem zone: 16609 pages used for memmap
+> [    0.000000]   HighMem zone: 1808595 pages, LIFO batch:31
 
- include/linux/dma-buf.h | 99 -------------------------------------------------
- 1 file changed, 99 deletions(-)
+Why zone movable disappear?
 
-diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
-index eb48f38..bd2e52c 100644
---- a/include/linux/dma-buf.h
-+++ b/include/linux/dma-buf.h
-@@ -156,7 +156,6 @@ static inline void get_dma_buf(struct dma_buf *dmabuf)
- 	get_file(dmabuf->file);
- }
- 
--#ifdef CONFIG_DMA_SHARED_BUFFER
- struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
- 							struct device *dev);
- void dma_buf_detach(struct dma_buf *dmabuf,
-@@ -184,103 +183,5 @@ int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
- 		 unsigned long);
- void *dma_buf_vmap(struct dma_buf *);
- void dma_buf_vunmap(struct dma_buf *, void *vaddr);
--#else
--
--static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
--							struct device *dev)
--{
--	return ERR_PTR(-ENODEV);
--}
--
--static inline void dma_buf_detach(struct dma_buf *dmabuf,
--				  struct dma_buf_attachment *dmabuf_attach)
--{
--	return;
--}
--
--static inline struct dma_buf *dma_buf_export(void *priv,
--					     const struct dma_buf_ops *ops,
--					     size_t size, int flags)
--{
--	return ERR_PTR(-ENODEV);
--}
--
--static inline int dma_buf_fd(struct dma_buf *dmabuf, int flags)
--{
--	return -ENODEV;
--}
--
--static inline struct dma_buf *dma_buf_get(int fd)
--{
--	return ERR_PTR(-ENODEV);
--}
--
--static inline void dma_buf_put(struct dma_buf *dmabuf)
--{
--	return;
--}
--
--static inline struct sg_table *dma_buf_map_attachment(
--	struct dma_buf_attachment *attach, enum dma_data_direction write)
--{
--	return ERR_PTR(-ENODEV);
--}
--
--static inline void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
--			struct sg_table *sg, enum dma_data_direction dir)
--{
--	return;
--}
--
--static inline int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
--					   size_t start, size_t len,
--					   enum dma_data_direction dir)
--{
--	return -ENODEV;
--}
--
--static inline void dma_buf_end_cpu_access(struct dma_buf *dmabuf,
--					  size_t start, size_t len,
--					  enum dma_data_direction dir)
--{
--}
--
--static inline void *dma_buf_kmap_atomic(struct dma_buf *dmabuf,
--					unsigned long pnum)
--{
--	return NULL;
--}
--
--static inline void dma_buf_kunmap_atomic(struct dma_buf *dmabuf,
--					 unsigned long pnum, void *vaddr)
--{
--}
--
--static inline void *dma_buf_kmap(struct dma_buf *dmabuf, unsigned long pnum)
--{
--	return NULL;
--}
--
--static inline void dma_buf_kunmap(struct dma_buf *dmabuf,
--				  unsigned long pnum, void *vaddr)
--{
--}
--
--static inline int dma_buf_mmap(struct dma_buf *dmabuf,
--			       struct vm_area_struct *vma,
--			       unsigned long pgoff)
--{
--	return -ENODEV;
--}
--
--static inline void *dma_buf_vmap(struct dma_buf *dmabuf)
--{
--	return NULL;
--}
--
--static inline void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
--{
--}
--#endif /* CONFIG_DMA_SHARED_BUFFER */
- 
- #endif /* __DMA_BUF_H__ */
--- 
-1.8.0
 
 
