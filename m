@@ -1,129 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2LLTHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 14:07:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59858 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754149Ab2LLTHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 14:07:30 -0500
-Date: Wed, 12 Dec 2012 21:00:21 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Nelson <robertcnelson@gmail.com>
-CC: Paolo Pisati <paolo.pisati@canonical.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
- original voltage values
-Message-ID: <20121212190021.GA29854@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1355312753-16514-1-git-send-email-paolo.pisati@canonical.com>
- <1355312753-16514-2-git-send-email-paolo.pisati@canonical.com>
- <CAOCHtYhgQQX5560+bOHJGJ3EWqrE2JtdUfDNzk_R2Pgkw6c9+w@mail.gmail.com>
+	id S1754734Ab2LLTOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 14:14:33 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36708 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab2LLTOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 14:14:31 -0500
+Message-ID: <50C8D739.6030903@linux.vnet.ibm.com>
+Date: Thu, 13 Dec 2012 00:42:57 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
-Content-Disposition: inline
-In-Reply-To: <CAOCHtYhgQQX5560+bOHJGJ3EWqrE2JtdUfDNzk_R2Pgkw6c9+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com>
+In-Reply-To: <20121212184849.GA26784@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121219-5564-0000-0000-000005C1A594
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---EeQfGwPcQSOJBaQU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/13/2012 12:18 AM, Oleg Nesterov wrote:
+> On 12/13, Srivatsa S. Bhat wrote:
+>>
+>> On 12/12/2012 11:32 PM, Oleg Nesterov wrote:
+>>> And _perhaps_ get_ can avoid it too?
+>>>
+>>> I didn't really try to think, probably this is not right, but can't
+>>> something like this work?
+>>>
+>>> 	#define XXXX	(1 << 16)
+>>> 	#define MASK	(XXXX -1)
+>>>
+>>> 	void get_online_cpus_atomic(void)
+>>> 	{
+>>> 		preempt_disable();
+>>>
+>>> 		// only for writer
+>>> 		__this_cpu_add(reader_percpu_refcnt, XXXX);
+>>>
+>>> 		if (__this_cpu_read(reader_percpu_refcnt) & MASK) {
+>>> 			__this_cpu_inc(reader_percpu_refcnt);
+>>> 		} else {
+>>> 			smp_wmb();
+>>> 			if (writer_active()) {
+>>> 				...
+>>> 			}
+>>> 		}
+>>>
+>>> 		__this_cpu_dec(reader_percpu_refcnt, XXXX);
+>>> 	}
+>>>
+>>
+>> Sorry, may be I'm too blind to see, but I didn't understand the logic
+>> of how the mask helps us avoid disabling interrupts..
+> 
+> Why do we need cli/sti at all? We should prevent the following race:
+> 
+> 	- the writer already holds hotplug_rwlock, so get_ must not
+> 	  succeed.
+> 
+> 	- the new reader comes, it increments reader_percpu_refcnt,
+> 	  but before it checks writer_active() ...
+> 
+> 	- irq handler does get_online_cpus_atomic() and sees
+> 	  reader_nested_percpu() == T, so it simply increments
+> 	  reader_percpu_refcnt and succeeds.
+> 
+> OTOH, why do we need to increment reader_percpu_refcnt the counter
+> in advance? To ensure that either we see writer_active() or the
+> writer should see reader_percpu_refcnt != 0 (and that is why they
+> should write/read in reverse order).
+> 
+> The code above tries to avoid this race using the lower 16 bits
+> as a "nested-counter", and the upper bits to avoid the race with
+> the writer.
+> 
+> 	// only for writer
+> 	__this_cpu_add(reader_percpu_refcnt, XXXX);
+> 
+> If irq comes and does get_online_cpus_atomic(), it won't be confused
+> by __this_cpu_add(XXXX), it will check the lower bits and switch to
+> the "slow path".
+> 
 
-Hi,
+This is a very clever scheme indeed! :-) Thanks a lot for explaining
+it in detail.
 
-On Wed, Dec 12, 2012 at 12:13:35PM -0600, Robert Nelson wrote:
-> On Wed, Dec 12, 2012 at 5:45 AM, Paolo Pisati
-> <paolo.pisati@canonical.com> wrote:
-> > Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
-> > ---
-> >  drivers/regulator/core.c |   16 ++++++++++++++--
-> >  1 file changed, 14 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> > index e872c8b..c347fd0 100644
-> > --- a/drivers/regulator/core.c
-> > +++ b/drivers/regulator/core.c
-> > @@ -2250,6 +2250,7 @@ int regulator_set_voltage(struct regulator *regul=
-ator, int min_uV, int max_uV)
-> >  {
-> >         struct regulator_dev *rdev =3D regulator->rdev;
-> >         int ret =3D 0;
-> > +       int old_min_uV, old_max_uV;
-> >
-> >         mutex_lock(&rdev->mutex);
-> >
-> > @@ -2271,18 +2272,29 @@ int regulator_set_voltage(struct regulator *reg=
-ulator, int min_uV, int max_uV)
-> >         ret =3D regulator_check_voltage(rdev, &min_uV, &max_uV);
-> >         if (ret < 0)
-> >                 goto out;
-> > +
-> > +       /* restore original values in case of error */
-> > +       old_min_uV =3D regulator->min_uV;
-> > +       old_max_uV =3D regulator->max_uV;
-> >         regulator->min_uV =3D min_uV;
-> >         regulator->max_uV =3D max_uV;
-> >
-> >         ret =3D regulator_check_consumers(rdev, &min_uV, &max_uV);
-> >         if (ret < 0)
-> > -               goto out;
-> > +               goto out2;
-> >
-> >         ret =3D _regulator_do_set_voltage(rdev, min_uV, max_uV);
-> > -
-> > +       if (ret < 0)
-> > +               goto out2;
-> > +
-> >  out:
-> >         mutex_unlock(&rdev->mutex);
-> >         return ret;
-> > +out2:
-> > +       regulator->min_uV =3D old_min_uV;
-> > +       regulator->max_uV =3D old_max_uV;
-> > +       mutex_unlock(&rdev->mutex);
-> > +       return ret;
-> >  }
-> >  EXPORT_SYMBOL_GPL(regulator_set_voltage);
-> >
-> > --
-> > 1.7.10.4
->=20
-> Nice! This fixes the 800Mhz lockup on bootup after a software reset we
-> were seeing on the Beagle xM's with v3.7.x/v3.6.x...
->=20
-> Tested-by: Robert Nelson <robertcnelson@gmail.com>
+> 
+> But once again, so far I didn't really try to think. It is quite
+> possible I missed something.
+> 
 
-if this fixes a boot lockup with older kernel, I believe this deserves a
-Cc: stable@vger.kernel.org.
+Even I don't spot anything wrong with it. But I'll give it some more
+thought..
 
---=20
-balbi
+Regards,
+Srivatsa S. Bhat
 
---EeQfGwPcQSOJBaQU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQyNRFAAoJEIaOsuA1yqREGOMQAKrdaHEhlkTlu8ZVLk+Awu/5
-3PQ6eaOQwkYWrY6RZ0rMTshEUZvraaJ2Ge3vWTdR5eaIPaDSE3EgDh7JjqosAlu1
-PC6p19mPxUqijsL/ZAWP7oHs5m7xw/5jKlzBaemlel2SOOppSlI5i17aocRVibhB
-vtLrJgdTlUZ5RAxUMOIg3zai6K0P36THLdOC00X+PKbvCg3TeWoR/6/nTgFCXADH
-i/0R81dHRLv7aYKi+vBGmyxplEy8Fv3zovfOInE8sDxjvSLlumWXjwPzjm7R5nJ/
-O+rJWTcEG2UJzv1eaHvKYGWg/rHnHO2Cjc5KJ3G4EDHBfLWpoCfpOnayaNuWj1KA
-asMjTUrQoTZ7eTNqvpsWWZinlqyaxkPtyVNJun5QKObZFeVot7rKOxvdTSqQbtu9
-vcXNHAcTwoLHvlnro+nZrqmSJrLXB4icQJ8GJBJJsmp6fpLT/HRliD8OauOu413I
-JYBKq8NeAWN7RDbxqTJWvHGuykUh6kfPSWaASLPRAMR6jidex4WFSgw0qQZwQQY/
-9dq2JasIPFFoCJKQochmXgGhj6l1SB+PtO+omURB+BhoryphkB5TElOToIk54lNy
-78jAQgRa1qUZeU6RphDX/UKjESF+HGJVpPw50oRQ+XFTWp0S54CkGqsZfsLjlJAa
-3k7Ii23H2kYEtHXl9Rvn
-=7f5T
------END PGP SIGNATURE-----
-
---EeQfGwPcQSOJBaQU--
