@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab2LLG1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 01:27:34 -0500
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:46952 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751457Ab2LLG1e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 01:27:34 -0500
-Message-ID: <50C823D6.4080101@marvell.com>
-Date: Wed, 12 Dec 2012 14:27:34 +0800
-From: Qing Xu <qingx@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1751516Ab2LLG3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 01:29:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29575 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab2LLG3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 01:29:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,264,1355126400"; 
+   d="scan'208";a="232639913"
+Message-ID: <50C823A4.109@intel.com>
+Date: Wed, 12 Dec 2012 14:26:44 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Qing Xu <qingx@marvell.com>
-Cc: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        Qiao Zhou <zhouqiao@marvell.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Chao Xie <cxie4@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/4] mfd: 88pm80x: move to regmap irq base implementation
-References: <1354513557-21579-1-git-send-email-qingx@marvell.com>
-In-Reply-To: <1354513557-21579-1-git-send-email-qingx@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Subject: Re: [PATCH 08/18] sched: consider runnable load average in move_tasks
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <1355127754-8444-9-git-send-email-alex.shi@intel.com> <50C80ADF.8050504@linux.vnet.ibm.com>
+In-Reply-To: <50C80ADF.8050504@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Dec 2012 06:27:11.0251 (UTC) FILETIME=[B7D09630:01CDD831]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2012 01:45 PM, Qing Xu wrote:
-> From: Qing Xu <qingx@marvell.com>
->
-> get irq_base for mfd sub-device
->
-> Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
-> Signed-off-by: Qing Xu <qingx@marvell.com>
-> ---
->   drivers/mfd/88pm800.c       |    2 +-
->   drivers/mfd/88pm805.c       |    1 +
->   include/linux/mfd/88pm80x.h |    1 +
->   3 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-> index 73b2c9f..e1525ab 100644
-> --- a/drivers/mfd/88pm800.c
-> +++ b/drivers/mfd/88pm800.c
-> @@ -343,7 +343,7 @@ static int __devinit device_irq_init_800(struct pm80x_chip *chip)
->   	ret =
->   	    regmap_add_irq_chip(chip->regmap, chip->irq, flags, -1,
->   				chip->regmap_irq_chip, &chip->irq_data);
-> -
-> +	chip->irq_base = regmap_irq_chip_get_base(chip->irq_data);
->   out:
->   	return ret;
->   }
-> diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
-> index 7878013..8c9e25a 100644
-> --- a/drivers/mfd/88pm805.c
-> +++ b/drivers/mfd/88pm805.c
-> @@ -168,6 +168,7 @@ static int __devinit device_irq_init_805(struct pm80x_chip *chip)
->   	ret =
->   	    regmap_add_irq_chip(chip->regmap, chip->irq, flags, -1,
->   				chip->regmap_irq_chip, &chip->irq_data);
-> +	chip->irq_base = regmap_irq_chip_get_base(chip->irq_data);
->   out:
->   	return ret;
->   }
-> diff --git a/include/linux/mfd/88pm80x.h b/include/linux/mfd/88pm80x.h
-> index a0ca0dc..904efb9 100644
-> --- a/include/linux/mfd/88pm80x.h
-> +++ b/include/linux/mfd/88pm80x.h
-> @@ -303,6 +303,7 @@ struct pm80x_chip {
->   	int id;
->   	int irq;
->   	int irq_mode;
-> +	int irq_base;
->   	unsigned long wu_flag;
->   	spinlock_t lock;
->   };
+On 12/12/2012 12:41 PM, Preeti U Murthy wrote:
+> Hi Alex,
+> On 12/10/2012 01:52 PM, Alex Shi wrote:
+>> Except using runnable load average in background, move_tasks is also
+>> the key functions in load balance. We need consider the runnable load
+>> average in it in order to the apple to apple load comparison.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  kernel/sched/fair.c |   11 ++++++++++-
+>>  1 files changed, 10 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 6d893a6..bbb069c 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3741,6 +3741,15 @@ static unsigned long task_h_load(struct task_struct *p);
+>>  
+>>  static const unsigned int sched_nr_migrate_break = 32;
+>>  
+>> +static unsigned long task_h_load_avg(struct task_struct *p)
+>> +{
+>> +	u32 period = p->se.avg.runnable_avg_period;
+>> +	if (!period)
+>> +		return 0;
+>> +
+>> +	return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
+>                         ^^^^^^^^^^^^
+> This might result in an overflow,considering you are multiplying two 32
+> bit integers.Below is how this is handled in
+> __update_task_entity_contrib in kernel/sched/fair.c
+> 
+> u32 contrib;
+> /* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
+> contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
+> contrib /= (se->avg.runnable_avg_period + 1);
+> se->avg.load_avg_contrib = scale_load(contrib);
+
+scale_load_down is do nothing.
+> 
+> Also why can't p->se.load_avg_contrib be used directly? as a return
+> value for task_h_load_avg? since this is already updated in
+> update_task_entity_contrib and update_group_entity_contrib.
+
+No, only non task entity goes to  update_group_entity_contrib. not task
+entity.
 
 
-Samuel,
-
-Could you help to review my patch? Thanks a lot!
-
-Qing
-
+>> +}
+>> +
+>>  /*
+>>   * move_tasks tries to move up to imbalance weighted load from busiest to
+>>   * this_rq, as part of a balancing operation within domain "sd".
+>> @@ -3776,7 +3785,7 @@ static int move_tasks(struct lb_env *env)
+>>  		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
+>>  			goto next;
+>>  
+>> -		load = task_h_load(p);
+>> +		load = task_h_load_avg(p);
+>>  
+>>  		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+>>  			goto next;
+>>
+> 
+> Regards
+> Preeti U Murthy
+> 
 
