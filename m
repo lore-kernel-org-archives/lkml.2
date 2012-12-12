@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2LLCqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Dec 2012 21:46:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2169 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab2LLCqP (ORCPT
+	id S1754946Ab2LLCqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Dec 2012 21:46:43 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:45967 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab2LLCqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Dec 2012 21:46:15 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=cU5zP3iA40MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wzXg5rMBBV8A:10 a=s37wLwxS4G2fx1OE9iEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355280374.17101.325.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH] sched: rt: fix selecting runqueue for task to be
- pushed
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Dec 2012 21:46:14 -0500
-In-Reply-To: <1355277274.17101.323.camel@gandalf.local.home>
-References: <CAJd=RBCk0eWQqTk-BX8_=aBdYEQnbnf57dHZdcVbWbVY=33OhQ@mail.gmail.com>
-	 <1355149273.17101.176.camel@gandalf.local.home>
-	 <CAJd=RBDprA5ruzY6-uQ3L5eSX3Muk8fSpQZbbmsK0oAGwk0WtQ@mail.gmail.com>
-	 <1355277274.17101.323.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Dec 2012 21:46:42 -0500
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Dec 2012 21:46:42 EST
+MIME-Version: 1.0
+In-Reply-To: <CAGDELX6L89ux2TXJLnm5aC2zNdSqQDZws+c5-OA0Xbtkt7Nw5g@mail.gmail.com>
+References: <CAGDELX7f-Ee-V_M8kbDONRFCTBbZM2H_Q17Bk_12r4xw85Wq4Q@mail.gmail.com>
+	<20121212014109.38e18eeb@neptune.home>
+	<CAGDELX6rtztDzQobfaUNB2iZSyxGL9vzu5mM4sG7bDip=SaBag@mail.gmail.com>
+	<20121212020348.0afa77e2@neptune.home>
+	<CAGDELX6L89ux2TXJLnm5aC2zNdSqQDZws+c5-OA0Xbtkt7Nw5g@mail.gmail.com>
+Date: Wed, 12 Dec 2012 03:40:16 +0100
+Message-ID: <CAGDELX6CPevOq8EowLu1GUwiS6Yw4vjOz3S2AOewFBbt0pC_dw@mail.gmail.com>
+Subject: Re: "attempt to access beyond end of device" on DVD
+From: Jacek Poplawski <jacekpoplawski@gmail.com>
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 20:54 -0500, Steven Rostedt wrote:
+OK, I was wrong previously.
 
-> I'm actually thinking that that test should always fail. The
-> cpupri_find() does a scan of all priorities up to but not including the
-> current task's priority. If cpupri_find() finds a mask, it means that it
-> found CPUs that are running only tasks of lower priority than the task
-> we are checking. Which means, it should never include the task's CPU, as
-> that CPU should have a higher priority than what is being returned by
-> lowest_mask. If it can't find a set of CPUs of lower priority, it should
-> return false, and the find_lowest_rq() should exit.
-> 
-> I'll add a WARN_ON_ONCE() there, and see if I can trigger it. :-/
+I don't need to reload sr_mod, I only need to remount DVD.
 
-Ah, for select_task_rq_rt() it can get that CPU, because it's called in
-the wakeup path before the task is added into the CPUs priority. And we
-definitely want the current CPU in that case.
-
-For pushing, the local CPU should never be returned. I'll check to make
-sure that's the case too.
-
--- Steve
+The reason I was wrong is I was suspecting that DVD remounts itself
+after eject, but looks like it doesn't. Also it means that the problem
+is different than 3 years ago, because I am sure I was remounting DVD
+by hand and now I use some automount feature of Arch Linux / GNOME3.
 
 
+
+
+
+
+On 12/12/12, Jacek Poplawski <jacekpoplawski@gmail.com> wrote:
+>> Did you check if unbinding drivers or unloading their modules has the
+>> same effect as rebooting? That might help narrowing the area of code to
+>> look at.
+>
+> You were right.
+> I unmounted the DVD, then removed module sr_mod, reloaded it, inserted
+> DVD again and copied missing files, now they are OK.
+>
+>
+>> While at it, please tell us how your CD/DVD drive is connected and which
+>> controller it's connected to (relevant dmesg parts).
+>
+> [    0.893465] ata5.00: ATAPI: Optiarc DVD RW AD-7203S, 1.05, max UDMA/100
+> [    0.906796] ata5.00: configured for UDMA/100
+> (...)
+> [    1.232096] scsi 4:0:0:0: CD-ROM            Optiarc  DVD RW
+> AD-7203S  1.05 PQ: 0 ANSI: 5
+> (...)
+> [  897.871546] sr0: scsi3-mmc drive: 125x/125x writer dvd-ram cd/rw
+> xa/form2 cdda tray
+> [  897.871726] sr 4:0:0:0: Attached scsi CD-ROM sr0
+>
+> I don't have other devices to test (and haven't tried loop device).
+>
