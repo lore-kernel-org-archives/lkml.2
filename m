@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab2LLGgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 01:36:41 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:48134 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab2LLGgk (ORCPT
+	id S1751227Ab2LLGlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 01:41:06 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:33680 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750714Ab2LLGlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 01:36:40 -0500
-X-Greylist: delayed 2909 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Dec 2012 01:36:40 EST
-Date: Tue, 11 Dec 2012 20:46:48 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Benedikt Spranger <b.spranger@linutronix.de>, linux-kernel@vger.kernel.org,
-        Alexander.Frank@eberspaecher.com
-Subject: Re: [PATCH 2/2] uio: do not expose inode to uio open/release hooks
-Message-ID: <20121212044648.GB7224@kroah.com>
-References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
- <1355267523-19724-3-git-send-email-b.spranger@linutronix.de>
- <20121211232032.GA24933@kroah.com>
- <20121212014221.GA2642@local>
+	Wed, 12 Dec 2012 01:41:05 -0500
+Message-ID: <50C82402.3000500@marvell.com>
+Date: Wed, 12 Dec 2012 14:28:18 +0800
+From: Qing Xu <qingx@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212014221.GA2642@local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Qing Xu <qingx@marvell.com>
+Cc: Qiao Zhou <zhouqiao@marvell.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Xiaofan Tian <tianxf@marvell.com>, Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: 88pm80x: fix no interrupt mask reg
+References: <1354522285-7563-1-git-send-email-qingx@marvell.com>
+In-Reply-To: <1354522285-7563-1-git-send-email-qingx@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Dec 2012 06:27:55.0844 (UTC) FILETIME=[D264F040:01CDD831]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 02:42:22AM +0100, Hans J. Koch wrote:
-> On Tue, Dec 11, 2012 at 03:20:32PM -0800, Greg KH wrote:
-> > On Wed, Dec 12, 2012 at 12:12:02AM +0100, Benedikt Spranger wrote:
-> > > The inode parameter is unused by in kernel users of UIO.
-> > 
-> > Ok.
-> > 
-> > > Also the inode parameter makes it hard to resolve the existing open(),
-> > > mmap() and close() difficulty.
-> > 
-> > I don't understand, what do you mean by this?  What is this parameter
-> > causing problems with?
-> 
-> The problem is that according to POSIX, it is guaranteed that in userspace
-> you can do
-> 
-> fd = open("/dev/uio0", ...)
-> ptr = mmap(...fd...)
-> close(fd)
-> 
-> with ptr still being valid and useable after that.
+On 12/03/2012 04:11 PM, Qing Xu wrote:
+> From: Qing Xu <qingx@marvell.com>
+>
+> 1.88pm80x do not have interrupt mask registers and we use
+> interrupt enable register. So we need to set mask_invert flag.
+> 2.add support for D0 version
+>
+> Signed-off-by: Xiaofan Tian <tianxf@marvell.com>
+> Signed-off-by: Qing Xu <qingx@marvell.com>
+> ---
+>   drivers/mfd/88pm800.c |    4 +++-
+>   drivers/mfd/88pm805.c |    1 +
+>   2 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+> index e1525ab..3fcc8dd 100644
+> --- a/drivers/mfd/88pm800.c
+> +++ b/drivers/mfd/88pm800.c
+> @@ -119,7 +119,8 @@ enum {
+>   	PM800_CHIP_A1  = 0x61,
+>   	PM800_CHIP_B0  = 0x62,
+>   	PM800_CHIP_C0  = 0x63,
+> -	PM800_CHIP_END = PM800_CHIP_C0,
+> +	PM800_CHIP_D0  = 0x64,
+> +	PM800_CHIP_END = PM800_CHIP_D0,
+>   
+>   	/* Make sure to update this to the last stepping */
+>   	PM8XXX_CHIP_END = PM800_CHIP_END
+> @@ -362,6 +363,7 @@ static struct regmap_irq_chip pm800_irq_chip = {
+>   	.status_base = PM800_INT_STATUS1,
+>   	.mask_base = PM800_INT_ENA_1,
+>   	.ack_base = PM800_INT_STATUS1,
+> +	.mask_invert = 1,
+>   };
+>   
+>   static int pm800_pages_init(struct pm80x_chip *chip)
+> diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
+> index 8c9e25a..39a91bd 100644
+> --- a/drivers/mfd/88pm805.c
+> +++ b/drivers/mfd/88pm805.c
+> @@ -187,6 +187,7 @@ static struct regmap_irq_chip pm805_irq_chip = {
+>   	.status_base = PM805_INT_STATUS1,
+>   	.mask_base = PM805_INT_MASK1,
+>   	.ack_base = PM805_INT_STATUS1,
+> +	.mask_invert = 1,
+>   };
+>   
+>   static int __devinit device_805_init(struct pm80x_chip *chip)
 
-Yes, but what does that have to do with this in-kernel, internal api?
 
-confused,
+Samuel,
 
-greg k-h
+Could you help to review my patch? Thanks a lot!
+
+Qing
+
+
