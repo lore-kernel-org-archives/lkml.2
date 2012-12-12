@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2LLOLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 09:11:00 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50187 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab2LLOK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 09:10:59 -0500
+	id S1754165Ab2LLOOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 09:14:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257Ab2LLON7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 09:13:59 -0500
+Date: Wed, 12 Dec 2012 16:13:58 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] kvm: memory slot cleanups, fix, and increase
+Message-ID: <20121212141358.GR11016@redhat.com>
+References: <20121210171417.10461.20079.stgit@bling.home>
 MIME-Version: 1.0
-In-Reply-To: <20121212145631.d03a40fd28d4b59b56009fe1@mxc.nes.nec.co.jp>
-References: <20121211214859.GG5580@redhat.com>
-	<104724866.46130887.1355264225876.JavaMail.root@redhat.com>
-	<20121212145631.d03a40fd28d4b59b56009fe1@mxc.nes.nec.co.jp>
-Date: Wed, 12 Dec 2012 23:10:57 +0900
-Message-ID: <CAAmzW4PGD4QWVuL4zWLeZ3GLyetoD0NO8qgc1Rgfx-CtGS384w@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
-From: JoonSoo Kim <js1304@gmail.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Cc: anderson@redhat.com, vgoyal@redhat.com, akpm@linux-foundation.org,
-        rmk+kernel@arm.linux.org.uk, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Atsushi.
+On Mon, Dec 10, 2012 at 10:32:39AM -0700, Alex Williamson wrote:
+> v2: Update 02/10 to not check userspace_addr when slot is removed.
+>     Yoshikawa-san withdrew objection to increase slot_bitmap prior
+>     to his series to remove slot_bitmap.
+> 
+> This series does away with any kind of complicated resizing of the
+> slot array and simply does a one time increase.  I do compact struct
+> kvm_memory_slot a bit to take better advantage of the space we are
+> using.  This reduces each slot from 64 bytes (x86_64) to 56 bytes.
+> By enforcing the API around valid operations for an unused slot and
+> fields that can be modified runtime, I found and was able to fix a
+> bug in iommu mapping for slots.  The renames enabled me to find the
+> previously posted bug fix for catching slot overlaps.
+> 
+> As mentioned in the series, the primary motivation for increasing
+> memory slots is assigned devices.  With this, I've been able to
+> assign 30 devices to a single VM and could have gone further, but
+> ran out of SRIOV VFs.  Typical devices use anywhere from 2-4 slots
+> and max out at 8 slots.  125 user slots (3 private slots) allows
+> us to support between 28 and 56 typical devices per VM.
+> 
+> Tested on x86_64, compiled on ia64, powerpc, and s390.
+> 
+> Thanks,
+> Alex
+> 
+Reviewed-by: Gleb Natapov <gleb@redhat.com>
 
-2012/12/12 Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>:
-> Hello,
->
-> On Tue, 11 Dec 2012 17:17:05 -0500 (EST)
-> Dave Anderson <anderson@redhat.com> wrote:
->
->>
->>
->> ----- Original Message -----
->> > On Mon, Dec 10, 2012 at 11:40:47PM +0900, JoonSoo Kim wrote:
->> >
->> > [..]
->> > > > So without knowing details of both the data structures, I think if vmlist
->> > > > is going away, then user space tools should be able to traverse vmap_area_root
->> > > > rb tree. I am assuming it is sorted using ->addr field and we should be
->> > > > able to get vmalloc area start from there. It will just be a matter of
->> > > > exporting right fields to user space (instead of vmlist).
->> > >
->> > > There is address sorted list of vmap_area, vmap_area_list.
->> > > So we can use it for traversing vmalloc areas if it is necessary.
->> > > But, as I mentioned before, kexec write *just* address of vmlist and
->> > > offset of vm_struct's address field.  It imply that they don't traverse vmlist,
->> > > because they didn't write vm_struct's next field which is needed for traversing.
->> > > Without vm_struct's next field, they have no method for traversing.
->> > > So, IMHO, assigning dummy vm_struct to vmlist which is implemented by [7/8] is
->> > > a safe way to maintain a compatibility of userspace tool. :)
->> >
->> > Actually the design of "makedumpfile" and "crash" tool is that they know
->> > about kernel data structures and they adopt to changes. So for major
->> > changes they keep track of kernel version numbers and if access the
->> > data structures accordingly.
->> >
->> > Currently we access first element of vmlist to determine start of vmalloc
->> > address. True we don't have to traverse the list.
->> >
->> > But as you mentioned we should be able to get same information by
->> > traversing to left most element of vmap_area_list rb tree. So I think
->> > instead of trying to retain vmlist first element just for backward
->> > compatibility, I will rather prefer get rid of that code completely
->> > from kernel and let user space tool traverse rbtree. Just export
->> > minimum needed info for traversal in user space.
->>
->> There's no need to traverse the rbtree.  There is a vmap_area_list
->> linked list of vmap_area structures that is also sorted by virtual
->> address.
->>
->> All that makedumpfile would have to do is to access the first vmap_area
->> in the vmap_area_list -- as opposed to the way that it does now, which is
->> by accessing the first vm_struct in the to-be-obsoleted vmlist list.
->>
->> So it seems silly to keep the dummy "vmlist" around.
->
-> I think so, I will modify makedumpfile to get the start address of vmalloc
-> with vmap_area_list if the related symbols are provided as VMCOREINFO like
-> vmlist.
-> BTW, have we to consider other tools ?
-> If it is clear, I think we can get rid of the dummy vmlist.
+> ---
+> 
+> Alex Williamson (10):
+>       kvm: Restrict non-existing slot state transitions
+>       kvm: Check userspace_addr when modifying a memory slot
+>       kvm: Fix iommu map/unmap to handle memory slot moves
+>       kvm: Minor memory slot optimization
+>       kvm: Rename KVM_MEMORY_SLOTS -> KVM_USER_MEM_SLOTS
+>       kvm: Make KVM_PRIVATE_MEM_SLOTS optional
+>       kvm: struct kvm_memory_slot.user_alloc -> bool
+>       kvm: struct kvm_memory_slot.flags -> u32
+>       kvm: struct kvm_memory_slot.id -> short
+>       kvm: Increase user memory slots on x86 to 125
+> 
+> 
+>  arch/ia64/include/asm/kvm_host.h    |    4 --
+>  arch/ia64/kvm/kvm-ia64.c            |    8 ++--
+>  arch/powerpc/include/asm/kvm_host.h |    6 +--
+>  arch/powerpc/kvm/book3s_hv.c        |    2 -
+>  arch/powerpc/kvm/powerpc.c          |    4 +-
+>  arch/s390/include/asm/kvm_host.h    |    4 --
+>  arch/s390/kvm/kvm-s390.c            |    4 +-
+>  arch/x86/include/asm/kvm_host.h     |    8 ++--
+>  arch/x86/include/asm/vmx.h          |    6 +--
+>  arch/x86/kvm/vmx.c                  |    6 +--
+>  arch/x86/kvm/x86.c                  |   10 ++---
+>  include/linux/kvm_host.h            |   24 +++++++-----
+>  virt/kvm/kvm_main.c                 |   72 +++++++++++++++++++++++------------
+>  13 files changed, 90 insertions(+), 68 deletions(-)
 
-Good!
-In next spin, I will remove dummy vmlist and export vmap_area_list symbol
-for makedumpfile.
-
-I don't know any other tools.
-If anyone knows it, please let me know.
-
-Thanks! Atsushi, Dave and Vivek.
+--
+			Gleb.
