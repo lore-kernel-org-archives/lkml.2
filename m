@@ -1,147 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab2LMTfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 14:35:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:28334 "EHLO mga09.intel.com"
+	id S932249Ab2LMTfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 14:35:32 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60826 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab2LMTfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 14:35:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,275,1355126400"; 
-   d="asc'?scan'208";a="233642024"
-Date: Thu, 13 Dec 2012 21:35:50 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Miles J Penner <miles.j.penner@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Tushar N Dave <tushar.n.dave@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] PCI Hotplug: workaround for Thunderbolt on Acer
- Aspire S5
-Message-ID: <20121213193550.GB23994@otc-wbsnb-06>
-References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
- <20121213184441.GB12105@kroah.com>
+	id S932162Ab2LMTfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 14:35:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH 1/6] ACPI: Separate adding ACPI device objects from probing ACPI drivers
+Date: Thu, 13 Dec 2012 20:40:33 +0100
+Message-ID: <3742073.hTjabQ5pdD@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <50C9D29F.9040508@gmail.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <2789050.ITilpEgQsC@vostro.rjw.lan> <50C9D29F.9040508@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
-Content-Disposition: inline
-In-Reply-To: <20121213184441.GB12105@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, December 13, 2012 09:05:35 PM Jiang Liu wrote:
+> On 12/13/2012 06:32 AM, Rafael J. Wysocki wrote:
+> > On Thursday, December 13, 2012 12:38:01 AM Jiang Liu wrote:
+> >> On 12/10/2012 07:00 AM, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>>
+> >>> Currently, as soon as an ACPI device node object (struct acpi_device)
+> >> snip
+> >>   
+> >>> @@ -1600,48 +1608,77 @@ static acpi_status acpi_bus_check_add(ac
+> >>>  	 * We may already have an acpi_device from a previous enumeration.  If
+> >>>  	 * so, we needn't add it again, but we may still have to start it.
+> >>>  	 */
+> >>> -	device = NULL;
+> >>>  	acpi_bus_get_device(handle, &device);
+> >>>  	if (ops->acpi_op_add && !device) {
+> >>> -		acpi_add_single_object(&device, handle, type, sta, ops);
+> >>> -		/* Is the device a known good platform device? */
+> >>> -		if (device
+> >>> -		    && !acpi_match_device_ids(device, acpi_platform_device_ids))
+> >>> -			acpi_create_platform_device(device);
+> >>> -	}
+> >>> +		struct acpi_bus_ops add_ops = *ops;
+> >>>  
+> >>> -	if (!device)
+> >>> -		return AE_CTRL_DEPTH;
+> >>> -
+> >>> -	if (ops->acpi_op_start && !(ops->acpi_op_add)) {
+> >>> -		status = acpi_start_single_object(device);
+> >>> -		if (ACPI_FAILURE(status))
+> >>> +		add_ops.acpi_op_match = 0;
+> >>> +		acpi_add_single_object(&device, handle, type, sta, &add_ops);
+> >>> +		if (!device)
+> >>>  			return AE_CTRL_DEPTH;
+> >>> +
+> >>> +		device->bus_ops.acpi_op_match = 1;
+> >>>  	}
+> >>>  
+> >>>  	if (!*return_value)
+> >>>  		*return_value = device;
+> >>> +
+> >>>  	return AE_OK;
+> >>>  }
+> >>>  
+> >>> +static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
+> >>> +					void *context, void **not_used)
+> >>> +{
+> >>> +	struct acpi_bus_ops *ops = context;
+> >>> +	struct acpi_device *device;
+> >>> +	acpi_status status = AE_OK;
+> >>> +
+> >>> +	if (acpi_bus_get_device(handle, &device))
+> >>> +		return AE_CTRL_DEPTH;
+> >>> +
+> >>> +	if (ops->acpi_op_add) {
+> >>> +		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+> >>> +			/* This is a known good platform device. */
+> >>> +			acpi_create_platform_device(device);
+> >>> +		} else {
+> >>> +			int ret = device_attach(&device->dev);
+> >>> +			acpi_hot_add_bind(device);
+> >>> +			if (ret)
+> >>> +				status = AE_CTRL_DEPTH;
+> >>> +		}
+> >>> +	} else if (ops->acpi_op_start) {
+> >>> +		if (ACPI_FAILURE(acpi_start_single_object(device)))
+> >>> +			status = AE_CTRL_DEPTH;
+> >>> +	}
+> >>> +	return status;
+> >>> +}
+> >>> +
+> >>>  static int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
+> >>>  			 struct acpi_device **child)
+> >>>  {
+> >>> -	acpi_status status;
+> >>>  	void *device = NULL;
+> >>> +	acpi_status status;
+> >>> +	int ret = 0;
+> >>>  
+> >>>  	status = acpi_bus_check_add(handle, 0, ops, &device);
+> >>> -	if (ACPI_SUCCESS(status))
+> >>> +	if (ACPI_FAILURE(status)) {
+> >>> +		ret = -ENODEV;
+> >>> +		goto out;
+> >>> +	}
+> >>> +
+> >>> +	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> >>> +			    acpi_bus_check_add, NULL, ops, &device);
+> >>> +	if (device)
+> >>>  		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> >>> -				    acpi_bus_check_add, NULL, ops, &device);
+> >>> +				    acpi_bus_probe_start, NULL, ops, NULL);
+> >> Hi Rafael,
+> >> 	Should we call acpi_bus_probe_start for the top device corresponding to 
+> >> "handle" too here?
+> > 
+> > Do you mean separately?  I don't think so.  It will be covered by the namespace
+> > walking, won't it?
+> Hi Rafael,
+> 	According to test results from Yijing, we do need to call acpi_bus_probe_start
+> for the top device corresponding to "handle".
+> 	Comments for acpi_walk_namespace says:
+> /*******************************************************************************
+>  *
+>  * FUNCTION:    acpi_walk_namespace
+>  *
+>  * DESCRIPTION: Performs a modified depth-first walk of the namespace tree,
+>  *              starting (and ending) at the object specified by start_handle.
+>                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>  *              The callback function is called whenever an object that matches
+>  *              the type parameter is found. If the callback function returns
+>  *              a non-zero value, the search is terminated immediately and this
+>  *              value is returned to the caller.
+>  *
+>  *              The point of this procedure is to provide a generic namespace
+>  *              a non-zero value, the search is terminated immediately and this
+>  *              value is returned to the caller.
+>  *
+>  *              The point of this procedure is to provide a generic namespace
+>  *              walk routine that can be called from multiple places to
+>  *              provide multiple services; the callback function(s) can be
+>  *              tailored to each task, whether it is a print function,
+>  *              a compare function, etc.
+>  *
+>  ******************************************************************************/
+> 
+> But acpi_ns_walk_namespace() doesn't really call the pre_order_visit and post_order_visit
+> for the start_handle. That means acpi_walk_namespace won't call the callback for the top
+> handle.
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You are right.
 
-On Thu, Dec 13, 2012 at 10:44:41AM -0800, Greg KH wrote:
-> On Thu, Dec 13, 2012 at 05:31:46PM +0200, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >=20
-> > Correct ACPI PCI hotplug imeplementation should have _RMV method in a
-> > PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
-> > deeper in hierarchy:
-> >=20
-> > Device (RP05)
-> > {
-> >    // ...
-> >    Device (HRUP)
-> >    {
-> >        // ...
-> >        Device (HRDN)
-> >        {
-> >            // ...
-> >            Device (EPUP)
-> >            {
-> >                // ...
-> >                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
-> >                {
-> >                    Return (One)
-> >                }
-> >            }
-> >        }
-> >    }
-> > }
-> >=20
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  drivers/pci/hotplug/acpi_pcihp.c |   13 +++++++++++++
-> >  1 file changed, 13 insertions(+)
-> >=20
-> > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acp=
-i_pcihp.c
-> > index 2a47e82..d92ebfb 100644
-> > --- a/drivers/pci/hotplug/acpi_pcihp.c
-> > +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> > @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
-> >  	status =3D acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> >  	if (ACPI_SUCCESS(status) && removable)
-> >  		return 1;
-> > +
-> > +	/*
-> > +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
-> > +	 *
-> > +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
-> > +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
-> > +	 * deeper in hierarchy.
-> > +	 */
-> > +	status =3D acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
-> > +			&removable);
-> > +	if (ACPI_SUCCESS(status) && removable)
-> > +		return 1;
->=20
-> I have no objection to this patch as-is, but I wonder how will other
-> BIOSes implement this "incorrectly" in the future.  Should we always
-> just try to walk the whole PCI slot heirachy looking for the _RMV
-> attribute?  That should solve the problem where someone else places this
-> at another location for the slot, right?
+I'll fix that and send updated series.  It looks like Bjorn wants me to rework
+the changelogs anyway. :-)
 
-I'm new with PCI and I'm not sure what problems can cause false positive
-here.
-What will heppend if we find yet another PCI-to-PCI bridge in the hierarchy
-and some of slots of that bridge will have _RMV method? Is it possible,
-right?
+Thanks,
+Rafael
 
-I prefer postpone any generalization before we will find any similar bug
-on other HW. (I naively hope BIOS developers will not repeat theirs bugs).
 
-> Is there any test for Windows that ensures that this gets placed in the
-> "correct" location that we can rely on?
-
-No idea. I haven't seen any Windows.
-
---=20
- Kirill A. Shutemov
-
---FkmkrVfFsRoUs1wW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQyi4WAAoJEAd+omnVudOMlVUP+wfjyOYeVJZBqgHAQwifUX9U
-rc1w4wwfE8w92d5vmesl7k3YOnKL8wGh6YaG0EDLpMSEYWAbj6bdA6fekiFnardL
-8Q3QkHwrgKsycIrQcib2IGqk5/Dd365pjXV8/3BwjSB24Dw/7e5NpmJUbsYcUDYn
-fXIYFV3Ow/GSMRXnJ3nDh2tkVP8BE6Y3OkDA3TU4Y/q1Fxr3IoPxKU3EoG/0iv7x
-xUt/JUyzgzu3Uo7lU02PfDuPJoSfb9uW2wR+ZqtD1hGj0xp4Z/1o1TpJ4FMuXRIA
-J4o3vc3ThixtiGJhmRTRHZvHwGTRqvLPYusv+cPW4jMFlG6WQmHLx/GdrCK5WkSK
-ViCBU4Eqt5K6zTTiAhtbXkXlt//xKbyeRuqglj/GRiWQcsIK0XbRiWHAZB+Tt3or
-9yUyWDTfC1yHrlbrBSz4HgHKlLpdfZWOasLOrCPw6WSJx5aEPH3aRHSGUt14kBNv
-ATjGX/Vwqtmm/uBApfM6vLV91JWpiyaO5czrFXqIBQG7RZZvWH8SxGdr/ikjocja
-7Kfs6j1thoqXoT4S6Bdh0pvYtxxNwrFXrBo3igdfopYwMU3Zm7Vmk+W5LN+xDo09
-VHfFhLLNBOQtF7WsmYB81GW/dp3zPXOu8yKFcjlAxoOoBq4YxSV9S//81tL1eLJU
-PvPSBgZWOfIgxOW5Ycnx
-=OaTg
------END PGP SIGNATURE-----
-
---FkmkrVfFsRoUs1wW--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
