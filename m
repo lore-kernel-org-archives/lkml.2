@@ -1,123 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab2LMCta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:49:30 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35452 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab2LMCt3 (ORCPT
+	id S1755576Ab2LMCwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:52:24 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51452 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab2LMCwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:49:29 -0500
+	Wed, 12 Dec 2012 21:52:20 -0500
+Message-ID: <50C942BE.20902@huawei.com>
+Date: Thu, 13 Dec 2012 10:51:42 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXofExFJtPZZqynDGDZV6Kk2zpUwPcME9rB7L-AX5RLog@mail.gmail.com>
-References: <50BFFB6E.5080108@zytor.com>
-	<CAE9FiQU9mZpqhwX_a4Sv0a0aiReTxJfyJqNRVXTTXvjkFLrVZA@mail.gmail.com>
-	<CAE9FiQXofExFJtPZZqynDGDZV6Kk2zpUwPcME9rB7L-AX5RLog@mail.gmail.com>
-Date: Wed, 12 Dec 2012 18:49:27 -0800
-X-Google-Sender-Auth: MBOhmuqWYSrmwur4lpimaEfXpQA
-Message-ID: <CAE9FiQX5XB-RMN-2AyCPix2EHVh8_WCO+fbJAFoJb8S0MUV_Sw@mail.gmail.com>
-Subject: Re: kexec and struct boot_params
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: Xishi Qiu <qiuxishi@huawei.com>, <tj@kernel.org>, <lizefan@huawei.com>,
+        <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, <dhillf@gmail.com>,
+        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
+References: <50C83F97.3040009@huawei.com> <20121212101917.GD32081@dhcp22.suse.cz> <50C85FFD.10305@huawei.com> <20121212112329.GE32081@dhcp22.suse.cz>
+In-Reply-To: <20121212112329.GE32081@dhcp22.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 10:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Dec 5, 2012 at 7:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Wed, Dec 5, 2012 at 5:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> Hi Eric,
+On 2012/12/12 19:23, Michal Hocko wrote:
+
+> On Wed 12-12-12 18:44:13, Xishi Qiu wrote:
+>> On 2012/12/12 18:19, Michal Hocko wrote:
+>>
+>>> On Wed 12-12-12 16:25:59, Jianguo Wu wrote:
+>>>> Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
+>>>> and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
+>>>> system will boot fail.
+>>>>
+>>>> This failure is caused by following code path:
+>>>> setup_hugepagesz
+>>>> 	hugetlb_add_hstate
+>>>> 		hugetlb_cgroup_file_init
+>>>> 			cgroup_add_cftypes
+>>>> 				kzalloc <--slab is *not available* yet
+>>>>
+>>>> For this path, slab is not available yet, so memory allocated will be
+>>>> failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
+>>>>
+>>>> So I move hugetlb_cgroup_file_init() into hugetlb_init().
 >>>
->>> Could you give a list of struct boot_params field which are initialized
->>> properly by kexec?  I think we need to do the sentinel hack, and want to
->>> know what to whitelist.
+>>> I do not think this is a good idea. hugetlb_init is in __init section as
+>>> well so what guarantees that the slab is initialized by then? Isn't this
+>>> just a good ordering that makes this working?
 >>
->> the one with *
->> ? means set only when lfb_depth > 8
->> also
->>    0xa2 to 0x1df is not set
+>> Hi Michal,
 >>
->> struct x86_linux_param_header {
->>         uint8_t  orig_x;                        /* 0x00 */  *
->>         uint8_t  orig_y;                        /* 0x01 */  *
->>         uint16_t ext_mem_k;                     /* 0x02 -- EXT_MEM_K sits here */   *
->>         uint16_t orig_video_page;               /* 0x04 */  *
->>         uint8_t  orig_video_mode;               /* 0x06 */  *
->>         uint8_t  orig_video_cols;               /* 0x07 */  *
->>         uint16_t unused2;                       /* 0x08 */
->>         uint16_t orig_video_ega_bx;             /* 0x0a */  *
->>         uint16_t unused3;                       /* 0x0c */
->>         uint8_t  orig_video_lines;              /* 0x0e */  *
->>         uint8_t  orig_video_isVGA;              /* 0x0f */   *
->>         uint16_t orig_video_points;             /* 0x10 */   *
+>> __initcall functions will be called in
+>> start_kernel()
+>> 	rest_init()  // -> slab is already
+>> 		kernel_init()
+>> 			kernel_init_freeable()
+>> 				do_basic_setup()
+>> 					do_initcalls()
 >>
->>         /* VESA graphic mode -- linear frame buffer */
->>         uint16_t lfb_width;                     /* 0x12 */   *
->>         uint16_t lfb_height;                    /* 0x14 */   *
->>         uint16_t lfb_depth;                     /* 0x16 */   *
->>         uint32_t lfb_base;                      /* 0x18 */   *
->>         uint32_t lfb_size;                      /* 0x1c */   *
->>         uint16_t cl_magic;                      /* 0x20 */   *
->> #define CL_MAGIC_VALUE 0xA33F
->>         uint16_t cl_offset;                     /* 0x22 */   *
->>         uint16_t lfb_linelength;                /* 0x24 */   *
->>         uint8_t  red_size;                      /* 0x26 */   ?
->>         uint8_t  red_pos;                       /* 0x27 */   ?
->>         uint8_t  green_size;                    /* 0x28 */   ?
->>         uint8_t  green_pos;                     /* 0x29 */   ?
->>         uint8_t  blue_size;                     /* 0x2a */   ?
->>         uint8_t  blue_pos;                      /* 0x2b */   ?
->>         uint8_t  rsvd_size;                     /* 0x2c */   ?
->>         uint8_t  rsvd_pos;                      /* 0x2d */   ?
->>         uint16_t vesapm_seg;                    /* 0x2e */   *
->>         uint16_t vesapm_off;                    /* 0x30 */
->>         uint16_t pages;                         /* 0x32 */   *
->>         uint8_t  reserved4[12];                 /* 0x34 -- 0x3f reserved for future expansion */
+>> and setup_hugepagesz() will be called in
+>> start_kernel()
+>> 	parse_early_param()  // -> before mm_init() -> kmem_cache_init()
 >>
->>         struct apm_bios_info apm_bios_info;     /* 0x40 */   *
->>         struct drive_info_struct drive_info;    /* 0x80 */   *
->>         struct sys_desc_table sys_desc_table;   /* 0xa0 */   * only .length =
->> 0, aka 0xa2 to 0x1df is not set
->>         uint32_t alt_mem_k;                     /* 0x1e0 */  *
->>         uint8_t  reserved5[4];                  /* 0x1e4 */
->>         uint8_t  e820_map_nr;                   /* 0x1e8 */  *
->>         uint8_t  eddbuf_entries;                /* 0x1e9 */  *
->>         uint8_t  edd_mbr_sig_buf_entries;       /* 0x1ea */  *
->>         uint8_t  reserved6[6];                  /* 0x1eb */
->>         HEADER.....                                         copied and or meset 0 and set.
->>         uint8_t  reserved16[0x290 - 0x248];     /* 0x248 */
->>         uint32_t edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];   /* 0x290 */  *
->> #endif
->>         struct  e820entry e820_map[E820MAX];    /* 0x2d0 */   *
->>         uint8_t _pad8[48];                      /* 0xcd0 */
->>         struct  edd_info eddbuf[EDDMAXNR];      /* 0xd00 */   *
->>                                                 /* 0xeec */
->> #define COMMAND_LINE_SIZE 2048
->> };
->>
->>
->>>
->>> Also, does kexec set a bootloader ID?
->>
->> no, 0xff
->
-> Hi, Peter,
->
-> What's your decision about this?
->
-> Do you mean have one boot_params mask in initdata and AND that with
-> boot_params from bootloader
-> to clean not used bytes?
->
-> So later will not need to check
->     if (boot_params.hdr.xloadflags & USE_EXT_BOOT_PARAMS)
-> ?
->
-> I worked out other patches that remove kdump 896M limitation.
-> would like to post those patches to get more testing.
-> those are needed for bigger system with lots of pcie devices.
+>> Is this right?
+> 
+> Yes this is right. I just noticed that kmem_cache_init_late is an __init
+> function as well and didn't realize it is called directly. Sorry about
+> the confusion.
+> Anyway I still think it would be a better idea to move the call into the
+> hugetlb_cgroup_create callback where it is more logical IMO but now that
+
+Hi Michal,
+
+Thanks for your review and comments:).
+hugetlb_cgroup_create is a callback of hugetlb_subsys,
+and hugetlb_cgroup_file_init add h->cgroup_files to hugetlb_subsys,
+so we cann't move hugetlb_cgroup_file_init into hugetlb_cgroup_create, right?
+
+Thanks,
+Jianguo wu
+
+> I'm looking at other controllers (blk and kmem.tcp) they all do this from
+> init calls as well. So it doesn't make sense to have hugetlb behave
+> differently.
+> 
+> So
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Thanks!
 
 
-ping!
+
