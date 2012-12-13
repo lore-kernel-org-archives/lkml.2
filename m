@@ -1,223 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2LMR2P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 12:28:15 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44738 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab2LMR2O (ORCPT
+	id S1756010Ab2LMRax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 12:30:53 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:60601 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab2LMRaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 12:28:14 -0500
+	Thu, 13 Dec 2012 12:30:52 -0500
+Message-ID: <50CA10C8.3020509@gmail.com>
+Date: Thu, 13 Dec 2012 10:30:48 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 13 Dec 2012 17:27:53 +0000
-X-Google-Sender-Auth: kJlQXNqgcve8DdwvN3690dY_AaQ
-Message-ID: <CACxGe6vuJd2vC6phw+e1RYyhg5MSR=2_KJvH39mEHm=hBgbk5w@mail.gmail.com>
-Subject: [GIT PULL] SPI changes for v3.8
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        spi-devel-general@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.8
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com> <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com> <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com> <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com> <50C9E692.9070506@gmail.com> <CA+55aFzmDooC3tYzvP1YGv9g4ej1hBUQBPV6R+ukrfxuEELBaQ@mail.gmail.com> <50CA0134.2090608@gmail.com> <CA+55aFyZ2kAQPmZSv_sfHDAR1gusOxO22TRX-kqSim-cZrMscw@mail.gmail.com> <CA+55aFwSYyoLmdDJ5xsdwcWLThYQ7oieoeWDV2g+wV3CJk4vtg@mail.gmail.com>
+In-Reply-To: <CA+55aFwSYyoLmdDJ5xsdwcWLThYQ7oieoeWDV2g+wV3CJk4vtg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 12/13/12 10:02 AM, Linus Torvalds wrote:
 
-Please pull the below SPI changes as described below.
+ From your response to Ingo I take it you looked into other cases. I'll 
+summarize here to make sure we are on the same page:
 
-g.
+1. guest only profiling from the host
+perf {record|top} -e cycles:G
 
-The following changes since commit b69f0859dc8e633c5d8c06845811588fe17e68b3:
+2. host only profiling
+perf {record|top} -e cycles:H
 
-  Linux 3.7-rc8 (2012-12-03 11:22:37 -0800)
+These are 4 existing use cases that toggle exclude_guest and do work 
+today for those who care. Not the lack of precise attribute on the 
+commands. These are the existing use cases that break by inverting the 
+logic in the kernel.
 
-are available in the git repository at:
+The problem child is perf record -e cycles:ppG. That command silently 
+crashes running VMs. You don't get a pop up or message that says "Dave, 
+you crashed your VMs running perf". You don't notice the VMs have 
+crashed until you attempt to login or what have you.
 
-  git://git.secretlab.ca/git/linux-2.6 tags/spi-for-linus
+So how many perf users are having weird VM crashes? I don't know. I just 
+happened to:
 
-for you to fetch changes up to 7cb943615aabbd72624f77f0a84b8c5d627cf846:
+1. not use libbvirt
+2. have a running VM with console messages kicked to ttyS0
+3. ttyS0 connected to stdio
+4. screen session with a running VM open
 
-  spi/sparc: Allow of_register_spi_devices for sparc (2012-12-10 22:31:37 +0000)
+at the time I ran perf.
 
-----------------------------------------------------------------
-SPI changes for v3.8
 
-Primarily SPI device driver bug fixes, one removal of an old driver, and
-some new tegra support. There is some core code change too, but all in
-all pretty small stuff. The new features to note are:
-- Common code for describing GPIO CS lines in the device tree
-- Remove the SPI_BUFSIZ limitation on spi_write_the_read()
-- core spi ensures bits_per_word is set correctly
-- SPARC can now use SPI
+> Btw, I do *not* think that you should necessariyl default to 'H' for
+> host-only mode.
 
-----------------------------------------------------------------
-Abhilash Kesavan (1):
-      spi: s3c64xx: Add fix for crash in spi suspend/resume
+The change made to perf userspace was to set exclude_guest IF precise is 
+requested AND GH have not been specified.
 
-Alexander Shiyan (1):
-      spi/clps711x: New SPI master driver
+>
+> The way it should work is that ":pp", ":ppH" and ":ppV" are all different.
+>
+>   - "cycles:ppH" means: I want precise cycles only for the host case
+>
+>   - "cycles:ppV" means: I want precise cycles, and I want the VM too
+>
+>     This would result in EOPNOTSUPP for the case we know is buggy (but
+> presumably work on some other CPUs that don't have the problem)
+>
+>   - "cycles:pp" is "I want precise cycles, and I don't care about virtualization"
 
-Andreas Larsson (1):
-      spi/sparc: Allow of_register_spi_devices for sparc
+yes, this is the case I handled within perf userspace.
 
-Bastian Hecht (2):
-      spi/sh-msiof: Remove unneeded clock name
-      spi/sh: Add SH Mobile series as dependency to MSIOF controller
+And then there is the whole 'perf kvm {top|record}' twists to the perf code.
 
-Daniel Mack (2):
-      spi/mcspi: allow configuration of pin directions
-      spi/omap: fix D0/D1 direction confusion
+David
 
-Florian Fainelli (3):
-      spi/bcm63xx: remove driver version
-      spi/bcm63xx: add missing spi_master_{resume,suspend} calls to PM callbacks
-      spi/bcm63xx: remove useless call to bcm63xx_spi_check_transfer()
-
-Grant Likely (4):
-      Merge branch 'spi-next' from git://git.kernel.org/.../broonie/misc.git
-      spi: Fix comparison of different integer types
-      Merge tag 'v3.7-rc8' into spi/next
-      spi: Remove HOTPLUG section attributes
-
-Guennadi Liakhovetski (2):
-      spi/bitbang: avoid needless loop flow manipulations
-      spi/bitbang: (cosmetic) simplify list manipulation
-
-Jason Gunthorpe (1):
-      spi/orion: Add SPI_CHPA and SPI_CPOL support to kirkwood driver.
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      of_spi: add generic binding support to specify cs gpio
-
-Lars-Peter Clausen (1):
-      spi: Add support for specifying 3-wire mode via device tree
-
-Laxman Dewangan (5):
-      spi: tegra: add spi driver for SLINK controller
-      spi: make sure all transfer has bits_per_word set
-      spi: tegra: sequence compatible strings as per preference
-      spi: Dont call master->setup if not populated
-      spi: tegra: add spi driver for sflash controller
-
-Mark Brown (11):
-      Merge branch 'spi-linus', remote-tracking branches
-'misc/spi/bcm63xx', 'misc/spi/mcspi', 'misc/spi/mxs' and
-'misc/spi/s3c64xx' into spi-next
-      Merge branch 'spi-pl022' into spi-next
-      Merge tag 'spi-linus' into spi-next
-      Merge branch 'spi-tegra' into spi-next
-      Merge branch 'spi-spidev' into spi-next
-      Merge branch 'spi-linus' into spi-next
-      Merge branch 'spi-fix-s3c64xx' into spi-next
-      Merge branches 'spi-core' and 'spi-tegra' into spi-next
-      Merge branch 'spi-tegra' into spi-next
-      Merge branch 'spi-mcspi' into spi-next
-      spi: Remove SPI_BUFSIZ restriction on spi_write_then_read()
-
-Maxime Ripard (2):
-      spi: spidev: Add device tree bindings
-      spi: spidev: Add Rohm DH2228FV DAC compatible string
-
-Patrice Chotard (1):
-      spi/pl022: add IDLE state pin management
-
-Phil Edworthy (1):
-      spi/sh-hspi: add CS manual control support
-
-Sachin Kamat (1):
-      spi: omap2-mcspi: remove duplicate inclusion of linux/err.h
-
-Shubhrajyoti D (2):
-      spi: omap2-mcspi: Reorder the wait_for_completion for tx
-      spi: omap2-mcspi: Fix the redifine warning
-
-Thomas Abraham (1):
-      spi/s3c64xx: use clk_prepare_enable and clk_disable_unprepare
-
-Ulf Hansson (3):
-      spi/pl022: Revert "spi/pl022: fix spi-pl022 pm enable at probe"
-      spi/pl022: Minor simplification for runtime pm
-      spi/pl022: Activate resourses before deactivate them in suspend
-
-Wei Yongjun (1):
-      spi: omap2-mcspi: remove duplicated include from spi-omap2-mcspi.c
-
-Wolfram Sang (1):
-      spi/stmp: remove obsolete driver
-
- .../bindings/spi/nvidia,tegra20-sflash.txt         |   26 +
- .../bindings/spi/nvidia,tegra20-slink.txt          |   26 +
- Documentation/devicetree/bindings/spi/omap-spi.txt |    4 +-
- Documentation/devicetree/bindings/spi/spi-bus.txt  |   22 +
- drivers/spi/Kconfig                                |   31 +-
- drivers/spi/Makefile                               |    5 +-
- drivers/spi/spi-altera.c                           |    6 +-
- drivers/spi/spi-ath79.c                            |    6 +-
- drivers/spi/spi-atmel.c                            |    4 +-
- drivers/spi/spi-bcm63xx.c                          |   22 +-
- drivers/spi/spi-bfin-sport.c                       |    8 +-
- drivers/spi/spi-bfin5xx.c                          |    4 +-
- drivers/spi/spi-bitbang.c                          |   27 +-
- drivers/spi/spi-clps711x.c                         |  296 +++++
- drivers/spi/spi-coldfire-qspi.c                    |    6 +-
- drivers/spi/spi-davinci.c                          |    6 +-
- drivers/spi/spi-dw-mmio.c                          |    6 +-
- drivers/spi/spi-dw-pci.c                           |    6 +-
- drivers/spi/spi-dw.c                               |    6 +-
- drivers/spi/spi-ep93xx.c                           |    6 +-
- drivers/spi/spi-falcon.c                           |    6 +-
- drivers/spi/spi-fsl-espi.c                         |    8 +-
- drivers/spi/spi-fsl-lib.c                          |    4 +-
- drivers/spi/spi-fsl-spi.c                          |   14 +-
- drivers/spi/spi-gpio.c                             |   13 +-
- drivers/spi/spi-imx.c                              |    6 +-
- drivers/spi/spi-mpc512x-psc.c                      |   10 +-
- drivers/spi/spi-mpc52xx-psc.c                      |    8 +-
- drivers/spi/spi-mpc52xx.c                          |    8 +-
- drivers/spi/spi-mxs.c                              |    6 +-
- drivers/spi/spi-nuc900.c                           |    6 +-
- drivers/spi/spi-oc-tiny.c                          |   10 +-
- drivers/spi/spi-octeon.c                           |    6 +-
- drivers/spi/spi-omap-100k.c                        |    2 +-
- drivers/spi/spi-omap2-mcspi.c                      |   76 +-
- drivers/spi/spi-orion.c                            |   27 +-
- drivers/spi/spi-pl022.c                            |   61 +-
- drivers/spi/spi-pxa2xx-pci.c                       |    6 +-
- drivers/spi/spi-pxa2xx.c                           |    4 +-
- drivers/spi/spi-rspi.c                             |   10 +-
- drivers/spi/spi-s3c24xx.c                          |    6 +-
- drivers/spi/spi-s3c64xx.c                          |   38 +-
- drivers/spi/spi-sh-hspi.c                          |   49 +-
- drivers/spi/spi-sh-msiof.c                         |    6 +-
- drivers/spi/spi-sh.c                               |    6 +-
- drivers/spi/spi-sirf.c                             |    6 +-
- drivers/spi/spi-stmp.c                             |  664 ----------
- drivers/spi/spi-tegra20-sflash.c                   |  665 ++++++++++
- drivers/spi/spi-tegra20-slink.c                    | 1358 ++++++++++++++++++++
- drivers/spi/spi-ti-ssp.c                           |    6 +-
- drivers/spi/spi-tle62x0.c                          |    6 +-
- drivers/spi/spi-topcliff-pch.c                     |   12 +-
- drivers/spi/spi-xcomm.c                            |    6 +-
- drivers/spi/spi-xilinx.c                           |    6 +-
- drivers/spi/spi.c                                  |  101 +-
- drivers/spi/spidev.c                               |   16 +-
- include/linux/platform_data/spi-clps711x.h         |   21 +
- include/linux/platform_data/spi-omap2-mcspi.h      |    4 +
- include/linux/spi/spi-tegra.h                      |   40 +
- include/linux/spi/spi.h                            |    3 +
- 60 files changed, 2894 insertions(+), 939 deletions(-)
- create mode 100644
-Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
- create mode 100644
-Documentation/devicetree/bindings/spi/nvidia,tegra20-slink.txt
- create mode 100644 drivers/spi/spi-clps711x.c
- delete mode 100644 drivers/spi/spi-stmp.c
- create mode 100644 drivers/spi/spi-tegra20-sflash.c
- create mode 100644 drivers/spi/spi-tegra20-slink.c
- create mode 100644 include/linux/platform_data/spi-clps711x.h
- create mode 100644 include/linux/spi/spi-tegra.h
-
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
