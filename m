@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab2LMCwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:52:24 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51452 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab2LMCwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:52:20 -0500
-Message-ID: <50C942BE.20902@huawei.com>
-Date: Thu, 13 Dec 2012 10:51:42 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755601Ab2LMCxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:53:45 -0500
+Received: from mga14.intel.com ([143.182.124.37]:10411 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754941Ab2LMCxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:53:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,270,1355126400"; 
+   d="scan'208";a="230828089"
+Message-ID: <50C942AE.6010102@intel.com>
+Date: Thu, 13 Dec 2012 10:51:26 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Xishi Qiu <qiuxishi@huawei.com>, <tj@kernel.org>, <lizefan@huawei.com>,
-        <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, <dhillf@gmail.com>,
-        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
-References: <50C83F97.3040009@huawei.com> <20121212101917.GD32081@dhcp22.suse.cz> <50C85FFD.10305@huawei.com> <20121212112329.GE32081@dhcp22.suse.cz>
-In-Reply-To: <20121212112329.GE32081@dhcp22.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Alex Shi <lkml.alex@gmail.com>, Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, rob@landley.net, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into
+ LB and power awareness scheduling
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com> <50C722AC.3080806@intel.com> <20121211154819.GC8873@liondog.tnic> <50C75935.1040004@linux.intel.com> <20121211161320.GA28827@liondog.tnic> <50C76208.107@linux.intel.com> <CAHLCerPy2+-t0mAwn3nEAd2CRMmyqCLVTO3j2zua1P4uDE1BPA@mail.gmail.com> <CAGjg+kHTvQe4NBTf41oSanZ9WBvFHsRPFqT4MdW9Sft=pOd5HA@mail.gmail.com> <CAKfTPtC+=-zvQ=NyVyDto76SfJY=90e4mrkJ0DGH-_PVpBg3EQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtC+=-zvQ=NyVyDto76SfJY=90e4mrkJ0DGH-_PVpBg3EQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/12 19:23, Michal Hocko wrote:
-
-> On Wed 12-12-12 18:44:13, Xishi Qiu wrote:
->> On 2012/12/12 18:19, Michal Hocko wrote:
->>
->>> On Wed 12-12-12 16:25:59, Jianguo Wu wrote:
->>>> Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
->>>> and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
->>>> system will boot fail.
->>>>
->>>> This failure is caused by following code path:
->>>> setup_hugepagesz
->>>> 	hugetlb_add_hstate
->>>> 		hugetlb_cgroup_file_init
->>>> 			cgroup_add_cftypes
->>>> 				kzalloc <--slab is *not available* yet
->>>>
->>>> For this path, slab is not available yet, so memory allocated will be
->>>> failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
->>>>
->>>> So I move hugetlb_cgroup_file_init() into hugetlb_init().
->>>
->>> I do not think this is a good idea. hugetlb_init is in __init section as
->>> well so what guarantees that the slab is initialized by then? Isn't this
->>> just a good ordering that makes this working?
->>
->> Hi Michal,
->>
->> __initcall functions will be called in
->> start_kernel()
->> 	rest_init()  // -> slab is already
->> 		kernel_init()
->> 			kernel_init_freeable()
->> 				do_basic_setup()
->> 					do_initcalls()
->>
->> and setup_hugepagesz() will be called in
->> start_kernel()
->> 	parse_early_param()  // -> before mm_init() -> kmem_cache_init()
->>
->> Is this right?
+On 12/12/2012 10:21 PM, Vincent Guittot wrote:
+>>> >> If Linux is to continue to work efficiently on heterogeneous
+>>> >> multi-processing platforms, it needs to provide scheduling mechanisms
+>>> >> that can be exploited as per the demands of the HW architecture.
+>> >
+>> > Linus definitely disagree such ideas. :) So, need to summaries the
+>> > logical beyond all hardware.
+>> >
+>>> >> example is the "small task packing (and spreading)" for which Vincent
+>>> >> Guittot has posted a patchset[1] earlier and so has Alex now.
+>> >
+>> > Sure. I just thought my patchset should handled the 'small task
+>> > packing' scenario. Could you guy like to have a try?
+> Hi Alex,
 > 
-> Yes this is right. I just noticed that kmem_cache_init_late is an __init
-> function as well and didn't realize it is called directly. Sorry about
-> the confusion.
-> Anyway I still think it would be a better idea to move the call into the
-> hugetlb_cgroup_create callback where it is more logical IMO but now that
+> Yes, I will do a try with your patchset when i will have some spare time
 
-Hi Michal,
-
-Thanks for your review and comments:).
-hugetlb_cgroup_create is a callback of hugetlb_subsys,
-and hugetlb_cgroup_file_init add h->cgroup_files to hugetlb_subsys,
-so we cann't move hugetlb_cgroup_file_init into hugetlb_cgroup_create, right?
-
-Thanks,
-Jianguo wu
-
-> I'm looking at other controllers (blk and kmem.tcp) they all do this from
-> init calls as well. So it doesn't make sense to have hugetlb behave
-> differently.
-> 
-> So
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Thanks!
-
-
-
+Thanks Vincent! the balance and powersaving policy should have effect.
