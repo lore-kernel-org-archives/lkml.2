@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab2LMNJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 08:09:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54047 "EHLO mx1.redhat.com"
+	id S1755641Ab2LMNJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 08:09:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab2LMNJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 08:09:38 -0500
+	id S1755579Ab2LMNJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 08:09:47 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,18 +15,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 02/14] perf hists: Rename hist_entry__add_pair arguments
-Date: Thu, 13 Dec 2012 14:09:00 +0100
-Message-Id: <1355404152-16523-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 08/14] perf diff: Display data file info ahead of the diff output
+Date: Thu, 13 Dec 2012 14:09:06 +0100
+Message-Id: <1355404152-16523-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1355404152-16523-1-git-send-email-jolsa@redhat.com>
 References: <1355404152-16523-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current logic is to attach pair to the leader hist_entry.
-Arguments of hist_entry__add_pair function were placed
-the other way round.. driving me crazy.
+Data files are referenced through the index of the file
+on the command line. Adding list of data files for each
+index to ease up navigation for user.
+
+It's displayed only if in verbose mode.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -37,27 +39,45 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/sort.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/builtin-diff.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index a1c0d56..7425f8d 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -115,10 +115,10 @@ static inline struct hist_entry *hist_entry__next_pair(struct hist_entry *he)
- 	return NULL;
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index a3e3f7a..15a68fb 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -482,6 +482,21 @@ static void hists__process(struct hists *base, struct hists *new)
+ 	hists__fprintf(base, true, 0, 0, stdout);
  }
  
--static inline void hist_entry__add_pair(struct hist_entry *he,
--					struct hist_entry *pair)
-+static inline void hist_entry__add_pair(struct hist_entry *pair,
-+					struct hist_entry *he)
++static void data__fprintf(void)
++{
++	struct data__file *d;
++	int i;
++
++	fprintf(stdout, "# Data files:\n");
++
++	data__for_each_file(i, d)
++		fprintf(stdout, "#  [%d] %s %s\n",
++			d->idx, d->file,
++			!d->idx ? "(Baseline)" : "");
++
++	fprintf(stdout, "#\n");
++}
++
+ static void data_process(void)
  {
--	list_add_tail(&he->pairs.head, &pair->pairs.node);
-+	list_add_tail(&pair->pairs.node, &he->pairs.head);
- }
+ 	struct perf_evlist *evlist_old = data__files[0].session->evlist;
+@@ -501,6 +516,9 @@ static void data_process(void)
  
- enum sort_type {
+ 		first = false;
+ 
++		if (verbose)
++			data__fprintf();
++
+ 		hists__process(&evsel_old->hists, &evsel_new->hists);
+ 	}
+ }
 -- 
 1.7.11.7
 
