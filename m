@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab2LMWSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:18:42 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:32816 "EHLO hydra.sisk.pl"
+	id S1755732Ab2LMWTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:19:44 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:32828 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab2LMWSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:18:32 -0500
+	id S1753084Ab2LMWSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 17:18:33 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
         Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH rev.2 5/6] ACPI: Replace struct acpi_bus_ops with enum type
-Date: Thu, 13 Dec 2012 23:22:36 +0100
-Message-ID: <2453149.dHvfCJDb1i@vostro.rjw.lan>
+Subject: [PATCH rev.2 3/6] ACPI: Make acpi_bus_add() and acpi_bus_start() visibly different
+Date: Thu, 13 Dec 2012 23:21:09 +0100
+Message-ID: <6125262.Gkj20UX9S9@vostro.rjw.lan>
 User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
 In-Reply-To: <1499423.ez5cZl2uAf@vostro.rjw.lan>
 References: <8498184.VilrUmatxI@vostro.rjw.lan> <1499423.ez5cZl2uAf@vostro.rjw.lan>
@@ -27,178 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Notice that one member of struct acpi_bus_ops, acpi_op_add, is not
-used anywhere any more and the relationship between its remaining
-members, acpi_op_match and acpi_op_start, is such that it doesn't
-make sense to set the latter without setting the former at the same
-time.  Therefore, replace struct acpi_bus_ops with new a enum type,
-enum acpi_bus_add_type, with three values, ACPI_BUS_ADD_BASIC,
-ACPI_BUS_ADD_MATCH, ACPI_BUS_ADD_START, corresponding to
-both acpi_op_match and acpi_op_start unset, acpi_op_match set and
-acpi_op_start unset, and both acpi_op_match and acpi_op_start set,
-respectively.
+The current ACPI namespace scanning code suggests that acpi_bus_add()
+and acpi_bus_start() share some code.  In fact, however, they are
+completely different code paths (except for the initial checks), so
+refactor the code to make that distinction visibly clear.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/scan.c     |   35 ++++++++++++-----------------------
- include/acpi/acpi_bus.h |   15 ++++++++-------
- 2 files changed, 20 insertions(+), 30 deletions(-)
+ drivers/acpi/scan.c |   68 +++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 38 insertions(+), 30 deletions(-)
 
 Index: linux/drivers/acpi/scan.c
 ===================================================================
 --- linux.orig/drivers/acpi/scan.c
 +++ linux/drivers/acpi/scan.c
-@@ -494,7 +494,7 @@ static int acpi_bus_match(struct device
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
- 	struct acpi_driver *acpi_drv = to_acpi_driver(drv);
- 
--	return acpi_dev->bus_ops.acpi_op_match
-+	return acpi_dev->add_type >= ACPI_BUS_ADD_MATCH
- 		&& !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
+@@ -1622,10 +1622,9 @@ static acpi_status acpi_bus_check_add(ac
+ 	return AE_OK;
  }
  
-@@ -580,7 +580,7 @@ static int acpi_device_probe(struct devi
- 
- 	ret = acpi_bus_driver_init(acpi_dev, acpi_drv);
- 	if (!ret) {
--		if (acpi_dev->bus_ops.acpi_op_start)
-+		if (acpi_dev->add_type == ACPI_BUS_ADD_START)
- 			acpi_start_single_object(acpi_dev);
- 
- 		if (acpi_drv->ops.notify) {
-@@ -1433,7 +1433,7 @@ static void acpi_hot_add_bind(struct acp
- static int acpi_add_single_object(struct acpi_device **child,
- 				  acpi_handle handle, int type,
- 				  unsigned long long sta,
--				  struct acpi_bus_ops *ops)
-+				  enum acpi_bus_add_type add_type)
+-static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
+-					void *context, void **not_used)
++static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
++					  void *not_used, void **ret_not_used)
  {
- 	int result;
+-	struct acpi_bus_ops *ops = context;
+ 	acpi_status status = AE_OK;
  	struct acpi_device *device;
-@@ -1449,7 +1449,7 @@ static int acpi_add_single_object(struct
- 	device->device_type = type;
- 	device->handle = handle;
- 	device->parent = acpi_bus_get_parent(handle);
--	device->bus_ops = *ops; /* workround for not call .start */
-+	device->add_type = add_type;
- 	STRUCT_TO_INT(device->status) = sta;
+ 	unsigned long long sta_not_used;
+@@ -1641,18 +1640,13 @@ static acpi_status acpi_bus_probe_start(
+ 	if (acpi_bus_get_device(handle, &device))
+ 		return AE_CTRL_DEPTH;
  
- 	acpi_device_get_busid(device);
-@@ -1502,7 +1502,7 @@ static int acpi_add_single_object(struct
+-	if (ops->acpi_op_add) {
+-		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+-			/* This is a known good platform device. */
+-			acpi_create_platform_device(device);
+-		} else {
+-			int ret = device_attach(&device->dev);
+-			acpi_hot_add_bind(device);
+-			if (ret)
+-				status = AE_CTRL_DEPTH;
+-		}
+-	} else if (ops->acpi_op_start) {
+-		if (ACPI_FAILURE(acpi_start_single_object(device)))
++	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
++		/* This is a known good platform device. */
++		acpi_create_platform_device(device);
++	} else {
++		int ret = device_attach(&device->dev);
++		acpi_hot_add_bind(device);
++		if (ret)
+ 			status = AE_CTRL_DEPTH;
+ 	}
+ 	return status;
+@@ -1674,10 +1668,10 @@ static int acpi_bus_scan(acpi_handle han
+ 		goto out;
  
- 	result = acpi_device_register(device);
+ 	ret = 0;
+-	status = acpi_bus_probe_start(handle, 0, ops, NULL);
++	status = acpi_bus_device_attach(handle, 0, NULL, NULL);
+ 	if (ACPI_SUCCESS(status))
+ 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-				    acpi_bus_probe_start, NULL, ops, NULL);
++				    acpi_bus_device_attach, NULL, NULL, NULL);
  
--	if (device->bus_ops.acpi_op_match)
-+	if (device->add_type >= ACPI_BUS_ADD_MATCH)
- 		acpi_hot_add_bind(device);
- 
- end:
-@@ -1526,16 +1526,12 @@ end:
- 
- static void acpi_bus_add_power_resource(acpi_handle handle)
+  out:
+ 	if (child)
+@@ -1702,31 +1696,45 @@ int
+ acpi_bus_add(struct acpi_device **child,
+ 	     struct acpi_device *parent, acpi_handle handle, int type)
  {
--	struct acpi_bus_ops ops = {
--		.acpi_op_start = 1,
--		.acpi_op_match = 1,
--	};
- 	struct acpi_device *device = NULL;
+-	struct acpi_bus_ops ops;
+-
+-	memset(&ops, 0, sizeof(ops));
+-	ops.acpi_op_add = 1;
++	struct acpi_bus_ops ops = { .acpi_op_add = 1, };
  
- 	acpi_bus_get_device(handle, &device);
- 	if (!device)
- 		acpi_add_single_object(&device, handle, ACPI_BUS_TYPE_POWER,
--					ACPI_STA_DEFAULT, &ops);
-+					ACPI_STA_DEFAULT, ACPI_BUS_ADD_START);
+ 	return acpi_bus_scan(handle, &ops, child);
  }
+ EXPORT_SYMBOL(acpi_bus_add);
  
- static int acpi_bus_type_and_status(acpi_handle handle, int *type,
-@@ -1604,16 +1600,13 @@ static acpi_status acpi_bus_check_add(ac
- 
- 	acpi_bus_get_device(handle, &device);
- 	if (!device) {
--		struct acpi_bus_ops ops = {
--			.acpi_op_start = !!context,
--			.acpi_op_match = 0,
--		};
--
--		acpi_add_single_object(&device, handle, type, sta, &ops);
-+		acpi_add_single_object(&device, handle, type, sta,
-+				       ACPI_BUS_ADD_BASIC);
- 		if (!device)
- 			return AE_CTRL_DEPTH;
- 
--		device->bus_ops.acpi_op_match = 1;
-+		device->add_type = context ?
-+					ACPI_BUS_ADD_START : ACPI_BUS_ADD_MATCH;
- 	}
- 
- 	if (!*return_value)
-@@ -1795,10 +1788,6 @@ static int acpi_bus_scan_fixed(void)
+-int acpi_bus_start(struct acpi_device *device)
++static acpi_status acpi_bus_start_device(acpi_handle handle, u32 lvl,
++					 void *not_used, void **ret_not_used)
  {
- 	int result = 0;
- 	struct acpi_device *device = NULL;
--	struct acpi_bus_ops ops = {
--		.acpi_op_start = 1,
--		.acpi_op_match = 1,
--	};
- 
- 	/*
- 	 * Enumerate all fixed-feature devices.
-@@ -1807,7 +1796,7 @@ static int acpi_bus_scan_fixed(void)
- 		result = acpi_add_single_object(&device, NULL,
- 						ACPI_BUS_TYPE_POWER_BUTTON,
- 						ACPI_STA_DEFAULT,
--						&ops);
-+						ACPI_BUS_ADD_START);
- 		device_init_wakeup(&device->dev, true);
- 	}
- 
-@@ -1815,7 +1804,7 @@ static int acpi_bus_scan_fixed(void)
- 		result = acpi_add_single_object(&device, NULL,
- 						ACPI_BUS_TYPE_SLEEP_BUTTON,
- 						ACPI_STA_DEFAULT,
--						&ops);
-+						ACPI_BUS_ADD_START);
- 	}
- 
- 	return result;
-Index: linux/include/acpi/acpi_bus.h
-===================================================================
---- linux.orig/include/acpi/acpi_bus.h
-+++ linux/include/acpi/acpi_bus.h
-@@ -63,6 +63,13 @@ acpi_get_physical_device_location(acpi_h
- #define ACPI_BUS_FILE_ROOT	"acpi"
- extern struct proc_dir_entry *acpi_root_dir;
- 
-+enum acpi_bus_add_type {
-+	ACPI_BUS_ADD_BASIC = 0,
-+	ACPI_BUS_ADD_MATCH,
-+	ACPI_BUS_ADD_START,
-+	ACPI_BUS_ADD_TYPE_COUNT
-+};
+-	struct acpi_bus_ops ops;
+-	int result;
++	struct acpi_device *device;
++	unsigned long long sta_not_used;
++	int type_not_used;
++	acpi_status status;
 +
- enum acpi_bus_removal_type {
- 	ACPI_BUS_REMOVAL_NORMAL = 0,
- 	ACPI_BUS_REMOVAL_EJECT,
-@@ -95,12 +102,6 @@ typedef int (*acpi_op_bind) (struct acpi
- typedef int (*acpi_op_unbind) (struct acpi_device * device);
- typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
++	/*
++	 * Ignore errors ignored by acpi_bus_check_add() to avoid terminating
++	 * namespace walks prematurely.
++	 */
++	if (acpi_bus_type_and_status(handle, &type_not_used, &sta_not_used))
++		return AE_OK;
++
++	if (acpi_bus_get_device(handle, &device))
++		return AE_CTRL_DEPTH;
  
--struct acpi_bus_ops {
--	u32 acpi_op_add:1;
--	u32 acpi_op_start:1;
--	u32 acpi_op_match:1;
--};
++	return acpi_start_single_object(device);
++}
++
++int acpi_bus_start(struct acpi_device *device)
++{
+ 	if (!device)
+ 		return -EINVAL;
+ 
+-	memset(&ops, 0, sizeof(ops));
+-	ops.acpi_op_start = 1;
 -
- struct acpi_device_ops {
- 	acpi_op_add add;
- 	acpi_op_remove remove;
-@@ -284,7 +285,7 @@ struct acpi_device {
- 	struct acpi_driver *driver;
- 	void *driver_data;
- 	struct device dev;
--	struct acpi_bus_ops bus_ops;	/* workaround for different code path for hotplug */
-+	enum acpi_bus_add_type add_type;	/* how to handle adding */
- 	enum acpi_bus_removal_type removal_type;	/* indicate for different removal type */
- 	u8 physical_node_count;
- 	struct list_head physical_node_list;
+-	result = acpi_bus_scan(device->handle, &ops, NULL);
++	if (ACPI_SUCCESS(acpi_start_single_object(device)))
++		acpi_walk_namespace(ACPI_TYPE_ANY, device->handle,
++				    ACPI_UINT32_MAX, acpi_bus_start_device,
++				    NULL, NULL, NULL);
+ 
+ 	acpi_update_all_gpes();
+-
+-	return result;
++	return 0;
+ }
+ EXPORT_SYMBOL(acpi_bus_start);
+ 
 
