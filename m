@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab2LMOo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:44:27 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36036 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932598Ab2LMOoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:44:21 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v2] f2fs: fix up f2fs_get_parent issue to retrieve correct parent inode number
-Date: Thu, 13 Dec 2012 23:44:11 +0900
-Message-Id: <1355409851-6389-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932583Ab2LMOoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:44:44 -0500
+Received: from mx1.netapp.com ([216.240.18.38]:44005 "EHLO mx1.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932535Ab2LMOoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:44:18 -0500
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Dec 2012 09:44:18 EST
+X-IronPort-AV: E=Sophos;i="4.84,273,1355126400"; 
+   d="scan'208";a="230595949"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "ycnian@gmail.com" <ycnian@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH] nfs: Don't return referenced delegations
+Thread-Topic: [PATCH] nfs: Don't return referenced delegations
+Thread-Index: AQHN2P25HGqNgJtDPUKWDrT34w34JZgXUiWA
+Date: Thu, 13 Dec 2012 14:34:53 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91192A73F@SACEXCMBX04-PRD.hq.netapp.com>
+References: <1355380636-10915-1-git-send-email-ycnian@gmail.com>
+In-Reply-To: <1355380636-10915-1-git-send-email-ycnian@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.117]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <BF5A70267A97E044A33975714F3B4E79@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBDEilD2026771
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Thu, 2012-12-13 at 14:37 +0800, ycnian@gmail.com wrote:
+> From: Yanchuan Nian <ycnian@gmail.com>
+> 
+> The client returns unreferenced delegations in state management. It scans all
+> delegations and tests the NFS_DELEGATION_REFERENCED flag. if this flag is not
+> set, NFS_DELEGATION_RETURN will be set and the delegation will be returned. 
+> But unfortunately NFS_DELEGATION_REFERENCED is cleared after the testing, so 
+> delegations which are still being used will be returned in the next state
+> management.
+> 
+> Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+> ---
+>  fs/nfs/delegation.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+> index 81c5eec..485e8c0 100644
+> --- a/fs/nfs/delegation.c
+> +++ b/fs/nfs/delegation.c
+> @@ -506,7 +506,7 @@ static void nfs_mark_return_unreferenced_delegations(struct nfs_server *server)
+>  	struct nfs_delegation *delegation;
+>  
+>  	list_for_each_entry_rcu(delegation, &server->delegations, super_list) {
+> -		if (test_and_clear_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
+> +		if (test_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
+>  			continue;
+>  		nfs_mark_return_delegation(server, delegation);
+>  	}
 
-Test Case:
-[NFS Client]
-ls -lR .
+The clearing of the bit here is 100% intentional. This is a variant on
+basic mark-and-sweep garbage collection where if the bit hasn't been set
+again the next time we scan, then we assume the delegation isn't being
+used.
 
-[NFS Server]
-while [ 1 ]
-do
-echo 3 > /proc/sys/vm/drop_caches
-done
-
-Error on NFS Client: "No such file or directory"
-
-When cache is dropped at the server, it results in lookup failure at the
-NFS client due to non-connection with the parent. The default path is it
-initiates a lookup by calculating the hash value for the name, even though
-the hash values stored on the disk for "." and ".." is maintained as zero,
-which results in failure from find_in_block due to not matching HASH values.
-Fix up, by using the correct hashing values for these entries.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/dir.c  |    4 ++--
- fs/f2fs/hash.c |    4 ++++
- 2 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-index b4e24f3..a158406 100644
---- a/fs/f2fs/dir.c
-+++ b/fs/f2fs/dir.c
-@@ -540,13 +540,13 @@ int f2fs_make_empty(struct inode *inode, struct inode *parent)
- 
- 	de = &dentry_blk->dentry[0];
- 	de->name_len = cpu_to_le16(1);
--	de->hash_code = 0;
-+	de->hash_code = f2fs_dentry_hash(".", 1);
- 	de->ino = cpu_to_le32(inode->i_ino);
- 	memcpy(dentry_blk->filename[0], ".", 1);
- 	set_de_type(de, inode);
- 
- 	de = &dentry_blk->dentry[1];
--	de->hash_code = 0;
-+	de->hash_code = f2fs_dentry_hash("..", 2);
- 	de->name_len = cpu_to_le16(2);
- 	de->ino = cpu_to_le32(parent->i_ino);
- 	memcpy(dentry_blk->filename[1], "..", 2);
-diff --git a/fs/f2fs/hash.c b/fs/f2fs/hash.c
-index a60f042..5e48bac 100644
---- a/fs/f2fs/hash.c
-+++ b/fs/f2fs/hash.c
-@@ -76,6 +76,10 @@ f2fs_hash_t f2fs_dentry_hash(const char *name, int len)
- 	const char *p;
- 	__u32 in[8], buf[4];
- 
-+	if ((len <= 2) && (name[0] == '.') &&
-+		(name[1] == '.' || name[1] == '\0'))
-+		return 0;
-+
- 	/* Initialize the default seed for the hash checksum functions */
- 	buf[0] = 0x67452301;
- 	buf[1] = 0xefcdab89;
 -- 
-1.7.9.5
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
