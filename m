@@ -1,190 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab2LMC57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:57:59 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4710 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab2LMC54 (ORCPT
+	id S1755498Ab2LMDDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:03:05 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48342 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab2LMDDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:57:56 -0500
-Message-ID: <50C94413.4090606@huawei.com>
-Date: Thu, 13 Dec 2012 10:57:23 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 12 Dec 2012 22:03:03 -0500
+Message-ID: <50C94561.3070800@gmail.com>
+Date: Wed, 12 Dec 2012 20:02:57 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: <tj@kernel.org>, <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Liujiang <jiang.liu@huawei.com>,
-        <dhillf@gmail.com>, Jiang Liu <liuj97@gmail.com>,
-        qiuxishi <qiuxishi@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
-References: <50C83F97.3040009@huawei.com> <8738zb9p59.fsf@linux.vnet.ibm.com>
-In-Reply-To: <8738zb9p59.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.8
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+In-Reply-To: <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/13 1:05, Aneesh Kumar K.V wrote:
+On 12/12/12 7:53 PM, Linus Torvalds wrote:
+> Hmm. This may be entirely unrelated to this particular pull request, but
+>
+>     perf record -e cycles:pp
+>
+> no longer works on my westmere machine (Operation not supported). It
+> used to work, but I haven't tried to bisect it, since I hope somebody
+> will just go "oh, I know what's up".
 
-> Jianguo Wu <wujianguo@huawei.com> writes:
-> 
->> Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
->> and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
->> system will boot fail.
->>
->> This failure is caused by following code path:
->> setup_hugepagesz
->> 	hugetlb_add_hstate
->> 		hugetlb_cgroup_file_init
->> 			cgroup_add_cftypes
->> 				kzalloc <--slab is *not available* yet
->>
->> For this path, slab is not available yet, so memory allocated will be
->> failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
->>
->> So I move hugetlb_cgroup_file_init() into hugetlb_init().
->>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> ---
->>  include/linux/hugetlb_cgroup.h |    7 ++-----
->>  mm/hugetlb.c                   |   11 +----------
->>  mm/hugetlb_cgroup.c            |   23 +++++++++++++++++++++--
->>  3 files changed, 24 insertions(+), 17 deletions(-)
->>
->> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
->> index d73878c..5bb9c28 100644
->> --- a/include/linux/hugetlb_cgroup.h
->> +++ b/include/linux/hugetlb_cgroup.h
->> @@ -62,7 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
->>  					 struct page *page);
->>  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->>  					   struct hugetlb_cgroup *h_cg);
->> -extern int hugetlb_cgroup_file_init(int idx) __init;
->> +extern void hugetlb_cgroup_file_init(void) __init;
->>  extern void hugetlb_cgroup_migrate(struct page *oldhpage,
->>  				   struct page *newhpage);
->>
->> @@ -111,10 +111,7 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->>  	return;
->>  }
->>
->> -static inline int __init hugetlb_cgroup_file_init(int idx)
->> -{
->> -	return 0;
->> -}
->> +static inline void __init hugetlb_cgroup_file_init() {}
->>
->>  static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
->>  					  struct page *newhpage)
->> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
->> index 1ef2cd4..a30da48 100644
->> --- a/mm/hugetlb.c
->> +++ b/mm/hugetlb.c
->> @@ -1906,14 +1906,12 @@ static int __init hugetlb_init(void)
->>  		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
->>
->>  	hugetlb_init_hstates();
->> -
->>  	gather_bootmem_prealloc();
->> -
->>  	report_hugepages();
->>
->>  	hugetlb_sysfs_init();
->> -
->>  	hugetlb_register_all_nodes();
->> +	hugetlb_cgroup_file_init();
->>
->>  	return 0;
->>  }
->> @@ -1943,13 +1941,6 @@ void __init hugetlb_add_hstate(unsigned order)
->>  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
->>  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
->>  					huge_page_size(h)/1024);
->> -	/*
->> -	 * Add cgroup control files only if the huge page consists
->> -	 * of more than two normal pages. This is because we use
->> -	 * page[2].lru.next for storing cgoup details.
->> -	 */
->> -	if (order >= HUGETLB_CGROUP_MIN_ORDER)
->> -		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
->>
->>  	parsed_hstate = h;
->>  }
->> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
->> index a3f358f..284cb68 100644
->> --- a/mm/hugetlb_cgroup.c
->> +++ b/mm/hugetlb_cgroup.c
->> @@ -340,7 +340,7 @@ static char *mem_fmt(char *buf, int size, unsigned long hsize)
->>  	return buf;
->>  }
->>
->> -int __init hugetlb_cgroup_file_init(int idx)
->> +static void __init __hugetlb_cgroup_file_init(int idx)
->>  {
->>  	char buf[32];
->>  	struct cftype *cft;
->> @@ -382,7 +382,26 @@ int __init hugetlb_cgroup_file_init(int idx)
->>
->>  	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
->>
->> -	return 0;
->> +	return;
->> +}
->> +
->> +void __init hugetlb_cgroup_file_init()
->> +{
->> +	struct hstate *h;
->> +	int idx;
->> +
->> +	idx = 0;
->> +	for_each_hstate(h) {
->> +		/*
->> +		 * Add cgroup control files only if the huge page consists
->> +		 * of more than two normal pages. This is because we use
->> +		 * page[2].lru.next for storing cgoup details.
->> +		 */
->> +		if (h->order >= HUGETLB_CGROUP_MIN_ORDER)
->> +			__hugetlb_cgroup_file_init(idx);
-> 
-> Is it better to say ?
-> 
->              if (huge_page_order(h) >= HUGETLB_CGROUP_MIN_ORDER)
->                           __hugetlb_cgroup_file_init(hstate_index(h));
+Can you add -v and see if it spits out more info?
 
-Hi Aneesh,
-
-Thanks for your review and suggestion, this is better.
-
-Thanks,
-Jianguo Wu
-
-> 
-> It should be ok both case.
-> 
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> 
->> +
->> +		idx++;
->> +	}
->>  }
->>
->>  /*
->> -- 1.7.1
-> 
-> -anesh
-> 
-> 
-> .
-> 
-
-
-
+David
