@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2LMBiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 20:38:06 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:40594 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab2LMBiD (ORCPT
+	id S1755402Ab2LMBnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 20:43:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55685 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab2LMBnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 20:38:03 -0500
-Date: Thu, 13 Dec 2012 12:37:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kumar, Anil" <anilkumar.v@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: linux-next: manual merge of the l2-mtd tree with Linus' tree
-Message-Id: <20121213123755.db3d38128e0593a372ccf17f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Dec_2012_12_37_55_+1100_CZfapUg2lWfWOWy5"
+	Wed, 12 Dec 2012 20:43:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121212101108.GC18885@quack.suse.cz>
+References: <20121210221222.GA25700@quack.suse.cz>
+	<CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com>
+	<20121212101108.GC18885@quack.suse.cz>
+Date: Thu, 13 Dec 2012 09:43:31 +0800
+X-Google-Sender-Auth: vDKElXfgfnGEKEE2x5SxXPcq8yE
+Message-ID: <CANejiEU=vcpofMViAH609fH_fh=eTn8v3_06boVbQSbvs8DOTw@mail.gmail.com>
+Subject: Re: Read starvation by sync writes
+From: Shaohua Li <shli@kernel.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Dec_2012_12_37_55_+1100_CZfapUg2lWfWOWy5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2012/12/12 Jan Kara <jack@suse.cz>:
+> On Wed 12-12-12 10:55:15, Shaohua Li wrote:
+>> 2012/12/11 Jan Kara <jack@suse.cz>:
+>> >   Hi,
+>> >
+>> >   I was looking into IO starvation problems where streaming sync writes (in
+>> > my case from kjournald but DIO would look the same) starve reads. This is
+>> > because reads happen in small chunks and until a request completes we don't
+>> > start reading further (reader reads lots of small files) while writers have
+>> > plenty of big requests to submit. Both processes end up fighting for IO
+>> > requests and writer writes nr_batching 512 KB requests while reader reads
+>> > just one 4 KB request or so. Here the effect is magnified by the fact that
+>> > the drive has relatively big queue depth so it usually takes longer than
+>> > BLK_BATCH_TIME to complete the read request. The net result is it takes
+>> > close to two minutes to read files that can be read under a second without
+>> > writer load. Without the big drive's queue depth, results are not ideal but
+>> > they are bearable - it takes about 20 seconds to do the reading. And for
+>> > comparison, when writer and reader are not competing for IO requests (as it
+>> > happens when writes are submitted as async), it takes about 2 seconds to
+>> > complete reading.
+>> >
+>> > Simple reproducer is:
+>> >
+>> > echo 3 >/proc/sys/vm/drop_caches
+>> > dd if=/dev/zero of=/tmp/f bs=1M count=10000 &
+>> > sleep 30
+>> > time cat /etc/* 2>&1 >/dev/null
+>> > killall dd
+>> > rm /tmp/f
+>> >
+>> >   The question is how can we fix this? Two quick hacks that come to my mind
+>> > are remove timeout from the batching logic (is it that important?) or
+>> > further separate request allocation logic so that reads have their own
+>> > request pool. More systematic fix would be to change request allocation
+>> > logic to always allow at least a fixed number of requests per IOC. What do
+>> > people think about this?
+>>
+>> As long as queue depth > workload iodepth, there is little we can do
+>> to prioritize tasks/IOC. Because throttling a task/IOC means queue
+>> will be idle. We don't want to idle a queue (especially for SSD), so
+>> we always push as more requests as possible to the queue, which
+>> will break any prioritization. As far as I know we always have such
+>> issue in CFQ for big queue depth disk.
+>   Yes, I understand that. But actually big queue depth on its own doesn't
+> make the problem really bad (at least for me). When the reader doesn't have
+> to wait for free IO requests, it progresses at a reasonable speed. What
+> makes it really bad is that big queue depth effectively disallows any use
+> of ioc_batching() mode for the reader and thus it blocks in request
+> allocation for every single read request unlike writer which always uses
+> its full batch (32 requests).
 
-Hi Artem,
+This can't explain why setting queue depth 1 makes the performance
+better. In that case, write still get that number of requests, read will
+wait for a request. Anyway, try setting nr_request to a big number
+and check if performance is different.
 
-Today's linux-next merge of the l2-mtd tree got a conflict in
-Documentation/devicetree/bindings/arm/davinci/nand.txt between commit
-fed16bba8726 ("mtd: nand: davinci: fix the binding documentation") from
-Linus' tree and commit 192afdbfbc5c ("mtd: davinci: add support for
-parition binding nodes") from the l2-mtd tree.
-
-I fixed it up (maybe- see below) and can carry the fix as necessary (no
-action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc Documentation/devicetree/bindings/arm/davinci/nand.txt
-index 49fc7ad,4746452..0000000
---- a/Documentation/devicetree/bindings/arm/davinci/nand.txt
-+++ b/Documentation/devicetree/bindings/arm/davinci/nand.txt
-@@@ -23,16 -23,37 +23,24 @@@ Recommended properties=20
-  - ti,davinci-nand-buswidth: buswidth 8 or 16
-  - ti,davinci-nand-use-bbt: use flash based bad block table support.
- =20
-+ nand device bindings may contain additional sub-nodes describing
-+ partitions of the address space. See partition.txt for more detail.
-+=20
- -Example (enbw_cmc board):
- -aemif@60000000 {
- -	compatible =3D "ti,davinci-aemif";
- -	#address-cells =3D <2>;
- -	#size-cells =3D <1>;
- -	reg =3D <0x68000000 0x80000>;
- -	ranges =3D <2 0 0x60000000 0x02000000
- -		  3 0 0x62000000 0x02000000
- -		  4 0 0x64000000 0x02000000
- -		  5 0 0x66000000 0x02000000
- -		  6 0 0x68000000 0x02000000>;
- -	nand@3,0 {
- -		compatible =3D "ti,davinci-nand";
- -		reg =3D <3 0x0 0x807ff
- -			6 0x0 0x8000>;
- -		#address-cells =3D <1>;
- -		#size-cells =3D <1>;
- -		ti,davinci-chipselect =3D <1>;
- -		ti,davinci-mask-ale =3D <0>;
- -		ti,davinci-mask-cle =3D <0>;
- -		ti,davinci-mask-chipsel =3D <0>;
- -		ti,davinci-ecc-mode =3D "hw";
- -		ti,davinci-ecc-bits =3D <4>;
- -		ti,davinci-nand-use-bbt;
- +Example(da850 EVM ):
- +nand_cs3@62000000 {
- +	compatible =3D "ti,davinci-nand";
- +	reg =3D <0x62000000 0x807ff
- +		0x68000000 0x8000>;
- +	ti,davinci-chipselect =3D <1>;
- +	ti,davinci-mask-ale =3D <0>;
- +	ti,davinci-mask-cle =3D <0>;
- +	ti,davinci-mask-chipsel =3D <0>;
- +	ti,davinci-ecc-mode =3D "hw";
- +	ti,davinci-ecc-bits =3D <4>;
- +	ti,davinci-nand-use-bbt;
-+=20
- -		partition@180000 {
- -			label =3D "ubifs";
- -			reg =3D <0x180000 0x7e80000>;
- -		};
-++	partition@180000 {
-++		label =3D "ubifs";
-++		reg =3D <0x180000 0x7e80000>;
-+ 	};
-  };
-
---Signature=_Thu__13_Dec_2012_12_37_55_+1100_CZfapUg2lWfWOWy5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQyTFzAAoJEECxmPOUX5FE7+IP/2+Ghpn6N8O9Dopp87EeqnMw
-Hx6Ec0t+GFFDGby349bOzEeJgOWUybncyk3kHT24NvXiMk33UKjPz7Dj/GUTuoam
-pJGTT2PjK/PzqopO/T8eBcU31YUjit/rcGpDYQAstjxhQDRD0GNLdXydLnc+0Hh6
-9PlvOBNTncB+0avv3mMTe4KL4JxuRebEytFdp/wgOyUF0uZVINeXxaY5+Vx7Ssnv
-xIgx2yoiqd5wzuMirQqSLYPmIr+cXs5kbCWuEUgEy0E0VlbOXfK7k1FIrY3/4tRq
-1MO4m3ZRTMayDQyoCLUBPDM+3wDZqHQNVfKDK5dltprFE4/86rFZAAuBhXZDt7Qp
-6/AR/ouYOKuoQsGdMFc02qsKCeXloSeLf3AD4OckUcZYJ5KEbioamMHloDU/ncPP
-T5dtq6YZtBnMkRNTBiJ8HtBm2HykdBjcPyzTSESpkYfEM1Cmo6fNikdt0ZHHM6LS
-K8JdFsUoQi4ohAFLH6e6A+axLtWDsEBArwWNJFZh43ZWggzOuN+B3lmq2RLzeLbL
-96DfMomgueTE+ysQi2y1HogIWPR/+R/Os4/B0c1VkOBHH5JkNlUkDJuuBx0EOm1s
-k3/035+HI744mFEApvmc4uHkbi5+qY0kOw3FWdi5td3iQtP7oRJhcS34bdOnvWwT
-qzrBEIDfJMWc5GnhJeQX
-=cdWg
------END PGP SIGNATURE-----
-
---Signature=_Thu__13_Dec_2012_12_37_55_+1100_CZfapUg2lWfWOWy5--
+Thanks,
+Shaohua
