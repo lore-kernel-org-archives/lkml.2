@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2LMNYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 08:24:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64336 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754272Ab2LMNWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 08:22:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,273,1355126400"; 
-   d="scan'208";a="233435673"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: RE: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
-Thread-Topic: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
-Thread-Index: AQHN2SMhPVBNd0EOSNivpcZOpMzv75gWt1qA
-Date: Thu, 13 Dec 2012 13:22:13 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353A8C10@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233539DED4@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923353A779A@SHSMSX101.ccr.corp.intel.com>
- <50C93F36.4030402@huawei.com> <1747018.CRodbRKbDV@vostro.rjw.lan>
-In-Reply-To: <1747018.CRodbRKbDV@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="gb2312"
+	id S1755505Ab2LMNbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 08:31:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49481 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab2LMNbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 08:31:13 -0500
+Message-ID: <50C9D882.7000808@kernel.dk>
+Date: Thu, 13 Dec 2012 14:30:42 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Jan Kara <jack@suse.cz>, Shaohua Li <shli@kernel.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Read starvation by sync writes
+References: <20121210221222.GA25700@quack.suse.cz> <CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com> <20121212101108.GC18885@quack.suse.cz> <50C8A07B.6040508@kernel.dk> <x49vcc7kyza.fsf@segfault.boston.devel.redhat.com> <x49obhzkqhy.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49obhzkqhy.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBDDOSYc025205
 
-Rafael J. Wysocki wrote:
-> On Thursday, December 13, 2012 10:36:38 AM Jiang Liu wrote:
->> On 2012-12-12 22:37, Liu, Jinsong wrote:
->>> Wen Congyang wrote:
->>>> At 12/08/2012 06:19 AM, Rafael J. Wysocki Wrote:
->>>>> On Tuesday, December 04, 2012 01:39:54 AM Liu, Jinsong wrote:
->>>>>> Resend it, add Rafael and linux-acpi@vger.kernel.org
->>>>> 
->>>>> I wonder what memory hotplug people think about that.
->>>>> 
->>>>> Thanks,
->>>>> Rafael
->>>>> 
->>>>> 
->>>>>> ===============
->>>>>> From 1d39279e45c54ce531691da5ffe261e7689dd92c Mon Sep 17
->>>>>> 00:00:00 2001 From: Liu Jinsong <jinsong.liu@intel.com>
->>>>>> Date: Wed, 14 Nov 2012 18:52:06 +0800
->>>>>> Subject: [PATCH] X86/acpi: remove redundant logic of acpi memory
->>>>>> hotadd 
->>>>>> 
->>>>>> When memory hotadd, acpi_memory_enable_device has already been
->>>>>> done at drv->ops.add (acpi_memory_device_add), no need to do it
->>>>>> again at notify callback. 
->>>>>> 
->>>>>> At acpi_memory_enable_device, acpi_memory_get_device_resources
->>>>>> is also a redundant action, since it has been done at
->>>>>> drv->ops.add. 
->>>>>> 
->>>>>> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
->>>>>> ---
->>>>>>  drivers/acpi/acpi_memhotplug.c |   17 -----------------
->>>>>>  1 files changed, 0 insertions(+), 17 deletions(-)
->>>>>> 
->>>>>> diff --git a/drivers/acpi/acpi_memhotplug.c
->>>>>> b/drivers/acpi/acpi_memhotplug.c
->>>>>> index 24c807f..a6489fd 100644
->>>>>> --- a/drivers/acpi/acpi_memhotplug.c
->>>>>> +++ b/drivers/acpi/acpi_memhotplug.c
->>>>>> @@ -220,15 +220,6 @@ static int acpi_memory_enable_device(struct
->>>>>>  	acpi_memory_device *mem_device) struct acpi_memory_info *info;
->>>>>> int node; 
->>>>>> 
->>>>>> -
->>>>>> -	/* Get the range from the _CRS */
->>>>>> -	result = acpi_memory_get_device_resources(mem_device);
->>>>>> -	if (result) {
->>>>>> -		printk(KERN_ERR PREFIX "get_device_resources failed\n");
->>>>>> -		mem_device->state = MEMORY_INVALID_STATE;
->>>>>> -		return result;
->>>>>> -	}
->>>>>> -
->>>>>>  	node = acpi_get_node(mem_device->device->handle);  	/*
->>>>>>  	 * Tell the VM there is more memory here...
->>>>>> @@ -357,14 +348,6 @@ static void
->>>>>>  		acpi_memory_device_notify(acpi_handle handle, u32 event, void
->>>>>> *data)  			break; } 
->>>>>> 
->>>>>> -		if (acpi_memory_check_device(mem_device))
->>>>>> -			break;
->>>> 
->>>> Hmm, if acpi_memory_check_device() fails, it means the memory
->>>> device disappears I don't know if a real hardware uses this way to
->>>> remove memory device. 
->>>> 
->>>>>> -
->>>>>> -		if (acpi_memory_enable_device(mem_device)) {
->>>>>> -			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
->>>>>> -			break;
->>>>>> -		}
->>>> 
->>>> If acpi_memory_get_device() doesn't fail, it means that the device
->>>> has been managed by this driver, so I think we can do this cleanup.
->>>> 
->>>> Thanks
->>>> Wen Congyang
->>>> 
->>> 
->>> Thanks! any comments from Huawei side, Jiang? Hi Jinsong,
->> 
->> We think it's ok.
->> 
->> acpi_memory_device_notify
->> 	acpi_memory_get_device
->> 		acpi_memory_device_add
->> 			acpi_memory_get_device_resources
->> 			acpi_memory_enable_device
->> 				acpi_memory_get_device_resources£¨redundant£©
->> 	acpi_memory_check_device£¨redundant£©
->> 	acpi_memory_enable_device£¨redundant£©
+On 2012-12-12 20:41, Jeff Moyer wrote:
+> Jeff Moyer <jmoyer@redhat.com> writes:
 > 
-> OK, thanks.
+>>> I agree. This isn't about scheduling, we haven't even reached that part
+>>> yet. Back when we split the queues into read vs write, this problem
+>>> obviously wasn't there. Now we have sync writes and reads, both eating
+>>> from the same pool. The io scheduler can impact this a bit by forcing
+>>> reads to must allocate (Jan, which io scheduler are you using?). CFQ
+>>> does this when it's expecting a request from this process queue.
+>>>
+>>> Back in the day, we used to have one list. To avoid a similar problem,
+>>> we reserved the top of the list for reads. With the batching, it's a bit
+>>> more complicated. If we make the request allocation (just that, not the
+>>> scheduling) be read vs write instead of sync vs async, then we have the
+>>> same issue for sync vs buffered writes.
+>>>
+>>> How about something like the below? Due to the nature of sync reads, we
+>>> should allow a much longer timeout. The batch is really tailored towards
+>>> writes at the moment. Also shrink the batch count, 32 is pretty large...
+>>
+>> Does batching even make sense for dependent reads?  I don't think it
+>> does.
 > 
-> I'll queue it up for submission as a fix later in the cycle.
+> Having just read the batching code in detail, I'd like to ammend this
+> misguided comment.  Batching logic kicks in when you happen to be lucky
+> enough to use up the last request.  As such, I'd be surprised if the
+> patch you posted helped.  Jens, don't you think the writer is way more
+> likely to become the batcher?  I do agree with shrinking the batch count
+> to 16, whether or not the rest of the patch goes in.
 > 
-> Thanks,
-> Rafael
+>>  Assuming you disagree, then you'll have to justify that fixed
+>> time value of 2 seconds.  The amount of time between dependent reads
+>> will vary depending on other I/O sent to the device, the properties of
+>> the device, the I/O scheduler, and so on.  If you do stick 2 seconds in
+>> there, please comment it.  Maybe it's time we started keeping track of
+>> worst case Q->C time?  That could be used to tell worst case latency,
+>> and adjust magic timeouts like this one.
+>>
+>> I'm still thinking about how we might solve this in a cleaner way.
+> 
+> The way things stand today, you can do a complete end run around the I/O
+> scheduler by queueing up enough I/O.  To address that, I think we need
+> to move to a request list per io_context as Jan had suggested.  That
+> way, we can keep the logic about who gets to submit I/O when in one
+> place.
+> 
+> Jens, what do you think?
 
-Thank you all!
+I think that is pretty extreme. We have way too much accounting around
+this already, and I'd rather just limit the batching than make
+per-ioc request lists too.
 
-Jinsongÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I agree the batch addition isn't super useful for the reads. It really
+is mostly a writer thing, and the timing reflects that.
+
+The problem is really that the WRITE_SYNC is (for Jan's case) behaving
+like buffered writes, so it eats up a queue of requests very easily. On
+the allocation side, the assumption is that WRITE_SYNC behaves like
+dependent reads. Similar to a dd with oflag=direct, not like a flood of
+requests. For dependent sync writes, our current behaviour is fine, we
+treat them like reads. For commits of WRITE_SYNC, they should be treated
+like async WRITE instead.
+
+-- 
+Jens Axboe
+
