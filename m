@@ -1,210 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785Ab2LMOjC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:39:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44627 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932689Ab2LMOJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:09:06 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 135/241] md/raid10: close race that lose writes lost when replacement completes.
-Date: Thu, 13 Dec 2012 11:58:20 -0200
-Message-Id: <1355407206-17100-136-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	id S932731Ab2LMOjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:39:01 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45841 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932136Ab2LMOi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:38:58 -0500
+Date: Thu, 13 Dec 2012 19:38:07 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] uprobes: Kill the pointless inode/uc checks in
+ register/unregister
+Message-ID: <20121213140807.GF29086@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121123202741.GA18858@redhat.com>
+ <20121123202806.GA18887@redhat.com>
+ <20121210061901.GF22164@linux.vnet.ibm.com>
+ <20121210191232.GA32462@redhat.com>
+ <20121213103548.GC29086@linux.vnet.ibm.com>
+ <20121213131540.GA11862@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121213131540.GA11862@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121314-5806-0000-0000-00001CEF0D34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+> > >
+> > > I agree, sometimes it makes sense to protect against the stupid mistakes,
+> > > but if we want to check against NULL we should do
+> > >
+> > > 	if (WARN_ON(!inode))
+> > > 		return;
+> > >
+> >
+> > agree, that warn_on is better than a simple check
+> 
+> and this one
+> 
+> 	if (WARN_ON(inode < PAGE_OFFSET))
+> 
+> is even better ;)
 
-------------------
+Okay.
 
-From: NeilBrown <neilb@suse.de>
+> 
+> > > Especially in uprobe_unregister(). The current code is really "hide
+> > > the possible problem" and nothing more. It is better to crash imho
+> > > than silently return.
+> > >
+> > > > > register() also checks uc->next == NULL, probably to prevent the
+> > > > > double-register but the caller can do other stupid/wrong things.
+> > > >
+> > > > Users can surely do more stupid things. But this is again something that
+> > > > kernel can identify. By allowing a double-register of a consumer, thats
+> > > > already registered, we might end up allowing circular loop of consumers.
+> > >
+> > > I understand. But in this case we should document that uc->next must
+> > > be cleared before uprobe_register(). Or add init_consumer().
+> > >
+> > > And we should change uprobe_unregister() to clear uc->next as well.
+> > > I think that the code like this
+> > >
+> > > 	uprobe_register(uc);
+> > > 	uprobe_unregister(uc);
+> > >
+> > > 	uprobe_register(uc);
+> > >
+> > > should work. Currently it doesn't because of this check.
+> > >
+> >
+> > yes, these should work and makes a case to nullify ->next on unregister.
+> >
+> > However, what if someone tries
+> >
+> > 	uprobe_register(uc1);
+> > 	uprobe_register(uc2);
+> > 	uprobe_register(uc1);
+> >
+> > i.e somebody tries to re-register uc1, while its active and has a valid
+> > next. After the re-registration of uc1, the uprobe->consumers will no more reference uc2.
+> 
+> Yes. And even without uprobe_register(uc2) the result won't be good.
+> This is like list_add(node).
+> 
+> > Should we leave this case as a fool shooting himself?
+> 
+> IMHO yes, or we should create init_consumer() or at least document that
+> the private ->next member should be nullified.
+> 
 
-commit e7c0c3fa29280d62aa5e11101a674bb3064bd791 upstream.
-
-When a replacement operation completes there is a small window
-when the original device is marked 'faulty' and the replacement
-still looks like a replacement.  The faulty should be removed and
-the replacement moved in place very quickly, bit it isn't instant.
-
-So the code write out to the array must handle the possibility that
-the only working device for some slot in the replacement - but it
-doesn't.  If the primary device is faulty it just gives up.  This
-can lead to corruption.
-
-So make the code more robust: if either  the primary or the
-replacement is present and working, write to them.  Only when
-neither are present do we give up.
-
-This bug has been present since replacement was introduced in
-3.3, so it is suitable for any -stable kernel since then.
-
-Reported-by: "George Spelvin" <linux@horizon.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-[ herton: hairy code adjustment on 3rd hunk (conf->copies for loop) ]
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/md/raid10.c |  113 +++++++++++++++++++++++++++------------------------
- 1 file changed, 59 insertions(+), 54 deletions(-)
-
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 17fae37..0920adf 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1267,18 +1267,21 @@ retry_write:
- 			blocked_rdev = rrdev;
- 			break;
- 		}
-+		if (rdev && (test_bit(Faulty, &rdev->flags)
-+			     || test_bit(Unmerged, &rdev->flags)))
-+			rdev = NULL;
- 		if (rrdev && (test_bit(Faulty, &rrdev->flags)
- 			      || test_bit(Unmerged, &rrdev->flags)))
- 			rrdev = NULL;
- 
- 		r10_bio->devs[i].bio = NULL;
- 		r10_bio->devs[i].repl_bio = NULL;
--		if (!rdev || test_bit(Faulty, &rdev->flags) ||
--		    test_bit(Unmerged, &rdev->flags)) {
-+
-+		if (!rdev && !rrdev) {
- 			set_bit(R10BIO_Degraded, &r10_bio->state);
- 			continue;
- 		}
--		if (test_bit(WriteErrorSeen, &rdev->flags)) {
-+		if (rdev && test_bit(WriteErrorSeen, &rdev->flags)) {
- 			sector_t first_bad;
- 			sector_t dev_sector = r10_bio->devs[i].addr;
- 			int bad_sectors;
-@@ -1320,8 +1323,10 @@ retry_write:
- 					max_sectors = good_sectors;
- 			}
- 		}
--		r10_bio->devs[i].bio = bio;
--		atomic_inc(&rdev->nr_pending);
-+		if (rdev) {
-+			r10_bio->devs[i].bio = bio;
-+			atomic_inc(&rdev->nr_pending);
-+		}
- 		if (rrdev) {
- 			r10_bio->devs[i].repl_bio = bio;
- 			atomic_inc(&rrdev->nr_pending);
-@@ -1377,58 +1382,58 @@ retry_write:
- 	for (i = 0; i < conf->copies; i++) {
- 		struct bio *mbio;
- 		int d = r10_bio->devs[i].devnum;
--		if (!r10_bio->devs[i].bio)
--			continue;
--
--		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
--			    max_sectors);
--		r10_bio->devs[i].bio = mbio;
--
--		mbio->bi_sector	= (r10_bio->devs[i].addr+
--				   choose_data_offset(r10_bio,
--						      conf->mirrors[d].rdev));
--		mbio->bi_bdev = conf->mirrors[d].rdev->bdev;
--		mbio->bi_end_io	= raid10_end_write_request;
--		mbio->bi_rw = WRITE | do_sync | do_fua;
--		mbio->bi_private = r10_bio;
--
--		atomic_inc(&r10_bio->remaining);
--		spin_lock_irqsave(&conf->device_lock, flags);
--		bio_list_add(&conf->pending_bio_list, mbio);
--		conf->pending_count++;
--		spin_unlock_irqrestore(&conf->device_lock, flags);
--		if (!mddev_check_plugged(mddev))
--			md_wakeup_thread(mddev->thread);
--
--		if (!r10_bio->devs[i].repl_bio)
--			continue;
-+		if (r10_bio->devs[i].bio) {
-+			struct md_rdev *rdev = conf->mirrors[d].rdev;
-+			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
-+			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
-+				    max_sectors);
-+			r10_bio->devs[i].bio = mbio;
-+
-+			mbio->bi_sector	= (r10_bio->devs[i].addr+
-+					   choose_data_offset(r10_bio,
-+							      rdev));
-+			mbio->bi_bdev = rdev->bdev;
-+			mbio->bi_end_io = raid10_end_write_request;
-+			mbio->bi_rw = WRITE | do_sync | do_fua;
-+			mbio->bi_private = r10_bio;
- 
--		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
--			    max_sectors);
--		r10_bio->devs[i].repl_bio = mbio;
-+			atomic_inc(&r10_bio->remaining);
-+			spin_lock_irqsave(&conf->device_lock, flags);
-+			bio_list_add(&conf->pending_bio_list, mbio);
-+			conf->pending_count++;
-+			spin_unlock_irqrestore(&conf->device_lock, flags);
-+			if (!mddev_check_plugged(mddev))
-+				md_wakeup_thread(mddev->thread);
-+		}
- 
--		/* We are actively writing to the original device
--		 * so it cannot disappear, so the replacement cannot
--		 * become NULL here
--		 */
--		mbio->bi_sector	= (r10_bio->devs[i].addr +
--				   choose_data_offset(
--					   r10_bio,
--					   conf->mirrors[d].replacement));
--		mbio->bi_bdev = conf->mirrors[d].replacement->bdev;
--		mbio->bi_end_io	= raid10_end_write_request;
--		mbio->bi_rw = WRITE | do_sync | do_fua;
--		mbio->bi_private = r10_bio;
-+		if (r10_bio->devs[i].repl_bio) {
-+			struct md_rdev *rdev = conf->mirrors[d].replacement;
-+			if (rdev == NULL) {
-+				/* Replacement just got moved to main 'rdev' */
-+				smp_mb();
-+				rdev = conf->mirrors[d].rdev;
-+			}
-+			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
-+			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
-+				    max_sectors);
-+			r10_bio->devs[i].repl_bio = mbio;
-+
-+			mbio->bi_sector = (r10_bio->devs[i].addr +
-+					   choose_data_offset(
-+						   r10_bio, rdev));
-+			mbio->bi_bdev = rdev->bdev;
-+			mbio->bi_end_io = raid10_end_write_request;
-+			mbio->bi_rw = WRITE | do_sync | do_fua;
-+			mbio->bi_private = r10_bio;
- 
--		atomic_inc(&r10_bio->remaining);
--		spin_lock_irqsave(&conf->device_lock, flags);
--		bio_list_add(&conf->pending_bio_list, mbio);
--		conf->pending_count++;
--		spin_unlock_irqrestore(&conf->device_lock, flags);
--		if (!mddev_check_plugged(mddev))
--			md_wakeup_thread(mddev->thread);
-+			atomic_inc(&r10_bio->remaining);
-+			spin_lock_irqsave(&conf->device_lock, flags);
-+			bio_list_add(&conf->pending_bio_list, mbio);
-+			conf->pending_count++;
-+			spin_unlock_irqrestore(&conf->device_lock, flags);
-+			if (!mddev_check_plugged(mddev))
-+				md_wakeup_thread(mddev->thread);
-+		}
- 	}
- 
- 	/* Don't remove the bias on 'remaining' (one_write_done) until
--- 
-1.7.9.5
+Okay, Since we agree that its a user mistake. So lets document this and
+continue with what you propose.
 
