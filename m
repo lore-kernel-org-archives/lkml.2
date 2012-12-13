@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2LMWGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:06:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26694 "EHLO
+	id S1756140Ab2LMWHB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:07:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26684 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab2LMWCy (ORCPT
+	with ESMTP id S1756481Ab2LMWCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:54 -0500
+	Thu, 13 Dec 2012 17:02:53 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 19/27] x86, boot: update comments about entries for 64bit image
-Date: Thu, 13 Dec 2012 14:02:13 -0800
-Message-Id: <1355436141-8668-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v6 15/27] x86, kexec: set ident mapping for kernel that is above max_pfn
+Date: Thu, 13 Dec 2012 14:02:09 -0800
+Message-Id: <1355436141-8668-16-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
@@ -24,60 +24,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now 64bit entry is fixed on 0x200, can not be changed anymore.
+When first kernel is booted with memmap= or mem=  to limit max_pfn.
+kexec can load second kernel above that max_pfn.
 
-Update the comments to reflect that.
+We need to set ident mapping for whole image in this case not just
+for first 2M.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/boot/compressed/head_64.S |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ arch/x86/kernel/machine_kexec_64.c |   43 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 5c80b94..5ba0c95 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -37,6 +37,12 @@
- 	__HEAD
- 	.code32
- ENTRY(startup_32)
-+	/*
-+	 * 32bit entry is 0, could not be changed!
-+	 * If we come here directly from a bootloader,
-+	 * kernel(text+data+bss+brk) ramdisk, zero_page, command line
-+	 * all need to be under 4G limit.
-+	 */
- 	cld
- 	/*
- 	 * Test KEEP_SEGMENTS flag to see if the bootloader is asking
-@@ -182,20 +188,18 @@ ENTRY(startup_32)
- 	lret
- ENDPROC(startup_32)
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index b3ea9db..be14ee1 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -56,6 +56,25 @@ out:
+ 	return result;
+ }
  
--	/*
--	 * Be careful here startup_64 needs to be at a predictable
--	 * address so I can export it in an ELF header.  Bootloaders
--	 * should look at the ELF header to find this address, as
--	 * it may change in the future.
--	 */
- 	.code64
- 	.org 0x200
- ENTRY(startup_64)
++static int ident_mapping_init(struct kimage *image, pgd_t *level4p,
++				unsigned long mstart, unsigned long mend)
++{
++	int result;
++
++	mstart = round_down(mstart, PMD_SIZE);
++	mend   = round_up(mend - 1, PMD_SIZE);
++
++	while (mstart < mend) {
++		result = init_one_level2_page(image, level4p, mstart);
++		if (result)
++			return result;
++
++		mstart += PMD_SIZE;
++	}
++
++	return 0;
++}
++
+ static void init_level2_page(pmd_t *level2p, unsigned long addr)
+ {
+ 	unsigned long end_addr;
+@@ -184,22 +203,34 @@ err:
+ 	return result;
+ }
+ 
+-
+ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+ {
++	unsigned long mstart, mend;
+ 	pgd_t *level4p;
+ 	int result;
++	int i;
++
+ 	level4p = (pgd_t *)__va(start_pgtable);
+ 	result = init_level4_page(image, level4p, 0, max_pfn << PAGE_SHIFT);
+ 	if (result)
+ 		return result;
++
  	/*
-+	 * 64bit entry is 0x200, could not be changed!
- 	 * We come here either from startup_32 or directly from a
--	 * 64bit bootloader.  If we come here from a bootloader we depend on
--	 * an identity mapped page table being provied that maps our
--	 * entire text+data+bss and hopefully all of memory.
-+	 * 64bit bootloader.
-+	 * If we come here from a bootloader, kernel(text+data+bss+brk),
-+	 * ramdisk, zero_page, command line could be above 4G.
-+	 * We depend on an identity mapped page table being provided
-+	 * that maps our entire kernel(text+data+bss+brk), and hopefully
-+	 * all of memory.
+-	 * image->start may be outside 0 ~ max_pfn, for example when
+-	 * jump back to original kernel from kexeced kernel
++	 * segments's mem ranges could be outside 0 ~ max_pfn,
++	 * for example when jump back to original kernel from kexeced kernel.
++	 * or first kernel is booted with user mem map, and second kernel
++	 * could be loaded out of that range.
  	 */
- #ifdef CONFIG_EFI_STUB
- 	/*
+-	result = init_one_level2_page(image, level4p, image->start);
+-	if (result)
+-		return result;
++	for (i = 0; i < image->nr_segments; i++) {
++		mstart = image->segment[i].mem;
++		mend   = mstart + image->segment[i].memsz;
++
++		result = ident_mapping_init(image, level4p, mstart, mend);
++
++		if (result)
++			return result;
++	}
++
+ 	return init_transition_pgtable(image, level4p);
+ }
+ 
 -- 
 1.7.10.4
 
