@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab2LMOPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:15:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45185 "EHLO
+	id S932978Ab2LMORJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:17:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45176 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab2LMOPa (ORCPT
+	with ESMTP id S933358Ab2LMOPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:15:30 -0500
+	Thu, 13 Dec 2012 09:15:23 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Bottomley <JBottomley@Parallels.com>,
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 238/241] [SCSI] hpsa: gen8plus Smart Array IDs
-Date: Thu, 13 Dec 2012 12:00:03 -0200
-Message-Id: <1355407206-17100-239-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 236/241] ASoC: dmaengine: Correct Makefile when sound is built as module
+Date: Thu, 13 Dec 2012 12:00:01 -0200
+Message-Id: <1355407206-17100-237-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,79 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Miller <mike.miller@hp.com>
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-commit fe0c9610bb68dd0aad1017456f5e3c31264d70c2 upstream.
+commit 961a7aeafab477f63d9eef26afde9cbb8badcd0f upstream.
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+soc-dmaengine-pcm library need to be part of the snd-soc-core in order to
+be able to compile ASoC as modules when dmaengine is enabled on the platform.
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/scsi/hpsa.c     |   32 +++++++++++++++++++++++++-------
- include/linux/pci_ids.h |    1 +
- 2 files changed, 26 insertions(+), 7 deletions(-)
+ sound/soc/Makefile |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index f9823f2..cb00d70 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -99,6 +99,15 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1924},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
- 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
- 	{0,}
-@@ -118,13 +127,22 @@ static struct board_type products[] = {
- 	{0x3249103C, "Smart Array P812", &SA5_access},
- 	{0x324a103C, "Smart Array P712m", &SA5_access},
- 	{0x324b103C, "Smart Array P711m", &SA5_access},
--	{0x3350103C, "Smart Array", &SA5_access},
--	{0x3351103C, "Smart Array", &SA5_access},
--	{0x3352103C, "Smart Array", &SA5_access},
--	{0x3353103C, "Smart Array", &SA5_access},
--	{0x3354103C, "Smart Array", &SA5_access},
--	{0x3355103C, "Smart Array", &SA5_access},
--	{0x3356103C, "Smart Array", &SA5_access},
-+	{0x3350103C, "Smart Array P222", &SA5_access},
-+	{0x3351103C, "Smart Array P420", &SA5_access},
-+	{0x3352103C, "Smart Array P421", &SA5_access},
-+	{0x3353103C, "Smart Array P822", &SA5_access},
-+	{0x3354103C, "Smart Array P420i", &SA5_access},
-+	{0x3355103C, "Smart Array P220i", &SA5_access},
-+	{0x3356103C, "Smart Array P721m", &SA5_access},
-+	{0x1920103C, "Smart Array", &SA5_access},
-+	{0x1921103C, "Smart Array", &SA5_access},
-+	{0x1922103C, "Smart Array", &SA5_access},
-+	{0x1923103C, "Smart Array", &SA5_access},
-+	{0x1924103C, "Smart Array", &SA5_access},
-+	{0x1925103C, "Smart Array", &SA5_access},
-+	{0x1926103C, "Smart Array", &SA5_access},
-+	{0x1928103C, "Smart Array", &SA5_access},
-+	{0x334d103C, "Smart Array P822se", &SA5_access},
- 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
- };
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 70990f4..7fda792 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -1,8 +1,9 @@
+ snd-soc-core-objs := soc-core.o soc-dapm.o soc-jack.o soc-cache.o soc-utils.o
+ snd-soc-core-objs += soc-pcm.o soc-io.o
  
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index c71eea2..a56c194 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -752,6 +752,7 @@
- #define PCI_DEVICE_ID_HP_CISSD		0x3238
- #define PCI_DEVICE_ID_HP_CISSE		0x323a
- #define PCI_DEVICE_ID_HP_CISSF		0x323b
-+#define PCI_DEVICE_ID_HP_CISSH		0x323c
- #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
+-snd-soc-dmaengine-pcm-objs := soc-dmaengine-pcm.o
+-obj-$(CONFIG_SND_SOC_DMAENGINE_PCM) += snd-soc-dmaengine-pcm.o
++ifneq ($(CONFIG_SND_SOC_DMAENGINE_PCM),)
++snd-soc-core-objs += soc-dmaengine-pcm.o
++endif
  
- #define PCI_VENDOR_ID_PCTECH		0x1042
+ obj-$(CONFIG_SND_SOC)	+= snd-soc-core.o
+ obj-$(CONFIG_SND_SOC)	+= codecs/
 -- 
 1.7.9.5
 
