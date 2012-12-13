@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab2LMA2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:28:16 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42583 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab2LMA2N (ORCPT
+	id S1755404Ab2LMA3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:29:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54788 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab2LMA3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:28:13 -0500
-Message-ID: <1355358485.1508.2.camel@kernel.cn.ibm.com>
-Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
- keep movable limit for nodes
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>,
-        hpa@zytor.com, akpm@linux-foundation.org, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
-        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Date: Wed, 12 Dec 2012 18:28:05 -0600
-In-Reply-To: <50C85D2D.5030309@cn.fujitsu.com>
-References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
-	   <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
-	   <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com>
-	  <1355225313.1919.1.camel@kernel.cn.ibm.com> <50C7D490.60409@huawei.com>
-	  <50C849DD.20405@cn.fujitsu.com>
-	 <1355304570.1542.0.camel@kernel.cn.ibm.com>
-	 <50C85D2D.5030309@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Dec 2012 19:29:19 -0500
+Date: Wed, 12 Dec 2012 16:28:06 -0800
+Message-Id: <201212130028.qBD0S6Qb032540@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/acpi changes for v3.8
+Cc: David Rientjes <rientjes@google.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Robert Moore <robert.moore@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Thomas Renninger <trenn@suse.de>,
+        Tony Luck <tony.luck@intel.com>, Yinghai Lu <yinghai@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 12 Dec 2012 16:28:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 18:32 +0800, Tang Chen wrote:
-> Hi Simon,
-> 
-> On 12/12/2012 05:29 PM, Simon Jeons wrote:
-> >
-> > Thanks for your clarify.
-> >
-> > Enable PAE on x86 32bit kernel, 8G memory, movablecore=6.5G
-> 
-> Could you please provide more info ?
-> 
-> Such as the whole kernel commondline. And did this happen after
-> you applied these patches ? What is the output without these
-> patches ?
+Hi Linus,
 
-This result is without the patches, I didn't add more kernel
-commandline, just movablecore=6.5G, but output as you see is strange, so
-what happened? 
+This is a patchset which didn't make the last merge window.  It adds a
+debugging capability to feed ACPI tables via the initramfs.
 
-> 
-> Thanks. :)
-> 
-> >>
-> >> [    0.000000] 8304MB HIGHMEM available.
-> >> [    0.000000] 885MB LOWMEM available.
-> >> [    0.000000]   mapped low ram: 0 - 375fe000
-> >> [    0.000000]   low ram: 0 - 375fe000
-> >> [    0.000000] Zone ranges:
-> >> [    0.000000]   DMA      [mem 0x00010000-0x00ffffff]
-> >> [    0.000000]   Normal   [mem 0x01000000-0x375fdfff]
-> >> [    0.000000]   HighMem  [mem 0x375fe000-0x3e5fffff]
-> >> [    0.000000] Movable zone start for each node
-> >> [    0.000000] Early memory node ranges
-> >> [    0.000000]   node   0: [mem 0x00010000-0x0009cfff]
-> >> [    0.000000]   node   0: [mem 0x00100000-0x1fffffff]
-> >> [    0.000000]   node   0: [mem 0x20200000-0x3fffffff]
-> >> [    0.000000]   node   0: [mem 0x40200000-0xb69cbfff]
-> >> [    0.000000]   node   0: [mem 0xb6a46000-0xb6a47fff]
-> >> [    0.000000]   node   0: [mem 0xb6b1c000-0xb6cfffff]
-> >> [    0.000000]   node   0: [mem 0x00000000-0x3e5fffff]
-> >> [    0.000000] On node 0 totalpages: 2051391
-> >> [    0.000000] free_area_init_node: node 0, pgdat c0c26a80,
-> >> node_mem_map
-> >> f19de200
-> >> [    0.000000]   DMA zone: 32 pages used for memmap
-> >> [    0.000000]   DMA zone: 0 pages reserved
-> >> [    0.000000]   DMA zone: 3949 pages, LIFO batch:0
-> >> [    0.000000]   Normal zone: 1740 pages used for memmap
-> >> [    0.000000]   Normal zone: 220466 pages, LIFO batch:31
-> >> [    0.000000]   HighMem zone: 16609 pages used for memmap
-> >> [    0.000000]   HighMem zone: 1808595 pages, LIFO batch:31
-> >
-> > Why zone movable disappear?
-> >
-> >
-> >
-> >
-> 
+On a grander scope, it formalizes using the initramfs protocol for
+feeding arbitrary blobs which need to be accessed early to the kernel:
+they are fed first in the initramfs blob (lots of bootloaders can
+concatenate this at boot time, others can use a single file) in an
+uncompressed cpio archive using filenames starting with "kernel/".
+
+The ACPI maintainers requested that this patchset be fed via the x86
+tree rather than the ACPI tree as the footprint in the general x86
+code is much bigger than in the ACPI code proper.
+
+	-hpa
 
 
+The following changes since commit 979570e02981d4a8fc20b3cc8fd651856c98ee9d:
+
+  Linux 3.6-rc7 (2012-09-23 18:10:57 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-acpi-for-linus
+
+David Rientjes (1):
+      ACPI: Fix build when disabled
+
+H. Peter Anvin (1):
+      lib: Add early cpio decoder
+
+Thomas Renninger (5):
+      x86, acpi: Introduce x86 arch specific arch_reserve_mem_area() for e820 handling
+      ACPI: Store valid ACPI tables passed via early initrd in reserved memblock areas
+      ACPI: Implement physical address table override
+      ACPI: Create acpi_table_taint() function to avoid code duplication
+      ACPI: Document ACPI table overriding via initrd
+
+Tony Luck (1):
+      X86 ACPI: Use #ifdef not #if for CONFIG_X86 check
+
+ Documentation/acpi/initrd_table_override.txt |   94 ++++++++++++
+ arch/x86/kernel/acpi/boot.c                  |    6 +
+ arch/x86/kernel/setup.c                      |    4 +
+ drivers/acpi/Kconfig                         |    9 +
+ drivers/acpi/osl.c                           |  202 ++++++++++++++++++++++++--
+ include/linux/acpi.h                         |   16 ++
+ include/linux/earlycpio.h                    |   17 ++
+ lib/Makefile                                 |    2 +-
+ lib/earlycpio.c                              |  145 ++++++++++++++++++
+ 9 files changed, 483 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/acpi/initrd_table_override.txt
+ create mode 100644 include/linux/earlycpio.h
+ create mode 100644 lib/earlycpio.c
