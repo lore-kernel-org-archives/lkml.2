@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab2LMLIK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 06:08:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50025 "EHLO mx2.suse.de"
+	id S1754581Ab2LMLKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 06:10:17 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60163 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753376Ab2LMLII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 06:08:08 -0500
-Date: Thu, 13 Dec 2012 11:07:59 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/8] mm: vmscan: clean up get_scan_count()
-Message-ID: <20121213110759.GA1009@suse.de>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-7-git-send-email-hannes@cmpxchg.org>
+	id S1753343Ab2LMLKP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 06:10:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
+Date: Thu, 13 Dec 2012 12:15:18 +0100
+Message-ID: <1747018.CRodbRKbDV@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <50C93F36.4030402@huawei.com>
+References: <DE8DF0795D48FD4CA783C40EC829233539DED4@SHSMSX101.ccr.corp.intel.com> <DE8DF0795D48FD4CA783C40EC82923353A779A@SHSMSX101.ccr.corp.intel.com> <50C93F36.4030402@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1355348620-9382-7-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 04:43:38PM -0500, Johannes Weiner wrote:
-> Reclaim pressure balance between anon and file pages is calculated
-> through a tuple of numerators and a shared denominator.
+On Thursday, December 13, 2012 10:36:38 AM Jiang Liu wrote:
+> On 2012-12-12 22:37, Liu, Jinsong wrote:
+> > Wen Congyang wrote:
+> >> At 12/08/2012 06:19 AM, Rafael J. Wysocki Wrote:
+> >>> On Tuesday, December 04, 2012 01:39:54 AM Liu, Jinsong wrote:
+> >>>> Resend it, add Rafael and linux-acpi@vger.kernel.org
+> >>>
+> >>> I wonder what memory hotplug people think about that.
+> >>>
+> >>> Thanks,
+> >>> Rafael
+> >>>
+> >>>
+> >>>> ===============
+> >>>> From 1d39279e45c54ce531691da5ffe261e7689dd92c Mon Sep 17 00:00:00
+> >>>> 2001 
+> >>>> From: Liu Jinsong <jinsong.liu@intel.com>
+> >>>> Date: Wed, 14 Nov 2012 18:52:06 +0800
+> >>>> Subject: [PATCH] X86/acpi: remove redundant logic of acpi memory
+> >>>> hotadd 
+> >>>>
+> >>>> When memory hotadd, acpi_memory_enable_device has already been done
+> >>>> at drv->ops.add (acpi_memory_device_add), no need to do it again
+> >>>> at notify callback.
+> >>>>
+> >>>> At acpi_memory_enable_device, acpi_memory_get_device_resources
+> >>>> is also a redundant action, since it has been done at drv->ops.add.
+> >>>>
+> >>>> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> >>>> ---
+> >>>>  drivers/acpi/acpi_memhotplug.c |   17 -----------------
+> >>>>  1 files changed, 0 insertions(+), 17 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/acpi/acpi_memhotplug.c
+> >>>> b/drivers/acpi/acpi_memhotplug.c 
+> >>>> index 24c807f..a6489fd 100644
+> >>>> --- a/drivers/acpi/acpi_memhotplug.c
+> >>>> +++ b/drivers/acpi/acpi_memhotplug.c
+> >>>> @@ -220,15 +220,6 @@ static int acpi_memory_enable_device(struct
+> >>>>  	acpi_memory_device *mem_device) struct acpi_memory_info *info;
+> >>>>  	int node;
+> >>>>
+> >>>> -
+> >>>> -	/* Get the range from the _CRS */
+> >>>> -	result = acpi_memory_get_device_resources(mem_device);
+> >>>> -	if (result) {
+> >>>> -		printk(KERN_ERR PREFIX "get_device_resources failed\n");
+> >>>> -		mem_device->state = MEMORY_INVALID_STATE;
+> >>>> -		return result;
+> >>>> -	}
+> >>>> -
+> >>>>  	node = acpi_get_node(mem_device->device->handle);  	/*
+> >>>>  	 * Tell the VM there is more memory here...
+> >>>> @@ -357,14 +348,6 @@ static void
+> >>>>  		acpi_memory_device_notify(acpi_handle handle, u32 event, void
+> >>>> *data)  			break; } 
+> >>>>
+> >>>> -		if (acpi_memory_check_device(mem_device))
+> >>>> -			break;
+> >>
+> >> Hmm, if acpi_memory_check_device() fails, it means the memory device
+> >> disappears 
+> >> I don't know if a real hardware uses this way to remove memory device.
+> >>
+> >>>> -
+> >>>> -		if (acpi_memory_enable_device(mem_device)) {
+> >>>> -			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
+> >>>> -			break;
+> >>>> -		}
+> >>
+> >> If acpi_memory_get_device() doesn't fail, it means that the device
+> >> has been managed by this driver, so I think we can do this cleanup.
+> >>
+> >> Thanks
+> >> Wen Congyang
+> >>
+> > 
+> > Thanks! any comments from Huawei side, Jiang?
+> Hi Jinsong,
 > 
-> Exceptional cases that want to force-scan anon or file pages configure
-> the numerators and denominator such that one list is preferred, which
-> is not necessarily the most obvious way:
+> We think it's ok.
 > 
->     fraction[0] = 1;
->     fraction[1] = 0;
->     denominator = 1;
->     goto out;
-> 
-> Make this easier by making the force-scan cases explicit and use the
-> fractionals only in case they are calculated from reclaim history.
-> 
-> And bring the variable declarations/definitions in order.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> acpi_memory_device_notify
+> 	acpi_memory_get_device
+> 		acpi_memory_device_add
+> 			acpi_memory_get_device_resources
+> 			acpi_memory_enable_device
+> 				acpi_memory_get_device_resources（redundant）
+> 	acpi_memory_check_device（redundant）
+> 	acpi_memory_enable_device（redundant）
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+OK, thanks.
 
-The if at the end looks like it should have been a switch maybe?
+I'll queue it up for submission as a fix later in the cycle.
 
-switch(scan_balance) {
-case SCAN_EQUAL:
-	/* Scan relative to size */
-	break;
-case SCAN_FRACT:
-	/* Scan proportional to swappiness */
-	scan = div64_u64(scan * fraction[file], denominator);
-case SCAN_FILE:
-case SCAN_ANON:
-	/* Scan only file or only anon LRU */
-	if ((scan_balance == SCAN_FILE) != file)
-		scan = 0;
-	break;
-default:
-	/* Look ma, no brain */
-	BUG();
-}
+Thanks,
+Rafael
+
 
 -- 
-Mel Gorman
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
