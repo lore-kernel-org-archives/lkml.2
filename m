@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab2LMBne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 20:43:34 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42281 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155Ab2LMBnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 20:43:33 -0500
-MIME-Version: 1.0
-Date: Wed, 12 Dec 2012 20:43:32 -0500
-Message-ID: <CAKPZWXc55MWN3ajpvf0vLXP9KebFo17bGAmD8X=mavxyWJui1w@mail.gmail.com>
-Subject: [PATCH] USB: adds support for Novatek wireless mouse to usbhid
-From: Benoit Touchette <draekko.dev@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, trivial@kernel.org, greg@kroah.com,
-        marcobiscaro2112@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755443Ab2LMBnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 20:43:53 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36577 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755076Ab2LMBnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 20:43:50 -0500
+Message-ID: <1355363029.2164.14.camel@joe-AO722>
+Subject: [TRIVIAL PATCH V2 12/26] s390: Convert print_symbol to %pSR
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 12 Dec 2012 17:43:49 -0800
+In-Reply-To: <cover.1355335227.git.joe@perches.com>
+References: <cover.1355335227.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the Novatek wireless mouse (device id
-0603:1602) to usbhid and fixes bug
-https://bugzilla.kernel.org/show_bug.cgi?id=47031
+Use the new vsprintf extension to avoid any possible
+message interleaving.
 
-Reported-by: Benoit Touchette <draekko.dev@gmail.com>
-Signed-off-by: Benoit Touchette <draekko.dev@gmail.com>
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
 
---- linux-3.6.10/drivers/hid/hid-ids.h.orig    2012-12-10
-14:13:27.000000000 -0500
-+++ linux-3.6.10/drivers/hid/hid-ids.h    2012-12-12 20:06:41.000000000 -0500
-@@ -833,4 +833,7 @@
- #define USB_VENDOR_ID_PRIMAX    0x0461
- #define USB_DEVICE_ID_PRIMAX_KEYBOARD    0x4e05
+V2: Add missing parentheses, remove comma
 
-+#define USB_VENDOR_ID_NOVATEK    0x0603
-+#define USB_DEVICE_ID_NOVATEK_MOUSE    0x1602
-+
+ arch/s390/kernel/traps.c |   28 ++++++++++++++++------------
+ 1 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
+index 70ecfc5..f718e12 100644
+--- a/arch/s390/kernel/traps.c
++++ b/arch/s390/kernel/traps.c
+@@ -91,8 +91,9 @@ __show_trace(unsigned long sp, unsigned long low, unsigned long high)
+ 		if (sp < low || sp > high - sizeof(*sf))
+ 			return sp;
+ 		sf = (struct stack_frame *) sp;
+-		printk("([<%016lx>] ", sf->gprs[8] & PSW_ADDR_INSN);
+-		print_symbol("%s)\n", sf->gprs[8] & PSW_ADDR_INSN);
++		printk("([<%016lx>] %pSR)\n",
++		       sf->gprs[8] & PSW_ADDR_INSN,
++		       (void *)(sf->gprs[8] & PSW_ADDR_INSN));
+ 		/* Follow the backchain. */
+ 		while (1) {
+ 			low = sp;
+@@ -102,16 +103,18 @@ __show_trace(unsigned long sp, unsigned long low, unsigned long high)
+ 			if (sp <= low || sp > high - sizeof(*sf))
+ 				return sp;
+ 			sf = (struct stack_frame *) sp;
+-			printk(" [<%016lx>] ", sf->gprs[8] & PSW_ADDR_INSN);
+-			print_symbol("%s\n", sf->gprs[8] & PSW_ADDR_INSN);
++			printk(" [<%016lx>] %pSR\n",
++			       sf->gprs[8] & PSW_ADDR_INSN,
++			       (void *)(sf->gprs[8] & PSW_ADDR_INSN));
+ 		}
+ 		/* Zero backchain detected, check for interrupt frame. */
+ 		sp = (unsigned long) (sf + 1);
+ 		if (sp <= low || sp > high - sizeof(*regs))
+ 			return sp;
+ 		regs = (struct pt_regs *) sp;
+-		printk(" [<%016lx>] ", regs->psw.addr & PSW_ADDR_INSN);
+-		print_symbol("%s\n", regs->psw.addr & PSW_ADDR_INSN);
++		printk(" [<%016lx>] %pSR\n",
++		       regs->psw.addr & PSW_ADDR_INSN,
++		       (void *)(regs->psw.addr & PSW_ADDR_INSN));
+ 		low = sp;
+ 		sp = regs->gprs[15];
+ 	}
+@@ -169,8 +172,9 @@ static void show_last_breaking_event(struct pt_regs *regs)
+ {
+ #ifdef CONFIG_64BIT
+ 	printk("Last Breaking-Event-Address:\n");
+-	printk(" [<%016lx>] ", regs->args[0] & PSW_ADDR_INSN);
+-	print_symbol("%s\n", regs->args[0] & PSW_ADDR_INSN);
++	printk(" [<%016lx>] %pSR\n",
++	       regs->args[0] & PSW_ADDR_INSN,
++	       (void *)(regs->args[0] & PSW_ADDR_INSN));
  #endif
---- linux-3.6.10/drivers/hid/usbhid/hid-quirks.c.orig    2012-12-10
-14:13:27.000000000 -0500
-+++ linux-3.6.10/drivers/hid/usbhid/hid-quirks.c    2012-12-12
-20:06:41.000000000 -0500
-@@ -98,6 +98,8 @@ static const struct hid_blacklist {
+ }
+ 
+@@ -201,10 +205,10 @@ void show_registers(struct pt_regs *regs)
+ 	char *mode;
+ 
+ 	mode = user_mode(regs) ? "User" : "Krnl";
+-	printk("%s PSW : %p %p",
+-	       mode, (void *) regs->psw.mask,
+-	       (void *) regs->psw.addr);
+-	print_symbol(" (%s)\n", regs->psw.addr & PSW_ADDR_INSN);
++	printk("%s PSW : %p %p (%pSR)\n",
++	       mode, (void *)regs->psw.mask,
++	       (void *)regs->psw.addr,
++	       (void *)(regs->psw.addr & PSW_ADDR_INSN));
+ 	printk("           R:%x T:%x IO:%x EX:%x Key:%x M:%x W:%x "
+ 	       "P:%x AS:%x CC:%x PM:%x", mask_bits(regs, PSW_MASK_PER),
+ 	       mask_bits(regs, PSW_MASK_DAT), mask_bits(regs, PSW_MASK_IO),
+-- 
+1.7.8.112.g3fd21
 
-     { USB_VENDOR_ID_PI_ENGINEERING,
-USB_DEVICE_ID_PI_ENGINEERING_VEC_USB_FOOTPEDAL,
-HID_QUIRK_HIDINPUT_FORCE },
 
-+    { USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE,
-HID_QUIRK_NO_INIT_REPORTS },
-+
-     { USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_MULTI_TOUCH,
-HID_QUIRK_MULTI_INPUT },
-     { USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS,
-HID_QUIRK_MULTI_INPUT },
-     { USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD,
-HID_QUIRK_NO_INIT_REPORTS },
