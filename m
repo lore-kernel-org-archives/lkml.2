@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab2LMONf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:13:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45007 "EHLO
+	id S933313Ab2LMONr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:13:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45023 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933220Ab2LMON2 (ORCPT
+	with ESMTP id S933291Ab2LMONl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:13:28 -0500
+	Thu, 13 Dec 2012 09:13:41 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Michal Schmidt <mschmidt@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 205/241] ipv6: send unsolicited neighbour advertisements to all-nodes
-Date: Thu, 13 Dec 2012 11:59:30 -0200
-Message-Id: <1355407206-17100-206-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 208/241] r8169: use unlimited DMA burst for TX
+Date: Thu, 13 Dec 2012 11:59:33 -0200
+Message-Id: <1355407206-17100-209-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,42 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit 60713a0ca7fd6651b951cc1b4dbd528d1fc0281b upstream.
+commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd upstream.
 
-As documented in RFC4861 (Neighbor Discovery for IP version 6) 7.2.6.,
-unsolicited neighbour advertisements should be sent to the all-nodes
-multicast address.
+The r8169 driver currently limits the DMA burst for TX to 1024 bytes. I have
+a box where this prevents the interface from using the gigabit line to its full
+potential. This patch solves the problem by setting TX_DMA_BURST to unlimited.
 
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+The box has an ASRock B75M motherboard with on-board RTL8168evl/8111evl
+(XID 0c900880). TSO is enabled.
+
+I used netperf (TCP_STREAM test) to measure the dependency of TX throughput
+on MTU. I did it for three different values of TX_DMA_BURST ('5'=512, '6'=1024,
+'7'=unlimited). This chart shows the results:
+http://michich.fedorapeople.org/r8169/r8169-effects-of-TX_DMA_BURST.png
+
+Interesting points:
+ - With the current DMA burst limit (1024):
+   - at the default MTU=1500 I get only 842 Mbit/s.
+   - when going from small MTU, the performance rises monotonically with
+     increasing MTU only up to a peak at MTU=1076 (908 MBit/s). Then there's
+     a sudden drop to 762 MBit/s from which the throughput rises monotonically
+     again with further MTU increases.
+ - With a smaller DMA burst limit (512):
+   - there's a similar peak at MTU=1076 and another one at MTU=564.
+ - With unlimited DMA burst:
+   - at the default MTU=1500 I get nice 940 Mbit/s.
+   - the throughput rises monotonically with increasing MTU with no strange
+     peaks.
+
+Notice that the peaks occur at MTU sizes that are multiples of the DMA burst
+limit plus 52. Why 52? Because:
+  20 (IP header) + 20 (TCP header) + 12 (TCP options) = 52
+
+The Realtek-provided r8168 driver (v8.032.00) uses unlimited TX DMA burst too,
+except for CFG_METHOD_1 where the TX DMA burst is set to 512 bytes.
+CFG_METHOD_1 appears to be the oldest MAC version of "RTL8168B/8111B",
+i.e. RTL_GIGA_MAC_VER_11 in r8169. Not sure if this MAC version really needs
+the smaller burst limit, or if any other versions have similar requirements.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv6/ndisc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-index 54f62d3..35bfebc 100644
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -580,7 +580,7 @@ static void ndisc_send_unsol_na(struct net_device *dev)
- {
- 	struct inet6_dev *idev;
- 	struct inet6_ifaddr *ifa;
--	struct in6_addr mcaddr;
-+	struct in6_addr mcaddr = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 575b79c..0e09bb8 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -75,7 +75,7 @@
+ static const int multicast_filter_limit = 32;
  
- 	idev = in6_dev_get(dev);
- 	if (!idev)
-@@ -588,7 +588,6 @@ static void ndisc_send_unsol_na(struct net_device *dev)
+ #define MAX_READ_REQUEST_SHIFT	12
+-#define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
++#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
+ #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
  
- 	read_lock_bh(&idev->lock);
- 	list_for_each_entry(ifa, &idev->addr_list, if_list) {
--		addrconf_addr_solict_mult(&ifa->addr, &mcaddr);
- 		ndisc_send_na(dev, NULL, &mcaddr, &ifa->addr,
- 			      /*router=*/ !!idev->cnf.forwarding,
- 			      /*solicited=*/ false, /*override=*/ true,
 -- 
 1.7.9.5
 
