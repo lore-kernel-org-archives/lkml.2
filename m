@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab2LMLYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 06:24:09 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:9815 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab2LMLYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 06:24:07 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-cc-50c9bad53b18
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linus.walleij@linaro.org, kgene.kim@samsung.com, t.figa@samsung.com,
-        patches@linaro.org
-Subject: [PATCH 3/3] arm: exynos: skip wakeup interrupt registration for
- exynos5250 if pinctrl is enabled
-Date: Thu, 13 Dec 2012 17:24:04 +0530
-Message-id: <1355399644-29417-4-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-In-reply-to: <1355399644-29417-1-git-send-email-thomas.abraham@linaro.org>
-References: <1355399644-29417-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t9jAd2ru04GGHRtM7e4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr4fG0lW8Fdtoq5/30aGG+xdjFyckgImEis3r6PDcIW
-	k7hwbz2YLSSwiFHi7yc1CLuNSaJnaRGIzSZgIPFo4Tt2EFtEQEFic+8zoDlcHMwCKxglTnR9
-	BUsIC2RLvDk3l7GLkYODRUBV4ufqbBCTV8BT4sSyZIhVShIbeo8ygdicAl4Sbcu7WCBWeUoc
-	+vSJbQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwV5/Jr2DcVWDxSFGAQ5GJR7e
-	wvCTAUKsiWXFlbmHGCU4mJVEeP2XA4V4UxIrq1KL8uOLSnNSiw8xSnOwKInzNnukBAgJpCeW
-	pGanphakFsFkmTg4pRoYV/W377SZuee3qM0x57JrX/aWsrSpB33OE3BYp1CmtEzy7Z4TZ24y
-	ORfHyBQ5FkpY+rR5ZL8MYRfQ0gycbr6h/n/a4mT2F6cWp9THXU68+H7BXp+k7POryzQXSD19
-	mPudxatW62axF9/l1Rpv3xcYVi3PLlXSuzLp9Y53n0UX9B85IX3dSXaWEktxRqKhFnNRcSIA
-	xZwhVvYBAAA=
+	id S1755225Ab2LML2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 06:28:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50039 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753436Ab2LML2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 06:28:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,273,1355126400"; 
+   d="asc'?scan'208";a="233387522"
+Message-ID: <1355398120.3400.46.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2 07/10] mtd: nand/gpio: use io{read,write}*_rep
+ accessors
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        benh@kernel.crashing.org, arnd@arndb.de, james.hogan@imgtec.com,
+        Matthew Leach <matthew@mattleach.net>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Date: Thu, 13 Dec 2012 13:28:40 +0200
+In-Reply-To: <1355166762-15133-8-git-send-email-will.deacon@arm.com>
+References: <1355166762-15133-1-git-send-email-will.deacon@arm.com>
+	 <1355166762-15133-8-git-send-email-will.deacon@arm.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-LSJehB3qcSwBLeZbc8kf"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Skip the wakeup interrupt registration for Exynos5250 if pinctrl support
-is enabled for Exynos5250.
 
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
----
- arch/arm/mach-exynos/common.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+--=-LSJehB3qcSwBLeZbc8kf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 73b940f..7ad5011 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -1019,6 +1019,7 @@ static int __init exynos_init_irq_eint(void)
- 	static const struct of_device_id exynos_pinctrl_ids[] = {
- 		{ .compatible = "samsung,pinctrl-exynos4210", },
- 		{ .compatible = "samsung,pinctrl-exynos4x12", },
-+		{ .compatible = "samsung,pinctrl-exynos5250", },
- 	};
- 	struct device_node *pctrl_np, *wkup_np;
- 	const char *wkup_compat = "samsung,exynos4210-wakeup-eint";
--- 
-1.6.6.rc2
+On Mon, 2012-12-10 at 19:12 +0000, Will Deacon wrote:
+> From: Matthew Leach <matthew@mattleach.net>
+>=20
+> The {read,write}s{b,w,l} operations are not defined by all
+> architectures and are being removed from the asm-generic/io.h
+> interface.
+>=20
+> This patch replaces the usage of these string functions in the mtd
+> gpio accessors with io{read,write}{8,16,32}_rep calls instead.
+
+Pushed this one to l2-mtd.git, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-LSJehB3qcSwBLeZbc8kf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQybvpAAoJECmIfjd9wqK0vtcQAKliGYZyOYPGvbM1we/D6O44
+hq2RBr01Aa7/3R/NmqSxkMmWEeET0zP88/FMIKVS/dEx1xF2ZYMSJPuMhMjchWzV
+xkChUg1nbkr5Nh5WTCSjVwk4LYcichcqifsgTsDsLGPuNqJqTmiZtUCnPoAMfn6Z
+AT2gzcJUMWglkB1YbaznEShBlsq575GBKKEfjp/jqwyO3uneOdVtuOu+L5wtL8Of
+XCXsaYdE0f0+hQft3m5fbTv9MRtRONKHKCmVR8Cai1FZ53j0fRQZi0Z2K31Gdrko
+/jaJKiVcEpiBS8WCzkDbhcsbeSIDaS7t7FeGCdKfwp5X21aGS09c74tURrz1wbyG
+bzEu2HEpP9sMxS2gMeKwpSDjdBnlLQOjw++1a7KtiGGDkhA+GdpD8bOG9/x0ynm9
+HsutjqmkW+JapFVqlueHqEVNyRuen2ig34MFNIVjaKnMnDY1bk9pI/9VgqWRQ4N1
+zZDAMUvPH+JyJz7JDdMW8mmYnoJkKCPh2DZE1VxHzU7BLdmJZOG164vvhpGLnVee
+KRBpX2d5M1vLAWQ1IjfqU74c5BJCJ0b/Xj7Rhl89jBkPdjYhEYzM2MHZsPmSm6ai
+D9gcm5CmBve6cf/0/iKff44089r1EtPJycc27sLY/iu43+IwMqtmMG7txV7b5Fs0
+EGyxq227AKhkU02Iiaj6
+=SDm3
+-----END PGP SIGNATURE-----
+
+--=-LSJehB3qcSwBLeZbc8kf--
 
