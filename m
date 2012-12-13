@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab2LMOoo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:44:44 -0500
-Received: from mx1.netapp.com ([216.240.18.38]:44005 "EHLO mx1.netapp.com"
+	id S932649Ab2LMOo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:44:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58710 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932535Ab2LMOoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:44:18 -0500
-X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Dec 2012 09:44:18 EST
-X-IronPort-AV: E=Sophos;i="4.84,273,1355126400"; 
-   d="scan'208";a="230595949"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "ycnian@gmail.com" <ycnian@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH] nfs: Don't return referenced delegations
-Thread-Topic: [PATCH] nfs: Don't return referenced delegations
-Thread-Index: AQHN2P25HGqNgJtDPUKWDrT34w34JZgXUiWA
-Date: Thu, 13 Dec 2012 14:34:53 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91192A73F@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1355380636-10915-1-git-send-email-ycnian@gmail.com>
-In-Reply-To: <1355380636-10915-1-git-send-email-ycnian@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.117]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <BF5A70267A97E044A33975714F3B4E79@tahoe.netapp.com>
+	id S932486Ab2LMOom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:44:42 -0500
+Date: Thu, 13 Dec 2012 14:44:38 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
+Message-ID: <20121213144438.GC9887@suse.de>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
+ <50C8FCE0.1060408@redhat.com>
+ <20121212222844.GA10257@cmpxchg.org>
+ <20121213100704.GV1009@suse.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121213100704.GV1009@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBDEilD2026771
 
-On Thu, 2012-12-13 at 14:37 +0800, ycnian@gmail.com wrote:
-> From: Yanchuan Nian <ycnian@gmail.com>
+On Thu, Dec 13, 2012 at 10:07:04AM +0000, Mel Gorman wrote:
+> On Wed, Dec 12, 2012 at 05:28:44PM -0500, Johannes Weiner wrote:
+> > On Wed, Dec 12, 2012 at 04:53:36PM -0500, Rik van Riel wrote:
+> > > On 12/12/2012 04:43 PM, Johannes Weiner wrote:
+> > > >dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
 > 
-> The client returns unreferenced delegations in state management. It scans all
-> delegations and tests the NFS_DELEGATION_REFERENCED flag. if this flag is not
-> set, NFS_DELEGATION_RETURN will be set and the delegation will be returned. 
-> But unfortunately NFS_DELEGATION_REFERENCED is cleared after the testing, so 
-> delegations which are still being used will be returned in the next state
-> management.
+> You are using some internal tree for that commit. Now that it's upstream
+> it is commit e9868505987a03a26a3979f27b82911ccc003752.
 > 
-> Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
-> ---
->  fs/nfs/delegation.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > >a point of not going for anonymous memory while there is still enough
+> > > >inactive cache around.
+> > > >
+> > > >The check was added only for global reclaim, but it is just as useful
+> > > >for memory cgroup reclaim.
+> > > >
+> > > >Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > >---
+> > > >  mm/vmscan.c | 19 ++++++++++---------
+> > > >  1 file changed, 10 insertions(+), 9 deletions(-)
+> > > >
+> > > <SNIP>
+> > > 
+> > > I believe the if() block should be moved to AFTER
+> > > the check where we make sure we actually have enough
+> > > file pages.
+> > 
+> > You are absolutely right, this makes more sense.  Although I'd figure
+> > the impact would be small because if there actually is that little
+> > file cache, it won't be there for long with force-file scanning... :-)
+> > 
 > 
-> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-> index 81c5eec..485e8c0 100644
-> --- a/fs/nfs/delegation.c
-> +++ b/fs/nfs/delegation.c
-> @@ -506,7 +506,7 @@ static void nfs_mark_return_unreferenced_delegations(struct nfs_server *server)
->  	struct nfs_delegation *delegation;
->  
->  	list_for_each_entry_rcu(delegation, &server->delegations, super_list) {
-> -		if (test_and_clear_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
-> +		if (test_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
->  			continue;
->  		nfs_mark_return_delegation(server, delegation);
->  	}
+> Does it actually make sense? Lets take the global reclaim case.
+> 
+> <stupidity snipped>
 
-The clearing of the bit here is 100% intentional. This is a variant on
-basic mark-and-sweep garbage collection where if the bit hasn't been set
-again the next time we scan, then we assume the delegation isn't being
-used.
+I made a stupid mistake that Michal Hocko pointed out to me. The goto
+out means that it should be fine either way.
+
+> I'm not being super thorough because I'm not quite sure this is the right
+> patch if the motivation is for memcg to use the same logic. Instead of
+> moving this if, why do you not estimate "free" for the memcg based on the
+> hard limit and current usage? 
+> 
+
+I'm still curious about this part.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Mel Gorman
+SUSE Labs
