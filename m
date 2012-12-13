@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2LMDwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:52:15 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:51801 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab2LMDwO (ORCPT
+	id S1754496Ab2LMEFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 23:05:20 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:20972 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab2LMEFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:52:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <50C94ECD.6020504@gmail.com>
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
- <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
- <50C94ECD.6020504@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Dec 2012 19:51:52 -0800
-X-Google-Sender-Auth: G_7IFA9IIr-J_lO9S6q3Chy1rQ4
-Message-ID: <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com>
-Subject: Re: [GIT PULL] perf changes for v3.8
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Dec 2012 23:05:17 -0500
+Message-ID: <1355370975.18964.83.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 01/11] Add hotplug.h for hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: rjw@sisk.pl, lenb@kernel.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Wed, 12 Dec 2012 20:56:15 -0700
+In-Reply-To: <20121212235358.GA22764@kroah.com>
+References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
+	 <1355354243-18657-2-git-send-email-toshi.kani@hp.com>
+	 <20121212235358.GA22764@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 7:43 PM, David Ahern <dsahern@gmail.com> wrote:
->
-> you know what's worse? All of your VMs blowing up because anyone runs perf
-> with precise attribute. Virtualization and and performance monitoring
-> collide. From the log message for commit 1342798.
->
-> "Intel PEBS in VT-x context uses the DS address as a guest linear address,
-> even though its programmed by the host as a host linear address. This either
-> results in guest memory corruption and or the hardware faulting and
-> 'crashing' the virtual machine.  Therefore we have to disable PEBS on VT-x
-> enter and re-enable on VT-x exit, enforcing a strict exclude_guest."
+On Wed, 2012-12-12 at 15:53 -0800, Greg KH wrote:
+> On Wed, Dec 12, 2012 at 04:17:13PM -0700, Toshi Kani wrote:
+> > Added include/linux/hotplug.h, which defines the hotplug framework
+> > interfaces used by the framework itself and handlers.
+> 
+> No, please name this properly, _everything_ is hotpluggable these days,
+> and unless you want the whole kernel and all busses and devices to use
+> this, then it needs to be named much better than this, sorry.
+> 
+> We went through this same issue over 10 years ago, please, let's learn
+> from our mistakes and not do it again.
 
-Right.
+Agreed.  I will come up with a better name to avoid the confusion.
 
-SO WHY DON'T YOU JUST DO THAT THEN?
+> > +/* Add Validate order values */
+> > +#define HP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
+> 
+> This is really ACPI specific, so why not just put it under include/acpi/
+> instead?
 
-Disable PEBS on Vt-x enter and re-enable it on exit. End of story.
-Exactly like you say.
+Yes, this needs to be revisited.  For now, it is defined in the same
+file since it helps to manage the ordering when all values are defined
+in a same place.  We may need the ordering values defined in each arch
+when this framework is used by multiple architectures. 
 
-But don't in the process screw up people WHO DON'T EVEN DO VIRTUALIZATION!
+> And note, PPC and other arches probably do this already (s390?) so to
+> exclude them from the beginning would not be a good idea.
 
-So please, just remove that idiotic "if (!event->attr.exclude_guest)"
-test. It's wrong. It cannot possibly do the right thing.  It is
-totally misdesigned, exactly because you don't even know beforehand if
-somebody uses virtualization or not.
+Thanks for the suggestion.  I will check other architectures and bring
+them to the discussions. 
 
-Now, if the feature had been done the sane way around, and you'd have
-an explicit flag that says "force this even on entry to virtualized
-guests", then you could have said "Dave, I can't do that combination
-of precise and virtualized guests". At that point you have - at perf
-record time - a valid reason to say EOPNOTSUPP.
+-Toshi
 
-But doing it this way was wrong. Switch that "exclude_guest" attribute
-around, and admit that "H" was bogus, and that the right thing to do
-was to add a "V" flag that sets the "force_guest" flag instead.
 
-Problem solved, without screwing people who have no reason to ever care.
-
-               Linus
