@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2LMDZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:25:24 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33524 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab2LMDZX (ORCPT
+	id S1755418Ab2LMDdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:33:18 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:58443 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754261Ab2LMDdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:25:23 -0500
-Message-ID: <50C94A9C.2050900@gmail.com>
-Date: Wed, 12 Dec 2012 20:25:16 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 12 Dec 2012 22:33:16 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AooLABlLyVB5LB3g/2dsb2JhbABFhU+zGYYHF3OCHgEBBTocIxAIAw4KLhQlAyETiBC+KRSMN4RDA5YIiU6Ge4MH
+Date: Thu, 13 Dec 2012 14:33:11 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Steve French <sfrench@samba.org>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com
+Subject: Re: [PATCH 4/4] fs: remove obsolete simple_strto<foo>
+Message-ID: <20121213033311.GG16353@dastard>
+References: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.8
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
-In-Reply-To: <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/12 7:53 PM, Linus Torvalds wrote:
-> Hmm. This may be entirely unrelated to this particular pull request, but
->
->     perf record -e cycles:pp
->
-> no longer works on my westmere machine (Operation not supported). It
-> used to work, but I haven't tried to bisect it, since I hope somebody
-> will just go "oh, I know what's up".
+On Fri, Dec 07, 2012 at 05:25:19PM +0530, Abhijit Pawar wrote:
+> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
 
-One last "I may know what's up" question. I wonder if you are tripping 
-on this:
+The XFS changes look fine. Consider those:
 
-     if (event->attr.precise_ip) {
-         int precise = 0;
+Acked-by: Dave Chinner <dchinner@redhat.com>
 
-         if (!event->attr.exclude_guest)
-             return -EOPNOTSUPP;
-
-Are you running an older perf binary on the 3.8 kernel?
-
-Does this work: perf record -e cycles:ppH  ...
-
-David
+-- 
+Dave Chinner
+david@fromorbit.com
