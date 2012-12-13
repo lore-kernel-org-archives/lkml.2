@@ -1,137 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab2LMA3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:29:46 -0500
-Received: from nm26.access.bullet.mail.mud.yahoo.com ([66.94.237.91]:39984
-	"EHLO nm26.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754793Ab2LMA3p (ORCPT
+	id S1755464Ab2LMA34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:29:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19053 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793Ab2LMA3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:29:45 -0500
-X-Yahoo-Newman-Id: 411790.39423.bm@smtp108.sbc.mail.mud.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: BM3s8xYVM1mknpATImoZna4O9weTyQmlhpWxLAx7Fq4Gkj7
- RsTANNQBVeYVreaBkpXc0_mWbifvwz1gCQxHJlsgBUJyJm0ampWV8CY0voRv
- 47FMTvidBIcc.6jpfL25gthSyNGsh_KJ60PGIBHcDR3cB3ISXM126DIfgSth
- vSAjrsEvPSzcM5wiAw6qc36auLGDDf.U42H7n7.Tphm.6bA289KzY2pE3ZRR
- D8BNo__3GghYk2t7AU6cQQghjazini0SH6nuRdNPWu4dyM49J__l7da2amx.
- 8mMmfypis8ISo5O0ZRZv.CKY1sy8KcMeabLDg2y.SpVKM3sAVy1IAiJ2nApi
- GtBLV3Nbvu_RiAGQqv0vnZiIEq0nAr81arhyPVhuaj.9lbN78UBywB4Tze0s
- AwbBtDkzEqqFqIseCO0YeVt5u00KQo1hvy85sWbxtuEqSOoJSZ8Gp3bhYoqo
- 8f_v6a6BRvjVFVKcjfc2gp7jn0NOPnhI3u4XTUUDoTebD6g940DR286pkZX5
- EkB4D
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <50C9217B.1010801@att.net>
-Date: Wed, 12 Dec 2012 18:29:47 -0600
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121128 Thunderbird/10.0.11
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Jan Beulich <JBeulich@suse.com>, david.daney@cavium.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] utilize _Static_assert() for BUILD_BUG_ON() when the
- compiler supports it
-References: <5093EB1C02000078000A61D7@nat28.tlf.novell.com> <20121105142944.7b16e6a4.akpm@linux-foundation.org> <877gpz5wi4.fsf@rustcorp.com.au> <5098E50402000078000A698C@nat28.tlf.novell.com> <87ehk6443a.fsf@rustcorp.com.au> <509A245202000078000A6E8F@nat28.tlf.novell.com> <87zk2t2dzp.fsf@rustcorp.com.au>
-In-Reply-To: <87zk2t2dzp.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 12 Dec 2012 19:29:54 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6rjoWDsBMgUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=TkPsaq_4P5wA:10 a=VwQbUJbxAAAA:8 a=AdX03QhhDBMRJ6uPRCAA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355358592.17101.360.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/5] [GIT PULL] ktest: fixes and updated for new boot
+ loaders
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Dec 2012 19:29:52 -0500
+In-Reply-To: <20121213104736.bd2094f856d459edae2d9529@canb.auug.org.au>
+References: <20121212221437.245229327@goodmis.org>
+	 <20121213104736.bd2094f856d459edae2d9529@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wow, it's really easy to miss parallel development on the same issue.  
-Sorry for my late response to this thread.  I started another thread 
-addressing these issues (as well as a few others) back in September 
-(https://lkml.org/lkml/2012/9/28/1136).  I've finally gotten ACKs from 
-maintainers with v6 of the patches (here 
-https://lkml.org/lkml/2012/11/20/621) and I'm just waiting for 3.8-rc1 
-to re-submit them.  I actually submitted these patches back in June as 
-part of a larger patch set, but broke it apart in September (I had way 
-to many changes for one patch set)
+On Thu, 2012-12-13 at 10:47 +1100, Stephen Rothwell wrote:
+> Hi Steve,
+> 
+> On Wed, 12 Dec 2012 17:14:37 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > Please pull the latest ktest-v3.8 tree, which can be found at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+> > ktest-v3.8
+> > 
+> > Head SHA1: a7c85ac16cf29aa0fec5fef2fe26bb09a9e3ee19
+> > 
+> > 
+> > Steven Rostedt (5):
+> >       ktest: Add support for grub2
+> >       ktest: Sync before reboot
+> >       ktest: Add native support for syslinux boot loader
+> >       ktest: Fix breakage from change of oldnoconfig to olddefconfig
+> >       ktest: Test if target machine is up before install
+> 
+> Just a bit disappointed that none of this made ever it into your for-next
+> branch (and hence linux-next) ...
+> 
+
+Yeah, I know. That's because most of it stays in a quilt queue and I
+commit it to git when the merge window opens. I use ktest every day, and
+hammer it more than anyone else. I usually shake out all the bugs before
+I post.
+
+As this sits in the tools/testing/ktest/ directory and is just a single
+perl script, it doesn't interact with other parts of the kernel tree.
+I've been trying to remember to add it to linux-next, but sometimes I
+forget :-(
+
+My work flow with ktest is basically this:
+
+1) Something about ktest bothers me
+
+2) I write up a new feature
+
+3) Test it a bit, and then make it into a quilt patch
+
+4) After using it for a while, I'll do the git commit and push
+   it off to linux-next
+
+5) Merge window opens, I look at both my commits and my quilt queue
+   and commit any missing patches that I feel is good enough
+
+6) Push the entire thing off to Linus
 
 
-On 11/07/2012 05:24 PM, Rusty Russell wrote:
-> Jan Beulich<JBeulich@suse.com>  writes:
->>>>> On 07.11.12 at 02:03, Rusty Russell<rusty@rustcorp.com.au>  wrote:
->>>>> __COUNTER__:
->>>>>          Used to make a unique id.  Let's define __UNIQUE_ID(prefix) for
->>>>>          this (using __COUNTER__ or __LINE__). 4.3 and above.
->>>> The fallback to __LINE__ is not necessarily correct in all cases,
->>>> namely when deep macro expansions result in two instances used
->>>> on the same source line, or a use in a header matches line number
->>>> wise a second use in another header or the source file.
->>>>
->>>> I considered to option of a fallback (and hence an abstraction in
->>>> compiler*.h) when doing this, but I didn't want to do something
->>>> that would break in perhaps vary obscure ways.
->>> I was thinking of my own code in moduleparam.h, but elfnote.h does the
->>> same trick.  In both cases, it'll simply fail compile if we fallback and
->>> __LINE__ isn't unique.
->>>
->>> So again, I don't think we're going to see many uses, and no existing
->>> use will bite us.
->> That's exactly the point - we can't know (because there's no
->> guarantee there aren't - or won't be by the time it might get
->> merged - any two conflicting uses of BUILD_BUG_ON...().
-> Conflicting BUILD_BUG_ON() is completely harmless: two identical
-> undefines are OK.  The other cases cause a compile error, and one which
-> is trivial to fix, and I'm happy to fix it if it does.
->
-> I've never seen a construction in the kernel which would silently break
-> if __UNIQUE_ID() isn't actually unique.  That makes sense, because you
-> if the symbol wasn't exposed you wouldn't need a __UNIQUE_ID.  And if
-> it's exposed, the compiler will give an error on multiple definition.
->
-> (Obviously you can't have non-static __UNIQUE_ID() because it's only
-> ever unique across a single gcc compile).
-I was considering __COUNTER__, but in the end, others felt that the 
-inconsistency could cause problems later.  However, with the 
-__compiletime_error function attribute, the result will only be that the 
-actual error message emitted will be incorrect, since the first error 
-attribute assigned to the extern function will be used.  Thus, compiling 
-this code:
+ktest is very low on my priority list of things to maintain, and I
+sometimes forget step 4. But I don't worry too much because it may miss
+out on some testing, but if it breaks, it will only break ktest. It
+shouldn't break anything else in the kernel.
 
-{extern void func(void) __attribute__((error("hello")));}
-{extern void func(void) __attribute__((error("goodbye"))); func();}
+And actually, I admit the last 3 patches of the series was written in
+the last week and the other 2 a couple of weeks before that, as I was
+adding a new machine to my test suite and added a Fedora 17 image for
+the first time (first one without grub1 and with systemd), that it
+caused me a lot of pain with my automated testing. I struggled with
+grub2, got it mostly working, but then decided recently to just use
+syslinux. I also just noticed the breakage that was there from the last
+release, where the make oldnoconfig was changed. Hmm, maybe I should
+look at linux-next more often, to see if anyone is touching ktest
+without telling me.
 
-would result in an error with the message "hello".
+I'll try to be better next time :-)  (no pun intended)
 
->>>> #define __build_bug_on_failed(n) __build_bug_on_##n##_failed
->>>> #define _BUILD_BUG_ON(n, condition)				\
->>>> 	do {							\
->>>> 		extern void __compiletime_error(#condition)	\
->>>> 		__build_bug_on_failed(n)(void);			\
->>>> 		if (condition) __build_bug_on_failed(n)();	\
->>>> 	} while(0)
->> Actually, I just noticed that __linktime_error() really is a compile
->> time error when gcc supports __attribute__(__error__()), so
->> probably using that one instead of __compiletime_error() here
->> would be the cleaner approach.
->>
->> The one thing puzzling me here is that __linktime_error() gets
->> defined even if __CHECKER__ isn't defined, while
->> __compiletime_error() doesn't - an apparent inconsistency
->> between 746a2a838deec3ef86ef6b7c3edd4207b9a351aa
->> (Kosaki?) and 1399ff86f2a2bbacbbe68fa00c5f8c752b344723
->> (David?), with apparently the latter being too lax, as it only
->> introduced a use inside a !__CHECKER__ section.
-> Yes, __linktime_error() makes no sense, since it's identical to
-> __compiletime_error().  It's also a terrible name.  Let's kill it.
-Definitely.  My patch set kills that sucker too.
->
-> I hadn't noticed BUILD_BUG.  We should fix that as discussed here, and
-> simply make BUILD_BUG_ON() call it.
->
->>> Subject: __UNIQUE_ID()
->>>
->>> Jan Beulich points out __COUNTER__ (gcc 4.3 and above), so let's use
->>> that to create unique ids.  This is better than __LINE__ which we use
->>> today, so provide a wrapper.
->>>
->>> Signed-off-by: Rusty Russell<rusty@rustcorp.com.au>
->> Acked-by: Jan Beulich<jbeulich@suse.com>
-> Thanks,
-> Rusty.
-https://lkml.org/lkml/2012/9/28/1136
+-- Steve
+
+
