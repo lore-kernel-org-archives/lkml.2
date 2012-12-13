@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab2LMOGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:06:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44415 "EHLO
+	id S932351Ab2LMOG4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:06:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44434 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932275Ab2LMOGg (ORCPT
+	with ESMTP id S932254Ab2LMOGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:06:36 -0500
+	Thu, 13 Dec 2012 09:06:52 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 095/241] ALSA: usb-audio: Fix mutex deadlock at disconnection
-Date: Thu, 13 Dec 2012 11:57:40 -0200
-Message-Id: <1355407206-17100-96-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 099/241] memcg: oom: fix totalpages calculation for memory.swappiness==0
+Date: Thu, 13 Dec 2012 11:57:44 -0200
+Message-Id: <1355407206-17100-100-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,68 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 10e44239f67d0b6fb74006e61a7e883b8075247a upstream.
+commit 9a5a8f19b43430752067ecaee62fc59e11e88fa6 upstream.
 
-The recent change for USB-audio disconnection race fixes introduced a
-mutex deadlock again.  There is a circular dependency between
-chip->shutdown_rwsem and pcm->open_mutex, depicted like below, when a
-device is opened during the disconnection operation:
+oom_badness() takes a totalpages argument which says how many pages are
+available and it uses it as a base for the score calculation.  The value
+is calculated by mem_cgroup_get_limit which considers both limit and
+total_swap_pages (resp.  memsw portion of it).
 
-A. snd_usb_audio_disconnect() ->
-     card.c::register_mutex ->
-       chip->shutdown_rwsem (write) ->
-         snd_card_disconnect() ->
-           pcm.c::register_mutex ->
-             pcm->open_mutex
+This is usually correct but since fe35004fbf9e ("mm: avoid swapping out
+with swappiness==0") we do not swap when swappiness is 0 which means
+that we cannot really use up all the totalpages pages.  This in turn
+confuses oom score calculation if the memcg limit is much smaller than
+the available swap because the used memory (capped by the limit) is
+negligible comparing to totalpages so the resulting score is too small
+if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
+A wrong process might be selected as result.
 
-B. snd_pcm_open() ->
-     pcm->open_mutex ->
-       snd_usb_pcm_open() ->
-         chip->shutdown_rwsem (read)
+The problem can be worked around by checking mem_cgroup_swappiness==0
+and not considering swap at all in such a case.
 
-Since the chip->shutdown_rwsem protection in the case A is required
-only for turning on the chip->shutdown flag and it doesn't have to be
-taken for the whole operation, we can reduce its window in
-snd_usb_audio_disconnect().
-
-Reported-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ herton: unfuzz patch ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/usb/card.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ Documentation/cgroups/memory.txt |    4 ++++
+ mm/memcontrol.c                  |   21 +++++++++++++++------
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index 486b4a6..b3f5ad4 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -559,9 +559,11 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- 		return;
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index dd88540..63838c2 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -464,6 +464,10 @@ Note:
+ 5.3 swappiness
  
- 	card = chip->card;
--	mutex_lock(&register_mutex);
- 	down_write(&chip->shutdown_rwsem);
- 	chip->shutdown = 1;
-+	up_write(&chip->shutdown_rwsem);
+ Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
++Please note that unlike the global swappiness, memcg knob set to 0
++really prevents from any swapping even if there is a swap storage
++available. This might lead to memcg OOM killer if there are no file
++pages to reclaim.
+ 
+ Following cgroups' swappiness can't be changed.
+ - root cgroup (uses /proc/sys/vm/swappiness).
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f72b5e5..3ddd346 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1457,17 +1457,26 @@ static int mem_cgroup_count_children(struct mem_cgroup *memcg)
+ u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+ {
+ 	u64 limit;
+-	u64 memsw;
+ 
+ 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-	limit += total_swap_pages << PAGE_SHIFT;
+ 
+-	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+ 	/*
+-	 * If memsw is finite and limits the amount of swap space available
+-	 * to this memcg, return that limit.
++	 * Do not consider swap space if we cannot swap due to swappiness
+ 	 */
+-	return min(limit, memsw);
++	if (mem_cgroup_swappiness(memcg)) {
++		u64 memsw;
 +
-+	mutex_lock(&register_mutex);
- 	chip->num_interfaces--;
- 	if (chip->num_interfaces <= 0) {
- 		snd_card_disconnect(card);
-@@ -582,11 +584,9 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- 			snd_usb_mixer_disconnect(p);
- 		}
- 		usb_chip[chip->index] = NULL;
--		up_write(&chip->shutdown_rwsem);
- 		mutex_unlock(&register_mutex);
- 		snd_card_free_when_closed(card);
- 	} else {
--		up_write(&chip->shutdown_rwsem);
- 		mutex_unlock(&register_mutex);
- 	}
++		limit += total_swap_pages << PAGE_SHIFT;
++		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
++
++		/*
++		 * If memsw is finite and limits the amount of swap space
++		 * available to this memcg, return that limit.
++		 */
++		limit = min(limit, memsw);
++	}
++
++	return limit;
  }
+ 
+ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
 -- 
 1.7.9.5
 
