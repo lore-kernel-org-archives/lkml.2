@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab2LMOR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:17:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45156 "EHLO
+	id S933511Ab2LMOS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:18:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45152 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933502Ab2LMOPH (ORCPT
+	with ESMTP id S933442Ab2LMOPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:15:07 -0500
+	Thu, 13 Dec 2012 09:15:05 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Calvin Walton <calvin.walton@kepstin.ca>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 232/241] i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
-Date: Thu, 13 Dec 2012 11:59:57 -0200
-Message-Id: <1355407206-17100-233-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 231/241] telephony: ijx: buffer overflow in ixj_write_cid()
+Date: Thu, 13 Dec 2012 11:59:56 -0200
+Message-Id: <1355407206-17100-232-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,47 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Calvin Walton <calvin.walton@kepstin.ca>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit a51d4ed01e5bb39d2cf36a12f9976ab08872c192 upstream.
+[Not needed in 3.8 or newer as this driver is removed there. - gregkh]
 
-This board is incorrectly detected as having an LVDS connector,
-resulting in the VGA output (the only available output on the board)
-showing the console only in the top-left 1024x768 pixels, and an extra
-LVDS connector appearing in X.
+We get this from user space and nothing has been done to ensure that
+these strings are NUL terminated.
 
-It's a desktop Mini-ITX board using an Atom D525 CPU with an NM10
-chipset.
-
-I've had this board for about a year, but this is the first time I
-noticed the issue because I've been running it headless for most of its
-life.
-
-Signed-off-by: Calvin Walton <calvin.walton@kepstin.ca>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/telephony/ixj.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 9393860..7af9258 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -785,6 +785,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Gigabyte GA-D525TUD",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
-+		},
-+	},
+diff --git a/drivers/staging/telephony/ixj.c b/drivers/staging/telephony/ixj.c
+index fd7757a..93ff7af 100644
+--- a/drivers/staging/telephony/ixj.c
++++ b/drivers/staging/telephony/ixj.c
+@@ -3190,12 +3190,12 @@ static void ixj_write_cid(IXJ *j)
  
- 	{ }	/* terminating entry */
- };
+ 	ixj_fsk_alloc(j);
+ 
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
+@@ -3340,12 +3340,12 @@ static void ixj_write_cidcw(IXJ *j)
+ 		ixj_pre_cid(j);
+ 	}
+ 	j->flags.cidcw_ack = 0;
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
 -- 
 1.7.9.5
 
