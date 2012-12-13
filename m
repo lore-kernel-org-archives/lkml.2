@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2LMGrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 01:47:31 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40946 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab2LMGra (ORCPT
+	id S1753207Ab2LMGrt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 01:47:49 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57038 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab2LMGrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 01:47:30 -0500
+	Thu, 13 Dec 2012 01:47:48 -0500
 From: ycnian@gmail.com
 To: Trond.Myklebust@netapp.com
 Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
         Yanchuan Nian <ycnian@gmail.com>
-Subject: [PATCH] nfs: Don't return referenced delegations
-Date: Thu, 13 Dec 2012 14:37:16 +0800
-Message-Id: <1355380636-10915-1-git-send-email-ycnian@gmail.com>
+Subject: [PATCH] nfs: Remove duplicate function declaration in internal.h
+Date: Thu, 13 Dec 2012 14:37:34 +0800
+Message-Id: <1355380654-10949-1-git-send-email-ycnian@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,31 +21,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yanchuan Nian <ycnian@gmail.com>
 
-The client returns unreferenced delegations in state management. It scans all
-delegations and tests the NFS_DELEGATION_REFERENCED flag. if this flag is not
-set, NFS_DELEGATION_RETURN will be set and the delegation will be returned. 
-But unfortunately NFS_DELEGATION_REFERENCED is cleared after the testing, so 
-delegations which are still being used will be returned in the next state
-management.
+Remove duplicate function declaration in internal.h
 
 Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
 ---
- fs/nfs/delegation.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/nfs/internal.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 81c5eec..485e8c0 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -506,7 +506,7 @@ static void nfs_mark_return_unreferenced_delegations(struct nfs_server *server)
- 	struct nfs_delegation *delegation;
- 
- 	list_for_each_entry_rcu(delegation, &server->delegations, super_list) {
--		if (test_and_clear_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
-+		if (test_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
- 			continue;
- 		nfs_mark_return_delegation(server, delegation);
- 	}
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index 59b133c..440674f 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -409,9 +409,6 @@ extern struct nfs_write_header *nfs_writehdr_alloc(void);
+ extern void nfs_writehdr_free(struct nfs_pgio_header *hdr);
+ extern int nfs_generic_flush(struct nfs_pageio_descriptor *desc,
+ 			     struct nfs_pgio_header *hdr);
+-extern void nfs_pageio_init_write(struct nfs_pageio_descriptor *pgio,
+-			struct inode *inode, int ioflags,
+-			const struct nfs_pgio_completion_ops *compl_ops);
+ extern void nfs_pageio_reset_write_mds(struct nfs_pageio_descriptor *pgio);
+ extern void nfs_writedata_release(struct nfs_write_data *wdata);
+ extern void nfs_commit_free(struct nfs_commit_data *p);
 -- 
 1.7.4.4
 
