@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab2LMObr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:31:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44809 "EHLO
+	id S933001Ab2LMOcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:32:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44800 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932976Ab2LMOLK (ORCPT
+	with ESMTP id S932941Ab2LMOLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:11:10 -0500
+	Thu, 13 Dec 2012 09:11:03 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
+Cc: Jiri Slaby <jslaby@suse.cz>, Grant Grundler <grundler@parisc-linux.org>,
+        Nobin Mathew <nobin.mathew@gmail.com>,
+        Robert Hancock <hancockr@shaw.ca>, Arnd Bergmann <arnd@arndb.de>,
+        David Altobelli <david.altobelli@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 168/241] sparc64: fix ptrace interaction with force_successful_syscall_return()
-Date: Thu, 13 Dec 2012 11:58:53 -0200
-Message-Id: <1355407206-17100-169-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 164/241] MISC: hpilo, remove pci_disable_device
+Date: Thu, 13 Dec 2012 11:58:49 -0200
+Message-Id: <1355407206-17100-165-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,85 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 55c2770e413e96871147b9406a9c41fe9bc5209c upstream.
+commit bcdee04ea7ae0406ae69094f6df1aacb66a69a0b upstream.
 
-we want syscall_trace_leave() called on exit from any syscall;
-skipping its call in case we'd done force_successful_syscall_return()
-is broken...
+pci_disable_device(pdev) used to be in pci remove function. But this
+PCI device has two functions with interrupt lines connected to a
+single pin. The other one is a USB host controller. So when we disable
+the PIN there e.g. by rmmod hpilo, the controller stops working. It is
+because the interrupt link is disabled in ACPI since it is not
+refcounted yet. See acpi_pci_link_free_irq called from
+acpi_pci_irq_disable.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+It is not the best solution whatsoever, but as a workaround until the
+ACPI irq link refcounting is sorted out this should fix the reported
+errors.
+
+References: https://lkml.org/lkml/2008/11/4/535
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Grant Grundler <grundler@parisc-linux.org>
+Cc: Nobin Mathew <nobin.mathew@gmail.com>
+Cc: Robert Hancock <hancockr@shaw.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: David Altobelli <david.altobelli@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/sparc/kernel/syscalls.S |   32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
+ drivers/misc/hpilo.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 1d7e274..7f5f65d 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -212,24 +212,20 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
--	/* Check if force_successful_syscall_return()
--	 * was invoked.
--	 */
--	ldub	[%g6 + TI_SYS_NOERROR], %l2
--	brnz,a,pn %l2, 80f
--	 stb	%g0, [%g6 + TI_SYS_NOERROR]
--
- 	cmp	%o0, -ERESTART_RESTARTBLOCK
- 	bgeu,pn	%xcc, 1f
--	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
--80:
-+	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
-+	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
-+
-+2:
-+	stb	%g0, [%g6 + TI_SYS_NOERROR]
- 	/* System call success, clear Carry condition code. */
- 	andn	%g3, %g2, %g3
-+3:
- 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
- 	bne,pn	%icc, linux_syscall_trace2
- 	 add	%l1, 0x4, %l2			! npc = npc+4
-@@ -238,20 +234,20 @@ ret_sys_call:
- 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- 
- 1:
-+	/* Check if force_successful_syscall_return()
-+	 * was invoked.
+diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+index fffc227..9c99680 100644
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -735,7 +735,14 @@ static void ilo_remove(struct pci_dev *pdev)
+ 	free_irq(pdev->irq, ilo_hw);
+ 	ilo_unmap_device(pdev, ilo_hw);
+ 	pci_release_regions(pdev);
+-	pci_disable_device(pdev);
++	/*
++	 * pci_disable_device(pdev) used to be here. But this PCI device has
++	 * two functions with interrupt lines connected to a single pin. The
++	 * other one is a USB host controller. So when we disable the PIN here
++	 * e.g. by rmmod hpilo, the controller stops working. It is because
++	 * the interrupt link is disabled in ACPI since it is not refcounted
++	 * yet. See acpi_pci_link_free_irq called from acpi_pci_irq_disable.
 +	 */
-+	ldub	[%g6 + TI_SYS_NOERROR], %l2
-+	brnz,pn %l2, 2b
-+	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	/* System call failure, set Carry condition code.
- 	 * Also, get abs(errno) to return to the process.
- 	 */
--	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
- 	sub	%g0, %o0, %o0
--	or	%g3, %g2, %g3
- 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
--	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
--	bne,pn	%icc, linux_syscall_trace2
--	 add	%l1, 0x4, %l2			! npc = npc+4
--	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
-+	ba,pt	%xcc, 3b
-+	 or	%g3, %g2, %g3
- 
--	b,pt	%xcc, rtrap
--	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- linux_syscall_trace2:
- 	call	syscall_trace_leave
- 	 add	%sp, PTREGS_OFF, %o0
+ 	kfree(ilo_hw);
+ 	ilo_hwdev[(minor / MAX_CCB)] = 0;
+ }
+@@ -820,7 +827,7 @@ unmap:
+ free_regions:
+ 	pci_release_regions(pdev);
+ disable:
+-	pci_disable_device(pdev);
++/*	pci_disable_device(pdev);  see comment in ilo_remove */
+ free:
+ 	kfree(ilo_hw);
+ out:
 -- 
 1.7.9.5
 
