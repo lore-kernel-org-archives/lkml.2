@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab2LMOHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:07:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44483 "EHLO
+	id S932533Ab2LMOqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:46:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44492 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254Ab2LMOHY (ORCPT
+	with ESMTP id S932409Ab2LMOH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:07:24 -0500
+	Thu, 13 Dec 2012 09:07:29 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ignacy Gawedzki <i@lri.fr>, Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: James Bottomley <JBottomley@Parallels.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 107/241] mac80211: deinitialize ibss-internals after emptiness check
-Date: Thu, 13 Dec 2012 11:57:52 -0200
-Message-Id: <1355407206-17100-108-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 109/241] fix virtual aliasing issue in get_shared_area()
+Date: Thu, 13 Dec 2012 11:57:54 -0200
+Message-Id: <1355407206-17100-110-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,55 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-commit b78a4932f5fb11fadf41e69c606a33fa6787574c upstream.
+commit 949a05d03490e39e773e8652ccab9157e6f595b4 upstream.
 
-The check whether the IBSS is active and can be removed should be
-performed before deinitializing the fields used for the check/search.
-Otherwise, the configured BSS will not be found and removed properly.
+On Thu, 2012-11-01 at 16:45 -0700, Michel Lespinasse wrote:
+> Looking at the arch/parisc/kernel/sys_parisc.c implementation of
+> get_shared_area(), I do have a concern though. The function basically
+> ignores the pgoff argument, so that if one creates a shared mapping of
+> pages 0-N of a file, and then a separate shared mapping of pages 1-N
+> of that same file, both will have the same cache offset for their
+> starting address.
+>
+> This looks like this would create obvious aliasing issues. Am I
+> misreading this ? I can't understand how this could work good enough
+> to be undetected, so there must be something I'm missing here ???
 
-To make it more clear for the future, rename sdata->u.ibss to the
-local pointer ifibss which is used within the checks.
+This turns out to be correct and we need to pay attention to the pgoff as
+well as the address when creating the virtual address for the area.
+Fortunately, the bug is rarely triggered as most applications which use pgoff
+tend to use large values (git being the primary one, and it uses pgoff in
+multiples of 16MB) which are larger than our cache coherency modulus, so the
+problem isn't often seen in practise.
 
-This behaviour was introduced by
-f3209bea110cade12e2b133da8b8499689cb0e2e
-("mac80211: fix IBSS teardown race")
-
-Cc: Ignacy Gawedzki <i@lri.fr>
-Signed-off-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/mac80211/ibss.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/parisc/kernel/sys_parisc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
-index ebf6425..980b4f4 100644
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -1154,10 +1154,6 @@ int ieee80211_ibss_leave(struct ieee80211_sub_if_data *sdata)
+diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
+index c9b9322..7ea75d1 100644
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -73,6 +73,8 @@ static unsigned long get_shared_area(struct address_space *mapping,
+ 	struct vm_area_struct *vma;
+ 	int offset = mapping ? get_offset(mapping) : 0;
  
- 	mutex_lock(&sdata->u.ibss.mtx);
- 
--	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
--	memset(sdata->u.ibss.bssid, 0, ETH_ALEN);
--	sdata->u.ibss.ssid_len = 0;
--
- 	active_ibss = ieee80211_sta_active_ibss(sdata);
- 
- 	if (!active_ibss && !is_zero_ether_addr(ifibss->bssid)) {
-@@ -1178,6 +1174,10 @@ int ieee80211_ibss_leave(struct ieee80211_sub_if_data *sdata)
- 		}
- 	}
- 
-+	ifibss->state = IEEE80211_IBSS_MLME_SEARCH;
-+	memset(ifibss->bssid, 0, ETH_ALEN);
-+	ifibss->ssid_len = 0;
++	offset = (offset + (pgoff << PAGE_SHIFT)) & 0x3FF000;
 +
- 	sta_info_flush(sdata->local, sdata);
+ 	addr = DCACHE_ALIGN(addr - offset) + offset;
  
- 	spin_lock_bh(&ifibss->incomplete_lock);
+ 	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
 -- 
 1.7.9.5
 
