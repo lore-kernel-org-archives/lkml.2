@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab2LMPnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:43:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33128 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860Ab2LMPnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 10:43:49 -0500
-Date: Thu, 13 Dec 2012 16:43:46 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/8] mm: vmscan: save work scanning (almost) empty LRU
- lists
-Message-ID: <20121213154346.GF21644@dhcp22.suse.cz>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-4-git-send-email-hannes@cmpxchg.org>
+	id S1755838Ab2LMPs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:48:26 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61190 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab2LMPsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 10:48:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355348620-9382-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKfTPtCUDEC50xexmLQ1d9qvBz1iJnf4aGSGjN==jqZwpxrwiQ@mail.gmail.com>
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
+	<1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
+	<50C93AC1.1060202@intel.com>
+	<CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
+	<50C9E552.1010600@intel.com>
+	<CAKfTPtCUDEC50xexmLQ1d9qvBz1iJnf4aGSGjN==jqZwpxrwiQ@mail.gmail.com>
+Date: Thu, 13 Dec 2012 16:48:23 +0100
+Message-ID: <CAKfTPtAhFtGKOtwumuav+pndoAZiKjHvYoE2NZxtgP+qHuHY3g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, preeti@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
+        arjan@linux.intel.com, amit.kucheria@linaro.org,
+        viresh.kumar@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-12-12 16:43:35, Johannes Weiner wrote:
-> In certain cases (kswapd reclaim, memcg target reclaim), a fixed
-> minimum amount of pages is scanned from the LRU lists on each
-> iteration, to make progress.
-> 
-> Do not make this minimum bigger than the respective LRU list size,
-> however, and save some busy work trying to isolate and reclaim pages
-> that are not there.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On 13 December 2012 15:53, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> On 13 December 2012 15:25, Alex Shi <alex.shi@intel.com> wrote:
+>> On 12/13/2012 06:11 PM, Vincent Guittot wrote:
+>>> On 13 December 2012 03:17, Alex Shi <alex.shi@intel.com> wrote:
+>>>> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
+>>>>> During the creation of sched_domain, we define a pack buddy CPU for each CPU
+>>>>> when one is available. We want to pack at all levels where a group of CPU can
+>>>>> be power gated independently from others.
+>>>>> On a system that can't power gate a group of CPUs independently, the flag is
+>>>>> set at all sched_domain level and the buddy is set to -1. This is the default
+>>>>> behavior.
+>>>>> On a dual clusters / dual cores system which can power gate each core and
+>>>>> cluster independently, the buddy configuration will be :
+>>>>>
+>>>>>       | Cluster 0   | Cluster 1   |
+>>>>>       | CPU0 | CPU1 | CPU2 | CPU3 |
+>>>>> -----------------------------------
+>>>>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+>>>>>
+>>>>> Small tasks tend to slip out of the periodic load balance so the best place
+>>>>> to choose to migrate them is during their wake up. The decision is in O(1) as
+>>>>> we only check again one buddy CPU
+>>>>
+>>>> Just have a little worry about the scalability on a big machine, like on
+>>>> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
+>>>> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
+>>>> is different on task distribution decision.
+>>>
+>>> The buddy CPU should probably not be the same for all 64 LCPU it
+>>> depends on where it's worth packing small tasks
+>>
+>> Do you have further ideas for buddy cpu on such example?
+>
+> yes, I have several ideas which were not really relevant for small
+> system but could be interesting for larger system
+>
+> We keep the same algorithm in a socket but we could either use another
+> LCPU in the targeted socket (conf0) or chain the socket (conf1)
+> instead of packing directly in one LCPU
+>
+> The scheme below tries to summaries the idea:
+>
+> Socket      | socket 0 | socket 1   | socket 2   | socket 3   |
+> LCPU        | 0 | 1-15 | 16 | 17-31 | 32 | 33-47 | 48 | 49-63 |
+> buddy conf0 | 0 | 0    | 1  | 16    | 2  | 32    | 3  | 48    |
+> buddy conf1 | 0 | 0    | 0  | 16    | 16 | 32    | 32 | 48    |
+> buddy conf2 | 0 | 0    | 16 | 16    | 32 | 32    | 48 | 48    |
+>
+> But, I don't know how this can interact with NUMA load balance and the
+> better might be to use conf3.
 
-Hmm, shrink_lruvec would do:
-	nr_to_scan = min_t(unsigned long,
-			   nr[lru], SWAP_CLUSTER_MAX);
-	nr[lru] -= nr_to_scan;
-and isolate_lru_pages does
-	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++)
-so it shouldn't matter and we shouldn't do any additional loops, right?
+I mean conf2 not conf3
 
-Anyway it would be beter if get_scan_count wouldn't ask for more than is
-available.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  include/linux/swap.h |  2 +-
->  mm/vmscan.c          | 10 ++++++----
->  2 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 68df9c1..8c66486 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -156,7 +156,7 @@ enum {
->  	SWP_SCANNING	= (1 << 8),	/* refcount in scan_swap_map */
->  };
->  
-> -#define SWAP_CLUSTER_MAX 32
-> +#define SWAP_CLUSTER_MAX 32UL
->  #define COMPACT_CLUSTER_MAX SWAP_CLUSTER_MAX
->  
->  /*
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6e53446..1763e79 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1748,15 +1748,17 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->  out:
->  	for_each_evictable_lru(lru) {
->  		int file = is_file_lru(lru);
-> +		unsigned long size;
->  		unsigned long scan;
->  
-> -		scan = get_lru_size(lruvec, lru);
-> +		size = get_lru_size(lruvec, lru);
-+		size = scan = get_lru_size(lruvec, lru);
-
->  		if (sc->priority || noswap) {
-> -			scan >>= sc->priority;
-> +			scan = size >> sc->priority;
->  			if (!scan && force_scan)
-> -				scan = SWAP_CLUSTER_MAX;
-> +				scan = min(size, SWAP_CLUSTER_MAX);
->  			scan = div64_u64(scan * fraction[file], denominator);
-> -		}
-> +		} else
-> +			scan = size;
-
-And this is not necessary then but this is totally nit.
-
->  		nr[lru] = scan;
->  	}
->  }
-> -- 
-> 1.7.11.7
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+>
+>>>
+>>> Which kind of sched_domain configuration have you for such system ?
+>>> and how many sched_domain level have you ?
+>>
+>> it is general X86 domain configuration. with 4 levels,
+>> sibling/core/cpu/numa.
+>>>
