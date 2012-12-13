@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933354Ab2LMOW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:22:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45039 "EHLO
+	id S933369Ab2LMOWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:22:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45028 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291Ab2LMONv (ORCPT
+	with ESMTP id S933305Ab2LMONo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:13:51 -0500
+	Thu, 13 Dec 2012 09:13:44 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ulrich Weber <ulrich.weber@sophos.com>,
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 211/241] netfilter: nf_nat: don't check for port change on ICMP tuples
-Date: Thu, 13 Dec 2012 11:59:36 -0200
-Message-Id: <1355407206-17100-212-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 209/241] netfilter: Mark SYN/ACK packets as invalid from original direction
+Date: Thu, 13 Dec 2012 11:59:34 -0200
+Message-Id: <1355407206-17100-210-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,50 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Weber <ulrich.weber@sophos.com>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit 38fe36a248ec3228f8e6507955d7ceb0432d2000 upstream.
+commit 64f509ce71b08d037998e93dd51180c19b2f464c upstream.
 
-ICMP tuples have id in src and type/code in dst.
-So comparing src.u.all with dst.u.all will always fail here
-and ip_xfrm_me_harder() is called for every ICMP packet,
-even if there was no NAT.
+Clients should not send such packets. By accepting them, we open
+up a hole by wich ephemeral ports can be discovered in an off-path
+attack.
 
-This patch is a backport of:
+See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
+http://arxiv.org/abs/1201.2074
 
-[ 38fe36a netfilter: nf_nat: don't check for port change on ICMP tuples ]
-
-Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv4/netfilter/nf_nat_standalone.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/netfilter/nf_conntrack_proto_tcp.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_nat_standalone.c b/net/ipv4/netfilter/nf_nat_standalone.c
-index 3828a42..da4098f 100644
---- a/net/ipv4/netfilter/nf_nat_standalone.c
-+++ b/net/ipv4/netfilter/nf_nat_standalone.c
-@@ -194,7 +194,8 @@ nf_nat_out(unsigned int hooknum,
- 
- 		if ((ct->tuplehash[dir].tuple.src.u3.ip !=
- 		     ct->tuplehash[!dir].tuple.dst.u3.ip) ||
--		    (ct->tuplehash[dir].tuple.src.u.all !=
-+		    (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+		     ct->tuplehash[dir].tuple.src.u.all !=
- 		     ct->tuplehash[!dir].tuple.dst.u.all)
- 		   )
- 			return ip_xfrm_me_harder(skb) == 0 ? ret : NF_DROP;
-@@ -230,7 +231,8 @@ nf_nat_local_fn(unsigned int hooknum,
- 				ret = NF_DROP;
- 		}
- #ifdef CONFIG_XFRM
--		else if (ct->tuplehash[dir].tuple.dst.u.all !=
-+		else if (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+			 ct->tuplehash[dir].tuple.dst.u.all !=
- 			 ct->tuplehash[!dir].tuple.src.u.all)
- 			if (ip_xfrm_me_harder(skb))
- 				ret = NF_DROP;
+diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+index 21ff1a9..6638ad5 100644
+--- a/net/netfilter/nf_conntrack_proto_tcp.c
++++ b/net/netfilter/nf_conntrack_proto_tcp.c
+@@ -158,21 +158,18 @@ static const u8 tcp_conntracks[2][6][TCP_CONNTRACK_MAX] = {
+  *	sCL -> sSS
+  */
+ /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sS2	*/
+-/*synack*/ { sIV, sIV, sIG, sIG, sIG, sIG, sIG, sIG, sIG, sSR },
++/*synack*/ { sIV, sIV, sSR, sIV, sIV, sIV, sIV, sIV, sIV, sSR },
+ /*
+  *	sNO -> sIV	Too late and no reason to do anything
+  *	sSS -> sIV	Client can't send SYN and then SYN/ACK
+  *	sS2 -> sSR	SYN/ACK sent to SYN2 in simultaneous open
+- *	sSR -> sIG
+- *	sES -> sIG	Error: SYNs in window outside the SYN_SENT state
+- *			are errors. Receiver will reply with RST
+- *			and close the connection.
+- *			Or we are not in sync and hold a dead connection.
+- *	sFW -> sIG
+- *	sCW -> sIG
+- *	sLA -> sIG
+- *	sTW -> sIG
+- *	sCL -> sIG
++ *	sSR -> sSR	Late retransmitted SYN/ACK in simultaneous open
++ *	sES -> sIV	Invalid SYN/ACK packets sent by the client
++ *	sFW -> sIV
++ *	sCW -> sIV
++ *	sLA -> sIV
++ *	sTW -> sIV
++ *	sCL -> sIV
+  */
+ /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sS2	*/
+ /*fin*/    { sIV, sIV, sFW, sFW, sLA, sLA, sLA, sTW, sCL, sIV },
 -- 
 1.7.9.5
 
