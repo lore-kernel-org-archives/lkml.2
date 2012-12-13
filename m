@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab2LMChA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:37:00 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:36806 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756539Ab2LMC0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:26:54 -0500
-Message-ID: <1355365612.2164.17.camel@joe-AO722>
-Subject: Re: =?UTF-8?Q?=E7=AD=94=E5=A4=8D=3A?= [TRIVIAL PATCH 15/26]
- unicore32: Convert print_symbol to %pSR
-From: Joe Perches <joe@perches.com>
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: "'Jiri Kosina'" <trivial@kernel.org>, linux-kernel@vger.kernel.org
-Date: Wed, 12 Dec 2012 18:26:52 -0800
-In-Reply-To: <001d01cdd8cd$371dfd60$a559f820$@mprc.pku.edu.cn>
-References: <cover.1355335227.git.joe@perches.com>
-	 <19e6ea369e4455fc447c48f72bd433921bd0a703.1355335228.git.joe@perches.com>
-	 <001d01cdd8cd$371dfd60$a559f820$@mprc.pku.edu.cn>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1756480Ab2LMChc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:37:32 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41021 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab2LMCh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:37:27 -0500
+Message-ID: <50C93F64.1090906@gmail.com>
+Date: Wed, 12 Dec 2012 21:37:24 -0500
+From: "draekko.dev" <draekko.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, trivial@kernel.org,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] USB: adds support for Novatek wireless mouse to usbhid
+References: <CAKPZWXc55MWN3ajpvf0vLXP9KebFo17bGAmD8X=mavxyWJui1w@mail.gmail.com> <20121213015025.GA10991@kroah.com>
+In-Reply-To: <20121213015025.GA10991@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 09:00 +0800, Guan Xuetao wrote:
-> 确认下面的patch可以正常编译，无warning信息
+I followed what was listed here
+http://www.kernel.org/doc/Documentation/SubmittingPatches i won't be
+resubmitting, i've already spent way too much time for a few lines of
+code, I've already been through this with the Ubuntu guys amongst other
+reasons. I can email you the file as attachment but that's the extent of
+my involvement at this point.
 
-There is no unicore32 cross compiler available
-on kernel.org.
+Wishing you y'all a nice evening,
+Ben
 
-ftp://ftp.kernel.org/pub/tools/crosstool/index.html
+PS. Resubmitting this email as it for some reason was only sent to Greg.
 
-These are unsigned long cast to (void *)
-What is the warning and how does it differ
-from any existing warning?
-
-> > diff --git a/arch/unicore32/kernel/process.c
-[]
-> > @@ -169,8 +169,9 @@ void __show_regs(struct pt_regs *regs)
-> >  		init_utsname()->release,
-> >  		(int)strcspn(init_utsname()->version, " "),
-> >  		init_utsname()->version);
-> > -	print_symbol("PC is at %s\n", instruction_pointer(regs));
-> > -	print_symbol("LR is at %s\n", regs->UCreg_lr);
-> > +	printk(KERN_DEFAULT "PC is at %pSR\n",
-> > +	       (void *)instruction_pointer(regs));
-> > +	printk(KERN_DEFAULT "LR is at %pSR\n", (void *)regs->UCreg_lr);
-> >  	printk(KERN_DEFAULT "pc : [<%08lx>]    lr : [<%08lx>]    psr:
-> %08lx\n"
-> >  	       "sp : %08lx  ip : %08lx  fp : %08lx\n",
-> >  		regs->UCreg_pc, regs->UCreg_lr, regs->UCreg_asr,
-
-
+On Wed, Dec 12, 2012 at 8:50 PM, Greg KH <greg@kroah.com> wrote:
+> On Wed, Dec 12, 2012 at 08:43:32PM -0500, Benoit Touchette wrote:
+>> This patch adds support for the Novatek wireless mouse (device id
+>> 0603:1602) to usbhid and fixes bug
+>> https://bugzilla.kernel.org/show_bug.cgi?id=47031
+>>
+>> Reported-by: Benoit Touchette <draekko.dev@gmail.com>
+>> Signed-off-by: Benoit Touchette <draekko.dev@gmail.com>
+>>
+>> ---
+>>
+>> --- linux-3.6.10/drivers/hid/hid-ids.h.orig    2012-12-10
+>> 14:13:27.000000000 -0500
+>> +++ linux-3.6.10/drivers/hid/hid-ids.h    2012-12-12 20:06:41.000000000 -0500
+>
+> Please use the scripts/get_maintainer.pl tool to send this patch to the
+> correct people and mailing list.
+>
+> Also, your patch is line-wrapped, and can't be applied, you need to look
+> into fixing your email client to not do this if you wish to get patches
+> accepted.
+>
+> greg k-h
