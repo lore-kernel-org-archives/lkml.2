@@ -1,128 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab2LMWDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:03:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26713 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756704Ab2LMWC5 (ORCPT
+	id S1756758Ab2LMWDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:03:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50561 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756368Ab2LMWDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:57 -0500
+	Thu, 13 Dec 2012 17:03:02 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 20/27] x86, 64bit: Print init kernel lowmap correctly
-Date: Thu, 13 Dec 2012 14:02:14 -0800
-Message-Id: <1355436141-8668-21-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v6 27/27] x86: Merge early kernel reserve for 32bit and 64bit
+Date: Thu, 13 Dec 2012 14:02:21 -0800
+Message-Id: <1355436141-8668-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we get x86_64_start_kernel from arch/x86/kernel/head_64.S,
+They are the same, could move them out from head32/64.c to setup.c.
 
-We have
-1. kernel highmap 512M (KERNEL_IMAGE_SIZE) from kernel loaded address.
-2. kernel lowmap: [0, 1024M), and size (_end - _text) from kernel
-   loaded address.
-
-for example, if the kernel bzImage is loaded high from 8G, will get:
-1. kernel highmap:  [8G, 8G+512M)
-2. kernel lowmap: [0, 1024M), and  [8G, 8G +_end - _text)
-
-So max_pfn_mapped that is for low map pfn recording is not that
-simple to 512M for 64 bit.
-
-Try to print out two ranges, when kernel is loaded high.
-
-Also need to use KERNEL_IMAGE_SIZE directly for highmap cleanup.
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first to hold the location, and just
+need to make sure we reserve them before we are using memblock to find
+free mem to use.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/head64.c |    2 --
- arch/x86/kernel/setup.c  |   23 +++++++++++++++++++++--
- arch/x86/mm/init_64.c    |    6 +++++-
- 3 files changed, 26 insertions(+), 5 deletions(-)
+ arch/x86/kernel/head32.c |    9 ---------
+ arch/x86/kernel/head64.c |    3 ---
+ arch/x86/kernel/setup.c  |    9 +++++++++
+ 3 files changed, 9 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index 4c52efc..17f7792 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -30,9 +30,6 @@ static void __init i386_default_early_setup(void)
+ 
+ void __init i386_start_kernel(void)
+ {
+-	memblock_reserve(__pa_symbol(&_text),
+-			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
+@@ -46,11 +43,5 @@ void __init i386_start_kernel(void)
+ 		break;
+ 	}
+ 
+-	/*
+-	 * At this point everything still needed from the boot loader
+-	 * or BIOS or kernel text should be early reserved or marked not
+-	 * RAM in e820. All other memory is free game.
+-	 */
+-
+ 	start_kernel();
+ }
 diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index b8b6ad9..17978b2 100644
+index 17978b2..934b122 100644
 --- a/arch/x86/kernel/head64.c
 +++ b/arch/x86/kernel/head64.c
-@@ -110,8 +110,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 	/* Make NULL pointers segfault */
- 	zap_identity_mappings();
+@@ -136,9 +136,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 		copy_bootdata(real_mode_data);
+ 	}
  
--	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+-	memblock_reserve(__pa_symbol(&_text),
+-			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
 -
- 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
- #ifdef CONFIG_EARLY_PRINTK
- 		set_intr_gate(i, &early_idt_handlers[i]);
+ 	reserve_ebda_region();
+ 
+ 	/*
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index efb33dd..c4e7aaa 100644
+index d62069b..fcfcaef 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -675,6 +675,26 @@ static int __init parse_reservelow(char *p)
+@@ -727,8 +727,17 @@ static __init void print_init_mem_mapped(void)
  
- early_param("reservelow", parse_reservelow);
- 
-+static __init void print_init_mem_mapped(void)
-+{
-+#ifdef CONFIG_X86_32
-+	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
-+			(max_pfn_mapped<<PAGE_SHIFT) - 1);
-+#else
-+	unsigned long text = __pa_symbol(&_text);
-+	unsigned long end = round_up(__pa_symbol(_end) - 1, PMD_SIZE);
-+
-+	if (end <= PUD_SIZE)
-+		printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
-+			PUD_SIZE - 1);
-+	else if (text <= PUD_SIZE)
-+		printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
-+			end - 1);
-+	else
-+		printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx] [mem %#010lx-%#010lx]\n",
-+			PUD_SIZE - 1, text, end - 1);
-+#endif
-+}
- /*
-  * Determine if we were loaded by an EFI loader.  If so, then we have also been
-  * passed the efi memmap, systab, etc., so we should use these data structures
-@@ -943,8 +963,7 @@ void __init setup_arch(char **cmdline_p)
- 	setup_bios_corruption_check();
- #endif
- 
--	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
--			(max_pfn_mapped<<PAGE_SHIFT) - 1);
-+	print_init_mem_mapped();
- 
- 	setup_real_mode();
- 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 91f116a..11c49b8 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -304,10 +304,14 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
- void __init cleanup_highmap(void)
+ void __init setup_arch(char **cmdline_p)
  {
- 	unsigned long vaddr = __START_KERNEL_map;
--	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
-+	unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
- 	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
- 	pmd_t *pmd = level2_kernel_pgt;
- 
-+	/* Xen has its own end somehow with abused max_pfn_mapped */
-+	if (max_pfn_mapped)
-+		vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++	memblock_reserve(__pa_symbol(_text),
++			 (unsigned long)__bss_stop - (unsigned long)_text);
 +
- 	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
- 		if (pmd_none(*pmd))
- 			continue;
+ 	early_reserve_initrd();
+ 
++	/*
++	 * At this point everything still needed from the boot loader
++	 * or BIOS or kernel text should be early reserved or marked not
++	 * RAM in e820. All other memory is free game.
++	 */
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
 -- 
 1.7.10.4
 
