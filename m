@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab2LMTjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 14:39:11 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:36290 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439Ab2LMTjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 14:39:08 -0500
-Date: Thu, 13 Dec 2012 14:38:20 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/8] mm: vmscan: save work scanning (almost) empty LRU
- lists
-Message-ID: <20121213193820.GC6317@cmpxchg.org>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-4-git-send-email-hannes@cmpxchg.org>
- <20121213154346.GF21644@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213154346.GF21644@dhcp22.suse.cz>
+	id S1756250Ab2LMTjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 14:39:33 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32053 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754791Ab2LMTjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 14:39:32 -0500
+X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_aGYK8jRc_AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SI-C17Dh1R0A:10 a=oqgoUqyQApVjktboBwEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355427569.17101.380.camel@gandalf.local.home>
+Subject: Re: [BUG] ftrace: available_filter_functions empty after unloading
+ module
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Piotr Haber <phaber@broadcom.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Dec 2012 14:39:29 -0500
+In-Reply-To: <1355405698.17101.373.camel@gandalf.local.home>
+References: <50C0B236.4090200@broadcom.com>
+	 <1354817428.17101.10.camel@gandalf.local.home>
+	 <50C1A3A3.8030107@broadcom.com>
+	 <1354888679.17101.36.camel@gandalf.local.home>
+	 <50C5CB74.10008@broadcom.com>
+	 <1355405698.17101.373.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 04:43:46PM +0100, Michal Hocko wrote:
-> On Wed 12-12-12 16:43:35, Johannes Weiner wrote:
-> > In certain cases (kswapd reclaim, memcg target reclaim), a fixed
-> > minimum amount of pages is scanned from the LRU lists on each
-> > iteration, to make progress.
+On Thu, 2012-12-13 at 08:34 -0500, Steven Rostedt wrote:
+> On Mon, 2012-12-10 at 12:45 +0100, Piotr Haber wrote:
+> 
+> > > So you unloaded a module that you were tracing, correct? Hmm, the
+> > > warning that you hit was an accounting error. The accounting of what
+> > > functions are traced and what isn't. For some reason it tried to disable
+> > > a function that wasn't being traced.
+> > Yes, it happens when i unload a module that i traced before
 > > 
-> > Do not make this minimum bigger than the respective LRU list size,
-> > however, and save some busy work trying to isolate and reclaim pages
-> > that are not there.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > Can you easily reproduce this? If so, can you give my your .config and
+> > > the steps you used to trigger it.
+> > Not 100% but it happens often enough to be annoying
+> > Attached is the config
+> > As for reproduction, i load the brcmsmac module, add all it symbols to
+> > set_ftrace_filter, associate with AP and unload the module
+> > nothing fancy, i use 'function' tracer
 > 
-> Hmm, shrink_lruvec would do:
-> 	nr_to_scan = min_t(unsigned long,
-> 			   nr[lru], SWAP_CLUSTER_MAX);
-> 	nr[lru] -= nr_to_scan;
-> and isolate_lru_pages does
-> 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++)
-> so it shouldn't matter and we shouldn't do any additional loops, right?
-> 
-> Anyway it would be beter if get_scan_count wouldn't ask for more than is
-> available.
+> Thanks, I'll see if I can reproduce it.
 
-Consider the inactive_list_is_low() check (especially expensive for
-memcg anon), lru_add_drain(), lru lock acquisition...
+Can you tell me exactly what steps you took too?
 
-And as I wrote to Mel in the other email, this can happen a lot when
-you have memory cgroups in a multi-node environment.
+Did you start function tracing before loading the module?
 
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+For example, did you do something like:
 
-Thanks!
+echo function > current_tracer
+modprobe brcmsmac
+echo :mod:brcmsmac > set_ftrace_filter
+echo 0 > tracing_on
+rmmod brcmsmac
 
-> > @@ -1748,15 +1748,17 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> >  out:
-> >  	for_each_evictable_lru(lru) {
-> >  		int file = is_file_lru(lru);
-> > +		unsigned long size;
-> >  		unsigned long scan;
-> >  
-> > -		scan = get_lru_size(lruvec, lru);
-> > +		size = get_lru_size(lruvec, lru);
-> +		size = scan = get_lru_size(lruvec, lru);
-> 
-> >  		if (sc->priority || noswap) {
-> > -			scan >>= sc->priority;
-> > +			scan = size >> sc->priority;
-> >  			if (!scan && force_scan)
-> > -				scan = SWAP_CLUSTER_MAX;
-> > +				scan = min(size, SWAP_CLUSTER_MAX);
-> >  			scan = div64_u64(scan * fraction[file], denominator);
-> > -		}
-> > +		} else
-> > +			scan = size;
-> 
-> And this is not necessary then but this is totally nit.
+??
 
-Do you actually find this more readable?  Setting size = scan and then
-later scan = size >> sc->priority? :-)
+Thanks,
+
+-- Steve
+
+
