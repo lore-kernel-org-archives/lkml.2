@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2LMB56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 20:57:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36216 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab2LMB54 (ORCPT
+	id S1755428Ab2LMB7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 20:59:14 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:12323 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab2LMB7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 20:57:56 -0500
-Date: Wed, 12 Dec 2012 17:57:54 -0800
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
-Subject: [GIT PULL 5/5] ARM: arm-soc board updates, take 2
-Message-ID: <20121213015754.GE28281@quad.lixom.net>
-References: <20121213015543.GA18953@quad.lixom.net>
+	Wed, 12 Dec 2012 20:59:12 -0500
+X-Spam-Score: -99.9
+Message-ID: <50C936A4.5000900@asianux.com>
+Date: Thu, 13 Dec 2012 10:00:04 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213015543.GA18953@quad.lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, "'Jiri Kosina'" <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: =?UTF-8?B?562U5aSNOiBbVFJJVklBTCBQQVRDSCAxNS8yNl0gdW5pY29yZTM=?=
+ =?UTF-8?B?MjogQ29udmVydCBwcmludF9zeW1ib2wgdG8gJXBTUg==?=
+References: <cover.1355335227.git.joe@perches.com>  <19e6ea369e4455fc447c48f72bd433921bd0a703.1355335228.git.joe@perches.com>  <001d01cdd8cd$371dfd60$a559f820$@mprc.pku.edu.cn> <1355361663.2164.8.camel@joe-AO722>
+In-Reply-To: <1355361663.2164.8.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+于 2012年12月13日 09:21, Joe Perches 写道:
+> On Thu, 2012-12-13 at 09:00 +0800, Guan Xuetao wrote:
+>> 确认下面的patch可以正常编译，无warning信息
 
-This branch contains board updates for shmobile that had dependencies
-on earlier branches past the first driver branch, and thus are merged
-separately.
-
-Most of these are to enable audio and USB on shmobile. They contain a
-dependent ASoC branch that has been coordinated with Mark Brown.
+   please be sure that the patch below can pass compiling, without warnings
 
 
-Conflict seen with this merge:
+> 
+> I'm afraid I can't read this.
+> Anyone have an English translation?
+> 
 
-None
+  I can try (although I do not known the details of this patch)
 
-----------------------------------------------------------------
+  :-)
 
-The following changes since commit 370cdda68eb40e69a7a8950abec230976e5d9117:
-
-  Merge branch 'next/drivers' into HEAD
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/boards2
-
-for you to fetch changes up to d7460f4a3d75469deb1c6c028961da69608d02d9:
-
-  Merge branch 'boards3' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into next/boards2
-
-----------------------------------------------------------------
-
-Arnd Bergmann (3):
-      Merge branches 'depends/asoc', 'renesas/boards' and 'renesas/soc' into next/boards2
-      Merge branches 'depends/asoc', 'renesas/boards', 'renesas/soc' and 'renesas/soc2' into next/boards2
-      Merge branch 'boards' of git://git.kernel.org/.../horms/renesas into next/boards2
-
-Bastian Hecht (1):
-      ARM: shmobile: mackerel: Add FLCTL IRQ resource
-
-Kuninori Morimoto (12):
-      ASoC: fsi: fixup channels_min/max
-      ASoC: fsi: use devm_request_irq()
-      ASoC: fsi: fsi_set_master_clk() was called from fsi_hw_xxx() only
-      ASoC: fsi: care fsi_hw_start/stop() return value
-      ASoC: fsi: add master clock control functions
-      ARM: shmobile: marzen: add USB phy support
-      ARM: shmobile: marzen: add USB EHCI driver support
-      ARM: shmobile: marzen: add USB OHCI driver support
-      ARM: shmobile: mackerel: enable DMAEngine on USB Host
-      ARM: shmobile: use FSI driver's audio clock on armadillo800eva
-      ARM: shmobile: use FSI driver's audio clock on mackerel
-      ARM: shmobile: use FSI driver's audio clock on ap4evb
-
-Olof Johansson (1):
-      Merge branch 'boards3' of git://git.kernel.org/.../horms/renesas into next/boards2
-
-Simon Horman (1):
-      Merge branch 'soc' into boards
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
 
- arch/arm/configs/marzen_defconfig              |  14 +-
- arch/arm/mach-shmobile/Kconfig                 |   2 +
- arch/arm/mach-shmobile/board-ap4evb.c          | 139 +-----
- arch/arm/mach-shmobile/board-armadillo800eva.c |  38 +-
- arch/arm/mach-shmobile/board-mackerel.c        |  80 +---
- arch/arm/mach-shmobile/board-marzen.c          | 186 ++++++++-
- include/sound/sh_fsi.h                         |   6 +
- sound/soc/sh/fsi.c                             | 441 ++++++++++++++++++--
- 8 files changed, 617 insertions(+), 289 deletions(-)
+-- 
+Chen Gang
+
+Asianux Corporation
