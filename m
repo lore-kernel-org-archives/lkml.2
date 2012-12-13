@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2LMQPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 11:15:15 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:12213 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab2LMQPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 11:15:14 -0500
-Message-ID: <50C9FF11.2030303@tilera.com>
-Date: Thu, 13 Dec 2012 11:15:13 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756285Ab2LMQRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 11:17:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755733Ab2LMQRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 11:17:17 -0500
+Date: Thu, 13 Dec 2012 17:17:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121213161709.GA19125@redhat.com>
+References: <20121211140314.23621.64088.stgit@srivatsabhat.in.ibm.com> <20121211140358.23621.97011.stgit@srivatsabhat.in.ibm.com> <20121212171720.GA22289@redhat.com> <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/tile: provide PT_FLAGS_COMPAT value in pt_regs
-References: <201212122227.qBCMRiNg000851@farm-0002.internal.tilera.com> <20121212234307.GA7694@redhat.com> <50C9ECFF.6070708@tilera.com> <20121213154929.GA17421@redhat.com>
-In-Reply-To: <20121213154929.GA17421@redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C9F38F.3020005@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 10:49 AM, Oleg Nesterov wrote:
-> On 12/13, Chris Metcalf wrote:
->> On 12/12/2012 6:43 PM, Oleg Nesterov wrote:
->>> And. arch/tile/kernel/ptrace.c:arch_ptrace() does
->>>
->>> 	case PTRACE_SETOPTIONS:
->>> 		/* Support TILE-specific ptrace options. */
->>> 		child->ptrace &= ~PT_TRACE_MASK_TILE;
->>> 		tmp = data & PTRACE_O_MASK_TILE;
->>> 		data &= ~PTRACE_O_MASK_TILE;
->>>
->>> AFAICS we need something like BUILD_BUG_ON(PTRACE_O_MASK_TILE & PTRACE_O_MASK),
->> I don't think so.  These are disjoint namespaces anyway.
->> PTRACE_O_MASK_TILE is for the actual PTRACE_SETOPTIONS ABI values.
-> Yes, and thus it should not intersect with the generic PTRACE_O_MASK, no?
+On 12/13, Srivatsa S. Bhat wrote:
+>
+> On 12/13/2012 12:42 AM, Srivatsa S. Bhat wrote:
+> >
+> > Even I don't spot anything wrong with it. But I'll give it some more
+> > thought..
+>
+> Since an interrupt handler can also run get_online_cpus_atomic(), we
+> cannot use the __this_cpu_* versions for modifying reader_percpu_refcnt,
+> right?
 
-Yes, I misunderstood your original suggestion (I read PTRACE_O_MASK as PT_TRACE_MASK_TILE - oops).  You're quite right that it's a good build bug; I'll add it to the cleanup patch that will also move the task->ptrace bit clear.
+Hmm. I thought that __this_cpu_* must be safe under preempt_disable().
+IOW, I thought that, say, this_cpu_inc() is "equal" to preempt_disable +
+__this_cpu_inc() correctness-wise.
 
->>> 		ret = ptrace_request(child, request, addr, data);
->>> 		if (tmp & PTRACE_O_TRACEMIGRATE)
->>> 			child->ptrace |= PT_TRACE_MIGRATE;
->>>
->>> this also needs "ret == 0" check
->> The question is, what happens if we pass some illegal bit to the generic
->> ptrace_request(), and also pass a valid PTRACE_O_MASK_TILE bit?
->> Currently we set the tile-specific bit, then report the error.
->> This is consistent with how ptrace_setoptions() handles a mix of legal and
->> illegal bits.
-> But ptrace_setoptions() returns EINVAL? it doesn't accept illegal bits.
+And. I thought that this_cpu_inc() is safe wrt interrupt, like local_t.
 
-It does return EINVAL - but if it gets both legal and illegal bits, it honors all the legal bits first.  So we honor the PT_TRACE_MIGRATE bit in this code, even if ptrace_request() returns EINVAL.
+But when I try to read the comments percpu.h, I am starting to think that
+even this_cpu_inc() is not safe if irq handler can do the same?
 
-> So I'd say it looks fine to me.
+Confused...
 
-Thanks!  Should I convert that to a Reviewed-by or Acked-by on the patch?
+I am shy to ask... will, say, DEFINE_PER_CPU(local_t) and
+local_inc(__this_cpu_ptr(...)) work??
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> But still, this scheme is better, because the reader doesn't have to spin
+> on the read_lock() with interrupts disabled.
+
+Yes, but my main concern is that irq_disable/enable itself is not that cheap.
+
+Oleg.
 
