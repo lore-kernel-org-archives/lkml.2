@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2LMOIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:08:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44565 "EHLO
+	id S932657Ab2LMOIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:08:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44584 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab2LMOIZ (ORCPT
+	with ESMTP id S932629Ab2LMOIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:08:25 -0500
+	Thu, 13 Dec 2012 09:08:40 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 124/241] drm/radeon: properly handle mc_stop/mc_resume on evergreen+ (v2)
-Date: Thu, 13 Dec 2012 11:58:09 -0200
-Message-Id: <1355407206-17100-125-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 127/241] x86, efi: Fix processor-specific memcpy() build error
+Date: Thu, 13 Dec 2012 11:58:12 -0200
+Message-Id: <1355407206-17100-128-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,279 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 62444b7462a2b98bc78d68736c03a7c4e66ba7e2 upstream.
+commit 0f905a43ce955b638139bd84486194770a6a2c08 upstream.
 
-- Stop the displays from accessing the FB
-- Block CPU access
-- Turn off MC client access
+Building for Athlon/Duron/K7 results in the following build error,
 
-This should fix issues some users have seen, especially
-with UEFI, when changing the MC FB location that result
-in hangs or display corruption.
+arch/x86/boot/compressed/eboot.o: In function `__constant_memcpy3d':
+eboot.c:(.text+0x385): undefined reference to `_mmx_memcpy'
+arch/x86/boot/compressed/eboot.o: In function `efi_main':
+eboot.c:(.text+0x1a22): undefined reference to `_mmx_memcpy'
 
-v2: fix crtc enabled check noticed by Luca Tettamanti
+because the boot stub code doesn't link with the kernel proper, and
+therefore doesn't have access to the 3DNow version of memcpy. So,
+follow the example of misc.c and #undef memcpy so that we use the
+version provided by misc.c.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ herton: adjust context ]
+See https://bugzilla.kernel.org/show_bug.cgi?id=50391
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Reported-by: Ryan Underwood <nemesis@icequake.net>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c     |  169 +++++++++++++++-----------------
- drivers/gpu/drm/radeon/evergreen_reg.h |    2 +
- drivers/gpu/drm/radeon/evergreend.h    |    7 ++
- drivers/gpu/drm/radeon/radeon_asic.h   |    1 +
- 4 files changed, 88 insertions(+), 91 deletions(-)
+ arch/x86/boot/compressed/eboot.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index b6cce9c..e07700a 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1129,116 +1129,103 @@ void evergreen_agp_enable(struct radeon_device *rdev)
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 4e85f5f..f204178 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -12,6 +12,8 @@
+ #include <asm/setup.h>
+ #include <asm/desc.h>
  
- void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *save)
- {
-+	u32 crtc_enabled, tmp, frame_count, blackout;
-+	int i, j;
++#undef memcpy			/* Use memcpy from misc.c */
 +
- 	save->vga_render_control = RREG32(VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(VGA_HDP_CONTROL);
+ #include "eboot.h"
  
--	/* Stop all video */
-+	/* disable VGA render */
- 	WREG32(VGA_RENDER_CONTROL, 0);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 1);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 1);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 1);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 1);
--	}
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
-+	/* blank the display controllers */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		crtc_enabled = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]) & EVERGREEN_CRTC_MASTER_EN;
-+		if (crtc_enabled) {
-+			save->crtc_enabled[i] = true;
-+			if (ASIC_IS_DCE6(rdev)) {
-+				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
-+				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
-+					radeon_wait_for_vblank(rdev, i);
-+					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
-+					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+				}
-+			} else {
-+				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
-+				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
-+					radeon_wait_for_vblank(rdev, i);
-+					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
-+					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+				}
-+			}
-+			/* wait for the next frame */
-+			frame_count = radeon_get_vblank_counter(rdev, i);
-+			for (j = 0; j < rdev->usec_timeout; j++) {
-+				if (radeon_get_vblank_counter(rdev, i) != frame_count)
-+					break;
-+				udelay(1);
-+			}
-+		}
- 	}
- 
--	WREG32(D1VGA_CONTROL, 0);
--	WREG32(D2VGA_CONTROL, 0);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_D3VGA_CONTROL, 0);
--		WREG32(EVERGREEN_D4VGA_CONTROL, 0);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_D5VGA_CONTROL, 0);
--		WREG32(EVERGREEN_D6VGA_CONTROL, 0);
-+	radeon_mc_wait_for_idle(rdev);
-+
-+	blackout = RREG32(MC_SHARED_BLACKOUT_CNTL);
-+	if ((blackout & BLACKOUT_MODE_MASK) != 1) {
-+		/* Block CPU access */
-+		WREG32(BIF_FB_EN, 0);
-+		/* blackout the MC */
-+		blackout &= ~BLACKOUT_MODE_MASK;
-+		WREG32(MC_SHARED_BLACKOUT_CNTL, blackout | 1);
- 	}
- }
- 
- void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
- {
--	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC0_REGISTER_OFFSET,
--	       upper_32_bits(rdev->mc.vram_start));
--	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC0_REGISTER_OFFSET,
--	       upper_32_bits(rdev->mc.vram_start));
--	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + EVERGREEN_CRTC0_REGISTER_OFFSET,
--	       (u32)rdev->mc.vram_start);
--	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC0_REGISTER_OFFSET,
--	       (u32)rdev->mc.vram_start);
--
--	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC1_REGISTER_OFFSET,
--	       upper_32_bits(rdev->mc.vram_start));
--	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC1_REGISTER_OFFSET,
--	       upper_32_bits(rdev->mc.vram_start));
--	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + EVERGREEN_CRTC1_REGISTER_OFFSET,
--	       (u32)rdev->mc.vram_start);
--	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC1_REGISTER_OFFSET,
--	       (u32)rdev->mc.vram_start);
--
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC2_REGISTER_OFFSET,
--		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC2_REGISTER_OFFSET,
--		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + EVERGREEN_CRTC2_REGISTER_OFFSET,
--		       (u32)rdev->mc.vram_start);
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC2_REGISTER_OFFSET,
--		       (u32)rdev->mc.vram_start);
--
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC3_REGISTER_OFFSET,
--		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC3_REGISTER_OFFSET,
--		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + EVERGREEN_CRTC3_REGISTER_OFFSET,
--		       (u32)rdev->mc.vram_start);
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC3_REGISTER_OFFSET,
--		       (u32)rdev->mc.vram_start);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC4_REGISTER_OFFSET,
--		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC4_REGISTER_OFFSET,
--		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + EVERGREEN_CRTC4_REGISTER_OFFSET,
--		       (u32)rdev->mc.vram_start);
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC4_REGISTER_OFFSET,
--		       (u32)rdev->mc.vram_start);
-+	u32 tmp, frame_count;
-+	int i, j;
- 
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+	/* update crtc base addresses */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + crtc_offsets[i],
- 		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + crtc_offsets[i],
- 		       upper_32_bits(rdev->mc.vram_start));
--		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + crtc_offsets[i],
- 		       (u32)rdev->mc.vram_start);
--		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + crtc_offsets[i],
- 		       (u32)rdev->mc.vram_start);
- 	}
--
- 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS_HIGH, upper_32_bits(rdev->mc.vram_start));
- 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
--	/* Unlock host access */
-+
-+	/* unblackout the MC */
-+	tmp = RREG32(MC_SHARED_BLACKOUT_CNTL);
-+	tmp &= ~BLACKOUT_MODE_MASK;
-+	WREG32(MC_SHARED_BLACKOUT_CNTL, tmp);
-+	/* allow CPU access */
-+	WREG32(BIF_FB_EN, FB_READ_EN | FB_WRITE_EN);
-+
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled) {
-+			if (ASIC_IS_DCE6(rdev)) {
-+				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
-+				tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
-+				WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+			} else {
-+				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
-+				tmp &= ~EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
-+				WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+			}
-+			/* wait for the next frame */
-+			frame_count = radeon_get_vblank_counter(rdev, i);
-+			for (j = 0; j < rdev->usec_timeout; j++) {
-+				if (radeon_get_vblank_counter(rdev, i) != frame_count)
-+					break;
-+				udelay(1);
-+			}
-+		}
-+	}
-+	/* Unlock vga access */
- 	WREG32(VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
- 	WREG32(VGA_RENDER_CONTROL, save->vga_render_control);
-diff --git a/drivers/gpu/drm/radeon/evergreen_reg.h b/drivers/gpu/drm/radeon/evergreen_reg.h
-index 8beac10..034f4c2 100644
---- a/drivers/gpu/drm/radeon/evergreen_reg.h
-+++ b/drivers/gpu/drm/radeon/evergreen_reg.h
-@@ -218,6 +218,8 @@
- #define EVERGREEN_CRTC_CONTROL                          0x6e70
- #       define EVERGREEN_CRTC_MASTER_EN                 (1 << 0)
- #       define EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE (1 << 24)
-+#define EVERGREEN_CRTC_BLANK_CONTROL                    0x6e74
-+#       define EVERGREEN_CRTC_BLANK_DATA_EN             (1 << 8)
- #define EVERGREEN_CRTC_STATUS                           0x6e8c
- #       define EVERGREEN_CRTC_V_BLANK                   (1 << 0)
- #define EVERGREEN_CRTC_STATUS_POSITION                  0x6e90
-diff --git a/drivers/gpu/drm/radeon/evergreend.h b/drivers/gpu/drm/radeon/evergreend.h
-index 1a8b960..bfdbafe 100644
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -87,6 +87,10 @@
- 
- #define	CONFIG_MEMSIZE					0x5428
- 
-+#define	BIF_FB_EN						0x5490
-+#define		FB_READ_EN					(1 << 0)
-+#define		FB_WRITE_EN					(1 << 1)
-+
- #define	CP_STRMOUT_CNTL					0x84FC
- 
- #define	CP_COHER_CNTL					0x85F0
-@@ -430,6 +434,9 @@
- #define		NOOFCHAN_MASK					0x00003000
- #define MC_SHARED_CHREMAP					0x2008
- 
-+#define MC_SHARED_BLACKOUT_CNTL           		0x20ac
-+#define		BLACKOUT_MODE_MASK			0x00000007
-+
- #define	MC_ARB_RAMCFG					0x2760
- #define		NOOFBANK_SHIFT					0
- #define		NOOFBANK_MASK					0x00000003
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index 476c68d..e9d2b5d 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -388,6 +388,7 @@ void r700_cp_fini(struct radeon_device *rdev);
- struct evergreen_mc_save {
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
-+	bool crtc_enabled[RADEON_MAX_CRTCS];
- };
- 
- void evergreen_pcie_gart_tlb_flush(struct radeon_device *rdev);
+ static efi_system_table_t *sys_table;
 -- 
 1.7.9.5
 
