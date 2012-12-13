@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab2LMOkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:40:37 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38962 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932230Ab2LMOke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:40:34 -0500
-Date: Thu, 13 Dec 2012 19:39:49 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] uprobes: Introduce uprobe->register_rwsem
-Message-ID: <20121213140949.GA3902@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121124180213.GA30963@redhat.com>
- <20121124180228.GA30980@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121124180228.GA30980@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121314-7182-0000-0000-000003C328D1
+	id S932641Ab2LMOIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:08:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44574 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab2LMOIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:08:34 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Paul Bolle <pebolle@tiscali.nl>, Alex Deucher <alexander.deucher@amd.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 126/241] radeon: add AGPMode 1 quirk for RV250
+Date: Thu, 13 Dec 2012 11:58:11 -0200
+Message-Id: <1355407206-17100-127-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-11-24 19:02:28]:
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> Introduce uprobe->register_rwsem. It is taken for writing around
-> __uprobe_register/unregister.
-> 
-> Change handler_chain() to use this sem rather than consumer_rwsem.
-> 
-> The main reason for this change is that we have the nasty problem
-> with mmap_sem/consumer_rwsem dependency. filter_chain() needs to
-> protect uprobe->consumers like handler_chain(), but they can not
-> use the same lock. filter_chain() can be called under ->mmap_sem
-> (currently this is always true), but we want to allow ->handler()
-> to play with the probed task's memory, and this needs ->mmap_sem.
-> 
-> Alternatively we could use srcu, but synchronize_srcu() is very
-> slow and ->register_rwsem allows us to do more. In particular, we
-> can teach handler_chain() to do remove_breakpoint() if this bp is
-> "nacked" by all consumers, we know that we can't race with the
-> new consumer which does uprobe_register().
-> 
-> See also the next patches. uprobes_mutex[] is almost ready to die.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+------------------
 
+From: Paul Bolle <pebolle@tiscali.nl>
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+commit 45171002b01b2e2ec4f991eca81ffd8430fd0aec upstream.
 
-> ---
->  kernel/events/uprobes.c |   10 ++++++++--
->  1 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index c80507d..03ffbb5 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -91,6 +91,7 @@ static atomic_t uprobe_events = ATOMIC_INIT(0);
->  struct uprobe {
->  	struct rb_node		rb_node;	/* node in the rb tree */
->  	atomic_t		ref;
-> +	struct rw_semaphore	register_rwsem;
->  	struct rw_semaphore	consumer_rwsem;
->  	struct mutex		copy_mutex;	/* TODO: kill me and UPROBE_COPY_INSN */
->  	struct list_head	pending_list;
-> @@ -449,6 +450,7 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
-> 
->  	uprobe->inode = igrab(inode);
->  	uprobe->offset = offset;
-> +	init_rwsem(&uprobe->register_rwsem);
->  	init_rwsem(&uprobe->consumer_rwsem);
->  	mutex_init(&uprobe->copy_mutex);
->  	/* For now assume that the instruction need not be single-stepped */
-> @@ -476,10 +478,10 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
->  		return;
-> 
-> -	down_read(&uprobe->consumer_rwsem);
-> +	down_read(&uprobe->register_rwsem);
->  	for (uc = uprobe->consumers; uc; uc = uc->next)
->  		uc->handler(uc, regs);
-> -	up_read(&uprobe->consumer_rwsem);
-> +	up_read(&uprobe->register_rwsem);
->  }
-> 
->  static void consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
-> @@ -873,9 +875,11 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
->  	mutex_lock(uprobes_hash(inode));
->  	uprobe = alloc_uprobe(inode, offset);
->  	if (uprobe) {
-> +		down_write(&uprobe->register_rwsem);
->  		ret = __uprobe_register(uprobe, uc);
->  		if (ret)
->  			__uprobe_unregister(uprobe, uc);
-> +		up_write(&uprobe->register_rwsem);
->  	}
->  	mutex_unlock(uprobes_hash(inode));
->  	if (uprobe)
-> @@ -899,7 +903,9 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
->  		return;
-> 
->  	mutex_lock(uprobes_hash(inode));
-> +	down_write(&uprobe->register_rwsem);
->  	__uprobe_unregister(uprobe, uc);
-> +	up_write(&uprobe->register_rwsem);
->  	mutex_unlock(uprobes_hash(inode));
->  	put_uprobe(uprobe);
->  }
-> -- 
-> 1.5.5.1
-> 
+The Intel 82855PM host bridge / Mobility FireGL 9000 RV250 combination
+in an (outdated) ThinkPad T41 needs AGPMode 1 for suspend/resume (under
+KMS, that is). So add a quirk for it.
+
+(Change R250 to RV250 in comment for preceding quirk too.)
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/gpu/drm/radeon/radeon_agp.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_agp.c b/drivers/gpu/drm/radeon/radeon_agp.c
+index bd2f33e..bc6b64f 100644
+--- a/drivers/gpu/drm/radeon/radeon_agp.c
++++ b/drivers/gpu/drm/radeon/radeon_agp.c
+@@ -70,9 +70,12 @@ static struct radeon_agpmode_quirk radeon_agpmode_quirk_list[] = {
+ 	/* Intel 82830 830 Chipset Host Bridge / Mobility M6 LY Needs AGPMode 2 (fdo #17360)*/
+ 	{ PCI_VENDOR_ID_INTEL, 0x3575, PCI_VENDOR_ID_ATI, 0x4c59,
+ 		PCI_VENDOR_ID_DELL, 0x00e3, 2},
+-	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 R250 Needs AGPMode 1 (lp #296617) */
++	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 (lp #296617) */
+ 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4c66,
+ 		PCI_VENDOR_ID_DELL, 0x0149, 1},
++	/* Intel 82855PM host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 for suspend/resume */
++	{ PCI_VENDOR_ID_INTEL, 0x3340, PCI_VENDOR_ID_ATI, 0x4c66,
++		PCI_VENDOR_ID_IBM, 0x0531, 1},
+ 	/* Intel 82852/82855 host bridge / Mobility 9600 M10 RV350 Needs AGPMode 1 (deb #467460) */
+ 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4e50,
+ 		0x1025, 0x0061, 1},
+-- 
+1.7.9.5
 
