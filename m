@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab2LMQj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 11:39:56 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:13247 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab2LMQjy (ORCPT
+	id S1756523Ab2LMQlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 11:41:07 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38689 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755571Ab2LMQlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 11:39:54 -0500
-Message-ID: <1355416251.18964.170.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH 02/11] drivers/base: Add hotplug framework code
-From: Toshi Kani <toshi.kani@hp.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>, "lenb@kernel.org" <lenb@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "guohanjun@huawei.com" <guohanjun@huawei.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 13 Dec 2012 09:30:51 -0700
-In-Reply-To: <20121213042437.GA14240@kroah.com>
-References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
-	 <1355354243-18657-3-git-send-email-toshi.kani@hp.com>
-	 <20121212235418.GB22764@kroah.com>
-	 <1355371365.18964.89.camel@misato.fc.hp.com>
-	 <20121213042437.GA14240@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 11:41:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1212111530250.1180-100000@iolanthe.rowland.org>
+References: <CANc+2y50-AYJcJgeQ8JHJiMjwxg=tbkQ2HQR4=ZZsEthKiWXgw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1212111530250.1180-100000@iolanthe.rowland.org>
+Date: Thu, 13 Dec 2012 22:11:03 +0530
+Message-ID: <CANc+2y5pJzda_Rafunn9rFZSgH_Dyq5+rer3rss1=5E7QxqZ6Q@mail.gmail.com>
+Subject: Re: Fwd: Safely remove option shows with Micro SD Card connected to
+ Linux through an Android phone
+From: prasannatsmkumar <prasannatsmkumar@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        nautilus-list@gnome.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 04:24 +0000, Greg KH wrote:
-> On Wed, Dec 12, 2012 at 09:02:45PM -0700, Toshi Kani wrote:
-> > On Wed, 2012-12-12 at 15:54 -0800, Greg KH wrote:
-> > > On Wed, Dec 12, 2012 at 04:17:14PM -0700, Toshi Kani wrote:
-> > > > Added hotplug.c, which is the hotplug framework code.
-> > > 
-> > > Again, better naming please.
-> > 
-> > Yes, I will change it to be more specific, something like
-> > "sys_hotplug.c".
-> 
-> Ugh, what's wrong with just a simple "system_bus.c" or something like
-> that, and then put all of the needed system bus logic in there and tie
-> the cpus and other sysdev code into that?
+On Wed, Dec 12, 2012 at 2:07 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> STOP UNIT means spin down the disk or eject the disc.  Since your phone
+> doesn't have a disk drive or an optical disc, no wonder this step
+> failed.
 
-The issue is that the framework does not provide the system bus
-structure.  This is because the system bus structure is not used for CPU
-and memory initialization at boot (as I explained in my other email).
-The framework manages the calling sequence of hotplug operations, which
-is similar to the boot sequence managed by start_kernel(),
-kernel_init(), do_initcalls(), etc.  In such sense, this file might not
-be a good fit for drivers/base, but I could not find a better place for
-it.
+Yes of course it does not have a optical disc or disk drive. But I
+thought if there is no such thing nautilus should not try to spin
+down. Linux kernel has nothing to do with this problem though.
 
-Thanks,
--Toshi
+>
+> No, neither option cuts power.  The main difference is that "safely
+> remove" disables the USB connection, so that if the device has an "okay
+> to unplug now" light, the light will turn on.
 
+I have seen lights going off in my pen drive, so naturally as an user
+I assumed that nautilus request the kernel to cut down the power and
+kernel did that. After choosing "Safely Remove" option my device node
+(/dev/sdb or whatever) still exists?
 
+>
+> You probably should get in touch with the people who maintain the
+> Nautilus program if you want to know why it does something.
+
+Yeah sure. Nautilus people are in this list. I will communicate with them.
+
+Thanks and Regards,
+PrasannaKumar
