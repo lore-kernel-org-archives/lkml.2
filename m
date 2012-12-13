@@ -1,124 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab2LMQaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 11:30:18 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30490 "EHLO
+	id S1756450Ab2LMQb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 11:31:29 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:30508 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756449Ab2LMQaP (ORCPT
+	with ESMTP id S1756444Ab2LMQah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 11:30:15 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-24-50ca02959f42
+	Thu, 13 Dec 2012 11:30:37 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-ca-50ca02ac4874
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         grant.likely@secretlab.ca, kgene.kim@samsung.com, jg1.han@samsung.com,
         thomas.abraham@linaro.org
-Subject: [PATCH v3 1/2] ARM: Exynos5250: Enabling ehci-s5p driver
-Date: Thu, 13 Dec 2012 22:06:01 +0530
-Message-id: <1355416562-25539-2-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v3 2/2] ARM: Exynos5250: Enabling ohci-exynos driver
+Date: Thu, 13 Dec 2012 22:06:02 +0530
+Message-id: <1355416562-25539-3-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1355416562-25539-1-git-send-email-gautam.vivek@samsung.com>
 References: <1355416562-25539-1-git-send-email-gautam.vivek@samsung.com>
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsWyRsSkSncq06kAg8ePRCwu75rDZjHj/D4m
-	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgyrg5/TVzwR3pimcz5zI2MH4S62Lk5JAQMJE4
-	9+sQM4QtJnHh3nq2LkYuDiGBpYwSL8+1ssMUze67D5WYziixqOElK4QzmUnizZcTrCBVbAK6
-	Ek1vdzGC2CICRRL75v9gBiliFljIKPH+5UmwHcICjhJfJrSANbAIqEq87GoFa+AV8JDoan/C
-	ArFOQeLN7Wdg9ZwCnhLzz28EqxcCqplz8zw7RK+AxLfJh4DqOYDqZSU2HQDbJSHwmE1i/ePb
-	UHMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzA0Dz975n0DsZVDRaH
-	GAU4GJV4eAvDTwYIsSaWFVfmHmKU4GBWEuG98RooxJuSWFmVWpQfX1Sak1p8iNEH6JKJzFKi
-	yfnAuMkriTc0NjE3NTa1NDIyMzXFIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgXGh9795
-	V+bLdzw7kbNEKzVg9rytfjP0mNT12z9rTTcol4xpPpe7+lzrKhPxaPXnl5s+vdjs6X6J+cEX
-	recLpu8/H79UZ9mNbm097+vbvnRm9XuHb1qpXnrn9sZY1+Cn1vHPWcun/Guz37NFSdehWuX/
-	Dqtd3ItXfO5dXdTRWLKRI6ZVc8PG3+FKLMUZiYZazEXFiQDctoudegIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jQd2pTKcCDFZt5bC4vGsOm8WM8/uY
-	LBYta2V2YPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
-	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj5vTX
-	zAV3pCuezZzL2MD4SayLkZNDQsBEYnbffTYIW0ziwr31QDYXh5DAdEaJRQ0vWSGcyUwSb76c
-	YAWpYhPQlWh6u4sRxBYRKJLYN/8HM0gRs8BCRon3L08ygySEBRwlvkxoAWtgEVCVeNnVCtbA
-	K+Ah0dX+hAVinYLEm9vPwOo5BTwl5p/fCFYvBFQz5+Z59gmMvAsYGVYxiqYWJBcUJ6XnGukV
-	J+YWl+al6yXn525iBAf+M+kdjKsaLA4xCnAwKvHwFoafDBBiTSwrrsw9xCjBwawkwnvjNVCI
-	NyWxsiq1KD++qDQntfgQow/QVROZpUST84FRmVcSb2hsYm5qbGppYmFiZolDWEmct9kjJUBI
-	ID2xJDU7NbUgtQhmHBMHp1QDo8lELsmPb4pF1x5Wni9ydNf88NefAtJELp+R6uHdcLd9x5R9
-	+Z1Fu1suJTJItMTarnVPjDFb9PSUbrbfpQs3I3OfeMadsXRU2xzB0/qmV+TQU4uFG7XXBM9K
-	Fpf8kHhJp3upUsL0k+pXXxyYnlz0+QWP3NVN9496fvy5/MqNqVKHn8/5NvNnk4cSS3FGoqEW
-	c1FxIgCqz0nvqQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsWyRsSkVncN06kAg0OfpC0u75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgylj1+C9zwV3RirbVk5kaGP8IdjFyckgImEg8
+	n7qOBcIWk7hwbz1bFyMXh5DAUkaJTffPMMMUtTa9g0pMZ5RY8WASC4QzmUni36rPjCBVbAK6
+	Ek1vd4HZIgJFEvvm/2AGKWIWWMgo8f7lSbBRwgIuEjubn7F3MXJwsAioStycEw4S5hXwkGhZ
+	e48dYpuCxJvbz8DKOQU8Jeaf38gKYgsB1cy5eR6shkVAQOLb5EMsIGMkBGQlNh0AWyUh8JhN
+	YsGaLYwQcyQlDq64wTKBUXgBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjMDAPP3vmfQO
+	xlUNFocYBTgYlXh4C8NPBgixJpYVV+YeYpTgYFYS4b3xGijEm5JYWZValB9fVJqTWnyI0Qfo
+	konMUqLJ+cCoySuJNzQ2MTc1NrU0MjIzNcUhrCTO2+yREiAkkJ5YkpqdmlqQWgQzjomDU6qB
+	sTfQvL5T91rWbm/LvTn9Sw4UZnYcCp54Wqmjaol8brOpQNjmPnPnk3sYFwbHTvt0uO+VaMit
+	/5vf/M2S9DedYrbb4/Sx71nNdquyFtjJT57HWiz67XkG6+M3qgpPtIUMFVbyBK99uJ5fP2z2
+	tFD/z8+nB1+5E1c4I1n6kdQsq14rw9U8G6NLlFiKMxINtZiLihMBW+JxaHkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jQd01TKcCDHreC1hc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
+	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ix6vFf
+	5oK7ohVtqyczNTD+Eexi5OSQEDCRaG16xwZhi0lcuLceyObiEBKYziix4sEkFghnMpPEv1Wf
+	GUGq2AR0JZre7gKzRQSKJPbN/8EMUsQssJBR4v3Lk8wgCWEBF4mdzc/Yuxg5OFgEVCVuzgkH
+	CfMKeEi0rL3HDrFNQeLN7Wdg5ZwCnhLzz29kBbGFgGrm3DzPPoGRdwEjwypG0dSC5ILipPRc
+	I73ixNzi0rx0veT83E2M4LB/Jr2DcVWDxSFGAQ5GJR7ewvCTAUKsiWXFlbmHGCU4mJVEeG+8
+	BgrxpiRWVqUW5ccXleakFh9i9AE6aiKzlGhyPjAm80riDY1NzE2NTS1NLEzMLHEIK4nzNnuk
+	BAgJpCeWpGanphakFsGMY+LglGpg1JuW2RC2KsKcU+3TKufjJ4ND3ewX5rDvsau8/URGprbO
+	7Nyss4dYMsIrpkesbmlR5LD8s2xFd/nLYt6DE1aHX+jm06sw6vn7sT7y0OL3xzPktp3gvRwq
+	tiTka2zD9nfvF4Zq7LG79rq/QmXOgsyeB92fzV1XuB66Y1t7QYvB6ti2NoOwkwv3K7EUZyQa
+	ajEXFScCAP91mxioAgAA
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding EHCI device tree node for Exynos5250 along with
-the device base adress and gpio line for vbus.
+Adding OHCI device tree node for Exynos5250 along with
+the device base address.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 Acked-by: Jingoo Han <jg1.han@samsung.com>
 ---
- .../devicetree/bindings/usb/exynos-usb.txt         |   25 ++++++++++++++++++++
- arch/arm/boot/dts/exynos5250-smdk5250.dts          |    4 +++
- arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++
+ .../devicetree/bindings/usb/exynos-usb.txt         |   15 +++++++++++++++
+ arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++++
  arch/arm/mach-exynos/include/mach/map.h            |    1 +
- arch/arm/mach-exynos/mach-exynos5-dt.c             |    2 +
- 5 files changed, 38 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/exynos-usb.txt
+ arch/arm/mach-exynos/mach-exynos5-dt.c             |    2 ++
+ 4 files changed, 24 insertions(+), 0 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-new file mode 100644
-index 0000000..e8bbb47
---- /dev/null
+index e8bbb47..f66fcdd 100644
+--- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
 +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-@@ -0,0 +1,25 @@
-+Samsung Exynos SoC USB controller
+@@ -23,3 +23,18 @@ Example:
+ 		interrupts = <0 71 0>;
+ 		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
+ 	};
 +
-+The USB devices interface with USB controllers on Exynos SOCs.
-+The device node has following properties.
-+
-+EHCI
++OHCI
 +Required properties:
-+ - compatible: should be "samsung,exynos4210-ehci" for USB 2.0
-+   EHCI controller in host mode.
++ - compatible: should be "samsung,exynos4210-ohci" for USB 2.0
++   OHCI companion controller in host mode.
 + - reg: physical base address of the controller and length of memory mapped
 +   region.
 + - interrupts: interrupt number to the cpu.
 +
-+Optional properties:
-+ - samsung,vbus-gpio:  if present, specifies the GPIO that
-+   needs to be pulled up for the bus to be powered.
-+
 +Example:
-+
-+	usb@12110000 {
-+		compatible = "samsung,exynos4210-ehci";
-+		reg = <0x12110000 0x100>;
++	usb@12120000 {
++		compatible = "samsung,exynos4210-ohci";
++		reg = <0x12120000 0x100>;
 +		interrupts = <0 71 0>;
-+		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
 +	};
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index 711b55f..f990086 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -218,4 +218,8 @@
- 	i2s_2: i2s@12D70000 {
- 		status = "disabled";
- 	};
-+
-+	usb@12110000 {
-+		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-+	};
- };
 diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 581e57a..584bb9a 100644
+index 584bb9a..75510d1 100644
 --- a/arch/arm/boot/dts/exynos5250.dtsi
 +++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -299,6 +299,12 @@
- 		rx-dma-channel = <&pdma0 11>; /* preliminary */
+@@ -305,6 +305,12 @@
+ 		interrupts = <0 71 0>;
  	};
  
-+	usb@12110000 {
-+		compatible = "samsung,exynos4210-ehci";
-+		reg = <0x12110000 0x100>;
++	usb@12120000 {
++		compatible = "samsung,exynos4210-ohci";
++		reg = <0x12120000 0x100>;
 +		interrupts = <0 71 0>;
 +	};
 +
@@ -126,27 +103,27 @@ index 581e57a..584bb9a 100644
  		#address-cells = <1>;
  		#size-cells = <1>;
 diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index cbb2852..b2c662f 100644
+index b2c662f..4bf6fd9 100644
 --- a/arch/arm/mach-exynos/include/mach/map.h
 +++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -201,6 +201,7 @@
- #define EXYNOS4_PA_EHCI			0x12580000
+@@ -202,6 +202,7 @@
  #define EXYNOS4_PA_OHCI			0x12590000
  #define EXYNOS4_PA_HSPHY		0x125B0000
-+#define EXYNOS5_PA_EHCI			0x12110000
+ #define EXYNOS5_PA_EHCI			0x12110000
++#define EXYNOS5_PA_OHCI			0x12120000
  #define EXYNOS4_PA_MFC			0x13400000
  
  #define EXYNOS4_PA_UART			0x13800000
 diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index 462e5ac..b3b9af1 100644
+index b3b9af1..07aa586 100644
 --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
 +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
- 				"samsung-i2s.1", NULL),
- 	OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
+@@ -112,6 +112,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
  				"samsung-i2s.2", NULL),
-+	OF_DEV_AUXDATA("samsung,exynos4210-ehci", EXYNOS5_PA_EHCI,
-+				"s5p-ehci", NULL),
+ 	OF_DEV_AUXDATA("samsung,exynos4210-ehci", EXYNOS5_PA_EHCI,
+ 				"s5p-ehci", NULL),
++	OF_DEV_AUXDATA("samsung,exynos4210-ohci", EXYNOS5_PA_OHCI,
++				"exynos-ohci", NULL),
  	{},
  };
  
