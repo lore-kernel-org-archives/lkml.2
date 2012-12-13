@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2LMPXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:23:14 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35552 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab2LMPWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 10:22:21 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: cbou@mail.ru, Marcus Cooper <marcus.xm.cooper@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 16/18] power: ab8500_charger: remove unused defines.
-Date: Thu, 13 Dec 2012 15:21:39 +0000
-Message-Id: <1355412102-14265-17-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355412102-14265-1-git-send-email-lee.jones@linaro.org>
-References: <1355412102-14265-1-git-send-email-lee.jones@linaro.org>
+	id S1756310Ab2LMPXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:23:46 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39137 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753031Ab2LMPXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 10:23:12 -0500
+Message-ID: <1355412191.12036.2.camel@joe-AO722>
+Subject: Re: [PATCHv3 4/7] gpu: host1x: Add debug support
+From: Joe Perches <joe@perches.com>
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+Cc: thierry.reding@avionic-design.de, dev@lynxeye.de,
+        linux-tegra@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        amerilainen@nvidia.com, linux-kernel@vger.kernel.org
+Date: Thu, 13 Dec 2012 07:23:11 -0800
+In-Reply-To: <1355407484-28904-5-git-send-email-tbergstrom@nvidia.com>
+References: <1355407484-28904-1-git-send-email-tbergstrom@nvidia.com>
+	 <1355407484-28904-5-git-send-email-tbergstrom@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+On Thu, 2012-12-13 at 16:04 +0200, Terje Bergstrom wrote:
+> Add support for host1x debugging. Adds debugfs entries, and dumps
+> channel state to UART in case of stuck job.
 
-Cleanup of the ab8500_charger driver.
+trivial note:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
-Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
----
- drivers/power/ab8500_charger.c |    5 -----
- 1 file changed, 5 deletions(-)
+[]
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index 7bfb02e..0ada459 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -115,11 +115,6 @@ enum ab8500_charger_link_status {
- 	USB_STAT_CARKIT_1,
- 	USB_STAT_CARKIT_2,
- 	USB_STAT_ACA_DOCK_CHARGER,
--	USB_STAT_SAMSUNG_USB_PHY_DIS,
--	USB_STAT_SAMSUNG_USB_PHY_ENA,
--	USB_STAT_SAMSUNG_UART_PHY_DIS,
--	USB_STAT_SAMSUNG_UART_PHY_ENA,
--	USB_STAT_MOTOROLA_USB_PHY_ENA,
- };
- 
- enum ab8500_usb_state {
--- 
-1.7.9.5
+> diff --git a/drivers/gpu/host1x/debug.h b/drivers/gpu/host1x/debug.h
+[]
+> +void host1x_debug_output(struct output *o, const char *fmt, ...);
+
+This should be marked __printf(2, 3)
+so the compiler verifies format and argument types.
+
 
