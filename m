@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab2LMTMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 14:12:39 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52158 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab2LMTMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 14:12:38 -0500
-Message-ID: <50CA28A1.2080003@gmail.com>
-Date: Thu, 13 Dec 2012 12:12:33 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755909Ab2LMTNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 14:13:21 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42041 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802Ab2LMTNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 14:13:19 -0500
+Date: Thu, 13 Dec 2012 20:13:17 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+Message-ID: <20121213191317.GE31485@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+	"Yu, Fenghua" <fenghua.yu@intel.com>,
+	"mingo@kernel.org" <mingo@kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"tglx@linutronix.de" <tglx@linutronix.de>,
+	"hpa@linux.intel.com" <hpa@linux.intel.com>,
+	"linux-tip-commits@vger.kernel.org" <linux-tip-commits@vger.kernel.org>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+References: <20121211170605.GD28827@liondog.tnic>
+ <CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com>
+ <50C76F9E.4080001@zytor.com>
+ <CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com>
+ <50C7C859.60405@zytor.com>
+ <CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
+ <50C82ABF.3020907@zytor.com>
+ <20121212133853.GC8760@liondog.tnic>
+ <50C963B1.3040609@zytor.com>
+ <50C96717.3020407@zytor.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.8
-References: <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com> <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com> <50C9E692.9070506@gmail.com> <CA+55aFzmDooC3tYzvP1YGv9g4ej1hBUQBPV6R+ukrfxuEELBaQ@mail.gmail.com> <50CA0134.2090608@gmail.com> <CA+55aFyZ2kAQPmZSv_sfHDAR1gusOxO22TRX-kqSim-cZrMscw@mail.gmail.com> <CA+55aFwSYyoLmdDJ5xsdwcWLThYQ7oieoeWDV2g+wV3CJk4vtg@mail.gmail.com> <50CA10C8.3020509@gmail.com> <20121213173617.GB19444@gmail.com>
-In-Reply-To: <20121213173617.GB19444@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50C96717.3020407@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/12 10:36 AM, Ingo Molnar wrote:
-> The #1 problem child in this particular case, the one you should
-> care about most is:
->
-> 	perf record -e cycles:pp
->
-> As 99% of the people won't be doing any host or guest side
-> profiling, they just want to do profiling.
+On Wed, Dec 12, 2012 at 09:26:47PM -0800, H. Peter Anvin wrote:
+> On 12/12/2012 09:12 PM, H. Peter Anvin wrote:
+> >Here is a version that compiles.  It doesn't *boot* yet, because the
+> >switchover from dynamic mode to the real pagetables doesn't happen right
+> >and so we end up on an uninitialized set of page tables.
+> >
+> >The new page table setup in tip:x86/mm2 should make that easier to
+> >achieve, however... I won't have time to test this out tonight, though.
+> >
+> >     -hpa
+> 
+> Well, minus a simple brainfart now it actually gets into the page
+> table setup.
 
-In older code (v3.6 and before) -e cycles:p sets the exclude_guest flag 
-to 0, so -e cycles:p and -e cycles:pG are equivalent with respect to 
-exclude_guest.
+If by this you mean that you can only see
 
+"Decompressing Linux...
+Parsing ELF.."
 
-> Ok? So now we need a patch that does all that - otherwise we'll
-> have to revert the one that added the regression.
+and then the VM reboots (running it in KVM) then ok, I'm seeing this
+here too.
 
-I will not have time to work on a patch until Sunday at the earliest.
+Thanks.
 
-David
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
