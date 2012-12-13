@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab2LMOKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:10:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44751 "EHLO
+	id S932912Ab2LMOKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:10:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44743 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932853Ab2LMOKa (ORCPT
+	with ESMTP id S932825Ab2LMOK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:10:30 -0500
+	Thu, 13 Dec 2012 09:10:27 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mike Galbraith <mgalbraith@suse.de>, Tejun Heo <tj@kernel.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 156/241] Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
-Date: Thu, 13 Dec 2012 11:58:41 -0200
-Message-Id: <1355407206-17100-157-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 155/241] workqueue: exit rescuer_thread() as TASK_RUNNING
+Date: Thu, 13 Dec 2012 11:58:40 -0200
+Message-Id: <1355407206-17100-156-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,93 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <efault@gmx.de>
+From: Mike Galbraith <mgalbraith@suse.de>
 
-commit fd8ef11730f1d03d5d6555aa53126e9e34f52f12 upstream.
+commit 412d32e6c98527078779e5b515823b2810e40324 upstream.
 
-This reverts commit 800d4d30c8f20bd728e5741a3b77c4859a613f7c.
+A rescue thread exiting TASK_INTERRUPTIBLE can lead to a task scheduling
+off, never to be seen again.  In the case where this occurred, an exiting
+thread hit reiserfs homebrew conditional resched while holding a mutex,
+bringing the box to its knees.
 
-Between commits 8323f26ce342 ("sched: Fix race in task_group()") and
-800d4d30c8f2 ("sched, autogroup: Stop going ahead if autogroup is
-disabled"), autogroup is a wreck.
+PID: 18105  TASK: ffff8807fd412180  CPU: 5   COMMAND: "kdmflush"
+ #0 [ffff8808157e7670] schedule at ffffffff8143f489
+ #1 [ffff8808157e77b8] reiserfs_get_block at ffffffffa038ab2d [reiserfs]
+ #2 [ffff8808157e79a8] __block_write_begin at ffffffff8117fb14
+ #3 [ffff8808157e7a98] reiserfs_write_begin at ffffffffa0388695 [reiserfs]
+ #4 [ffff8808157e7ad8] generic_perform_write at ffffffff810ee9e2
+ #5 [ffff8808157e7b58] generic_file_buffered_write at ffffffff810eeb41
+ #6 [ffff8808157e7ba8] __generic_file_aio_write at ffffffff810f1a3a
+ #7 [ffff8808157e7c58] generic_file_aio_write at ffffffff810f1c88
+ #8 [ffff8808157e7cc8] do_sync_write at ffffffff8114f850
+ #9 [ffff8808157e7dd8] do_acct_process at ffffffff810a268f
+    [exception RIP: kernel_thread_helper]
+    RIP: ffffffff8144a5c0  RSP: ffff8808157e7f58  RFLAGS: 00000202
+    RAX: 0000000000000000  RBX: 0000000000000000  RCX: 0000000000000000
+    RDX: 0000000000000000  RSI: ffffffff8107af60  RDI: ffff8803ee491d18
+    RBP: 0000000000000000   R8: 0000000000000000   R9: 0000000000000000
+    R10: 0000000000000000  R11: 0000000000000000  R12: 0000000000000000
+    R13: 0000000000000000  R14: 0000000000000000  R15: 0000000000000000
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
 
-With both applied, all you have to do to crash a box is disable
-autogroup during boot up, then reboot..  boom, NULL pointer dereference
-due to commit 800d4d30c8f2 not allowing autogroup to move things, and
-commit 8323f26ce342 making that the only way to switch runqueues:
-
-  BUG: unable to handle kernel NULL pointer dereference at           (null)
-  IP: [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
-  Pid: 7047, comm: systemd-user-se Not tainted 3.6.8-smp #7 MEDIONPC MS-7502/MS-7502
-  RIP: effective_load.isra.43+0x50/0x90
-  Process systemd-user-se (pid: 7047, threadinfo ffff880221dde000, task ffff88022618b3a0)
-  Call Trace:
-    select_task_rq_fair+0x255/0x780
-    try_to_wake_up+0x156/0x2c0
-    wake_up_state+0xb/0x10
-    signal_wake_up+0x28/0x40
-    complete_signal+0x1d6/0x250
-    __send_signal+0x170/0x310
-    send_signal+0x40/0x80
-    do_send_sig_info+0x47/0x90
-    group_send_sig_info+0x4a/0x70
-    kill_pid_info+0x3a/0x60
-    sys_kill+0x97/0x1a0
-    ? vfs_read+0x120/0x160
-    ? sys_read+0x45/0x90
-    system_call_fastpath+0x16/0x1b
-  Code: 49 0f af 41 50 31 d2 49 f7 f0 48 83 f8 01 48 0f 46 c6 48 2b 07 48 8b bf 40 01 00 00 48 85 ff 74 3a 45 31 c0 48 8b 8f 50 01 00 00 <48> 8b 11 4c 8b 89 80 00 00 00 49 89 d2 48 01 d0 45 8b 59 58 4c
-  RIP  [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
-   RSP <ffff880221ddfbd8>
-  CR2: 0000000000000000
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/sched/auto_group.c |    4 ----
- kernel/sched/auto_group.h |    5 -----
- 2 files changed, 9 deletions(-)
+ kernel/workqueue.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-index 0984a21..15f60d0 100644
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 478f2ab..a6a4c90 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2045,8 +2045,10 @@ static int rescuer_thread(void *__wq)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
  
- 	p->signal->autogroup = autogroup_kref_get(ag);
+-	if (kthread_should_stop())
++	if (kthread_should_stop()) {
++		__set_current_state(TASK_RUNNING);
+ 		return 0;
++	}
  
--	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
--		goto out;
--
- 	t = p;
- 	do {
- 		sched_move_task(t);
- 	} while_each_thread(p, t);
- 
--out:
- 	unlock_task_sighand(p, &flags);
- 	autogroup_kref_put(prev);
- }
-diff --git a/kernel/sched/auto_group.h b/kernel/sched/auto_group.h
-index 8bd0471..443232e 100644
---- a/kernel/sched/auto_group.h
-+++ b/kernel/sched/auto_group.h
-@@ -4,11 +4,6 @@
- #include <linux/rwsem.h>
- 
- struct autogroup {
--	/*
--	 * reference doesn't mean how many thread attach to this
--	 * autogroup now. It just stands for the number of task
--	 * could use this autogroup.
--	 */
- 	struct kref		kref;
- 	struct task_group	*tg;
- 	struct rw_semaphore	lock;
+ 	/*
+ 	 * See whether any cpu is asking for help.  Unbounded
 -- 
 1.7.9.5
 
