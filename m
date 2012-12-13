@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab2LMHRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 02:17:22 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:57430 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2LMHRV (ORCPT
+	id S1753124Ab2LMHSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 02:18:18 -0500
+Received: from www84.your-server.de ([213.133.104.84]:58850 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab2LMHSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 02:17:21 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap1FAHR/yVBV5qjOPGdsb2JhbABFDoVBhSOzfRcDAQEBATg0gh4BAQQBOhwjBQsIA0YUJQoaLodwCr41FJAZYQOWCIV7jQM/
-X-IronPort-AV: E=Sophos;i="4.84,272,1355094000"; 
-   d="scan'208";a="247503011"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 13 Dec 2012 08:20:11 +0100
-To: "Gabriel L. Somlo" <somlo@cmu.edu>
-Cc: Guenter Roeck <groeck-dsl@sbcglobal.net>, khali@linux-fr.org,
-        linux@roeck-us.net, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, agraf@suse.de, rene@exactcode.com
-Subject: Re: [PATCH v2] applesmc: add sysfs file to report OSK
-Message-ID: <20121213072011.GA515@polaris.bitmath.org>
-References: <20121210195414.GA642@polaris.bitmath.org>
- <20121210222313.GF2097@hedwig.ini.cmu.edu>
- <20121212230128.GE16373@lobsang.ini.cmu.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212230128.GE16373@lobsang.ini.cmu.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Dec 2012 02:18:17 -0500
+Message-ID: <1355383038.18653.2.camel@wall-e>
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
+        john.stultz@linaro.org, luto@amacapital.net
+Date: Thu, 13 Dec 2012 08:17:18 +0100
+In-Reply-To: <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
+	 <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
+	 <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>
+	 <1355379433.24701.1.camel@wall-e>
+	 <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gabriel,
+Am Mittwoch, den 12.12.2012, 22:47 -0800 schrieb H. Peter Anvin:
+> Should be a simple matter of sharing pages.  Look perhaps at the x32 vdso for a hint.
+> 
 
-> I could try to hardcode the OSK inside QEMU, or I could try to include
-> it as a default config file entry, but I'm quite certain the QEMU project
-> would be uncomfortable "distributing" a string on which Apple claims
-> copyright. Even if that happened, distros might then balk at shipping
-> QEMU as part of their package repositories, for the exact same reason.
 
-I understand this is frustrating, and I believe you have made a good
-case for the rationale. However, the technical issues remain. Also,
-there might still be other, simpler, solutions.
+> >
+> >Any idea or clean solution how i can map the 64 bit vgtod into the 32
+> >bit address space? Thats the only problem i see.
+> >
 
-> The only viable (from a legal CYA standpoint) thing I can think of is
-> to make it easy to acquire the OSK automatically, on demand, directly
-> from the hardware. Right now, the logical place for that is applesmc.ko.
-> It already controls access to the SMC, and already reports values for
-> various keys.
+No, i see no special handling for x32 vdso to do this. I am not sure if
+x32 vdso can access the 64 bit address space of vsyscall_gtod_data. I
+can't test this due the lack of a x32 abi system.
 
-How about encrypting the string with a key only found on an Apple
-computer? There are strings available in both ACPI and EFI that could
-serve such a purpose.
 
-Regarding the patch, I agree with Guenter that putting more unrelated
-things into the hwmon subsystem makes no sense. Most of the
-information in applesmc should go into the hwmon, thermal, backlight
-and input subsystems, but some strings should go somewhere else (maybe
-/sys/firmware/smc/?). The reluctance you experience here is a
-technical one; someone will need to make an effort to create a good
-place for your string, and it does not help that the string is, in
-fact, a constant. :-)
-
-So, don't give up hope, but please do not expect an immediate solution.
-
-Thanks.
-Henrik
