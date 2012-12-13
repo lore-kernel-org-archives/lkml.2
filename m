@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989Ab2LMOc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:32:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44776 "EHLO
+	id S932992Ab2LMOdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:33:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44761 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932825Ab2LMOKr (ORCPT
+	with ESMTP id S932899Ab2LMOKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:10:47 -0500
+	Thu, 13 Dec 2012 09:10:38 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcos Chaparro <marcos@mrkindustries.com.ar>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 162/241] Bluetooth: ath3k: Add support for VAIO VPCEH [0489:e027]
-Date: Thu, 13 Dec 2012 11:58:47 -0200
-Message-Id: <1355407206-17100-163-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 159/241] tmpfs: fix shared mempolicy leak
+Date: Thu, 13 Dec 2012 11:58:44 -0200
+Message-Id: <1355407206-17100-160-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,75 +27,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcos Chaparro <marcos@mrkindustries.com.ar>
+From: Mel Gorman <mgorman@suse.de>
 
-commit acd9454433e28c1a365d8b069813c35c1c3a8ac3 upstream.
+commit 18a2f371f5edf41810f6469cb9be39931ef9deb9 upstream.
 
-Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the
-devices list.
-Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth
-device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth
-[0cf3:3005].
+This fixes a regression in 3.7-rc, which has since gone into stable.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e027 Rev= 0.01
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+Commit 00442ad04a5e ("mempolicy: fix a memory corruption by refcount
+imbalance in alloc_pages_vma()") changed get_vma_policy() to raise the
+refcount on a shmem shared mempolicy; whereas shmem_alloc_page() went
+on expecting alloc_page_vma() to drop the refcount it had acquired.
+This deserves a rework: but for now fix the leak in shmem_alloc_page().
 
-Signed-off-by: Marcos Chaparro <marcos@mrkindustries.com.ar>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Hugh: shmem_swapin() did not need a fix, but surely it's clearer to use
+the same refcounting there as in shmem_alloc_page(), delete its onstack
+mempolicy, and the strange mpol_cond_copy() and __mpol_cond_copy() -
+those were invented to let swapin_readahead() make an unknown number of
+calls to alloc_pages_vma() with one mempolicy; but since 00442ad04a5e,
+alloc_pages_vma() has kept refcount in balance, so now no problem.
+
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/bluetooth/ath3k.c |    1 +
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 2 insertions(+)
+ include/linux/mempolicy.h |   16 ----------------
+ mm/mempolicy.c            |   22 ----------------------
+ mm/shmem.c                |   26 ++++++++++++++++----------
+ 3 files changed, 16 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index fc2de55..b00000e 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x13d3, 0x3304) },
- 	{ USB_DEVICE(0x0930, 0x0215) },
- 	{ USB_DEVICE(0x0489, 0xE03D) },
-+	{ USB_DEVICE(0x0489, 0xE027) },
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index c252970..7539a67 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -137,16 +137,6 @@ static inline void mpol_cond_put(struct mempolicy *pol)
+ 		__mpol_put(pol);
+ }
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03F0, 0x311D) },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index b5f008c..e1848be 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -131,6 +131,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
-+	{ USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
+-extern struct mempolicy *__mpol_cond_copy(struct mempolicy *tompol,
+-					  struct mempolicy *frompol);
+-static inline struct mempolicy *mpol_cond_copy(struct mempolicy *tompol,
+-						struct mempolicy *frompol)
+-{
+-	if (!frompol)
+-		return frompol;
+-	return __mpol_cond_copy(tompol, frompol);
+-}
+-
+ extern struct mempolicy *__mpol_dup(struct mempolicy *pol);
+ static inline struct mempolicy *mpol_dup(struct mempolicy *pol)
+ {
+@@ -270,12 +260,6 @@ static inline void mpol_cond_put(struct mempolicy *pol)
+ {
+ }
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+-static inline struct mempolicy *mpol_cond_copy(struct mempolicy *to,
+-						struct mempolicy *from)
+-{
+-	return from;
+-}
+-
+ static inline void mpol_get(struct mempolicy *pol)
+ {
+ }
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index cee020c..e65ca51 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2029,28 +2029,6 @@ struct mempolicy *__mpol_dup(struct mempolicy *old)
+ 	return new;
+ }
+ 
+-/*
+- * If *frompol needs [has] an extra ref, copy *frompol to *tompol ,
+- * eliminate the * MPOL_F_* flags that require conditional ref and
+- * [NOTE!!!] drop the extra ref.  Not safe to reference *frompol directly
+- * after return.  Use the returned value.
+- *
+- * Allows use of a mempolicy for, e.g., multiple allocations with a single
+- * policy lookup, even if the policy needs/has extra ref on lookup.
+- * shmem_readahead needs this.
+- */
+-struct mempolicy *__mpol_cond_copy(struct mempolicy *tompol,
+-						struct mempolicy *frompol)
+-{
+-	if (!mpol_needs_cond_ref(frompol))
+-		return frompol;
+-
+-	*tompol = *frompol;
+-	tompol->flags &= ~MPOL_F_SHARED;	/* copy doesn't need unref */
+-	__mpol_put(frompol);
+-	return tompol;
+-}
+-
+ /* Slow path of a mempolicy comparison */
+ bool __mpol_equal(struct mempolicy *a, struct mempolicy *b)
+ {
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8d0c102..626a7e7 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -921,24 +921,28 @@ static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+ static struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
+ 			struct shmem_inode_info *info, pgoff_t index)
+ {
+-	struct mempolicy mpol, *spol;
+ 	struct vm_area_struct pvma;
+-
+-	spol = mpol_cond_copy(&mpol,
+-			mpol_shared_policy_lookup(&info->policy, index));
++	struct page *page;
+ 
+ 	/* Create a pseudo vma that just contains the policy */
+ 	pvma.vm_start = 0;
+ 	pvma.vm_pgoff = index;
+ 	pvma.vm_ops = NULL;
+-	pvma.vm_policy = spol;
+-	return swapin_readahead(swap, gfp, &pvma, 0);
++	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
++
++	page = swapin_readahead(swap, gfp, &pvma, 0);
++
++	/* Drop reference taken by mpol_shared_policy_lookup() */
++	mpol_cond_put(pvma.vm_policy);
++
++	return page;
+ }
+ 
+ static struct page *shmem_alloc_page(gfp_t gfp,
+ 			struct shmem_inode_info *info, pgoff_t index)
+ {
+ 	struct vm_area_struct pvma;
++	struct page *page;
+ 
+ 	/* Create a pseudo vma that just contains the policy */
+ 	pvma.vm_start = 0;
+@@ -946,10 +950,12 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+ 	pvma.vm_ops = NULL;
+ 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
+ 
+-	/*
+-	 * alloc_page_vma() will drop the shared policy reference
+-	 */
+-	return alloc_page_vma(gfp, &pvma, 0);
++	page = alloc_page_vma(gfp, &pvma, 0);
++
++	/* Drop reference taken by mpol_shared_policy_lookup() */
++	mpol_cond_put(pvma.vm_policy);
++
++	return page;
+ }
+ #else /* !CONFIG_NUMA */
+ #ifdef CONFIG_TMPFS
 -- 
 1.7.9.5
 
