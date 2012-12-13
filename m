@@ -1,131 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab2LMPP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:15:27 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50459 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab2LMPPY (ORCPT
+	id S1755841Ab2LMPPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:15:42 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33480 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587Ab2LMPPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 10:15:24 -0500
-Message-ID: <50C9F0F5.40307@gmail.com>
-Date: Thu, 13 Dec 2012 23:15:01 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 13 Dec 2012 10:15:40 -0500
+Message-ID: <50C9F114.4050502@ti.com>
+Date: Thu, 13 Dec 2012 10:15:32 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tang Chen <tangchen@cn.fujitsu.com>, Huxinwei <huxinwei@huawei.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>       <50B5EFE9.3040206@huawei.com>      <1354128096.26955.276.camel@misato.fc.hp.com>     <50B6E936.2080308@huawei.com>  <1354228028.7776.56.camel@misato.fc.hp.com>     <50BC29C6.6050706@huawei.com>   <1354579848.21585.54.camel@misato.fc.hp.com>  <50C0CA90.7010608@gmail.com>   <1354849065.21116.61.camel@misato.fc.hp.com> <50C1852D.3000104@huawei.com>  <1354928933.28379.37.camel@misato.fc.hp.com> <50C74481.7010107@gmail.com> <1355409749.18964.107.camel@misato.fc.hp.com>
-In-Reply-To: <1355409749.18964.107.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Kumar, Anil" <anilkumar.v@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the l2-mtd tree with Linus' tree
+References: <20121213123755.db3d38128e0593a372ccf17f@canb.auug.org.au> <F3DBB1B3EF102E4994C89758CFCA32412A304D@DBDE01.ent.ti.com>
+In-Reply-To: <F3DBB1B3EF102E4994C89758CFCA32412A304D@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 10:42 PM, Toshi Kani wrote:
-> On Tue, 2012-12-11 at 22:34 +0800, Jiang Liu wrote:
->> On 12/08/2012 09:08 AM, Toshi Kani wrote:
->>> On Fri, 2012-12-07 at 13:57 +0800, Jiang Liu wrote:
->>>> On 2012-12-7 10:57, Toshi Kani wrote:
->>>>> On Fri, 2012-12-07 at 00:40 +0800, Jiang Liu wrote:
->>>>>> On 12/04/2012 08:10 AM, Toshi Kani wrote:
->>>>>>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
->>>>>>>> On 2012/11/30 6:27, Toshi Kani wrote:
->>>>>>>>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
->  :
->>>>> Yes, the framework should allow such future work.  I also think that the
->>>>> framework itself should be independent from such ACPI issue.  Ideally,
->>>>> it should be able to support non-ACPI platforms.
->>>> The same point here. The ACPI based hotplug framework is designed as:
->>>> 1) an ACPI based hotplug slot driver to handle platform specific logic.
->>>>    Platform may provide platform specific slot drivers to discover, manage
->>>>    hotplug slots. We have provided a default implementation of slot driver
->>>>    according to the ACPI spec.
->>>
->>> The ACPI spec does not define that _EJ0 is required to receive a hot-add
->>> request, i.e. bus/device check.  This is a major issue.  Since Windows
->>> only supports hot-add, I think there are platforms that only support
->>> hot-add today.
->>>
->>>> 2) an ACPI based hotplug manager driver, which is a platform independent
->>>>    driver and manages all hotplug slot created by the slot driver.
->>>
->>> It is surely impressive work, but I think is is a bit overdoing.  I
->>> expect hot-pluggable servers come with management console and/or GUI
->>> where a user can manage hardware units and initiate hot-plug operations.
->>> I do not think the kernel needs to step into such area since it tends to
->>> be platform-specific. 
->> One of the major usages of this feature is for testing. 
->> It will be hard for OSVs and OEMs to verify hotplug functionalities if it could
->> only be tested by physical hotplug or through management console. So to pave the
->> way for hotplug, we need to provide a mechanism for OEMs and OSVs to execute 
->> auto stress tests for hotplug functionalities.
-> 
-> Yes, but such OS->FW interface is platform-specific.  Some platforms use
-> IPMI for the OS to communicate with the management console.  In this
-> case, an OEM-specific command can be used to request a hotplug through
-> IPMI.  Some platforms may also support test programs to run on the
-> management console for validations.
-> 
-> For early development testing, Yinghai's SCI emulation patch can be used
-> to emulate hotplug events from the OS.  It would be part of the kernel
-> debugging features once this patch is accepted. 
-Hi Toshi,
-	ACPI 5.0 has provided some mechanism to normalize the way to issue
-RAS related requests to firmware. I hope ACPI 5.x will define some standardized
-ways based on the PCC defined in 5.0. If needed, we may provide platform
-specific methods for them too.
-Regards!
-Gerry
+On 12/13/2012 12:38 AM, Kumar, Anil wrote:
+> On Thu, Dec 13, 2012 at 07:07:55, Stephen Rothwell wrote:
+>> Hi Artem,
+>>
+>> Today's linux-next merge of the l2-mtd tree got a conflict in
+>> Documentation/devicetree/bindings/arm/davinci/nand.txt between commit
+>> fed16bba8726 ("mtd: nand: davinci: fix the binding documentation") from
+>> Linus' tree and commit 192afdbfbc5c ("mtd: davinci: add support for
+>> parition binding nodes") from the l2-mtd tree.
+>>
+>> I fixed it up (maybe- see below) and can carry the fix as necessary (no
+>> action is required).
+>>
+>> -- 
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>>
+>> diff --cc Documentation/devicetree/bindings/arm/davinci/nand.txt
+>> index 49fc7ad,4746452..0000000
+>> --- a/Documentation/devicetree/bindings/arm/davinci/nand.txt
+>> +++ b/Documentation/devicetree/bindings/arm/davinci/nand.txt
+>> @@@ -23,16 -23,37 +23,24 @@@ Recommended properties
+>>    - ti,davinci-nand-buswidth: buswidth 8 or 16
+>>    - ti,davinci-nand-use-bbt: use flash based bad block table support.
+>>
+>> + nand device bindings may contain additional sub-nodes describing
+>> + partitions of the address space. See partition.txt for more detail.
+>> +
+>>   -Example (enbw_cmc board):
+>>   -aemif@60000000 {
+>>   -	compatible = "ti,davinci-aemif";
+>>   -	#address-cells =<2>;
+>>   -	#size-cells =<1>;
+>>   -	reg =<0x68000000 0x80000>;
+>>   -	ranges =<2 0 0x60000000 0x02000000
+>>   -		  3 0 0x62000000 0x02000000
+>>   -		  4 0 0x64000000 0x02000000
+>>   -		  5 0 0x66000000 0x02000000
+>>   -		  6 0 0x68000000 0x02000000>;
+>>   -	nand@3,0 {
+>>   -		compatible = "ti,davinci-nand";
+>>   -		reg =<3 0x0 0x807ff
+>>   -			6 0x0 0x8000>;
+>>   -		#address-cells =<1>;
+>>   -		#size-cells =<1>;
+>>   -		ti,davinci-chipselect =<1>;
+>>   -		ti,davinci-mask-ale =<0>;
+>>   -		ti,davinci-mask-cle =<0>;
+>>   -		ti,davinci-mask-chipsel =<0>;
+>>   -		ti,davinci-ecc-mode = "hw";
+>>   -		ti,davinci-ecc-bits =<4>;
+>>   -		ti,davinci-nand-use-bbt;
+>>   +Example(da850 EVM ):
+>>   +nand_cs3@62000000 {
+>>   +	compatible = "ti,davinci-nand";
+>>   +	reg =<0x62000000 0x807ff
+>>   +		0x68000000 0x8000>;
+>>   +	ti,davinci-chipselect =<1>;
+>>   +	ti,davinci-mask-ale =<0>;
+>>   +	ti,davinci-mask-cle =<0>;
+>>   +	ti,davinci-mask-chipsel =<0>;
+>>   +	ti,davinci-ecc-mode = "hw";
+>>   +	ti,davinci-ecc-bits =<4>;
+>>   +	ti,davinci-nand-use-bbt;
+>> +
+>>   -		partition@180000 {
+>>   -			label = "ubifs";
+>>   -			reg =<0x180000 0x7e80000>;
+>>   -		};
+>> ++	partition@180000 {
+>> ++		label = "ubifs";
+>> ++		reg =<0x180000 0x7e80000>;
+> partition@180000 is sub-node of nand_cs3@62000000.
+> nand_cs3@62000000 needs to use below properties
+>
+> #address-cells =<1>;
+> #size-cells =<1>;
+>
+> Without these properties DT build will give reg format Warning.
+>
+>> + 	};
+>>    };
+>>
+Anul,
 
-> 
->  
->>>> We haven't gone further enough to provide an ACPI independent hotplug framework
->>>> because we only have experience with x86 and Itanium, both are ACPI based.
->>>> We may try to implement an ACPI independent hotplug framework by pushing all
->>>> ACPI specific logic into the slot driver, I think it's doable. But we need
->>>> suggestions from experts of other architectures, such as SPARC and Power.
->>>> But seems Power already have some sorts of hotplug framework, right?
->>>
->>> I do not know about the Linux hot-plug support on other architectures.
->>> PA-RISC SuperDome also supports Node hot-plug, but it is not supported
->>> by Linux.  Since ARM is getting used by servers, I would not surprise if
->>> there will be an ARM based server with hot-plug support in future.
->> Seems ARM is on the way to adopt ACPI, so may be we could support ARM servers
->> in the future.
-> 
-> That's good to know.
-> 
->  :
->>>>>> So in our framework, we have an option to relay hotplug event from firmware
->>>>>> to userspace, so the userspace has a chance to reject the hotplug operations
->>>>>> if it may cause unacceptable disturbance to userspace services.
->>>>>
->>>>> I think validation from user-space is necessary for deleting I/O
->>>>> devices.  For CPU and memory, the kernel check works fine.
->>>> Agreed. But we may need help from userspace to handle cgroup/cpuset/cpuisol
->>>> etc for cpu and memory hot-removal. Especially for telecom applications, they
->>>> have strong dependency on cgroup/cpuisol to guarantee latency.
->>>
->>> I have not looked at the code, but isn't these cpu attributes managed in
->>> the kernel?
->> Some Telecom applications want to run in an deterministic environment, so they
->> depend on cpuisol/cpuset to provide such an environment. If hotplug event happens,
->> these Telecom application should be notified so they have a chance to redistribute
->> the workload.
-> 
-> I agree that we need to generate an event that can be subscribed by
-> those applications, so that they can react quickly on the change.
-> 
-> Thanks,
-> -Toshi
-> 
-> 
+Could you point me to a corresponding driver commit id?
 
+Murali
