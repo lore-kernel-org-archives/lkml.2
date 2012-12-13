@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab2LMOPi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:15:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45181 "EHLO
+	id S932681Ab2LMOQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:16:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45196 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933529Ab2LMOP3 (ORCPT
+	with ESMTP id S933575Ab2LMOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:15:29 -0500
+	Thu, 13 Dec 2012 09:15:37 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 237/241] i82975x_edac: Fix dimm label initialization
-Date: Thu, 13 Dec 2012 12:00:02 -0200
-Message-Id: <1355407206-17100-238-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 240/241] drm/i915: do not default to 18 bpp for eDP if missing from VBT
+Date: Thu, 13 Dec 2012 12:00:05 -0200
+Message-Id: <1355407206-17100-241-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,81 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 479696840239e0cc43efb3c917bdcad2174d2215 upstream.
+commit 9a30a61f3516871c5c638fd7c025fbaa11ddf7fe upstream.
 
-The driver has only 4 hardcoded labels, but allows much more memory.
-Fix it by removing the hardcoded logic, using snprintf() instead.
+commit 500a8cc466a24e2fbc4c86ef9c6467ae2ffdeb0c
+Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+Date:   Wed Jan 13 11:19:52 2010 +0800
 
-[   19.833972] general protection fault: 0000 [#1] SMP
-[   19.837733] Modules linked in: i82975x_edac(+) edac_core firewire_ohci firewire_core crc_itu_t nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
-[   19.837733] CPU 0
-[   19.837733] Pid: 390, comm: udevd Not tainted 3.6.1-1.fc17.x86_64.debug #1 Dell Inc.                 Precision WorkStation 390    /0MY510
-[   19.837733] RIP: 0010:[<ffffffff813463a8>]  [<ffffffff813463a8>] strncpy+0x18/0x30
-[   19.837733] RSP: 0018:ffff880078535b68  EFLAGS: 00010202
-[   19.837733] RAX: ffff880069fa9708 RBX: ffff880078588000 RCX: ffff880069fa9708
-[   19.837733] RDX: 000000000000001f RSI: 5f706f5f63616465 RDI: ffff880069fa9708
-[   19.837733] RBP: ffff880078535b68 R08: ffff880069fa9727 R09: 000000000000fffe
-[   19.837733] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
-[   19.837733] R13: 0000000000000000 R14: ffff880069fa9290 R15: ffff880079624a80
-[   19.837733] FS:  00007f3de01ee840(0000) GS:ffff88007c400000(0000) knlGS:0000000000000000
-[   19.837733] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   19.837733] CR2: 00007f3de00b9000 CR3: 0000000078dbc000 CR4: 00000000000007f0
-[   19.837733] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   19.837733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   19.837733] Process udevd (pid: 390, threadinfo ffff880078534000, task ffff880079642450)
-[   19.837733] Stack:
-[   19.837733]  ffff880078535c18 ffffffffa017c6b8 00040000816d627f ffff880079624a88
-[   19.837733]  ffffc90004cd6000 ffff880079624520 ffff88007ac21148 0000000000000000
-[   19.837733]  0000000000000000 0004000000000000 feda000078535bc8 ffffffff810d696d
-[   19.837733] Call Trace:
-[   19.837733]  [<ffffffffa017c6b8>] i82975x_init_one+0x2e6/0x3e6 [i82975x_edac]
-...
+    drm/i915: parse eDP panel color depth from VBT block
 
-Fix bug reported at:
-	https://bugzilla.redhat.com/show_bug.cgi?id=848149
-And, very likely:
-	https://bbs.archlinux.org/viewtopic.php?id=148033
-	https://bugzilla.kernel.org/show_bug.cgi?id=47171
+originally introduced parsing bpp for eDP from VBT, with a default of 18
+bpp if the eDP BIOS data block is not present. Turns out that default seems
+to break the Macbook Pro with retina display, as noted in
 
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-[ herton: keep original strncpy arguments (use ...channels[chan].dimm->label ]
+commit 4344b813f105a19f793f1fd93ad775b784648b95
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Aug 10 11:10:20 2012 +0200
+
+    drm/i915: ignore eDP bpc settings from vbt
+
+Since we can't ignore bpc settings from VBT completely after all, get rid
+of the default. Do not clamp eDP to 18 bpp by default if the eDP BDB is
+missing from VBT.
+
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Henrik Rydberg <rydberg@euromail.se>
+[danvet: paste in the updated commit message from irc.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/edac/i82975x_edac.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/intel_bios.c    |   11 ++---------
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 433332c..837ccc5 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -370,10 +370,6 @@ static enum dev_type i82975x_dram_type(void __iomem *mch_window, int rank)
- static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		struct pci_dev *pdev, void __iomem *mch_window)
- {
--	static const char *labels[4] = {
--							"DIMM A1", "DIMM A2",
--							"DIMM B1", "DIMM B2"
--						};
- 	struct csrow_info *csrow;
- 	unsigned long last_cumul_size;
- 	u8 value;
-@@ -424,9 +420,10 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 			dimm = mci->csrows[index].channels[chan].dimm;
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index 3534593..c4b9892 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -500,12 +500,8 @@ parse_edp(struct drm_i915_private *dev_priv, struct bdb_header *bdb)
  
- 			dimm->nr_pages = nr_pages / csrow->nr_channels;
--			strncpy(csrow->channels[chan].dimm->label,
--					labels[(index >> 1) + (chan * 2)],
--					EDAC_MC_LABEL_LEN);
-+
-+			snprintf(csrow->channels[chan].dimm->label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
-+				 (chan == 0) ? 'A' : 'B',
-+				 index);
- 			dimm->grain = 1 << 7;	/* 128Byte cache-line resolution */
- 			dimm->dtype = i82975x_dram_type(mch_window, index);
- 			dimm->mtype = MEM_DDR2; /* I82975x supports only DDR2 */
+ 	edp = find_section(bdb, BDB_EDP);
+ 	if (!edp) {
+-		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
+-			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
+-				      "supported, assume %dbpp panel color "
+-				      "depth.\n",
+-				      dev_priv->edp.bpp);
+-		}
++		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
++			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
+ 		return;
+ 	}
+ 
+@@ -658,9 +654,6 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+ 	dev_priv->lvds_use_ssc = 1;
+ 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+-
+-	/* eDP data */
+-	dev_priv->edp.bpp = 18;
+ }
+ 
+ static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 9916052..552a229 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3620,7 +3620,7 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+ 			/* Use VBT settings if we have an eDP panel */
+ 			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
+ 
+-			if (edp_bpc < display_bpc) {
++			if (edp_bpc && edp_bpc < display_bpc) {
+ 				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+ 				display_bpc = edp_bpc;
+ 			}
 -- 
 1.7.9.5
 
