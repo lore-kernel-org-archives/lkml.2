@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab2LMFyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 00:54:21 -0500
-Received: from www84.your-server.de ([213.133.104.84]:54405 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab2LMFyU (ORCPT
+	id S1753144Ab2LMFyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 00:54:41 -0500
+Received: from [216.32.180.11] ([216.32.180.11]:24104 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750819Ab2LMFyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 00:54:20 -0500
-Message-ID: <1355378005.24283.11.camel@wall-e>
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
-        john.stultz@linaro.org, luto@amacapital.net
-Date: Thu, 13 Dec 2012 06:53:25 +0100
-In-Reply-To: <50C9148C.4040308@zytor.com>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
-	 <50C9148C.4040308@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
+	Thu, 13 Dec 2012 00:54:40 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I936eI1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758hbe9i1155h)
+Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
+        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        shubhro <omaplinuxkernel@gmail.com>
+In-Reply-To: <20121212131108.1e158ae2.akpm@linux-foundation.org>
+References: <1349952025.9228.3.camel@dhruva>
+	 <1350986593.23353.3.camel@dhruva> <1353665463.1760.3000.camel@dhruva>
+	 <20121127142358.9a4bc20d.akpm@linux-foundation.org>
+	 <1354094680.10949.1.camel@dhruva> <1355118149.4272.1.camel@dhruva>
+	 <20121212131108.1e158ae2.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Dec 2012 11:21:09 +0530
+Message-ID: <1355377869.1683.1.camel@dhruva>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 12.12.2012, 15:34 -0800 schrieb H. Peter Anvin:
-> On 12/12/2012 12:19 PM, stefani@seibold.net wrote:
-> > diff --git a/arch/x86/vdso/vdso32/vclock_gettime.c b/arch/x86/vdso/vdso32/vclock_gettime.c
-> > new file mode 100644
-> > index 0000000..c9a1909
-> > --- /dev/null
-> > +++ b/arch/x86/vdso/vdso32/vclock_gettime.c
-> > @@ -0,0 +1,7 @@
-> > +/*
-> > + * since vgtod layout differs between X86_64 and x86_32, it is not possible to
-> > + * provide a 32 bit vclock with a 64 bit kernel
-> > + */
-> > +#ifdef CONFIG_X86_32
-> > +#include "../vclock_gettime.c"
-> > +#endif
+On Wed, 2012-12-12 at 13:11 -0800, Andrew Morton wrote:
+> On Mon, 10 Dec 2012 11:12:29 +0530
+> Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
 > 
-> This is where this goes fail.  Sorry, it is not acceptable to introduce 
-> an ABI on x86-32 without providing it also on x86-64 in compatibility mode.
+> > On Wed, 2012-11-28 at 14:54 +0530, Ashish Jangam wrote:
+> > > On Tue, 2012-11-27 at 14:23 -0800, Andrew Morton wrote:
+> > > > On Fri, 23 Nov 2012 15:41:03 +0530
+> > > > Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
+> > > > 
+> > > > > On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
+> > > > > > Does this patch looks good?
+> > > > > > On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
+> > > > > > > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
+> > > > > > > the DA9055 MFD core.
+> > > > > > > 
+> > > > > > > This patch is functionally tested on Samsung SMDKV6410.
+> > > > 
+> > > > "shubhro <omaplinuxkernel@gmail.com>" made a comment, but it was ignored:
+> > > > 
+> > > > : On Thu, 11 Oct 2012 16:53:34 +0530
+> > > > : shubhro <omaplinuxkernel@gmail.com> wrote:
+> > > > : 
+> > > > : > On Thursday 11 October 2012 04:10 PM, Ashish Jangam wrote:
+> > > > : > > +#define da9055_rtc_freeze NULL
+> > > > : > > +#endif
+> > > > : > > +
+> > > > : > > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
+> > > > : > > +	.suspend = da9055_rtc_suspend,
+> > > > : > > +	.resume = da9055_rtc_resume,
+> > > > : > > +
+> > > > : > > +	.freeze = da9055_rtc_freeze,
+> > > > : > > +	.thaw = da9055_rtc_resume,
+> > > > : > > +	.restore = da9055_rtc_resume,
+> > > > : > > +
+> > > > : > > +	.poweroff = da9055_rtc_suspend,
+> > > > : > > +};
+> > > > : > You may want to use simple dev pm ops
+> > > To support generic PM ops these additional ops were supported.
+> > Are there any further comments on this patch.
 > 
-> I also don't believe it is not possible... it might require some more 
-> cleverness; perhaps we need to do the 32-bit vgtod in such a way that it 
-> *is* compatible with 64 bits.
+> Is the patch usable against current mainline?  "This patch has got
+> dependency on the DA9055 MFD core".  What is the status of that?
+The dependent DA9055 MFD core is merged.
 > 
-
-The comment is ambiguous:
-
-Since vgtod layout differs between X86_64 and x86_32 AND the vgtod is
-not inside the accessible address space of a 32 bit program, it is
-CURRENTLY not possible to provide a 32 bit vclock with a 64 bit kernel
-
-As i understand VDSO it is an alternativ way, so if there is no support
-for it, there must be a fall back to the system call interface in the
-program or lib, which tries to use it.
-
-So there is no drawback for 32 bit programs running on a 64 bit kernel. 
-
-I think this feature is not so important and can implemented in a
-subsequent patch, because a 64 bit kernel system mostly runs 64 bit
-programs. Let us fix this things step by step.
-
-- Stefani
+> If the patch is ready to go then please refresh it, retest and resend?
+> 
+Ok, I can test and resend it.
 
 
