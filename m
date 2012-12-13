@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab2LMFgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 00:36:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60963 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2LMFgF (ORCPT
+	id S1752347Ab2LMFix (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 00:38:53 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55691 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750782Ab2LMFiw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 00:36:05 -0500
-Message-ID: <1355376960.1567.3.camel@kernel.cn.ibm.com>
-Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 12 Dec 2012 23:36:00 -0600
-In-Reply-To: <50C8FCE0.1060408@redhat.com>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
-	 <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
-	 <50C8FCE0.1060408@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 00:38:52 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+Subject: RE: linux-next: manual merge of the l2-mtd tree with Linus' tree
+Thread-Topic: linux-next: manual merge of the l2-mtd tree with Linus' tree
+Thread-Index: AQHN2NKANN2f4lvgYkKZQ9O3bO2BN5gWNDBQ
+Date: Thu, 13 Dec 2012 05:38:39 +0000
+Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412A304D@DBDE01.ent.ti.com>
+References: <20121213123755.db3d38128e0593a372ccf17f@canb.auug.org.au>
+In-Reply-To: <20121213123755.db3d38128e0593a372ccf17f@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 16:53 -0500, Rik van Riel wrote:
-> On 12/12/2012 04:43 PM, Johannes Weiner wrote:
-> > dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
-> > a point of not going for anonymous memory while there is still enough
-> > inactive cache around.
-> >
-> > The check was added only for global reclaim, but it is just as useful
-> > for memory cgroup reclaim.
-> >
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >   mm/vmscan.c | 19 ++++++++++---------
-> >   1 file changed, 10 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 157bb11..3874dcb 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1671,6 +1671,16 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> >   		denominator = 1;
-> >   		goto out;
-> >   	}
-> > +	/*
-> > +	 * There is enough inactive page cache, do not reclaim
-> > +	 * anything from the anonymous working set right now.
-> > +	 */
-> > +	if (!inactive_file_is_low(lruvec)) {
-> > +		fraction[0] = 0;
-> > +		fraction[1] = 1;
-> > +		denominator = 1;
-> > +		goto out;
-> > +	}
-> >
-> >   	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
-> >   		get_lru_size(lruvec, LRU_INACTIVE_ANON);
-> > @@ -1688,15 +1698,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> >   			fraction[1] = 0;
-> >   			denominator = 1;
-> >   			goto out;
-> > -		} else if (!inactive_file_is_low_global(zone)) {
-> > -			/*
-> > -			 * There is enough inactive page cache, do not
-> > -			 * reclaim anything from the working set right now.
-> > -			 */
-> > -			fraction[0] = 0;
-> > -			fraction[1] = 1;
-> > -			denominator = 1;
-> > -			goto out;
-> >   		}
-> >   	}
-> >
-> >
+On Thu, Dec 13, 2012 at 07:07:55, Stephen Rothwell wrote:
+> Hi Artem,
 > 
-> I believe the if() block should be moved to AFTER
-> the check where we make sure we actually have enough
-> file pages.
-
-Where check enough file pages? 
-if (unlikely(file + free <= high_wmark_pages(zone))), correct?
-
+> Today's linux-next merge of the l2-mtd tree got a conflict in
+> Documentation/devicetree/bindings/arm/davinci/nand.txt between commit
+> fed16bba8726 ("mtd: nand: davinci: fix the binding documentation") from
+> Linus' tree and commit 192afdbfbc5c ("mtd: davinci: add support for
+> parition binding nodes") from the l2-mtd tree.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> I fixed it up (maybe- see below) and can carry the fix as necessary (no
+> action is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc Documentation/devicetree/bindings/arm/davinci/nand.txt
+> index 49fc7ad,4746452..0000000
+> --- a/Documentation/devicetree/bindings/arm/davinci/nand.txt
+> +++ b/Documentation/devicetree/bindings/arm/davinci/nand.txt
+> @@@ -23,16 -23,37 +23,24 @@@ Recommended properties 
+>   - ti,davinci-nand-buswidth: buswidth 8 or 16
+>   - ti,davinci-nand-use-bbt: use flash based bad block table support.
+>   
+> + nand device bindings may contain additional sub-nodes describing
+> + partitions of the address space. See partition.txt for more detail.
+> + 
+>  -Example (enbw_cmc board):
+>  -aemif@60000000 {
+>  -	compatible = "ti,davinci-aemif";
+>  -	#address-cells = <2>;
+>  -	#size-cells = <1>;
+>  -	reg = <0x68000000 0x80000>;
+>  -	ranges = <2 0 0x60000000 0x02000000
+>  -		  3 0 0x62000000 0x02000000
+>  -		  4 0 0x64000000 0x02000000
+>  -		  5 0 0x66000000 0x02000000
+>  -		  6 0 0x68000000 0x02000000>;
+>  -	nand@3,0 {
+>  -		compatible = "ti,davinci-nand";
+>  -		reg = <3 0x0 0x807ff
+>  -			6 0x0 0x8000>;
+>  -		#address-cells = <1>;
+>  -		#size-cells = <1>;
+>  -		ti,davinci-chipselect = <1>;
+>  -		ti,davinci-mask-ale = <0>;
+>  -		ti,davinci-mask-cle = <0>;
+>  -		ti,davinci-mask-chipsel = <0>;
+>  -		ti,davinci-ecc-mode = "hw";
+>  -		ti,davinci-ecc-bits = <4>;
+>  -		ti,davinci-nand-use-bbt;
+>  +Example(da850 EVM ):
+>  +nand_cs3@62000000 {
+>  +	compatible = "ti,davinci-nand";
+>  +	reg = <0x62000000 0x807ff
+>  +		0x68000000 0x8000>;
+>  +	ti,davinci-chipselect = <1>;
+>  +	ti,davinci-mask-ale = <0>;
+>  +	ti,davinci-mask-cle = <0>;
+>  +	ti,davinci-mask-chipsel = <0>;
+>  +	ti,davinci-ecc-mode = "hw";
+>  +	ti,davinci-ecc-bits = <4>;
+>  +	ti,davinci-nand-use-bbt;
+> + 
+>  -		partition@180000 {
+>  -			label = "ubifs";
+>  -			reg = <0x180000 0x7e80000>;
+>  -		};
+> ++	partition@180000 {
+> ++		label = "ubifs";
+> ++		reg = <0x180000 0x7e80000>;
 
+partition@180000 is sub-node of nand_cs3@62000000.
+nand_cs3@62000000 needs to use below properties 
+
+#address-cells = <1>;
+#size-cells = <1>;
+
+Without these properties DT build will give reg format Warning. 
+
+> + 	};
+>   };
+> 
 
