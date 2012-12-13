@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab2LMOKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:10:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44765 "EHLO
+	id S932938Ab2LMOK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:10:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44781 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab2LMOKj (ORCPT
+	with ESMTP id S932909Ab2LMOKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:10:39 -0500
+	Thu, 13 Dec 2012 09:10:51 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Dmitry Rogozhkin <dmitry.v.rogozhkin@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 160/241] HID: microsoft: do not use compound literal - fix build
-Date: Thu, 13 Dec 2012 11:58:45 -0200
-Message-Id: <1355407206-17100-161-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 163/241] drm/i915: EBUSY status handling added to i915_gem_fault().
+Date: Thu, 13 Dec 2012 11:58:48 -0200
+Message-Id: <1355407206-17100-164-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,44 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Dmitry Rogozhkin <dmitry.v.rogozhkin@intel.com>
 
-commit 6b90466cfec2a2fe027187d675d8d14217c12d82 upstream.
+commit e79e0fe380847493266fba557217e2773c61bd1b upstream.
 
-In patch "HID: microsoft: fix invalid rdesc for 3k kbd" I fixed
-support for MS 3k keyboards. However the added check using memcmp and
-a compound statement breaks build on architectures where memcmp is a
-macro with parameters.
+Subsequent threads returning EBUSY from vm_insert_pfn() was not handled
+correctly. As a result concurrent access from new threads to
+mmapped data caused SIGBUS.
 
-hid-microsoft.c:51:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+Note that this fixes i-g-t/tests/gem_threaded_tiled_access.
 
-On x86_64, memcmp is a function, so I did not see the error.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Dmitry Rogozhkin <dmitry.v.rogozhkin@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/hid/hid-microsoft.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-index 3899989..259b9f4 100644
---- a/drivers/hid/hid-microsoft.c
-+++ b/drivers/hid/hid-microsoft.c
-@@ -47,9 +47,9 @@ static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		rdesc[559] = 0x45;
- 	}
- 	/* the same as above (s/usage/physical/) */
--	if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
--			!memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
--				&rdesc[94], 4)) {
-+	if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
-+			rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
-+			rdesc[97] == 0xff) {
- 		rdesc[94] = 0x35;
- 		rdesc[96] = 0x45;
- 	}
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index fc6683a..4dc8a9b 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1144,6 +1144,11 @@ out:
+ 	case 0:
+ 	case -ERESTARTSYS:
+ 	case -EINTR:
++	case -EBUSY:
++		/*
++		 * EBUSY is ok: this just means that another thread
++		 * already did the job.
++		 */
+ 		return VM_FAULT_NOPAGE;
+ 	case -ENOMEM:
+ 		return VM_FAULT_OOM;
 -- 
 1.7.9.5
 
