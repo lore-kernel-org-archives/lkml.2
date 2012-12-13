@@ -1,65 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab2LMDHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:07:20 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:54596 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab2LMDHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:07:18 -0500
-From: Jonathan Callen <abcd@gentoo.org>
-To: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jonathan Callen <abcd@gentoo.org>
-Subject: [PATCH] Documentation/java.txt: add Java 7 support
-Date: Wed, 12 Dec 2012 17:06:37 -1000
-Message-Id: <1355367997-1533718-1-git-send-email-abcd@gentoo.org>
-X-Mailer: git-send-email 1.8.0
+	id S1755663Ab2LMDJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:09:41 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:33725 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab2LMDJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 22:09:40 -0500
+Message-ID: <1355368171.1436.1.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>,
+        hpa@zytor.com, akpm@linux-foundation.org, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Date: Wed, 12 Dec 2012 21:09:31 -0600
+In-Reply-To: <50C933E2.3070608@cn.fujitsu.com>
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
+	    <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
+	    <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com>
+	   <1355225313.1919.1.camel@kernel.cn.ibm.com> <50C7D490.60409@huawei.com>
+	   <50C849DD.20405@cn.fujitsu.com>
+	  <1355304570.1542.0.camel@kernel.cn.ibm.com>
+	  <50C85D2D.5030309@cn.fujitsu.com>
+	 <1355358485.1508.2.camel@kernel.cn.ibm.com>
+	 <50C933E2.3070608@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sample wrapper currently fails on some Java 7 .class files.  This
-updates the wrapper to properly handle those files.
+On Thu, 2012-12-13 at 09:48 +0800, Tang Chen wrote:
+> On 12/13/2012 08:28 AM, Simon Jeons wrote:
+> > On Wed, 2012-12-12 at 18:32 +0800, Tang Chen wrote:
+> >> Hi Simon,
+> >>
+> >> On 12/12/2012 05:29 PM, Simon Jeons wrote:
+> >>>
+> >>> Thanks for your clarify.
+> >>>
+> >>> Enable PAE on x86 32bit kernel, 8G memory, movablecore=6.5G
+> >>
+> >> Could you please provide more info ?
+> >>
+> >> Such as the whole kernel commondline. And did this happen after
+> >> you applied these patches ? What is the output without these
+> >> patches ?
+> >
+> > This result is without the patches, I didn't add more kernel
+> > commandline, just movablecore=6.5G, but output as you see is strange, so
+> > what happened?
+> 
+> Hi Simon,
+> 
+> For now, I'm not quite sure what happened. Could you please provide the
+> output without the movablecore=6.5G option ?
+> 
+> Seeing from your output, your totalpages=2051391, which is about 8G. But
+> the memory mapped for your node 0 is obviously not enough.
+> 
+> When we have high memory, ZONE_MOVABLE is taken from ZONE_HIGH. So the
+> first line, 8304MB HIGHMEM available is also strange.
+> 
+> So I think we need more info to find out the problem. :)
+> 
 
-Signed-off-by: Jonathan Callen <abcd@gentoo.org>
----
- Documentation/java.txt | 8 ++++++++
- 1 file changed, 8 insertions(+)
+[    0.000000] 8304MB HIGHMEM available.
+[    0.000000] 885MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 375fe000
+[    0.000000]   low ram: 0 - 375fe000
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x00010000-0x00ffffff]
+[    0.000000]   Normal   [mem 0x01000000-0x375fdfff]
+[    0.000000]   HighMem  [mem 0x375fe000-0x3e5fffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00010000-0x0009cfff]
+[    0.000000]   node   0: [mem 0x00100000-0x1fffffff]
+[    0.000000]   node   0: [mem 0x20200000-0x3fffffff]
+[    0.000000]   node   0: [mem 0x40200000-0xb69cbfff]
+[    0.000000]   node   0: [mem 0xb6a46000-0xb6a47fff]
+[    0.000000]   node   0: [mem 0xb6b1c000-0xb6cfffff]
+[    0.000000]   node   0: [mem 0x00000000-0x3e5fffff]
+[    0.000000] On node 0 totalpages: 2051391
+[    0.000000] free_area_init_node: node 0, pgdat c0c2cc00, node_mem_map
+f19c2200
+[    0.000000]   DMA zone: 32 pages used for memmap
+[    0.000000]   DMA zone: 0 pages reserved
+[    0.000000]   DMA zone: 3949 pages, LIFO batch:0
+[    0.000000]   Normal zone: 1740 pages used for memmap
+[    0.000000]   Normal zone: 220466 pages, LIFO batch:31
+[    0.000000]   HighMem zone: 16609 pages used for memmap
+[    0.000000]   HighMem zone: 1808595 pages, LIFO batch:31
 
-diff --git a/Documentation/java.txt b/Documentation/java.txt
-index e6a7232..4180205 100644
---- a/Documentation/java.txt
-+++ b/Documentation/java.txt
-@@ -188,6 +188,9 @@ shift
- #define CP_METHODREF 10
- #define CP_INTERFACEMETHODREF 11
- #define CP_NAMEANDTYPE 12
-+#define CP_METHODHANDLE 15
-+#define CP_METHODTYPE 16
-+#define CP_INVOKEDYNAMIC 18
- 
- /* Define some commonly used error messages */
- 
-@@ -242,14 +245,19 @@ void skip_constant(FILE *classfile, u_int16_t *cur)
- 		break;
- 	case CP_CLASS:
- 	case CP_STRING:
-+	case CP_METHODTYPE:
- 		seekerr = fseek(classfile, 2, SEEK_CUR);
- 		break;
-+	case CP_METHODHANDLE:
-+		seekerr = fseek(classfile, 3, SEEK_CUR);
-+		break;
- 	case CP_INTEGER:
- 	case CP_FLOAT:
- 	case CP_FIELDREF:
- 	case CP_METHODREF:
- 	case CP_INTERFACEMETHODREF:
- 	case CP_NAMEANDTYPE:
-+	case CP_INVOKEDYNAMIC:
- 		seekerr = fseek(classfile, 4, SEEK_CUR);
- 		break;
- 	case CP_LONG:
--- 
-1.7.12
+
+menuentry 'Fedora (3.7.0+)' --class fedora --class gnu-linux --class gnu
+--class os $menuentry_id_option
+'gnulinux-simple-7ed9528d-006f-4d9e-93d9-f68b0967ca99' {
+        load_video
+        set gfxpayload=keep
+        insmod gzio
+        insmod part_msdos
+        insmod ext2
+        set root='hd0,msdos1'
+        if [ x$feature_platform_search_hint = xy ]; then
+          search --no-floppy --fs-uuid --set=root --hint-bios=hd0,msdos1
+--hint-efi=hd0,msdos1 --hint-baremetal=ahci0,msdos1 --hint='hd0,msdos1'
+eba9dfce-d7f1-4b5c-9199-f2abf80e5dc6
+        else
+          search --no-floppy --fs-uuid --set=root
+eba9dfce-d7f1-4b5c-9199-f2abf80e5dc6
+        fi
+        echo 'Loading Fedora (3.7.0+)'
+        linux   /vmlinuz-3.7.0+ root=/dev/mapper/vg_kernel-lv_root ro
+rd.md=0 rd.dm=0 rd.lvm.lv=vg_kernel/lv_root SYSFONT=True  KEYTABLE=us
+rd.luks=0 LANG=en_US.UTF-8 rd.lvm.lv=vg_kernel/lv_swap rhgb quiet
+        echo 'Loading initial ramdisk ...'
+        initrd /initramfs-3.7.0+.img
+}
+
+
+> Thank. :)
+> 
+> >
+> >>
+> >> Thanks. :)
+> >>
+> >>>>
+> >>>> [    0.000000] 8304MB HIGHMEM available.
+> >>>> [    0.000000] 885MB LOWMEM available.
+> >>>> [    0.000000]   mapped low ram: 0 - 375fe000
+> >>>> [    0.000000]   low ram: 0 - 375fe000
+> >>>> [    0.000000] Zone ranges:
+> >>>> [    0.000000]   DMA      [mem 0x00010000-0x00ffffff]
+> >>>> [    0.000000]   Normal   [mem 0x01000000-0x375fdfff]
+> >>>> [    0.000000]   HighMem  [mem 0x375fe000-0x3e5fffff]
+> >>>> [    0.000000] Movable zone start for each node
+> >>>> [    0.000000] Early memory node ranges
+> >>>> [    0.000000]   node   0: [mem 0x00010000-0x0009cfff]
+> >>>> [    0.000000]   node   0: [mem 0x00100000-0x1fffffff]
+> >>>> [    0.000000]   node   0: [mem 0x20200000-0x3fffffff]
+> >>>> [    0.000000]   node   0: [mem 0x40200000-0xb69cbfff]
+> >>>> [    0.000000]   node   0: [mem 0xb6a46000-0xb6a47fff]
+> >>>> [    0.000000]   node   0: [mem 0xb6b1c000-0xb6cfffff]
+> >>>> [    0.000000]   node   0: [mem 0x00000000-0x3e5fffff]
+> >>>> [    0.000000] On node 0 totalpages: 2051391
+> >>>> [    0.000000] free_area_init_node: node 0, pgdat c0c26a80,
+> >>>> node_mem_map
+> >>>> f19de200
+> >>>> [    0.000000]   DMA zone: 32 pages used for memmap
+> >>>> [    0.000000]   DMA zone: 0 pages reserved
+> >>>> [    0.000000]   DMA zone: 3949 pages, LIFO batch:0
+> >>>> [    0.000000]   Normal zone: 1740 pages used for memmap
+> >>>> [    0.000000]   Normal zone: 220466 pages, LIFO batch:31
+> >>>> [    0.000000]   HighMem zone: 16609 pages used for memmap
+> >>>> [    0.000000]   HighMem zone: 1808595 pages, LIFO batch:31
+> >>>
+> >>> Why zone movable disappear?
+> >>>
+> >>>
+> >>>
+> >>>
+> >>
+> >
+> >
+> >
+> 
+
 
