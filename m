@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab2LMOLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:11:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44817 "EHLO
+	id S933025Ab2LMOL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:11:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44822 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab2LMOLR (ORCPT
+	with ESMTP id S933006Ab2LMOLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:11:17 -0500
+	Thu, 13 Dec 2012 09:11:22 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Jiri Kosina <jkosina@suse.cz>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 170/241] sparc64: Fix bit twiddling in sparc_pmu_enable_event().
-Date: Thu, 13 Dec 2012 11:58:55 -0200
-Message-Id: <1355407206-17100-171-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 171/241] sparc64: do not clobber personality flags in sys_sparc64_personality()
+Date: Thu, 13 Dec 2012 11:58:56 -0200
+Message-Id: <1355407206-17100-172-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,51 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit e793d8c6740f8fe704fa216e95685f4d92c4c4b9 upstream.
+commit a27032eee8cb6e16516f13c8a9752e9d5d4cc430 upstream.
 
-There was a serious disconnect in the logic happening in
-sparc_pmu_disable_event() vs. sparc_pmu_enable_event().
+There are multiple errors in how sys_sparc64_personality() handles
+personality flags stored in top three bytes.
 
-Event disable is implemented by programming a NOP event into the PCR.
+- directly comparing current->personality against PER_LINUX32 doesn't work
+  in cases when any of the personality flags stored in the top three bytes
+  are used.
+- directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+  discards any flags stored in the top three bytes
 
-However, event enable was not reversing this operation.  Instead, it
-was setting the User/Priv/Hypervisor trace enable bits.
+Fix the first one by properly using personality() macro to compare only
+PER_MASK bytes.
+Fix the second one by setting only the bits that should be set, instead of
+overwriting the whole value.
 
-That's not sparc_pmu_enable_event()'s job, that's what
-sparc_pmu_enable() and sparc_pmu_disable() do .
-
-The intent of sparc_pmu_enable_event() is clear, since it first clear
-out the event type encoding field.  So fix this by OR'ing in the event
-encoding rather than the trace enable bits.
-
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/sparc/kernel/perf_event.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/sparc/kernel/sys_sparc_64.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index b0cce26..ac18037 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -557,11 +557,13 @@ static u64 nop_for_index(int idx)
- 
- static inline void sparc_pmu_enable_event(struct cpu_hw_events *cpuc, struct hw_perf_event *hwc, int idx)
+diff --git a/arch/sparc/kernel/sys_sparc_64.c b/arch/sparc/kernel/sys_sparc_64.c
+index 275f74f..3c38914 100644
+--- a/arch/sparc/kernel/sys_sparc_64.c
++++ b/arch/sparc/kernel/sys_sparc_64.c
+@@ -519,12 +519,12 @@ SYSCALL_DEFINE1(sparc64_personality, unsigned long, personality)
  {
--	u64 val, mask = mask_for_index(idx);
-+	u64 enc, val, mask = mask_for_index(idx);
-+
-+	enc = perf_event_get_enc(cpuc->events[idx]);
+ 	int ret;
  
- 	val = cpuc->pcr;
- 	val &= ~mask;
--	val |= hwc->config;
-+	val |= event_encoding(enc, idx);
- 	cpuc->pcr = val;
+-	if (current->personality == PER_LINUX32 &&
+-	    personality == PER_LINUX)
+-		personality = PER_LINUX32;
++	if (personality(current->personality) == PER_LINUX32 &&
++	    personality(personality) == PER_LINUX)
++		personality |= PER_LINUX32;
+ 	ret = sys_personality(personality);
+-	if (ret == PER_LINUX32)
+-		ret = PER_LINUX;
++	if (personality(ret) == PER_LINUX32)
++		ret &= ~PER_LINUX32;
  
- 	pcr_ops->write(cpuc->pcr);
+ 	return ret;
+ }
 -- 
 1.7.9.5
 
