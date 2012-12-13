@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab2LMOav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:30:51 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42708 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756625Ab2LMOas (ORCPT
+	id S1756733Ab2LMObK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:31:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44828 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932935Ab2LMOLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:30:48 -0500
-Message-ID: <50C9E692.9070506@gmail.com>
-Date: Thu, 13 Dec 2012 07:30:42 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.8
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com> <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com> <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com> <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com>
-In-Reply-To: <20121213073056.GA13156@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 09:11:25 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 172/241] sparc64: Be less verbose during vmemmap population.
+Date: Thu, 13 Dec 2012 11:58:57 -0200
+Message-Id: <1355407206-17100-173-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/12 12:30 AM, Ingo Molnar wrote:
->
-> * David Ahern <dsahern@gmail.com> wrote:
->
->>> But doing it this way was wrong. Switch that "exclude_guest"
->>> attribute around, and admit that "H" was bogus, and that the
->>> right thing to do was to add a "V" flag that sets the
->>> "force_guest" flag instead.
->>
->> I understand this is annoying. [...]
->
-> It's not annoying, it's outright broken - it's a regression that
-> we'll fix.
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-One of the problems is that existing binaries set the exclude_guest flag 
-(https://lkml.org/lkml/2012/7/9/292).
+------------------
 
-So, requesting users to update their binaries if they want to use 
-precise sampling is not acceptable. A 100% catastrophic failure of all 
-running VMs is acceptable? All VMs will crash and there is no direct 
-causal relationship.
+From: "David S. Miller" <davem@davemloft.net>
 
-David
+commit 2856cc2e4d0852c3ddaae9dcb19cb9396512eb08 upstream.
+
+On a 2-node machine with 256GB of ram we get 512 lines of
+console output, which is just too much.
+
+This mimicks Yinghai Lu's x86 commit c2b91e2eec9678dbda274e906cc32ea8f711da3b
+(x86_64/mm: check and print vmemmap allocation continuous) except that
+we aren't ever going to get contiguous block pointers in between calls
+so just print when the virtual address or node changes.
+
+This decreases the output by an order of 16.
+
+Also demote this to KERN_DEBUG.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ arch/sparc/mm/init_64.c |   28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 6026fdd..d58edf5 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2020,6 +2020,9 @@ EXPORT_SYMBOL(_PAGE_CACHE);
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ unsigned long vmemmap_table[VMEMMAP_SIZE];
+ 
++static long __meminitdata addr_start, addr_end;
++static int __meminitdata node_start;
++
+ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
+ {
+ 	unsigned long vstart = (unsigned long) start;
+@@ -2050,15 +2053,30 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
+ 
+ 			*vmem_pp = pte_base | __pa(block);
+ 
+-			printk(KERN_INFO "[%p-%p] page_structs=%lu "
+-			       "node=%d entry=%lu/%lu\n", start, block, nr,
+-			       node,
+-			       addr >> VMEMMAP_CHUNK_SHIFT,
+-			       VMEMMAP_SIZE);
++			/* check to see if we have contiguous blocks */
++			if (addr_end != addr || node_start != node) {
++				if (addr_start)
++					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
++					       addr_start, addr_end-1, node_start);
++				addr_start = addr;
++				node_start = node;
++			}
++			addr_end = addr + VMEMMAP_CHUNK;
+ 		}
+ 	}
+ 	return 0;
+ }
++
++void __meminit vmemmap_populate_print_last(void)
++{
++	if (addr_start) {
++		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
++		       addr_start, addr_end-1, node_start);
++		addr_start = 0;
++		addr_end = 0;
++		node_start = 0;
++	}
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+-- 
+1.7.9.5
+
