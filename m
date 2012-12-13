@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab2LMReL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 12:34:11 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:50690 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755774Ab2LMReI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 12:34:08 -0500
-Date: Thu, 13 Dec 2012 18:34:00 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing
- issues
-Message-ID: <20121213173400.GH4261@local>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua>
- <201212111247.36167.vitas@nppfactor.kiev.ua>
- <20121213171109.GG4261@local>
- <201212131923.21266.vitas@nppfactor.kiev.ua>
+	id S1756418Ab2LMReo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 12:34:44 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:31778 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755490Ab2LMRen (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 12:34:43 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+YNqn7FIJV4cWIx9GqbFOt
+Date: Thu, 13 Dec 2012 09:34:33 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Jon Hunter <jon-hunter@ti.com>
+Cc: NeilBrown <neilb@suse.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Erickson <marathon96@gmail.com>, linux-omap@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] OMAP: add pwm driver using dmtimers.
+Message-ID: <20121213173433.GD4989@atomide.com>
+References: <20121212192430.50cea126@notabene.brown>
+ <50C8ABFC.3080309@ti.com>
+ <20121213140635.4eda5858@notabene.brown>
+ <50CA0B4D.2000302@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201212131923.21266.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50CA0B4D.2000302@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 07:23:21PM +0200, Vitalii Demianets wrote:
-> On Thursday 13 December 2012 19:11:09 Hans J. Koch wrote:
-> > On Tue, Dec 11, 2012 at 12:47:35PM +0200, Vitalii Demianets wrote:
-> > > Please, review the v3 of "Fix memory freeing issues" patch (first in the
-> > > series I posted yesterday) and ignore the second, as we haven't agreed
-> > > on it.
-> >
-> > I can't find a v3. Please resend it.
-> >
+* Jon Hunter <jon-hunter@ti.com> [121213 09:11]:
+> On 12/12/2012 09:06 PM, NeilBrown wrote:
+> > On Wed, 12 Dec 2012 10:08:28 -0600 Jon Hunter <jon-hunter@ti.com> wrote:
+> >> On 12/12/2012 02:24 AM, NeilBrown wrote:
+> >>> +
+> >>> +#include <plat/dmtimer.h>
+> >>
+> >> This is going to be a problem for the single zImage work, because we
+> >> cannot include any plat headers in driver code any more. Therefore,
+> >> although it is not ideal, one way to handle this is pass function
+> >> pointers to the various dmtimer APIs that are needed via the platform
+> >> data. Painful I know ...
+> > 
+> > But that doesn't work with devicetree does it?
 > 
-> I've posted v3 as a [PATCH 1/2 v3] in series:
-> http://www.spinics.net/lists/kernel/msg1450101.html
+> Ugh, you are right! This is becoming an increasing problem.
 > 
-> You were CC-ed. If for some reason you didn't get it in your mailbox, I'll 
-> resend.
+> > Can't we move the dmtimer.h file to include/linux/omap-dmtimer.h or something?
+> 
+> I can ask Tony if he thinks we could do that.
 
-OK, found it, sorry. I ignored that one because it does the same flag-testing
-stuff. It is unnecessary and only tries to fix userspace stupidity in the
-kernel. I won't buy that one, and I already gave an explanation why.
-I won't take it just because you disagree with my opinion.
+Yeah we need to fix this somehow. First we need to limit that header
+to the minimum and have most of it in a local header file for the
+clocksource and clockevent. Then let's move the minimal header to
+include/linux/omap-dmtimer.h until we have something Linux generic
+available for doing things like this.
 
-Thanks,
-Hans
+Regards,
+
+Tony
