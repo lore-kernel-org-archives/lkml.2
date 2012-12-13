@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab2LMOJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:09:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44685 "EHLO
+	id S932851Ab2LMOKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:10:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44708 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932819Ab2LMOJw (ORCPT
+	with ESMTP id S932796Ab2LMOKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:09:52 -0500
+	Thu, 13 Dec 2012 09:10:07 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 147/241] can: peak_usb: fix hwtstamp assignment
-Date: Thu, 13 Dec 2012 11:58:32 -0200
-Message-Id: <1355407206-17100-148-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 151/241] mm/vmemmap: fix wrong use of virt_to_page
+Date: Thu, 13 Dec 2012 11:58:36 -0200
+Message-Id: <1355407206-17100-152-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,99 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit c9faaa09e2a1335678f09c70a0d0eda095564bab upstream.
+commit ae64ffcac35de0db628ba9631edf8ff34c5cd7ac upstream.
 
-The skb->tstamp is set to the hardware timestamp when available in the USB
-urb message. This leads to user visible timestamps which contain the 'uptime'
-of the USB adapter - and not the usual system generated timestamp.
+I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing
+memory hotremove, there is a kernel BUG at arch/x86/mm/physaddr.c:20.
 
-Fix this wrong assignment by applying the available hardware timestamp to the
-skb_shared_hwtstamps data structure - which is intended for this purpose.
+It is caused by free_section_usemap()->virt_to_page(), virt_to_page() is
+only used for kernel direct mapping address, but sparse-vmemmap uses
+vmemmap address, so it is going wrong here.
 
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+  ------------[ cut here ]------------
+  kernel BUG at arch/x86/mm/physaddr.c:20!
+  invalid opcode: 0000 [#1] SMP
+  Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_mod coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspkr iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_core mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
+  CPU 39
+  Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI QSSC-S4R/QSSC-S4R
+  RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+0x88/0x90
+  RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
+  RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
+  ...
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Reviewd-by: Wen Congyang <wency@cn.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/can/usb/peak_usb/pcan_usb.c     |    8 ++++++--
- drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    8 ++++++--
- 2 files changed, 12 insertions(+), 4 deletions(-)
+ mm/sparse.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/can/usb/peak_usb/pcan_usb.c b/drivers/net/can/usb/peak_usb/pcan_usb.c
-index 86f26a1..25723d8 100644
---- a/drivers/net/can/usb/peak_usb/pcan_usb.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb.c
-@@ -519,8 +519,10 @@ static int pcan_usb_decode_error(struct pcan_usb_msg_context *mc, u8 n,
- 	mc->pdev->dev.can.state = new_state;
+diff --git a/mm/sparse.c b/mm/sparse.c
+index 950981f..0abadaf 100644
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -629,7 +629,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+ {
+ 	return; /* XXX: Not implemented yet */
+ }
+-static void free_map_bootmem(struct page *page, unsigned long nr_pages)
++static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+ {
+ }
+ #else
+@@ -670,10 +670,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+ 			   get_order(sizeof(struct page) * nr_pages));
+ }
  
- 	if (status_len & PCAN_USB_STATUSLEN_TIMESTAMP) {
-+		struct skb_shared_hwtstamps *hwts = skb_hwtstamps(skb);
-+
- 		peak_usb_get_ts_tv(&mc->pdev->time_ref, mc->ts16, &tv);
--		skb->tstamp = timeval_to_ktime(tv);
-+		hwts->hwtstamp = timeval_to_ktime(tv);
+-static void free_map_bootmem(struct page *page, unsigned long nr_pages)
++static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+ {
+ 	unsigned long maps_section_nr, removing_section_nr, i;
+ 	unsigned long magic;
++	struct page *page = virt_to_page(memmap);
+ 
+ 	for (i = 0; i < nr_pages; i++, page++) {
+ 		magic = (unsigned long) page->lru.next;
+@@ -722,13 +723,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+ 	 */
+ 
+ 	if (memmap) {
+-		struct page *memmap_page;
+-		memmap_page = virt_to_page(memmap);
+-
+ 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+ 			>> PAGE_SHIFT;
+ 
+-		free_map_bootmem(memmap_page, nr_pages);
++		free_map_bootmem(memmap, nr_pages);
  	}
+ }
  
- 	netif_rx(skb);
-@@ -605,6 +607,7 @@ static int pcan_usb_decode_data(struct pcan_usb_msg_context *mc, u8 status_len)
- 	struct sk_buff *skb;
- 	struct can_frame *cf;
- 	struct timeval tv;
-+	struct skb_shared_hwtstamps *hwts;
- 
- 	skb = alloc_can_skb(mc->netdev, &cf);
- 	if (!skb)
-@@ -652,7 +655,8 @@ static int pcan_usb_decode_data(struct pcan_usb_msg_context *mc, u8 status_len)
- 
- 	/* convert timestamp into kernel time */
- 	peak_usb_get_ts_tv(&mc->pdev->time_ref, mc->ts16, &tv);
--	skb->tstamp = timeval_to_ktime(tv);
-+	hwts = skb_hwtstamps(skb);
-+	hwts->hwtstamp = timeval_to_ktime(tv);
- 
- 	/* push the skb */
- 	netif_rx(skb);
-diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-index 629c4ba..c95913a 100644
---- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-@@ -532,6 +532,7 @@ static int pcan_usb_pro_handle_canmsg(struct pcan_usb_pro_interface *usb_if,
- 	struct can_frame *can_frame;
- 	struct sk_buff *skb;
- 	struct timeval tv;
-+	struct skb_shared_hwtstamps *hwts;
- 
- 	skb = alloc_can_skb(netdev, &can_frame);
- 	if (!skb)
-@@ -549,7 +550,8 @@ static int pcan_usb_pro_handle_canmsg(struct pcan_usb_pro_interface *usb_if,
- 		memcpy(can_frame->data, rx->data, can_frame->can_dlc);
- 
- 	peak_usb_get_ts_tv(&usb_if->time_ref, le32_to_cpu(rx->ts32), &tv);
--	skb->tstamp = timeval_to_ktime(tv);
-+	hwts = skb_hwtstamps(skb);
-+	hwts->hwtstamp = timeval_to_ktime(tv);
- 
- 	netif_rx(skb);
- 	netdev->stats.rx_packets++;
-@@ -570,6 +572,7 @@ static int pcan_usb_pro_handle_error(struct pcan_usb_pro_interface *usb_if,
- 	u8 err_mask = 0;
- 	struct sk_buff *skb;
- 	struct timeval tv;
-+	struct skb_shared_hwtstamps *hwts;
- 
- 	/* nothing should be sent while in BUS_OFF state */
- 	if (dev->can.state == CAN_STATE_BUS_OFF)
-@@ -664,7 +667,8 @@ static int pcan_usb_pro_handle_error(struct pcan_usb_pro_interface *usb_if,
- 	dev->can.state = new_state;
- 
- 	peak_usb_get_ts_tv(&usb_if->time_ref, le32_to_cpu(er->ts32), &tv);
--	skb->tstamp = timeval_to_ktime(tv);
-+	hwts = skb_hwtstamps(skb);
-+	hwts->hwtstamp = timeval_to_ktime(tv);
- 	netif_rx(skb);
- 	netdev->stats.rx_packets++;
- 	netdev->stats.rx_bytes += can_frame->can_dlc;
 -- 
 1.7.9.5
 
