@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab2LMOnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:43:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44542 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932448Ab2LMOIF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:08:05 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 119/241] reiserfs: Protect reiserfs_quota_write() with write lock
-Date: Thu, 13 Dec 2012 11:58:04 -0200
-Message-Id: <1355407206-17100-120-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	id S932605Ab2LMOnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:43:40 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44679 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932448Ab2LMOng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:43:36 -0500
+Date: Thu, 13 Dec 2012 19:42:46 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] uprobes: Change filter_chain() to iterate
+ ->consumers list
+Message-ID: <20121213141246.GC3902@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121124180213.GA30963@redhat.com>
+ <20121124180231.GA30983@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121124180231.GA30983@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121314-7182-0000-0000-000003C33564
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+* Oleg Nesterov <oleg@redhat.com> [2012-11-24 19:02:31]:
 
-------------------
+> Now that it safe to use ->consumer_rwsem under ->mmap_sem we can
+> almost finish the implementation of filter_chain(). It still lacks
+> the actual uc->filter(...) call but othewrwise it is ready, just
+> it pretends that ->filter() always returns true.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-From: Jan Kara <jack@suse.cz>
 
-commit 361d94a338a3fd0cee6a4ea32bbc427ba228e628 upstream.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Calls into reiserfs journalling code and reiserfs_get_block() need to
-be protected with write lock. We remove write lock around calls to high
-level quota code in the next patch so these paths would suddently become
-unprotected.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- fs/reiserfs/super.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 9b1745f..295caeb8 100644
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -2328,7 +2328,9 @@ static ssize_t reiserfs_quota_write(struct super_block *sb, int type,
- 		tocopy = sb->s_blocksize - offset < towrite ?
- 		    sb->s_blocksize - offset : towrite;
- 		tmp_bh.b_state = 0;
-+		reiserfs_write_lock(sb);
- 		err = reiserfs_get_block(inode, blk, &tmp_bh, GET_BLOCK_CREATE);
-+		reiserfs_write_unlock(sb);
- 		if (err)
- 			goto out;
- 		if (offset || tocopy != sb->s_blocksize)
-@@ -2344,10 +2346,12 @@ static ssize_t reiserfs_quota_write(struct super_block *sb, int type,
- 		flush_dcache_page(bh->b_page);
- 		set_buffer_uptodate(bh);
- 		unlock_buffer(bh);
-+		reiserfs_write_lock(sb);
- 		reiserfs_prepare_for_journal(sb, bh, 1);
- 		journal_mark_dirty(current->journal_info, sb, bh);
- 		if (!journal_quota)
- 			reiserfs_add_ordered_list(inode, bh);
-+		reiserfs_write_unlock(sb);
- 		brelse(bh);
- 		offset = 0;
- 		towrite -= tocopy;
--- 
-1.7.9.5
+> ---
+>  kernel/events/uprobes.c |   21 +++++++++++++--------
+>  1 files changed, 13 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 03ffbb5..873c993 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -614,14 +614,19 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
+> 
+>  static bool filter_chain(struct uprobe *uprobe)
+>  {
+> -	/*
+> -	 * TODO:
+> -	 *	for_each_consumer(uc)
+> -	 *		if (uc->filter(...))
+> -	 *			return true;
+> -	 *	return false;
+> -	 */
+> -	return uprobe->consumers != NULL;
+> +	struct uprobe_consumer *uc;
+> +	bool ret = false;
+> +
+> +	down_read(&uprobe->consumer_rwsem);
+> +	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> +		/* TODO: ret = uc->filter(...) */
+> +		ret = true;
+> +		if (ret)
+> +			break;
+> +	}
+> +	up_read(&uprobe->consumer_rwsem);
+> +
+> +	return ret;
+>  }
+> 
+>  static int
+> -- 
+> 1.5.5.1
+> 
 
