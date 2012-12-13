@@ -1,167 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab2LMPD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:03:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44148 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab2LMODV (ORCPT
+	id S1756169Ab2LMPDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:03:34 -0500
+Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:44442 "EHLO
+	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756149Ab2LMPDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:03:21 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 042/241] iscsi-target: Fix missed wakeup race in TX thread
-Date: Thu, 13 Dec 2012 11:56:47 -0200
-Message-Id: <1355407206-17100-43-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	Thu, 13 Dec 2012 10:03:30 -0500
+Message-ID: <1355410991.11327.12.camel@selen>
+Subject: Re: [PATCHv3 0/7] Support for Tegra 2D hardware
+From: Lucas Stach <dev@lynxeye.de>
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+Cc: thierry.reding@avionic-design.de, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, amerilainen@nvidia.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Dec 2012 16:03:11 +0100
+In-Reply-To: <1355407484-28904-1-git-send-email-tbergstrom@nvidia.com>
+References: <1355407484-28904-1-git-send-email-tbergstrom@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+Hi Terje,
 
-------------------
+Am Donnerstag, den 13.12.2012, 16:04 +0200 schrieb Terje Bergstrom:
+> This set of patches adds support for Tegra20 and Tegra30 host1x and
+> 2D. It is based on linux-next.
+> 
+> The third version has too many changes to list all of them. Here are
+> highlights:
+>  * Renamed to host1x, and moved to drivers/gpu/host1x
+>  * Greatly simplified the inner workings between physical and logical
+>    driver
+>  * Does not use AUXDATA for passing data to driver
+>  * Runtime power management removed - will replace with runtime PM
+>    later
+>  * IOCTLs padded and use __64 for passing pointers
+>  * DMABUF support removed, replaced with GEM CMA support
 
-From: Roland Dreier <roland@purestorage.com>
+You are still doing the allocation the IMHO wrong way around. I thought
+we agreed to do all the allocations in host1x, which obviously means not
+using the cma_gem_helpers anymore, but introducing a new native host1x
+object to back GEM/V4L/whatever objects. IMHO the current approach is a
+clear layering violation and makes proper IOMMU support a lot harder. It
+would also allow to get rid of all the indirections and ifdefs in host1x
+memmgr, as host1x would only have to deal with it's native objects.
 
-commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
+All the complexity of converting host1x to GEM objects should be located
+in tegradrm and not be scattered between different modules.
 
-The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
-missed wakeup race:
+Did you leave this out on purpose in this version of the patchset?
 
- - TX thread finishes handle_immediate_queue() and handle_response_queue(),
-   thinks both queues are empty.
- - Another thread adds a queue entry and does wake_up_process(), which does
-   nothing because the TX thread is still awake.
- - TX thread does schedule_timeout() and sleeps forever.
+>  * host1x driver validates command streams and copies them to kernel
+>    owned buffer
+>  * Generic interrupt support removed - only syncpt irq remains
+>  * Sync points are allocated now dynamically
+>  * IO register space handling rewritten to use helper functions
+>  * Other numerous fixes and simplifications to code
+> 
+> Some of the issues left open:
+>  * Register definitions still use static inline. There has been a
+>    debate about code style versus ability to use compiler type
+>    checking and code coverage analysis. There was no conclusion, so
+>    I left it as was.
+>  * tegradrm has a global variable. Plan was to hide that behind a
+>    virtual device, and use that as DRM root device. That plan went
+>    bad once the FB CMA helper used the device for trying to allocate
+>    memory.
+See above, we should get rid of the helpers and do all allocations
+within host1x.
 
-In practice this can kill an iSCSI connection if for example an initiator
-does single-threaded writes and the target misses the wakeup window when
-queueing an R2T; in this case the connection will be stuck until the
-initiator loses patience and does some task management operation (or kills
-the connection entirely).
+Regards,
+Lucas
 
-Fix this by converting to wait_event_interruptible(), which does not
-suffer from this sort of race.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/target/iscsi/iscsi_target.c       |    4 +++-
- drivers/target/iscsi/iscsi_target_core.h  |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    1 +
- drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
- drivers/target/iscsi/iscsi_target_util.h  |    1 +
- 5 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index 6d1d906..4891cc8 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3733,7 +3733,9 @@ restart:
- 		 */
- 		iscsit_thread_check_cpumask(conn, current, 1);
- 
--		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
-+		wait_event_interruptible(conn->queues_wq,
-+					 !iscsit_conn_all_queues_empty(conn) ||
-+					 ts->status == ISCSI_THREAD_SET_RESET);
- 
- 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
- 		     signal_pending(current))
-diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
-index 8bb81d68..d76a711 100644
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -485,6 +485,7 @@ struct iscsi_tmr_req {
- };
- 
- struct iscsi_conn {
-+	wait_queue_head_t	queues_wq;
- 	/* Authentication Successful for this connection */
- 	u8			auth_complete;
- 	/* State connection is currently in */
-diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
-index ae30424..3cb7a4f 100644
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -45,6 +45,7 @@ extern spinlock_t sess_idr_lock;
- 
- static int iscsi_login_init_conn(struct iscsi_conn *conn)
- {
-+	init_waitqueue_head(&conn->queues_wq);
- 	INIT_LIST_HEAD(&conn->conn_list);
- 	INIT_LIST_HEAD(&conn->conn_cmd_list);
- 	INIT_LIST_HEAD(&conn->immed_queue_list);
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index b42cdeb..552f45a 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -488,7 +488,7 @@ void iscsit_add_cmd_to_immediate_queue(
- 	atomic_set(&conn->check_immediate_queue, 1);
- 	spin_unlock_bh(&conn->immed_queue_lock);
- 
--	wake_up_process(conn->thread_set->tx_thread);
-+	wake_up(&conn->queues_wq);
- }
- 
- struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
-@@ -562,7 +562,7 @@ void iscsit_add_cmd_to_response_queue(
- 	atomic_inc(&cmd->response_queue_count);
- 	spin_unlock_bh(&conn->response_queue_lock);
- 
--	wake_up_process(conn->thread_set->tx_thread);
-+	wake_up(&conn->queues_wq);
- }
- 
- struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
-@@ -616,6 +616,24 @@ static void iscsit_remove_cmd_from_response_queue(
- 	}
- }
- 
-+bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
-+{
-+	bool empty;
-+
-+	spin_lock_bh(&conn->immed_queue_lock);
-+	empty = list_empty(&conn->immed_queue_list);
-+	spin_unlock_bh(&conn->immed_queue_lock);
-+
-+	if (!empty)
-+		return empty;
-+
-+	spin_lock_bh(&conn->response_queue_lock);
-+	empty = list_empty(&conn->response_queue_list);
-+	spin_unlock_bh(&conn->response_queue_lock);
-+
-+	return empty;
-+}
-+
- void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
- {
- 	struct iscsi_queue_req *qr, *qr_tmp;
-diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
-index e1c729b..2ff9bbc 100644
---- a/drivers/target/iscsi/iscsi_target_util.h
-+++ b/drivers/target/iscsi/iscsi_target_util.h
-@@ -25,6 +25,7 @@ extern struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_
- extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
- extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
- extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
-+extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
- extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
- extern void iscsit_release_cmd(struct iscsi_cmd *);
- extern void iscsit_free_cmd(struct iscsi_cmd *);
--- 
-1.7.9.5
 
