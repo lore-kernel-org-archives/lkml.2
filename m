@@ -1,36 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab2LMO1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:27:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752927Ab2LMO1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:27:32 -0500
-Date: Thu, 13 Dec 2012 15:27:28 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] sched: cputime: avoid multiplication overflow (in common
- cases)
-Message-ID: <20121213142727.GA4609@redhat.com>
-References: <20121213084430.GA2297@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213084430.GA2297@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S933199Ab2LMO1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:27:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44895 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933145Ab2LMOML (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:12:11 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 184/241] floppy: destroy floppy workqueue before cleaning up the queue
+Date: Thu, 13 Dec 2012 11:59:09 -0200
+Message-Id: <1355407206-17100-185-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 09:44:30AM +0100, Stanislaw Gruszka wrote:
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> ---
->  kernel/sched/cputime.c |   92 +++++++++++++++++++++++++++++------------------
->  1 files changed, 57 insertions(+), 35 deletions(-)
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-There are recent changes in cputime.c . This patch will not apply,
-please ignore it for now. I'll repost.
+------------------
 
-Stanislaw
+From: Jiri Kosina <jkosina@suse.cz>
+
+commit eac7cc52c6b410e542af431b2ee93f3d7dbfb6af upstream.
+
+We need to first destroy the floppy_wq workqueue before cleaning up
+the queue. Otherwise we might race with still pending work with the
+workqueue, but all the block queue already gone. This might lead to
+various oopses, such as
+
+ CPU 0
+ Pid: 6, comm: kworker/u:0 Not tainted 3.7.0-rc4 #1 Bochs Bochs
+ RIP: 0010:[<ffffffff8134eef5>]  [<ffffffff8134eef5>] blk_peek_request+0xd5/0x1c0
+ RSP: 0000:ffff88000dc7dd88  EFLAGS: 00010092
+ RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000000
+ RDX: ffff88000f602688 RSI: ffffffff81fd95d8 RDI: 6b6b6b6b6b6b6b6b
+ RBP: ffff88000dc7dd98 R08: ffffffff81fd95c8 R09: 0000000000000000
+ R10: ffffffff81fd9480 R11: 0000000000000001 R12: 6b6b6b6b6b6b6b6b
+ R13: ffff88000dc7dfd8 R14: ffff88000dc7dfd8 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000000 CR3: 0000000001e11000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process kworker/u:0 (pid: 6, threadinfo ffff88000dc7c000, task ffff88000dc5ecc0)
+ Stack:
+  0000000000000000 0000000000000000 ffff88000dc7ddb8 ffffffff8134efee
+  ffff88000dc7ddb8 0000000000000000 ffff88000dc7dde8 ffffffff814aef3c
+  ffffffff81e75d80 ffff88000dc0c640 ffff88000fbfb000 ffffffff814aed90
+ Call Trace:
+  [<ffffffff8134efee>] blk_fetch_request+0xe/0x30
+  [<ffffffff814aef3c>] redo_fd_request+0x1ac/0x400
+  [<ffffffff814aed90>] ? start_motor+0x130/0x130
+  [<ffffffff8106b526>] process_one_work+0x136/0x450
+  [<ffffffff8106af65>] ? manage_workers+0x205/0x2e0
+  [<ffffffff8106bb6d>] worker_thread+0x14d/0x420
+  [<ffffffff8106ba20>] ? rescuer_thread+0x1a0/0x1a0
+  [<ffffffff8107075a>] kthread+0xba/0xc0
+  [<ffffffff810706a0>] ? __kthread_parkme+0x80/0x80
+  [<ffffffff818b553a>] ret_from_fork+0x7a/0xb0
+  [<ffffffff810706a0>] ? __kthread_parkme+0x80/0x80
+ Code: 0f 84 c0 00 00 00 83 f8 01 0f 85 e2 00 00 00 81 4b 40 00 00 80 00 48 89 df e8 58 f8 ff ff be fb ff ff ff
+ fe ff ff <49> 8b 1c 24 49 39 dc 0f 85 2e ff ff ff 41 0f b6 84 24 28 04 00
+ RIP  [<ffffffff8134eef5>] blk_peek_request+0xd5/0x1c0
+  RSP <ffff88000dc7dd88>
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[ herton: adjust context ]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/block/floppy.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 7ad2489..059315b 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -4329,6 +4329,7 @@ out_unreg_region:
+ out_unreg_blkdev:
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ out_put_disk:
++	destroy_workqueue(floppy_wq);
+ 	while (dr--) {
+ 		del_timer_sync(&motor_off_timer[dr]);
+ 		if (disks[dr]->queue) {
+@@ -4341,7 +4342,6 @@ out_put_disk:
+ 		}
+ 		put_disk(disks[dr]);
+ 	}
+-	destroy_workqueue(floppy_wq);
+ 	return err;
+ }
+ 
+@@ -4538,6 +4538,8 @@ static void __exit floppy_module_exit(void)
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ 	platform_driver_unregister(&floppy_driver);
+ 
++	destroy_workqueue(floppy_wq);
++
+ 	for (drive = 0; drive < N_DRIVE; drive++) {
+ 		del_timer_sync(&motor_off_timer[drive]);
+ 
+@@ -4562,7 +4564,6 @@ static void __exit floppy_module_exit(void)
+ 
+ 	cancel_delayed_work_sync(&fd_timeout);
+ 	cancel_delayed_work_sync(&fd_timer);
+-	destroy_workqueue(floppy_wq);
+ 
+ 	if (atomic_read(&usage_count))
+ 		floppy_release_irq_and_dma();
+-- 
+1.7.9.5
+
