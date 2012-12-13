@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2LMDdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:33:18 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:58443 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754261Ab2LMDdQ (ORCPT
+	id S1755492Ab2LMDes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:34:48 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48635 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab2LMDer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:33:16 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AooLABlLyVB5LB3g/2dsb2JhbABFhU+zGYYHF3OCHgEBBTocIxAIAw4KLhQlAyETiBC+KRSMN4RDA5YIiU6Ge4MH
-Date: Thu, 13 Dec 2012 14:33:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Abhijit Pawar <abhi.c.pawar@gmail.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steve French <sfrench@samba.org>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com
-Subject: Re: [PATCH 4/4] fs: remove obsolete simple_strto<foo>
-Message-ID: <20121213033311.GG16353@dastard>
-References: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
+	Wed, 12 Dec 2012 22:34:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354881319-23585-1-git-send-email-abhi.c.pawar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50C94A9C.2050900@gmail.com>
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+ <50C94A9C.2050900@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Dec 2012 19:34:26 -0800
+X-Google-Sender-Auth: JA8YQwFd3MdN8Q20Tlf7MZ6LQkM
+Message-ID: <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
+Subject: Re: [GIT PULL] perf changes for v3.8
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 05:25:19PM +0530, Abhijit Pawar wrote:
-> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
+On Wed, Dec 12, 2012 at 7:25 PM, David Ahern <dsahern@gmail.com> wrote:
+>
+> Are you running an older perf binary on the 3.8 kernel?
 
-The XFS changes look fine. Consider those:
+I am.. I don't tend to rebuild 'perf'..
 
-Acked-by: Dave Chinner <dchinner@redhat.com>
+> Does this work: perf record -e cycles:ppH  ...
 
--- 
-Dave Chinner
-david@fromorbit.com
+Yes it does. What is 'H' and why should anybody care? Especially since
+I'm not running virtualized.
+
+That whole "exclude_guest" test is insane when there isn't any
+virtualization going on. Very annoying.
+
+                Linus
