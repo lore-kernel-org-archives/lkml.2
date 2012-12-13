@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab2LMOKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:10:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44708 "EHLO
+	id S932866Ab2LMOKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:10:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44722 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932796Ab2LMOKH (ORCPT
+	with ESMTP id S932853Ab2LMOKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:10:07 -0500
+	Thu, 13 Dec 2012 09:10:15 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+Cc: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 151/241] mm/vmemmap: fix wrong use of virt_to_page
-Date: Thu, 13 Dec 2012 11:58:36 -0200
-Message-Id: <1355407206-17100-152-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 150/241] futex: avoid wake_futex() for a PI futex_q
+Date: Thu, 13 Dec 2012 11:58:35 -0200
+Message-Id: <1355407206-17100-151-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,82 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit ae64ffcac35de0db628ba9631edf8ff34c5cd7ac upstream.
+commit aa10990e028cac3d5e255711fb9fb47e00700e35 upstream.
 
-I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing
-memory hotremove, there is a kernel BUG at arch/x86/mm/physaddr.c:20.
+Dave Jones reported a bug with futex_lock_pi() that his trinity test
+exposed.  Sometime between queue_me() and taking the q.lock_ptr, the
+lock_ptr became NULL, resulting in a crash.
 
-It is caused by free_section_usemap()->virt_to_page(), virt_to_page() is
-only used for kernel direct mapping address, but sparse-vmemmap uses
-vmemmap address, so it is going wrong here.
+While futex_wake() is careful to not call wake_futex() on futex_q's with
+a pi_state or an rt_waiter (which are either waiting for a
+futex_unlock_pi() or a PI futex_requeue()), futex_wake_op() and
+futex_requeue() do not perform the same test.
 
-  ------------[ cut here ]------------
-  kernel BUG at arch/x86/mm/physaddr.c:20!
-  invalid opcode: 0000 [#1] SMP
-  Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_mod coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspkr iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_core mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
-  CPU 39
-  Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI QSSC-S4R/QSSC-S4R
-  RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+0x88/0x90
-  RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
-  RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
-  ...
+Update futex_wake_op() and futex_requeue() to test for q.pi_state and
+q.rt_waiter and abort with -EINVAL if detected.  To ensure any future
+breakage is caught, add a WARN() to wake_futex() if the same condition
+is true.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewd-by: Wen Congyang <wency@cn.fujitsu.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+This fix has seen 3 hours of testing with "trinity -c futex" on an
+x86_64 VM with 4 CPUS.
+
+[akpm@linux-foundation.org: tidy up the WARN()]
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Dave Jones <davej@redat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: John Kacur <jkacur@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- mm/sparse.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ kernel/futex.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/mm/sparse.c b/mm/sparse.c
-index 950981f..0abadaf 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -629,7 +629,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 20ef219..19eb089 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -843,6 +843,9 @@ static void wake_futex(struct futex_q *q)
  {
- 	return; /* XXX: Not implemented yet */
- }
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- }
- #else
-@@ -670,10 +670,11 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
- 			   get_order(sizeof(struct page) * nr_pages));
- }
+ 	struct task_struct *p = q->task;
  
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long maps_section_nr, removing_section_nr, i;
- 	unsigned long magic;
-+	struct page *page = virt_to_page(memmap);
++	if (WARN(q->pi_state || q->rt_waiter, "refusing to wake PI futex\n"))
++		return;
++
+ 	/*
+ 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
+ 	 * a non-futex wake up happens on another CPU then the task
+@@ -1078,6 +1081,10 @@ retry_private:
  
- 	for (i = 0; i < nr_pages; i++, page++) {
- 		magic = (unsigned long) page->lru.next;
-@@ -722,13 +723,10 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
- 	 */
- 
- 	if (memmap) {
--		struct page *memmap_page;
--		memmap_page = virt_to_page(memmap);
--
- 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
- 			>> PAGE_SHIFT;
- 
--		free_map_bootmem(memmap_page, nr_pages);
-+		free_map_bootmem(memmap, nr_pages);
+ 	plist_for_each_entry_safe(this, next, head, list) {
+ 		if (match_futex (&this->key, &key1)) {
++			if (this->pi_state || this->rt_waiter) {
++				ret = -EINVAL;
++				goto out_unlock;
++			}
+ 			wake_futex(this);
+ 			if (++ret >= nr_wake)
+ 				break;
+@@ -1090,6 +1097,10 @@ retry_private:
+ 		op_ret = 0;
+ 		plist_for_each_entry_safe(this, next, head, list) {
+ 			if (match_futex (&this->key, &key2)) {
++				if (this->pi_state || this->rt_waiter) {
++					ret = -EINVAL;
++					goto out_unlock;
++				}
+ 				wake_futex(this);
+ 				if (++op_ret >= nr_wake2)
+ 					break;
+@@ -1098,6 +1109,7 @@ retry_private:
+ 		ret += op_ret;
  	}
- }
  
++out_unlock:
+ 	double_unlock_hb(hb1, hb2);
+ out_put_keys:
+ 	put_futex_key(&key2);
+@@ -1387,9 +1399,13 @@ retry_private:
+ 		/*
+ 		 * FUTEX_WAIT_REQEUE_PI and FUTEX_CMP_REQUEUE_PI should always
+ 		 * be paired with each other and no other futex ops.
++		 *
++		 * We should never be requeueing a futex_q with a pi_state,
++		 * which is awaiting a futex_unlock_pi().
+ 		 */
+ 		if ((requeue_pi && !this->rt_waiter) ||
+-		    (!requeue_pi && this->rt_waiter)) {
++		    (!requeue_pi && this->rt_waiter) ||
++		    this->pi_state) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 -- 
 1.7.9.5
 
