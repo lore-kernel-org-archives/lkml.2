@@ -1,340 +1,877 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab2LMKQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 05:16:38 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:21898 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab2LMKQf (ORCPT
+	id S1753940Ab2LMKRy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 05:17:54 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36398 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab2LMKRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 05:16:35 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-13-50c9aafb6b9b
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-To: thierry.reding@avionic-design.de
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com
-Subject: [PATCH] pwm: add Exynos PWM driver
-Date: Thu, 13 Dec 2012 19:16:36 +0900
-Message-id: <1355393796-15436-1-git-send-email-jy0922.shim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t8zTd3fq04GGDR91rG4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MpY9XonW8Ek54q1XW3sDYzbzbsYOTkkBEwk5i17wARh
-	i0lcuLeerYuRi0NIYBmjxKKtj1lhipb//88MkVjEKDG9/SMjhNPCJDH70F0WkCo2AT2JO9uO
-	g40SEVCRmLYGYiyzQLlE++/dzCC2sIC2RP+vbkYQm0VAVaL50kl2EJtXwF3i6M4+oHoOoG0K
-	EnMm2UCUCEh8m3yIBSIsK7HpANgNEgIH2CRen/vNBnGcpMTBFTdYJjAKLmBkWMUomlqQXFCc
-	lJ5rqFecmFtcmpeul5yfu4kRElxSOxhXNlgcYhTgYFTi4S0IPxkgxJpYVlyZe4hRgoNZSYTX
-	fzlQiDclsbIqtSg/vqg0J7X4EKMP0CUTmaVEk/OBgZ9XEm9obGBsaGhpaGZqaWqAQ1hJnLfZ
-	IyVASCA9sSQ1OzW1ILUIZhwTB6dUA6Pvwjs+XiUpFaIvzriFdt8442PTND/cfvuvx9Muqv5Z
-	qPT94ayDn9331Kur+D1ZH6KaUpoSot9m5eR6UYd1daPdlQ8tK1P2z5iiHDvt2bQjz+2Vfeff
-	r9F/ki29+p7KivcpJ6Zz+Dss09UtburJSXGXXLQytF5+vYlzx4bg4IAnRvOOrrl6Z6sSS3FG
-	oqEWc1FxIgBGAD4kWwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t9jAd3fq04GGOyYq2JxedccNosZ5/cx
-	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
-	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYser1TraCSc4V
-	a7va2BsYt5t3MXJySAiYSCz//58ZwhaTuHBvPVsXIxeHkMAiRonp7R8ZIZwWJonZh+6ygFSx
-	CehJ3Nl2nAnEFhFQkZi25gGYzSxQLtH+ezfYJGEBbYn+X92MIDaLgKpE86WT7CA2r4C7xNGd
-	fUD1HEDbFCTmTLKZwMi9gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw6D6T2sG4ssHi
-	EKMAB6MSD29B+MkAIdbEsuLK3EOMEhzMSiK8/suBQrwpiZVVqUX58UWlOanFhxh9gJZPZJYS
-	Tc4HxlVeSbyhsYmZkaWRmbGJubExDmElcd5mj5QAIYH0xJLU7NTUgtQimHFMHJxSDYyMHO76
-	eXUPZsyd0/FwEVfME9/lC8/vP8jJOUfkuojmDNX+z3d/60XPPTR3ujnDIfv/E138Kz6/mXTZ
-	tPC43OnoBWVOdWs6L8j6TQ12Ujn2gUMp/0xfn9cpO7d/H1WdeMQTgvi3tc4zCDM+XFG+SC4r
-	ap9QL/fyW533nk+8MP+Zr89thl8hwg+VWIozEg21mIuKEwGXbV5nigIAAA==
-X-CFilter-Loop: Reflected
+	Thu, 13 Dec 2012 05:17:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <ff99ea521406a089a5dd5f5ece7468eb.squirrel@www.codeaurora.org>
+References: <n@samsung.com>
+	<1353844588-29281-1-git-send-email-merez@codeaurora.org>
+	<50B757D4.30706@samsung.com>
+	<0539db7b53ef7d652d19190e53e21b19.squirrel@www.codeaurora.org>
+	<CAPDyKFrMZrgrc8PfXWzqiR2qp6iQTLzAcQmhuwyLni-Cu9uDtg@mail.gmail.com>
+	<2db99fefdf4105b67f63dfb93a8362ec.squirrel@www.codeaurora.org>
+	<CAPDyKFpMRWVtCAHd7mMZ=pXbsb1s39O6WB0S4H6+sPZwMdG3Dw@mail.gmail.com>
+	<ff99ea521406a089a5dd5f5ece7468eb.squirrel@www.codeaurora.org>
+Date: Thu, 13 Dec 2012 11:17:47 +0100
+Message-ID: <CAPDyKFqfn9gboAqoyt=BX=7S9p+nsshO=KrrooAmyS8Hz2=HMA@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc: core: Add support for idle time BKOPS
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: merez@codeaurora.org
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is PWM driver to support 4 pwm for Exynos SoCs. Also this supports
-device tree node.
+On 12 December 2012 13:32,  <merez@codeaurora.org> wrote:
+> Hi Ulf,
+>
+> Sorry for the late response.
+> See my reply below.
+>
+> Thanks,
+> Maya
+>
+> On Thu, December 6, 2012 2:18 am, Ulf Hansson wrote:
+>> Hi Maya,
+>>
+>> On 4 December 2012 22:17,  <merez@codeaurora.org> wrote:
+>>> Hi Ulf,
+>>>
+>>> Let me try to better explain:
+>>> The idea behind the periodic BKOPS is to check the card's need for BKOPS
+>>> periodically in order to prevent an urgent BKOPS need by the card.
+>>> In order to actually manage to prevent the urgent BKOPS need, the host
+>>> should give the card enough time to perform the BKOPS (when it
+>>> recognizes
+>>> BKOPS need), otherwise there is no point in having the periodic BKOPS.
+>>> The above results in the following:
+>>> 1. After starting non-urgent BKOPS we "delay" getting into suspend by
+>>> polling on the card's status (explanation below), in order to give the
+>>> card time to perform the BKOPS. This has no effect on the power
+>>> consumption since the same BKOPS operations that were performed after
+>>> the
+>>> foregound operation just moved to another location, meaning before going
+>>> into suspend.
+>>
+>> I am not sure what you are talking about here, runtime suspend or
+>> system suspend? Polling the card's status will not prevent any of
+>> this. So you have got this wrong.
+>
+> I am referring to the runtime suspend.
+> Our controller implements the runtime suspend and is not using the default
+> implementation of core/bus.c.
 
-The existing s3c24xx-pwm driver has many dependence with arch specific
-codes and it is difficult to support device tree by static mapping of
-PMW memory area. Also it can't support multi pwm to one device and can't
-make to module.
+This is not the "default runtime suspend" for a host device, but for
+the card device. Do not mix this up with runtime pm for a host device.
 
-Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
----
-This is based on for-next branch of git://gitorious.org/linux-pwm/linux-pwm.git
+Right now runtime pm for the card _device_ is only enabled for SDIO.
+Thus SDIO drivers can use runtime pm to actually trigger an SDIO card
+to be fully suspended when it is not needed and thus save a lot of
+power. For example when a WLAN interface goes up/down.
 
- drivers/pwm/Kconfig      |    9 ++
- drivers/pwm/Makefile     |    1 +
- drivers/pwm/pwm-exynos.c |  234 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 244 insertions(+)
- create mode 100644 drivers/pwm/pwm-exynos.c
+> This is the reason why in our implementation polling the card status
+> "delays" the runtime suspend while it is not the case when using the
+> default runtime suspend implementation.
+> I can try to explain here what our controller is doing but since it is
+> specific to us then I guess it is not relevant to the discussion.
+> Our controller is calling mmc_suspend_host in runtime suspend, which
+> issues an HPI to stop the BKOPS.
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index ed81720..1632ace 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -46,6 +46,15 @@ config PWM_BFIN
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-bfin.
- 
-+config PWM_EXYNOS
-+	tristate "Exynos pwm support"
-+	depends on ARCH_EXYNOS
-+	help
-+	  Generic PWM framework driver for Exynos.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-exynos.
-+
- config PWM_IMX
- 	tristate "i.MX pwm support"
- 	depends on ARCH_MXC
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index acfe482..423a251 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -1,6 +1,7 @@
- obj-$(CONFIG_PWM)		+= core.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
-+obj-$(CONFIG_PWM_EXYNOS)	+= pwm-exynos.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
- obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
- obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
-diff --git a/drivers/pwm/pwm-exynos.c b/drivers/pwm/pwm-exynos.c
-new file mode 100644
-index 0000000..5a411b6
---- /dev/null
-+++ b/drivers/pwm/pwm-exynos.c
-@@ -0,0 +1,234 @@
-+/*
-+ * Copyright (C) 2012 Samsung Electronics Co.Ltd
-+ * Author: Joonyoung Shim <jy0922.shim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+#define PWM_NUM			4
-+
-+#define PWM_TCFG0		0x00
-+#define PWM_TCFG1		0x04
-+#define PWM_TCON		0x08
-+#define PWM_TCNTB(hw)		(0x0c + (hw) * 0x0c)
-+#define PWM_TCMPB(hw)		(0x10 + (hw) * 0x0c)
-+#define PWM_TCNTO(hw)		(0x14 + (hw) * 0x0c)
-+
-+#define PWM_TCFG0_RST_VAL	0x101
-+#define PWM_TCFG1_RST_VAL	0x0
-+#define PWM_TCON_RST_VAL	0x44404		/* inverter on */
-+
-+#define PWM_TCFG0_PRESCALER0_MASK	0xff
-+#define PWM_TCFG0_PRESCALER1_MASK	0xff00
-+#define PWM_TCFG0_PRESCALER1_SHIFT	8
-+
-+#define PWM_TCFG1_MUX_MASK		0xf
-+#define PWM_TCFG1_MUX_SHIFT		4
-+
-+#define PWM_TCON_BASE(hw)		((hw) ? ((hw) + 1) * 4 : 0)
-+#define PWM_TCON_START(hw)		(1 << (PWM_TCON_BASE(hw) + 0))
-+#define PWM_TCON_MANUALUPDATE(hw)	(1 << (PWM_TCON_BASE(hw) + 1))
-+#define PWM_TCON_INVERTER(hw)		(1 << (PWM_TCON_BASE(hw) + 2))
-+#define PWM_TCON_AUTORELOAD(hw)		(1 << (PWM_TCON_BASE(hw) + 3))
-+
-+struct exynos_pwm {
-+	struct pwm_chip		chip;
-+	struct device		*dev;
-+	struct clk		*clk;
-+	struct mutex		mutex;
-+	void __iomem		*base;
-+};
-+
-+static int exynos_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			     int duty_ns, int period_ns)
-+{
-+	struct exynos_pwm *exynos = container_of(chip, struct exynos_pwm, chip);
-+	unsigned long long c;
-+	unsigned long period_cycles, duty_cycles;
-+	unsigned long clk_rate;
-+	unsigned int prescaler;
-+	unsigned int divider;
-+	unsigned int hw = pwm->hwpwm;
-+	u32 val;
-+
-+	if (period_ns > NSEC_PER_SEC)
-+		return -ERANGE;
-+
-+	val = readl(exynos->base + PWM_TCFG0);
-+	if (hw == 0 || hw == 1)
-+		prescaler = val & PWM_TCFG0_PRESCALER0_MASK;
-+	else
-+		prescaler = (val & PWM_TCFG0_PRESCALER1_MASK) >>
-+						PWM_TCFG0_PRESCALER1_SHIFT;
-+
-+	val = readl(exynos->base + PWM_TCFG1);
-+	divider = val & (PWM_TCFG1_MUX_MASK << (hw * PWM_TCFG1_MUX_SHIFT));
-+	divider = 1 << divider;
-+
-+	/* Clock Frequency = PCLK / (prescaler + 1) / divider */
-+	clk_rate = clk_get_rate(exynos->clk);
-+	clk_rate = clk_rate / (prescaler + 1) / divider;
-+
-+	c = (unsigned long long)clk_rate * period_ns;
-+	do_div(c, NSEC_PER_SEC);
-+	period_cycles = (unsigned long)c;
-+
-+	c = (unsigned long long)period_cycles * duty_ns;
-+	do_div(c, period_ns);
-+	duty_cycles = (unsigned long)c;
-+
-+	/* because inverter is on and count down */
-+	duty_cycles = period_cycles - duty_cycles;
-+
-+	writel(period_cycles, exynos->base + PWM_TCNTB(hw));
-+	writel(duty_cycles, exynos->base + PWM_TCMPB(hw));
-+
-+	mutex_lock(&exynos->mutex);
-+	val = readl(exynos->base + PWM_TCON);
-+	val |= PWM_TCON_MANUALUPDATE(hw);
-+	val |= PWM_TCON_AUTORELOAD(hw);
-+	writel(val, exynos->base + PWM_TCON);
-+
-+	val &= ~PWM_TCON_MANUALUPDATE(hw);
-+	writel(val, exynos->base + PWM_TCON);
-+	mutex_unlock(&exynos->mutex);
-+
-+	return 0;
-+}
-+
-+static int exynos_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct exynos_pwm *exynos = container_of(chip, struct exynos_pwm, chip);
-+	unsigned int hw = pwm->hwpwm;
-+	u32 val;
-+
-+	mutex_lock(&exynos->mutex);
-+	val = readl(exynos->base + PWM_TCON);
-+	val |= PWM_TCON_START(hw);
-+	writel(val, exynos->base + PWM_TCON);
-+	mutex_unlock(&exynos->mutex);
-+
-+	return 0;
-+}
-+
-+static void exynos_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct exynos_pwm *exynos = container_of(chip, struct exynos_pwm, chip);
-+	unsigned int hw = pwm->hwpwm;
-+	u32 val;
-+
-+	mutex_lock(&exynos->mutex);
-+	val = readl(exynos->base + PWM_TCON);
-+	val |= PWM_TCON_START(hw);
-+	writel(val, exynos->base + PWM_TCON);
-+	mutex_unlock(&exynos->mutex);
-+}
-+
-+static const struct pwm_ops exynos_pwm_ops = {
-+	.config = exynos_pwm_config,
-+	.enable = exynos_pwm_enable,
-+	.disable = exynos_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int exynos_pwm_probe(struct platform_device *pdev)
-+{
-+	struct exynos_pwm *exynos;
-+	struct resource *res;
-+	int ret;
-+
-+	exynos = devm_kzalloc(&pdev->dev, sizeof(*exynos), GFP_KERNEL);
-+	if (!exynos) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	exynos->dev = &pdev->dev;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "no memory resources defined\n");
-+		return -ENODEV;
-+	}
-+
-+	exynos->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!exynos->base)
-+		return -EADDRNOTAVAIL;
-+
-+	exynos->clk = devm_clk_get(&pdev->dev, "timers");
-+	if (IS_ERR(exynos->clk)) {
-+		dev_err(&pdev->dev, "failed to get timer clock with %ld\n",
-+				PTR_ERR(exynos->clk));
-+		return PTR_ERR(exynos->clk);
-+	}
-+
-+	mutex_init(&exynos->mutex);
-+
-+	exynos->chip.dev = &pdev->dev;
-+	exynos->chip.ops = &exynos_pwm_ops;
-+	exynos->chip.base = -1;
-+	exynos->chip.npwm = PWM_NUM;
-+
-+	ret = clk_prepare_enable(exynos->clk);
-+	if (ret)
-+		return ret;
-+
-+	/* Reset registers related with PWM clock and control */
-+	writel(PWM_TCFG0_RST_VAL, exynos->base + PWM_TCFG0);
-+	writel(PWM_TCFG1_RST_VAL, exynos->base + PWM_TCFG1);
-+	writel(PWM_TCON_RST_VAL, exynos->base + PWM_TCON);
-+
-+	ret = pwmchip_add(&exynos->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		clk_disable_unprepare(exynos->clk);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, exynos);
-+
-+	return 0;
-+}
-+
-+static int __devexit exynos_pwm_remove(struct platform_device *pdev)
-+{
-+	struct exynos_pwm *exynos = platform_get_drvdata(pdev);
-+	if (!exynos)
-+		return -ENODEV;
-+
-+	clk_disable_unprepare(exynos->clk);
-+
-+	return pwmchip_remove(&exynos->chip);
-+}
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id exynos_pwm_dt_match[] = {
-+	{ .compatible = "samsung,exynos-pwm" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, exynos_pwm_dt_match);
-+#endif
-+
-+static struct platform_driver exynos_pwm_driver = {
-+	.probe		= exynos_pwm_probe,
-+	.remove		= __devexit_p(exynos_pwm_remove),
-+	.driver		= {
-+		.name	= "exynos-pwm",
-+		.owner	= THIS_MODULE,
-+		.of_match_table	= of_match_ptr(exynos_pwm_dt_match),
-+	},
-+};
-+module_platform_driver(exynos_pwm_driver);
-+
-+MODULE_DESCRIPTION("Exynos PWM driver");
-+MODULE_AUTHOR("Joonyoung Shim <jy0922.shim@samsung.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
+So, doing mmc_suspend_host in you runtime_suspend callback, is that
+really what you want to do?
 
+1.
+You will introduce significant latencies (I have seen SD-cards which
+needs more than 1 s to initialize, eMMC is better but we are anyway
+talking several 100 ms) once new requests arrives after the host as
+entered the runtime suspend state.
+
+2.
+SD cards has no "power off" notification, so you will actually stress
+test the SD cards internal FTL to be crash safe by cutting the power
+to it more often.
+
+3.
+You will prevent SD-cards from doing it's back ground operations,
+which is done automatically and not like in a controlled manner as for
+eMMC.
+
+So of course, you save some power, but is the consequences worth it? :-)
+
+> Now that I understand that this code is not needed for all the host
+> drivers I will add a flag to decide if polling is required when doing an
+> unblocking BKOPS.
+
+You must not poll to prevent this!
+
+Instead you need to prevent the host from going into runtime suspend
+state, which is simply done by pm_runtime_get_sync for the host
+device.
+Although, it _must_ not be done for drivers not doing mmc_suspend_host
+in their runtime suspend callbacks. Since then it will prevent these
+from doing runtime power save actions, which is not ok.
+
+> Other host drivers that actually suspend on runtime suspend can enable
+> this flag and allow BKOPS to be active for a longer period.
+> I will prepare a new patch and send it for review.
+>
+>>
+>>> 2. Using PM_SUSPEND_PREPARE instead of the workqueue would not be
+>>> efficient since we don't want to wait until the host is ready to get
+>>> into
+>>> suspend and then prevent him from suspending by doing BKOPS operations
+>>> that can take a long time. It is better to start the BKOPS earlier.
+>>
+>> I did not suggest to use PM_SUSPEND_PREPARE, but to use runtime PM for
+>> the card device. It can be an option to implement this feature on top
+>> of a workqueue. At least worth to consider.
+>>
+>
+> We consider to call mmc_start_bkops every time MMC becomes idle, to
+> check the need for BKOPS. I will test it and include it in the next patch.
+>
+>>>
+>>> I am not too familiar with the controllers code and also my
+>>> understanding
+>>> in runtime suspend is very basic, so feel free to correct me if I'm
+>>> wrong
+>>> here or the behavior in other controllers is different from msm_sdcc.
+>>> mmc_claim_host calls host->ops->enable. This API is implemented per
+>>> controller but as far as I understand it, this API must prevent suspend,
+>>> otherwise we might go into suspend while there is bus activity. By doing
+>>> get_card_status we call mmc_claim_host and this call is the one that
+>>> "delays" getting into suspend.
+>>
+>> host->ops->enable is the old way of implementing runtime power save
+>> for host drivers. Nowadays most drivers is using runtime PM instead.
+>>
+>> When you say that mmc_claim_host will prevent suspend, I suppose you
+>> mean that host->ops->disable wont be called? That is definitely not
+>> the same as preventing a system suspend, and moreover it should not.
+>> If you think that the host must be prevented from entering runtime
+>> power save (runtime_supend or host->ops->disable), you must elaborate
+>> more on this, because I don't understand why this is needed.
+>>
+> Again, this is specific to our controller, so you can just ignore that.
+>
+>>> If this is not the case in other controllers than the BKOPS will not
+>>> prevent the suspend and BKOPS will be interrupted.
+>>> As for the effect on the battery consumption, this is probably something
+>>> specific to our controller, so sorry if I created a confusion.
+>>>
+>>> Additional comments inline.
+>>>
+>>> Thanks,
+>>> Maya
+>>>
+>>> On Tue, December 4, 2012 1:52 am, Ulf Hansson wrote:
+>>>> On 3 December 2012 10:49,  <merez@codeaurora.org> wrote:
+>>>>> Hi Jaehoon,
+>>>>>
+>>>>> With this patch we don't expect to see any degradation. Thanks for
+>>>>> verifying that.
+>>>>> The test plan would be to run the lmdd and iozone benchmarks with this
+>>>>> patch and verify that the performance is not degraded.
+>>>>> I verified it with the msm_sdcc controller.
+>>>>>
+>>>>> Chris - We do expect it to influence the battery consumption, since we
+>>>>> now
+>>>>> delay getting into suspend (since mmc_start_bkops which is called
+>>>>> after
+>>>>> the delayed work is executed claims the host).
+>>>>> The solution for that should be done by the controller which can
+>>>>> shorten
+>>>>> the timeout given to pm_schedule_suspend by the periodic BKOPS idle
+>>>>> time.
+>>>>> Does it make sense to you?
+>>>>>
+>>>>> Thanks,
+>>>>> Maya
+>>>>> On Thu, November 29, 2012 4:40 am, Jaehoon Chung wrote:
+>>>>>> Hi Maya,
+>>>>>>
+>>>>>> Thank you a lot for working idle time BKOPS.
+>>>>>>
+>>>>>> I tested with this patch. It's working fine.(Suspend/resume is also
+>>>>>> working well.)
+>>>>>> Test controller is sdhci controller.
+>>>>>> When i tested the performance with iozone, i didn't find that
+>>>>>> performance
+>>>>>> is decreased.
+>>>>>> Well, as Chris is mentioned, do you have any test plan?
+>>>>>> So I will test more with this patch, because i want to test with
+>>>>>> dw-mmc
+>>>>>> controller, too.
+>>>>>>
+>>>>>> On 11/25/2012 08:56 PM, Maya Erez wrote:
+>>>>>>> Devices have various maintenance operations need to perform
+>>>>>>> internally.
+>>>>>>> In order to reduce latencies during time critical operations like
+>>>>>>> read
+>>>>>>> and write, it is better to execute maintenance operations in other
+>>>>>>> times - when the host is not being serviced. Such operations are
+>>>>>>> called
+>>>>>>> Background operations (BKOPS).
+>>>>>>> The device notifies the status of the BKOPS need by updating
+>>>>>>> BKOPS_STATUS
+>>>>>>> (EXT_CSD byte [246]).
+>>>>>>>
+>>>>>>> According to the standard a host that supports BKOPS shall check the
+>>>>>>> status periodically and start background operations as needed, so
+>>>>>>> that
+>>>>>>> the device has enough time for its maintenance operations.
+>>>>>>>
+>>>>>>> This patch adds support for this periodic check of the BKOPS status.
+>>>>>>> Since foreground operations are of higher priority than background
+>>>>>>> operations the host will check the need for BKOPS when it is idle,
+>>>>>>> and in case of an incoming request the BKOPS operation will be
+>>>>>>> interrupted.
+>>>>>>>
+>>>>>>> When the mmcqd thread is idle, a delayed work is created to check
+>>>>>>> the
+>>>>>>> need for BKOPS. The time to start the delayed work is calculated
+>>>>>>> based
+>>>>>>> on the host controller suspend timeout, in case it was set. If not,
+>>>>>>> a
+>>>>>>> default time is used.
+>>>>
+>>>> What host controller suspend timeout are you referring to here?
+>>>>
+>>>> If you are thinking of the runtime PM autosuspend timeout used in many
+>>>> host driver, then you might have missunderstand how runtime PM is used
+>>>> in host drivers.
+>>>> This has nothing to do with BKOPS as such, unless you think that the
+>>>> card must be kept clocked during BKOPS operations, but then this needs
+>>>> to be stated somewhere in this patch and that is not the case.
+>>>>
+>>>> Moreover, I could not find any new timeout added for the _host_ struct
+>>>> in this patch.
+>>> Yes, I was referring to the runtime PM autosuspend timeout. Since we
+>>> want
+>>> to give the BKOPS time to be performed before going into suspend, we
+>>> need
+>>> to take this timeout into account.
+>>
+>> Not sure why need to consider this timeout. Anyway, if so you must
+>> instead use the runtime PM API to prevent the host from being runtime
+>> suspended, like pm_runtime_get_sync.
+>>
+>>>>
+>>>>>>> If BKOPS are required in level 1, which is non-blocking, there will
+>>>>>>> be
+>>>>>>> polling of the card status to wait for the BKOPS completion and
+>>>>>>> prevent
+>>>>>>> suspend that will interrupt the BKOPS.
+>>>>
+>>>> Not sure of what suspend you are talking about here. But for sure
+>>>> BKOPS must _never_ prevent a system suspend.
+>>>>
+>>>> You might want to prevent a host from being runtime suspended though,
+>>>> but that is not accomplished in this patch.
+>>> This is explained in my general comment. Let me know if it is still not
+>>> clear.
+>>>>
+>>>>>>> If the card raised an exception, the need for urgent BKOPS (level
+>>>>>>> 2/3)
+>>>>>>> will be checked immediately and if needed, the BKOPS will be
+>>>>>>> performed
+>>>>>>> without waiting for the next idle time.
+>>>>>>>
+>>>>>>> Signed-off-by: Maya Erez <merez@codeaurora.org>
+>>>>>>>
+>>>>>>> ---
+>>>>>>> This patch is based on the periodic BKOPS implementation in version
+>>>>>>> 8
+>>>>>>> of
+>>>>>>> "support BKOPS feature for eMMC" patch.
+>>>>>>> The patch was modified to answer the following issues:
+>>>>>>> - In order to prevent a race condition between going into suspend
+>>>>>>> and
+>>>>>>> starting BKOPS,
+>>>>>>>   the suspend timeout of the host controller is taking into accound
+>>>>>>> in
+>>>>>>> determination of the start time
+>>>>>>>   of the delayed work
+>>>>>>> - Since mmc_start_bkops is called from two contexts now,
+>>>>>>> mmc_claim_host
+>>>>>>> was moved to the beginning of the function
+>>>>>>> - Also, the check of doing_bkops should be protected when determing
+>>>>>>> if
+>>>>>>> an HPI is needed due to the same reason.
+>>>>>>>
+>>>>>>> Changes in v3:
+>>>>>>>     - Move the call to stop_bkops to block.c.
+>>>>>>>       This allows us to remove the mmc_claim_host from inside the
+>>>>>>> function and doesn't cause additional degradation
+>>>>>>>       due to un-neccessary calim host operation
+>>>>>>>
+>>>>>>> Changes in v2:
+>>>>>>>     - Check the number of written / discarded sectors as the trigger
+>>>>>>> for
+>>>>>>> checking the BKOPS need.
+>>>>>>>     - Code review fixes
+>>>>>>>
+>>>>>>> ---
+>>>>>>>  drivers/mmc/card/block.c |    8 ++-
+>>>>>>>  drivers/mmc/card/queue.c |    2 +
+>>>>>>>  drivers/mmc/core/core.c  |  178
+>>>>>>> +++++++++++++++++++++++++++++++++++++++++++---
+>>>>>>>  drivers/mmc/core/mmc.c   |   23 ++++++
+>>>>>>>  include/linux/mmc/card.h |   35 +++++++++
+>>>>>>>  include/linux/mmc/core.h |    3 +
+>>>>>>>  6 files changed, 237 insertions(+), 12 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>>>>>>> index 172a768..40b4ae3 100644
+>>>>>>> --- a/drivers/mmc/card/block.c
+>>>>>>> +++ b/drivers/mmc/card/block.c
+>>>>>>> @@ -1394,9 +1394,15 @@ static int mmc_blk_issue_rq(struct mmc_queue
+>>>>>>> *mq,
+>>>>>>> struct request *req)
+>>>>>>>      struct mmc_blk_data *md = mq->data;
+>>>>>>>      struct mmc_card *card = md->queue.card;
+>>>>>>>
+>>>>>>> -    if (req && !mq->mqrq_prev->req)
+>>>>>>> +    if (req && !mq->mqrq_prev->req) {
+>>>>>>>              /* claim host only for the first request */
+>>>>>>>              mmc_claim_host(card->host);
+>>>>>>> +            if (card->ext_csd.bkops_en &&
+>>>>>>> +                card->bkops_info.started_delayed_bkops) {
+>>>>>>> +                            card->bkops_info.started_delayed_bkops
+>>>>>>> =
+>>>>>>> false;
+>>>>>>> +                            mmc_stop_bkops(card);
+>>>>>> We didn't need to check whether mmc_stop_bkops is success or not?
+>>>>>> If mmc_stop_bkops() is failed, then bkops is continuously running.
+>>>>>>
+>>>>>> Best Regards,
+>>>>>> Jaehoon Chung
+>>>>>>
+>>>>>>> +            }
+>>>>>>> +    }
+>>>>>>>
+>>>>>>>      ret = mmc_blk_part_switch(card, md);
+>>>>>>>      if (ret) {
+>>>>>>> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+>>>>>>> index fadf52e..9d0c96a 100644
+>>>>>>> --- a/drivers/mmc/card/queue.c
+>>>>>>> +++ b/drivers/mmc/card/queue.c
+>>>>>>> @@ -51,6 +51,7 @@ static int mmc_queue_thread(void *d)
+>>>>>>>  {
+>>>>>>>      struct mmc_queue *mq = d;
+>>>>>>>      struct request_queue *q = mq->queue;
+>>>>>>> +    struct mmc_card *card = mq->card;
+>>>>>>>
+>>>>>>>      current->flags |= PF_MEMALLOC;
+>>>>>>>
+>>>>>>> @@ -83,6 +84,7 @@ static int mmc_queue_thread(void *d)
+>>>>>>>                              set_current_state(TASK_RUNNING);
+>>>>>>>                              break;
+>>>>>>>                      }
+>>>>>>> +                    mmc_start_delayed_bkops(card);
+>>>>>>>                      up(&mq->thread_sem);
+>>>>>>>                      schedule();
+>>>>>>>                      down(&mq->thread_sem);
+>>>>>>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>>>>>>> index 06c42cf..72ae15b 100644
+>>>>>>> --- a/drivers/mmc/core/core.c
+>>>>>>> +++ b/drivers/mmc/core/core.c
+>>>>>>> @@ -253,9 +253,36 @@ mmc_start_request(struct mmc_host *host, struct
+>>>>>>> mmc_request *mrq)
+>>>>>>>  }
+>>>>>>>
+>>>>>>>  /**
+>>>>>>> + * mmc_start_delayed_bkops() - Start a delayed work to check for
+>>>>>>> + *      the need of non urgent BKOPS
+>>>>>>> + *
+>>>>>>> + * @card: MMC card to start BKOPS on
+>>>>>>> + */
+>>>>>>> +void mmc_start_delayed_bkops(struct mmc_card *card)
+>>>>>>> +{
+>>>>>>> +    if (!card || !card->ext_csd.bkops_en ||
+>>>>>>> mmc_card_doing_bkops(card))
+>>>>>>> +            return;
+>>>>>>> +
+>>>>>>> +    pr_debug("%s: %s: queueing delayed_bkops_work\n",
+>>>>>>> +             mmc_hostname(card->host), __func__);
+>>>>>>> +
+>>>>>>> +    /*
+>>>>>>> +     * cancel_delayed_bkops_work will prevent a race condition
+>>>>>>> between
+>>>>>>> +     * fetching a request by the mmcqd and the delayed work, in
+>>>>>>> case
+>>>>>>> +     * it was removed from the queue work but not started yet
+>>>>>>> +     */
+>>>>>>> +    card->bkops_info.cancel_delayed_work = false;
+>>>>>>> +    card->bkops_info.started_delayed_bkops = true;
+>>>>>>> +    queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+>>>>>>> +                       msecs_to_jiffies(
+>>>>>>> +                               card->bkops_info.delay_ms));
+>>>>>>> +}
+>>>>>>> +EXPORT_SYMBOL(mmc_start_delayed_bkops);
+>>>>>>> +
+>>>>>>> +/**
+>>>>>>>   *  mmc_start_bkops - start BKOPS for supported cards
+>>>>>>>   *  @card: MMC card to start BKOPS
+>>>>>>> - *  @form_exception: A flag to indicate if this function was
+>>>>>>> + *  @from_exception: A flag to indicate if this function was
+>>>>>>>   *                   called due to an exception raised by the card
+>>>>>>>   *
+>>>>>>>   *  Start background operations whenever requested.
+>>>>>>> @@ -269,25 +296,47 @@ void mmc_start_bkops(struct mmc_card *card,
+>>>>>>> bool
+>>>>>>> from_exception)
+>>>>>>>      bool use_busy_signal;
+>>>>>>>
+>>>>>>>      BUG_ON(!card);
+>>>>>>> -
+>>>>>>> -    if (!card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+>>>>>>> +    if (!card->ext_csd.bkops_en)
+>>>>>>>              return;
+>>>>>>>
+>>>>>>> +    mmc_claim_host(card->host);
+>>>>>>> +
+>>>>>>> +    if ((card->bkops_info.cancel_delayed_work) && !from_exception)
+>>>>>>> {
+>>>>>>> +            pr_debug("%s: %s: cancel_delayed_work was set, exit\n",
+>>>>>>> +                     mmc_hostname(card->host), __func__);
+>>>>>>> +            card->bkops_info.cancel_delayed_work = false;
+>>>>>>> +            goto out;
+>>>>>>> +    }
+>>>>>>> +
+>>>>>>> +    if (mmc_card_doing_bkops(card)) {
+>>>>>>> +            pr_debug("%s: %s: already doing bkops, exit\n",
+>>>>>>> +                     mmc_hostname(card->host), __func__);
+>>>>>>> +            goto out;
+>>>>>>> +    }
+>>>>>>> +
+>>>>>>>      err = mmc_read_bkops_status(card);
+>>>>>>>      if (err) {
+>>>>>>>              pr_err("%s: Failed to read bkops status: %d\n",
+>>>>>>>                     mmc_hostname(card->host), err);
+>>>>>>> -            return;
+>>>>>>> +            goto out;
+>>>>>>>      }
+>>>>>>>
+>>>>>>>      if (!card->ext_csd.raw_bkops_status)
+>>>>>>> -            return;
+>>>>>>> +            goto out;
+>>>>>>>
+>>>>>>> +    pr_info("%s: %s: card->ext_csd.raw_bkops_status = 0x%x\n",
+>>>>>>> +            mmc_hostname(card->host), __func__,
+>>>>>>> +            card->ext_csd.raw_bkops_status);
+>>>>>>> +
+>>>>>>> +    /*
+>>>>>>> +     * If the function was called due to exception but there is no
+>>>>>>> need
+>>>>>>> +     * for urgent BKOPS, BKOPs will be performed by the delayed
+>>>>>>> BKOPs
+>>>>>>> +     * work, before going to suspend
+>>>>>>> +     */
+>>>>>>>      if (card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2 &&
+>>>>>>>          from_exception)
+>>>>>>> -            return;
+>>>>>>> +            goto out;
+>>>>>>>
+>>>>>>> -    mmc_claim_host(card->host);
+>>>>>>>      if (card->ext_csd.raw_bkops_status >= EXT_CSD_BKOPS_LEVEL_2) {
+>>>>>>>              timeout = MMC_BKOPS_MAX_TIMEOUT;
+>>>>>>>              use_busy_signal = true;
+>>>>>>> @@ -309,13 +358,108 @@ void mmc_start_bkops(struct mmc_card *card,
+>>>>>>> bool
+>>>>>>> from_exception)
+>>>>>>>       * bkops executed synchronously, otherwise
+>>>>>>>       * the operation is in progress
+>>>>>>>       */
+>>>>>>> -    if (!use_busy_signal)
+>>>>>>> +    if (!use_busy_signal) {
+>>>>>>>              mmc_card_set_doing_bkops(card);
+>>>>>>> +            pr_debug("%s: %s: starting the polling thread\n",
+>>>>>>> +                     mmc_hostname(card->host), __func__);
+>>>>>>> +            queue_work(system_nrt_wq,
+>>>>>>> +                       &card->bkops_info.poll_for_completion);
+>>>>>>> +    }
+>>>>>>> +
+>>>>>>>  out:
+>>>>>>>      mmc_release_host(card->host);
+>>>>>>>  }
+>>>>>>>  EXPORT_SYMBOL(mmc_start_bkops);
+>>>>>>>
+>>>>>>> +/**
+>>>>>>> + * mmc_bkops_completion_polling() - Poll on the card status to
+>>>>>>> + * wait for the non-blocking BKOPS completion
+>>>>>>> + * @work:   The completion polling work
+>>>>>>> + *
+>>>>>>> + * The on-going reading of the card status will prevent the card
+>>>>>>> + * from getting into suspend while it is in the middle of
+>>>>>>> + * performing BKOPS.
+>>>>
+>>>> Not true! Suspend will not be prevented by doing a mmc_send_status.
+>>>> Moreover, I would be interested to understand more about why you need
+>>>> to prevent "suspend". Please elaborate why you think this is needed.
+>>> This is explained in my general comment. Let me know if it is still not
+>>> clear.
+>>>>
+>>>>>>> + * Since the non blocking BKOPS can be interrupted by a fetched
+>>>>>>> + * request we also check IF mmc_card_doing_bkops in each
+>>>>>>> + * iteration.
+>>>>>>> + */
+>>>>>>> +void mmc_bkops_completion_polling(struct work_struct *work)
+>>>>>>> +{
+>>>>>>> +    struct mmc_card *card = container_of(work, struct mmc_card,
+>>>>>>> +                    bkops_info.poll_for_completion);
+>>>>>>> +    unsigned long timeout_jiffies = jiffies +
+>>>>>>> +            msecs_to_jiffies(BKOPS_COMPLETION_POLLING_TIMEOUT_MS);
+>>>>>>> +    u32 status;
+>>>>>>> +    int err;
+>>>>>>> +
+>>>>>>> +    /*
+>>>>>>> +     * Wait for the BKOPs to complete. Keep reading the status to
+>>>>>>> prevent
+>>>>>>> +     * the host from getting into suspend
+>>>>>>> +     */
+>>>>>>> +    do {
+>>>>>>> +            mmc_claim_host(card->host);
+>>>>>>> +
+>>>>>>> +            if (!mmc_card_doing_bkops(card))
+>>>>>>> +                    goto out;
+>>>>>>> +
+>>>>>>> +            err = mmc_send_status(card, &status);
+>>>>>>> +            if (err) {
+>>>>>>> +                    pr_err("%s: error %d requesting status\n",
+>>>>>>> +                           mmc_hostname(card->host), err);
+>>>>>>> +                    goto out;
+>>>>>>> +            }
+>>>>>>> +
+>>>>>>> +            /*
+>>>>>>> +             * Some cards mishandle the status bits, so make sure
+>>>>>>> to
+>>>>>>> check
+>>>>>>> +             * both the busy indication and the card state.
+>>>>>>> +             */
+>>>>>>> +            if ((status & R1_READY_FOR_DATA) &&
+>>>>>>> +                (R1_CURRENT_STATE(status) != R1_STATE_PRG)) {
+>>>>>>> +                    pr_debug("%s: %s: completed BKOPs, exit
+>>>>>>> polling\n",
+>>>>>>> +                             mmc_hostname(card->host), __func__);
+>>>>>>> +                    mmc_card_clr_doing_bkops(card);
+>>>>>>> +                    card->bkops_info.started_delayed_bkops = false;
+>>>>>>> +                    goto out;
+>>>>>>> +            }
+>>>>>>> +
+>>>>>>> +            mmc_release_host(card->host);
+>>>>>>> +
+>>>>>>> +            /*
+>>>>>>> +             * Sleep before checking the card status again to allow
+>>>>>>> the
+>>>>>>> +             * card to complete the BKOPs operation
+>>>>>>> +             */
+>>>>>>> +            msleep(BKOPS_COMPLETION_POLLING_INTERVAL_MS);
+>>>>>>> +    } while (time_before(jiffies, timeout_jiffies));
+>>>>>>> +
+>>>>>>> +    pr_err("%s: %s: exit polling due to timeout\n",
+>>>>>>> +           mmc_hostname(card->host), __func__);
+>>>>>>> +
+>>>>>>> +    return;
+>>>>>>> +out:
+>>>>>>> +    mmc_release_host(card->host);
+>>>>>>> +}
+>>>>>>> +
+>>>>>>> +/**
+>>>>>>> + * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
+>>>>>>> + * needed
+>>>>>>> + * @work:   The idle time BKOPS work
+>>>>>>> + */
+>>>>>>> +void mmc_start_idle_time_bkops(struct work_struct *work)
+>>>>>>> +{
+>>>>>>> +    struct mmc_card *card = container_of(work, struct mmc_card,
+>>>>>>> +                    bkops_info.dw.work);
+>>>>>>> +
+>>>>>>> +    /*
+>>>>>>> +     * Prevent a race condition between mmc_stop_bkops and the
+>>>>>>> delayed
+>>>>>>> +     * BKOPS work in case the delayed work is executed on another
+>>>>>>> CPU
+>>>>>>> +     */
+>>>>>>> +    if (card->bkops_info.cancel_delayed_work)
+>>>>>>> +            return;
+>>>>>>> +
+>>>>>>> +    mmc_start_bkops(card, false);
+>>>>>>> +}
+>>>>>>> +EXPORT_SYMBOL(mmc_start_idle_time_bkops);
+>>>>>>> +
+>>>>>>>  static void mmc_wait_done(struct mmc_request *mrq)
+>>>>>>>  {
+>>>>>>>      complete(&mrq->completion);
+>>>>>>> @@ -582,6 +726,17 @@ int mmc_stop_bkops(struct mmc_card *card)
+>>>>>>>      int err = 0;
+>>>>>>>
+>>>>>>>      BUG_ON(!card);
+>>>>>>> +
+>>>>>>> +    /*
+>>>>>>> +     * Notify the delayed work to be cancelled, in case it was
+>>>>>>> already
+>>>>>>> +     * removed from the queue, but was not started yet
+>>>>>>> +     */
+>>>>>>> +    card->bkops_info.cancel_delayed_work = true;
+>>>>>>> +    if (delayed_work_pending(&card->bkops_info.dw))
+>>>>>>> +            cancel_delayed_work_sync(&card->bkops_info.dw);
+>>>>>>> +    if (!mmc_card_doing_bkops(card))
+>>>>>>> +            goto out;
+>>>>>>> +
+>>>>>>>      err = mmc_interrupt_hpi(card);
+>>>>>>>
+>>>>>>>      /*
+>>>>>>> @@ -593,6 +748,7 @@ int mmc_stop_bkops(struct mmc_card *card)
+>>>>>>>              err = 0;
+>>>>>>>      }
+>>>>>>>
+>>>>>>> +out:
+>>>>>>>      return err;
+>>>>>>>  }
+>>>>>>>  EXPORT_SYMBOL(mmc_stop_bkops);
+>>>>>>> @@ -2506,15 +2662,15 @@ int mmc_pm_notify(struct notifier_block
+>>>>>>> *notify_block,
+>>>>>>>      switch (mode) {
+>>>>>>>      case PM_HIBERNATION_PREPARE:
+>>>>>>>      case PM_SUSPEND_PREPARE:
+>>>>>>> -            if (host->card && mmc_card_mmc(host->card) &&
+>>>>>>> -                mmc_card_doing_bkops(host->card)) {
+>>>>>>> +            if (host->card && mmc_card_mmc(host->card)) {
+>>>>>>> +                    mmc_claim_host(host);
+>>>>>>>                      err = mmc_stop_bkops(host->card);
+>>>>>>> +                    mmc_release_host(host);
+>>>>
+>>>> This code seems a bit strange. You will check for mmc_card_mmc, but
+>>>> not all (e)MMC will support bkops. How about acually just checking if
+>>>> bkops is "on" or "off" somehow.
+>>>>
+>>>> Additionally, so this piece of code shall stop an ongoing bkops before
+>>>> going to suspend, so that make sense. But would it not be more
+>>>> meaningfull to take care of that in mmc_suspend_host? I mean why do yo
+>>>> need to do it in the PM_SUSPEND_PREPARE notification sequence
+>>>> especially?
+>>> This code was not added by me. I just added the
+>>> mmc_claim_host(host)/mmc_release_host calls. Maybe Jaehoon, who added
+>>> this
+>>> code in the BKOPS patch can respond to your comment.
+>>>>
+>>>>>>>                      if (err) {
+>>>>>>>                              pr_err("%s: didn't stop bkops\n",
+>>>>>>>                                      mmc_hostname(host));
+>>>>>>>                              return err;
+>>>>>>>                      }
+>>>>>>> -                    mmc_card_clr_doing_bkops(host->card);
+>>>>>>>              }
+>>>>>>>
+>>>>>>>              spin_lock_irqsave(&host->lock, flags);
+>>>>>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+>>>>>>> index 7cc4638..dba76e3 100644
+>>>>>>> --- a/drivers/mmc/core/mmc.c
+>>>>>>> +++ b/drivers/mmc/core/mmc.c
+>>>>>>> @@ -1258,6 +1258,29 @@ static int mmc_init_card(struct mmc_host
+>>>>>>> *host,
+>>>>>>> u32 ocr,
+>>>>>>>              }
+>>>>>>>      }
+>>>>>>>
+>>>>>>> +    if (!oldcard) {
+>>>>>>> +            if (card->ext_csd.bkops_en) {
+>>>>>>> +                    INIT_DELAYED_WORK(&card->bkops_info.dw,
+>>>>>>> +                                      mmc_start_idle_time_bkops);
+>>>>>>> +
+>>>>>>> INIT_WORK(&card->bkops_info.poll_for_completion,
+>>>>>>> +                              mmc_bkops_completion_polling);
+>>>>
+>>>> I guess you don't have "removable" eMMC with BKOPS support so this
+>>>> code will in practice only be executed once for an eMMC, so we are
+>>>> safe. But still I am not fond of putting this code for workqueue here.
+>>>> Either that should be done as a part of when the card is
+>>>> created/deleted or when then host is created/deleted.
+>>> I will check if there could be a better place for this.
+>>>>
+>>>>>>> +
+>>>>>>> +                    /*
+>>>>>>> +                     * Calculate the time to start the BKOPs
+>>>>>>> checking.
+>>>>>>> +                     * The idle time of the host controller should
+>>>>>>> be
+>>>>>>> taken
+>>>>>>> +                     * into account in order to prevent a race
+>>>>>>> condition
+>>>>>>> +                     * before starting BKOPs and going into
+>>>>>>> suspend.
+>>>>>>> +                     * If the host controller didn't set its idle
+>>>>>>> time,
+>>>>>>> +                     * a default value is used.
+>>>>>>> +                     */
+>>>>>>> +                    card->bkops_info.delay_ms =
+>>>>>>> MMC_IDLE_BKOPS_TIME_MS;
+>>>>>>> +                    if (card->bkops_info.host_suspend_tout_ms)
+>>>>>>> +                            card->bkops_info.delay_ms = min(
+>>>>>>> +                                    card->bkops_info.delay_ms,
+>>>>>>> +
+>>>>>>> card->bkops_info.host_suspend_tout_ms/2);
+>>>>>>> +            }
+>>>>>>> +    }
+>>>>>>> +
+>>>>>>>      if (!oldcard)
+>>>>>>>              host->card = card;
+>>>>>>>
+>>>>>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+>>>>>>> index 943550d..224e2a5 100644
+>>>>>>> --- a/include/linux/mmc/card.h
+>>>>>>> +++ b/include/linux/mmc/card.h
+>>>>>>> @@ -208,6 +208,39 @@ struct mmc_part {
+>>>>>>>  #define MMC_BLK_DATA_AREA_GP        (1<<2)
+>>>>>>>  };
+>>>>>>>
+>>>>>>> +/**
+>>>>>>> + * struct mmc_bkops_info - BKOPS data
+>>>>>>> + * @dw:     Idle time bkops delayed work
+>>>>>>> + * @host_suspend_tout_ms:   The host controller idle time,
+>>>>>>> + * before getting into suspend
+>>>>>>> + * @delay_ms:       The time to start the BKOPS
+>>>>>>> + *        delayed work once MMC thread is idle
+>>>>>>> + * @poll_for_completion:    Poll on BKOPS completion
+>>>>>>> + * @cancel_delayed_work: A flag to indicate if the delayed work
+>>>>>>> + *        should be cancelled
+>>>>>>> + * @started_delayed_bkops:  A flag to indicate if the delayed
+>>>>>>> + *        work was scheduled
+>>>>>>> + * @sectors_changed:  number of  sectors written or
+>>>>>>> + *       discard since the last idle BKOPS were scheduled
+>>>>>>> + */
+>>>>>>> +struct mmc_bkops_info {
+>>>>>>> +    struct delayed_work     dw;
+>>>>>>> +    unsigned int            host_suspend_tout_ms;
+>>>>
+>>>> As stated earlier, what is this timeout you are referring to? What
+>>>> suspend?
+>>> Explained above.
+>>>>
+>>>>>>> +    unsigned int            delay_ms;
+>>>>>>> +/*
+>>>>>>> + * A default time for checking the need for non urgent BKOPS once
+>>>>>>> mmcqd
+>>>>>>> + * is idle.
+>>>>>>> + */
+>>>>>>> +#define MMC_IDLE_BKOPS_TIME_MS 2000
+>>>>>>> +    struct work_struct      poll_for_completion;
+>>>>>>> +/* Polling timeout and interval for waiting on non-blocking BKOPs
+>>>>>>> completion */
+>>>>>>> +#define BKOPS_COMPLETION_POLLING_TIMEOUT_MS 10000 /* in ms */
+>>>>>>> +#define BKOPS_COMPLETION_POLLING_INTERVAL_MS 1000 /* in ms */
+>>>>>>> +    bool                    cancel_delayed_work;
+>>>>>>> +    bool                    started_delayed_bkops;
+>>>>>>> +    unsigned int            sectors_changed;
+>>>>
+>>>> Could not find "sectors_changed" being used. Maybe you forgot to
+>>>> remove this from previous version of the patch.
+>>> Yes, this should be removed.
+>>>>
+>>>>>>> +};
+>>>>>>> +
+>>>>>>>  /*
+>>>>>>>   * MMC device
+>>>>>>>   */
+>>>>>>> @@ -276,6 +309,8 @@ struct mmc_card {
+>>>>>>>      struct dentry           *debugfs_root;
+>>>>>>>      struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical
+>>>>>>> partitions */
+>>>>>>>      unsigned int    nr_parts;
+>>>>>>> +
+>>>>>>> +    struct mmc_bkops_info   bkops_info;
+>>>>>>>  };
+>>>>>>>
+>>>>>>>  /*
+>>>>>>> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+>>>>>>> index 9b9cdaf..665d345 100644
+>>>>>>> --- a/include/linux/mmc/core.h
+>>>>>>> +++ b/include/linux/mmc/core.h
+>>>>>>> @@ -145,6 +145,9 @@ extern int mmc_app_cmd(struct mmc_host *, struct
+>>>>>>> mmc_card *);
+>>>>>>>  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card
+>>>>>>> *,
+>>>>>>>      struct mmc_command *, int);
+>>>>>>>  extern void mmc_start_bkops(struct mmc_card *card, bool
+>>>>>>> from_exception);
+>>>>>>> +extern void mmc_start_delayed_bkops(struct mmc_card *card);
+>>>>>>> +extern void mmc_start_idle_time_bkops(struct work_struct *work);
+>>>>>>> +extern void mmc_bkops_completion_polling(struct work_struct *work);
+>>>>>>>  extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned
+>>>>>>> int,
+>>>>>>> bool);
+>>>>>>>  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>>
+>>>>>
+>>>>>
+>>>>> --
+>>>>> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a
+>>>>> member
+>>>>> of Code Aurora Forum, hosted by The Linux Foundation
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>> linux-kernel"
+>>>>> in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>> Finally some overall thoughts. What I would like to understand is how
+>>>> we decide that the card has become "idle". I belive two values should
+>>>> be considered, but are they?
+>>>> 1. The card need BKOPS to be performed for some status level.
+>>>> 2. Request inactivity for a certain timeout has occured.
+>>>>
+>>>> Have you considered to use runtime PM for the card device instead of
+>>>> the workqueue?
+>>>>
+>>>> Kind regards
+>>>> Ulf Hansson
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>
+>>>
+>>> --
+>>> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a
+>>> member
+>>> of Code Aurora Forum, hosted by The Linux Foundation
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>> Kind regards
+>> Ulf Hansson
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+>
+> --
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+>
+
+Kind regards
+Ulf Hansson
