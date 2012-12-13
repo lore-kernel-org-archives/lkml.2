@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab2LMPRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:17:50 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61123 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab2LMPRt (ORCPT
+	id S1754152Ab2LMPV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:21:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:35552 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab2LMPVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 10:17:49 -0500
-Message-ID: <50C9F19D.8060209@gmail.com>
-Date: Thu, 13 Dec 2012 10:17:49 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH] mm: add node physical memory range to sysfs
-References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net> <20121207155125.d3117244.akpm@linux-foundation.org> <50C28720.3070205@linux.vnet.ibm.com> <1355361524.5255.9.camel@buesod1.americas.hpqcorp.net> <50C933E9.2040707@linux.vnet.ibm.com> <1355364222.9244.3.camel@buesod1.americas.hpqcorp.net> <50C95E4A.9010509@linux.vnet.ibm.com>
-In-Reply-To: <50C95E4A.9010509@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 10:21:55 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: cbou@mail.ru
+Subject: [PATCH 00/18] AB8500 battery management series upgrade 
+Date: Thu, 13 Dec 2012 15:21:23 +0000
+Message-Id: <1355412102-14265-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/12/12 11:49 PM), Dave Hansen wrote:
-> On 12/12/2012 06:03 PM, Davidlohr Bueso wrote:
->> On Wed, 2012-12-12 at 17:48 -0800, Dave Hansen wrote:
->>> But if we went and did it per-DIMM (showing which physical addresses and
->>> NUMA nodes a DIMM maps to), wouldn't that be redundant with this
->>> proposed interface?
->>
->> If DIMMs overlap between nodes, then we wouldn't have an exact range for
->> a node in question. Having both approaches would complement each other.
-> 
-> How is that possible?  If NUMA nodes are defined by distances from CPUs
-> to memory, how could a DIMM have more than a single distance to any
-> given CPU?
+Hi Anton,
 
-numa_emulation? just guess.
+Please find the next instalment of the AB8500 Power drivers upgrade.
+A lot of work has taken place on the internal development track, but
+little effort has gone into mainlining it. At last count there were
+around 70+ patches which are in need of forward-porting, then
+upstreaming. This patch-set aims to make a good start. :)
 
-
+ drivers/power/Kconfig                |   15 +
+ drivers/power/Makefile               |    1 +
+ drivers/power/ab8500_bmdata.c        |   18 +-
+ drivers/power/ab8500_btemp.c         |   27 +-
+ drivers/power/ab8500_charger.c       |  348 ++++++--
+ drivers/power/ab8500_fg.c            |  336 +++++--
+ drivers/power/abx500_chargalg.c      |   30 +-
+ drivers/power/pm2301_charger.c       | 1599 ++++++++++++++++++++++++++++++++++
+ include/linux/mfd/abx500.h           |    6 +-
+ include/linux/mfd/abx500/ab8500-bm.h |   10 +
+ include/linux/mfd/abx500/ab8500.h    |    5 +
+ include/linux/pm2301_charger.h       |   60 ++
+ 12 files changed, 2312 insertions(+), 143 deletions(-)
 
