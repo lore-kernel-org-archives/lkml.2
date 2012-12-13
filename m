@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab2LMOB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:01:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43990 "EHLO
+	id S1755875Ab2LMOBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:01:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44004 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932068Ab2LMOBY (ORCPT
+	with ESMTP id S1755858Ab2LMOBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:01:24 -0500
+	Thu, 13 Dec 2012 09:01:33 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johannes Berg <johannes.berg@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 011/241] wireless: drop invalid mesh address extension frames
-Date: Thu, 13 Dec 2012 11:56:16 -0200
-Message-Id: <1355407206-17100-12-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 014/241] mac80211: make sure data is accessible in EAPOL check
+Date: Thu, 13 Dec 2012 11:56:19 -0200
+Message-Id: <1355407206-17100-15-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,63 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 7dd111e8ee10cc6816669eabcad3334447673236 upstream.
+commit 6dbda2d00d466225f9db1dc695ff852443f28832 upstream.
 
-The mesh header can have address extension by a 4th
-or a 5th and 6th address, but never both. Drop such
-frames in 802.11 -> 802.3 conversion along with any
-frames that have the wrong extension.
+The code to allow EAPOL frames even when the station
+isn't yet marked associated needs to check that the
+incoming frame is long enough and due to paged RX it
+also can't assume skb->data contains the right data,
+it must use skb_copy_bits(). Fix this to avoid using
+data that doesn't really exist.
 
-Reviewed-by: Javier Cardona <javier@cozybit.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/wireless/util.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/mac80211/rx.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/net/wireless/util.c b/net/wireless/util.c
-index 6f13299..b3aeac4 100644
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -293,18 +293,15 @@ EXPORT_SYMBOL(ieee80211_get_hdrlen_from_skb);
- static int ieee80211_get_mesh_hdrlen(struct ieee80211s_hdr *meshhdr)
- {
- 	int ae = meshhdr->flags & MESH_FLAGS_AE;
--	/* 7.1.3.5a.2 */
-+	/* 802.11-2012, 8.2.4.7.3 */
- 	switch (ae) {
-+	default:
- 	case 0:
- 		return 6;
- 	case MESH_FLAGS_AE_A4:
- 		return 12;
- 	case MESH_FLAGS_AE_A5_A6:
- 		return 18;
--	case (MESH_FLAGS_AE_A4 | MESH_FLAGS_AE_A5_A6):
--		return 24;
--	default:
--		return 6;
- 	}
- }
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 4fd5369..064384c 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -874,14 +874,16 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
+ 		 */
+ 		if (rx->sta && rx->sdata->vif.type == NL80211_IFTYPE_STATION &&
+ 		    ieee80211_is_data_present(hdr->frame_control)) {
+-			u16 ethertype;
+-			u8 *payload;
+-
+-			payload = rx->skb->data +
+-				ieee80211_hdrlen(hdr->frame_control);
+-			ethertype = (payload[6] << 8) | payload[7];
+-			if (cpu_to_be16(ethertype) ==
+-			    rx->sdata->control_port_protocol)
++			unsigned int hdrlen;
++			__be16 ethertype;
++
++			hdrlen = ieee80211_hdrlen(hdr->frame_control);
++
++			if (rx->skb->len < hdrlen + 8)
++				return RX_DROP_MONITOR;
++
++			skb_copy_bits(rx->skb, hdrlen + 6, &ethertype, 2);
++			if (ethertype == rx->sdata->control_port_protocol)
+ 				return RX_CONTINUE;
+ 		}
  
-@@ -354,6 +351,8 @@ int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A4)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A5_A6) {
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
-@@ -378,6 +377,8 @@ int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
- 			/* make sure meshdr->flags is on the linear part */
- 			if (!pskb_may_pull(skb, hdrlen + 1))
- 				return -1;
-+			if (meshdr->flags & MESH_FLAGS_AE_A5_A6)
-+				return -1;
- 			if (meshdr->flags & MESH_FLAGS_AE_A4)
- 				skb_copy_bits(skb, hdrlen +
- 					offsetof(struct ieee80211s_hdr, eaddr1),
 -- 
 1.7.9.5
 
