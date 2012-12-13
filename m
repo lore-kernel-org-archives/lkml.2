@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab2LMLGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 06:06:21 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57447 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab2LMLGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 06:06:19 -0500
-Date: Thu, 13 Dec 2012 16:05:48 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] uprobes: Kill the pointless inode/uc checks in
- register/unregister
-Message-ID: <20121213103548.GC29086@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121123202741.GA18858@redhat.com>
- <20121123202806.GA18887@redhat.com>
- <20121210061901.GF22164@linux.vnet.ibm.com>
- <20121210191232.GA32462@redhat.com>
+	id S1754466Ab2LMLIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 06:08:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50025 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753376Ab2LMLII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 06:08:08 -0500
+Date: Thu, 13 Dec 2012 11:07:59 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/8] mm: vmscan: clean up get_scan_count()
+Message-ID: <20121213110759.GA1009@suse.de>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-7-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121210191232.GA32462@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121311-4834-0000-0000-000001754786
+In-Reply-To: <1355348620-9382-7-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-12-10 20:12:32]:
+On Wed, Dec 12, 2012 at 04:43:38PM -0500, Johannes Weiner wrote:
+> Reclaim pressure balance between anon and file pages is calculated
+> through a tuple of numerators and a shared denominator.
+> 
+> Exceptional cases that want to force-scan anon or file pages configure
+> the numerators and denominator such that one list is preferred, which
+> is not necessarily the most obvious way:
+> 
+>     fraction[0] = 1;
+>     fraction[1] = 0;
+>     denominator = 1;
+>     goto out;
+> 
+> Make this easier by making the force-scan cases explicit and use the
+> fractionals only in case they are calculated from reclaim history.
+> 
+> And bring the variable declarations/definitions in order.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-> On 12/10, Srikar Dronamraju wrote:
-> >
-> > * Oleg Nesterov <oleg@redhat.com> [2012-11-23 21:28:06]:
-> >
-> > > register/unregister verifies that inode/uc != NULL. For what?
-> > > This really looks like "hide the potential problem", the caller
-> > > should pass the valid data.
-> > >
-> >
-> > Agree that users should pass valid data.
-> > I do understand that we expect the users to be knowledge-able.
-> > Also users are routed thro in-kernel api that does this check.
-> >
-> > However from an api perspective, if a user passes invalid data, do we
-> > want the system to crash.
-> >
-> > Esp if kernel can identify that users has indeed passed wrong info. I do agree
-> > that users can still pass invalid data that kernel maynot be able to
-> > identify in most cases.
-> 
-> inode != NULL can't verify that it actually points to the valid inode,
-> NULL is only one example of invalid data.
-> 
-> I agree, sometimes it makes sense to protect against the stupid mistakes,
-> but if we want to check against NULL we should do
-> 
-> 	if (WARN_ON(!inode))
-> 		return;
-> 
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-agree, that warn_on is better than a simple check 
+The if at the end looks like it should have been a switch maybe?
 
-> Especially in uprobe_unregister(). The current code is really "hide
-> the possible problem" and nothing more. It is better to crash imho
-> than silently return.
-> 
-> > > register() also checks uc->next == NULL, probably to prevent the
-> > > double-register but the caller can do other stupid/wrong things.
-> >
-> > Users can surely do more stupid things. But this is again something that
-> > kernel can identify. By allowing a double-register of a consumer, thats
-> > already registered, we might end up allowing circular loop of consumers.
-> 
-> I understand. But in this case we should document that uc->next must
-> be cleared before uprobe_register(). Or add init_consumer().
-> 
-> And we should change uprobe_unregister() to clear uc->next as well.
-> I think that the code like this
-> 
-> 	uprobe_register(uc);
-> 	uprobe_unregister(uc);
-> 
-> 	uprobe_register(uc);
-> 
-> should work. Currently it doesn't because of this check.
-> 
-
-yes, these should work and makes a case to nullify ->next on unregister. 
-
-However, what if someone tries
-
-	uprobe_register(uc1);
-	uprobe_register(uc2);
-	uprobe_register(uc1);
-
-i.e somebody tries to re-register uc1, while its active and has a valid
-next. After the re-registration of uc1, the uprobe->consumers will no more reference uc2.
-
-Should we leave this case as a fool shooting himself?
- 
-> So I still think these checks are pointless and (at least in unregister)
-> even harmful.
-> 
+switch(scan_balance) {
+case SCAN_EQUAL:
+	/* Scan relative to size */
+	break;
+case SCAN_FRACT:
+	/* Scan proportional to swappiness */
+	scan = div64_u64(scan * fraction[file], denominator);
+case SCAN_FILE:
+case SCAN_ANON:
+	/* Scan only file or only anon LRU */
+	if ((scan_balance == SCAN_FILE) != file)
+		scan = 0;
+	break;
+default:
+	/* Look ma, no brain */
+	BUG();
+}
 
 -- 
-thanks and regards
-Srikar
-
+Mel Gorman
+SUSE Labs
