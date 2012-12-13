@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2LMN66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 08:58:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55995 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367Ab2LMN65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 08:58:57 -0500
-Date: Thu, 13 Dec 2012 14:58:53 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "draekko.dev" <draekko.dev@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] USB: adds support for Novatek wireless mouse to usbhid
-In-Reply-To: <50C93F64.1090906@gmail.com>
-Message-ID: <alpine.LNX.2.00.1212131457180.19767@pobox.suse.cz>
-References: <CAKPZWXc55MWN3ajpvf0vLXP9KebFo17bGAmD8X=mavxyWJui1w@mail.gmail.com> <20121213015025.GA10991@kroah.com> <50C93F64.1090906@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755694Ab2LMOAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:00:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43938 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab2LMOAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:00:45 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 001/241] gpio-timberdale: fix a potential wrapping issue
+Date: Thu, 13 Dec 2012 11:56:06 -0200
+Message-Id: <1355407206-17100-2-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Dec 2012, draekko.dev wrote:
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> I followed what was listed here
-> http://www.kernel.org/doc/Documentation/SubmittingPatches 
+------------------
 
-You did not completely. That document references
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-	http://www.kernel.org/doc/Documentation/email-clients.txt
+commit d79550a7bc35c16476ebdc27c78378d8093390ec upstream.
 
-and that clearly states that you can't use gmail web interface for in-line 
-patch submissions, as it unavoidably corrupts those.
+->last_ier is an unsigned long but the high bits can't be used int the
+original code because the shift wraps.
 
-> i won't be resubmitting, 
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/gpio/gpio-timberdale.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Well, then you can hardly expect the patch to be applied.
-
+diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdale.c
+index 031c6ad..1a3e2b9 100644
+--- a/drivers/gpio/gpio-timberdale.c
++++ b/drivers/gpio/gpio-timberdale.c
+@@ -116,7 +116,7 @@ static void timbgpio_irq_disable(struct irq_data *d)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&tgpio->lock, flags);
+-	tgpio->last_ier &= ~(1 << offset);
++	tgpio->last_ier &= ~(1UL << offset);
+ 	iowrite32(tgpio->last_ier, tgpio->membase + TGPIO_IER);
+ 	spin_unlock_irqrestore(&tgpio->lock, flags);
+ }
+@@ -128,7 +128,7 @@ static void timbgpio_irq_enable(struct irq_data *d)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&tgpio->lock, flags);
+-	tgpio->last_ier |= 1 << offset;
++	tgpio->last_ier |= 1UL << offset;
+ 	iowrite32(tgpio->last_ier, tgpio->membase + TGPIO_IER);
+ 	spin_unlock_irqrestore(&tgpio->lock, flags);
+ }
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
