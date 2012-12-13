@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab2LMO7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:59:20 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:65361 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab2LMO7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:59:18 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [TRIVIAL PATCH 11/26] powerpc: Convert print_symbol to %pSR
-Date: Thu, 13 Dec 2012 11:58:45 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-References: <cover.1355335227.git.joe@perches.com> <8c901014a0f571011023ed98b9a22bc690925b73.1355335228.git.joe@perches.com>
-In-Reply-To: <8c901014a0f571011023ed98b9a22bc690925b73.1355335228.git.joe@perches.com>
+	id S1756331Ab2LMO7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:59:54 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47826 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756143Ab2LMO7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:59:51 -0500
+Date: Thu, 13 Dec 2012 19:59:07 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] uprobes: Kill UPROBE_RUN_HANDLER flag
+Message-ID: <20121213142907.GD3902@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121124180213.GA30963@redhat.com>
+ <20121124180233.GA30990@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212131158.46055.arnd@arndb.de>
-X-Provags-ID: V02:K0:TTuXYtWznOkVb+tbxdvAq62nqZkfmpH28nYhuI3PGCj
- ZfVrr3G1xp1glCbKLL4eHJkWI089LELoV1twXiSbJritB63pkB
- 9VKIrVwCbHAp+/sK9/SKz/iwQOcCYOMOef7peme4ivw/I//dyR
- tLIZ7Xp7vgr2vNCk2T/LZUyjLFXrARKHymtXhQqsaXjtNE26Rq
- gZ9vzJTf1aDgex1I1ayjGXRnZLtaD7ykCM93hWGIcHaVSqAWrF
- 8zvaLXrCg1uKXuQZW24Mgr1vgvJtMeq3QKkszwMJsAnhcnTF7W
- lYKeisbzBEasPvCFbSU2BefFAoEJAHpIRFHHRcgcR1Ad7EZ9rp
- e38gY8kUNfwWtcL9JC1A=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121124180233.GA30990@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121314-7182-0000-0000-000003C36499
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 December 2012, Joe Perches wrote:
-> Use the new vsprintf extension to avoid any possible
-> message interleaving.
-> 
-> Convert the #ifdef DEBUG block to a single pr_debug.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+* Oleg Nesterov <oleg@redhat.com> [2012-11-24 19:02:33]:
 
-nice cleanup!
+> Simply remove UPROBE_RUN_HANDLER and the corresponding code.
+> 
+> It can only help if uprobe has a single consumer, and in fact
+> it is no longer needed after handler_chain() was changed to use
+> ->register_rwsem, we simply can not race with uprobe_register().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/events/uprobes.c |   23 +++++------------------
+>  1 files changed, 5 insertions(+), 18 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 873c993..97c3874 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -83,10 +83,8 @@ static atomic_t uprobe_events = ATOMIC_INIT(0);
+> 
+>  /* Have a copy of original instruction */
+>  #define UPROBE_COPY_INSN	0
+> -/* Dont run handlers when first register/ last unregister in progress*/
+> -#define UPROBE_RUN_HANDLER	1
+>  /* Can skip singlestep */
+> -#define UPROBE_SKIP_SSTEP	2
+> +#define UPROBE_SKIP_SSTEP	1
+> 
+>  struct uprobe {
+>  	struct rb_node		rb_node;	/* node in the rb tree */
+> @@ -475,9 +473,6 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+>  {
+>  	struct uprobe_consumer *uc;
+> 
+> -	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
+> -		return;
+> -
+>  	down_read(&uprobe->register_rwsem);
+>  	for (uc = uprobe->consumers; uc; uc = uc->next)
+>  		uc->handler(uc, regs);
+> @@ -825,13 +820,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+> 
+>  static int __uprobe_register(struct uprobe *uprobe, struct uprobe_consumer *uc)
+>  {
+> -	int err;
+> -
+>  	consumer_add(uprobe, uc);
+> -	err = register_for_each_vma(uprobe, true);
+> -	if (!err) /* TODO: pointless unless the first consumer */
+> -		set_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
+> -	return err;
+> +	return register_for_each_vma(uprobe, true);
+>  }
+> 
+>  static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
+> @@ -842,12 +832,9 @@ static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *u
+>  		return;
+> 
+>  	err = register_for_each_vma(uprobe, false);
+> -	if (!uprobe->consumers) {
+> -		clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
+> -		/* TODO : cant unregister? schedule a worker thread */
+> -		if (!err)
+> -			delete_uprobe(uprobe);
+> -	}
+> +	/* TODO : cant unregister? schedule a worker thread */
+> +	if (!uprobe->consumers && !err)
+> +		delete_uprobe(uprobe);
+>  }
+> 
+>  /*
+> -- 
+> 1.5.5.1
+> 
+
