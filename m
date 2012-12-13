@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab2LMOGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:06:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44388 "EHLO
+	id S932304Ab2LMOuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:50:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44395 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756561Ab2LMOGR (ORCPT
+	with ESMTP id S1756629Ab2LMOGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:06:17 -0500
+	Thu, 13 Dec 2012 09:06:22 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Dan Williams <dcbw@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 089/241] drm/i915/sdvo: clean up connectors on intel_sdvo_init() failures
-Date: Thu, 13 Dec 2012 11:57:34 -0200
-Message-Id: <1355407206-17100-90-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 091/241] USB: option: add Novatel E362 and Dell Wireless 5800 USB IDs
+Date: Thu, 13 Dec 2012 11:57:36 -0200
+Message-Id: <1355407206-17100-92-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,85 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit d0ddfbd3d1346c1f481ec2289eef350cdba64b42 upstream.
+commit fcb21645f1bd86d2be29baf48aa1b298de52ccc7 upstream.
 
-Any failures in intel_sdvo_init() after the intel_sdvo_setup_output() call
-left behind ghost connectors, attached (with a dangling pointer) to the
-sdvo that has been cleaned up and freed. Properly destroy any connectors
-attached to the encoder.
+The Dell 5800 appears to be a simple rebrand of the Novatel E362.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46381
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: bjo@nord-west.org
-[danvet: added a comment to explain why we need to clean up connectors
-even when sdvo_output_setup fails.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 9bb8168..1af5db5 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -2278,6 +2278,18 @@ intel_sdvo_output_setup(struct intel_sdvo *intel_sdvo, uint16_t flags)
- 	return true;
- }
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index b473e958..0179d55 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -157,6 +157,7 @@ static void option_instat_callback(struct urb *urb);
+ #define NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED	0x8001
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
++#define NOVATELWIRELESS_PRODUCT_E362		0x9010
+ #define NOVATELWIRELESS_PRODUCT_G1		0xA001
+ #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+@@ -192,6 +193,9 @@ static void option_instat_callback(struct urb *urb);
+ #define DELL_PRODUCT_5730_MINICARD_TELUS	0x8181
+ #define DELL_PRODUCT_5730_MINICARD_VZW		0x8182
  
-+static void intel_sdvo_output_cleanup(struct intel_sdvo *intel_sdvo)
-+{
-+	struct drm_device *dev = intel_sdvo->base.base.dev;
-+	struct drm_connector *connector, *tmp;
++#define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
++#define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
 +
-+	list_for_each_entry_safe(connector, tmp,
-+				 &dev->mode_config.connector_list, head) {
-+		if (intel_attached_encoder(connector) == &intel_sdvo->base)
-+			intel_sdvo_destroy(connector);
-+	}
-+}
-+
- static bool intel_sdvo_tv_create_property(struct intel_sdvo *intel_sdvo,
- 					  struct intel_sdvo_connector *intel_sdvo_connector,
- 					  int type)
-@@ -2584,7 +2596,8 @@ bool intel_sdvo_init(struct drm_device *dev, uint32_t sdvo_reg, bool is_sdvob)
- 				    intel_sdvo->caps.output_flags) != true) {
- 		DRM_DEBUG_KMS("SDVO output failed to setup on %s\n",
- 			      SDVO_NAME(intel_sdvo));
--		goto err;
-+		/* Output_setup can leave behind connectors! */
-+		goto err_output;
- 	}
+ #define KYOCERA_VENDOR_ID			0x0c88
+ #define KYOCERA_PRODUCT_KPC650			0x17da
+ #define KYOCERA_PRODUCT_KPC680			0x180a
+@@ -705,6 +709,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
  
- 	/* Only enable the hotplug irq if we need it, to work around noisy
-@@ -2601,12 +2614,12 @@ bool intel_sdvo_init(struct drm_device *dev, uint32_t sdvo_reg, bool is_sdvob)
- 
- 	/* Set the input timing to the screen. Assume always input 0. */
- 	if (!intel_sdvo_set_target_input(intel_sdvo))
--		goto err;
-+		goto err_output;
- 
- 	if (!intel_sdvo_get_input_pixel_clock_range(intel_sdvo,
- 						    &intel_sdvo->pixel_clock_min,
- 						    &intel_sdvo->pixel_clock_max))
--		goto err;
-+		goto err_output;
- 
- 	DRM_DEBUG_KMS("%s device VID/DID: %02X:%02X.%02X, "
- 			"clock range %dMHz - %dMHz, "
-@@ -2626,6 +2639,9 @@ bool intel_sdvo_init(struct drm_device *dev, uint32_t sdvo_reg, bool is_sdvob)
- 			(SDVO_OUTPUT_TMDS1 | SDVO_OUTPUT_RGB1) ? 'Y' : 'N');
- 	return true;
- 
-+err_output:
-+	intel_sdvo_output_cleanup(intel_sdvo);
-+
- err:
- 	drm_encoder_cleanup(&intel_encoder->base);
- 	i2c_del_adapter(&intel_sdvo->ddc);
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+@@ -727,6 +732,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_SPRINT) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_TELUS) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
 -- 
 1.7.9.5
 
