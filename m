@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2LMCqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:46:19 -0500
-Received: from mga14.intel.com ([143.182.124.37]:33859 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756152Ab2LMCqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:46:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,270,1355126400"; 
-   d="scan'208";a="180227392"
-Message-ID: <50C940E8.2020001@intel.com>
-Date: Thu, 13 Dec 2012 10:43:52 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1755463Ab2LMCta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:49:30 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35452 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab2LMCt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:49:29 -0500
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
-        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
-        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, preeti@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
-        arjan@linux.intel.com, amit.kucheria@linaro.org,
-        viresh.kumar@linaro.org
-Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
-References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org> <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org> <50C93AC1.1060202@intel.com>
-In-Reply-To: <50C93AC1.1060202@intel.com>
+In-Reply-To: <CAE9FiQXofExFJtPZZqynDGDZV6Kk2zpUwPcME9rB7L-AX5RLog@mail.gmail.com>
+References: <50BFFB6E.5080108@zytor.com>
+	<CAE9FiQU9mZpqhwX_a4Sv0a0aiReTxJfyJqNRVXTTXvjkFLrVZA@mail.gmail.com>
+	<CAE9FiQXofExFJtPZZqynDGDZV6Kk2zpUwPcME9rB7L-AX5RLog@mail.gmail.com>
+Date: Wed, 12 Dec 2012 18:49:27 -0800
+X-Google-Sender-Auth: MBOhmuqWYSrmwur4lpimaEfXpQA
+Message-ID: <CAE9FiQX5XB-RMN-2AyCPix2EHVh8_WCO+fbJAFoJb8S0MUV_Sw@mail.gmail.com>
+Subject: Re: kexec and struct boot_params
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 10:17 AM, Alex Shi wrote:
-> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
->> During the creation of sched_domain, we define a pack buddy CPU for each CPU
->> when one is available. We want to pack at all levels where a group of CPU can
->> be power gated independently from others.
->> On a system that can't power gate a group of CPUs independently, the flag is
->> set at all sched_domain level and the buddy is set to -1. This is the default
->> behavior.
->> On a dual clusters / dual cores system which can power gate each core and
->> cluster independently, the buddy configuration will be :
+On Thu, Dec 6, 2012 at 10:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Dec 5, 2012 at 7:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Wed, Dec 5, 2012 at 5:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> Hi Eric,
+>>>
+>>> Could you give a list of struct boot_params field which are initialized
+>>> properly by kexec?  I think we need to do the sentinel hack, and want to
+>>> know what to whitelist.
 >>
->>       | Cluster 0   | Cluster 1   |
->>       | CPU0 | CPU1 | CPU2 | CPU3 |
->> -----------------------------------
->> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+>> the one with *
+>> ? means set only when lfb_depth > 8
+>> also
+>>    0xa2 to 0x1df is not set
 >>
->> Small tasks tend to slip out of the periodic load balance so the best place
->> to choose to migrate them is during their wake up. The decision is in O(1) as
->> we only check again one buddy CPU
-> 
-> Just have a little worry about the scalability on a big machine, like on
-> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
-> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
-> is different on task distribution decision.
+>> struct x86_linux_param_header {
+>>         uint8_t  orig_x;                        /* 0x00 */  *
+>>         uint8_t  orig_y;                        /* 0x01 */  *
+>>         uint16_t ext_mem_k;                     /* 0x02 -- EXT_MEM_K sits here */   *
+>>         uint16_t orig_video_page;               /* 0x04 */  *
+>>         uint8_t  orig_video_mode;               /* 0x06 */  *
+>>         uint8_t  orig_video_cols;               /* 0x07 */  *
+>>         uint16_t unused2;                       /* 0x08 */
+>>         uint16_t orig_video_ega_bx;             /* 0x0a */  *
+>>         uint16_t unused3;                       /* 0x0c */
+>>         uint8_t  orig_video_lines;              /* 0x0e */  *
+>>         uint8_t  orig_video_isVGA;              /* 0x0f */   *
+>>         uint16_t orig_video_points;             /* 0x10 */   *
+>>
+>>         /* VESA graphic mode -- linear frame buffer */
+>>         uint16_t lfb_width;                     /* 0x12 */   *
+>>         uint16_t lfb_height;                    /* 0x14 */   *
+>>         uint16_t lfb_depth;                     /* 0x16 */   *
+>>         uint32_t lfb_base;                      /* 0x18 */   *
+>>         uint32_t lfb_size;                      /* 0x1c */   *
+>>         uint16_t cl_magic;                      /* 0x20 */   *
+>> #define CL_MAGIC_VALUE 0xA33F
+>>         uint16_t cl_offset;                     /* 0x22 */   *
+>>         uint16_t lfb_linelength;                /* 0x24 */   *
+>>         uint8_t  red_size;                      /* 0x26 */   ?
+>>         uint8_t  red_pos;                       /* 0x27 */   ?
+>>         uint8_t  green_size;                    /* 0x28 */   ?
+>>         uint8_t  green_pos;                     /* 0x29 */   ?
+>>         uint8_t  blue_size;                     /* 0x2a */   ?
+>>         uint8_t  blue_pos;                      /* 0x2b */   ?
+>>         uint8_t  rsvd_size;                     /* 0x2c */   ?
+>>         uint8_t  rsvd_pos;                      /* 0x2d */   ?
+>>         uint16_t vesapm_seg;                    /* 0x2e */   *
+>>         uint16_t vesapm_off;                    /* 0x30 */
+>>         uint16_t pages;                         /* 0x32 */   *
+>>         uint8_t  reserved4[12];                 /* 0x34 -- 0x3f reserved for future expansion */
+>>
+>>         struct apm_bios_info apm_bios_info;     /* 0x40 */   *
+>>         struct drive_info_struct drive_info;    /* 0x80 */   *
+>>         struct sys_desc_table sys_desc_table;   /* 0xa0 */   * only .length =
+>> 0, aka 0xa2 to 0x1df is not set
+>>         uint32_t alt_mem_k;                     /* 0x1e0 */  *
+>>         uint8_t  reserved5[4];                  /* 0x1e4 */
+>>         uint8_t  e820_map_nr;                   /* 0x1e8 */  *
+>>         uint8_t  eddbuf_entries;                /* 0x1e9 */  *
+>>         uint8_t  edd_mbr_sig_buf_entries;       /* 0x1ea */  *
+>>         uint8_t  reserved6[6];                  /* 0x1eb */
+>>         HEADER.....                                         copied and or meset 0 and set.
+>>         uint8_t  reserved16[0x290 - 0x248];     /* 0x248 */
+>>         uint32_t edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];   /* 0x290 */  *
+>> #endif
+>>         struct  e820entry e820_map[E820MAX];    /* 0x2d0 */   *
+>>         uint8_t _pad8[48];                      /* 0xcd0 */
+>>         struct  edd_info eddbuf[EDDMAXNR];      /* 0xd00 */   *
+>>                                                 /* 0xeec */
+>> #define COMMAND_LINE_SIZE 2048
+>> };
+>>
+>>
+>>>
+>>> Also, does kexec set a bootloader ID?
+>>
+>> no, 0xff
+>
+> Hi, Peter,
+>
+> What's your decision about this?
+>
+> Do you mean have one boot_params mask in initdata and AND that with
+> boot_params from bootloader
+> to clean not used bytes?
+>
+> So later will not need to check
+>     if (boot_params.hdr.xloadflags & USE_EXT_BOOT_PARAMS)
+> ?
+>
+> I worked out other patches that remove kdump 896M limitation.
+> would like to post those patches to get more testing.
+> those are needed for bigger system with lots of pcie devices.
 
-In above big machine example, only one buddy cpu is not sufficient on
-each of level, like for 4 sockets level, maybe tasks can just full fill
-2 sockets, then we just use 2 sockets, that is more performance/power
-efficient. But one buddy cpu here need to spread tasks to 4 sockets all.
 
-
+ping!
