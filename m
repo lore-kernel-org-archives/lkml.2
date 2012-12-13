@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab2LMLXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 06:23:55 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:21493 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753789Ab2LMLXy (ORCPT
+	id S1755231Ab2LMLYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 06:24:09 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:9815 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab2LMLYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 06:23:54 -0500
-X-IronPort-AV: E=Sophos;i="4.84,273,1355094000"; 
-   d="scan'208";a="185979272"
-Date: Thu, 13 Dec 2012 12:23:39 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: Evgeniy Polyakov <zbr@ioremap.net>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers/w1/masters/mxc_w1.c: use devm_ functions
-In-Reply-To: <20121213112029.GY6568@mwanda>
-Message-ID: <alpine.DEB.2.02.1212131222530.1966@hadrien>
-References: <1354835724-26945-2-git-send-email-Julia.Lawall@lip6.fr> <20121211212555.GA15333@ioremap.net> <20121213093938.GX6568@mwanda> <alpine.DEB.2.02.1212131118220.1966@hadrien> <20121213112029.GY6568@mwanda>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 13 Dec 2012 06:24:07 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-cc-50c9bad53b18
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linus.walleij@linaro.org, kgene.kim@samsung.com, t.figa@samsung.com,
+        patches@linaro.org
+Subject: [PATCH 3/3] arm: exynos: skip wakeup interrupt registration for
+ exynos5250 if pinctrl is enabled
+Date: Thu, 13 Dec 2012 17:24:04 +0530
+Message-id: <1355399644-29417-4-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+In-reply-to: <1355399644-29417-1-git-send-email-thomas.abraham@linaro.org>
+References: <1355399644-29417-1-git-send-email-thomas.abraham@linaro.org>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t9jAd2ru04GGHRtM7e4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr4fG0lW8Fdtoq5/30aGG+xdjFyckgImEis3r6PDcIW
+	k7hwbz2YLSSwiFHi7yc1CLuNSaJnaRGIzSZgIPFo4Tt2EFtEQEFic+8zoDlcHMwCKxglTnR9
+	BUsIC2RLvDk3l7GLkYODRUBV4ufqbBCTV8BT4sSyZIhVShIbeo8ygdicAl4Sbcu7WCBWeUoc
+	+vSJbQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwV5/Jr2DcVWDxSFGAQ5GJR7e
+	wvCTAUKsiWXFlbmHGCU4mJVEeP2XA4V4UxIrq1KL8uOLSnNSiw8xSnOwKInzNnukBAgJpCeW
+	pGanphakFsFkmTg4pRoYV/W377SZuee3qM0x57JrX/aWsrSpB33OE3BYp1CmtEzy7Z4TZ24y
+	ORfHyBQ5FkpY+rR5ZL8MYRfQ0gycbr6h/n/a4mT2F6cWp9THXU68+H7BXp+k7POryzQXSD19
+	mPudxatW62axF9/l1Rpv3xcYVi3PLlXSuzLp9Y53n0UX9B85IX3dSXaWEktxRqKhFnNRcSIA
+	xZwhVvYBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Dec 2012, Dan Carpenter wrote:
+Skip the wakeup interrupt registration for Exynos5250 if pinctrl support
+is enabled for Exynos5250.
 
-> On Thu, Dec 13, 2012 at 11:18:53AM +0100, Julia Lawall wrote:
-> > On Thu, 13 Dec 2012, Dan Carpenter wrote:
-> >
-> > > On Wed, Dec 12, 2012 at 01:25:56AM +0400, Evgeniy Polyakov wrote:
-> > > > I suppose mdev will be automatically freed, but who will release
-> > > > mdev->clk and other private members of mdev structure?
-> > >
-> > > +   mdev->clk = devm_clk_get(&pdev->dev, NULL);
-> > >
-> > > ->clk is now a devm pointer as well.
-> >
-> > Thanks for the suggestion.  I will submit a patch shortly.
-> >
->
-> Huh?  I think there is a miscommunication here.  I was trying to
-> explain that your original patch handles releasing ->clk.
->
-> I've reviewed the patch again and I still don't see a problem with
-> it.  What will you change when you resubmit?
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ arch/arm/mach-exynos/common.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Oops, sorry.  I thought your +   mdev->clk = devm_clk_get(&pdev->dev,
-NULL); was a suggestion of something I had overlooked.
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index 73b940f..7ad5011 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -1019,6 +1019,7 @@ static int __init exynos_init_irq_eint(void)
+ 	static const struct of_device_id exynos_pinctrl_ids[] = {
+ 		{ .compatible = "samsung,pinctrl-exynos4210", },
+ 		{ .compatible = "samsung,pinctrl-exynos4x12", },
++		{ .compatible = "samsung,pinctrl-exynos5250", },
+ 	};
+ 	struct device_node *pctrl_np, *wkup_np;
+ 	const char *wkup_compat = "samsung,exynos4210-wakeup-eint";
+-- 
+1.6.6.rc2
 
-Thanks,
-julia
