@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933387Ab2LMOOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:14:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45071 "EHLO
+	id S933419Ab2LMOO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:14:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab2LMOOM (ORCPT
+	with ESMTP id S933389Ab2LMOOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:14:12 -0500
+	Thu, 13 Dec 2012 09:14:16 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Marzinski <bmarzins@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
+Cc: Petr Matousek <pmatouse@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 217/241] GFS2: Don't call file_accessed() with a shared glock
-Date: Thu, 13 Dec 2012 11:59:42 -0200
-Message-Id: <1355407206-17100-218-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 218/241] KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set (CVE-2012-4461)
+Date: Thu, 13 Dec 2012 11:59:43 -0200
+Message-Id: <1355407206-17100-219-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,69 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Marzinski <bmarzins@redhat.com>
+From: Petr Matousek <pmatouse@redhat.com>
 
-commit 3d1626889a64bd5a661544d582036a0a02104a60 upstream.
+commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
 
-file_accessed() was being called by gfs2_mmap() with a shared glock. If it
-needed to update the atime, it was crashing because it dirtied the inode in
-gfs2_dirty_inode() without holding an exclusive lock. gfs2_dirty_inode()
-checked if the caller was already holding a glock, but it didn't make sure that
-the glock was in the exclusive state. Now, instead of calling file_accessed()
-while holding the shared lock in gfs2_mmap(), file_accessed() is called after
-grabbing and releasing the glock to update the inode.  If file_accessed() needs
-to update the atime, it will grab an exclusive lock in gfs2_dirty_inode().
+On hosts without the XSAVE support unprivileged local user can trigger
+oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
+cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
+ioctl.
 
-gfs2_dirty_inode() now also checks to make sure that if the calling process has
-already locked the glock, it has an exclusive lock.
+invalid opcode: 0000 [#2] SMP
+Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
+...
+Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
+EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
+EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
+EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
+ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
+task.ti=d7c62000)
+Stack:
+ 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
+ ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
+ c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
+Call Trace:
+ [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
+...
+ [<c12bfb44>] ? syscall_call+0x7/0xb
+Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
+1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
+d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
+EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
+0068:d7c63e70
 
-Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
+and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
+out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
+X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
+X86_FEATURE_XSAVE even on hosts that do not support it, might be
+susceptible to this attack from inside the guest as well.
+
+Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
+
+Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/gfs2/file.c  |   12 +++++-------
- fs/gfs2/super.c |    3 ++-
- 2 files changed, 7 insertions(+), 8 deletions(-)
+ arch/x86/kvm/cpuid.h |    3 +++
+ arch/x86/kvm/x86.c   |    3 +++
+ 2 files changed, 6 insertions(+)
 
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index 31b199f..a8a81d7 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -492,15 +492,13 @@ static int gfs2_mmap(struct file *file, struct vm_area_struct *vma)
- 		struct gfs2_holder i_gh;
- 		int error;
+diff --git a/arch/x86/kvm/cpuid.h b/arch/x86/kvm/cpuid.h
+index 26d1fb4..638de3e 100644
+--- a/arch/x86/kvm/cpuid.h
++++ b/arch/x86/kvm/cpuid.h
+@@ -23,6 +23,9 @@ static inline bool guest_cpuid_has_xsave(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_cpuid_entry2 *best;
  
--		gfs2_holder_init(ip->i_gl, LM_ST_SHARED, LM_FLAG_ANY, &i_gh);
--		error = gfs2_glock_nq(&i_gh);
--		if (error == 0) {
--			file_accessed(file);
--			gfs2_glock_dq(&i_gh);
--		}
--		gfs2_holder_uninit(&i_gh);
-+		error = gfs2_glock_nq_init(ip->i_gl, LM_ST_SHARED, LM_FLAG_ANY,
-+					   &i_gh);
- 		if (error)
- 			return error;
-+		/* grab lock to update inode */
-+		gfs2_glock_dq_uninit(&i_gh);
-+		file_accessed(file);
- 	}
- 	vma->vm_ops = &gfs2_vm_ops;
- 	vma->vm_flags |= VM_CAN_NONLINEAR;
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index 713e621..12769a2 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -800,7 +800,8 @@ static void gfs2_dirty_inode(struct inode *inode, int flags)
- 			return;
- 		}
- 		need_unlock = 1;
--	}
-+	} else if (WARN_ON_ONCE(ip->i_gl->gl_state != LM_ST_EXCLUSIVE))
-+		return;
++	if (!static_cpu_has(X86_FEATURE_XSAVE))
++		return 0;
++
+ 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
+ 	return best && (best->ecx & bit(X86_FEATURE_XSAVE));
+ }
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 14c290d..8b6fbee 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5741,6 +5741,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 	int pending_vec, max_bits, idx;
+ 	struct desc_ptr dt;
  
- 	if (current->journal_info == NULL) {
- 		ret = gfs2_trans_begin(sdp, RES_DINODE, 0);
++	if (!guest_cpuid_has_xsave(vcpu) && (sregs->cr4 & X86_CR4_OSXSAVE))
++		return -EINVAL;
++
+ 	dt.size = sregs->idt.limit;
+ 	dt.address = sregs->idt.base;
+ 	kvm_x86_ops->set_idt(vcpu, &dt);
 -- 
 1.7.9.5
 
