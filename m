@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab2LMQHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 11:07:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34385 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab2LMQHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 11:07:44 -0500
-Date: Thu, 13 Dec 2012 17:07:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/8] mm: vmscan: improve comment on low-page cache
- handling
-Message-ID: <20121213160742.GH21644@dhcp22.suse.cz>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-6-git-send-email-hannes@cmpxchg.org>
+	id S1756142Ab2LMQJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 11:09:42 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:48781 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab2LMQJl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 11:09:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355348620-9382-6-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1355410348-5129-2-git-send-email-gautam.vivek@samsung.com>
+References: <1355410348-5129-1-git-send-email-gautam.vivek@samsung.com>
+	<1355410348-5129-2-git-send-email-gautam.vivek@samsung.com>
+Date: Thu, 13 Dec 2012 21:39:39 +0530
+Message-ID: <CAFp+6iEUrP5by8+HHFBMYJcu1v9QB1=RGp675e-VfOoYR9dRjQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] usb: ehci-s5p/ohci-exynos: Fix compatible strings for
+ the device
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, balbi@ti.com, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com, jg1.han@samsung.com,
+        thomas.abraham@linaro.org, Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-12-12 16:43:37, Johannes Weiner wrote:
-> Fix comment style and elaborate on why anonymous memory is
-> force-scanned when file cache runs low.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-yes, much better
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
+On Thu, Dec 13, 2012 at 8:22 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Using specific chip in compatible strings. Newer SOCs can claim
+> device by using older string in the compatible list.
+>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 > ---
->  mm/vmscan.c | 12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 5e1beed..05475e1 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1697,13 +1697,15 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->  	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
->  		get_lru_size(lruvec, LRU_INACTIVE_FILE);
->  
-> +	/*
-> +	 * If it's foreseeable that reclaiming the file cache won't be
-> +	 * enough to get the zone back into a desirable shape, we have
-> +	 * to swap.  Better start now and leave the - probably heavily
-> +	 * thrashing - remaining file pages alone.
-> +	 */
->  	if (global_reclaim(sc)) {
-> -		free  = zone_page_state(zone, NR_FREE_PAGES);
-> +		free = zone_page_state(zone, NR_FREE_PAGES);
->  		if (unlikely(file + free <= high_wmark_pages(zone))) {
-> -			/*
-> -			 * If we have very few page cache pages, force-scan
-> -			 * anon pages.
-> -			 */
->  			fraction[0] = 1;
->  			fraction[1] = 0;
->  			denominator = 1;
-> -- 
-> 1.7.11.7
-> 
+>  drivers/usb/host/ehci-s5p.c    |    2 +-
+>  drivers/usb/host/ohci-exynos.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+> index 319dcfa..f18e6ac 100644
+> --- a/drivers/usb/host/ehci-s5p.c
+> +++ b/drivers/usb/host/ehci-s5p.c
+> @@ -266,7 +266,7 @@ static const struct dev_pm_ops s5p_ehci_pm_ops = {
+>
+>  #ifdef CONFIG_OF
+>  static const struct of_device_id exynos_ehci_match[] = {
+> -       { .compatible = "samsung,exynos-ehci" },
+> +       { .compatible = "samsung,exynos4210-ehci" },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, exynos_ehci_match);
+> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+> index aa3b884..77f2017 100644
+> --- a/drivers/usb/host/ohci-exynos.c
+> +++ b/drivers/usb/host/ohci-exynos.c
+> @@ -267,7 +267,7 @@ static const struct dev_pm_ops exynos_ohci_pm_ops = {
+>
+>  #ifdef CONFIG_OF
+>  static const struct of_device_id exynos_ohci_match[] = {
+> -       { .compatible = "samsung,exynos-ohci" },
+> +       { .compatible = "samsung,exynos4210-ohci" },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, exynos_ohci_match);
+> --
+> 1.7.6.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-Michal Hocko
-SUSE Labs
+Thanks & Regards
+Vivek
