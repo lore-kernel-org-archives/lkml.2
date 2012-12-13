@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2LMRDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 12:03:15 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37606 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab2LMRDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 12:03:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyZ2kAQPmZSv_sfHDAR1gusOxO22TRX-kqSim-cZrMscw@mail.gmail.com>
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
- <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
- <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com>
- <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com>
- <50C9E692.9070506@gmail.com> <CA+55aFzmDooC3tYzvP1YGv9g4ej1hBUQBPV6R+ukrfxuEELBaQ@mail.gmail.com>
- <50CA0134.2090608@gmail.com> <CA+55aFyZ2kAQPmZSv_sfHDAR1gusOxO22TRX-kqSim-cZrMscw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 13 Dec 2012 09:02:50 -0800
-X-Google-Sender-Auth: DWBJ3ZGnpe76VW24WQLUCtH_-ZI
-Message-ID: <CA+55aFwSYyoLmdDJ5xsdwcWLThYQ7oieoeWDV2g+wV3CJk4vtg@mail.gmail.com>
-Subject: Re: [GIT PULL] perf changes for v3.8
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756045Ab2LMRG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 12:06:28 -0500
+Received: from zmc.proxad.net ([212.27.53.206]:36782 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752872Ab2LMRG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 12:06:27 -0500
+From: Florian Fainelli <florian@openwrt.org>
+To: linux-kernel@vger.kernel.org (open list)
+Cc: Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH] x86: fix perf build with uclibc toolchains
+Date: Thu, 13 Dec 2012 18:04:17 +0100
+Message-Id: <1355418259-27566-1-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20121211090910.GA22985@gmail.com>
+References: <20121211090910.GA22985@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, I do *not* think that you should necessariyl default to 'H' for
-host-only mode.
+libio.h is not provided by uClibc, in order to be able to test the
+definition of __UCLIBC__ we need to include stdlib.h, which also
+includes stddef.h, providing the definition of 'NULL'
 
-The way it should work is that ":pp", ":ppH" and ":ppV" are all different.
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ tools/perf/arch/x86/util/dwarf-regs.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
- - "cycles:ppH" means: I want precise cycles only for the host case
+diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
+index a794d30..6f5267f 100644
+--- a/tools/perf/arch/x86/util/dwarf-regs.c
++++ b/tools/perf/arch/x86/util/dwarf-regs.c
+@@ -20,7 +20,10 @@
+  *
+  */
+ 
++#include <stdlib.h>
++#ifndef __UCLIBC__
+ #include <libio.h>
++#endif
+ #include <dwarf-regs.h>
+ 
+ /*
+-- 
+1.7.10.4
 
- - "cycles:ppV" means: I want precise cycles, and I want the VM too
-
-   This would result in EOPNOTSUPP for the case we know is buggy (but
-presumably work on some other CPUs that don't have the problem)
-
- - "cycles:pp" is "I want precise cycles, and I don't care about virtualization"
-
-   This would do whatever works. So it would basically become
-host-only, but if you don't want precise cycles (so no ":pp") then
-whatever our old behavior was (presumably "profile the virtual machine
-too") would be what happens.
-
-That sounds like (a) the interface that people want and (b) entirely
-backwards-compatible for all cases that can matter (where "oops, I
-crashed the VM" case does not matter).
-
-                Linus
