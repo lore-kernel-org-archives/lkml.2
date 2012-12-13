@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab2LMEXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 23:23:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58304 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab2LMEXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 23:23:19 -0500
-Message-ID: <50C95832.5030306@zytor.com>
-Date: Wed, 12 Dec 2012 20:23:14 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1754724Ab2LMEa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 23:30:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58120 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab2LMEa5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 23:30:57 -0500
+Message-ID: <50C959FD.7070408@vflare.org>
+Date: Wed, 12 Dec 2012 20:30:53 -0800
+From: Nitin Gupta <ngupta@vflare.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kexec and struct boot_params
-References: <50BFFB6E.5080108@zytor.com> <CAE9FiQU9mZpqhwX_a4Sv0a0aiReTxJfyJqNRVXTTXvjkFLrVZA@mail.gmail.com> <CAE9FiQXofExFJtPZZqynDGDZV6Kk2zpUwPcME9rB7L-AX5RLog@mail.gmail.com> <CAE9FiQX5XB-RMN-2AyCPix2EHVh8_WCO+fbJAFoJb8S0MUV_Sw@mail.gmail.com>
-In-Reply-To: <CAE9FiQX5XB-RMN-2AyCPix2EHVh8_WCO+fbJAFoJb8S0MUV_Sw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: zram: fix invalid memory references during disk write
+References: <1354257909-2380-1-git-send-email-ngupta@vflare.org> <20121211182720.GC29421@kroah.com>
+In-Reply-To: <20121211182720.GC29421@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 06:49 PM, Yinghai Lu wrote:
+On 12/11/2012 10:27 AM, Greg KH wrote:
+> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
+>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+>> of incompressible pages") which caused invalid memory references
+>> during disk write. Invalid references could occur in two cases:
+>>  - Incoming data expands on compression: In this case, reference was
+>> made to kunmap()'ed bio page.
+>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+>> case, reference was made to a kfree()'ed buffer.
 >>
->> Hi, Peter,
+>> Fixes bug 50081:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
 >>
->> What's your decision about this?
+>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
+>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
 >>
->> Do you mean have one boot_params mask in initdata and AND that with
->> boot_params from bootloader
->> to clean not used bytes?
->>
->> So later will not need to check
->>      if (boot_params.hdr.xloadflags & USE_EXT_BOOT_PARAMS)
->> ?
->>
->> I worked out other patches that remove kdump 896M limitation.
->> would like to post those patches to get more testing.
->> those are needed for bigger system with lots of pcie devices.
+>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
+>> 				# zram_decompress_page() function
+>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+>> Reported-by: Tomas M <tomas@slax.org>
+>> Reviewed-by: Minchan Kim <minchan@kernel.org>
+>> ---
+>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+>>  1 file changed, 24 insertions(+), 15 deletions(-)
+> 
+> This patch fails to apply to 3.6.10:
+> 
+> patching file drivers/staging/zram/zram_drv.c
+> Hunk #1 succeeded at 282 (offset 17 lines).
+> Hunk #2 FAILED at 286.
+> Hunk #3 succeeded at 319 (offset 17 lines).
+> Hunk #4 succeeded at 340 (offset 17 lines).
+> Hunk #5 succeeded at 353 (offset 17 lines).
+> Hunk #6 succeeded at 368 (offset 17 lines).
+> Hunk #7 succeeded at 385 (offset 17 lines).
+> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
+> 
+> Please redo this patch and resend it if you wish for it to be applied to
+> the 3.6-stable tree.
 >
->
-> ping!
->
 
-I still want to do what I mentioned before, because we need to not rely 
-on the initialized/16-bit portion so much:
+Please apply 37b51fd ("zram: factor-out zram_decompress_page()
+function") before applying this patch. I also mentioned this in the
+changelog description above in the format as specified in
+stable_kernel_rules.txt but looks like I misunderstood that doc.
 
-1. add a field in the uninitialized portion, call it "sentinel";
-2. make sure the byte position corresponding to the "sentinel" field is
-    nonzero in the bzImage file;
-3. if the kernel boots up and sentinel is nonzero, erase those fields
-    that you identified as uninitialized;
-4. assign a proper boot loader ID to kexec, so we have a way of dealing
-    with this kind of debacles in the future (that is what the
-    bootloader ID is for: it gives us a way to work around
-    bootloader-specific problems.)
+Thanks,
+Nitin
 
-We also need to formalize the 64-bit entry point properly, including all 
-the entry conditions and so forth.  That needs to be documented.
-
-Eric, any thoughts or additional opinions?
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
