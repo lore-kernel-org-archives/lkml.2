@@ -1,167 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab2LMDUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:20:14 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40782 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245Ab2LMDUK (ORCPT
+	id S1755564Ab2LMDWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:22:41 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33554 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593Ab2LMDWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:20:10 -0500
-Message-ID: <50C94923.4060203@huawei.com>
-Date: Thu, 13 Dec 2012 11:18:59 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>, <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, <dhillf@gmail.com>,
-        Jiang Liu <liuj97@gmail.com>, qiuxishi <qiuxishi@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
-Subject: [PATCH v2] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 12 Dec 2012 22:22:40 -0500
+Date: Wed, 12 Dec 2012 22:22:39 -0500 (EST)
+Message-Id: <20121212.222239.1677083852440112819.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nhorman@tuxdriver.com,
+        vyasevich@gmail.com
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFxvHrNYB_J851XTkZ4EiwZ68Fb64DEU1JJmxPV-zB+9Vw@mail.gmail.com>
+References: <CA+55aFwzUgxQAze=mYbEx8b61V542tzm06Df=mR1BtYVbJy0mg@mail.gmail.com>
+	<20121212.212734.917363230032045212.davem@davemloft.net>
+	<CA+55aFxvHrNYB_J851XTkZ4EiwZ68Fb64DEU1JJmxPV-zB+9Vw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
-and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
-system will boot fail.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Dec 2012 18:37:08 -0800
 
-This failure is caused by following code path:
-setup_hugepagesz
-	hugetlb_add_hstate
-		hugetlb_cgroup_file_init
-			cgroup_add_cftypes
-				kzalloc <--slab is *not available* yet
+> On Wed, Dec 12, 2012 at 6:27 PM, David Miller <davem@davemloft.net> wrote:
+>>
+>> There are two SCTP HMAC cookie algorithms, MD5 and SHA1.
+>>
+>> What used to happen is that you had to choose one at build
+>> time, and then you were stuck with that decision and it was
+>> all that you could use.
+>>
+>> Now, it's selectable at run time.
+>>
+>> If there's anything you find particularly anti-social about
+>> this, I'm sure we can adjust it.
+> 
+> So I'd suggest doing the same thing that the new thermal throttling
+> Kconfig does: start off by asking for the default algorithm, then ask
+> about the others.
+> 
+> The "choice" part selects the one that is default (so it never gets
+> asked about and is obviously compiled in), and the rest default to no
+> like we should.
+> 
+> See drivers/thermal/Kconfig for an example of this. I think we do it
+> in other places too, but that one happens to be new so I picked it as
+> an example.
+> 
+> The rule should be that we *never* default anything to 'yes', unless
+> it's old functionality that we always compiled in before too, and now
+> it got made conditional. So if you see a "default y" on new options,
+> you should basically consider it broken.
+> 
+> We're already bloating too much, we should not encourage people to
+> make things more bloated than necessary.
+> 
+> Btw, that Kconfig option has basically no useful help text either.
+> What's the point of repeating the question as a "help" message?
+> 
+> If people can't explain why anybody should enable it, it sure as hell
+> shouldn't default to 'y'. Maybe it shouldn't exist at all?
 
-For this path, slab is not available yet, so memory allocated will be
-failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
+Neil and Vlad, please take care of this.
 
-So I move hugetlb_cgroup_file_init() into hugetlb_init().
-
-Changelog:
-  use huge_page_order(h) instead of h->order as suggesting by Aneesh
-  add Reviewed-by and Acked-by 
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/hugetlb_cgroup.h |    7 ++-----
- mm/hugetlb.c                   |   11 +----------
- mm/hugetlb_cgroup.c            |   23 +++++++++++++++++++++--
- 3 files changed, 24 insertions(+), 17 deletions(-)
-
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index d73878c..5bb9c28 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -62,7 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
- 					 struct page *page);
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
--extern int hugetlb_cgroup_file_init(int idx) __init;
-+extern void hugetlb_cgroup_file_init(void) __init;
- extern void hugetlb_cgroup_migrate(struct page *oldhpage,
- 				   struct page *newhpage);
- 
-@@ -111,10 +111,7 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 	return;
- }
- 
--static inline int __init hugetlb_cgroup_file_init(int idx)
--{
--	return 0;
--}
-+static inline void __init hugetlb_cgroup_file_init() {}
- 
- static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
- 					  struct page *newhpage)
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1ef2cd4..a30da48 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1906,14 +1906,12 @@ static int __init hugetlb_init(void)
- 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
- 
- 	hugetlb_init_hstates();
--
- 	gather_bootmem_prealloc();
--
- 	report_hugepages();
- 
- 	hugetlb_sysfs_init();
--
- 	hugetlb_register_all_nodes();
-+	hugetlb_cgroup_file_init();
- 
- 	return 0;
- }
-@@ -1943,13 +1941,6 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
--	/*
--	 * Add cgroup control files only if the huge page consists
--	 * of more than two normal pages. This is because we use
--	 * page[2].lru.next for storing cgoup details.
--	 */
--	if (order >= HUGETLB_CGROUP_MIN_ORDER)
--		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
- 
- 	parsed_hstate = h;
- }
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index a3f358f..0aa8ae1 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -340,7 +340,7 @@ static char *mem_fmt(char *buf, int size, unsigned long hsize)
- 	return buf;
- }
- 
--int __init hugetlb_cgroup_file_init(int idx)
-+static void __init __hugetlb_cgroup_file_init(int idx)
- {
- 	char buf[32];
- 	struct cftype *cft;
-@@ -382,7 +382,26 @@ int __init hugetlb_cgroup_file_init(int idx)
- 
- 	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
- 
--	return 0;
-+	return;
-+}
-+
-+void __init hugetlb_cgroup_file_init()
-+{
-+	struct hstate *h;
-+	int idx;
-+
-+	idx = 0;
-+	for_each_hstate(h) {
-+		/*
-+		 * Add cgroup control files only if the huge page consists
-+		 * of more than two normal pages. This is because we use
-+		 * page[2].lru.next for storing cgroup details.
-+		 */
-+		if (huge_page_order(h) >= HUGETLB_CGROUP_MIN_ORDER)
-+			__hugetlb_cgroup_file_init(idx);
-+
-+		idx++;
-+	}
- }
- 
- /*
--- 
-1.7.1
-
-
+Thanks.
