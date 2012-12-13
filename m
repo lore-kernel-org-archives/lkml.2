@@ -1,47 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab2LMOie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:38:34 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37264 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab2LMOia (ORCPT
+	id S932785Ab2LMOjC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:39:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44627 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932689Ab2LMOJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:38:30 -0500
-Message-ID: <50C9E861.2010304@gmail.com>
-Date: Thu, 13 Dec 2012 07:38:25 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.8
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com> <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com> <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com> <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com> <50C9E692.9070506@gmail.com>
-In-Reply-To: <50C9E692.9070506@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 09:09:06 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: NeilBrown <neilb@suse.de>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 135/241] md/raid10: close race that lose writes lost when replacement completes.
+Date: Thu, 13 Dec 2012 11:58:20 -0200
+Message-Id: <1355407206-17100-136-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/12 7:30 AM, David Ahern wrote:
->> It's not annoying, it's outright broken - it's a regression that
->> we'll fix.
->
-> One of the problems is that existing binaries set the exclude_guest flag
-> (https://lkml.org/lkml/2012/7/9/292).
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Correction, I meant to say one of the problems is that existing binaries 
-sets the flag to 0 when precise is used.
+------------------
 
->
-> So, requesting users to update their binaries if they want to use
-> precise sampling is not acceptable. A 100% catastrophic failure of all
-> running VMs is acceptable? All VMs will crash and there is no direct
-> causal relationship.
+From: NeilBrown <neilb@suse.de>
 
+commit e7c0c3fa29280d62aa5e11101a674bb3064bd791 upstream.
+
+When a replacement operation completes there is a small window
+when the original device is marked 'faulty' and the replacement
+still looks like a replacement.  The faulty should be removed and
+the replacement moved in place very quickly, bit it isn't instant.
+
+So the code write out to the array must handle the possibility that
+the only working device for some slot in the replacement - but it
+doesn't.  If the primary device is faulty it just gives up.  This
+can lead to corruption.
+
+So make the code more robust: if either  the primary or the
+replacement is present and working, write to them.  Only when
+neither are present do we give up.
+
+This bug has been present since replacement was introduced in
+3.3, so it is suitable for any -stable kernel since then.
+
+Reported-by: "George Spelvin" <linux@horizon.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+[ herton: hairy code adjustment on 3rd hunk (conf->copies for loop) ]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/md/raid10.c |  113 +++++++++++++++++++++++++++------------------------
+ 1 file changed, 59 insertions(+), 54 deletions(-)
+
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 17fae37..0920adf 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1267,18 +1267,21 @@ retry_write:
+ 			blocked_rdev = rrdev;
+ 			break;
+ 		}
++		if (rdev && (test_bit(Faulty, &rdev->flags)
++			     || test_bit(Unmerged, &rdev->flags)))
++			rdev = NULL;
+ 		if (rrdev && (test_bit(Faulty, &rrdev->flags)
+ 			      || test_bit(Unmerged, &rrdev->flags)))
+ 			rrdev = NULL;
+ 
+ 		r10_bio->devs[i].bio = NULL;
+ 		r10_bio->devs[i].repl_bio = NULL;
+-		if (!rdev || test_bit(Faulty, &rdev->flags) ||
+-		    test_bit(Unmerged, &rdev->flags)) {
++
++		if (!rdev && !rrdev) {
+ 			set_bit(R10BIO_Degraded, &r10_bio->state);
+ 			continue;
+ 		}
+-		if (test_bit(WriteErrorSeen, &rdev->flags)) {
++		if (rdev && test_bit(WriteErrorSeen, &rdev->flags)) {
+ 			sector_t first_bad;
+ 			sector_t dev_sector = r10_bio->devs[i].addr;
+ 			int bad_sectors;
+@@ -1320,8 +1323,10 @@ retry_write:
+ 					max_sectors = good_sectors;
+ 			}
+ 		}
+-		r10_bio->devs[i].bio = bio;
+-		atomic_inc(&rdev->nr_pending);
++		if (rdev) {
++			r10_bio->devs[i].bio = bio;
++			atomic_inc(&rdev->nr_pending);
++		}
+ 		if (rrdev) {
+ 			r10_bio->devs[i].repl_bio = bio;
+ 			atomic_inc(&rrdev->nr_pending);
+@@ -1377,58 +1382,58 @@ retry_write:
+ 	for (i = 0; i < conf->copies; i++) {
+ 		struct bio *mbio;
+ 		int d = r10_bio->devs[i].devnum;
+-		if (!r10_bio->devs[i].bio)
+-			continue;
+-
+-		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
+-		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
+-			    max_sectors);
+-		r10_bio->devs[i].bio = mbio;
+-
+-		mbio->bi_sector	= (r10_bio->devs[i].addr+
+-				   choose_data_offset(r10_bio,
+-						      conf->mirrors[d].rdev));
+-		mbio->bi_bdev = conf->mirrors[d].rdev->bdev;
+-		mbio->bi_end_io	= raid10_end_write_request;
+-		mbio->bi_rw = WRITE | do_sync | do_fua;
+-		mbio->bi_private = r10_bio;
+-
+-		atomic_inc(&r10_bio->remaining);
+-		spin_lock_irqsave(&conf->device_lock, flags);
+-		bio_list_add(&conf->pending_bio_list, mbio);
+-		conf->pending_count++;
+-		spin_unlock_irqrestore(&conf->device_lock, flags);
+-		if (!mddev_check_plugged(mddev))
+-			md_wakeup_thread(mddev->thread);
+-
+-		if (!r10_bio->devs[i].repl_bio)
+-			continue;
++		if (r10_bio->devs[i].bio) {
++			struct md_rdev *rdev = conf->mirrors[d].rdev;
++			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
++			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
++				    max_sectors);
++			r10_bio->devs[i].bio = mbio;
++
++			mbio->bi_sector	= (r10_bio->devs[i].addr+
++					   choose_data_offset(r10_bio,
++							      rdev));
++			mbio->bi_bdev = rdev->bdev;
++			mbio->bi_end_io = raid10_end_write_request;
++			mbio->bi_rw = WRITE | do_sync | do_fua;
++			mbio->bi_private = r10_bio;
+ 
+-		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
+-		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
+-			    max_sectors);
+-		r10_bio->devs[i].repl_bio = mbio;
++			atomic_inc(&r10_bio->remaining);
++			spin_lock_irqsave(&conf->device_lock, flags);
++			bio_list_add(&conf->pending_bio_list, mbio);
++			conf->pending_count++;
++			spin_unlock_irqrestore(&conf->device_lock, flags);
++			if (!mddev_check_plugged(mddev))
++				md_wakeup_thread(mddev->thread);
++		}
+ 
+-		/* We are actively writing to the original device
+-		 * so it cannot disappear, so the replacement cannot
+-		 * become NULL here
+-		 */
+-		mbio->bi_sector	= (r10_bio->devs[i].addr +
+-				   choose_data_offset(
+-					   r10_bio,
+-					   conf->mirrors[d].replacement));
+-		mbio->bi_bdev = conf->mirrors[d].replacement->bdev;
+-		mbio->bi_end_io	= raid10_end_write_request;
+-		mbio->bi_rw = WRITE | do_sync | do_fua;
+-		mbio->bi_private = r10_bio;
++		if (r10_bio->devs[i].repl_bio) {
++			struct md_rdev *rdev = conf->mirrors[d].replacement;
++			if (rdev == NULL) {
++				/* Replacement just got moved to main 'rdev' */
++				smp_mb();
++				rdev = conf->mirrors[d].rdev;
++			}
++			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
++			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
++				    max_sectors);
++			r10_bio->devs[i].repl_bio = mbio;
++
++			mbio->bi_sector = (r10_bio->devs[i].addr +
++					   choose_data_offset(
++						   r10_bio, rdev));
++			mbio->bi_bdev = rdev->bdev;
++			mbio->bi_end_io = raid10_end_write_request;
++			mbio->bi_rw = WRITE | do_sync | do_fua;
++			mbio->bi_private = r10_bio;
+ 
+-		atomic_inc(&r10_bio->remaining);
+-		spin_lock_irqsave(&conf->device_lock, flags);
+-		bio_list_add(&conf->pending_bio_list, mbio);
+-		conf->pending_count++;
+-		spin_unlock_irqrestore(&conf->device_lock, flags);
+-		if (!mddev_check_plugged(mddev))
+-			md_wakeup_thread(mddev->thread);
++			atomic_inc(&r10_bio->remaining);
++			spin_lock_irqsave(&conf->device_lock, flags);
++			bio_list_add(&conf->pending_bio_list, mbio);
++			conf->pending_count++;
++			spin_unlock_irqrestore(&conf->device_lock, flags);
++			if (!mddev_check_plugged(mddev))
++				md_wakeup_thread(mddev->thread);
++		}
+ 	}
+ 
+ 	/* Don't remove the bias on 'remaining' (one_write_done) until
+-- 
+1.7.9.5
 
