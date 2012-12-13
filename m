@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab2LMOWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:22:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45028 "EHLO
+	id S933303Ab2LMONn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:13:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45018 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933305Ab2LMONo (ORCPT
+	with ESMTP id S933220Ab2LMONh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:13:44 -0500
+	Thu, 13 Dec 2012 09:13:37 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Cyril Brulebois <kibi@debian.org>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 209/241] netfilter: Mark SYN/ACK packets as invalid from original direction
-Date: Thu, 13 Dec 2012 11:59:34 -0200
-Message-Id: <1355407206-17100-210-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 207/241] r8169: Fix WoL on RTL8168d/8111d.
+Date: Thu, 13 Dec 2012 11:59:32 -0200
+Message-Id: <1355407206-17100-208-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,58 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Cyril Brulebois <kibi@debian.org>
 
-commit 64f509ce71b08d037998e93dd51180c19b2f464c upstream.
+commit b00e69dee4ccbb3a19989e3d4f1385bc2e3406cd upstream.
 
-Clients should not send such packets. By accepting them, we open
-up a hole by wich ephemeral ports can be discovered in an off-path
-attack.
+This regression was spotted between Debian squeeze and Debian wheezy
+kernels (respectively based on 2.6.32 and 3.2). More info about
+Wake-on-LAN issues with Realtek's 816x chipsets can be found in the
+following thread: http://marc.info/?t=132079219400004
 
-See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
-http://arxiv.org/abs/1201.2074
+Probable regression from d4ed95d796e5126bba51466dc07e287cebc8bd19;
+more chipsets are likely affected.
 
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Tested on top of a 3.2.23 kernel.
+
+Reported-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Tested-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Hinted-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Cyril Brulebois <kibi@debian.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/netfilter/nf_conntrack_proto_tcp.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
-index 21ff1a9..6638ad5 100644
---- a/net/netfilter/nf_conntrack_proto_tcp.c
-+++ b/net/netfilter/nf_conntrack_proto_tcp.c
-@@ -158,21 +158,18 @@ static const u8 tcp_conntracks[2][6][TCP_CONNTRACK_MAX] = {
-  *	sCL -> sSS
-  */
- /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sS2	*/
--/*synack*/ { sIV, sIV, sIG, sIG, sIG, sIG, sIG, sIG, sIG, sSR },
-+/*synack*/ { sIV, sIV, sSR, sIV, sIV, sIV, sIV, sIV, sIV, sSR },
- /*
-  *	sNO -> sIV	Too late and no reason to do anything
-  *	sSS -> sIV	Client can't send SYN and then SYN/ACK
-  *	sS2 -> sSR	SYN/ACK sent to SYN2 in simultaneous open
-- *	sSR -> sIG
-- *	sES -> sIG	Error: SYNs in window outside the SYN_SENT state
-- *			are errors. Receiver will reply with RST
-- *			and close the connection.
-- *			Or we are not in sync and hold a dead connection.
-- *	sFW -> sIG
-- *	sCW -> sIG
-- *	sLA -> sIG
-- *	sTW -> sIG
-- *	sCL -> sIG
-+ *	sSR -> sSR	Late retransmitted SYN/ACK in simultaneous open
-+ *	sES -> sIV	Invalid SYN/ACK packets sent by the client
-+ *	sFW -> sIV
-+ *	sCW -> sIV
-+ *	sLA -> sIV
-+ *	sTW -> sIV
-+ *	sCL -> sIV
-  */
- /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sS2	*/
- /*fin*/    { sIV, sIV, sFW, sFW, sLA, sLA, sLA, sTW, sCL, sIV },
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index e19e1f1..575b79c 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3601,6 +3601,8 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 
+ 	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_25:
++	case RTL_GIGA_MAC_VER_26:
+ 	case RTL_GIGA_MAC_VER_29:
+ 	case RTL_GIGA_MAC_VER_30:
+ 	case RTL_GIGA_MAC_VER_32:
 -- 
 1.7.9.5
 
