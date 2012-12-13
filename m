@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab2LMOLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:11:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44813 "EHLO
+	id S933015Ab2LMObr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:31:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab2LMOLO (ORCPT
+	with ESMTP id S932976Ab2LMOLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:11:14 -0500
+	Thu, 13 Dec 2012 09:11:10 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 169/241] sparc64: Like x86 we should check current->mm during perf backtrace generation.
-Date: Thu, 13 Dec 2012 11:58:54 -0200
-Message-Id: <1355407206-17100-170-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 168/241] sparc64: fix ptrace interaction with force_successful_syscall_return()
+Date: Thu, 13 Dec 2012 11:58:53 -0200
+Message-Id: <1355407206-17100-169-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,53 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 08280e6c4c2e8049ac61d9e8e3536ec1df629c0d upstream.
+commit 55c2770e413e96871147b9406a9c41fe9bc5209c upstream.
 
-If the MM is not active, only report the top-level PC.  Do not try to
-access the address space.
+we want syscall_trace_leave() called on exit from any syscall;
+skipping its call in case we'd done force_successful_syscall_return()
+is broken...
 
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/sparc/kernel/perf_event.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/syscalls.S |   32 ++++++++++++++------------------
+ 1 file changed, 14 insertions(+), 18 deletions(-)
 
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 5713957..b0cce26 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1426,8 +1426,6 @@ static void perf_callchain_user_64(struct perf_callchain_entry *entry,
- {
- 	unsigned long ufp;
+diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
+index 1d7e274..7f5f65d 100644
+--- a/arch/sparc/kernel/syscalls.S
++++ b/arch/sparc/kernel/syscalls.S
+@@ -212,24 +212,20 @@ linux_sparc_syscall:
+ 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
+ ret_sys_call:
+ 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
+-	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+ 	sra	%o0, 0, %o0
+ 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
+ 	sllx	%g2, 32, %g2
  
--	perf_callchain_store(entry, regs->tpc);
+-	/* Check if force_successful_syscall_return()
+-	 * was invoked.
+-	 */
+-	ldub	[%g6 + TI_SYS_NOERROR], %l2
+-	brnz,a,pn %l2, 80f
+-	 stb	%g0, [%g6 + TI_SYS_NOERROR]
 -
- 	ufp = regs->u_regs[UREG_I6] + STACK_BIAS;
- 	do {
- 		struct sparc_stackf *usf, sf;
-@@ -1448,8 +1446,6 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
- {
- 	unsigned long ufp;
+ 	cmp	%o0, -ERESTART_RESTARTBLOCK
+ 	bgeu,pn	%xcc, 1f
+-	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
+-80:
++	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
++	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
++
++2:
++	stb	%g0, [%g6 + TI_SYS_NOERROR]
+ 	/* System call success, clear Carry condition code. */
+ 	andn	%g3, %g2, %g3
++3:
+ 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
+ 	bne,pn	%icc, linux_syscall_trace2
+ 	 add	%l1, 0x4, %l2			! npc = npc+4
+@@ -238,20 +234,20 @@ ret_sys_call:
+ 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
  
--	perf_callchain_store(entry, regs->tpc);
--
- 	ufp = regs->u_regs[UREG_I6] & 0xffffffffUL;
- 	do {
- 		struct sparc_stackf32 *usf, sf;
-@@ -1468,6 +1464,11 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
- void
- perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- {
-+	perf_callchain_store(entry, regs->tpc);
-+
-+	if (!current->mm)
-+		return;
-+
- 	flushw_user();
- 	if (test_thread_flag(TIF_32BIT))
- 		perf_callchain_user_32(entry, regs);
+ 1:
++	/* Check if force_successful_syscall_return()
++	 * was invoked.
++	 */
++	ldub	[%g6 + TI_SYS_NOERROR], %l2
++	brnz,pn %l2, 2b
++	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+ 	/* System call failure, set Carry condition code.
+ 	 * Also, get abs(errno) to return to the process.
+ 	 */
+-	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
+ 	sub	%g0, %o0, %o0
+-	or	%g3, %g2, %g3
+ 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
+-	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
+-	bne,pn	%icc, linux_syscall_trace2
+-	 add	%l1, 0x4, %l2			! npc = npc+4
+-	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
++	ba,pt	%xcc, 3b
++	 or	%g3, %g2, %g3
+ 
+-	b,pt	%xcc, rtrap
+-	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
+ linux_syscall_trace2:
+ 	call	syscall_trace_leave
+ 	 add	%sp, PTREGS_OFF, %o0
 -- 
 1.7.9.5
 
