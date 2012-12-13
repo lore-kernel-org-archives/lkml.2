@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab2LMO7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:59:54 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47826 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756143Ab2LMO7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:59:51 -0500
-Date: Thu, 13 Dec 2012 19:59:07 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] uprobes: Kill UPROBE_RUN_HANDLER flag
-Message-ID: <20121213142907.GD3902@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121124180213.GA30963@redhat.com>
- <20121124180233.GA30990@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121124180233.GA30990@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121314-7182-0000-0000-000003C36499
+	id S1756207Ab2LMPAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:00:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44199 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab2LMOD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:03:56 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel J Blueman <daniel@quora.org>, Takashi Iwai <tiwai@suse.de>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 052/241] ALSA: HDA: Fix digital microphone on CS420x
+Date: Thu, 13 Dec 2012 11:56:57 -0200
+Message-Id: <1355407206-17100-53-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-11-24 19:02:33]:
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> Simply remove UPROBE_RUN_HANDLER and the corresponding code.
-> 
-> It can only help if uprobe has a single consumer, and in fact
-> it is no longer needed after handler_chain() was changed to use
-> ->register_rwsem, we simply can not race with uprobe_register().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+------------------
 
+From: Daniel J Blueman <daniel@quora.org>
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+commit 16337e028a6dae9fbdd718c0d42161540a668ff3 upstream.
 
-> ---
->  kernel/events/uprobes.c |   23 +++++------------------
->  1 files changed, 5 insertions(+), 18 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 873c993..97c3874 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -83,10 +83,8 @@ static atomic_t uprobe_events = ATOMIC_INIT(0);
-> 
->  /* Have a copy of original instruction */
->  #define UPROBE_COPY_INSN	0
-> -/* Dont run handlers when first register/ last unregister in progress*/
-> -#define UPROBE_RUN_HANDLER	1
->  /* Can skip singlestep */
-> -#define UPROBE_SKIP_SSTEP	2
-> +#define UPROBE_SKIP_SSTEP	1
-> 
->  struct uprobe {
->  	struct rb_node		rb_node;	/* node in the rb tree */
-> @@ -475,9 +473,6 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  {
->  	struct uprobe_consumer *uc;
-> 
-> -	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
-> -		return;
-> -
->  	down_read(&uprobe->register_rwsem);
->  	for (uc = uprobe->consumers; uc; uc = uc->next)
->  		uc->handler(uc, regs);
-> @@ -825,13 +820,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
-> 
->  static int __uprobe_register(struct uprobe *uprobe, struct uprobe_consumer *uc)
->  {
-> -	int err;
-> -
->  	consumer_add(uprobe, uc);
-> -	err = register_for_each_vma(uprobe, true);
-> -	if (!err) /* TODO: pointless unless the first consumer */
-> -		set_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
-> -	return err;
-> +	return register_for_each_vma(uprobe, true);
->  }
-> 
->  static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
-> @@ -842,12 +832,9 @@ static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *u
->  		return;
-> 
->  	err = register_for_each_vma(uprobe, false);
-> -	if (!uprobe->consumers) {
-> -		clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
-> -		/* TODO : cant unregister? schedule a worker thread */
-> -		if (!err)
-> -			delete_uprobe(uprobe);
-> -	}
-> +	/* TODO : cant unregister? schedule a worker thread */
-> +	if (!uprobe->consumers && !err)
-> +		delete_uprobe(uprobe);
->  }
-> 
->  /*
-> -- 
-> 1.5.5.1
-> 
+Correctly enable the digital microphones with the right bits in the
+right coeffecient registers on Cirrus CS4206/7 codecs. It also
+prevents misconfiguring ADC1/2.
+
+This fixes the digital mic on the Macbook Pro 10,1/Retina.
+
+Based-on-patch-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ herton: unfuzz patch ]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ sound/pci/hda/patch_cirrus.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/sound/pci/hda/patch_cirrus.c b/sound/pci/hda/patch_cirrus.c
+index d31497f..f61c6c3 100644
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -96,8 +96,8 @@ enum {
+ #define CS420X_VENDOR_NID	0x11
+ #define CS_DIG_OUT1_PIN_NID	0x10
+ #define CS_DIG_OUT2_PIN_NID	0x15
+-#define CS_DMIC1_PIN_NID	0x12
+-#define CS_DMIC2_PIN_NID	0x0e
++#define CS_DMIC1_PIN_NID	0x0e
++#define CS_DMIC2_PIN_NID	0x12
+ 
+ /* coef indices */
+ #define IDX_SPDIF_STAT		0x0000
+@@ -1074,14 +1074,18 @@ static void init_input(struct hda_codec *codec)
+ 			cs_automic(codec);
+ 
+ 		coef = 0x000a; /* ADC1/2 - Digital and Analog Soft Ramp */
++		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
++
++		coef = cs_vendor_coef_get(codec, IDX_BEEP_CFG);
+ 		if (is_active_pin(codec, CS_DMIC2_PIN_NID))
+-			coef |= 0x0500; /* DMIC2 2 chan on, GPIO1 off */
++			coef |= 1 << 4; /* DMIC2 2 chan on, GPIO1 off */
+ 		if (is_active_pin(codec, CS_DMIC1_PIN_NID))
+-			coef |= 0x1800; /* DMIC1 2 chan on, GPIO0 off
++			coef |= 1 << 3; /* DMIC1 2 chan on, GPIO0 off
+ 					 * No effect if SPDIF_OUT2 is
+ 					 * selected in IDX_SPDIF_CTL.
+ 					*/
+-		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
++
++		cs_vendor_coef_set(codec, IDX_BEEP_CFG, coef);
+ 	} else {
+ 		if (spec->mic_detect)
+ 			cs_automic(codec);
+-- 
+1.7.9.5
 
