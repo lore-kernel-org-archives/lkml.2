@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2LMWHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:07:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26684 "EHLO
+	id S1756701Ab2LMWHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:07:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26669 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756481Ab2LMWCx (ORCPT
+	with ESMTP id S1756639Ab2LMWCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:53 -0500
+	Thu, 13 Dec 2012 17:02:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 15/27] x86, kexec: set ident mapping for kernel that is above max_pfn
-Date: Thu, 13 Dec 2012 14:02:09 -0800
-Message-Id: <1355436141-8668-16-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Zachary Amsden <zamsden@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH v6 04/27] x86, boot: Move lldt/ltr out of 64bit code section
+Date: Thu, 13 Dec 2012 14:01:58 -0800
+Message-Id: <1355436141-8668-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When first kernel is booted with memmap= or mem=  to limit max_pfn.
-kexec can load second kernel above that max_pfn.
+commit 08da5a2ca
 
-We need to set ident mapping for whole image in this case not just
-for first 2M.
+    x86_64: Early segment setup for VT
+
+add lldt/ltr to clean more segments.
+
+Those code are put in code64, and it is using gdt that is only
+loaded from code32 path.
+
+That breaks booting with 64bit bootloader that does not go through
+code32 path. It get at startup_64 directly,  and it has different
+gdt.
+
+Move those lines into code32 after their gdt is loaded.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Zachary Amsden <zamsden@gmail.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/machine_kexec_64.c |   43 +++++++++++++++++++++++++++++++-----
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/head_64.S |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index b3ea9db..be14ee1 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -56,6 +56,25 @@ out:
- 	return result;
- }
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index fb984c0..5c80b94 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -154,6 +154,12 @@ ENTRY(startup_32)
+ 	btsl	$_EFER_LME, %eax
+ 	wrmsr
  
-+static int ident_mapping_init(struct kimage *image, pgd_t *level4p,
-+				unsigned long mstart, unsigned long mend)
-+{
-+	int result;
-+
-+	mstart = round_down(mstart, PMD_SIZE);
-+	mend   = round_up(mend - 1, PMD_SIZE);
-+
-+	while (mstart < mend) {
-+		result = init_one_level2_page(image, level4p, mstart);
-+		if (result)
-+			return result;
-+
-+		mstart += PMD_SIZE;
-+	}
-+
-+	return 0;
-+}
-+
- static void init_level2_page(pmd_t *level2p, unsigned long addr)
- {
- 	unsigned long end_addr;
-@@ -184,22 +203,34 @@ err:
- 	return result;
- }
- 
--
- static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
- {
-+	unsigned long mstart, mend;
- 	pgd_t *level4p;
- 	int result;
-+	int i;
-+
- 	level4p = (pgd_t *)__va(start_pgtable);
- 	result = init_level4_page(image, level4p, 0, max_pfn << PAGE_SHIFT);
- 	if (result)
- 		return result;
++	/* After gdt is loaded */
++	xorl	%eax, %eax
++	lldt	%ax
++	movl    $0x20, %eax
++	ltr	%ax
 +
  	/*
--	 * image->start may be outside 0 ~ max_pfn, for example when
--	 * jump back to original kernel from kexeced kernel
-+	 * segments's mem ranges could be outside 0 ~ max_pfn,
-+	 * for example when jump back to original kernel from kexeced kernel.
-+	 * or first kernel is booted with user mem map, and second kernel
-+	 * could be loaded out of that range.
- 	 */
--	result = init_one_level2_page(image, level4p, image->start);
--	if (result)
--		return result;
-+	for (i = 0; i < image->nr_segments; i++) {
-+		mstart = image->segment[i].mem;
-+		mend   = mstart + image->segment[i].memsz;
-+
-+		result = ident_mapping_init(image, level4p, mstart, mend);
-+
-+		if (result)
-+			return result;
-+	}
-+
- 	return init_transition_pgtable(image, level4p);
- }
+ 	 * Setup for the jump to 64bit mode
+ 	 *
+@@ -239,9 +245,6 @@ preferred_addr:
+ 	movl	%eax, %ss
+ 	movl	%eax, %fs
+ 	movl	%eax, %gs
+-	lldt	%ax
+-	movl    $0x20, %eax
+-	ltr	%ax
  
+ 	/*
+ 	 * Compute the decompressed kernel start address.  It is where
 -- 
 1.7.10.4
 
