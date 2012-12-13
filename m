@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab2LMOfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:35:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44731 "EHLO
+	id S932899Ab2LMOfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:35:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44719 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932758Ab2LMOKS (ORCPT
+	with ESMTP id S932840Ab2LMOKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:10:18 -0500
+	Thu, 13 Dec 2012 09:10:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Duncan Laurie <dlaurie@chromium.org>, Olof Johansson <olofj@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 154/241] x86, fpu: Avoid FPU lazy restore after suspend
-Date: Thu, 13 Dec 2012 11:58:39 -0200
-Message-Id: <1355407206-17100-155-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 149/241] writeback: put unused inodes to LRU after writeback completion
+Date: Thu, 13 Dec 2012 11:58:34 -0200
+Message-Id: <1355407206-17100-150-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,84 +31,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent Palatin <vpalatin@chromium.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 644c154186386bb1fa6446bc5e037b9ed098db46 upstream.
+commit 4eff96dd5283a102e0c1cac95247090be74a38ed upstream.
 
-When a cpu enters S3 state, the FPU state is lost.
-After resuming for S3, if we try to lazy restore the FPU for a process running
-on the same CPU, this will result in a corrupted FPU context.
+Commit 169ebd90131b ("writeback: Avoid iput() from flusher thread")
+removed iget-iput pair from inode writeback.  As a side effect, inodes
+that are dirty during iput_final() call won't be ever added to inode LRU
+(iput_final() doesn't add dirty inodes to LRU and later when the inode
+is cleaned there's noone to add the inode there).  Thus inodes are
+effectively unreclaimable until someone looks them up again.
 
-Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
-so nobody will try to lazy restore a state which doesn't exist in the hardware.
+The practical effect of this bug is limited by the fact that inodes are
+pinned by a dentry for long enough that the inode gets cleaned.  But
+still the bug can have nasty consequences leading up to OOM conditions
+under certain circumstances.  Following can easily reproduce the
+problem:
 
-Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
-by doing thousands of suspend/resume cycles with 4 processes doing FPU
-operations running. Without the patch, a process is killed after a
-few hundreds cycles by a SIGFPE.
+  for (( i = 0; i < 1000; i++ )); do
+    mkdir $i
+    for (( j = 0; j < 1000; j++ )); do
+      touch $i/$j
+      echo 2 > /proc/sys/vm/drop_caches
+    done
+  done
 
-Cc: Duncan Laurie <dlaurie@chromium.org>
-Cc: Olof Johansson <olofj@chromium.org>
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-Link: http://lkml.kernel.org/r/1354306532-1014-1-git-send-email-vpalatin@chromium.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+then one needs to run 'sync; ls -lR' to make inodes reclaimable again.
+
+We fix the issue by inserting unused clean inodes into the LRU after
+writeback finishes in inode_sync_complete().
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reported-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
- arch/x86/kernel/smpboot.c           |    5 +++++
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ fs/fs-writeback.c |    2 ++
+ fs/inode.c        |   16 ++++++++++++++--
+ fs/internal.h     |    1 +
+ 3 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 75f4c6d..04cb0f8 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -334,14 +334,17 @@ static inline void __thread_fpu_begin(struct task_struct *tsk)
- typedef struct { int preload; } fpu_switch_t;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index e2901ab..bf7e15d 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -233,6 +233,8 @@ static void requeue_io(struct inode *inode, struct bdi_writeback *wb)
+ static void inode_sync_complete(struct inode *inode)
+ {
+ 	inode->i_state &= ~I_SYNC;
++	/* If inode is clean an unused, put it into LRU now... */
++	inode_add_lru(inode);
+ 	/* Waiters must see I_SYNC cleared before being woken up */
+ 	smp_mb();
+ 	wake_up_bit(&inode->i_state, __I_SYNC);
+diff --git a/fs/inode.c b/fs/inode.c
+index c99163b..6d5a282 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -408,6 +408,19 @@ static void inode_lru_list_add(struct inode *inode)
+ 	spin_unlock(&inode->i_sb->s_inode_lru_lock);
+ }
  
- /*
-- * FIXME! We could do a totally lazy restore, but we need to
-- * add a per-cpu "this was the task that last touched the FPU
-- * on this CPU" variable, and the task needs to have a "I last
-- * touched the FPU on this CPU" and check them.
-+ * Must be run with preemption disabled: this clears the fpu_owner_task,
-+ * on this CPU.
-  *
-- * We don't do that yet, so "fpu_lazy_restore()" always returns
-- * false, but some day..
-+ * This will disable any lazy FPU state restore of the current FPU state,
-+ * but if the current thread owns the FPU, it will still be saved by.
-  */
-+static inline void __cpu_disable_lazy_restore(unsigned int cpu)
++/*
++ * Add inode to LRU if needed (inode is unused and clean).
++ *
++ * Needs inode->i_lock held.
++ */
++void inode_add_lru(struct inode *inode)
 +{
-+	per_cpu(fpu_owner_task, cpu) = NULL;
++	if (!(inode->i_state & (I_DIRTY | I_SYNC | I_FREEING | I_WILL_FREE)) &&
++	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
++		inode_lru_list_add(inode);
 +}
 +
- static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
- {
- 	return new == this_cpu_read_stable(fpu_owner_task) &&
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 7bd8a08..6977453 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -66,6 +66,8 @@
- #include <asm/mwait.h>
- #include <asm/apic.h>
- #include <asm/io_apic.h>
-+#include <asm/i387.h>
-+#include <asm/fpu-internal.h>
- #include <asm/setup.h>
- #include <asm/uv/uv.h>
- #include <linux/mc146818rtc.h>
-@@ -826,6 +828,9 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
- 
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
-+	/* the FPU context is blank, nobody can own it */
-+	__cpu_disable_lazy_restore(cpu);
 +
- 	err = do_boot_cpu(apicid, cpu, tidle);
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
+ static void inode_lru_list_del(struct inode *inode)
+ {
+ 	spin_lock(&inode->i_sb->s_inode_lru_lock);
+@@ -1390,8 +1403,7 @@ static void iput_final(struct inode *inode)
+ 
+ 	if (!drop && (sb->s_flags & MS_ACTIVE)) {
+ 		inode->i_state |= I_REFERENCED;
+-		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
+-			inode_lru_list_add(inode);
++		inode_add_lru(inode);
+ 		spin_unlock(&inode->i_lock);
+ 		return;
+ 	}
+diff --git a/fs/internal.h b/fs/internal.h
+index 18bc216..6445381 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -106,6 +106,7 @@ extern int open_check_o_direct(struct file *f);
+  * inode.c
+  */
+ extern spinlock_t inode_sb_list_lock;
++extern void inode_add_lru(struct inode *inode);
+ 
+ /*
+  * fs-writeback.c
 -- 
 1.7.9.5
 
