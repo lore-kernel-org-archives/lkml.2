@@ -1,46 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2LMA0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:26:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28022 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab2LMA0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:26:50 -0500
-Date: Wed, 12 Dec 2012 19:26:46 -0500
-From: Dave Jones <davej@redhat.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Durgadoss R <durgadoss.r@intel.com>
-Subject: Re: Thermal: Add a thermal notifier for user space
-Message-ID: <20121213002646.GA28642@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Zhang Rui <rui.zhang@intel.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Durgadoss R <durgadoss.r@intel.com>
-References: <20121212180547.F12BE6606F0@gitolite.kernel.org>
- <20121212182838.GA7497@redhat.com>
- <1355358199.2276.2.camel@rzhang1-mobl4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355358199.2276.2.camel@rzhang1-mobl4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755357Ab2LMA2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:28:16 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab2LMA2N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 19:28:13 -0500
+Message-ID: <1355358485.1508.2.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH v3 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>,
+        hpa@zytor.com, akpm@linux-foundation.org, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au, lliubbo@gmail.com,
+        jaegeuk.hanse@gmail.com, tony.luck@intel.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Date: Wed, 12 Dec 2012 18:28:05 -0600
+In-Reply-To: <50C85D2D.5030309@cn.fujitsu.com>
+References: <1355193207-21797-1-git-send-email-tangchen@cn.fujitsu.com>
+	   <1355193207-21797-4-git-send-email-tangchen@cn.fujitsu.com>
+	   <50C6A36C.5030606@huawei.com> <50C6A93A.50404@cn.fujitsu.com>
+	  <1355225313.1919.1.camel@kernel.cn.ibm.com> <50C7D490.60409@huawei.com>
+	  <50C849DD.20405@cn.fujitsu.com>
+	 <1355304570.1542.0.camel@kernel.cn.ibm.com>
+	 <50C85D2D.5030309@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 08:23:19AM +0800, Zhang Rui wrote:
- 
- > > 
- > > This is terribly generic sounding.  Might I suggest THERMAL_USER_SPACE instead ?
- > > 
- > Hi, Dave,
- > 
- > You're right. How about the patch attached?
+On Wed, 2012-12-12 at 18:32 +0800, Tang Chen wrote:
+> Hi Simon,
+> 
+> On 12/12/2012 05:29 PM, Simon Jeons wrote:
+> >
+> > Thanks for your clarify.
+> >
+> > Enable PAE on x86 32bit kernel, 8G memory, movablecore=6.5G
+> 
+> Could you please provide more info ?
+> 
+> Such as the whole kernel commondline. And did this happen after
+> you applied these patches ? What is the output without these
+> patches ?
 
-Looks good to me,
+This result is without the patches, I didn't add more kernel
+commandline, just movablecore=6.5G, but output as you see is strange, so
+what happened? 
 
-thanks,
+> 
+> Thanks. :)
+> 
+> >>
+> >> [    0.000000] 8304MB HIGHMEM available.
+> >> [    0.000000] 885MB LOWMEM available.
+> >> [    0.000000]   mapped low ram: 0 - 375fe000
+> >> [    0.000000]   low ram: 0 - 375fe000
+> >> [    0.000000] Zone ranges:
+> >> [    0.000000]   DMA      [mem 0x00010000-0x00ffffff]
+> >> [    0.000000]   Normal   [mem 0x01000000-0x375fdfff]
+> >> [    0.000000]   HighMem  [mem 0x375fe000-0x3e5fffff]
+> >> [    0.000000] Movable zone start for each node
+> >> [    0.000000] Early memory node ranges
+> >> [    0.000000]   node   0: [mem 0x00010000-0x0009cfff]
+> >> [    0.000000]   node   0: [mem 0x00100000-0x1fffffff]
+> >> [    0.000000]   node   0: [mem 0x20200000-0x3fffffff]
+> >> [    0.000000]   node   0: [mem 0x40200000-0xb69cbfff]
+> >> [    0.000000]   node   0: [mem 0xb6a46000-0xb6a47fff]
+> >> [    0.000000]   node   0: [mem 0xb6b1c000-0xb6cfffff]
+> >> [    0.000000]   node   0: [mem 0x00000000-0x3e5fffff]
+> >> [    0.000000] On node 0 totalpages: 2051391
+> >> [    0.000000] free_area_init_node: node 0, pgdat c0c26a80,
+> >> node_mem_map
+> >> f19de200
+> >> [    0.000000]   DMA zone: 32 pages used for memmap
+> >> [    0.000000]   DMA zone: 0 pages reserved
+> >> [    0.000000]   DMA zone: 3949 pages, LIFO batch:0
+> >> [    0.000000]   Normal zone: 1740 pages used for memmap
+> >> [    0.000000]   Normal zone: 220466 pages, LIFO batch:31
+> >> [    0.000000]   HighMem zone: 16609 pages used for memmap
+> >> [    0.000000]   HighMem zone: 1808595 pages, LIFO batch:31
+> >
+> > Why zone movable disappear?
+> >
+> >
+> >
+> >
+> 
 
-	Dave
 
