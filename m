@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab2LMO3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:29:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44864 "EHLO
+	id S933061Ab2LMOLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:11:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44848 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933088Ab2LMOLt (ORCPT
+	with ESMTP id S933040Ab2LMOLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:11:49 -0500
+	Thu, 13 Dec 2012 09:11:37 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Zumbiehl <florz@florz.de>, "David S. Miller" <davem@davemloft.net>,
+Cc: Eric Dumazet <edumazet@google.com>, Maxime Bizon <mbizon@freebox.fr>,
+        "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 178/241] vlan: don't deliver frames for unknown vlans to protocols
-Date: Thu, 13 Dec 2012 11:59:03 -0200
-Message-Id: <1355407206-17100-179-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 175/241] net: remove skb recycling
+Date: Thu, 13 Dec 2012 11:59:00 -0200
+Message-Id: <1355407206-17100-176-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,140 +27,495 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Zumbiehl <florz@florz.de>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e upstream.
+commit acb600def2110b1310466c0e485c0d26299898ae upstream.
+commit 66eef59f22275002f621ff9d951886b513d011b3 upstream.
 
-6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
-vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
-there was an rx_handler, as the rx_handler could cause the frame to be received
-on a different (virtual) vlan-capable interface where that vlan might be
-configured.
+Over time, skb recycling infrastructure got litle interest and
+many bugs. Generic rx path skb allocation is now using page
+fragments for efficient GRO / TCP coalescing, and recyling
+a tx skb for rx path is not worth the pain.
 
-As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
-frames for unknown vlans to be delivered to the protocol stack as if they had
-been received untagged.
+Last identified bug is that fat skbs can be recycled
+and it can endup using high order pages after few iterations.
 
-For example, if an ipv6 router advertisement that's tagged for a locally not
-configured vlan is received on an interface with macvlan interfaces attached,
-macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
-macvlan interfaces, which caused it to be passed to the protocol stack, leading
-to ipv6 addresses for the announced prefix being configured even though those
-are completely unusable on the underlying interface.
+With help from Maxime Bizon, who pointed out that commit
+87151b8689d (net: allow pskb_expand_head() to get maximum tailroom)
+introduced this regression for recycled skbs.
 
-The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
-rx_handler, if there is one, sees the frame unchanged, but afterwards,
-before the frame is delivered to the protocol stack, it gets marked whether
-there is an rx_handler or not.
+Instead of fixing this bug, lets remove skb recycling.
 
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
+Drivers wanting really hot skbs should use build_skb() anyway,
+to allocate/populate sk_buff right before netif_receive_skb()
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Maxime Bizon <mbizon@freebox.fr>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ herton: adjust context from 3.6 patch, same as patch for 3.4 ]
+[ herton: adjust context/backport for 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- include/linux/if_vlan.h |    8 ++++----
- net/8021q/vlan_core.c   |   10 ++--------
- net/core/dev.c          |    7 +++++--
- 3 files changed, 11 insertions(+), 14 deletions(-)
+ drivers/net/ethernet/calxeda/xgmac.c              |   19 +--------
+ drivers/net/ethernet/freescale/gianfar.c          |   28 ++----------
+ drivers/net/ethernet/freescale/gianfar.h          |    2 -
+ drivers/net/ethernet/freescale/ucc_geth.c         |   29 +++----------
+ drivers/net/ethernet/freescale/ucc_geth.h         |    2 -
+ drivers/net/ethernet/marvell/mv643xx_eth.c        |   18 +-------
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h      |    1 -
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   20 +--------
+ include/linux/skbuff.h                            |   24 -----------
+ net/core/skbuff.c                                 |   47 ---------------------
+ 10 files changed, 16 insertions(+), 174 deletions(-)
 
-diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-index a810987..561e130 100644
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -82,6 +82,8 @@ static inline int is_vlan_dev(struct net_device *dev)
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index 11f667f..8b0a0e4 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -375,7 +375,6 @@ struct xgmac_priv {
+ 	unsigned int tx_tail;
+ 
+ 	void __iomem *base;
+-	struct sk_buff_head rx_recycle;
+ 	unsigned int dma_buf_sz;
+ 	dma_addr_t dma_rx_phy;
+ 	dma_addr_t dma_tx_phy;
+@@ -674,9 +673,7 @@ static void xgmac_rx_refill(struct xgmac_priv *priv)
+ 		if (priv->rx_skbuff[entry] != NULL)
+ 			continue;
+ 
+-		skb = __skb_dequeue(&priv->rx_recycle);
+-		if (skb == NULL)
+-			skb = netdev_alloc_skb(priv->dev, priv->dma_buf_sz);
++		skb = netdev_alloc_skb(priv->dev, priv->dma_buf_sz);
+ 		if (unlikely(skb == NULL))
+ 			break;
+ 
+@@ -890,17 +887,7 @@ static void xgmac_tx_complete(struct xgmac_priv *priv)
+ 				       desc_get_buf_len(p), DMA_TO_DEVICE);
+ 		}
+ 
+-		/*
+-		 * If there's room in the queue (limit it to size)
+-		 * we add this skb back into the pool,
+-		 * if it's the right size.
+-		 */
+-		if ((skb_queue_len(&priv->rx_recycle) <
+-			DMA_RX_RING_SZ) &&
+-			skb_recycle_check(skb, priv->dma_buf_sz))
+-			__skb_queue_head(&priv->rx_recycle, skb);
+-		else
+-			dev_kfree_skb(skb);
++		dev_kfree_skb(skb);
+ 	}
+ 
+ 	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) >
+@@ -1017,7 +1004,6 @@ static int xgmac_open(struct net_device *dev)
+ 			dev->dev_addr);
+ 	}
+ 
+-	skb_queue_head_init(&priv->rx_recycle);
+ 	memset(&priv->xstats, 0, sizeof(struct xgmac_extra_stats));
+ 
+ 	/* Initialize the XGMAC and descriptors */
+@@ -1054,7 +1040,6 @@ static int xgmac_stop(struct net_device *dev)
+ 		napi_disable(&priv->napi);
+ 
+ 	writel(0, priv->base + XGMAC_DMA_INTR_ENA);
+-	skb_queue_purge(&priv->rx_recycle);
+ 
+ 	/* Disable the MAC core */
+ 	xgmac_mac_disable(priv->base);
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index 7f0183e..ccc2b3b 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -1746,7 +1746,6 @@ static void free_skb_resources(struct gfar_private *priv)
+ 			sizeof(struct rxbd8) * priv->total_rx_ring_size,
+ 			priv->tx_queue[0]->tx_bd_base,
+ 			priv->tx_queue[0]->tx_bd_dma_base);
+-	skb_queue_purge(&priv->rx_recycle);
  }
  
- #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
-+#define vlan_tx_nonzero_tag_present(__skb) \
-+	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
- #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
+ void gfar_start(struct net_device *dev)
+@@ -1921,8 +1920,6 @@ static int gfar_enet_open(struct net_device *dev)
  
- #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
-@@ -91,7 +93,7 @@ extern struct net_device *__vlan_find_dev_deep(struct net_device *real_dev,
- extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
- extern u16 vlan_dev_vlan_id(const struct net_device *dev);
+ 	enable_napi(priv);
  
--extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
-+extern bool vlan_do_receive(struct sk_buff **skb);
- extern struct sk_buff *vlan_untag(struct sk_buff *skb);
+-	skb_queue_head_init(&priv->rx_recycle);
+-
+ 	/* Initialize a bunch of registers */
+ 	init_registers(dev);
  
- extern int vlan_vid_add(struct net_device *dev, unsigned short vid);
-@@ -120,10 +122,8 @@ static inline u16 vlan_dev_vlan_id(const struct net_device *dev)
+@@ -2513,17 +2510,7 @@ static int gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
+ 
+ 		bytes_sent += skb->len;
+ 
+-		/*
+-		 * If there's room in the queue (limit it to rx_buffer_size)
+-		 * we add this skb back into the pool, if it's the right size
+-		 */
+-		if (skb_queue_len(&priv->rx_recycle) < rx_queue->rx_ring_size &&
+-				skb_recycle_check(skb, priv->rx_buffer_size +
+-					RXBUF_ALIGNMENT)) {
+-			gfar_align_skb(skb);
+-			skb_queue_head(&priv->rx_recycle, skb);
+-		} else
+-			dev_kfree_skb_any(skb);
++		dev_kfree_skb_any(skb);
+ 
+ 		tx_queue->tx_skbuff[skb_dirtytx] = NULL;
+ 
+@@ -2590,7 +2577,7 @@ static void gfar_new_rxbdp(struct gfar_priv_rx_q *rx_queue, struct rxbd8 *bdp,
+ static struct sk_buff * gfar_alloc_skb(struct net_device *dev)
+ {
+ 	struct gfar_private *priv = netdev_priv(dev);
+-	struct sk_buff *skb = NULL;
++	struct sk_buff *skb;
+ 
+ 	skb = netdev_alloc_skb(dev, priv->rx_buffer_size + RXBUF_ALIGNMENT);
+ 	if (!skb)
+@@ -2603,14 +2590,7 @@ static struct sk_buff * gfar_alloc_skb(struct net_device *dev)
+ 
+ struct sk_buff * gfar_new_skb(struct net_device *dev)
+ {
+-	struct gfar_private *priv = netdev_priv(dev);
+-	struct sk_buff *skb = NULL;
+-
+-	skb = skb_dequeue(&priv->rx_recycle);
+-	if (!skb)
+-		skb = gfar_alloc_skb(dev);
+-
+-	return skb;
++	return gfar_alloc_skb(dev);
+ }
+ 
+ static inline void count_errors(unsigned short status, struct net_device *dev)
+@@ -2768,7 +2748,7 @@ int gfar_clean_rx_ring(struct gfar_priv_rx_q *rx_queue, int rx_work_limit)
+ 			if (unlikely(!newskb))
+ 				newskb = skb;
+ 			else if (skb)
+-				skb_queue_head(&priv->rx_recycle, skb);
++				dev_kfree_skb(skb);
+ 		} else {
+ 			/* Increment the number of packets */
+ 			rx_queue->stats.rx_packets++;
+diff --git a/drivers/net/ethernet/freescale/gianfar.h b/drivers/net/ethernet/freescale/gianfar.h
+index 2136c7f..27d8aeb 100644
+--- a/drivers/net/ethernet/freescale/gianfar.h
++++ b/drivers/net/ethernet/freescale/gianfar.h
+@@ -1072,8 +1072,6 @@ struct gfar_private {
+ 
+ 	u32 cur_filer_idx;
+ 
+-	struct sk_buff_head rx_recycle;
+-
+ 	/* RX queue filer rule set*/
+ 	struct ethtool_rx_list rx_list;
+ 	struct mutex rx_queue_access;
+diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
+index 9ac14f8..e20f60c 100644
+--- a/drivers/net/ethernet/freescale/ucc_geth.c
++++ b/drivers/net/ethernet/freescale/ucc_geth.c
+@@ -210,14 +210,12 @@ static struct list_head *dequeue(struct list_head *lh)
+ static struct sk_buff *get_new_skb(struct ucc_geth_private *ugeth,
+ 		u8 __iomem *bd)
+ {
+-	struct sk_buff *skb = NULL;
++	struct sk_buff *skb;
+ 
+-	skb = __skb_dequeue(&ugeth->rx_recycle);
++	skb = netdev_alloc_skb(ugeth->ndev,
++			       ugeth->ug_info->uf_info.max_rx_buf_length +
++			       UCC_GETH_RX_DATA_BUF_ALIGNMENT);
+ 	if (!skb)
+-		skb = netdev_alloc_skb(ugeth->ndev,
+-				      ugeth->ug_info->uf_info.max_rx_buf_length +
+-				      UCC_GETH_RX_DATA_BUF_ALIGNMENT);
+-	if (skb == NULL)
+ 		return NULL;
+ 
+ 	/* We need the data buffer to be aligned properly.  We will reserve
+@@ -2021,8 +2019,6 @@ static void ucc_geth_memclean(struct ucc_geth_private *ugeth)
+ 		iounmap(ugeth->ug_regs);
+ 		ugeth->ug_regs = NULL;
+ 	}
+-
+-	skb_queue_purge(&ugeth->rx_recycle);
+ }
+ 
+ static void ucc_geth_set_multi(struct net_device *dev)
+@@ -2231,8 +2227,6 @@ static int ucc_struct_init(struct ucc_geth_private *ugeth)
+ 		return -ENOMEM;
+ 	}
+ 
+-	skb_queue_head_init(&ugeth->rx_recycle);
+-
  	return 0;
  }
  
--static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
-+static inline bool vlan_do_receive(struct sk_buff **skb)
- {
--	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
--		(*skb)->pkt_type = PACKET_OTHERHOST;
- 	return false;
+@@ -3275,12 +3269,7 @@ static int ucc_geth_rx(struct ucc_geth_private *ugeth, u8 rxQ, int rx_work_limit
+ 			if (netif_msg_rx_err(ugeth))
+ 				ugeth_err("%s, %d: ERROR!!! skb - 0x%08x",
+ 					   __func__, __LINE__, (u32) skb);
+-			if (skb) {
+-				skb->data = skb->head + NET_SKB_PAD;
+-				skb->len = 0;
+-				skb_reset_tail_pointer(skb);
+-				__skb_queue_head(&ugeth->rx_recycle, skb);
+-			}
++			dev_kfree_skb(skb);
+ 
+ 			ugeth->rx_skbuff[rxQ][ugeth->skb_currx[rxQ]] = NULL;
+ 			dev->stats.rx_dropped++;
+@@ -3350,13 +3339,7 @@ static int ucc_geth_tx(struct net_device *dev, u8 txQ)
+ 
+ 		dev->stats.tx_packets++;
+ 
+-		if (skb_queue_len(&ugeth->rx_recycle) < RX_BD_RING_LEN &&
+-			     skb_recycle_check(skb,
+-				    ugeth->ug_info->uf_info.max_rx_buf_length +
+-				    UCC_GETH_RX_DATA_BUF_ALIGNMENT))
+-			__skb_queue_head(&ugeth->rx_recycle, skb);
+-		else
+-			dev_kfree_skb(skb);
++		dev_kfree_skb(skb);
+ 
+ 		ugeth->tx_skbuff[txQ][ugeth->skb_dirtytx[txQ]] = NULL;
+ 		ugeth->skb_dirtytx[txQ] =
+diff --git a/drivers/net/ethernet/freescale/ucc_geth.h b/drivers/net/ethernet/freescale/ucc_geth.h
+index f71b3e7..75f3371 100644
+--- a/drivers/net/ethernet/freescale/ucc_geth.h
++++ b/drivers/net/ethernet/freescale/ucc_geth.h
+@@ -1214,8 +1214,6 @@ struct ucc_geth_private {
+ 	/* index of the first skb which hasn't been transmitted yet. */
+ 	u16 skb_dirtytx[NUM_TX_QUEUES];
+ 
+-	struct sk_buff_head rx_recycle;
+-
+ 	struct ugeth_mii_info *mii_info;
+ 	struct phy_device *phydev;
+ 	phy_interface_t phy_interface;
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index f0f06b2..7197e0f 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -412,7 +412,6 @@ struct mv643xx_eth_private {
+ 	u8 work_rx_refill;
+ 
+ 	int skb_size;
+-	struct sk_buff_head rx_recycle;
+ 
+ 	/*
+ 	 * RX state.
+@@ -673,9 +672,7 @@ static int rxq_refill(struct rx_queue *rxq, int budget)
+ 		struct rx_desc *rx_desc;
+ 		int size;
+ 
+-		skb = __skb_dequeue(&mp->rx_recycle);
+-		if (skb == NULL)
+-			skb = netdev_alloc_skb(mp->dev, mp->skb_size);
++		skb = netdev_alloc_skb(mp->dev, mp->skb_size);
+ 
+ 		if (skb == NULL) {
+ 			mp->oom = 1;
+@@ -989,14 +986,7 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
+ 				       desc->byte_cnt, DMA_TO_DEVICE);
+ 		}
+ 
+-		if (skb != NULL) {
+-			if (skb_queue_len(&mp->rx_recycle) <
+-					mp->rx_ring_size &&
+-			    skb_recycle_check(skb, mp->skb_size))
+-				__skb_queue_head(&mp->rx_recycle, skb);
+-			else
+-				dev_kfree_skb(skb);
+-		}
++		dev_kfree_skb(skb);
+ 	}
+ 
+ 	__netif_tx_unlock(nq);
+@@ -2349,8 +2339,6 @@ static int mv643xx_eth_open(struct net_device *dev)
+ 
+ 	napi_enable(&mp->napi);
+ 
+-	skb_queue_head_init(&mp->rx_recycle);
+-
+ 	mp->int_mask = INT_EXT;
+ 
+ 	for (i = 0; i < mp->rxq_count; i++) {
+@@ -2445,8 +2433,6 @@ static int mv643xx_eth_stop(struct net_device *dev)
+ 	mib_counters_update(mp);
+ 	del_timer_sync(&mp->mib_counters_timer);
+ 
+-	skb_queue_purge(&mp->rx_recycle);
+-
+ 	for (i = 0; i < mp->rxq_count; i++)
+ 		rxq_deinit(mp->rxq + i);
+ 	for (i = 0; i < mp->txq_count; i++)
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index dc20c56..e4616a0 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -47,7 +47,6 @@ struct stmmac_priv {
+ 	unsigned int dirty_rx;
+ 	struct sk_buff **rx_skbuff;
+ 	dma_addr_t *rx_skbuff_dma;
+-	struct sk_buff_head rx_recycle;
+ 
+ 	struct net_device *dev;
+ 	dma_addr_t dma_rx_phy;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index ea3003e..810a59e 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -660,18 +660,7 @@ static void stmmac_tx(struct stmmac_priv *priv)
+ 		priv->hw->ring->clean_desc3(p);
+ 
+ 		if (likely(skb != NULL)) {
+-			/*
+-			 * If there's room in the queue (limit it to size)
+-			 * we add this skb back into the pool,
+-			 * if it's the right size.
+-			 */
+-			if ((skb_queue_len(&priv->rx_recycle) <
+-				priv->dma_rx_size) &&
+-				skb_recycle_check(skb, priv->dma_buf_sz))
+-				__skb_queue_head(&priv->rx_recycle, skb);
+-			else
+-				dev_kfree_skb(skb);
+-
++			dev_kfree_skb(skb);
+ 			priv->tx_skbuff[entry] = NULL;
+ 		}
+ 
+@@ -1063,7 +1052,6 @@ static int stmmac_open(struct net_device *dev)
+ 		phy_start(priv->phydev);
+ 
+ 	napi_enable(&priv->napi);
+-	skb_queue_head_init(&priv->rx_recycle);
+ 	netif_start_queue(dev);
+ 
+ 	return 0;
+@@ -1109,7 +1097,6 @@ static int stmmac_release(struct net_device *dev)
+ 		kfree(priv->tm);
+ #endif
+ 	napi_disable(&priv->napi);
+-	skb_queue_purge(&priv->rx_recycle);
+ 
+ 	/* Free the IRQ lines */
+ 	free_irq(dev->irq, dev);
+@@ -1270,10 +1257,7 @@ static inline void stmmac_rx_refill(struct stmmac_priv *priv)
+ 		if (likely(priv->rx_skbuff[entry] == NULL)) {
+ 			struct sk_buff *skb;
+ 
+-			skb = __skb_dequeue(&priv->rx_recycle);
+-			if (skb == NULL)
+-				skb = netdev_alloc_skb_ip_align(priv->dev,
+-								bfsize);
++			skb = netdev_alloc_skb_ip_align(priv->dev, bfsize);
+ 
+ 			if (unlikely(skb == NULL))
+ 				break;
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 642cb73..ce73657 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -579,9 +579,6 @@ static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
+ 	return __alloc_skb(size, priority, 1, NUMA_NO_NODE);
  }
  
-diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
-index 830059d..fe29a64 100644
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -5,7 +5,7 @@
- #include <linux/export.h>
- #include "vlan.h"
+-extern void skb_recycle(struct sk_buff *skb);
+-extern bool skb_recycle_check(struct sk_buff *skb, int skb_size);
+-
+ extern struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src);
+ extern int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask);
+ extern struct sk_buff *skb_clone(struct sk_buff *skb,
+@@ -2550,27 +2547,6 @@ static inline void skb_checksum_none_assert(const struct sk_buff *skb)
  
--bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
-+bool vlan_do_receive(struct sk_buff **skbp)
+ bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
+ 
+-static inline bool skb_is_recycleable(const struct sk_buff *skb, int skb_size)
+-{
+-	if (irqs_disabled())
+-		return false;
+-
+-	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY)
+-		return false;
+-
+-	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
+-		return false;
+-
+-	skb_size = SKB_DATA_ALIGN(skb_size + NET_SKB_PAD);
+-	if (skb_end_offset(skb) < skb_size)
+-		return false;
+-
+-	if (skb_shared(skb) || skb_cloned(skb))
+-		return false;
+-
+-	return true;
+-}
+-
+ /**
+  * skb_head_is_locked - Determine if the skb->head is locked down
+  * @skb: skb to check
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 015f3a7..7ed8ef3 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -572,53 +572,6 @@ void consume_skb(struct sk_buff *skb)
+ }
+ EXPORT_SYMBOL(consume_skb);
+ 
+-/**
+- * 	skb_recycle - clean up an skb for reuse
+- * 	@skb: buffer
+- *
+- * 	Recycles the skb to be reused as a receive buffer. This
+- * 	function does any necessary reference count dropping, and
+- * 	cleans up the skbuff as if it just came from __alloc_skb().
+- */
+-void skb_recycle(struct sk_buff *skb)
+-{
+-	struct skb_shared_info *shinfo;
+-
+-	skb_release_head_state(skb);
+-
+-	shinfo = skb_shinfo(skb);
+-	memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
+-	atomic_set(&shinfo->dataref, 1);
+-
+-	memset(skb, 0, offsetof(struct sk_buff, tail));
+-	skb->data = skb->head + NET_SKB_PAD;
+-	skb_reset_tail_pointer(skb);
+-}
+-EXPORT_SYMBOL(skb_recycle);
+-
+-/**
+- *	skb_recycle_check - check if skb can be reused for receive
+- *	@skb: buffer
+- *	@skb_size: minimum receive buffer size
+- *
+- *	Checks that the skb passed in is not shared or cloned, and
+- *	that it is linear and its head portion at least as large as
+- *	skb_size so that it can be recycled as a receive buffer.
+- *	If these conditions are met, this function does any necessary
+- *	reference count dropping and cleans up the skbuff as if it
+- *	just came from __alloc_skb().
+- */
+-bool skb_recycle_check(struct sk_buff *skb, int skb_size)
+-{
+-	if (!skb_is_recycleable(skb, skb_size))
+-		return false;
+-
+-	skb_recycle(skb);
+-
+-	return true;
+-}
+-EXPORT_SYMBOL(skb_recycle_check);
+-
+ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
  {
- 	struct sk_buff *skb = *skbp;
- 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
- 	struct vlan_pcpu_stats *rx_stats;
- 
- 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
--	if (!vlan_dev) {
--		/* Only the last call to vlan_do_receive() should change
--		 * pkt_type to PACKET_OTHERHOST
--		 */
--		if (vlan_id && last_handler)
--			skb->pkt_type = PACKET_OTHERHOST;
-+	if (!vlan_dev)
- 		return false;
--	}
- 
- 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
- 	if (unlikely(!skb))
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 8b3dee5..4ef7993 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3206,18 +3206,18 @@ another_round:
- ncls:
- #endif
- 
--	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
- 			pt_prev = NULL;
- 		}
--		if (vlan_do_receive(&skb, !rx_handler))
-+		if (vlan_do_receive(&skb))
- 			goto another_round;
- 		else if (unlikely(!skb))
- 			goto out;
- 	}
- 
-+	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
-@@ -3237,6 +3237,9 @@ ncls:
- 		}
- 	}
- 
-+	if (vlan_tx_nonzero_tag_present(skb))
-+		skb->pkt_type = PACKET_OTHERHOST;
-+
- 	/* deliver only exact match when indicated */
- 	null_or_dev = deliver_exact ? skb->dev : NULL;
- 
+ 	new->tstamp		= old->tstamp;
 -- 
 1.7.9.5
 
