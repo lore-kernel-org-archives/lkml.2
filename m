@@ -1,106 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2LMPDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:03:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59641 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756091Ab2LMPC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 10:02:59 -0500
-Date: Thu, 13 Dec 2012 16:02:55 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
-        Shaohua Li <shli@kernel.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Read starvation by sync writes
-Message-ID: <20121213150255.GA21592@quack.suse.cz>
-References: <20121210221222.GA25700@quack.suse.cz>
- <CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com>
- <20121212101108.GC18885@quack.suse.cz>
- <50C8A07B.6040508@kernel.dk>
- <x49vcc7kyza.fsf@segfault.boston.devel.redhat.com>
- <x49obhzkqhy.fsf@segfault.boston.devel.redhat.com>
- <50C9D882.7000808@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C9D882.7000808@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756151Ab2LMPD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:03:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44148 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab2LMODV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:03:21 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Roland Dreier <roland@purestorage.com>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 042/241] iscsi-target: Fix missed wakeup race in TX thread
+Date: Thu, 13 Dec 2012 11:56:47 -0200
+Message-Id: <1355407206-17100-43-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-12-12 14:30:42, Jens Axboe wrote:
-> On 2012-12-12 20:41, Jeff Moyer wrote:
-> > Jeff Moyer <jmoyer@redhat.com> writes:
-> > 
-> >>> I agree. This isn't about scheduling, we haven't even reached that part
-> >>> yet. Back when we split the queues into read vs write, this problem
-> >>> obviously wasn't there. Now we have sync writes and reads, both eating
-> >>> from the same pool. The io scheduler can impact this a bit by forcing
-> >>> reads to must allocate (Jan, which io scheduler are you using?). CFQ
-> >>> does this when it's expecting a request from this process queue.
-> >>>
-> >>> Back in the day, we used to have one list. To avoid a similar problem,
-> >>> we reserved the top of the list for reads. With the batching, it's a bit
-> >>> more complicated. If we make the request allocation (just that, not the
-> >>> scheduling) be read vs write instead of sync vs async, then we have the
-> >>> same issue for sync vs buffered writes.
-> >>>
-> >>> How about something like the below? Due to the nature of sync reads, we
-> >>> should allow a much longer timeout. The batch is really tailored towards
-> >>> writes at the moment. Also shrink the batch count, 32 is pretty large...
-> >>
-> >> Does batching even make sense for dependent reads?  I don't think it
-> >> does.
-> > 
-> > Having just read the batching code in detail, I'd like to ammend this
-> > misguided comment.  Batching logic kicks in when you happen to be lucky
-> > enough to use up the last request.  As such, I'd be surprised if the
-> > patch you posted helped.  Jens, don't you think the writer is way more
-> > likely to become the batcher?  I do agree with shrinking the batch count
-> > to 16, whether or not the rest of the patch goes in.
-> > 
-> >>  Assuming you disagree, then you'll have to justify that fixed
-> >> time value of 2 seconds.  The amount of time between dependent reads
-> >> will vary depending on other I/O sent to the device, the properties of
-> >> the device, the I/O scheduler, and so on.  If you do stick 2 seconds in
-> >> there, please comment it.  Maybe it's time we started keeping track of
-> >> worst case Q->C time?  That could be used to tell worst case latency,
-> >> and adjust magic timeouts like this one.
-> >>
-> >> I'm still thinking about how we might solve this in a cleaner way.
-> > 
-> > The way things stand today, you can do a complete end run around the I/O
-> > scheduler by queueing up enough I/O.  To address that, I think we need
-> > to move to a request list per io_context as Jan had suggested.  That
-> > way, we can keep the logic about who gets to submit I/O when in one
-> > place.
-> > 
-> > Jens, what do you think?
-> 
-> I think that is pretty extreme. We have way too much accounting around
-> this already, and I'd rather just limit the batching than make
-> per-ioc request lists too.
-> 
-> I agree the batch addition isn't super useful for the reads. It really
-> is mostly a writer thing, and the timing reflects that.
-> 
-> The problem is really that the WRITE_SYNC is (for Jan's case) behaving
-> like buffered writes, so it eats up a queue of requests very easily. On
-> the allocation side, the assumption is that WRITE_SYNC behaves like
-> dependent reads. Similar to a dd with oflag=direct, not like a flood of
-> requests. For dependent sync writes, our current behaviour is fine, we
-> treat them like reads. For commits of WRITE_SYNC, they should be treated
-> like async WRITE instead.
-  Yeah. But it's similar to what happens when you run fsync() on a large
-dirty file. That will also submit a lot of WRITE_SYNC requests... kjournald
-could probably use WRITE instead of WRITE_SYNC for large commits. It's just
-that we don't really want to give e.g. DIO a preference over kjournald
-because transaction commit can effectively block any metadata changes on
-the filesystem.
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-								Honza
+------------------
+
+From: Roland Dreier <roland@purestorage.com>
+
+commit d5627acba9ae584cf4928af19f7ddf5f6837de32 upstream.
+
+The sleeping code in iscsi_target_tx_thread() is susceptible to the classic
+missed wakeup race:
+
+ - TX thread finishes handle_immediate_queue() and handle_response_queue(),
+   thinks both queues are empty.
+ - Another thread adds a queue entry and does wake_up_process(), which does
+   nothing because the TX thread is still awake.
+ - TX thread does schedule_timeout() and sleeps forever.
+
+In practice this can kill an iSCSI connection if for example an initiator
+does single-threaded writes and the target misses the wakeup window when
+queueing an R2T; in this case the connection will be stuck until the
+initiator loses patience and does some task management operation (or kills
+the connection entirely).
+
+Fix this by converting to wait_event_interruptible(), which does not
+suffer from this sort of race.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/target/iscsi/iscsi_target.c       |    4 +++-
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
+ drivers/target/iscsi/iscsi_target_util.h  |    1 +
+ 5 files changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 6d1d906..4891cc8 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3733,7 +3733,9 @@ restart:
+ 		 */
+ 		iscsit_thread_check_cpumask(conn, current, 1);
+ 
+-		schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT);
++		wait_event_interruptible(conn->queues_wq,
++					 !iscsit_conn_all_queues_empty(conn) ||
++					 ts->status == ISCSI_THREAD_SET_RESET);
+ 
+ 		if ((ts->status == ISCSI_THREAD_SET_RESET) ||
+ 		     signal_pending(current))
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index 8bb81d68..d76a711 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -485,6 +485,7 @@ struct iscsi_tmr_req {
+ };
+ 
+ struct iscsi_conn {
++	wait_queue_head_t	queues_wq;
+ 	/* Authentication Successful for this connection */
+ 	u8			auth_complete;
+ 	/* State connection is currently in */
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index ae30424..3cb7a4f 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -45,6 +45,7 @@ extern spinlock_t sess_idr_lock;
+ 
+ static int iscsi_login_init_conn(struct iscsi_conn *conn)
+ {
++	init_waitqueue_head(&conn->queues_wq);
+ 	INIT_LIST_HEAD(&conn->conn_list);
+ 	INIT_LIST_HEAD(&conn->conn_cmd_list);
+ 	INIT_LIST_HEAD(&conn->immed_queue_list);
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index b42cdeb..552f45a 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -488,7 +488,7 @@ void iscsit_add_cmd_to_immediate_queue(
+ 	atomic_set(&conn->check_immediate_queue, 1);
+ 	spin_unlock_bh(&conn->immed_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_conn *conn)
+@@ -562,7 +562,7 @@ void iscsit_add_cmd_to_response_queue(
+ 	atomic_inc(&cmd->response_queue_count);
+ 	spin_unlock_bh(&conn->response_queue_lock);
+ 
+-	wake_up_process(conn->thread_set->tx_thread);
++	wake_up(&conn->queues_wq);
+ }
+ 
+ struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *conn)
+@@ -616,6 +616,24 @@ static void iscsit_remove_cmd_from_response_queue(
+ 	}
+ }
+ 
++bool iscsit_conn_all_queues_empty(struct iscsi_conn *conn)
++{
++	bool empty;
++
++	spin_lock_bh(&conn->immed_queue_lock);
++	empty = list_empty(&conn->immed_queue_list);
++	spin_unlock_bh(&conn->immed_queue_lock);
++
++	if (!empty)
++		return empty;
++
++	spin_lock_bh(&conn->response_queue_lock);
++	empty = list_empty(&conn->response_queue_list);
++	spin_unlock_bh(&conn->response_queue_lock);
++
++	return empty;
++}
++
+ void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
+ {
+ 	struct iscsi_queue_req *qr, *qr_tmp;
+diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
+index e1c729b..2ff9bbc 100644
+--- a/drivers/target/iscsi/iscsi_target_util.h
++++ b/drivers/target/iscsi/iscsi_target_util.h
+@@ -25,6 +25,7 @@ extern struct iscsi_queue_req *iscsit_get_cmd_from_immediate_queue(struct iscsi_
+ extern void iscsit_add_cmd_to_response_queue(struct iscsi_cmd *, struct iscsi_conn *, u8);
+ extern struct iscsi_queue_req *iscsit_get_cmd_from_response_queue(struct iscsi_conn *);
+ extern void iscsit_remove_cmd_from_tx_queues(struct iscsi_cmd *, struct iscsi_conn *);
++extern bool iscsit_conn_all_queues_empty(struct iscsi_conn *);
+ extern void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *);
+ extern void iscsit_release_cmd(struct iscsi_cmd *);
+ extern void iscsit_free_cmd(struct iscsi_cmd *);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.5
+
