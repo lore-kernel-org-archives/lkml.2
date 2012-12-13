@@ -1,88 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2LMAwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:52:43 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41773 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab2LMAwl (ORCPT
+	id S1755444Ab2LMAyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:54:54 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:54495 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231Ab2LMAyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:52:41 -0500
-Date: Wed, 12 Dec 2012 16:55:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 00/11] Hot-plug and Online/Offline framework
-Message-ID: <20121213005510.GA9220@kroah.com>
-References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
- <20121212235657.GD22764@kroah.com>
- <1355359176.18964.41.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355359176.18964.41.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Dec 2012 19:54:52 -0500
+Date: Thu, 13 Dec 2012 11:54:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the cpuidle tree
+Message-Id: <20121213115444.c500ea3bdb566b5acdc7c5ff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Dec_2012_11_54_44_+1100_0b1Ca=q84RT4KBsq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 05:39:36PM -0700, Toshi Kani wrote:
-> On Wed, 2012-12-12 at 15:56 -0800, Greg KH wrote:
-> > On Wed, Dec 12, 2012 at 04:17:12PM -0700, Toshi Kani wrote:
-> > > This patchset is an initial prototype of proposed hot-plug framework
-> > > for design review.  The hot-plug framework is designed to provide 
-> > > the common framework for hot-plugging and online/offline operations
-> > > of system devices, such as CPU, Memory and Node.  While this patchset
-> > > only supports ACPI-based hot-plug operations, the framework itself is
-> > > designed to be platform-neural and can support other FW architectures
-> > > as necessary.
-> > > 
-> > > The patchset has not been fully tested yet, esp. for memory hot-plug.
-> > > Any help for testing will be very appreciated since my test setup
-> > > is limited.
-> > > 
-> > > The patchset is based on the linux-next branch of linux-pm.git tree.
-> > > 
-> > > Overview of the Framework
-> > > =========================
-> > 
-> > <snip>
-> > 
-> > Why all the new framework, doesn't the existing bus infrastructure
-> > provide everything you need here?  Shouldn't you just be putting your
-> > cpus and memory sticks on a bus and handle stuff that way?  What makes
-> > these types of devices so unique from all other devices that Linux has
-> > been handling in a dynamic manner (i.e. hotplugging them) for many many
-> > years?
-> > 
-> > Why are you reinventing the wheel?
-> 
-> Good question.  Yes, USB and PCI hotplug operate based on their bus
-> structures.  USB and PCI cards only work under USB and PCI bus
-> controllers.  So, their framework can be composed within the bus
-> structures as you pointed out.
-> 
-> However, system devices such CPU and memory do not have their standard
-> bus.  ACPI allows these system devices to be enumerated, but it does not
-> make ACPI as the HW bus hierarchy for CPU and memory, unlike PCI and
-> USB.  Therefore, CPU and memory modules manage CPU and memory outside of
-> ACPI.  This makes sense because CPU and memory can be used without ACPI.
-> 
-> This leads us an issue when we try to manage system device hotplug
-> within ACPI, because ACPI does not control everything.  This patchset
-> provides a common hotplug framework for system devices, which both ACPI
-> and non-ACPI modules (i.e. CPU and memory modules) can participate and
-> are coordinated for their hotplug operations.  This is analogous to the
-> boot-up sequence, which ACPI and non-ACPI modules can participate to
-> enable CPU and memory.
+--Signature=_Thu__13_Dec_2012_11_54_44_+1100_0b1Ca=q84RT4KBsq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Then create a "virtual" bus and put the devices you wish to control on
-that.  That is what the "system bus" devices were supposed to be, it's
-about time someone took that code and got it all working properly in
-this way, that is why it was created oh so long ago.
+Hi Daniel,
 
-greg k-h
+After merging the cpuidle tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+In file included from drivers/cpuidle/cpuidle.c:23:0:
+drivers/cpuidle/cpuidle.h:74:20: error: redefinition of 'cpuidle_state_is_c=
+oupled'
+drivers/cpuidle/cpuidle.h:44:20: note: previous definition of 'cpuidle_stat=
+e_is_coupled' was here
+drivers/cpuidle/cpuidle.h:80:19: error: redefinition of 'cpuidle_enter_stat=
+e_coupled'
+drivers/cpuidle/cpuidle.h:50:19: note: previous definition of 'cpuidle_ente=
+r_state_coupled' was here
+drivers/cpuidle/cpuidle.h:86:19: error: redefinition of 'cpuidle_coupled_re=
+gister_device'
+drivers/cpuidle/cpuidle.h:56:19: note: previous definition of 'cpuidle_coup=
+led_register_device' was here
+drivers/cpuidle/cpuidle.h:91:20: error: redefinition of 'cpuidle_coupled_un=
+register_device'
+drivers/cpuidle/cpuidle.h:61:20: note: previous definition of 'cpuidle_coup=
+led_unregister_device' was here
+In file included from drivers/cpuidle/governor.c:15:0:
+drivers/cpuidle/cpuidle.h:74:20: error: redefinition of 'cpuidle_state_is_c=
+oupled'
+drivers/cpuidle/cpuidle.h:44:20: note: previous definition of 'cpuidle_stat=
+e_is_coupled' was here
+drivers/cpuidle/cpuidle.h:80:19: error: redefinition of 'cpuidle_enter_stat=
+e_coupled'
+drivers/cpuidle/cpuidle.h:50:19: note: previous definition of 'cpuidle_ente=
+r_state_coupled' was here
+drivers/cpuidle/cpuidle.h:86:19: error: redefinition of 'cpuidle_coupled_re=
+gister_device'
+drivers/cpuidle/cpuidle.h:56:19: note: previous definition of 'cpuidle_coup=
+led_register_device' was here
+drivers/cpuidle/cpuidle.h:91:20: error: redefinition of 'cpuidle_coupled_un=
+register_device'
+drivers/cpuidle/cpuidle.h:61:20: note: previous definition of 'cpuidle_coup=
+led_unregister_device' was here
+
+Caused by a mismerge.  I applied the following merge fix:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 13 Dec 2012 11:52:10 +1100
+Subject: [PATCH] cpuidle: fix mismerge
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/cpuidle/cpuidle.h |   30 ------------------------------
+ 1 file changed, 30 deletions(-)
+
+diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+index f67517e..ee97e96 100644
+--- a/drivers/cpuidle/cpuidle.h
++++ b/drivers/cpuidle/cpuidle.h
+@@ -63,34 +63,4 @@ static inline void cpuidle_coupled_unregister_device(str=
+uct cpuidle_device *dev)
+ }
+ #endif
+=20
+-#ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
+-bool cpuidle_state_is_coupled(struct cpuidle_device *dev,
+-		struct cpuidle_driver *drv, int state);
+-int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+-		struct cpuidle_driver *drv, int next_state);
+-int cpuidle_coupled_register_device(struct cpuidle_device *dev);
+-void cpuidle_coupled_unregister_device(struct cpuidle_device *dev);
+-#else
+-static inline bool cpuidle_state_is_coupled(struct cpuidle_device *dev,
+-		struct cpuidle_driver *drv, int state)
+-{
+-	return false;
+-}
+-
+-static inline int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+-		struct cpuidle_driver *drv, int next_state)
+-{
+-	return -1;
+-}
+-
+-static inline int cpuidle_coupled_register_device(struct cpuidle_device *d=
+ev)
+-{
+-	return 0;
+-}
+-
+-static inline void cpuidle_coupled_unregister_device(struct cpuidle_device=
+ *dev)
+-{
+-}
+-#endif
+-
+ #endif /* __DRIVER_CPUIDLE_H */
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__13_Dec_2012_11_54_44_+1100_0b1Ca=q84RT4KBsq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIbBAEBCAAGBQJQySdUAAoJEECxmPOUX5FEhTkP92D0ZQNpe3acyCAXhfaj3d2a
+4cVpeJ4d6qr8PXFiTlr0Sr3NI8tBzc+9sgwJZ3zu+5patJwbWFZdDYPLCBy9JbwH
+MeJf24ZibY157AgMtWZJee3SBLTW4e5Wpvr7PH5EfgcUdvVtul54pDHxuLY8AIp2
+wkPHb81NPtfaX4FGt9bEt03sgsbTFqapbVY/Bl4anK/8fgpykDjb59nPJeSy5fKG
+2KC7nL0v4cRNt8K0XecFqNll9AQOSo1YH55H+GK/93bYIdmHG3i/uyEA820hKHLH
+SgH6XyNJHIkIJ3/I9VdHMMj3tejv89wc+o8OHq7AAxl2NdvDWkcqEaGqYfAe44Ih
+37NnaEpWqx35Ul8lV21Sm/GWdRz7XHf8vU6NPs6+O1RAgVgbDjl+SVhAdyvohH/8
+cEnhpCJuq7P7N4trvcX8J8FfYnGlnbOw4/mw6ylFXudJpSw7vN5qFZasUh1Uu7mX
+a/3i7V6pS/4SGtdRvN+JwP+rnkAEuTWM4rUOOM3qWWTVlXv+6xSazMu6ybDFTfvt
+lH6Qj3L3Ur1W13LVC9JLQhId/hr/fwlKOX8oSNcv/iitw0YxfT5YfQ/I/PYbFEsQ
+jnMHZI4xE/4YvtWjcJYOxreoldS+cRWxlT0kW8ze3F7KOnXFSZz5CK/2+F70Yprs
+IMrn3KeVADrULcvTd7A=
+=phO5
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_Dec_2012_11_54_44_+1100_0b1Ca=q84RT4KBsq--
