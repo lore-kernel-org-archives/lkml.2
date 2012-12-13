@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2LMNbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 08:31:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49481 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab2LMNbN (ORCPT
+	id S1755412Ab2LMNfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 08:35:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26922 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab2LMNfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 08:31:13 -0500
-Message-ID: <50C9D882.7000808@kernel.dk>
-Date: Thu, 13 Dec 2012 14:30:42 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Jan Kara <jack@suse.cz>, Shaohua Li <shli@kernel.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Read starvation by sync writes
-References: <20121210221222.GA25700@quack.suse.cz> <CANejiEW2+iUVnyV0EV2n=vi_+bjX42SkeT9F6EUV5LkwXH4e0g@mail.gmail.com> <20121212101108.GC18885@quack.suse.cz> <50C8A07B.6040508@kernel.dk> <x49vcc7kyza.fsf@segfault.boston.devel.redhat.com> <x49obhzkqhy.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49obhzkqhy.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Dec 2012 08:35:00 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_aGYK8jRc_AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SI-C17Dh1R0A:10 a=cFc9ES33HgeE0Hcm5gAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355405698.17101.373.camel@gandalf.local.home>
+Subject: Re: [BUG] ftrace: available_filter_functions empty after unloading
+ module
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Piotr Haber <phaber@broadcom.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Dec 2012 08:34:58 -0500
+In-Reply-To: <50C5CB74.10008@broadcom.com>
+References: <50C0B236.4090200@broadcom.com>
+	 <1354817428.17101.10.camel@gandalf.local.home>
+	 <50C1A3A3.8030107@broadcom.com>
+	 <1354888679.17101.36.camel@gandalf.local.home>
+	 <50C5CB74.10008@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-12 20:41, Jeff Moyer wrote:
-> Jeff Moyer <jmoyer@redhat.com> writes:
-> 
->>> I agree. This isn't about scheduling, we haven't even reached that part
->>> yet. Back when we split the queues into read vs write, this problem
->>> obviously wasn't there. Now we have sync writes and reads, both eating
->>> from the same pool. The io scheduler can impact this a bit by forcing
->>> reads to must allocate (Jan, which io scheduler are you using?). CFQ
->>> does this when it's expecting a request from this process queue.
->>>
->>> Back in the day, we used to have one list. To avoid a similar problem,
->>> we reserved the top of the list for reads. With the batching, it's a bit
->>> more complicated. If we make the request allocation (just that, not the
->>> scheduling) be read vs write instead of sync vs async, then we have the
->>> same issue for sync vs buffered writes.
->>>
->>> How about something like the below? Due to the nature of sync reads, we
->>> should allow a much longer timeout. The batch is really tailored towards
->>> writes at the moment. Also shrink the batch count, 32 is pretty large...
->>
->> Does batching even make sense for dependent reads?  I don't think it
->> does.
-> 
-> Having just read the batching code in detail, I'd like to ammend this
-> misguided comment.  Batching logic kicks in when you happen to be lucky
-> enough to use up the last request.  As such, I'd be surprised if the
-> patch you posted helped.  Jens, don't you think the writer is way more
-> likely to become the batcher?  I do agree with shrinking the batch count
-> to 16, whether or not the rest of the patch goes in.
-> 
->>  Assuming you disagree, then you'll have to justify that fixed
->> time value of 2 seconds.  The amount of time between dependent reads
->> will vary depending on other I/O sent to the device, the properties of
->> the device, the I/O scheduler, and so on.  If you do stick 2 seconds in
->> there, please comment it.  Maybe it's time we started keeping track of
->> worst case Q->C time?  That could be used to tell worst case latency,
->> and adjust magic timeouts like this one.
->>
->> I'm still thinking about how we might solve this in a cleaner way.
-> 
-> The way things stand today, you can do a complete end run around the I/O
-> scheduler by queueing up enough I/O.  To address that, I think we need
-> to move to a request list per io_context as Jan had suggested.  That
-> way, we can keep the logic about who gets to submit I/O when in one
-> place.
-> 
-> Jens, what do you think?
+On Mon, 2012-12-10 at 12:45 +0100, Piotr Haber wrote:
 
-I think that is pretty extreme. We have way too much accounting around
-this already, and I'd rather just limit the batching than make
-per-ioc request lists too.
+> > So you unloaded a module that you were tracing, correct? Hmm, the
+> > warning that you hit was an accounting error. The accounting of what
+> > functions are traced and what isn't. For some reason it tried to disable
+> > a function that wasn't being traced.
+> Yes, it happens when i unload a module that i traced before
+> 
+> > Can you easily reproduce this? If so, can you give my your .config and
+> > the steps you used to trigger it.
+> Not 100% but it happens often enough to be annoying
+> Attached is the config
+> As for reproduction, i load the brcmsmac module, add all it symbols to
+> set_ftrace_filter, associate with AP and unload the module
+> nothing fancy, i use 'function' tracer
 
-I agree the batch addition isn't super useful for the reads. It really
-is mostly a writer thing, and the timing reflects that.
+Thanks, I'll see if I can reproduce it.
 
-The problem is really that the WRITE_SYNC is (for Jan's case) behaving
-like buffered writes, so it eats up a queue of requests very easily. On
-the allocation side, the assumption is that WRITE_SYNC behaves like
-dependent reads. Similar to a dd with oflag=direct, not like a flood of
-requests. For dependent sync writes, our current behaviour is fine, we
-treat them like reads. For commits of WRITE_SYNC, they should be treated
-like async WRITE instead.
+> 
+> BTW.
+> is it a feature that when there is a traceon trigger added on a function
+> from module (like: echo 'brcms_free:traceon' > set_ftrace_filter) after
+> module unloading it is not removed?
+> just function name gets changed to symbol address
 
--- 
-Jens Axboe
+Um, ah, yyyeah! Yeah, yeah, feature. Yep that's a feature alright.
+
+But I think it may be deprecated in the near future.
+
+-- Steve
+
 
