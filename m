@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab2LMNKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 08:10:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26488 "EHLO mx1.redhat.com"
+	id S1755612Ab2LMNJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 08:09:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32058 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755682Ab2LMNJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 08:09:59 -0500
+	id S1755582Ab2LMNJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 08:09:47 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,18 +15,21 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 11/14] perf diff: Change diff command to work over multiple data files
-Date: Thu, 13 Dec 2012 14:09:09 +0100
-Message-Id: <1355404152-16523-12-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 07/14] perf hists: Marking dummy hists entries
+Date: Thu, 13 Dec 2012 14:09:05 +0100
+Message-Id: <1355404152-16523-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1355404152-16523-1-git-send-email-jolsa@redhat.com>
 References: <1355404152-16523-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding diff command the flexibility to specify multiple data
-files on input. If not input file is given the standard behaviour
-stands and diff inspects 'perf.data' and 'perf.data.old' files.
+It does not make sense to make some computation (ratio, wdiff),
+when the hist_entry is 'dummy' - added via hists__link.
+
+Adding dummy field to struct hist_entry which indicates
+that it was added by hists__link and avoiding some of
+the processing for such entries.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -37,214 +40,97 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-diff.c | 99 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 66 insertions(+), 33 deletions(-)
+ tools/perf/ui/hist.c   | 21 ++++++++++++++-------
+ tools/perf/util/hist.c |  1 +
+ tools/perf/util/sort.h |  3 +++
+ 3 files changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 3b3d21f..25a41e8 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -44,6 +44,7 @@ struct data__file {
- 	struct perf_session	*session;
- 	const char		*file;
- 	int			 idx;
-+	struct hists		*hists;
- 	struct diff_hpp_fmt	 fmt[PERF_HPP_DIFF__MAX_INDEX];
- };
- 
-@@ -56,6 +57,7 @@ static int data__files_cnt;
- 	     i++, d = &data__files[i])
- 
- #define data__for_each_file(i, d) data__for_each_file_start(i, d, 0)
-+#define data__for_each_file_new(i, d) data__for_each_file_start(i, d, 1)
- 
- static char diff__default_sort_order[] = "dso,symbol";
- static bool force;
-@@ -526,23 +528,19 @@ static void hists__compute_resort(struct hists *hists)
- 	}
- }
- 
--static void hists__process(struct hists *base, struct hists *new)
-+static void hists__process(struct hists *hists)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index a81f0c9..7da98ac 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -200,8 +200,11 @@ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
  {
--	hists__match(base, new);
--
- 	if (show_baseline_only)
--		hists__baseline_only(base);
--	else
--		hists__link(base, new);
-+		hists__baseline_only(hists);
+ 	double percent = baseline_percent(he);
  
- 	if (sort_compute) {
--		hists__precompute(base);
--		hists__compute_resort(base);
-+		hists__precompute(hists);
-+		hists__compute_resort(hists);
- 	} else {
--		hists__output_resort(base);
-+		hists__output_resort(hists);
- 	}
- 
--	hists__fprintf(base, true, 0, 0, stdout);
-+	hists__fprintf(hists, true, 0, 0, stdout);
+-	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%",
+-				      percent);
++	if (!he->dummy)
++		return percent_color_snprintf(hpp->buf, hpp->size,
++					      " %6.2f%%", percent);
++	else
++		return scnprintf(hpp->buf, hpp->size, "        ");
  }
  
- static void data__fprintf(void)
-@@ -562,27 +560,40 @@ static void data__fprintf(void)
+ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+@@ -210,7 +213,10 @@ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	double percent = baseline_percent(he);
+ 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
  
- static void data_process(void)
- {
--	struct perf_evlist *evlist_old = data__files[0].session->evlist;
--	struct perf_evlist *evlist_new = data__files[1].session->evlist;
--	struct perf_evsel *evsel_old;
-+	struct perf_evlist *evlist_base = data__files[0].session->evlist;
-+	struct perf_evsel *evsel_base;
- 	bool first = true;
- 
--	list_for_each_entry(evsel_old, &evlist_old->entries, node) {
--		struct perf_evsel *evsel_new;
-+	list_for_each_entry(evsel_base, &evlist_base->entries, node) {
-+		struct data__file *d;
-+		int i;
- 
--		evsel_new = evsel_match(evsel_old, evlist_new);
--		if (!evsel_new)
--			continue;
-+		data__for_each_file_new(i, d) {
-+			struct perf_evlist *evlist = d->session->evlist;
-+			struct perf_evsel *evsel;
-+
-+			evsel = evsel_match(evsel_base, evlist);
-+			if (!evsel)
-+				continue;
-+
-+			d->hists = &evsel->hists;
-+
-+			hists__match(&evsel_base->hists, &evsel->hists);
-+
-+			if (!show_baseline_only)
-+				hists__link(&evsel_base->hists,
-+					    &evsel->hists);
-+		}
- 
- 		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
--			perf_evsel__name(evsel_old));
-+			perf_evsel__name(evsel_base));
- 
- 		first = false;
- 
--		if (verbose)
-+		if (data__files_cnt > 2)
- 			data__fprintf();
- 
--		hists__process(&evsel_old->hists, &evsel_new->hists);
-+		hists__process(&evsel_base->hists);
- 	}
+-	return scnprintf(hpp->buf, hpp->size, fmt, percent);
++	if (!he->dummy)
++		return scnprintf(hpp->buf, hpp->size, fmt, percent);
++	else
++		return scnprintf(hpp->buf, hpp->size, "            ");
  }
  
-@@ -781,10 +792,29 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
- 	};
- }
- 
-+static struct hist_entry *get_pair(struct hist_entry *he,
-+				   struct diff_hpp_fmt *dfmt)
-+{
-+	void *ptr = dfmt - dfmt->idx;
-+	struct data__file *d = container_of(ptr, struct data__file, fmt);
-+
-+	if (hist_entry__has_pairs(he)) {
-+		struct hist_entry *pair;
-+
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node)
-+			if (pair->hists == d->hists)
-+				return pair;
+ static int hpp__header_samples(struct perf_hpp_fmt *_fmt __maybe_unused,
+@@ -309,8 +315,7 @@ static int hpp__entry_delta(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 			diff = he->diff.period_ratio_delta;
+ 		else
+ 			diff = perf_diff__compute_delta(he, pair);
+-	} else
+-		diff = perf_diff__period_percent(he, he->stat.period);
 +	}
-+
-+	return NULL;
-+}
-+
- static void
--__hpp__entry_global(struct hist_entry *he, int idx, char *buf, size_t size)
-+__hpp__entry_global(struct hist_entry *he, struct diff_hpp_fmt *dfmt,
-+		    char *buf, size_t size)
- {
--	struct hist_entry *pair = hist_entry__next_pair(he);
-+	struct hist_entry *pair = get_pair(he, dfmt);
-+	int idx = dfmt->idx;
  
- 	/* baseline is special */
- 	if (idx == PERF_HPP_DIFF__BASELINE)
-@@ -804,7 +834,7 @@ static int hpp__entry_global(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
- 		container_of(_fmt, struct diff_hpp_fmt, fmt);
- 	char buf[MAX_COL_WIDTH] = " ";
+ 	if (fabs(diff) >= 0.01)
+ 		scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
+@@ -340,7 +345,8 @@ static int hpp__entry_ratio(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	char buf[32] = " ";
+ 	double ratio = 0.0;
  
--	__hpp__entry_global(he, dfmt->idx, buf, MAX_COL_WIDTH);
-+	__hpp__entry_global(he, dfmt, buf, MAX_COL_WIDTH);
+-	if (pair) {
++	/* No point for ratio number if we are dummy.. */
++	if (!he->dummy && pair) {
+ 		if (he->diff.computed)
+ 			ratio = he->diff.period_ratio;
+ 		else
+@@ -375,7 +381,8 @@ static int hpp__entry_wdiff(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	char buf[32] = " ";
+ 	s64 wdiff = 0;
  
- 	if (symbol_conf.field_sep)
- 		return scnprintf(hpp->buf, hpp->size, "%s", buf);
-@@ -833,7 +863,7 @@ static int hpp__width(struct perf_hpp_fmt *fmt,
- 	return dfmt->header_width;
- }
- 
--static void init_header(struct diff_hpp_fmt *dfmt)
-+static void init_header(struct data__file *d, struct diff_hpp_fmt *dfmt)
- {
- #define MAX_HEADER_NAME 100
- 	char buf_indent[MAX_HEADER_NAME];
-@@ -848,6 +878,9 @@ static void init_header(struct diff_hpp_fmt *dfmt)
- 	/* Only our defined HPP fmts should appear here. */
- 	BUG_ON(!header);
- 
-+	if (data__files_cnt > 2)
-+		scnprintf(buf, MAX_HEADER_NAME, "%s/%d", header, d->idx);
-+
- #define NAME (data__files_cnt > 2 ? buf : header)
- 	dfmt->header_width = width;
- 	width = (int) strlen(NAME);
-@@ -877,7 +910,7 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	if (idx == PERF_HPP_DIFF__BASELINE)
- 		fmt->color = hpp__color_baseline;
- 
--	init_header(dfmt);
-+	init_header(d, dfmt);
- 	perf_hpp__column_register(fmt);
- }
- 
-@@ -922,18 +955,18 @@ static int data_init(int argc, const char **argv)
- 		"perf.data.old",
- 		"perf.data",
- 	};
-+	bool use_default = true;
- 	int i;
- 
- 	data__files_cnt = 2;
- 
- 	if (argc) {
--		if (argc > 2)
--			usage_with_options(diff_usage, options);
--		if (argc == 2) {
--			defaults[0] = argv[0];
--			defaults[1] = argv[1];
--		} else
-+		if (argc == 1)
- 			defaults[1] = argv[0];
-+		else {
-+			data__files_cnt = argc;
-+			use_default = false;
-+		}
- 	} else if (symbol_conf.default_guest_vmlinux_name ||
- 		   symbol_conf.default_guest_kallsyms) {
- 		defaults[0] = "perf.data.host";
-@@ -945,7 +978,7 @@ static int data_init(int argc, const char **argv)
- 		return -ENOMEM;
- 
- 	data__for_each_file(i, d) {
--		d->file = defaults[i];
-+		d->file = use_default ? defaults[i] : argv[i];
- 		d->idx  = i;
+-	if (pair) {
++	/* No point for wdiff number if we are dummy.. */
++	if (!he->dummy && pair) {
+ 		if (he->diff.computed)
+ 			wdiff = he->diff.wdiff;
+ 		else
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 37179af..677d1c9 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -761,6 +761,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 		rb_link_node(&he->rb_node_in, parent, p);
+ 		rb_insert_color(&he->rb_node_in, root);
+ 		hists__inc_nr_entries(hists, he);
++		he->dummy = true;
  	}
+ out:
+ 	return he;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 7425f8d..a7f6e05 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -86,6 +86,9 @@ struct hist_entry {
  
+ 	struct hist_entry_diff	diff;
+ 
++	/* We are added by hists__add_dummy_entry. */
++	bool			dummy;
++
+ 	/* XXX These two should move to some tree widget lib */
+ 	u16			row_offset;
+ 	u16			nr_rows;
 -- 
 1.7.11.7
 
