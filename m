@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab2LMOGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:06:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44375 "EHLO
+	id S932315Ab2LMOGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:06:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44415 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756561Ab2LMOGH (ORCPT
+	with ESMTP id S932275Ab2LMOGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:06:07 -0500
+	Thu, 13 Dec 2012 09:06:36 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 087/241] s390/signal: set correct address space control
-Date: Thu, 13 Dec 2012 11:57:32 -0200
-Message-Id: <1355407206-17100-88-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 095/241] ALSA: usb-audio: Fix mutex deadlock at disconnection
+Date: Thu, 13 Dec 2012 11:57:40 -0200
+Message-Id: <1355407206-17100-96-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,147 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit fa968ee215c0ca91e4a9c3a69ac2405aae6e5d2f upstream.
+commit 10e44239f67d0b6fb74006e61a7e883b8075247a upstream.
 
-If user space is running in primary mode it can switch to secondary
-or access register mode, this is used e.g. in the clock_gettime code
-of the vdso. If a signal is delivered to the user space process while
-it has been running in access register mode the signal handler is
-executed in access register mode as well which will result in a crash
-most of the time.
+The recent change for USB-audio disconnection race fixes introduced a
+mutex deadlock again.  There is a circular dependency between
+chip->shutdown_rwsem and pcm->open_mutex, depicted like below, when a
+device is opened during the disconnection operation:
 
-Set the address space control bits in the PSW to the default for the
-execution of the signal handler and make sure that the previous
-address space control is restored on signal return. Take care
-that user space can not switch to the kernel address space by
-modifying the registers in the signal frame.
+A. snd_usb_audio_disconnect() ->
+     card.c::register_mutex ->
+       chip->shutdown_rwsem (write) ->
+         snd_card_disconnect() ->
+           pcm.c::register_mutex ->
+             pcm->open_mutex
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-[ herton: use backported version for kernel <= 3.6 provided by Martin
-  Schwidefsky ]
+B. snd_pcm_open() ->
+     pcm->open_mutex ->
+       snd_usb_pcm_open() ->
+         chip->shutdown_rwsem (read)
+
+Since the chip->shutdown_rwsem protection in the case A is required
+only for turning on the chip->shutdown flag and it doesn't have to be
+taken for the whole operation, we can reduce its window in
+snd_usb_audio_disconnect().
+
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/s390/include/asm/compat.h   |    2 +-
- arch/s390/include/asm/ptrace.h   |    4 ++--
- arch/s390/kernel/compat_signal.c |   14 ++++++++++++--
- arch/s390/kernel/signal.c        |   14 ++++++++++++--
- 4 files changed, 27 insertions(+), 7 deletions(-)
+ sound/usb/card.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/s390/include/asm/compat.h b/arch/s390/include/asm/compat.h
-index 234f1d8..2e0a15b 100644
---- a/arch/s390/include/asm/compat.h
-+++ b/arch/s390/include/asm/compat.h
-@@ -20,7 +20,7 @@
- #define PSW32_MASK_CC		0x00003000UL
- #define PSW32_MASK_PM		0x00000f00UL
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index 486b4a6..b3f5ad4 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -559,9 +559,11 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+ 		return;
  
--#define PSW32_MASK_USER		0x00003F00UL
-+#define PSW32_MASK_USER		0x0000FF00UL
- 
- #define PSW32_ADDR_AMODE	0x80000000UL
- #define PSW32_ADDR_INSN		0x7FFFFFFFUL
-diff --git a/arch/s390/include/asm/ptrace.h b/arch/s390/include/asm/ptrace.h
-index aeb77f0..d3750e7 100644
---- a/arch/s390/include/asm/ptrace.h
-+++ b/arch/s390/include/asm/ptrace.h
-@@ -240,7 +240,7 @@ typedef struct
- #define PSW_MASK_EA		0x00000000UL
- #define PSW_MASK_BA		0x00000000UL
- 
--#define PSW_MASK_USER		0x00003F00UL
-+#define PSW_MASK_USER		0x0000FF00UL
- 
- #define PSW_ADDR_AMODE		0x80000000UL
- #define PSW_ADDR_INSN		0x7FFFFFFFUL
-@@ -269,7 +269,7 @@ typedef struct
- #define PSW_MASK_EA		0x0000000100000000UL
- #define PSW_MASK_BA		0x0000000080000000UL
- 
--#define PSW_MASK_USER		0x00003F0180000000UL
-+#define PSW_MASK_USER		0x0000FF0180000000UL
- 
- #define PSW_ADDR_AMODE		0x0000000000000000UL
- #define PSW_ADDR_INSN		0xFFFFFFFFFFFFFFFFUL
-diff --git a/arch/s390/kernel/compat_signal.c b/arch/s390/kernel/compat_signal.c
-index 3c0c198..3901276 100644
---- a/arch/s390/kernel/compat_signal.c
-+++ b/arch/s390/kernel/compat_signal.c
-@@ -311,6 +311,10 @@ static int restore_sigregs32(struct pt_regs *regs,_sigregs32 __user *sregs)
- 	regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
- 		(__u64)(regs32.psw.mask & PSW32_MASK_USER) << 32 |
- 		(__u64)(regs32.psw.addr & PSW32_ADDR_AMODE);
-+	/* Check for invalid user address space control. */
-+	if ((regs->psw.mask & PSW_MASK_ASC) >= (psw_kernel_bits & PSW_MASK_ASC))
-+		regs->psw.mask = (psw_user_bits & PSW_MASK_ASC) |
-+			(regs->psw.mask & ~PSW_MASK_ASC);
- 	regs->psw.addr = (__u64)(regs32.psw.addr & PSW32_ADDR_INSN);
- 	for (i = 0; i < NUM_GPRS; i++)
- 		regs->gprs[i] = (__u64) regs32.gprs[i];
-@@ -483,7 +487,10 @@ static int setup_frame32(int sig, struct k_sigaction *ka,
- 
- 	/* Set up registers for signal handler */
- 	regs->gprs[15] = (__force __u64) frame;
--	regs->psw.mask |= PSW_MASK_BA;		/* force amode 31 */
-+	/* Force 31 bit amode and default user address space control. */
-+	regs->psw.mask = PSW_MASK_BA |
-+		(psw_user_bits & PSW_MASK_ASC) |
-+		(regs->psw.mask & ~PSW_MASK_ASC);
- 	regs->psw.addr = (__force __u64) ka->sa.sa_handler;
- 
- 	regs->gprs[2] = map_signal(sig);
-@@ -551,7 +558,10 @@ static int setup_rt_frame32(int sig, struct k_sigaction *ka, siginfo_t *info,
- 
- 	/* Set up registers for signal handler */
- 	regs->gprs[15] = (__force __u64) frame;
--	regs->psw.mask |= PSW_MASK_BA;		/* force amode 31 */
-+	/* Force 31 bit amode and default user address space control. */
-+	regs->psw.mask = PSW_MASK_BA |
-+		(psw_user_bits & PSW_MASK_ASC) |
-+		(regs->psw.mask & ~PSW_MASK_ASC);
- 	regs->psw.addr = (__u64) ka->sa.sa_handler;
- 
- 	regs->gprs[2] = map_signal(sig);
-diff --git a/arch/s390/kernel/signal.c b/arch/s390/kernel/signal.c
-index ac565b4..ddddb80 100644
---- a/arch/s390/kernel/signal.c
-+++ b/arch/s390/kernel/signal.c
-@@ -138,6 +138,10 @@ static int restore_sigregs(struct pt_regs *regs, _sigregs __user *sregs)
- 	/* Use regs->psw.mask instead of psw_user_bits to preserve PER bit. */
- 	regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
- 		(user_sregs.regs.psw.mask & PSW_MASK_USER);
-+	/* Check for invalid user address space control. */
-+	if ((regs->psw.mask & PSW_MASK_ASC) >= (psw_kernel_bits & PSW_MASK_ASC))
-+		regs->psw.mask = (psw_user_bits & PSW_MASK_ASC) |
-+			(regs->psw.mask & ~PSW_MASK_ASC);
- 	/* Check for invalid amode */
- 	if (regs->psw.mask & PSW_MASK_EA)
- 		regs->psw.mask |= PSW_MASK_BA;
-@@ -275,7 +279,10 @@ static int setup_frame(int sig, struct k_sigaction *ka,
- 
- 	/* Set up registers for signal handler */
- 	regs->gprs[15] = (unsigned long) frame;
--	regs->psw.mask |= PSW_MASK_EA | PSW_MASK_BA;	/* 64 bit amode */
-+	/* Force default amode and default user address space control. */
-+	regs->psw.mask = PSW_MASK_EA | PSW_MASK_BA |
-+		(psw_user_bits & PSW_MASK_ASC) |
-+		(regs->psw.mask & ~PSW_MASK_ASC);
- 	regs->psw.addr = (unsigned long) ka->sa.sa_handler | PSW_ADDR_AMODE;
- 
- 	regs->gprs[2] = map_signal(sig);
-@@ -348,7 +355,10 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 
- 	/* Set up registers for signal handler */
- 	regs->gprs[15] = (unsigned long) frame;
--	regs->psw.mask |= PSW_MASK_EA | PSW_MASK_BA;	/* 64 bit amode */
-+	/* Force default amode and default user address space control. */
-+	regs->psw.mask = PSW_MASK_EA | PSW_MASK_BA |
-+		(psw_user_bits & PSW_MASK_ASC) |
-+		(regs->psw.mask & ~PSW_MASK_ASC);
- 	regs->psw.addr = (unsigned long) ka->sa.sa_handler | PSW_ADDR_AMODE;
- 
- 	regs->gprs[2] = map_signal(sig);
+ 	card = chip->card;
+-	mutex_lock(&register_mutex);
+ 	down_write(&chip->shutdown_rwsem);
+ 	chip->shutdown = 1;
++	up_write(&chip->shutdown_rwsem);
++
++	mutex_lock(&register_mutex);
+ 	chip->num_interfaces--;
+ 	if (chip->num_interfaces <= 0) {
+ 		snd_card_disconnect(card);
+@@ -582,11 +584,9 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+ 			snd_usb_mixer_disconnect(p);
+ 		}
+ 		usb_chip[chip->index] = NULL;
+-		up_write(&chip->shutdown_rwsem);
+ 		mutex_unlock(&register_mutex);
+ 		snd_card_free_when_closed(card);
+ 	} else {
+-		up_write(&chip->shutdown_rwsem);
+ 		mutex_unlock(&register_mutex);
+ 	}
+ }
 -- 
 1.7.9.5
 
