@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab2LMHSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 02:18:18 -0500
-Received: from www84.your-server.de ([213.133.104.84]:58850 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab2LMHSR (ORCPT
+	id S1752780Ab2LMH1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 02:27:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42779 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab2LMH1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 02:18:17 -0500
-Message-ID: <1355383038.18653.2.camel@wall-e>
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
-        john.stultz@linaro.org, luto@amacapital.net
-Date: Thu, 13 Dec 2012 08:17:18 +0100
-In-Reply-To: <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
-	 <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
-	 <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>
-	 <1355379433.24701.1.camel@wall-e>
-	 <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 13 Dec 2012 02:27:40 -0500
+Date: Thu, 13 Dec 2012 08:27:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.8
+Message-ID: <20121213072733.GA13124@gmail.com>
+References: <20121211090910.GA22985@gmail.com>
+ <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+ <50C94A9C.2050900@gmail.com>
+ <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
+ <50C94ECD.6020504@gmail.com>
+ <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com>
+ <50C95A21.1010101@gmail.com>
+ <CA+55aFz0aW8sA_51x8RxLd=bR=0izMJtRJm68bKqueJU9OKQsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz0aW8sA_51x8RxLd=bR=0izMJtRJm68bKqueJU9OKQsA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 12.12.2012, 22:47 -0800 schrieb H. Peter Anvin:
-> Should be a simple matter of sharing pages.  Look perhaps at the x32 vdso for a hint.
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Wed, Dec 12, 2012 at 8:31 PM, David Ahern <dsahern@gmail.com> wrote:
+> >
+> >
+> > See commit 26a4f3c0. But that was not enough.
 > 
+> Why? Make the people who run virtualization do the extra work. Things
+> never worked for them anyway, so forcing *them* to set a flag to get a
+> working thing is sane.
+> 
+> Forcing everybody else to set a flag is insane. See?
 
+Yeah, that's 100% stupid, we'll revert this change.
 
-> >
-> >Any idea or clean solution how i can map the 64 bit vgtod into the 32
-> >bit address space? Thats the only problem i see.
-> >
+Arnado, wanna do it or should I? This slipped through the 
+testing cracks ...
 
-No, i see no special handling for x32 vdso to do this. I am not sure if
-x32 vdso can access the 64 bit address space of vsyscall_gtod_data. I
-can't test this due the lack of a x32 abi system.
+Thanks,
 
-
+	Ingo
