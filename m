@@ -1,88 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab2LMI4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 03:56:36 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18630 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2LMI4f (ORCPT
+	id S1753426Ab2LMI55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 03:57:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57997 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2LMI5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 03:56:35 -0500
-X-AuditID: cbfec7f4-b7f6d6d000001620-2b-50c99841e08b
-Message-id: <50C99839.1040803@samsung.com>
-Date: Thu, 13 Dec 2012 09:56:25 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Pawel Moll <pawel.moll@arm.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Kevin Liu <keyuan.liu@gmail.com>
-Subject: Re: [PATCH RFC/RFT] regulator: core: Fix continuous_voltage_range case
- in regulator_can_change_voltage
-References: <1355275366.11924.2.camel@phoenix>
-In-reply-to: <1355275366.11924.2.camel@phoenix>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4FV3HGScDDLrPClpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MQ6s/shc08FZs2bmSrYHxDFcXIyeHhICJxI4l65ggbDGJC/fW
-	s3UxcnEICSxllHj5cC2Us4RJYuuSdnaQKl4BLYmnh28yg9gsAqoSv1qngNlsAoYSXW+72EBs
-	UQFfiWm/rjFB1AtK/Jh8jwXEFhFQklh1/zILyFBmgSuMEifXnAQaysEhLFAoMe+HJUiNkICe
-	RNv3SWD1nAL6ElMvb2MFsZkFzCQetaxjhrDlJTavecs8gVFgFpIVs5CUzUJStoCReRWjaGpp
-	ckFxUnquoV5xYm5xaV66XnJ+7iZGSAh+2cG4+JjVIUYBDkYlHt6C8JMBQqyJZcWVuYcYJTiY
-	lUR4WyYBhXhTEiurUovy44tKc1KLDzEycXBKNTCun2p53OqdoNVF0bAL02MsJeflWeyRi99Q
-	+Lz9l2tx/iXn2m9tPdqPZrMfsbtz9639gtS63L2f2T5uOKGTH/0nduPeWQK7055WvJKMUODf
-	+Yp32vFXhdESK8xvFuczfb13Xbli5xaVCak2AsV9Veu9FpbsvLB7yfw52b/Fcl8uOe1hNSv6
-	9erjSizFGYmGWsxFxYkAS4F8Ph8CAAA=
+	Thu, 13 Dec 2012 03:57:55 -0500
+Date: Thu, 13 Dec 2012 09:57:50 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+Message-ID: <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+ <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com>
+ <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de>
+ <50BF1DAA.8030805@nvidia.com>
+ <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de>
+ <50BF345A.8050201@nvidia.com>
+ <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
+ <50C5CAB5.3040000@nvidia.com>
+ <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de>
+ <50C99677.6090306@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
+Content-Disposition: inline
+In-Reply-To: <50C99677.6090306@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:m264fbwh1PhoYRI1OcIKJf8eDRyVcAqE+VZzBN4xJ0H
+ Z8m63dZPXeM5sgLKrQGvhBdR2n9AO2WT51u/XTjZ1SURC0rMU2
+ x51EUeOK0Xvl1A5PXA1d+OwMCsUI1T1fsxqdpl5turg6e8zA2g
+ d+k5GTJDxBg4aT3EM1NBNMicDpQndnXSN1JWs6djndT8v5OKpY
+ KBkpjErKfIgTIDUHB4Ta3/tyfb5GVExsoEpFuBi3RZxpQqwMRz
+ QaSwXMn25FnLXn2k7sPe4iWgTrOnZ3VXby4O0KCNlAp8LHVbc2
+ PyYt/YLLgNfjgNdzQYecAK/F5vB8e5W/pcIdmZoujySjieRtYj
+ 6vqE8rlTfFAk4DmHSvULwUh0iTg6TndbS6SHSeq1Kv2NMQfgC8
+ ajoBIjMSjUJVYNgkiVdnxRzZv+pEBKSd08=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 12/12/2012 2:22 AM, Axel Lin wrote:
-> Regulator drivers with continuous_voltage_range flag set allows not setting
-> n_voltages. Thus if continuous_voltage_range is set, check the constraint range
-> instead.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->   drivers/regulator/core.c |   12 +++++++++---
->   1 file changed, 9 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> index 0f65b24..d7448ad 100644
-> --- a/drivers/regulator/core.c
-> +++ b/drivers/regulator/core.c
-> @@ -1885,9 +1885,15 @@ int regulator_can_change_voltage(struct regulator *regulator)
->   	struct regulator_dev	*rdev = regulator->rdev;
->
->   	if (rdev->constraints &&
-> -	    rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE &&
-> -	    (rdev->desc->n_voltages - rdev->desc->linear_min_sel) > 1)
-> -		return 1;
-> +	    (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE)) {
-> +		if (rdev->desc->n_voltages - rdev->desc->linear_min_sel > 1)
-> +			return 1;
-> +
-> +		if (rdev->desc->continuous_voltage_range &&
-> +		    rdev->constraints->min_uV && rdev->constraints->max_uV &&
-> +		    rdev->constraints->min_uV != rdev->constraints->max_uV)
-> +			return 1;
-> +	}
->
->   	return 0;
->   }
->
+--a8Wt8u1KmwUX3Y2C
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This change looks reasonable, I've missed the fact that there is a
-support for regulators with continuous voltage range. This change also
-shows that the n_voltages based workaround used earlier by mmc core was
-indeed only a hack and regulator_can_change_voltage() approach is much
-cleaner solution.
+On Thu, Dec 13, 2012 at 10:48:55AM +0200, Terje Bergstr=C3=B6m wrote:
+> On 12.12.2012 18:08, Thierry Reding wrote:
+> > I've briefly discussed this with Stephen on IRC because I thought I had
+> > remembered him objecting to the idea of adding a dummy device just for
+> > this purpose. It turns out, however, that what he didn't like was to add
+> > a dummy node to the DT just to make this happen, but he has no (strong)
+> > objections to a dummy platform device.
+> >=20
+> > While I'm not very happy about that solution, I've been going over it
+> > for a week now and haven't come up with any better alternative that
+> > doesn't have its own disadvantages. So perhaps we should go ahead and
+> > implement that. For the host1x driver this really just means creating a
+> > platform device and adding it to the system, with some of the fields
+> > tweaked to make things work.
+>=20
+> Even the virtual device is not too beautiful. The problem is that the
+> virtual device is not physical parent for DC, HDMI, etc, so
+> dev_get_drvdata(pdev->dev.parent) returns the data from host1x device,
+> not the virtual device.
+>=20
+> We'll post with something that goes around this, but it's not going to
+> be too pretty. Let's try to find the solution once we get the code out.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+After some more discussion with Stephen on IRC we came to the conclusion
+that the easiest might be to have tegra-drm call into host1x with
+something like:
 
+	void host1x_set_drm_device(struct host1x *host1x, struct device *dev);
+
+Once the dummy device has been properly set up and have each client use
+
+	struct device *host1x_get_drm_device(struct host1x *host1x);
+
+to obtain a pointer to the dummy device, such that it can receive the
+driver-private data using dev_get_drvdata() on the returned device. As
+long as tegra-drm hasn't registered with host1x yet, the above function
+could return ERR_PTR(-EPROBE_DEFER), so that dependencies are
+automatically handled. This is required because, tegra-drm not being the
+parent of the child devices, it can be guaranteed that it is probed
+before any of the children.
+
+That way we should be able to get around any circular dependencies,
+since we only call into host1x from tegra-drm but not the other way
+around.
+
+Thierry
+
+--a8Wt8u1KmwUX3Y2C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQyZiOAAoJEN0jrNd/PrOhaxMP/RQ2ZKTm+6W/Sx36u5DmxvRf
+kINCtKJfLoNCghZHSuNOW3g/9DZmObk6I/gNuAEyq9BtNqUToP53ysvnuexGt0Ke
+DVepnPaOM+E1bNSesXyTpwTxBOtNQGPA8DU8WSKbfzcX29I7kNRaJDviOIG2zR3F
+yX1r11D7wejO3ZWIC2HmBht+uq9PRfpOkNaK54GbdAibGtgSqftm3WmZL+uGZwFw
+u+QS7wh+lEIxG+Dm0bhqFOvtQF3fRlACQDJsxLnMnGQC1Br71n1Rd/LKqWhlneVf
+qnBZ1ePSSccCWzn+n6cRKgKkChGWfIxwRHAhksymrd79HsoDPpxHxfivlrKgrB46
+q6z2rOm/mPqAcDszLaHZZgF/LCR+WiQavb1l+/SjJep8khcwQ2OpeF13UH/94CcB
+NMzoEDBdkamGXbg4QzLJ/uxqQMV7UQwUPlibVQxf9aL9LQbIgdMTaayAbu1lytvZ
+P2HwTLenfX7DdPEHKtRnW79l55MV3AEup+yG95k9M6vtdpoL3LmIyu1YT/2KkIgV
+ypbjZSYpatY1ONXkWPCRZDa6+OJ7zfLlz3QUsbBV8iWEjVzfuI5F5SW/lmTGr1LR
+hmTMNLetR4qxsM2jGCTVfi0JMpqLbQIAyLNYdavWboiYWfYnRzq8AvH4nFCn1lki
+mOYK7BIFUos5YfnRESEw
+=txuH
+-----END PGP SIGNATURE-----
+
+--a8Wt8u1KmwUX3Y2C--
