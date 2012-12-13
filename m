@@ -1,69 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2LMXPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 18:15:45 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:31311 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab2LMXPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 18:15:44 -0500
-Message-ID: <1355440542.1823.21.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: add node physical memory range to sysfs
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 13 Dec 2012 15:15:42 -0800
-In-Reply-To: <50C95E4A.9010509@linux.vnet.ibm.com>
-References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net>
-	 <20121207155125.d3117244.akpm@linux-foundation.org>
-	 <50C28720.3070205@linux.vnet.ibm.com>
-	 <1355361524.5255.9.camel@buesod1.americas.hpqcorp.net>
-	 <50C933E9.2040707@linux.vnet.ibm.com>
-	 <1355364222.9244.3.camel@buesod1.americas.hpqcorp.net>
-	 <50C95E4A.9010509@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755794Ab2LMXSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 18:18:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753409Ab2LMXR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 18:17:59 -0500
+Date: Thu, 13 Dec 2012 20:37:16 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 2/5] KVM: MMU: adjust page size early if gfn used as
+ page table
+Message-ID: <20121213223716.GA11385@amt.cnet>
+References: <50C5A747.1020105@linux.vnet.ibm.com>
+ <50C5A79F.3020805@linux.vnet.ibm.com>
+ <20121212005723.GA2898@amt.cnet>
+ <50C8D9AE.5050706@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C8D9AE.5050706@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 20:49 -0800, Dave Hansen wrote:
-> On 12/12/2012 06:03 PM, Davidlohr Bueso wrote:
-> > On Wed, 2012-12-12 at 17:48 -0800, Dave Hansen wrote:
-> >> But if we went and did it per-DIMM (showing which physical addresses and
-> >> NUMA nodes a DIMM maps to), wouldn't that be redundant with this
-> >> proposed interface?
+On Thu, Dec 13, 2012 at 03:23:26AM +0800, Xiao Guangrong wrote:
+> On 12/12/2012 08:57 AM, Marcelo Tosatti wrote:
+> > On Mon, Dec 10, 2012 at 05:13:03PM +0800, Xiao Guangrong wrote:
+> >> We have two issues in current code:
+> >> - if target gfn is used as its page table, guest will refault then kvm will use
+> >>   small page size to map it. We need two #PF to fix its shadow page table
+> >>
+> >> - sometimes, say a exception is triggered during vm-exit caused by #PF
+> >>   (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
+> >>   by the target gfn before go into page fault path, it will cause infinite
+> >>   loop:
+> >>   delete shadow pages shadowed by the gfn -> try to use large page size to map
+> >>   the gfn -> retry the access ->...
+> >>
+> >> To fix these, We can adjust page size early if the target gfn is used as page
+> >> table
+> >>
+> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >> ---
+> >>  arch/x86/kvm/mmu.c         |   13 ++++---------
+> >>  arch/x86/kvm/paging_tmpl.h |   33 ++++++++++++++++++++++++++++++++-
+> >>  2 files changed, 36 insertions(+), 10 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >> index 2a3c890..54fc61e 100644
+> >> --- a/arch/x86/kvm/mmu.c
+> >> +++ b/arch/x86/kvm/mmu.c
+> >> @@ -2380,15 +2380,10 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+> >>  	if (pte_access & ACC_WRITE_MASK) {
+> >>
+> >>  		/*
+> >> -		 * There are two cases:
+> >> -		 * - the one is other vcpu creates new sp in the window
+> >> -		 *   between mapping_level() and acquiring mmu-lock.
+> >> -		 * - the another case is the new sp is created by itself
+> >> -		 *   (page-fault path) when guest uses the target gfn as
+> >> -		 *   its page table.
+> >> -		 * Both of these cases can be fixed by allowing guest to
+> >> -		 * retry the access, it will refault, then we can establish
+> >> -		 * the mapping by using small page.
+> >> +		 * Other vcpu creates new sp in the window between
+> >> +		 * mapping_level() and acquiring mmu-lock. We can
+> >> +		 * allow guest to retry the access, the mapping can
+> >> +		 * be fixed if guest refault.
+> >>  		 */
+> >>  		if (level > PT_PAGE_TABLE_LEVEL &&
+> >>  		    has_wrprotected_page(vcpu->kvm, gfn, level))
+> >> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> >> index ec481e9..32d77ff 100644
+> >> --- a/arch/x86/kvm/paging_tmpl.h
+> >> +++ b/arch/x86/kvm/paging_tmpl.h
+> >> @@ -491,6 +491,36 @@ out_gpte_changed:
+> >>  	return 0;
+> >>  }
+> >>
+> >> + /*
+> >> + * To see whether the mapped gfn can write its page table in the current
+> >> + * mapping.
+> >> + *
+> >> + * It is the helper function of FNAME(page_fault). When guest uses large page
+> >> + * size to map the writable gfn which is used as current page table, we should
+> >> + * force kvm to use small page size to map it because new shadow page will be
+> >> + * created when kvm establishes shadow page table that stop kvm using large
+> >> + * page size. Do it early can avoid unnecessary #PF and emulation.
+> >> + *
+> >> + * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
+> >> + * since the PDPT is always shadowed, that means, we can not use large page
+> >> + * size to map the gfn which is used as PDPT.
+> >> + */
+> >> +static bool
+> >> +FNAME(mapped_gfn_can_write_current_pagetable)(struct guest_walker *walker)
+> >> +{
+> >> +	int level;
+> >> +	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
+> >> +
+> >> +	if (!(walker->pte_access & ACC_WRITE_MASK))
+> >> +		return false;
+> >> +
+> >> +	for (level = walker->level; level <= walker->max_level; level++)
+> >> +		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
+> >> +			return true;
 > > 
-> > If DIMMs overlap between nodes, then we wouldn't have an exact range for
-> > a node in question. Having both approaches would complement each other.
+> > XOR won't work. Just check with sums and integer comparison, ie.
+> > walker->gfn + KVM_PAGES_PER_HPAGE(walker->level).
 > 
-> How is that possible?  If NUMA nodes are defined by distances from CPUs
-> to memory, how could a DIMM have more than a single distance to any
-> given CPU?
-
-Can't this occur when interleaving emulated nodes with physical ones?
-
+> It can not work since walker->gfn is not large-page-size aligned. For example,
+> guest uses large page size to map 0x123000000 to physical address 0-2M, if
+> guest faults on 0x123001000, walker->gfn = 0x1000.
 > 
-> >> How do you plan to use this in practice, btw?
-> > 
-> > It started because I needed to recognize the address of a node to remove
-> > it from the e820 mappings and have the system "ignore" the node's
-> > memory.
+> The code "if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))" is the
+> same as "if (walker->gfn & mask == walker->table_gfn[level - 1] & mask)" - if
+> any page in the large page area used as page table, we should use 4K page size
+> to fix it.
 > 
-> Actually, now that I think about it, can you check in the
-> /sys/devices/system/ directories for memory and nodes?  We have linkages
-> there for each memory section to every NUMA node, and you can also
-> derive the physical address from the phys_index in each section.  That
-> should allow you to work out physical addresses for a given node.
+> In above example, if table_gfn is in the area [0, 2M), kvm is forced to use
+> 4k page size.
+
+Right, i misread it. 
+
+> > Moreover, its confusing to have it checked at this level. What about
+> > doing at reexecute_instruction?
 > 
+> Hmm, this patch is trying to fix a bug described in the changelog:
+> 
+> ======
+>  - sometimes, say a exception is triggered during vm-exit caused by #PF
+>    (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
+>    by the target gfn before go into page fault path, it will cause infinite
+>    loop:
+>    delete shadow pages shadowed by the gfn -> try to use large page size to map
+>    the gfn -> retry the access ->...
+> ======
+> 
+> Which is caused by this code:
+> 
+> 	if (is_page_fault(intr_info)) {
+> 		/* EPT won't cause page fault directly */
+> 		BUG_ON(enable_ept);
+> 		cr2 = vmcs_readl(EXIT_QUALIFICATION);
+> 		trace_kvm_page_fault(cr2, error_code);
+> 
+> 		if (kvm_event_needs_reinjection(vcpu))
+> 			kvm_mmu_unprotect_page_virt(vcpu, cr2);
+> 		return kvm_mmu_page_fault(vcpu, cr2, error_code, NULL, 0);
+> 	}
+> 
+> This bug is introduced in commit c219346325.
+> 
+> Another way to fix it is doing this change:
+> @@ -2395,7 +2395,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+>                  */
+>                 if (level > PT_PAGE_TABLE_LEVEL &&
+>                     has_wrprotected_page(vcpu->kvm, gfn, level))
+> -                       goto done;
+> +                       return 1;
+> 
+> The disadvantage of this way is, it causes unnecessary emulation. For example,
+> if 0-2M is mapped in guest and only page 0 used as page table, any write to
+> [4K, 2M) will need be emulated.
+> 
+> Your idea?
 
-I had looked at the memory-hotplug interface but found that this
-'phys_index' doesn't include holes, while ->node_spanned_pages does.
-
-Thanks,
-Davidlohr
+OK, i understand now.
 
