@@ -1,146 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab2LMTv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 14:51:26 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42831 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab2LMTvY (ORCPT
+	id S1756358Ab2LMTxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 14:53:20 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6883 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755786Ab2LMTxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 14:51:24 -0500
-Message-ID: <50CA31BB.2030507@acm.org>
-Date: Thu, 13 Dec 2012 13:51:23 -0600
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tony Camuso <tcamuso@redhat.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, openipmi-developer@lists.sourceforge.net,
-        grant.likely@secretlab.ca, Robert Evans <Robert.Evans@stratus.com>,
-        Jim Paradis <jparadis@redhat.com>
-Subject: Re: [PATCH] ipmi: add new kernel options to prevent automatic ipmi
- init
-References: <1355424008-20491-1-git-send-email-tcamuso@redhat.com>
-In-Reply-To: <1355424008-20491-1-git-send-email-tcamuso@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 13 Dec 2012 14:53:18 -0500
+X-Authority-Analysis: v=2.0 cv=JuRzXbEC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LjetiFoaFU4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=l0Sb2Ff8vwsA:10 a=hLX9fZNEpghGE8BfBh4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355428396.17101.382.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH RT 4/4 v2] sched/rt: Use IPI to trigger RT task
+ push migration instead of pulling
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Mike Galbraith <bitbucket@online.de>
+Date: Thu, 13 Dec 2012 14:53:16 -0500
+In-Reply-To: <20121212193920.803917953@goodmis.org>
+References: <20121212192733.221810086@goodmis.org>
+	 <20121212193920.803917953@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, the built-in driver works on systems that have more than one interface
-and more than one BMC, and multiple IPMBs (and all of the other channel
-types for that matter, and the driver handles all the multiplexing and nasty
-addressing).  There is, in fact, no arbitrary limit, and IBM tested
-this fairly extensively with some of their systems.  I'm not sure why you
-would need a custom driver, and if there are some custom things that need
-to be done for your servers, I'd be happy to add that.  I've worked with a
-number of other vendors to get changes like this in.  And then ipmitool,
-freeipmi, openipmi, etc. will work with the device.
+I didn't get a chance to test the latest IPI patch series on the 40 core
+box, and only had my 4 way box to test on. But I was able to test it
+last night and found some issues.
 
-I don't have a big problem with this patch.  I wonder why you would want
-to compile the standard driver into your kernel if you expected to load a
-module with a custom driver later, though.  None of the distros I know of
-compile it in, it's always a module.
+The RT_PUSH_IPI doesn't get automatically set because just doing the
+sched_feat_enable() wasn't enough. Below is the corrected patch.
 
-You can also dynamically remove the device from the driver using the hot
-add/remove capability.  To remove it, you can do:
-   echo remove,`cat /proc/ipmi/0/params`
-and it will disassociate that device (IPMI interface 0 in this case) 
-from the
-driver.  So you can iterate through all the devices in /proc/ipmi and
-remove them all at startup.
+Also, for some reason patch 3 caused the box to hang. Perhaps it
+required the RT_PUSH_IPI set, because it worked with the original patch
+series. But that series only did the push ipi. I removed it on the 40
+core before noticing that the RT_PUSH_IPI wasn't being automatically
+enabled.
 
-If none of the above options work for you, we can go ahead with this
-patch.  Just wanted to let you know that current options exist, and see
-if you wanted to take a different direction.
+Here's an update of patch 4:
 
--corey
+sched/rt: Use IPI to trigger RT task push migration instead of pulling
 
-On 12/13/2012 12:40 PM, Tony Camuso wrote:
-> The configuration change building ipmi_si into the kernel precludes the
-> use of a custom driver that can utilize more than one KCS interface,
-> multiple IPMBs, and more than one BMC. This capability is important for
-> fault-tolerant systems.
->
-> Even if the kernel option ipmi_si.trydefaults=0 is specified, ipmi_si
-> discovers and claims one of the KCS interfaces on a Stratus server.
-> The inability to now prevent the kernel from managing this device is a
-> regression from previous kernels. The regression breaks a capability
-> fault-tolerant vendors have relied upon.
->
-> To support both ACPI opregion access and the need to avoid activation
-> of ipmi_si on some platforms, we've added two new kernel options,
-> ipmi_si.tryacpi and ipmi_si.trydmi be added to prevent ipmi_si from
-> initializing when these options are set to 0 on the kernel command line.
-> With these options at the default value of 1, ipmi_si init proceeds
-> according to the kernel default.
->
-> Tested-by: Jim Paradis <jparadis@redhat.com>
-> Signed-off-by: Robert Evans <Robert.Evans@stratus.com>
-> Signed-off-by: Jim Paradis <jparadis@redhat.com>
-> Signed-off-by: Tony Camuso <tcamuso@redhat.com>
-> ---
->   drivers/char/ipmi/ipmi_si_intf.c | 28 ++++++++++++++++++++++++----
->   1 file changed, 24 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 20ab5b3..0a441cf 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -1208,6 +1208,12 @@ static int smi_num; /* Used to sequence the SMIs */
->   #define DEFAULT_REGSPACING	1
->   #define DEFAULT_REGSIZE		1
->   
-> +#ifdef CONFIG_ACPI
-> +static int           si_tryacpi = 1;
-> +#endif
-> +#ifdef CONFIG_DMI
-> +static int           si_trydmi = 1;
-> +#endif
->   static bool          si_trydefaults = 1;
->   static char          *si_type[SI_MAX_PARMS];
->   #define MAX_SI_TYPE_STR 30
-> @@ -1238,6 +1244,16 @@ MODULE_PARM_DESC(hotmod, "Add and remove interfaces.  See"
->   		 " Documentation/IPMI.txt in the kernel sources for the"
->   		 " gory details.");
->   
-> +#ifdef CONFIG_ACPI
-> +module_param_named(tryacpi, si_tryacpi, bool, 0);
-> +MODULE_PARM_DESC(tryacpi, "Setting this to zero will disable the"
-> +		 " default scan of the interfaces identified via ACPI");
-> +#endif
-> +#ifdef CONFIG_DMI
-> +module_param_named(trydmi, si_trydmi, bool, 0);
-> +MODULE_PARM_DESC(trydmi, "Setting this to zero will disable the"
-> +		 " default scan of the interfaces identified via DMI");
-> +#endif
->   module_param_named(trydefaults, si_trydefaults, bool, 0);
->   MODULE_PARM_DESC(trydefaults, "Setting this to 'false' will disable the"
->   		 " default scan of the KCS and SMIC interface at the standard"
-> @@ -3408,16 +3424,20 @@ static int init_ipmi_si(void)
->   #endif
->   
->   #ifdef CONFIG_ACPI
-> -	pnp_register_driver(&ipmi_pnp_driver);
-> -	pnp_registered = 1;
-> +	if (si_tryacpi) {
-> +		pnp_register_driver(&ipmi_pnp_driver);
-> +		pnp_registered = 1;
-> +	}
->   #endif
->   
->   #ifdef CONFIG_DMI
-> -	dmi_find_bmc();
-> +	if (si_trydmi)
-> +		dmi_find_bmc();
->   #endif
->   
->   #ifdef CONFIG_ACPI
-> -	spmi_find_bmc();
-> +	if (si_tryacpi)
-> +		spmi_find_bmc();
->   #endif
->   
->   	/* We prefer devices with interrupts, but in the case of a machine
+When debugging the latencies on a 40 core box, where we hit 300 to
+500 microsecond latencies, I found there was a huge contention on the
+runqueue locks.
+
+Investigating it further, running ftrace, I found that it was due to
+the pulling of RT tasks.
+
+The test that was run was the following:
+
+ cyclictest --numa -p95 -m -d0 -i100
+
+This created a thread on each CPU, that would set its wakeup in interations
+of 100 microseconds. The -d0 means that all the threads had the same
+interval (100us). Each thread sleeps for 100us and wakes up and measures
+its latencies.
+
+What happened was another RT task would be scheduled on one of the CPUs
+that was running our test, when the other CPUS test went to sleep and
+scheduled idle. This cause the "pull" operation to execute on all
+these CPUs. Each one of these saw the RT task that was overloaded on
+the CPU of the test that was still running, and each one tried
+to grab that task in a thundering herd way.
+
+To grab the task, each thread would do a double rq lock grab, grabbing
+its own lock as well as the rq of the overloaded CPU. As the sched
+domains on this box was rather flat for its size, I saw up to 12 CPUs
+block on this lock at once. This caused a ripple affect with the
+rq locks. As these locks were blocked, any wakeups or load balanceing
+on these CPUs would also block on these locks, and the wait time escalated.
+
+I've tried various methods to lesson the load, but things like an
+atomic counter to only let one CPU grab the task wont work, because
+the task may have a limited affinity, and we may pick the wrong
+CPU to take that lock and do the pull, to only find out that the
+CPU we picked isn't in the task's affinity.
+
+Instead of doing the PULL, I now have the CPUs that want the pull to
+send over an IPI to the overloaded CPU, and let that CPU pick what
+CPU to push the task to. No more need to grab the rq lock, and the
+push/pull algorithm still works fine.
+
+With this patch, the latency dropped to just 150us over a 20 hour run.
+Without the patch, the huge latencies would trigger in seconds.
+
+Now, this issue only seems to apply to boxes with greater than 16 CPUs.
+We noticed this on a 24 CPU box, and things got much worse on 40 (and
+presumably more CPUs would get even worse yet). But running with 16
+CPUs and below, the lock contention caused by the pulling of RT tasks
+is not noticable.
+
+I've created a new sched feature called RT_PUSH_IPI, which by default
+on 16 and less core CPUs is disabled, and on 17 or more CPUs it is
+enabled. That seems to be heuristic limit where the pulling logic
+causes higher latencies than IPIs. Of course with all heuristics, things
+could be different with different architectures.
+
+When RT_PUSH_IPI is not enabled, the old method of grabbing the rq locks
+and having the pulling CPU do the work is implemented. When RT_PUSH_IPI
+is enabled, the IPI is sent to the overloaded CPU to do a push.
+
+To enabled or disable this at run time:
+
+ # mount -t debugfs nodev /sys/kernel/debug
+ # echo RT_PUSH_IPI > /sys/kernel/debug/sched_features
+or
+ # echo NO_RT_PUSH_IPI > /sys/kernel/debug/sched_features
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: rt-linux.git/kernel/sched/core.c
+===================================================================
+--- rt-linux.git.orig/kernel/sched/core.c
++++ rt-linux.git/kernel/sched/core.c
+@@ -1538,6 +1538,9 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
++	if (sched_feat(RT_PUSH_IPI))
++		sched_rt_push_check();
++
+ 	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+ 		return;
+ 
+@@ -7541,6 +7544,21 @@ void __init sched_init_smp(void)
+ 	free_cpumask_var(non_isolated_cpus);
+ 
+ 	init_sched_rt_class();
++
++	/*
++	 * To avoid heavy contention on large CPU boxes,
++	 * when there is an RT overloaded CPU (two or more RT tasks
++	 * queued to run on a CPU and one of the waiting RT tasks
++	 * can migrate) and another CPU lowers its priority, instead
++	 * of grabbing both rq locks of the CPUS (as many CPUs lowering
++	 * their priority at the same time may create large latencies)
++	 * send an IPI to the CPU that is overloaded so that it can
++	 * do an efficent push.
++	 */
++	if (num_possible_cpus() > 16) {
++		sched_feat_enable(__SCHED_FEAT_RT_PUSH_IPI);
++		sysctl_sched_features |= (1UL << __SCHED_FEAT_RT_PUSH_IPI);
++	}
+ }
+ #else
+ void __init sched_init_smp(void)
+Index: rt-linux.git/kernel/sched/rt.c
+===================================================================
+--- rt-linux.git.orig/kernel/sched/rt.c
++++ rt-linux.git/kernel/sched/rt.c
+@@ -1723,6 +1723,31 @@ static void push_rt_tasks(struct rq *rq)
+ 		;
+ }
+ 
++/**
++ * sched_rt_push_check - check if we can push waiting RT tasks
++ *
++ * Called from sched IPI when sched feature RT_PUSH_IPI is enabled.
++ *
++ * Checks if there is an RT task that can migrate and there exists
++ * a CPU in its affinity that only has tasks lower in priority than
++ * the waiting RT task. If so, then it will push the task off to that
++ * CPU.
++ */
++void sched_rt_push_check(void)
++{
++	struct rq *rq = cpu_rq(smp_processor_id());
++
++	if (WARN_ON_ONCE(!irqs_disabled()))
++		return;
++
++	if (!has_pushable_tasks(rq))
++		return;
++
++	raw_spin_lock(&rq->lock);
++	push_rt_tasks(rq);
++	raw_spin_unlock(&rq->lock);
++}
++
+ static int pull_rt_task(struct rq *this_rq)
+ {
+ 	int this_cpu = this_rq->cpu, ret = 0, cpu;
+@@ -1750,6 +1775,18 @@ static int pull_rt_task(struct rq *this_
+ 			continue;
+ 
+ 		/*
++		 * When the RT_PUSH_IPI sched feature is enabled, instead
++		 * of trying to grab the rq lock of the RT overloaded CPU
++		 * send an IPI to that CPU instead. This prevents heavy
++		 * contention from several CPUs lowering its priority
++		 * and all trying to grab the rq lock of that overloaded CPU.
++		 */
++		if (sched_feat(RT_PUSH_IPI)) {
++			smp_send_reschedule(cpu);
++			continue;
++		}
++
++		/*
+ 		 * We can potentially drop this_rq's lock in
+ 		 * double_lock_balance, and another CPU could
+ 		 * alter this_rq
+Index: rt-linux.git/kernel/sched/sched.h
+===================================================================
+--- rt-linux.git.orig/kernel/sched/sched.h
++++ rt-linux.git/kernel/sched/sched.h
+@@ -1111,6 +1111,8 @@ static inline void double_rq_unlock(stru
+ 		__release(rq2->lock);
+ }
+ 
++void sched_rt_push_check(void);
++
+ #else /* CONFIG_SMP */
+ 
+ /*
+@@ -1144,6 +1146,9 @@ static inline void double_rq_unlock(stru
+ 	__release(rq2->lock);
+ }
+ 
++void sched_rt_push_check(void)
++{
++}
+ #endif
+ 
+ extern struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq);
+Index: rt-linux.git/kernel/sched/features.h
+===================================================================
+--- rt-linux.git.orig/kernel/sched/features.h
++++ rt-linux.git/kernel/sched/features.h
+@@ -73,6 +73,20 @@ SCHED_FEAT(PREEMPT_LAZY, true)
+ # endif
+ #endif
+ 
++/*
++ * In order to avoid a thundering herd attack of CPUS that are
++ * lowering their priorities at the same time, and there being
++ * a single CPU that has an RT task that can migrate and is waiting
++ * to run, where the other CPUs will try to take that CPUs
++ * rq lock and possibly create a large contention, sending an
++ * IPI to that CPU and let that CPU push the RT task to where
++ * it should go may be a better scenario.
++ *
++ * This is default off for machines with <= 16 CPUs, and will
++ * be turned on at boot up for machines with > 16 CPUs.
++ */
++SCHED_FEAT(RT_PUSH_IPI, false)
++
+ SCHED_FEAT(FORCE_SD_OVERLAP, false)
+ SCHED_FEAT(RT_RUNTIME_SHARE, true)
+ SCHED_FEAT(LB_MIN, false)
+
 
