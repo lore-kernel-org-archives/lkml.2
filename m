@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2LMCDo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:03:44 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:27734 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab2LMCDn (ORCPT
+	id S1754739Ab2LMCFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:05:23 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:50623 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab2LMCFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:03:43 -0500
-Message-ID: <1355364222.9244.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: add node physical memory range to sysfs
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Wed, 12 Dec 2012 18:03:42 -0800
-In-Reply-To: <50C933E9.2040707@linux.vnet.ibm.com>
-References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net>
-	 <20121207155125.d3117244.akpm@linux-foundation.org>
-	 <50C28720.3070205@linux.vnet.ibm.com>
-	 <1355361524.5255.9.camel@buesod1.americas.hpqcorp.net>
-	 <50C933E9.2040707@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Wed, 12 Dec 2012 21:05:21 -0500
+Date: Thu, 13 Dec 2012 13:05:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rafael Aquini <aquini@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: linux-next: manual merge of the virtio tree with Linus' tree
+Message-Id: <20121213130503.3432e2e1715439a49962873b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 17:48 -0800, Dave Hansen wrote:
-> On 12/12/2012 05:18 PM, Davidlohr Bueso wrote:
-> > On Fri, 2012-12-07 at 16:17 -0800, Dave Hansen wrote:
-> >> Seems like the better way to do this would be to expose the DIMMs
-> >> themselves in some way, and then map _those_ back to a node.
-> > 
-> > Good point, and from a DIMM perspective, I agree, and will look into
-> > this. However, IMHO, having the range of physical addresses for every
-> > node still provides valuable information, from a NUMA point of view. For
-> > example, dealing with node related e820 mappings.
-> 
-> But if we went and did it per-DIMM (showing which physical addresses and
-> NUMA nodes a DIMM maps to), wouldn't that be redundant with this
-> proposed interface?
-> 
+--Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If DIMMs overlap between nodes, then we wouldn't have an exact range for
-a node in question. Having both approaches would complement each other.
+Hi Rusty,
 
-> How do you plan to use this in practice, btw?
-> 
+Today's linux-next merge of the virtio tree got a conflict in
+drivers/virtio/virtio_balloon.c between commit e22504296d4f
+("virtio_balloon: introduce migration primitives to balloon pages") from
+Linus' tree and commit 41395dfb3d35 ("virtio: Convert dev_printk
+(KERN_<LEVEL> to dev_<level>(") from the virtio tree.
 
-It started because I needed to recognize the address of a node to remove
-it from the e820 mappings and have the system "ignore" the node's
-memory.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Thanks,
-Davidlohr
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/virtio/virtio_balloon.c
+index 2a70558,586395c..0000000
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@@ -133,16 -125,14 +133,15 @@@ static void fill_balloon(struct virtio_
+  	/* We can only do one array worth at a time. */
+  	num =3D min(num, ARRAY_SIZE(vb->pfns));
+ =20
+ +	mutex_lock(&vb->balloon_lock);
+  	for (vb->num_pfns =3D 0; vb->num_pfns < num;
+  	     vb->num_pfns +=3D VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ -		struct page *page =3D alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
+ -					__GFP_NOMEMALLOC | __GFP_NOWARN);
+ +		struct page *page =3D balloon_page_enqueue(vb_dev_info);
+ +
+  		if (!page) {
+- 			if (printk_ratelimit())
+- 				dev_printk(KERN_INFO, &vb->vdev->dev,
+- 					   "Out of puff! Can't get %u pages\n",
+- 					   VIRTIO_BALLOON_PAGES_PER_PAGE);
++ 			dev_info_ratelimited(&vb->vdev->dev,
+ -					     "Out of puff! Can't get %zu pages\n",
+ -					     num);
+++					     "Out of puff! Can't get %u pages\n",
+++					     VIRTIO_BALLOON_PAGES_PER_PAGE);
+  			/* Sleep for at least 1/5 of a second before retry. */
+  			msleep(200);
+  			break;
+
+--Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQyTfPAAoJEECxmPOUX5FEfg4P/R3sdKwXHaVoxIGQYLfukShp
+9LKAeFlf7xPwIbg7IntJsAQqtajlEddSVgt0A86PgaQuYehkiXdS8qFWHqOUZ7e2
+quCJ1f48F3YTP6ECBm/crIXM2uq8sCUbLSpfLRs9zIVTEChrrU9+mYQh4cXLnn1z
+YUEOAOOyNoDzYsHjLOaMhJ/guY31eZakr3JiiDgUyBSXWhco8zMOsBGB4eydi8M0
+C/v5JwHOM4g7ppexm2D+qC4QMEZSLJ3wU+eZ7UVF0KIJw23+oZUNpI4mhWZQ8tN0
+Lr0eHhn+9d6PPSGe+ORKkzCXthr1DyMdOBJLmYMmtMkmjVppZY2Cv08nYBSRuLuI
+bp2rXxAeTblhvKjTvxmxRfWwvknqFB2UETvlXa4uxCP1gznMMb+OWqdCOiUiZGOL
+Ks5mZrx/yxwEdHgfx70uF3N93Rqp2TKHIy/nsEji746ZCCGa/3yra+9Q1erORQb+
+qF/5+ND3RcTDfZ8MWKzJvYON+ufA+ysWtQFGoso+099cs6+7c5jmPBc0gT8nIHxl
+Lcbs1wXCT48IATLgmvrgc+wg/HQoWH6DX3iv9MALkAJhmRwJXxRvD+2t1XNrrMiW
+8eQUk60SEuUyhRY2Y07WQCMZjNHYffouI2o+fNWdsUHJ+MHGLHzBIo1uxObbCL7q
+pApomrCSPGEnC9TuD5pY
+=fVaz
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2--
