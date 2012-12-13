@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600Ab2LMC1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:27:39 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:33281 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037Ab2LMC1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:27:37 -0500
-Date: Wed, 12 Dec 2012 21:27:34 -0500 (EST)
-Message-Id: <20121212.212734.917363230032045212.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFwzUgxQAze=mYbEx8b61V542tzm06Df=mR1BtYVbJy0mg@mail.gmail.com>
-References: <20121212.151116.143443755590581447.davem@davemloft.net>
-	<CA+55aFwzUgxQAze=mYbEx8b61V542tzm06Df=mR1BtYVbJy0mg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S932585Ab2LMChA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:37:00 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36806 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756539Ab2LMC0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:26:54 -0500
+Message-ID: <1355365612.2164.17.camel@joe-AO722>
+Subject: Re: =?UTF-8?Q?=E7=AD=94=E5=A4=8D=3A?= [TRIVIAL PATCH 15/26]
+ unicore32: Convert print_symbol to %pSR
+From: Joe Perches <joe@perches.com>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: "'Jiri Kosina'" <trivial@kernel.org>, linux-kernel@vger.kernel.org
+Date: Wed, 12 Dec 2012 18:26:52 -0800
+In-Reply-To: <001d01cdd8cd$371dfd60$a559f820$@mprc.pku.edu.cn>
+References: <cover.1355335227.git.joe@perches.com>
+	 <19e6ea369e4455fc447c48f72bd433921bd0a703.1355335228.git.joe@perches.com>
+	 <001d01cdd8cd$371dfd60$a559f820$@mprc.pku.edu.cn>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Dec 2012 18:15:04 -0800
+On Thu, 2012-12-13 at 09:00 +0800, Guan Xuetao wrote:
+> 确认下面的patch可以正常编译，无warning信息
 
-> On Wed, Dec 12, 2012 at 12:11 PM, David Miller <davem@davemloft.net> wrote:
->>
->> There is one merge conflict to resolve in net/sched/cls_cgroup.c,
->> one commit changes the name of some members to "css_*" (this came
->> from Tejun's tree) and another commit adds an "attach" method.
-> 
-> There's more than that. The ARM board mess is apparently now affecting
-> the networking merges too.
-> 
-> I fixed it up. Hopefully correctly.
-> 
-> Also, why does the new SHA1 hmac cookie support default to 'y'?
+There is no unicore32 cross compiler available
+on kernel.org.
 
-There are two SCTP HMAC cookie algorithms, MD5 and SHA1.
+ftp://ftp.kernel.org/pub/tools/crosstool/index.html
 
-What used to happen is that you had to choose one at build
-time, and then you were stuck with that decision and it was
-all that you could use.
+These are unsigned long cast to (void *)
+What is the warning and how does it differ
+from any existing warning?
 
-Now, it's selectable at run time.
+> > diff --git a/arch/unicore32/kernel/process.c
+[]
+> > @@ -169,8 +169,9 @@ void __show_regs(struct pt_regs *regs)
+> >  		init_utsname()->release,
+> >  		(int)strcspn(init_utsname()->version, " "),
+> >  		init_utsname()->version);
+> > -	print_symbol("PC is at %s\n", instruction_pointer(regs));
+> > -	print_symbol("LR is at %s\n", regs->UCreg_lr);
+> > +	printk(KERN_DEFAULT "PC is at %pSR\n",
+> > +	       (void *)instruction_pointer(regs));
+> > +	printk(KERN_DEFAULT "LR is at %pSR\n", (void *)regs->UCreg_lr);
+> >  	printk(KERN_DEFAULT "pc : [<%08lx>]    lr : [<%08lx>]    psr:
+> %08lx\n"
+> >  	       "sp : %08lx  ip : %08lx  fp : %08lx\n",
+> >  		regs->UCreg_pc, regs->UCreg_lr, regs->UCreg_asr,
 
-If there's anything you find particularly anti-social about
-this, I'm sure we can adjust it.
+
