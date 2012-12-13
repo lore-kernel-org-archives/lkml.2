@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab2LMO3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:29:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44869 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933101Ab2LMOLx (ORCPT
+	id S933098Ab2LMOLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:11:51 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:49297 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933070Ab2LMOLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:11:53 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <james.l.morris@oracle.com>,
-        Jie Liu <jeff.liu@oracle.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 179/241] RDS: fix rds-ping spinlock recursion
-Date: Thu, 13 Dec 2012 11:59:04 -0200
-Message-Id: <1355407206-17100-180-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	Thu, 13 Dec 2012 09:11:44 -0500
+From: Armando Visconti <armando.visconti@st.com>
+To: <balbi@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <pratyush.anand@st.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <spear-devel@list.st.com>
+Subject: [PATCH] usb: gadget zero: avoid unnecessary reinit of data in f_sourcesink
+Date: Thu, 13 Dec 2012 15:11:19 +0100
+Message-ID: <1355407879-11784-1-git-send-email-armando.visconti@st.com>
+X-Mailer: git-send-email 1.7.4.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+In the IN case, since the USB request is allocated only when
+the source/sink function is started and never freed, the USB ept
+buffer needs to be inited only at the beginning. This change
+results into a more performant g_zero module, especially when
+'pattern=1' is selected.
 
-------------------
-
-From: "jeff.liu" <jeff.liu@oracle.com>
-
-commit 5175a5e76bbdf20a614fb47ce7a38f0f39e70226 upstream.
-
-This is the revised patch for fixing rds-ping spinlock recursion
-according to Venkat's suggestions.
-
-RDS ping/pong over TCP feature has been broken for years(2.6.39 to
-3.6.0) since we have to set TCP cork and call kernel_sendmsg() between
-ping/pong which both need to lock "struct sock *sk". However, this
-lock has already been hold before rds_tcp_data_ready() callback is
-triggerred. As a result, we always facing spinlock resursion which
-would resulting in system panic.
-
-Given that RDS ping is only used to test the connectivity and not for
-serious performance measurements, we can queue the pong transmit to
-rds_wq as a delayed response.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Armando Visconti <armando.visconti@st.com>
 ---
- net/rds/send.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/f_sourcesink.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/net/rds/send.c b/net/rds/send.c
-index 96531d4..88eace5 100644
---- a/net/rds/send.c
-+++ b/net/rds/send.c
-@@ -1122,7 +1122,7 @@ rds_send_pong(struct rds_connection *conn, __be16 dport)
- 	rds_stats_inc(s_send_pong);
+diff --git a/drivers/usb/gadget/f_sourcesink.c b/drivers/usb/gadget/f_sourcesink.c
+index 3c126fd..534cf8c 100644
+--- a/drivers/usb/gadget/f_sourcesink.c
++++ b/drivers/usb/gadget/f_sourcesink.c
+@@ -536,8 +536,7 @@ static void source_sink_complete(struct usb_ep *ep, struct usb_request *req)
+ 			check_read_data(ss, req);
+ 			if (pattern != 2)
+ 				memset(req->buf, 0x55, req->length);
+-		} else
+-			reinit_write_data(ep, req);
++		}
+ 		break;
  
- 	if (!test_bit(RDS_LL_SEND_FULL, &conn->c_flags))
--		rds_send_xmit(conn);
-+		queue_delayed_work(rds_wq, &conn->c_send_w, 0);
- 
- 	rds_message_put(rm);
- 	return 0;
+ 	/* this endpoint is normally active while we're configured */
 -- 
-1.7.9.5
+1.7.4.4
 
