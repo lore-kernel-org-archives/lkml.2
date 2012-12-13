@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2LMOaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:30:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44842 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933031Ab2LMOLg (ORCPT
+	id S1756731Ab2LMOav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:30:51 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42708 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756625Ab2LMOas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:11:36 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Gao feng <gaofeng@cn.fujitsu.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 174/241] infiniband: pass rdma_cm module to netlink_dump_start
-Date: Thu, 13 Dec 2012 11:58:59 -0200
-Message-Id: <1355407206-17100-175-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	Thu, 13 Dec 2012 09:30:48 -0500
+Message-ID: <50C9E692.9070506@gmail.com>
+Date: Thu, 13 Dec 2012 07:30:42 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.8
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com> <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com> <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com> <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com>
+In-Reply-To: <20121213073056.GA13156@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+On 12/13/12 12:30 AM, Ingo Molnar wrote:
+>
+> * David Ahern <dsahern@gmail.com> wrote:
+>
+>>> But doing it this way was wrong. Switch that "exclude_guest"
+>>> attribute around, and admit that "H" was bogus, and that the
+>>> right thing to do was to add a "V" flag that sets the
+>>> "force_guest" flag instead.
+>>
+>> I understand this is annoying. [...]
+>
+> It's not annoying, it's outright broken - it's a regression that
+> we'll fix.
 
-------------------
+One of the problems is that existing binaries set the exclude_guest flag 
+(https://lkml.org/lkml/2012/7/9/292).
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+So, requesting users to update their binaries if they want to use 
+precise sampling is not acceptable. A 100% catastrophic failure of all 
+running VMs is acceptable? All VMs will crash and there is no direct 
+causal relationship.
 
-commit 809d5fc9bf6589276a12bd4fd611e4c7ff9940c3 upstream.
-
-set netlink_dump_control.module to avoid panic.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/infiniband/core/cma.c     |    3 ++-
- drivers/infiniband/core/netlink.c |    1 +
- include/rdma/rdma_netlink.h       |    1 +
- 3 files changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
-index 2e826f9..d57ff70 100644
---- a/drivers/infiniband/core/cma.c
-+++ b/drivers/infiniband/core/cma.c
-@@ -3457,7 +3457,8 @@ out:
- }
- 
- static const struct ibnl_client_cbs cma_cb_table[] = {
--	[RDMA_NL_RDMA_CM_ID_STATS] = { .dump = cma_get_id_stats },
-+	[RDMA_NL_RDMA_CM_ID_STATS] = { .dump = cma_get_id_stats,
-+				       .module = THIS_MODULE },
- };
- 
- static int __init cma_init(void)
-diff --git a/drivers/infiniband/core/netlink.c b/drivers/infiniband/core/netlink.c
-index e497dfb..fb99702 100644
---- a/drivers/infiniband/core/netlink.c
-+++ b/drivers/infiniband/core/netlink.c
-@@ -152,6 +152,7 @@ static int ibnl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 			{
- 				struct netlink_dump_control c = {
- 					.dump = client->cb_table[op].dump,
-+					.module = client->cb_table[op].module,
- 				};
- 				return netlink_dump_start(nls, skb, nlh, &c);
- 			}
-diff --git a/include/rdma/rdma_netlink.h b/include/rdma/rdma_netlink.h
-index 3c5363a..bd3d8b2 100644
---- a/include/rdma/rdma_netlink.h
-+++ b/include/rdma/rdma_netlink.h
-@@ -39,6 +39,7 @@ struct rdma_cm_id_stats {
- 
- struct ibnl_client_cbs {
- 	int (*dump)(struct sk_buff *skb, struct netlink_callback *nlcb);
-+	struct module *module;
- };
- 
- int ibnl_init(void);
--- 
-1.7.9.5
-
+David
