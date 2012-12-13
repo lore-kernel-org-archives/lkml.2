@@ -1,112 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2LMXEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 18:04:13 -0500
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:32842 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab2LMXEK (ORCPT
+	id S1755917Ab2LMXJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 18:09:33 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:61229 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab2LMXJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 18:04:10 -0500
-Message-ID: <50CA5EE2.30206@linux.vnet.ibm.com>
-Date: Thu, 13 Dec 2012 21:04:02 -0200
-From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: dri-devel@lists.freedesktop.org
-CC: David Airlie <airlied@linux.ie>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        brking@linux.vnet.ibm.com, benh@au1.ibm.com
-Subject: drm: Added ppc64 root device getter
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121323-2362-0000-0000-0000093D62E4
+	Thu, 13 Dec 2012 18:09:31 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-95-50ca602929f8
+From: =?UTF-8?B?7J207LC966eM?= <cm224.lee@samsung.com>
+To: "'Namjae Jeon'" <linkinjeon@gmail.com>, jaegeuk.kim@samsung.com
+Cc: "'Amit Sahrawat'" <a.sahrawat@samsung.com>,
+        "'Namjae Jeon'" <namjae.jeon@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org
+References: <1355409851-6389-1-git-send-email-linkinjeon@gmail.com>
+In-reply-to: <1355409851-6389-1-git-send-email-linkinjeon@gmail.com>
+Subject: RE: [f2fs-dev] [PATCH v2] f2fs: fix up f2fs_get_parent issue to
+	retrieve correct parent inode number
+Date: Fri, 14 Dec 2012 08:09:28 +0900
+Message-id: <060d01cdd986$e708a180$b519e480$%lee@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3ZQF1LYmlTU4nES2S2vrhAJR8PzQARjg3g
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zY13NhFMBBifnSlvs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGVsaXjNVNAgVbHkdi9zA+Ns0S5GTg4JAROJX5+mskLY
+	YhIX7q1n62Lk4hASWMYosan9DzNM0aG+L4wQiemMEr9XfWSCcP4wStz73MECUsUmYCax8d4V
+	MFtEwFHi9O+vYGOZBfYxSnTvEQKxhQScJW6sucIEYnMKuEh8+NPEBmILC+RLrF/6CayeRUBV
+	4uTu/ewgNq+ArcSWv5uZIWxBiR+T77FAzFSXmDRvETOELS+xec1bIJsD6FJ1iUd/dUFMEQEj
+	ietvnSEqRCT2vXjHCDFdQOLb5EMsENWyEpsOMIN8IiGwil3i0rkTLBD/SkocXHGDZQKjxCwk
+	i2chWTwLyeJZSFYsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRESY1I7GFc2WBxiFOBg
+	VOLh/Sh0KkCINbGsuDL3EKMEB7OSCG+vH1CINyWxsiq1KD++qDQntfgQow/Q5ROZpUST84Hx
+	n1cSb2hsbGJmYmpibmlqbopDWEmct9kjJUBIID2xJDU7NbUgtQhmHBMHp1QDY0dWjEx+8rpi
+	H4PXh3a1/7hf6tUv5jNVl+nALXP32MKD6XUPZyWet2B/mF9c3HOXTeTDOrUNDfFeEZ6aalrc
+	/122Kmr2n+XeHXV/zrV0BZXnUSdizHiMJh7JvGy2qf/B/L1ySU/5M8X2HMxY8YArv8v+V1qi
+	92zejt9HFs/5c/zPWaf1U1RslFiKMxINtZiLihMB0LKFeN4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jQV3NhFMBBkf+iFjs2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmbGl4zVTQIFWx
+	5HYvcwPjbNEuRk4OCQETiUN9XxghbDGJC/fWs3UxcnEICUxnlPi96iMThPOHUeLe5w4WkCo2
+	ATOJjfeugNkiAo4Sp39/ZQWxmQX2MUp07xECsYUEnCVurLnCBGJzCrhIfPjTxAZiCwvkS6xf
+	+gmsnkVAVeLk7v3sIDavgK3Elr+bmSFsQYkfk++xQMxUl5g0bxEzhC0vsXnNWyCbA+hSdYlH
+	f3VBTBEBI4nrb50hKkQk9r14xziBUWgWkkGzkAyahWTQLCQtCxhZVjGKphYkFxQnpeca6hUn
+	5haX5qXrJefnbmIER/AzqR2MKxssDjEKcDAq8fB+FDoVIMSaWFZcmXuIUYKDWUmEt9cPKMSb
+	klhZlVqUH19UmpNafIjRB+jPicxSosn5wOSSVxJvaGxiZmRpZGZhZGJujkNYSZy32SMlQEgg
+	PbEkNTs1tSC1CGYcEwenVANjWsi2/tvKYvLmKRa+01Qj2C1DxIpsPS/umbLgmfC7zEqeiW+u
+	WTm9X/jtfJR03e0nwotKxM++nmliy/Hwior50wI+812z9A4xvTj5bRnnMintyql/2eacPX/S
+	VNL70Lf5pcql9c3Ri718tT+YSepu7urv2LaE9YLsgYhXmw6cLXvxcd7r31lPlFiKMxINtZiL
+	ihMB9m9LpA0DAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On architectures such as ppc64, there is no root bus device (it belongs
-to the hypervisor). DRM attempted to get one, causing a null-pointer
-dereference.
 
-Signed-off-by: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
 
---
-diff --git a/arch/powerpc/platforms/pseries/Makefile 
-b/arch/powerpc/platforms/pseries/Makefile
-index 890622b..ddfdda8 100644
---- a/arch/powerpc/platforms/pseries/Makefile
-+++ b/arch/powerpc/platforms/pseries/Makefile
-@@ -1,6 +1,8 @@
-  ccflags-$(CONFIG_PPC64)			:= -mno-minimal-toc
-  ccflags-$(CONFIG_PPC_PSERIES_DEBUG)	+= -DDEBUG
+> -----Original Message-----
+> From: Namjae Jeon [mailto:linkinjeon@gmail.com]
+> Sent: Thursday, December 13, 2012 11:44 PM
+> To: jaegeuk.kim@samsung.com
+> Cc: Namjae Jeon; Amit Sahrawat; Namjae Jeon; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org
+> Subject: [f2fs-dev] [PATCH v2] f2fs: fix up f2fs_get_parent issue to
+> retrieve correct parent inode number
+> 
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> Test Case:
+> [NFS Client]
+> ls -lR .
+> 
+> [NFS Server]
+> while [ 1 ]
+> do
+> echo 3 > /proc/sys/vm/drop_caches
+> done
+> 
+> Error on NFS Client: "No such file or directory"
+> 
+> When cache is dropped at the server, it results in lookup failure at the
+> NFS client due to non-connection with the parent. The default path is it
+> initiates a lookup by calculating the hash value for the name, even though
+> the hash values stored on the disk for "." and ".." is maintained as zero,
+> which results in failure from find_in_block due to not matching HASH values.
+> Fix up, by using the correct hashing values for these entries.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  fs/f2fs/dir.c  |    4 ++--
+>  fs/f2fs/hash.c |    4 ++++
+>  2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+> index b4e24f3..a158406 100644
+> --- a/fs/f2fs/dir.c
+> +++ b/fs/f2fs/dir.c
+> @@ -540,13 +540,13 @@ int f2fs_make_empty(struct inode *inode, struct inode
+> *parent)
+> 
+>  	de = &dentry_blk->dentry[0];
+>  	de->name_len = cpu_to_le16(1);
+> -	de->hash_code = 0;
+> +	de->hash_code = f2fs_dentry_hash(".", 1);
+>  	de->ino = cpu_to_le32(inode->i_ino);
+>  	memcpy(dentry_blk->filename[0], ".", 1);
+>  	set_de_type(de, inode);
+> 
+>  	de = &dentry_blk->dentry[1];
+> -	de->hash_code = 0;
+> +	de->hash_code = f2fs_dentry_hash("..", 2);
+>  	de->name_len = cpu_to_le16(2);
+>  	de->ino = cpu_to_le32(parent->i_ino);
+>  	memcpy(dentry_blk->filename[1], "..", 2);
+> diff --git a/fs/f2fs/hash.c b/fs/f2fs/hash.c
+> index a60f042..5e48bac 100644
+> --- a/fs/f2fs/hash.c
+> +++ b/fs/f2fs/hash.c
+> @@ -76,6 +76,10 @@ f2fs_hash_t f2fs_dentry_hash(const char *name, int len)
+>  	const char *p;
+>  	__u32 in[8], buf[4];
+> 
+> +	if ((len <= 2) && (name[0] == '.') &&
+> +		(name[1] == '.' || name[1] == '\0'))
+> +		return 0;
+> +
 
-+drm-y			+= drm_pci.o
-+
-  obj-y			:= lpar.o hvCall.o nvram.o reconfig.o \
-  			   setup.o iommu.o event_sources.o ras.o \
-  			   firmware.o power.o dlpar.o mobility.o
-diff --git a/arch/powerpc/platforms/pseries/drm_pci.c 
-b/arch/powerpc/platforms/pseries/drm_pci.c
-new file mode 100644
-index 0000000..da6675e
---- /dev/null
-+++ b/arch/powerpc/platforms/pseries/drm_pci.c
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (C) 2012 Lucas Kannebley Tavares, IBM Corporation
-+ *
-+ * pSeries specific routines for DRM.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ */
-+
-+inline struct pci_device *drm_get_parent_device(struct drm_device *dev) {
-+	return (dev->pdev->bus->self == NULL) ? dev->pdev : dev->pdev->bus->self;
-+}
-+
-diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-index eb37466..5a8a4f5 100644
---- a/drivers/gpu/drm/drm_pci.c
-+++ b/drivers/gpu/drm/drm_pci.c
-@@ -466,6 +466,10 @@ void drm_pci_exit(struct drm_driver *driver, struct 
-pci_driver *pdriver)
-  }
-  EXPORT_SYMBOL(drm_pci_exit);
+How about this?
+if (!memcmp(name, ".", len) || !memcmp(name, "..", len))
+	return 0;
 
-+inline __weak struct pci_device *drm_get_parent_device(struct 
-drm_device *dev) {
-+	return dev->pdev->bus->self;
-+}
-+
-  int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
-  {
-  	struct pci_dev *root;
-@@ -479,7 +483,7 @@ int drm_pcie_get_speed_cap_mask(struct drm_device 
-*dev, u32 *mask)
-  		return -EINVAL;
 
-  	// find PCI device for capabilities
--	root = dev->pdev->bus->self;
-+	root = drm_get_parent_device(dev);
-
-  	// some architectures might not have host bridges as PCI devices
-  	if (root == NULL)
-
--- 
-Lucas Kannebley Tavares
-Software Engineer
-IBM Linux Technology Center
+>  	/* Initialize the default seed for the hash checksum functions */
+>  	buf[0] = 0x67452301;
+>  	buf[1] = 0xefcdab89;
+> --
+> 1.7.9.5
+> 
+> 
+> ---------------------------------------------------------------------------
+> ---
+> LogMeIn Rescue: Anywhere, Anytime Remote support for IT. Free Trial
+> Remotely access PCs and mobile devices and provide instant support
+> Improve your efficiency, and focus on delivering more value-add services
+> Discover what IT Professionals Know. Rescue delivers
+> http://p.sf.net/sfu/logmein_12329d2d
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
