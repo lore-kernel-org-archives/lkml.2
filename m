@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731Ab2LMOjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:39:01 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45841 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932136Ab2LMOi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:38:58 -0500
-Date: Thu, 13 Dec 2012 19:38:07 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] uprobes: Kill the pointless inode/uc checks in
- register/unregister
-Message-ID: <20121213140807.GF29086@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121123202741.GA18858@redhat.com>
- <20121123202806.GA18887@redhat.com>
- <20121210061901.GF22164@linux.vnet.ibm.com>
- <20121210191232.GA32462@redhat.com>
- <20121213103548.GC29086@linux.vnet.ibm.com>
- <20121213131540.GA11862@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121213131540.GA11862@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121314-5806-0000-0000-00001CEF0D34
+	id S932760Ab2LMOjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:39:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44619 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932552Ab2LMOJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:09:03 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Jones <davej@redhat.com>, Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 133/241] selinux: fix sel_netnode_insert() suspicious rcu dereference
+Date: Thu, 13 Dec 2012 11:58:18 -0200
+Message-Id: <1355407206-17100-134-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >
-> > > I agree, sometimes it makes sense to protect against the stupid mistakes,
-> > > but if we want to check against NULL we should do
-> > >
-> > > 	if (WARN_ON(!inode))
-> > > 		return;
-> > >
-> >
-> > agree, that warn_on is better than a simple check
-> 
-> and this one
-> 
-> 	if (WARN_ON(inode < PAGE_OFFSET))
-> 
-> is even better ;)
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Okay.
+------------------
 
-> 
-> > > Especially in uprobe_unregister(). The current code is really "hide
-> > > the possible problem" and nothing more. It is better to crash imho
-> > > than silently return.
-> > >
-> > > > > register() also checks uc->next == NULL, probably to prevent the
-> > > > > double-register but the caller can do other stupid/wrong things.
-> > > >
-> > > > Users can surely do more stupid things. But this is again something that
-> > > > kernel can identify. By allowing a double-register of a consumer, thats
-> > > > already registered, we might end up allowing circular loop of consumers.
-> > >
-> > > I understand. But in this case we should document that uc->next must
-> > > be cleared before uprobe_register(). Or add init_consumer().
-> > >
-> > > And we should change uprobe_unregister() to clear uc->next as well.
-> > > I think that the code like this
-> > >
-> > > 	uprobe_register(uc);
-> > > 	uprobe_unregister(uc);
-> > >
-> > > 	uprobe_register(uc);
-> > >
-> > > should work. Currently it doesn't because of this check.
-> > >
-> >
-> > yes, these should work and makes a case to nullify ->next on unregister.
-> >
-> > However, what if someone tries
-> >
-> > 	uprobe_register(uc1);
-> > 	uprobe_register(uc2);
-> > 	uprobe_register(uc1);
-> >
-> > i.e somebody tries to re-register uc1, while its active and has a valid
-> > next. After the re-registration of uc1, the uprobe->consumers will no more reference uc2.
-> 
-> Yes. And even without uprobe_register(uc2) the result won't be good.
-> This is like list_add(node).
-> 
-> > Should we leave this case as a fool shooting himself?
-> 
-> IMHO yes, or we should create init_consumer() or at least document that
-> the private ->next member should be nullified.
-> 
+From: Dave Jones <davej@redhat.com>
 
-Okay, Since we agree that its a user mistake. So lets document this and
-continue with what you propose.
+commit 88a693b5c1287be4da937699cb82068ce9db0135 upstream.
+
+===============================
+[ INFO: suspicious RCU usage. ]
+3.5.0-rc1+ #63 Not tainted
+-------------------------------
+security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by trinity-child1/8750:
+ #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812d8f8a>] sel_netnode_sid+0x16a/0x3e0
+
+stack backtrace:
+Pid: 8750, comm: trinity-child1 Not tainted 3.5.0-rc1+ #63
+Call Trace:
+ [<ffffffff810cec2d>] lockdep_rcu_suspicious+0xfd/0x130
+ [<ffffffff812d91d1>] sel_netnode_sid+0x3b1/0x3e0
+ [<ffffffff812d8e20>] ? sel_netnode_find+0x1a0/0x1a0
+ [<ffffffff812d24a6>] selinux_socket_bind+0xf6/0x2c0
+ [<ffffffff810cd1dd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff810cdb55>] ? lock_release_holdtime.part.9+0x15/0x1a0
+ [<ffffffff81093841>] ? lock_hrtimer_base+0x31/0x60
+ [<ffffffff812c9536>] security_socket_bind+0x16/0x20
+ [<ffffffff815550ca>] sys_bind+0x7a/0x100
+ [<ffffffff816c03d5>] ? sysret_check+0x22/0x5d
+ [<ffffffff810d392d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
+ [<ffffffff8133b09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff816c03a9>] system_call_fastpath+0x16/0x1b
+
+This patch below does what Paul McKenney suggested in the previous thread.
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ security/selinux/netnode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
+index 28f911c..c5454c0 100644
+--- a/security/selinux/netnode.c
++++ b/security/selinux/netnode.c
+@@ -174,7 +174,8 @@ static void sel_netnode_insert(struct sel_netnode *node)
+ 	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
+ 		struct sel_netnode *tail;
+ 		tail = list_entry(
+-			rcu_dereference(sel_netnode_hash[idx].list.prev),
++			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
++						  lockdep_is_held(&sel_netnode_lock)),
+ 			struct sel_netnode, list);
+ 		list_del_rcu(&tail->list);
+ 		kfree_rcu(tail, rcu);
+-- 
+1.7.9.5
 
