@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab2LMSnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 13:43:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37084 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756508Ab2LMSnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 13:43:52 -0500
-Message-ID: <50CA2194.40103@zytor.com>
-Date: Thu, 13 Dec 2012 10:42:28 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756632Ab2LMSoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 13:44:46 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54981 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab2LMSop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 13:44:45 -0500
+Date: Thu, 13 Dec 2012 10:44:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Miles J Penner <miles.j.penner@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Tushar N Dave <tushar.n.dave@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] PCI Hotplug: workaround for Thunderbolt on Acer
+ Aspire S5
+Message-ID: <20121213184441.GB12105@kroah.com>
+References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Jiri Kosina <trivial@kernel.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "user-mode-linux-user@lists.sourceforge.net" 
-	<user-mode-linux-user@lists.sourceforge.net>
-Subject: Re: [TRIVIAL PATCH 16/26] x86: Convert print_symbol to %pSR
-References: <cover.1355335227.git.joe@perches.com> <054f8a88fe46ae0b4c2669d0e155d84c11b66115.1355335228.git.joe@perches.com> <20121212210959.GH8760@liondog.tnic> <1355347803.8538.16.camel@joe-AO722> <3908561D78D1C84285E8C5FCA982C28F1C969495@ORSMSX108.amr.corp.intel.com> <1355351039.27571.2.camel@joe-AO722> <20121212224550.GJ8760@liondog.tnic> <1355422990.13796.9.camel@joe-AO722> <20121213183659.GC31485@liondog.tnic>
-In-Reply-To: <20121213183659.GC31485@liondog.tnic>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 10:37 AM, Borislav Petkov wrote:
->>
->> If appropriate, the code could be changed to
->>
->> 	(void *)(unsigned long)m->ip
+On Thu, Dec 13, 2012 at 05:31:46PM +0200, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > 
-> Can we explicitly cast it to what it is so that we can be explicit as to
-> what we're casting it? IOW:
+> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> deeper in hierarchy:
 > 
-> 	(void *)(__u64)m->ip;
+> Device (RP05)
+> {
+>    // ...
+>    Device (HRUP)
+>    {
+>        // ...
+>        Device (HRDN)
+>        {
+>            // ...
+>            Device (EPUP)
+>            {
+>                // ...
+>                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+>                {
+>                    Return (One)
+>                }
+>            }
+>        }
+>    }
+> }
 > 
-> Does that even work on 32bit?
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  drivers/pci/hotplug/acpi_pcihp.c |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
 > 
-> Also, does the compiler bitch about this useless cast when building with
-> W=123?
-> 
+> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> index 2a47e82..d92ebfb 100644
+> --- a/drivers/pci/hotplug/acpi_pcihp.c
+> +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+>  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+>  	if (ACPI_SUCCESS(status) && removable)
+>  		return 1;
+> +
+> +	/*
+> +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> +	 *
+> +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> +	 * deeper in hierarchy.
+> +	 */
+> +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> +			&removable);
+> +	if (ACPI_SUCCESS(status) && removable)
+> +		return 1;
 
-Uh... no.
+I have no objection to this patch as-is, but I wonder how will other
+BIOSes implement this "incorrectly" in the future.  Should we always
+just try to walk the whole PCI slot heirachy looking for the _RMV
+attribute?  That should solve the problem where someone else places this
+at another location for the slot, right?
 
-The point is that (void *)(unsigned long) casts it to an integer of
-pointer size -- in userspace you would to (void *)(size_t) or (void
-*)(uintptr_t) -- so that the compiler knows "I meant to do that."
+Is there any test for Windows that ensures that this gets placed in the
+"correct" location that we can rely on?
 
-	-hpa
+thanks,
 
-
+greg k-h
