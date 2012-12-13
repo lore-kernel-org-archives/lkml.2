@@ -1,173 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab2LMXSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 18:18:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409Ab2LMXR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 18:17:59 -0500
-Date: Thu, 13 Dec 2012 20:37:16 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/5] KVM: MMU: adjust page size early if gfn used as
- page table
-Message-ID: <20121213223716.GA11385@amt.cnet>
-References: <50C5A747.1020105@linux.vnet.ibm.com>
- <50C5A79F.3020805@linux.vnet.ibm.com>
- <20121212005723.GA2898@amt.cnet>
- <50C8D9AE.5050706@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C8D9AE.5050706@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932095Ab2LMXSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 18:18:10 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:50168 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab2LMXSD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 18:18:03 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-00-50ca62176b0b
+From: =?UTF-8?B?7J207LC966eM?= <cm224.lee@samsung.com>
+To: =?UTF-8?B?J+ydtOywveunjCc=?= <cm224.lee@samsung.com>,
+        "'Namjae Jeon'" <linkinjeon@gmail.com>, jaegeuk.kim@samsung.com
+Cc: "'Namjae Jeon'" <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
+        "'Amit Sahrawat'" <a.sahrawat@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+References: <1355409851-6389-1-git-send-email-linkinjeon@gmail.com>
+ <060d01cdd986$e708a180$b519e480$%lee@samsung.com>
+In-reply-to: <060d01cdd986$e708a180$b519e480$%lee@samsung.com>
+Subject: RE: [f2fs-dev] [PATCH v2] f2fs: fix up f2fs_get_parent issue	to
+	retrieve correct parent inode number
+Date: Fri, 14 Dec 2012 08:17:42 +0900
+Message-id: <060e01cdd988$0d4d45c0$27e7d140$%lee@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3ZQF1LYmlTU4nES2S2vrhAJR8PzQARjg3gAABWgcA=
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zfV3xpFMBBpemMlvs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGWsWL6aqeCTSsWGSStZGxhb5boYOTkkBEwkXv86xAxh
+	i0lcuLeerYuRi0NIYBmjxP4FU9hgii69XcUIkZjOKLGyewErhPOHUWL91D52kCo2ATOJjfeu
+	sIDYIgKVErtfz2MBKWIW2McoserYerBRQgLlEu03NjOB2JwCdhKNV1eB2cIC+RKnXz1gBLFZ
+	BFQlVh5uBxvKK2ArsbVvKZQtKPFj8j2wBcwC6hKT5i1ihrC1JZ68uwB0EQfQqeoSj/7qgpgi
+	AlYS+7pUICpEJPa9eAc1XUDi2+RDLBDVshKbDjCDXCkhsIpd4vWqrSwQD0tKHFxxg2UCo8Qs
+	JItnIVk8C8niWUhWLGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kREmXSOxhXNVgcYhTg
+	YFTi4f0gdCpAiDWxrLgy9xCjBAezkghvrx9QiDclsbIqtSg/vqg0J7X4EKMP0OUTmaVEk/OB
+	CSCvJN7Q2NjEzMTUxNzS1NwUh7CSOG+zR0qAkEB6YklqdmpqQWoRzDgmDk6pBsYQ5cYNMif7
+	ffrPHv90aWJAVFAw1y+3m5u2bEzcpSQ+vdd6DUu8rfm/e1e29jMvvNR2wM8mIDPstFWv/oc5
+	fz7tdmjgvbqz3VUzv4Pl0HL247Y8W3tERA4Ze2VP4X4UacAVcnBf5sGw1EZ5O8HPq+Vcr7K7
+	TG1Y22DddOJb9OytstxT5/XU8yixFGckGmoxFxUnAgDYsr3J3wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jQV2xpFMBBl9vWlns2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmrFi+mqngk0rF
+	hkkrWRsYW+W6GDk5JARMJC69XcUIYYtJXLi3nq2LkYtDSGA6o8TK7gWsEM4fRon1U/vYQarY
+	BMwkNt67wgJiiwhUSux+PY8FpIhZYB+jxKpjIO2cQB3lEu03NjOB2JwCdhKNV1eB2cIC+RKn
+	Xz0AW8cioCqx8nA72FBeAVuJrX1LoWxBiR+T74EtYBZQl5g0bxEzhK0t8eTdBaCLOIBOVZd4
+	9FcXxBQRsJLY16UCUSEise/FO8YJjEKzkAyahWTQLCSDZiFpWcDIsopRNLUguaA4KT3XSK84
+	Mbe4NC9dLzk/dxMjOIafSe9gXNVgcYhRgINRiYf3g9CpACHWxLLiytxDjBIczEoivL1+QCHe
+	lMTKqtSi/Pii0pzU4kOMPkB/TmSWEk3OB6aXvJJ4Q2MTMyNLIzMLIxNzcxzCSuK8zR4pAUIC
+	6YklqdmpqQWpRTDjmDg4pRoY1/9Qrvr/5Ki5fODnvbPuBKQJhotydRxxYf8dEn86Q1RuXuTH
+	O7UvnpY6TQxe1fjkw+U56wPuTCqyPevxqD9v+fQ37zeXHDPo/FzxRZvrgR33uwO9Eer8T68c
+	O7ZWNkqRr/SIlNDjtIuCCTefMHZW5L8POjqrMSLUqm3HxvV2oZv87TZ/SvKsUWIpzkg01GIu
+	Kk4EABxWRzIOAwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 03:23:26AM +0800, Xiao Guangrong wrote:
-> On 12/12/2012 08:57 AM, Marcelo Tosatti wrote:
-> > On Mon, Dec 10, 2012 at 05:13:03PM +0800, Xiao Guangrong wrote:
-> >> We have two issues in current code:
-> >> - if target gfn is used as its page table, guest will refault then kvm will use
-> >>   small page size to map it. We need two #PF to fix its shadow page table
-> >>
-> >> - sometimes, say a exception is triggered during vm-exit caused by #PF
-> >>   (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
-> >>   by the target gfn before go into page fault path, it will cause infinite
-> >>   loop:
-> >>   delete shadow pages shadowed by the gfn -> try to use large page size to map
-> >>   the gfn -> retry the access ->...
-> >>
-> >> To fix these, We can adjust page size early if the target gfn is used as page
-> >> table
-> >>
-> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >> ---
-> >>  arch/x86/kvm/mmu.c         |   13 ++++---------
-> >>  arch/x86/kvm/paging_tmpl.h |   33 ++++++++++++++++++++++++++++++++-
-> >>  2 files changed, 36 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >> index 2a3c890..54fc61e 100644
-> >> --- a/arch/x86/kvm/mmu.c
-> >> +++ b/arch/x86/kvm/mmu.c
-> >> @@ -2380,15 +2380,10 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
-> >>  	if (pte_access & ACC_WRITE_MASK) {
-> >>
-> >>  		/*
-> >> -		 * There are two cases:
-> >> -		 * - the one is other vcpu creates new sp in the window
-> >> -		 *   between mapping_level() and acquiring mmu-lock.
-> >> -		 * - the another case is the new sp is created by itself
-> >> -		 *   (page-fault path) when guest uses the target gfn as
-> >> -		 *   its page table.
-> >> -		 * Both of these cases can be fixed by allowing guest to
-> >> -		 * retry the access, it will refault, then we can establish
-> >> -		 * the mapping by using small page.
-> >> +		 * Other vcpu creates new sp in the window between
-> >> +		 * mapping_level() and acquiring mmu-lock. We can
-> >> +		 * allow guest to retry the access, the mapping can
-> >> +		 * be fixed if guest refault.
-> >>  		 */
-> >>  		if (level > PT_PAGE_TABLE_LEVEL &&
-> >>  		    has_wrprotected_page(vcpu->kvm, gfn, level))
-> >> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> >> index ec481e9..32d77ff 100644
-> >> --- a/arch/x86/kvm/paging_tmpl.h
-> >> +++ b/arch/x86/kvm/paging_tmpl.h
-> >> @@ -491,6 +491,36 @@ out_gpte_changed:
-> >>  	return 0;
-> >>  }
-> >>
-> >> + /*
-> >> + * To see whether the mapped gfn can write its page table in the current
-> >> + * mapping.
-> >> + *
-> >> + * It is the helper function of FNAME(page_fault). When guest uses large page
-> >> + * size to map the writable gfn which is used as current page table, we should
-> >> + * force kvm to use small page size to map it because new shadow page will be
-> >> + * created when kvm establishes shadow page table that stop kvm using large
-> >> + * page size. Do it early can avoid unnecessary #PF and emulation.
-> >> + *
-> >> + * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
-> >> + * since the PDPT is always shadowed, that means, we can not use large page
-> >> + * size to map the gfn which is used as PDPT.
-> >> + */
-> >> +static bool
-> >> +FNAME(mapped_gfn_can_write_current_pagetable)(struct guest_walker *walker)
-> >> +{
-> >> +	int level;
-> >> +	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
-> >> +
-> >> +	if (!(walker->pte_access & ACC_WRITE_MASK))
-> >> +		return false;
-> >> +
-> >> +	for (level = walker->level; level <= walker->max_level; level++)
-> >> +		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
-> >> +			return true;
-> > 
-> > XOR won't work. Just check with sums and integer comparison, ie.
-> > walker->gfn + KVM_PAGES_PER_HPAGE(walker->level).
-> 
-> It can not work since walker->gfn is not large-page-size aligned. For example,
-> guest uses large page size to map 0x123000000 to physical address 0-2M, if
-> guest faults on 0x123001000, walker->gfn = 0x1000.
-> 
-> The code "if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))" is the
-> same as "if (walker->gfn & mask == walker->table_gfn[level - 1] & mask)" - if
-> any page in the large page area used as page table, we should use 4K page size
-> to fix it.
-> 
-> In above example, if table_gfn is in the area [0, 2M), kvm is forced to use
-> 4k page size.
+Sorry, I've missed too. Forget this, please.
 
-Right, i misread it. 
-
-> > Moreover, its confusing to have it checked at this level. What about
-> > doing at reexecute_instruction?
+> -----Original Message-----
+> From: 이창만 [mailto:cm224.lee@samsung.com]
+> Sent: Friday, December 14, 2012 8:09 AM
+> To: 'Namjae Jeon'; jaegeuk.kim@samsung.com
+> Cc: 'Namjae Jeon'; linux-fsdevel@vger.kernel.org; 'Amit Sahrawat'; linux-
+> kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: fix up f2fs_get_parent issue to
+> retrieve correct parent inode number
 > 
-> Hmm, this patch is trying to fix a bug described in the changelog:
 > 
-> ======
->  - sometimes, say a exception is triggered during vm-exit caused by #PF
->    (see handle_exception() in vmx.c), we remove all the shadow pages shadowed
->    by the target gfn before go into page fault path, it will cause infinite
->    loop:
->    delete shadow pages shadowed by the gfn -> try to use large page size to map
->    the gfn -> retry the access ->...
-> ======
 > 
-> Which is caused by this code:
+> > -----Original Message-----
+> > From: Namjae Jeon [mailto:linkinjeon@gmail.com]
+> > Sent: Thursday, December 13, 2012 11:44 PM
+> > To: jaegeuk.kim@samsung.com
+> > Cc: Namjae Jeon; Amit Sahrawat; Namjae Jeon; linux-kernel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org
+> > Subject: [f2fs-dev] [PATCH v2] f2fs: fix up f2fs_get_parent issue to
+> > retrieve correct parent inode number
+> >
+> > From: Namjae Jeon <namjae.jeon@samsung.com>
+> >
+> > Test Case:
+> > [NFS Client]
+> > ls -lR .
+> >
+> > [NFS Server]
+> > while [ 1 ]
+> > do
+> > echo 3 > /proc/sys/vm/drop_caches
+> > done
+> >
+> > Error on NFS Client: "No such file or directory"
+> >
+> > When cache is dropped at the server, it results in lookup failure at the
+> > NFS client due to non-connection with the parent. The default path is it
+> > initiates a lookup by calculating the hash value for the name, even
+> though
+> > the hash values stored on the disk for "." and ".." is maintained as zero,
+> > which results in failure from find_in_block due to not matching HASH
+> values.
+> > Fix up, by using the correct hashing values for these entries.
+> >
+> > Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> > Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > ---
+> >  fs/f2fs/dir.c  |    4 ++--
+> >  fs/f2fs/hash.c |    4 ++++
+> >  2 files changed, 6 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+> > index b4e24f3..a158406 100644
+> > --- a/fs/f2fs/dir.c
+> > +++ b/fs/f2fs/dir.c
+> > @@ -540,13 +540,13 @@ int f2fs_make_empty(struct inode *inode, struct
+> inode
+> > *parent)
+> >
+> >  	de = &dentry_blk->dentry[0];
+> >  	de->name_len = cpu_to_le16(1);
+> > -	de->hash_code = 0;
+> > +	de->hash_code = f2fs_dentry_hash(".", 1);
+> >  	de->ino = cpu_to_le32(inode->i_ino);
+> >  	memcpy(dentry_blk->filename[0], ".", 1);
+> >  	set_de_type(de, inode);
+> >
+> >  	de = &dentry_blk->dentry[1];
+> > -	de->hash_code = 0;
+> > +	de->hash_code = f2fs_dentry_hash("..", 2);
+> >  	de->name_len = cpu_to_le16(2);
+> >  	de->ino = cpu_to_le32(parent->i_ino);
+> >  	memcpy(dentry_blk->filename[1], "..", 2);
+> > diff --git a/fs/f2fs/hash.c b/fs/f2fs/hash.c
+> > index a60f042..5e48bac 100644
+> > --- a/fs/f2fs/hash.c
+> > +++ b/fs/f2fs/hash.c
+> > @@ -76,6 +76,10 @@ f2fs_hash_t f2fs_dentry_hash(const char *name, int len)
+> >  	const char *p;
+> >  	__u32 in[8], buf[4];
+> >
+> > +	if ((len <= 2) && (name[0] == '.') &&
+> > +		(name[1] == '.' || name[1] == '\0'))
+> > +		return 0;
+> > +
 > 
-> 	if (is_page_fault(intr_info)) {
-> 		/* EPT won't cause page fault directly */
-> 		BUG_ON(enable_ept);
-> 		cr2 = vmcs_readl(EXIT_QUALIFICATION);
-> 		trace_kvm_page_fault(cr2, error_code);
+> How about this?
+> if (!memcmp(name, ".", len) || !memcmp(name, "..", len))
+> 	return 0;
 > 
-> 		if (kvm_event_needs_reinjection(vcpu))
-> 			kvm_mmu_unprotect_page_virt(vcpu, cr2);
-> 		return kvm_mmu_page_fault(vcpu, cr2, error_code, NULL, 0);
-> 	}
 > 
-> This bug is introduced in commit c219346325.
+> >  	/* Initialize the default seed for the hash checksum functions */
+> >  	buf[0] = 0x67452301;
+> >  	buf[1] = 0xefcdab89;
+> > --
+> > 1.7.9.5
+> >
+> >
+> > -------------------------------------------------------------------------
+> --
+> > ---
+> > LogMeIn Rescue: Anywhere, Anytime Remote support for IT. Free Trial
+> > Remotely access PCs and mobile devices and provide instant support
+> > Improve your efficiency, and focus on delivering more value-add services
+> > Discover what IT Professionals Know. Rescue delivers
+> > http://p.sf.net/sfu/logmein_12329d2d
+> > _______________________________________________
+> > Linux-f2fs-devel mailing list
+> > Linux-f2fs-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 > 
-> Another way to fix it is doing this change:
-> @@ -2395,7 +2395,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->                  */
->                 if (level > PT_PAGE_TABLE_LEVEL &&
->                     has_wrprotected_page(vcpu->kvm, gfn, level))
-> -                       goto done;
-> +                       return 1;
 > 
-> The disadvantage of this way is, it causes unnecessary emulation. For example,
-> if 0-2M is mapped in guest and only page 0 used as page table, any write to
-> [4K, 2M) will need be emulated.
-> 
-> Your idea?
-
-OK, i understand now.
+> ---------------------------------------------------------------------------
+> ---
+> LogMeIn Rescue: Anywhere, Anytime Remote support for IT. Free Trial
+> Remotely access PCs and mobile devices and provide instant support
+> Improve your efficiency, and focus on delivering more value-add services
+> Discover what IT Professionals Know. Rescue delivers
+> http://p.sf.net/sfu/logmein_12329d2d
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
