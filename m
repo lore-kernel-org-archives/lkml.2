@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab2LMWC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:02:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26643 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab2LMWCt (ORCPT
+	id S1756786Ab2LMWEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:04:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50531 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756726Ab2LMWC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:49 -0500
+	Thu, 13 Dec 2012 17:02:59 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 05/27] x86, 64bit: clear ident mapping when kernel is above 512G
-Date: Thu, 13 Dec 2012 14:01:59 -0800
-Message-Id: <1355436141-8668-6-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Yinghai Lu <yinghai@kerne.org>
+Subject: [PATCH v6 23/27] x86: Don't panic if can not alloc buffer for swiotlb
+Date: Thu, 13 Dec 2012 14:02:17 -0800
+Message-Id: <1355436141-8668-24-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After following patch:
-	x86, 64bit: Set extra ident mapping for whole kernel range
+Normal boot path on system with iommu support:
+swiotlb buffer will be allocated early at first and then try to initialize
+iommu, if iommu for intel or amd could setup properly, swiotlb buffer
+will be freed.
 
-We have extra ident mapping for kernel that is loaded above 1G.
+The early allocating is with bootmem, and could panic when we try to use
+kdump with buffer above 4G only.
 
-So need to clear extra pgd entry when kernel is loaded above 512g.
+Replace the panic with WARN, and the kernel can go on without swiotlb,
+and could iommu later.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Yinghai Lu <yinghai@kerne.org>
 ---
- arch/x86/kernel/head64.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/kernel/pci-swiotlb.c |    5 ++++-
+ include/linux/swiotlb.h       |    2 +-
+ lib/swiotlb.c                 |   17 +++++++++++------
+ 3 files changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 037df57..3ef9ce6 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -29,7 +29,17 @@
- static void __init zap_identity_mappings(void)
+diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
+index 6c483ba..6f93eb7 100644
+--- a/arch/x86/kernel/pci-swiotlb.c
++++ b/arch/x86/kernel/pci-swiotlb.c
+@@ -91,7 +91,10 @@ IOMMU_INIT(pci_swiotlb_detect_4gb,
+ void __init pci_swiotlb_init(void)
  {
- 	pgd_t *pgd = pgd_offset_k(0UL);
-+	unsigned long pa_text = __pa_symbol(_text);
-+	unsigned long pa_end = __pa_symbol(_end);
+ 	if (swiotlb) {
+-		swiotlb_init(0);
++		if (swiotlb_init(0)) {
++			swiotlb = 0;
++			return;
++		}
+ 		dma_ops = &swiotlb_dma_ops;
+ 	}
+ }
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 8d08b3e..f7535d1 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -22,7 +22,7 @@ extern int swiotlb_force;
+  */
+ #define IO_TLB_SHIFT 11
+ 
+-extern void swiotlb_init(int verbose);
++int swiotlb_init(int verbose);
+ extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ extern unsigned long swiotlb_nr_tbl(void);
+ extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index f114bf6..6b99ea7 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -170,7 +170,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+  * Statically reserve bounce buffer space and initialize bounce buffer data
+  * structures for the software IO TLB used to implement the DMA API.
+  */
+-static void __init
++static int __init
+ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ {
+ 	unsigned long bytes;
+@@ -185,17 +185,22 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 	/*
+ 	 * Get IO TLB memory from the low pages
+ 	 */
+-	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+-	if (!io_tlb_start)
+-		panic("Cannot allocate SWIOTLB buffer");
++	io_tlb_start = alloc_bootmem_low_pages_nopanic(PAGE_ALIGN(bytes));
++	if (!io_tlb_start) {
++		WARN(1, "Cannot allocate SWIOTLB buffer");
++		return -1;
++	}
+ 
+ 	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
 +
- 	pgd_clear(pgd);
-+
-+	/* When kernel is loaded above 512G */
-+	if (pa_text >= PGDIR_SIZE)
-+		pgd_clear(pgd + pgd_index(pa_text));
-+	if (pa_end - 1 >= PGDIR_SIZE)
-+		pgd_clear(pgd + pgd_index(pa_end - 1));
-+
- 	__flush_tlb_all();
++	return 0;
  }
  
+-void __init
++int __init
+ swiotlb_init(int verbose)
+ {
+-	swiotlb_init_with_default_size(64 * (1<<20), verbose);	/* default to 64MB */
++	/* default to 64MB */
++	return swiotlb_init_with_default_size(64 * (1<<20), verbose);
+ }
+ 
+ /*
 -- 
 1.7.10.4
 
