@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab2LMIqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 03:46:06 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48280 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab2LMIqF (ORCPT
+	id S1753432Ab2LMIrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 03:47:22 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51672 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab2LMIrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 03:46:05 -0500
-Message-ID: <1355388358.31434.5.camel@phoenix>
-Subject: [RFC/RFT][PATCH 2/4] regulator: 88pm8607: Use activate_[reg|bit]
- with regmap based voltage_sel operations
+	Thu, 13 Dec 2012 03:47:20 -0500
+Message-ID: <1355388433.31434.7.camel@phoenix>
+Subject: [RFC/RFT][PATCH 3/4] regulator: da9052: Use activate_[reg|bit] with
+ regmap based voltage_sel operations
 From: Axel Lin <axel.lin@ingics.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Dec 2012 16:45:58 +0800
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Thu, 13 Dec 2012 16:47:13 +0800
 In-Reply-To: <1355388248.31434.3.camel@phoenix>
 References: <1355388248.31434.3.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -27,94 +28,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/regulator/88pm8607.c |   43 ++++++++++++------------------------------
- 1 file changed, 12 insertions(+), 31 deletions(-)
+ drivers/regulator/da9052-regulator.c |   41 +++++-----------------------------
+ 1 file changed, 6 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-index 2b55711..21a7334 100644
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -30,8 +30,6 @@ struct pm8607_regulator_info {
- 	unsigned int	*vol_table;
- 	unsigned int	*vol_suspend;
- 
--	int	update_reg;
--	int	update_bit;
- 	int	slope_double;
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+index d096309..47455ad 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -70,7 +70,6 @@ struct da9052_regulator_info {
+ 	int step_uV;
+ 	int min_uV;
+ 	int max_uV;
+-	unsigned char activate_bit;
  };
  
-@@ -222,29 +220,6 @@ static int pm8607_list_voltage(struct regulator_dev *rdev, unsigned index)
- 	return ret;
+ struct da9052_regulator {
+@@ -210,36 +209,6 @@ static int da9052_map_voltage(struct regulator_dev *rdev,
+ 	return sel;
  }
  
--static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+-static int da9052_regulator_set_voltage_sel(struct regulator_dev *rdev,
+-					    unsigned int selector)
 -{
--	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
--	uint8_t val;
+-	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
+-	struct da9052_regulator_info *info = regulator->info;
+-	int id = rdev_get_id(rdev);
 -	int ret;
 -
--	val = (uint8_t)(selector << (ffs(rdev->desc->vsel_mask) - 1));
--
--	ret = pm860x_set_bits(info->i2c, rdev->desc->vsel_reg,
--			      rdev->desc->vsel_mask, val);
--	if (ret)
+-	ret = da9052_reg_update(regulator->da9052, rdev->desc->vsel_reg,
+-				rdev->desc->vsel_mask, selector);
+-	if (ret < 0)
 -		return ret;
--	switch (info->desc.id) {
--	case PM8607_ID_BUCK1:
--	case PM8607_ID_BUCK3:
--		ret = pm860x_set_bits(info->i2c, info->update_reg,
--				      1 << info->update_bit,
--				      1 << info->update_bit);
+-
+-	/* Some LDOs and DCDCs are DVC controlled which requires enabling of
+-	 * the activate bit to implment the changes on the output.
+-	 */
+-	switch (id) {
+-	case DA9052_ID_BUCK1:
+-	case DA9052_ID_BUCK2:
+-	case DA9052_ID_BUCK3:
+-	case DA9052_ID_LDO2:
+-	case DA9052_ID_LDO3:
+-		ret = da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
+-					info->activate_bit, info->activate_bit);
 -		break;
 -	}
+-
 -	return ret;
 -}
 -
- static int pm8606_preg_enable(struct regulator_dev *rdev)
- {
- 	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
-@@ -276,7 +251,7 @@ static int pm8606_preg_is_enabled(struct regulator_dev *rdev)
- 
- static struct regulator_ops pm8607_regulator_ops = {
- 	.list_voltage	= pm8607_list_voltage,
--	.set_voltage_sel = pm8607_set_voltage_sel,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ static struct regulator_ops da9052_dcdc_ops = {
+ 	.get_current_limit = da9052_dcdc_get_current_limit,
+ 	.set_current_limit = da9052_dcdc_set_current_limit,
+@@ -247,7 +216,7 @@ static struct regulator_ops da9052_dcdc_ops = {
+ 	.list_voltage = da9052_list_voltage,
+ 	.map_voltage = da9052_map_voltage,
  	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage_sel = da9052_regulator_set_voltage_sel,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.is_enabled = regulator_is_enabled_regmap,
  	.enable = regulator_enable_regmap,
  	.disable = regulator_disable_regmap,
-@@ -313,11 +288,11 @@ static struct regulator_ops pm8606_preg_ops = {
- 		.n_voltages = ARRAY_SIZE(vreg##_table),			\
- 		.vsel_reg = PM8607_##vreg,				\
- 		.vsel_mask = ARRAY_SIZE(vreg##_table) - 1,		\
-+		.activate_reg = PM8607_##ureg,				\
-+		.activate_bit = (ubit),					\
- 		.enable_reg = PM8607_##ereg,				\
- 		.enable_mask = 1 << (ebit),				\
- 	},								\
--	.update_reg	= PM8607_##ureg,				\
--	.update_bit	= (ubit),					\
- 	.slope_double	= (0),						\
- 	.vol_table	= (unsigned int *)&vreg##_table,		\
- 	.vol_suspend	= (unsigned int *)&vreg##_suspend_table,	\
-@@ -343,9 +318,15 @@ static struct regulator_ops pm8606_preg_ops = {
+@@ -257,7 +226,7 @@ static struct regulator_ops da9052_ldo_ops = {
+ 	.list_voltage = da9052_list_voltage,
+ 	.map_voltage = da9052_map_voltage,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage_sel = da9052_regulator_set_voltage_sel,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -274,13 +243,14 @@ static struct regulator_ops da9052_ldo_ops = {
+ 		.owner = THIS_MODULE,\
+ 		.vsel_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.vsel_mask = (1 << (sbits)) - 1,\
++		.activate_reg = DA9052_SUPPLY_REG, \
++		.activate_bit = (abits), \
+ 		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.enable_mask = 1 << (ebits),\
+ 	},\
+ 	.min_uV = (min) * 1000,\
+ 	.max_uV = (max) * 1000,\
+ 	.step_uV = (step) * 1000,\
+-	.activate_bit = (abits),\
  }
  
- static struct pm8607_regulator_info pm8607_regulator_info[] = {
--	PM8607_DVC(BUCK1, GO, 0, SUPPLIES_EN11, 0),
--	PM8607_DVC(BUCK2, GO, 1, SUPPLIES_EN11, 1),
--	PM8607_DVC(BUCK3, GO, 2, SUPPLIES_EN11, 2),
-+	PM8607_DVC(BUCK1, GO, BIT(0), SUPPLIES_EN11, 0),
-+	/*
-+	 * BUCK2 is designed to control voltage of CP domain.
-+	 * Linux only runs in AP side, so we don't need to control BUCK2 in AP
-+	 * side. Thus set the activate bit to be 0 instead of BIT(1) to avoid
-+	 * updating activate_bit for BUCK2
-+	 */
-+	PM8607_DVC(BUCK2, GO, 0, SUPPLIES_EN11, 1),
-+	PM8607_DVC(BUCK3, GO, BIT(2), SUPPLIES_EN11, 2),
+ #define DA9052_DCDC(_id, step, min, max, sbits, ebits, abits) \
+@@ -294,13 +264,14 @@ static struct regulator_ops da9052_ldo_ops = {
+ 		.owner = THIS_MODULE,\
+ 		.vsel_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.vsel_mask = (1 << (sbits)) - 1,\
++		.activate_reg = DA9052_SUPPLY_REG, \
++		.activate_bit = (abits), \
+ 		.enable_reg = DA9052_BUCKCORE_REG + DA9052_ID_##_id, \
+ 		.enable_mask = 1 << (ebits),\
+ 	},\
+ 	.min_uV = (min) * 1000,\
+ 	.max_uV = (max) * 1000,\
+ 	.step_uV = (step) * 1000,\
+-	.activate_bit = (abits),\
+ }
  
- 	PM8607_LDO(1,         LDO1, 0, SUPPLIES_EN11, 3),
- 	PM8607_LDO(2,         LDO2, 0, SUPPLIES_EN11, 4),
+ static struct da9052_regulator_info da9052_regulator_info[] = {
 -- 
 1.7.9.5
 
