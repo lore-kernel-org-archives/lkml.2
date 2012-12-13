@@ -1,161 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2LMDk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:40:28 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36358 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab2LMDk0 (ORCPT
+	id S1753780Ab2LMDnT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:43:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43930 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab2LMDnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:40:26 -0500
-Message-ID: <50C94DE5.2040302@huawei.com>
-Date: Thu, 13 Dec 2012 11:39:17 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 12 Dec 2012 22:43:18 -0500
+Message-ID: <50C94ECD.6020504@gmail.com>
+Date: Wed, 12 Dec 2012 20:43:09 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, <dhillf@gmail.com>
-CC: Liujiang <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        qiuxishi <qiuxishi@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
-Subject: [PATCH v2 UPDATE] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
-Content-Type: text/plain; charset="UTF-8"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.8
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com> <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y
-and CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option,
-system will boot fail.
+On 12/12/12 8:34 PM, Linus Torvalds wrote:
+> On Wed, Dec 12, 2012 at 7:25 PM, David Ahern <dsahern@gmail.com> wrote:
+>>
+>> Are you running an older perf binary on the 3.8 kernel?
+>
+> I am.. I don't tend to rebuild 'perf'..
+>
+>> Does this work: perf record -e cycles:ppH  ...
+>
+> Yes it does. What is 'H' and why should anybody care? Especially since
+> I'm not running virtualized.
+>
+> That whole "exclude_guest" test is insane when there isn't any
+> virtualization going on. Very annoying.
 
-This failure is caused by following code path:
-setup_hugepagesz
-	hugetlb_add_hstate
-		hugetlb_cgroup_file_init
-			cgroup_add_cftypes
-				kzalloc <--slab is *not available* yet
+you know what's worse? All of your VMs blowing up because anyone runs 
+perf with precise attribute. Virtualization and and performance 
+monitoring collide. From the log message for commit 1342798.
 
-For this path, slab is not available yet, so memory allocated will be
-failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
+"Intel PEBS in VT-x context uses the DS address as a guest linear 
+address, even though its programmed by the host as a host linear 
+address. This either results in guest memory corruption and or the 
+hardware faulting and 'crashing' the virtual machine.  Therefore we have 
+to disable PEBS on VT-x enter and re-enable on VT-x exit, enforcing a 
+strict exclude_guest."
 
-So I move hugetlb_cgroup_file_init() into hugetlb_init().
-
-Changelog:
-  do code refactor as suggesting by Aneesh
-  add Reviewed-by and Acked-by 
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/hugetlb_cgroup.h |    7 ++-----
- mm/hugetlb.c                   |   11 +----------
- mm/hugetlb_cgroup.c            |   18 ++++++++++++++++--
- 3 files changed, 19 insertions(+), 17 deletions(-)
-
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index d73878c..5bb9c28 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -62,7 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
- 					 struct page *page);
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
--extern int hugetlb_cgroup_file_init(int idx) __init;
-+extern void hugetlb_cgroup_file_init(void) __init;
- extern void hugetlb_cgroup_migrate(struct page *oldhpage,
- 				   struct page *newhpage);
- 
-@@ -111,10 +111,7 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 	return;
- }
- 
--static inline int __init hugetlb_cgroup_file_init(int idx)
--{
--	return 0;
--}
-+static inline void __init hugetlb_cgroup_file_init() {}
- 
- static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
- 					  struct page *newhpage)
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1ef2cd4..a30da48 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1906,14 +1906,12 @@ static int __init hugetlb_init(void)
- 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
- 
- 	hugetlb_init_hstates();
--
- 	gather_bootmem_prealloc();
--
- 	report_hugepages();
- 
- 	hugetlb_sysfs_init();
--
- 	hugetlb_register_all_nodes();
-+	hugetlb_cgroup_file_init();
- 
- 	return 0;
- }
-@@ -1943,13 +1941,6 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
--	/*
--	 * Add cgroup control files only if the huge page consists
--	 * of more than two normal pages. This is because we use
--	 * page[2].lru.next for storing cgoup details.
--	 */
--	if (order >= HUGETLB_CGROUP_MIN_ORDER)
--		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
- 
- 	parsed_hstate = h;
- }
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index a3f358f..7af7459 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -340,7 +340,7 @@ static char *mem_fmt(char *buf, int size, unsigned long hsize)
- 	return buf;
- }
- 
--int __init hugetlb_cgroup_file_init(int idx)
-+static void __init __hugetlb_cgroup_file_init(int idx)
- {
- 	char buf[32];
- 	struct cftype *cft;
-@@ -382,7 +382,21 @@ int __init hugetlb_cgroup_file_init(int idx)
- 
- 	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
- 
--	return 0;
-+	return;
-+}
-+
-+void __init hugetlb_cgroup_file_init()
-+{
-+	struct hstate *h;
-+
-+	for_each_hstate(h)
-+		/*
-+		 * Add cgroup control files only if the huge page consists
-+		 * of more than two normal pages. This is because we use
-+		 * page[2].lru.next for storing cgroup details.
-+		 */
-+		if (huge_page_order(h) >= HUGETLB_CGROUP_MIN_ORDER)
-+			__hugetlb_cgroup_file_init(hstate_index(h));
- }
- 
- /*
--- 
-1.7.1
-
+David
 
