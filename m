@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226Ab2LMONI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:13:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44964 "EHLO
+	id S933258Ab2LMONU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:13:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44974 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933116Ab2LMONA (ORCPT
+	with ESMTP id S933225Ab2LMONH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:13:00 -0500
+	Thu, 13 Dec 2012 09:13:07 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li RongQing <roy.qing.li@gmail.com>,
+Cc: Petr Matousek <pmatouse@redhat.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 197/241] ipv6: Set default hoplimit as zero.
-Date: Thu, 13 Dec 2012 11:59:22 -0200
-Message-Id: <1355407206-17100-198-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 199/241] net: fix divide by zero in tcp algorithm illinois
+Date: Thu, 13 Dec 2012 11:59:24 -0200
+Message-Id: <1355407206-17100-200-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,47 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Jesper Dangaard Brouer <brouer@redhat.com>
 
-commit 14edd87dc67311556f1254a8f29cf4dd6cb5b7d1 upstream.
+commit 8f363b77ee4fbf7c3bbcf5ec2c5ca482d396d664 upstream.
 
-Commit a02e4b7dae4551(Demark default hoplimit as zero) only changes the
-hoplimit checking condition and default value in ip6_dst_hoplimit, not
-zeros all hoplimit default value.
+Reading TCP stats when using TCP Illinois congestion control algorithm
+can cause a divide by zero kernel oops.
 
-Keep the zeroing ip6_template_metrics[RTAX_HOPLIMIT - 1] to force it as
-const, cause as a37e6e344910(net: force dst_default_metrics to const
-section)
+The division by zero occur in tcp_illinois_info() at:
+ do_div(t, ca->cnt_rtt);
+where ca->cnt_rtt can become zero (when rtt_reset is called)
 
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Steps to Reproduce:
+ 1. Register tcp_illinois:
+     # sysctl -w net.ipv4.tcp_congestion_control=illinois
+ 2. Monitor internal TCP information via command "ss -i"
+     # watch -d ss -i
+ 3. Establish new TCP conn to machine
+
+Either it fails at the initial conn, or else it needs to wait
+for a loss or a reset.
+
+This is only related to reading stats.  The function avg_delay() also
+performs the same divide, but is guarded with a (ca->cnt_rtt > 0) at its
+calling point in update_params().  Thus, simply fix tcp_illinois_info().
+
+Function tcp_illinois_info() / get_info() is called without
+socket lock.  Thus, eliminate any race condition on ca->cnt_rtt
+by using a local stack variable.  Simply reuse info.tcpv_rttcnt,
+as its already set to ca->cnt_rtt.
+Function avg_delay() is not affected by this race condition, as
+its called with the socket lock.
+
+Cc: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv6/route.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_illinois.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index a3ef2ad..fd44184 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -205,7 +205,7 @@ static struct dst_ops ip6_dst_blackhole_ops = {
- };
+diff --git a/net/ipv4/tcp_illinois.c b/net/ipv4/tcp_illinois.c
+index 813b43a..834857f 100644
+--- a/net/ipv4/tcp_illinois.c
++++ b/net/ipv4/tcp_illinois.c
+@@ -313,11 +313,13 @@ static void tcp_illinois_info(struct sock *sk, u32 ext,
+ 			.tcpv_rttcnt = ca->cnt_rtt,
+ 			.tcpv_minrtt = ca->base_rtt,
+ 		};
+-		u64 t = ca->sum_rtt;
  
- static const u32 ip6_template_metrics[RTAX_MAX] = {
--	[RTAX_HOPLIMIT - 1] = 255,
-+	[RTAX_HOPLIMIT - 1] = 0,
- };
+-		do_div(t, ca->cnt_rtt);
+-		info.tcpv_rtt = t;
++		if (info.tcpv_rttcnt > 0) {
++			u64 t = ca->sum_rtt;
  
- static struct rt6_info ip6_null_entry_template = {
-@@ -1135,7 +1135,7 @@ struct dst_entry *icmp6_dst_alloc(struct net_device *dev,
- 	rt->rt6i_dst.addr = fl6->daddr;
- 	rt->rt6i_dst.plen = 128;
- 	rt->rt6i_idev     = idev;
--	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 255);
-+	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, 0);
- 
- 	spin_lock_bh(&icmp6_dst_lock);
- 	rt->dst.next = icmp6_dst_gc_list;
++			do_div(t, info.tcpv_rttcnt);
++			info.tcpv_rtt = t;
++		}
+ 		nla_put(skb, INET_DIAG_VEGASINFO, sizeof(info), &info);
+ 	}
+ }
 -- 
 1.7.9.5
 
