@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab2LMWC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:02:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50436 "EHLO
+	id S1756793Ab2LMWF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:05:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50497 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab2LMWCt (ORCPT
+	with ESMTP id S1756702Ab2LMWC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:49 -0500
+	Thu, 13 Dec 2012 17:02:56 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 08/27] x86: add get_ramdisk_image/size()
-Date: Thu, 13 Dec 2012 14:02:02 -0800
-Message-Id: <1355436141-8668-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v6 21/27] x86, boot: Not need to check setup_header version
+Date: Thu, 13 Dec 2012 14:02:15 -0800
+Message-Id: <1355436141-8668-22-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There several places to find ramdisk information early for reserving
-and relocating.
+That is for bootloader.
 
-Use functions to make code more readable and consistent.
+setup_data is in setup_header, and all bootloader is copying that
+for bzImage. So for old bootloader should keep that as 0.
 
-Later will add ext_ramdisk_image/size in those functions to support
-loading ramdisk above 4g.
+kexec till now for elf image, will set setup_data to 0.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+ arch/x86/kernel/setup.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 2bdcb0f..9546c90 100644
+index c4e7aaa..d0082a0 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -294,12 +294,25 @@ static void __init reserve_brk(void)
+@@ -439,8 +439,6 @@ static void __init parse_setup_data(void)
+ 	struct setup_data *data;
+ 	u64 pa_data;
  
- #ifdef CONFIG_BLK_DEV_INITRD
+-	if (boot_params.hdr.version < 0x0209)
+-		return;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+ 		u32 data_len, map_len;
+@@ -476,8 +474,6 @@ static void __init e820_reserve_setup_data(void)
+ 	u64 pa_data;
+ 	int found = 0;
  
-+static u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+
-+	return ramdisk_image;
-+}
-+static u64 __init get_ramdisk_size(void)
-+{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	return ramdisk_size;
-+}
-+
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -338,8 +351,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
+-	if (boot_params.hdr.version < 0x0209)
+-		return;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+ 		data = early_memremap(pa_data, sizeof(*data));
+@@ -501,8 +497,6 @@ static void __init memblock_x86_reserve_range_setup_data(void)
+ 	struct setup_data *data;
+ 	u64 pa_data;
  
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image();
-+	ramdisk_size  = get_ramdisk_size();
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -363,8 +376,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -376,8 +389,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
+-	if (boot_params.hdr.version < 0x0209)
+-		return;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+ 		data = early_memremap(pa_data, sizeof(*data));
 -- 
 1.7.10.4
 
