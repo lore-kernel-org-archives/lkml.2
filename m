@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab2LMOuf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:50:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44395 "EHLO
+	id S932342Ab2LMOvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:51:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44380 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab2LMOGW (ORCPT
+	with ESMTP id S1753390Ab2LMOGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:06:22 -0500
+	Thu, 13 Dec 2012 09:06:11 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 091/241] USB: option: add Novatel E362 and Dell Wireless 5800 USB IDs
-Date: Thu, 13 Dec 2012 11:57:36 -0200
-Message-Id: <1355407206-17100-92-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 088/241] wireless: allow 40 MHz on world roaming channels 12/13
+Date: Thu, 13 Dec 2012 11:57:33 -0200
+Message-Id: <1355407206-17100-89-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,58 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit fcb21645f1bd86d2be29baf48aa1b298de52ccc7 upstream.
+commit 43c771a1963ab461a2f194e3c97fded1d5fe262f upstream.
 
-The Dell 5800 appears to be a simple rebrand of the Novatel E362.
+When in world roaming mode, allow 40 MHz to be used
+on channels 12 and 13 so that an AP that is, e.g.,
+using HT40+ on channel 9 (in the UK) can be used.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Eddie Chapman <eddie@ehuk.net>
+Tested-by: Eddie Chapman <eddie@ehuk.net>
+Acked-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/serial/option.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/wireless/reg.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index b473e958..0179d55 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -157,6 +157,7 @@ static void option_instat_callback(struct urb *urb);
- #define NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED	0x8001
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
-+#define NOVATELWIRELESS_PRODUCT_E362		0x9010
- #define NOVATELWIRELESS_PRODUCT_G1		0xA001
- #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
-@@ -192,6 +193,9 @@ static void option_instat_callback(struct urb *urb);
- #define DELL_PRODUCT_5730_MINICARD_TELUS	0x8181
- #define DELL_PRODUCT_5730_MINICARD_VZW		0x8182
- 
-+#define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
-+#define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
-+
- #define KYOCERA_VENDOR_ID			0x0c88
- #define KYOCERA_PRODUCT_KPC650			0x17da
- #define KYOCERA_PRODUCT_KPC680			0x180a
-@@ -705,6 +709,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
-@@ -727,6 +732,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_SPRINT) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_TELUS) },	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index b01449f..4dc8347 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -134,9 +134,8 @@ static const struct ieee80211_regdomain world_regdom = {
+ 	.reg_rules = {
+ 		/* IEEE 802.11b/g, channels 1..11 */
+ 		REG_RULE(2412-10, 2462+10, 40, 6, 20, 0),
+-		/* IEEE 802.11b/g, channels 12..13. No HT40
+-		 * channel fits here. */
+-		REG_RULE(2467-10, 2472+10, 20, 6, 20,
++		/* IEEE 802.11b/g, channels 12..13. */
++		REG_RULE(2467-10, 2472+10, 40, 6, 20,
+ 			NL80211_RRF_PASSIVE_SCAN |
+ 			NL80211_RRF_NO_IBSS),
+ 		/* IEEE 802.11 channel 14 - Only JP enables
 -- 
 1.7.9.5
 
