@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2LMGrt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 01:47:49 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57038 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab2LMGrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 01:47:48 -0500
-From: ycnian@gmail.com
-To: Trond.Myklebust@netapp.com
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Yanchuan Nian <ycnian@gmail.com>
-Subject: [PATCH] nfs: Remove duplicate function declaration in internal.h
-Date: Thu, 13 Dec 2012 14:37:34 +0800
-Message-Id: <1355380654-10949-1-git-send-email-ycnian@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753301Ab2LMGr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 01:47:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59176 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626Ab2LMGry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 01:47:54 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1355379433.24701.1.camel@wall-e>
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 12 Dec 2012 22:47:31 -0800
+To: Stefani Seibold <stefani@seibold.net>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
+        john.stultz@linaro.org, luto@amacapital.net
+Message-ID: <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanchuan Nian <ycnian@gmail.com>
+Should be a simple matter of sharing pages.  Look perhaps at the x32 vdso for a hint.
 
-Remove duplicate function declaration in internal.h
+Stefani Seibold <stefani@seibold.net> wrote:
 
-Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
----
- fs/nfs/internal.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+>Am Mittwoch, den 12.12.2012, 22:14 -0800 schrieb H. Peter Anvin:
+>> This is too late for 3.8 anyway, so there is time to make it work
+>correctly before tge 3.9 merge window anyway.  After this merge window
+>is over I may pull tjis into a testing branch, but compat support is a
+>precondition.
+>> 
+>> The vdso is only optional if you build in backwards compatibility
+>anyway, and software has a right to expect a specific numeric kernel
+>version to export a single ABI.
+>> 
+>
+>Any idea or clean solution how i can map the 64 bit vgtod into the 32
+>bit address space? Thats the only problem i see.
+>
+>- Stefani
 
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index 59b133c..440674f 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -409,9 +409,6 @@ extern struct nfs_write_header *nfs_writehdr_alloc(void);
- extern void nfs_writehdr_free(struct nfs_pgio_header *hdr);
- extern int nfs_generic_flush(struct nfs_pageio_descriptor *desc,
- 			     struct nfs_pgio_header *hdr);
--extern void nfs_pageio_init_write(struct nfs_pageio_descriptor *pgio,
--			struct inode *inode, int ioflags,
--			const struct nfs_pgio_completion_ops *compl_ops);
- extern void nfs_pageio_reset_write_mds(struct nfs_pageio_descriptor *pgio);
- extern void nfs_writedata_release(struct nfs_write_data *wdata);
- extern void nfs_commit_free(struct nfs_commit_data *p);
 -- 
-1.7.4.4
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
