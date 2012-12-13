@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab2LMMU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 07:20:26 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:5052 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750819Ab2LMMUZ (ORCPT
+	id S1755453Ab2LMMU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 07:20:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43490 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2LMMU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 07:20:25 -0500
-X-Greylist: delayed 3853 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Dec 2012 07:20:24 EST
-Subject: Re: [RFC GIT PULL] "Nuke 386-DX/SX support" changes for v3.8
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Thu, 13 Dec 2012 07:20:57 -0500
+Date: Thu, 13 Dec 2012 06:20:48 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Daniel Berrange <berrange@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Thu, 13 Dec 2012 12:15:39 +0100
-In-Reply-To: <50C8D458.4050006@zytor.com>
-References: <20121211111026.GA26507@gmail.com>
-	 <CA+55aFzJX-EKC4Z98+KEaca0V27p8PxqZXiPox=TuuhytUTziw@mail.gmail.com>
-	 <50C8D458.4050006@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1355397344.5337.47.camel@thorin>
-Mime-Version: 1.0
-X-DCC--Metrics: esgaroth.petrovitsch.priv.at; whitelist
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] core_pattern: set core helpers root and namespace to
+ crashing process
+Message-ID: <20121213122048.GF5246@sergelap>
+References: <1355255996-25953-1-git-send-email-nhorman@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355255996-25953-1-git-send-email-nhorman@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2012-12-12 at 11:00 -0800, H. Peter Anvin wrote:
-[...]
-> There were a *bunch* of embedded 486 clones made, some still in 
-> production as far as I know, and I wouldn't be surprised if some of them 
-> lacked FPU.  I guess we'll see.
+Quoting Neil Horman (nhorman@tuxdriver.com):
+> Theres one problem I currently see with it, and that is that I'm not sure we can
+> change the current behavior of how the root fs is set for the pipe reader, lest
+> we break some user space expectations. As such, I've added a sysctl in this
+> patch to allow administrators to globally select if a core reader specified via
+> /proc/sys/kernel/core_pattern should use the global rootfs, or the (possibly)
+> chrooted fs of the crashing process.
 
-And there is an x86 emulator written in Javascript at
-http://www.bellard.org/jslinux/.
+Practical question:  How is the admin to make an educated decision on
+how to set the sysctl?
 
-http://www.bellard.org/jslinux/tech.html says that it (also) lacks an
-FPU.
-
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+-serge
