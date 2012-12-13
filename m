@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab2LMBRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 20:17:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55145 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab2LMBRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 20:17:11 -0500
-Message-ID: <50C92C61.8060104@zytor.com>
-Date: Wed, 12 Dec 2012 17:16:17 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Davide Ciminaghi <ciminaghi@gnudd.com>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Dan Williams <djbw@fb.com>, "Koul, Vinod" <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, rubini <rubini@gnudd.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Chris Ball <cjb@laptop.org>,
-        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Ben Dooks <ben-linux@fluff.org>, Viresh Kumar <viresh.linux@gmail.com>,
-        "rajeev-dlh.kumar" <rajeev-dlh.kumar@st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "giancarlo.asnaghi" <giancarlo.asnaghi@st.com>
-Subject: Re: [PATCH v4 0/7] enable support for AMBA drivers under x86
-References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com> <50C92366.8030604@zytor.com> <CACxGe6v97ZnJpggcSE2HEE0S7wZFrYgFW0Hmok7D9h8ByufqGg@mail.gmail.com>
-In-Reply-To: <CACxGe6v97ZnJpggcSE2HEE0S7wZFrYgFW0Hmok7D9h8ByufqGg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755200Ab2LMBSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 20:18:47 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:19984 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754616Ab2LMBSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 20:18:46 -0500
+Message-ID: <1355361524.5255.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mm: add node physical memory range to sysfs
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Wed, 12 Dec 2012 17:18:44 -0800
+In-Reply-To: <50C28720.3070205@linux.vnet.ibm.com>
+References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net>
+	 <20121207155125.d3117244.akpm@linux-foundation.org>
+	 <50C28720.3070205@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 05:10 PM, Grant Likely wrote:
-> On Thu, Dec 13, 2012 at 12:37 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> OK, so I'm not 100% sure how to best handle this patchset.  I can carry it
->> in the x86 tree with the appropriate ACKs... which could lead to ugly merge
->> conflicts, or we can ask the respective driver authors to take their bits...
->> but that gives a sequencing problem (the core patchset depends on a bunch of
->> outside trees in order to be tested.)
->>
->> Either way it is a late pull for 3.8 at best... however, the risk seems low
->> so *maybe* that is acceptable.
+On Fri, 2012-12-07 at 16:17 -0800, Dave Hansen wrote:
+> On 12/07/2012 03:51 PM, Andrew Morton wrote:
+> >> > +static ssize_t node_read_memrange(struct device *dev,
+> >> > +				  struct device_attribute *attr, char *buf)
+> >> > +{
+> >> > +	int nid = dev->id;
+> >> > +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+> >> > +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
+> > hm.  Is this correct for all for
+> > FLATMEM/SPARSEMEM/SPARSEMEM_VMEMMAP/DISCONTIGME/etc?
 > 
-> I'd put the whole series into a separate branch by itself and any
-> subsystems with problematic conflicts can merge it into their trees
-> also. I'm fine with putting it in the x86 tree for v3.9. I don't think
-> there is any huge rush on it.
+> It's not _wrong_ per se, but it's not super precise, either.
+> 
+> The problem is, it's quite valid to have these node_start/spanned ranges
+> overlap between two or more nodes on some hardware.  So, if the desired
+> purpose is to map nodes to DIMMs, then this can only accomplish this on
+> _some_ hardware, not all.  It would be completely useless for that
+> purpose for some configurations.
+> 
+> Seems like the better way to do this would be to expose the DIMMs
+> themselves in some way, and then map _those_ back to a node.
 > 
 
-That was pretty much my preferred option.  I'll put it into tip:x86/amba.
+Good point, and from a DIMM perspective, I agree, and will look into
+this. However, IMHO, having the range of physical addresses for every
+node still provides valuable information, from a NUMA point of view. For
+example, dealing with node related e820 mappings.
 
-	-hpa
+Andrew, with the documentation patch, would you be wiling to pickup a v2
+of this?
 
+Thanks,
+Davidlohr
 
