@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2LMEqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 23:46:48 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44345 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab2LMEqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 23:46:47 -0500
+	id S1754981Ab2LMEtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 23:49:32 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:57917 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752872Ab2LMEtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 23:49:31 -0500
+Message-ID: <50C95E4A.9010509@linux.vnet.ibm.com>
+Date: Wed, 12 Dec 2012 20:49:14 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <50C95A21.1010101@gmail.com>
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
- <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
- <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com>
- <50C95A21.1010101@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Dec 2012 20:46:26 -0800
-X-Google-Sender-Auth: CXdMsrCIm9gRVHw1X9lNJRufK4A
-Message-ID: <CA+55aFz0aW8sA_51x8RxLd=bR=0izMJtRJm68bKqueJU9OKQsA@mail.gmail.com>
-Subject: Re: [GIT PULL] perf changes for v3.8
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: add node physical memory range to sysfs
+References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net> <20121207155125.d3117244.akpm@linux-foundation.org> <50C28720.3070205@linux.vnet.ibm.com> <1355361524.5255.9.camel@buesod1.americas.hpqcorp.net> <50C933E9.2040707@linux.vnet.ibm.com> <1355364222.9244.3.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1355364222.9244.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121304-5806-0000-0000-00001CEB52AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 8:31 PM, David Ahern <dsahern@gmail.com> wrote:
->
->
-> See commit 26a4f3c0. But that was not enough.
+On 12/12/2012 06:03 PM, Davidlohr Bueso wrote:
+> On Wed, 2012-12-12 at 17:48 -0800, Dave Hansen wrote:
+>> But if we went and did it per-DIMM (showing which physical addresses and
+>> NUMA nodes a DIMM maps to), wouldn't that be redundant with this
+>> proposed interface?
+> 
+> If DIMMs overlap between nodes, then we wouldn't have an exact range for
+> a node in question. Having both approaches would complement each other.
 
-Why? Make the people who run virtualization do the extra work. Things
-never worked for them anyway, so forcing *them* to set a flag to get a
-working thing is sane.
+How is that possible?  If NUMA nodes are defined by distances from CPUs
+to memory, how could a DIMM have more than a single distance to any
+given CPU?
 
-Forcing everybody else to set a flag is insane. See?
+>> How do you plan to use this in practice, btw?
+> 
+> It started because I needed to recognize the address of a node to remove
+> it from the e820 mappings and have the system "ignore" the node's
+> memory.
 
-Your "that was not enough" is insane. It's purely about which *default
-convention* you choose. The "if (!event->attr.exclude_guest)" test is
-the wrong default convention, and it *should* have been "if
-(event->attr.include_guest)" with the virtualization people forced to
-use "cycles:ppV".
+Actually, now that I think about it, can you check in the
+/sys/devices/system/ directories for memory and nodes?  We have linkages
+there for each memory section to every NUMA node, and you can also
+derive the physical address from the phys_index in each section.  That
+should allow you to work out physical addresses for a given node.
 
-Claiming that there is some hardware overrun is silly, since that's
-totally *independent* of the choice of which way the flag works!
-
-> Requiring exclude_guest was
-> another required piece. If you want to see the discussion:
-> https://lkml.org/lkml/2012/7/9/264
-
-The only thing that discussion shows is that people were *AWARE* that
-this was a stupid change. I see Peter pointing out that this breaks
-peoples existing working setups.
-
-You broke the WORKING case for old binaries in order to give an error
-return in a case that NEVER EVEN WORKED with those binaries. Don't you
-see how insane that is?
-
-The 'H' flag is totally the wrong way around.  Exactly because it only
-"fixes" a case that was already working, and makes a case that never
-worked anyway now return an error value. That's not sane. Since the
-old broken case never worked, nobody can have depended on it. See why
-I'm saying that it's the people who use virtualization who should be
-forced to use the new flag, not the other way around?
-
-                   Linus
