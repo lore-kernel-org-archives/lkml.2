@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2LMIJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 03:09:37 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:17692 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab2LMIJf (ORCPT
+	id S1753445Ab2LMILd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 03:11:33 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33048 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab2LMIL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 03:09:35 -0500
-Subject: [PATCH 1/4] bdi: Allow block devices to say that they require stable
- page writes
-To: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz,
-        "Darrick J. Wong" <darrick.wong@oracle.com>, ericvh@gmail.com,
-        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Date: Thu, 13 Dec 2012 00:07:47 -0800
-Message-ID: <20121213080747.23360.24302.stgit@blackbox.djwong.org>
-In-Reply-To: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 13 Dec 2012 03:11:29 -0500
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: jgarzik@pobox.com
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>, stable@kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [libata] scsi: fix Null pointer dereference on disk error
+Date: Thu, 13 Dec 2012 16:12:18 +0800
+Message-Id: <1355386339-11411-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This creates a per-backing-device flag that tracks whether or not pages must be
-held immutable during writeout.  Eventually it will be used to waive
-wait_for_page_writeback() if nobody requires stable pages.
+Following oops were observed when disk error happened:
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
+[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
+[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
+[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
+[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
+[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
+[ 4291.783408] Oops: 0000 [#1] SMP
+[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
+[ 4291.934235] CPU 9
+[ 4291.958301] Pid: 27942, comm: hwinfo ......
+
+ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
+
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Cc: stable@kernel.org
+Cc: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- Documentation/ABI/testing/sysfs-class-bdi |    5 +++++
- block/blk-integrity.c                     |    4 ++++
- include/linux/backing-dev.h               |    6 ++++++
- mm/backing-dev.c                          |   11 +++++++++++
- 4 files changed, 26 insertions(+)
+ drivers/ata/libata-scsi.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-
-diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
-index 5f50097..d773d56 100644
---- a/Documentation/ABI/testing/sysfs-class-bdi
-+++ b/Documentation/ABI/testing/sysfs-class-bdi
-@@ -48,3 +48,8 @@ max_ratio (read-write)
- 	most of the write-back cache.  For example in case of an NFS
- 	mount that is prone to get stuck, or a FUSE mount which cannot
- 	be trusted to play fair.
-+
-+stable_pages_required (read-only)
-+
-+	If set, the backing device requires that all pages comprising a write
-+	request must not be changed until writeout is complete.
-diff --git a/block/blk-integrity.c b/block/blk-integrity.c
-index da2a818..dabd221 100644
---- a/block/blk-integrity.c
-+++ b/block/blk-integrity.c
-@@ -420,6 +420,8 @@ int blk_integrity_register(struct gendisk *disk, struct blk_integrity *template)
- 	} else
- 		bi->name = bi_unsupported_name;
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index a6df6a3..6407f05 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -309,7 +309,8 @@ ata_scsi_activity_show(struct device *dev, struct device_attribute *attr,
+ 	struct ata_port *ap = ata_shost_to_port(sdev->host);
+ 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
  
-+	disk->queue->backing_dev_info.capabilities |= BDI_CAP_STABLE_WRITES;
-+
- 	return 0;
+-	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
++	if (atadev && ap->ops->sw_activity_show &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
+ 		return ap->ops->sw_activity_show(atadev, buf);
+ 	return -EINVAL;
  }
- EXPORT_SYMBOL(blk_integrity_register);
-@@ -438,6 +440,8 @@ void blk_integrity_unregister(struct gendisk *disk)
- 	if (!disk || !disk->integrity)
- 		return;
+@@ -324,7 +325,8 @@ ata_scsi_activity_store(struct device *dev, struct device_attribute *attr,
+ 	enum sw_activity val;
+ 	int rc;
  
-+	disk->queue->backing_dev_info.capabilities &= ~BDI_CAP_STABLE_WRITES;
-+
- 	bi = disk->integrity;
- 
- 	kobject_uevent(&bi->kobj, KOBJ_REMOVE);
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 2a9a9ab..085501f 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -253,6 +253,7 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned int max_ratio);
- #define BDI_CAP_EXEC_MAP	0x00000040
- #define BDI_CAP_NO_ACCT_WB	0x00000080
- #define BDI_CAP_SWAP_BACKED	0x00000100
-+#define BDI_CAP_STABLE_WRITES	0x00000200
- 
- #define BDI_CAP_VMFLAGS \
- 	(BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP)
-@@ -307,6 +308,11 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout);
- int pdflush_proc_obsolete(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp, loff_t *ppos);
- 
-+static inline bool bdi_cap_stable_pages_required(struct backing_dev_info *bdi)
-+{
-+	return bdi->capabilities & BDI_CAP_STABLE_WRITES;
-+}
-+
- static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
- {
- 	return !(bdi->capabilities & BDI_CAP_NO_WRITEBACK);
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index d3ca2b3..41733c5 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -221,12 +221,23 @@ static ssize_t max_ratio_store(struct device *dev,
- }
- BDI_SHOW(max_ratio, bdi->max_ratio)
- 
-+static ssize_t stable_pages_required_show(struct device *dev,
-+					  struct device_attribute *attr,
-+					  char *page)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+
-+	return snprintf(page, PAGE_SIZE-1, "%d\n",
-+			bdi_cap_stable_pages_required(bdi) ? 1 : 0);
-+}
-+
- #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
- 
- static struct device_attribute bdi_dev_attrs[] = {
- 	__ATTR_RW(read_ahead_kb),
- 	__ATTR_RW(min_ratio),
- 	__ATTR_RW(max_ratio),
-+	__ATTR_RO(stable_pages_required),
- 	__ATTR_NULL,
- };
- 
+-	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
++	if (atadev && ap->ops->sw_activity_store &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
+ 		val = simple_strtoul(buf, NULL, 0);
+ 		switch (val) {
+ 		case OFF: case BLINK_ON: case BLINK_OFF:
+-- 
+1.7.9.5
 
