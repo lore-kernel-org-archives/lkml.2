@@ -1,152 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab2LMIsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 03:48:32 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58679 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab2LMIsa (ORCPT
+	id S1753888Ab2LMItG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 03:49:06 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18207 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab2LMItE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 03:48:30 -0500
-Message-ID: <1355388504.31434.8.camel@phoenix>
-Subject: [RFC/RFT][PATCH 4/4] regulator: tps6586x: Use activate_[reg|bit]
- with regmap based voltage_sel operations
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mike Rapoport <mike@compulab.co.il>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Dec 2012 16:48:24 +0800
-In-Reply-To: <1355388248.31434.3.camel@phoenix>
-References: <1355388248.31434.3.camel@phoenix>
+	Thu, 13 Dec 2012 03:49:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 13 Dec 2012 00:47:17 -0800
+Message-ID: <50C99677.6090306@nvidia.com>
+Date: Thu, 13 Dec 2012 10:48:55 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps6586x-regulator.c |   54 ++++++--------------------------
- 1 file changed, 10 insertions(+), 44 deletions(-)
+On 12.12.2012 18:08, Thierry Reding wrote:
+> I've briefly discussed this with Stephen on IRC because I thought I had
+> remembered him objecting to the idea of adding a dummy device just for
+> this purpose. It turns out, however, that what he didn't like was to add
+> a dummy node to the DT just to make this happen, but he has no (strong)
+> objections to a dummy platform device.
+> 
+> While I'm not very happy about that solution, I've been going over it
+> for a week now and haven't come up with any better alternative that
+> doesn't have its own disadvantages. So perhaps we should go ahead and
+> implement that. For the host1x driver this really just means creating a
+> platform device and adding it to the system, with some of the fields
+> tweaked to make things work.
 
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index f86da67..1b5e8b9 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -61,10 +61,6 @@ struct tps6586x_regulator {
- 
- 	int enable_bit[2];
- 	int enable_reg[2];
--
--	/* for DVM regulators */
--	int go_reg;
--	int go_bit;
- };
- 
- static inline struct device *to_tps6586x_dev(struct regulator_dev *rdev)
-@@ -72,37 +68,10 @@ static inline struct device *to_tps6586x_dev(struct regulator_dev *rdev)
- 	return rdev_get_dev(rdev)->parent;
- }
- 
--static int tps6586x_set_voltage_sel(struct regulator_dev *rdev,
--				    unsigned selector)
--{
--	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
--	struct device *parent = to_tps6586x_dev(rdev);
--	int ret, val, rid = rdev_get_id(rdev);
--	uint8_t mask;
--
--	val = selector << (ffs(rdev->desc->vsel_mask) - 1);
--	mask = rdev->desc->vsel_mask;
--
--	ret = tps6586x_update(parent, rdev->desc->vsel_reg, val, mask);
--	if (ret)
--		return ret;
--
--	/* Update go bit for DVM regulators */
--	switch (rid) {
--	case TPS6586X_ID_LDO_2:
--	case TPS6586X_ID_LDO_4:
--	case TPS6586X_ID_SM_0:
--	case TPS6586X_ID_SM_1:
--		ret = tps6586x_set_bits(parent, ri->go_reg, 1 << ri->go_bit);
--		break;
--	}
--	return ret;
--}
--
- static struct regulator_ops tps6586x_regulator_ops = {
- 	.list_voltage = regulator_list_voltage_table,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
--	.set_voltage_sel = tps6586x_set_voltage_sel,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 
- 	.is_enabled = regulator_is_enabled_regmap,
- 	.enable = regulator_enable_regmap,
-@@ -142,7 +111,7 @@ static const unsigned int tps6586x_dvm_voltages[] = {
- };
- 
- #define TPS6586X_REGULATOR(_id, _pin_name, vdata, vreg, shift, nbits,	\
--			   ereg0, ebit0, ereg1, ebit1)			\
-+			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)	\
- 	.desc	= {							\
- 		.supply_name = _pin_name,				\
- 		.name	= "REG-" #_id,					\
-@@ -156,29 +125,26 @@ static const unsigned int tps6586x_dvm_voltages[] = {
- 		.enable_mask = 1 << (ebit0),				\
- 		.vsel_reg = TPS6586X_##vreg,				\
- 		.vsel_mask = ((1 << (nbits)) - 1) << (shift),		\
-+		.activate_reg = (goreg),				\
-+		.activate_bit = (gobit),				\
- 	},								\
- 	.enable_reg[0]	= TPS6586X_SUPPLY##ereg0,			\
- 	.enable_bit[0]	= (ebit0),					\
- 	.enable_reg[1]	= TPS6586X_SUPPLY##ereg1,			\
- 	.enable_bit[1]	= (ebit1),
- 
--#define TPS6586X_REGULATOR_DVM_GOREG(goreg, gobit)			\
--	.go_reg = TPS6586X_##goreg,					\
--	.go_bit = (gobit),
--
- #define TPS6586X_LDO(_id, _pname, vdata, vreg, shift, nbits,		\
- 		     ereg0, ebit0, ereg1, ebit1)			\
- {									\
- 	TPS6586X_REGULATOR(_id, _pname, vdata, vreg, shift, nbits,	\
--			   ereg0, ebit0, ereg1, ebit1)			\
-+			   ereg0, ebit0, ereg1, ebit1, 0, 0)		\
- }
- 
- #define TPS6586X_DVM(_id, _pname, vdata, vreg, shift, nbits,		\
- 		     ereg0, ebit0, ereg1, ebit1, goreg, gobit)		\
- {									\
- 	TPS6586X_REGULATOR(_id, _pname, vdata, vreg, shift, nbits,	\
--			   ereg0, ebit0, ereg1, ebit1)			\
--	TPS6586X_REGULATOR_DVM_GOREG(goreg, gobit)			\
-+			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)	\
- }
- 
- #define TPS6586X_SYS_REGULATOR()					\
-@@ -207,13 +173,13 @@ static struct tps6586x_regulator tps6586x_regulator[] = {
- 	TPS6586X_LDO(SM_2, "vin-sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
- 
- 	TPS6586X_DVM(LDO_2, "vinldo23", dvm, LDO2BV1, 0, 5, ENA, 3,
--					ENB, 3, VCC2, 6),
-+					ENB, 3, TPS6586X_VCC2, BIT(6)),
- 	TPS6586X_DVM(LDO_4, "vinldo4", ldo4, LDO4V1, 0, 5, ENC, 3,
--					END, 3, VCC1, 6),
-+					END, 3, TPS6586X_VCC1, BIT(6)),
- 	TPS6586X_DVM(SM_0, "vin-sm0", dvm, SM0V1, 0, 5, ENA, 1,
--					ENB, 1, VCC1, 2),
-+					ENB, 1, TPS6586X_VCC1, BIT(2)),
- 	TPS6586X_DVM(SM_1, "vin-sm1", dvm, SM1V1, 0, 5, ENA, 0,
--					ENB, 0, VCC1, 0),
-+					ENB, 0, TPS6586X_VCC1, BIT(0)),
- };
- 
- /*
--- 
-1.7.9.5
+Even the virtual device is not too beautiful. The problem is that the
+virtual device is not physical parent for DC, HDMI, etc, so
+dev_get_drvdata(pdev->dev.parent) returns the data from host1x device,
+not the virtual device.
 
+We'll post with something that goes around this, but it's not going to
+be too pretty. Let's try to find the solution once we get the code out.
 
+Terje
 
