@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab2LMTcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 14:32:45 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:48035 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab2LMTcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 14:32:41 -0500
-Date: Thu, 13 Dec 2012 14:32:38 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: NFSv4 WARNING: at linux/fs/inode.c:280 drop_nlink+0x23/0x44()
-Message-ID: <20121213193238.GA5155@elliptictech.com>
-References: <20120818175750.GA12736@elliptictech.com>
+	id S932197Ab2LMTeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 14:34:25 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36283 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932151Ab2LMTeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 14:34:24 -0500
+Date: Thu, 13 Dec 2012 14:33:32 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/8] mm: vmscan: save work scanning (almost) empty LRU
+ lists
+Message-ID: <20121213193332.GB6317@cmpxchg.org>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-4-git-send-email-hannes@cmpxchg.org>
+ <20121213104104.GX1009@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120818175750.GA12736@elliptictech.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121213104104.GX1009@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-08-18 13:57 -0400, Nick Bowler wrote:
-> I just noticed the following WARNING in my logs.  Looking through the
-> older logs, I see quite a few of these going (at least) all the way back
-> to 3.3.x days.  The process which triggers the warning always seems to
-> be the same (icecat).
+On Thu, Dec 13, 2012 at 10:41:04AM +0000, Mel Gorman wrote:
+> On Wed, Dec 12, 2012 at 04:43:35PM -0500, Johannes Weiner wrote:
+> > In certain cases (kswapd reclaim, memcg target reclaim), a fixed
+> > minimum amount of pages is scanned from the LRU lists on each
+> > iteration, to make progress.
+> > 
+> > Do not make this minimum bigger than the respective LRU list size,
+> > however, and save some busy work trying to isolate and reclaim pages
+> > that are not there.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > 
-> This is on a Linux 3.5.2 NFSv4 client machine using sec=krb5.  Other
-> than the log noise, there seems to be no adverse effects.
+> This looks like a corner case where the LRU size would have to be smaller
+> than SWAP_CLUSTER_MAX. Is that common enough to care? It looks correct,
+> I'm just curious.
 
-FWIW, I'm still seeing this on 3.7.0; this time on a machine with NFSv3
-mounts and sec=sys.  Still apparently caused by firefox/icecat.
-
-> ------------[ cut here ]------------
-> WARNING: at /home/nbowler/misc/linux/fs/inode.c:280 drop_nlink+0x23/0x44()
-> Hardware name: System Product Name
-> Modules linked in: sha1_ssse3 sha1_generic hmac aes_x86_64 aes_generic cbc cts rpcsec_gss_krb5 nfs lockd auth_rpcgss nfs_acl sunrpc ipv6 nls_iso8859_1 nls_cp437 vfat fat w83627ehf hwmon_vid snd_pcm_oss snd_mixer_oss acpi_cpufreq mperf i915 drm_kms_helper drm snd_hda_codec_hdmi snd_hda_codec_realtek arc4 ath9k mac80211 ath9k_common ath9k_hw intel_agp i2c_algo_bit intel_gtt snd_hda_intel snd_hda_codec snd_pcm snd_timer coretemp agpgart hwmon kvm_intel snd ath cfg80211 soundcore snd_page_alloc i2c_i801 r8169 mii psmouse kvm evdev video sg
-> Pid: 1995, comm: icecat Not tainted 3.5.2 #46
-> Call Trace:
->  [<ffffffff8102b8b3>] warn_slowpath_common+0x80/0x98
->  [<ffffffff8102b8e0>] warn_slowpath_null+0x15/0x17
->  [<ffffffff810c5195>] drop_nlink+0x23/0x44
->  [<ffffffffa03aa2a1>] nfs_dentry_iput+0x35/0x4d [nfs]
->  [<ffffffff810c25d0>] dentry_kill+0x149/0x171
->  [<ffffffff810c2850>] dput+0xed/0xfe
->  [<ffffffff810b2ff4>] fput+0x1a5/0x1bd
->  [<ffffffff810b0454>] filp_close+0x6b/0x76
->  [<ffffffff810b04f1>] sys_close+0x92/0xd4
->  [<ffffffff8131efa2>] system_call_fastpath+0x16/0x1b
-> ---[ end trace b160c7dc08b4910c ]---
-> 
-> Please let me know if you need any more info,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+We have one lruvec per memcg per zone, so consider memory cgroups in a
+NUMA environment: NR_MEMCG * (NR_NODES - 1) * NR_LRU_LISTS permanently
+empty lruvecs, assuming the memory of one cgroup is bound to one node.
