@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab2LMOVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:21:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45060 "EHLO
+	id S933347Ab2LMOOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:14:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45044 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933321Ab2LMOOG (ORCPT
+	with ESMTP id S933321Ab2LMONy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:14:06 -0500
+	Thu, 13 Dec 2012 09:13:54 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tom Herbert <therbert@google.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 215/241] net-rps: Fix brokeness causing OOO packets
-Date: Thu, 13 Dec 2012 11:59:40 -0200
-Message-Id: <1355407206-17100-216-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 212/241] ipv4: avoid undefined behavior in do_ip_setsockopt()
+Date: Thu, 13 Dec 2012 11:59:37 -0200
+Message-Id: <1355407206-17100-213-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,39 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Herbert <therbert@google.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit baefa31db2f2b13a05d1b81bdf2d20d487f58b0a upstream.
+commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e upstream.
 
-In commit c445477d74ab3779 which adds aRFS to the kernel, the CPU
-selected for RFS is not set correctly when CPU is changing.
-This is causing OOO packets and probably other issues.
+(1<<optname) is undefined behavior in C with a negative optname or
+optname larger than 31.  In those cases the result of the shift is
+not necessarily zero (e.g., on x86).
 
-Signed-off-by: Tom Herbert <therbert@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Ben Hutchings <bhutchings@solarflare.com>
+This patch simplifies the code with a switch statement on optname.
+It also allows the compiler to generate better code (e.g., using a
+64-bit mask).
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/core/dev.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv4/ip_sockglue.c |   35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 75845ba..3ad746b 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2761,8 +2761,10 @@ static int get_rps_cpu(struct net_device *dev, struct sk_buff *skb,
- 		if (unlikely(tcpu != next_cpu) &&
- 		    (tcpu == RPS_NO_CPU || !cpu_online(tcpu) ||
- 		     ((int)(per_cpu(softnet_data, tcpu).input_queue_head -
--		      rflow->last_qtail)) >= 0))
-+		      rflow->last_qtail)) >= 0)) {
-+			tcpu = next_cpu;
- 			rflow = set_rps_cpu(dev, skb, rflow, next_cpu);
-+		}
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index 0d11f23..8285f00 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -456,19 +456,28 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int val = 0, err;
  
- 		if (tcpu != RPS_NO_CPU && cpu_online(tcpu)) {
- 			*rflowp = rflow;
+-	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
+-			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
+-			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
+-			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
+-			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
+-			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
+-			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
+-			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
+-	    optname == IP_UNICAST_IF ||
+-	    optname == IP_MULTICAST_TTL ||
+-	    optname == IP_MULTICAST_ALL ||
+-	    optname == IP_MULTICAST_LOOP ||
+-	    optname == IP_RECVORIGDSTADDR) {
++	switch (optname) {
++	case IP_PKTINFO:
++	case IP_RECVTTL:
++	case IP_RECVOPTS:
++	case IP_RECVTOS:
++	case IP_RETOPTS:
++	case IP_TOS:
++	case IP_TTL:
++	case IP_HDRINCL:
++	case IP_MTU_DISCOVER:
++	case IP_RECVERR:
++	case IP_ROUTER_ALERT:
++	case IP_FREEBIND:
++	case IP_PASSSEC:
++	case IP_TRANSPARENT:
++	case IP_MINTTL:
++	case IP_NODEFRAG:
++	case IP_UNICAST_IF:
++	case IP_MULTICAST_TTL:
++	case IP_MULTICAST_ALL:
++	case IP_MULTICAST_LOOP:
++	case IP_RECVORIGDSTADDR:
+ 		if (optlen >= sizeof(int)) {
+ 			if (get_user(val, (int __user *) optval))
+ 				return -EFAULT;
 -- 
 1.7.9.5
 
