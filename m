@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab2LMFyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 00:54:41 -0500
-Received: from [216.32.180.11] ([216.32.180.11]:24104 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750819Ab2LMFyk (ORCPT
+	id S1753067Ab2LMF4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 00:56:36 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:49995 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab2LMF4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 00:54:40 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371I936eI1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758hbe9i1155h)
-Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
-        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        shubhro <omaplinuxkernel@gmail.com>
-In-Reply-To: <20121212131108.1e158ae2.akpm@linux-foundation.org>
-References: <1349952025.9228.3.camel@dhruva>
-	 <1350986593.23353.3.camel@dhruva> <1353665463.1760.3000.camel@dhruva>
-	 <20121127142358.9a4bc20d.akpm@linux-foundation.org>
-	 <1354094680.10949.1.camel@dhruva> <1355118149.4272.1.camel@dhruva>
-	 <20121212131108.1e158ae2.akpm@linux-foundation.org>
+	Thu, 13 Dec 2012 00:56:34 -0500
+Message-ID: <1355378190.1567.6.camel@kernel.cn.ibm.com>
+Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 12 Dec 2012 23:56:30 -0600
+In-Reply-To: <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+	 <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Dec 2012 11:21:09 +0530
-Message-ID: <1355377869.1683.1.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 13:11 -0800, Andrew Morton wrote:
-> On Mon, 10 Dec 2012 11:12:29 +0530
-> Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
+On Wed, 2012-12-12 at 16:43 -0500, Johannes Weiner wrote:
+> When a reclaim scanner is doing its final scan before giving up and
+> there is swap space available, pay no attention to swappiness
+> preference anymore.  Just swap.
 > 
-> > On Wed, 2012-11-28 at 14:54 +0530, Ashish Jangam wrote:
-> > > On Tue, 2012-11-27 at 14:23 -0800, Andrew Morton wrote:
-> > > > On Fri, 23 Nov 2012 15:41:03 +0530
-> > > > Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
-> > > > 
-> > > > > On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
-> > > > > > Does this patch looks good?
-> > > > > > On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
-> > > > > > > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
-> > > > > > > the DA9055 MFD core.
-> > > > > > > 
-> > > > > > > This patch is functionally tested on Samsung SMDKV6410.
-> > > > 
-> > > > "shubhro <omaplinuxkernel@gmail.com>" made a comment, but it was ignored:
-> > > > 
-> > > > : On Thu, 11 Oct 2012 16:53:34 +0530
-> > > > : shubhro <omaplinuxkernel@gmail.com> wrote:
-> > > > : 
-> > > > : > On Thursday 11 October 2012 04:10 PM, Ashish Jangam wrote:
-> > > > : > > +#define da9055_rtc_freeze NULL
-> > > > : > > +#endif
-> > > > : > > +
-> > > > : > > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
-> > > > : > > +	.suspend = da9055_rtc_suspend,
-> > > > : > > +	.resume = da9055_rtc_resume,
-> > > > : > > +
-> > > > : > > +	.freeze = da9055_rtc_freeze,
-> > > > : > > +	.thaw = da9055_rtc_resume,
-> > > > : > > +	.restore = da9055_rtc_resume,
-> > > > : > > +
-> > > > : > > +	.poweroff = da9055_rtc_suspend,
-> > > > : > > +};
-> > > > : > You may want to use simple dev pm ops
-> > > To support generic PM ops these additional ops were supported.
-> > Are there any further comments on this patch.
+
+Confuse! If it's final scan and still swap space available, why nr[lru]
+= div64_u64(scan * fraction[file], denominator); instead of nr[lru] =
+scan; ? 
+
+> Note that this change won't make too big of a difference for general
+> reclaim: anonymous pages are already force-scanned when there is only
+> very little file cache left, and there very likely isn't when the
+> reclaimer enters this final cycle.
 > 
-> Is the patch usable against current mainline?  "This patch has got
-> dependency on the DA9055 MFD core".  What is the status of that?
-The dependent DA9055 MFD core is merged.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/vmscan.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> If the patch is ready to go then please refresh it, retest and resend?
-> 
-Ok, I can test and resend it.
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 3874dcb..6e53446 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1751,7 +1751,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>  		unsigned long scan;
+>  
+>  		scan = get_lru_size(lruvec, lru);
+> -		if (sc->priority || noswap || !vmscan_swappiness(sc)) {
+> +		if (sc->priority || noswap) {
+>  			scan >>= sc->priority;
+>  			if (!scan && force_scan)
+>  				scan = SWAP_CLUSTER_MAX;
 
 
