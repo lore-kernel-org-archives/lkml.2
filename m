@@ -1,79 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2LMAHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:07:09 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64182 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276Ab2LMAHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:07:06 -0500
-Date: Wed, 12 Dec 2012 16:07:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] EXTCON patches for 3.8-rc1
-Message-ID: <20121213000700.GA23442@kroah.com>
+	id S1755267Ab2LMAG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:06:58 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59248 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754276Ab2LMAG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 19:06:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: [Update][PATCH 3/6] ACPI: Make acpi_bus_add() and acpi_bus_start() visibly different
+Date: Thu, 13 Dec 2012 01:11:58 +0100
+Message-ID: <2379293.XqS6hlitES@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1693581.lT8eSoGRfL@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <1693581.lT8eSoGRfL@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 70e78c40ed6c25bb34d642848e485d79ffc55c26:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI: Make acpi_bus_add() and acpi_bus_start() visibly different
 
-  MAINTAINERS: remove drivers/staging/hv/ (2012-11-26 16:19:01 -0800)
+The current ACPI namespace scanning code suggests that acpi_bus_add()
+and acpi_bus_start() share some code.  In fact, however, they are
+completely different code paths (except for the initial checks), so
+refactor the code to make that distinction visibly clear.
 
-are available in the git repository at:
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.8-rc1
+Update is needed, because of a potential bug found in [1/6], as described here:
 
-for you to fetch changes up to 962b686c450493adb8596e813bdfd0e1613482e6:
+https://lkml.org/lkml/2012/12/12/460
 
-  Merge tag 'pull_req_20121122' of git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon into char-misc-next (2012-11-27 06:44:10 -0800)
+Thanks,
+Rafael
 
-----------------------------------------------------------------
+---
+ drivers/acpi/scan.c |   66 ++++++++++++++++++++++++++++------------------------
+ 1 file changed, 36 insertions(+), 30 deletions(-)
 
-EXTCON patches for 3.8-rc1
+Index: linux/drivers/acpi/scan.c
+===================================================================
+--- linux.orig/drivers/acpi/scan.c
++++ linux/drivers/acpi/scan.c
+@@ -1626,10 +1626,9 @@ static acpi_status acpi_bus_check_add(ac
+ 	return AE_OK;
+ }
+ 
+-static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
+-					void *context, void **not_used)
++static acpi_status acpi_bus_match_device(acpi_handle handle, u32 lvl,
++					 void *not_used, void **ret_not_used)
+ {
+-	struct acpi_bus_ops *ops = context;
+ 	acpi_status status = AE_OK;
+ 	struct acpi_device *device;
+ 	unsigned long long sta_not_used;
+@@ -1645,18 +1644,13 @@ static acpi_status acpi_bus_probe_start(
+ 	if (acpi_bus_get_device(handle, &device))
+ 		return AE_CTRL_DEPTH;
+ 
+-	if (ops->acpi_op_add) {
+-		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
+-			/* This is a known good platform device. */
+-			acpi_create_platform_device(device);
+-		} else {
+-			int ret = device_attach(&device->dev);
+-			acpi_hot_add_bind(device);
+-			if (ret)
+-				status = AE_CTRL_DEPTH;
+-		}
+-	} else if (ops->acpi_op_start) {
+-		if (ACPI_FAILURE(acpi_start_single_object(device)))
++	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
++		/* This is a known good platform device. */
++		acpi_create_platform_device(device);
++	} else {
++		int ret = device_attach(&device->dev);
++		acpi_hot_add_bind(device);
++		if (ret)
+ 			status = AE_CTRL_DEPTH;
+ 	}
+ 	return status;
+@@ -1679,7 +1673,7 @@ static int acpi_bus_scan(acpi_handle han
+ 			    acpi_bus_check_add, NULL, ops, &device);
+ 	if (device)
+ 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-				    acpi_bus_probe_start, NULL, ops, NULL);
++				    acpi_bus_match_device, NULL, NULL, NULL);
+ 	else
+ 		ret = -ENODEV;
+ 
+@@ -1706,31 +1700,43 @@ int
+ acpi_bus_add(struct acpi_device **child,
+ 	     struct acpi_device *parent, acpi_handle handle, int type)
+ {
+-	struct acpi_bus_ops ops;
+-
+-	memset(&ops, 0, sizeof(ops));
+-	ops.acpi_op_add = 1;
++	struct acpi_bus_ops ops = { .acpi_op_add = 1, };
+ 
+ 	return acpi_bus_scan(handle, &ops, child);
+ }
+ EXPORT_SYMBOL(acpi_bus_add);
+ 
+-int acpi_bus_start(struct acpi_device *device)
++static acpi_status acpi_bus_start_device(acpi_handle handle, u32 lvl,
++					 void *not_used, void **ret_not_used)
+ {
+-	struct acpi_bus_ops ops;
+-	int result;
++	struct acpi_device *device;
++	unsigned long long sta_not_used;
++	int type_not_used;
++	acpi_status status;
+ 
+-	if (!device)
+-		return -EINVAL;
++	/*
++	 * Ignore errors ignored by acpi_bus_check_add() to avoid terminating
++	 * namespace walks prematurely.
++	 */
++	if (acpi_bus_type_and_status(handle, &type_not_used, &sta_not_used))
++		return AE_OK;
+ 
+-	memset(&ops, 0, sizeof(ops));
+-	ops.acpi_op_start = 1;
++	if (acpi_bus_get_device(handle, &device))
++		return AE_CTRL_DEPTH;
+ 
+-	result = acpi_bus_scan(device->handle, &ops, NULL);
++	status = acpi_start_single_object(device);
++	return ACPI_SUCCESS(status) ? status : AE_CTRL_DEPTH;
++}
+ 
+-	acpi_update_all_gpes();
++int acpi_bus_start(struct acpi_device *device)
++{
++	if (!device)
++		return -EINVAL;
+ 
+-	return result;
++	acpi_walk_namespace(ACPI_TYPE_ANY, device->handle, ACPI_UINT32_MAX,
++			    acpi_bus_start_device, NULL, NULL, NULL);
++	acpi_update_all_gpes();
++	return 0;
+ }
+ EXPORT_SYMBOL(acpi_bus_start);
+ 
 
-Here are some drivers/extcon/ patches that I forgot to have you pull in
-the larger char/misc patchset from yesterday, for the 3.8-rc1 kernel.
-
-Nothing major here, just some driver updates, and cleanups, all of which
-have been in linux-next for a while now.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Alexey Khoroshilov (1):
-      extcon: arizona: unlock mutex on error path in arizona_micdet()
-
-Chanwoo Choi (1):
-      extcon: Add missing header file to extcon.h
-
-Greg Kroah-Hartman (1):
-      Merge tag 'pull_req_20121122' of git://git.kernel.org/.../mzx/extcon into char-misc-next
-
-MyungJoo Ham (1):
-      extcon: kernel_doc style fix
-
-Sachin Kamat (9):
-      extcon: Fix return value in extcon-class.c
-      extcon: max8997: Fix incorrect error check and return value
-      extcon: max77693: Fix incorrect error check and return value
-      extcon: max77693: Fix coding style
-      extcon: max8997: Fix checkpatch error
-      extcon: max8997: Fix a typo
-      extcon: max8997: Use devm_kzalloc
-      extcon: max77693: Use devm_kzalloc
-      extcon: max77693: Fix uninitialised variable warning
-
- drivers/extcon/extcon-arizona.c  |  1 +
- drivers/extcon/extcon-class.c    |  2 +-
- drivers/extcon/extcon-max77693.c | 36 ++++++++++++++++--------------------
- drivers/extcon/extcon-max8997.c  | 28 ++++++++++++----------------
- include/linux/extcon.h           | 50 ++++++++++++++++++++++++++------------------------
- 5 files changed, 56 insertions(+), 61 deletions(-)
