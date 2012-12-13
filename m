@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab2LMAsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:48:41 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:32510 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab2LMAsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:48:38 -0500
-Message-ID: <1355359176.18964.41.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH 00/11] Hot-plug and Online/Offline framework
-From: Toshi Kani <toshi.kani@hp.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: rjw@sisk.pl, lenb@kernel.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Wed, 12 Dec 2012 17:39:36 -0700
-In-Reply-To: <20121212235657.GD22764@kroah.com>
-References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
-	 <20121212235657.GD22764@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1755439Ab2LMAub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:50:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54964 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754908Ab2LMAu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 19:50:29 -0500
+Message-ID: <50C925F5.7030703@zytor.com>
+Date: Wed, 12 Dec 2012 16:48:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Davide Ciminaghi <ciminaghi@gnudd.com>
+CC: jaswinder.singh@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
+        tglx@linutronix.de, mingo@redhat.com, djbw@fb.com,
+        vinod.koul@intel.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, rubini@gnudd.com, wim@iguana.be,
+        cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
+        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        giancarlo.asnaghi@st.com
+Subject: Re: [PATCH v4 7/7] x86: add CONFIG_ARM_AMBA, selected by STA2X11
+References: <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com> <1355146956-6009-8-git-send-email-ciminaghi@gnudd.com>
+In-Reply-To: <1355146956-6009-8-git-send-email-ciminaghi@gnudd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 15:56 -0800, Greg KH wrote:
-> On Wed, Dec 12, 2012 at 04:17:12PM -0700, Toshi Kani wrote:
-> > This patchset is an initial prototype of proposed hot-plug framework
-> > for design review.  The hot-plug framework is designed to provide 
-> > the common framework for hot-plugging and online/offline operations
-> > of system devices, such as CPU, Memory and Node.  While this patchset
-> > only supports ACPI-based hot-plug operations, the framework itself is
-> > designed to be platform-neural and can support other FW architectures
-> > as necessary.
-> > 
-> > The patchset has not been fully tested yet, esp. for memory hot-plug.
-> > Any help for testing will be very appreciated since my test setup
-> > is limited.
-> > 
-> > The patchset is based on the linux-next branch of linux-pm.git tree.
-> > 
-> > Overview of the Framework
-> > =========================
-> 
-> <snip>
-> 
-> Why all the new framework, doesn't the existing bus infrastructure
-> provide everything you need here?  Shouldn't you just be putting your
-> cpus and memory sticks on a bus and handle stuff that way?  What makes
-> these types of devices so unique from all other devices that Linux has
-> been handling in a dynamic manner (i.e. hotplugging them) for many many
-> years?
-> 
-> Why are you reinventing the wheel?
+On 12/10/2012 05:42 AM, Davide Ciminaghi wrote:
+> From: Alessandro Rubini <rubini@gnudd.com>
+>
+> The sta2x11 I/O Hub is a bridge from PCIe to AMBA. It reuses a number
+> of amba drivers and needs to activate core bus support.
+>
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> ---
+>   arch/x86/Kconfig |    4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 5f67642..0659e7b 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -521,6 +521,7 @@ config STA2X11
+>   	select SWIOTLB
+>   	select MFD_STA2X11
+>   	select ARCH_REQUIRE_GPIOLIB
+> +	select ARM_AMBA
+>   	default n
+>   	---help---
+>   	  This adds support for boards based on the STA2X11 IO-Hub,
+> @@ -2237,6 +2238,9 @@ config GEOS
+>
+>   endif # X86_32
+>
+> +config ARM_AMBA
+> +        bool
+> +
+>   config AMD_NB
+>   	def_bool y
+>   	depends on CPU_SUP_AMD && PCI
+>
 
-Good question.  Yes, USB and PCI hotplug operate based on their bus
-structures.  USB and PCI cards only work under USB and PCI bus
-controllers.  So, their framework can be composed within the bus
-structures as you pointed out.
+I would be happier if instead we made this match PCI and made this a 
+depends on, but I'm not sure if it is worth holding up the patchset over.
 
-However, system devices such CPU and memory do not have their standard
-bus.  ACPI allows these system devices to be enumerated, but it does not
-make ACPI as the HW bus hierarchy for CPU and memory, unlike PCI and
-USB.  Therefore, CPU and memory modules manage CPU and memory outside of
-ACPI.  This makes sense because CPU and memory can be used without ACPI.
+	-hpa
 
-This leads us an issue when we try to manage system device hotplug
-within ACPI, because ACPI does not control everything.  This patchset
-provides a common hotplug framework for system devices, which both ACPI
-and non-ACPI modules (i.e. CPU and memory modules) can participate and
-are coordinated for their hotplug operations.  This is analogous to the
-boot-up sequence, which ACPI and non-ACPI modules can participate to
-enable CPU and memory.
-
-Thanks,
--Toshi
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
