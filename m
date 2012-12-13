@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2LMSXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 13:23:13 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:45679 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753481Ab2LMSXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 13:23:12 -0500
-Message-ID: <1355422990.13796.9.camel@joe-AO722>
-Subject: Re: [TRIVIAL PATCH 16/26] x86: Convert print_symbol to %pSR
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Jiri Kosina <trivial@kernel.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+	id S1756183Ab2LMSY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 13:24:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54455 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab2LMSY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 13:24:27 -0500
+Date: Thu, 13 Dec 2012 10:24:22 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "rjw@sisk.pl" <rjw@sisk.pl>, "lenb@kernel.org" <lenb@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "user-mode-linux-user@lists.sourceforge.net" 
-	<user-mode-linux-user@lists.sourceforge.net>
-Date: Thu, 13 Dec 2012 10:23:10 -0800
-In-Reply-To: <20121212224550.GJ8760@liondog.tnic>
-References: <cover.1355335227.git.joe@perches.com>
-	 <054f8a88fe46ae0b4c2669d0e155d84c11b66115.1355335228.git.joe@perches.com>
-	 <20121212210959.GH8760@liondog.tnic> <1355347803.8538.16.camel@joe-AO722>
-	 <3908561D78D1C84285E8C5FCA982C28F1C969495@ORSMSX108.amr.corp.intel.com>
-	 <1355351039.27571.2.camel@joe-AO722> <20121212224550.GJ8760@liondog.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "guohanjun@huawei.com" <guohanjun@huawei.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 02/11] drivers/base: Add hotplug framework code
+Message-ID: <20121213182422.GB9606@kroah.com>
+References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
+ <1355354243-18657-3-git-send-email-toshi.kani@hp.com>
+ <20121212235418.GB22764@kroah.com>
+ <1355371365.18964.89.camel@misato.fc.hp.com>
+ <20121213042437.GA14240@kroah.com>
+ <1355416251.18964.170.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355416251.18964.170.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-12 at 23:45 +0100, Borislav Petkov wrote:
-> On Wed, Dec 12, 2012 at 02:23:59PM -0800, Joe Perches wrote:
-> > On Wed, 2012-12-12 at 21:49 +0000, Luck, Tony wrote:
-> > > > I think I'd go ahead and ACK this unless Tony has some comments. I'm not
-> > > > happy about the two pr_emerg calls based on the conditional.
+On Thu, Dec 13, 2012 at 09:30:51AM -0700, Toshi Kani wrote:
+> On Thu, 2012-12-13 at 04:24 +0000, Greg KH wrote:
+> > On Wed, Dec 12, 2012 at 09:02:45PM -0700, Toshi Kani wrote:
+> > > On Wed, 2012-12-12 at 15:54 -0800, Greg KH wrote:
+> > > > On Wed, Dec 12, 2012 at 04:17:14PM -0700, Toshi Kani wrote:
+> > > > > Added hotplug.c, which is the hotplug framework code.
+> > > > 
+> > > > Again, better naming please.
 > > > 
-> > > As written the patch has the nice property of not making any changes to the
-> > > console output (except to eliminate the possibility of interleaved output that
-> > > the original code had).
+> > > Yes, I will change it to be more specific, something like
+> > > "sys_hotplug.c".
 > > 
-> > Well, it does eliminate a trailing space when m->cs != KERNEL_CS.
-> > That probably won't hurt anything, but...
+> > Ugh, what's wrong with just a simple "system_bus.c" or something like
+> > that, and then put all of the needed system bus logic in there and tie
+> > the cpus and other sysdev code into that?
 > 
-> Yeah, that won't be an issue. So let's take it as is, as Tony suggests.
+> The issue is that the framework does not provide the system bus
+> structure.  This is because the system bus structure is not used for CPU
+> and memory initialization at boot (as I explained in my other email).
 
-Hi again Boris.
+I understand, please fix that and then you will not have these issues :)
 
-I should mention one more thing.
+> The framework manages the calling sequence of hotplug operations, which
+> is similar to the boot sequence managed by start_kernel(),
+> kernel_init(), do_initcalls(), etc.  In such sense, this file might not
+> be a good fit for drivers/base, but I could not find a better place for
+> it.
 
-m->ip is a u64 so, when compiling x86-32, there's a new warning
-"cast to pointer from integer of different size".  This isn't new
-different behavior, just a new warning.  The previous print_symbol
-took a ulong and the u64 was silently truncated.
+Having "similar but slightly different" isn't a good way to do things,
+and I think you are trying to solve that problem here, so converting
+everything to use the driver model properly will solve these issues for
+you, right?
 
-  CC      arch/x86/kernel/cpu/mcheck/mce.o
-arch/x86/kernel/cpu/mcheck/mce.c: In function ‘print_mce’:
-arch/x86/kernel/cpu/mcheck/mce.c:246:4: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+I _really_ don't want to see yet-another-way-to-do-things be created at
+all, unless it really really really is special and different for some
+reason.  So far, I have yet to be convinced, especially given that your
+reasoning for doing this seems to be "to do it correctly would be too
+much work so I created another interface".  That isn't going to fly,
+sorry.
 
-If appropriate, the code could be changed to
+thanks,
 
-	(void *)(unsigned long)m->ip
-
-to shut the compiler up.
-
+greg k-h
