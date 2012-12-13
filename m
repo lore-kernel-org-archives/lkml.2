@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2LMAPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:15:23 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54020 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab2LMAPW (ORCPT
+	id S1755289Ab2LMASg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:18:36 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:59233 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815Ab2LMASf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:15:22 -0500
-Date: Wed, 12 Dec 2012 16:15:18 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Benedikt Spranger <b.spranger@linutronix.de>, linux-kernel@vger.kernel.org,
-        Alexander.Frank@eberspaecher.com
-Subject: Re: [PATCH 2/2] uio: do not expose inode to uio open/release hooks
-Message-ID: <20121213001518.GA23761@kroah.com>
-References: <1355267523-19724-1-git-send-email-b.spranger@linutronix.de>
- <1355267523-19724-3-git-send-email-b.spranger@linutronix.de>
- <20121211232032.GA24933@kroah.com>
- <20121212014221.GA2642@local>
- <20121212044648.GB7224@kroah.com>
- <20121212085053.GF2642@local>
- <20121212095616.357a59e9@mitra.spranger.biz>
- <20121212150818.GB8449@kroah.com>
- <20121213000853.GD4261@local>
+	Wed, 12 Dec 2012 19:18:35 -0500
+Message-ID: <50C91ED7.5050905@linaro.org>
+Date: Wed, 12 Dec 2012 16:18:31 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213000853.GD4261@local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] NTP: Add a CONFIG_RTC_SYSTOHC configuration
+References: <20121212055643.GA18078@obsidianresearch.com> <50C8DDAA.5010101@linaro.org> <20121212210443.GB11530@obsidianresearch.com>
+In-Reply-To: <20121212210443.GB11530@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 01:08:54AM +0100, Hans J. Koch wrote:
-> On Wed, Dec 12, 2012 at 07:08:18AM -0800, Greg KH wrote:
-> > On Wed, Dec 12, 2012 at 09:56:16AM +0100, Benedikt Spranger wrote:
-> > > Am Wed, 12 Dec 2012 09:50:54 +0100
-> > > schrieb "Hans J. Koch" <hjk@hansjkoch.de>:
-> > > 
-> > > > On Tue, Dec 11, 2012 at 08:46:48PM -0800, Greg KH wrote:
-> > > > > Yes, but what does that have to do with this in-kernel, internal api?
-> > > > 
-> > > > Ah, OK. You're right, the commit message is confusing.
-> > > > 
-> > > > Bene, it's enough to say we drop the inode parameter because nobody
-> > > > ever needed it.
-> > > I am fine with that.
-> > > 
-> > > > I cannot see why this also helps with the other problem.
-> > > It would help, because we can defer calling the release hook until the
-> > > last mmap user is gone. In this case the inode pointer may not be valid
-> > > anymore.
-> > 
-> > Which, again, is the same for any in-kernel driver with these types of
-> > callbacks.
-> 
-> Is that a general mmap problem that wants to be fixed?
+On 12/12/2012 01:04 PM, Jason Gunthorpe wrote:
+> On Wed, Dec 12, 2012 at 11:40:26AM -0800, John Stultz wrote:
+>
+>>> The option also overrides the call to any platform update_persistent_clock
+>>> so that the RTC subsystem completely and generically replaces this
+>>> functionality.
+>>>
+>>> Tested on ARM kirkwood and PPC405
+>> So I'm initially mixed on this, as it feels a little redundant (esp
+>> given it may override a higher precision arch-specific function).
+>> But from the perspective of this being a generic RTC function,
+>> instead of an per-arch implementation, it does seem reasonable.
+> It isn't really redundant. The kernel still has two RTC subsystems,
+> 'class RTC' and various platform specific
+> things. update_persisent_clock is the entry for the platform specific
+> RTC, while rtc_update_persistent_clock is the entry for class RTC.
+>
+> The issue is on platforms like PPC where both co-exist. On PPC
+> update_persisent_clock just calls through a function pointer
+> (set_rtc_time) to the machine description to do whatever that mach
+> needs. Currently all the PPC mach's that use class RTC drivers via DTS
+> set set_rtc_time to null. Only the machs that implement a non class
+> RTC driver provide an implementation.
+>
+> So it is an either/or case - either rtc_update_persistent_clock works
+> or update_persistent_clock does, never both.
+Right.  I just want to make sure that we reduce the duplication between 
+the two paths (and ensure sane defaults, so users don't have to go 
+hunting for the right config for things to work properly). The other 
+complication is that in some cases, the arch specific path is much finer 
+grained then the RTC layer's second granularity, so we need to ensure we 
+prefer the arch specific path in those cases.
 
-Not that I know of, but I haven't messed around in this area of the
-kernel in a long time, sorry.
+>> Hrm. So on architectures that support GENERIC_CMOS_UPDATE already,
+>> this creates a duplicated code path that is slightly different. I'd
+>> like to avoid this if possible.  Since you're plugging
+>> rtc_update_persistent_clock into the GENERIC_CMOS_UPDATE code, we
+>> can't just have this option depend on !GENERIC_CMOS_UPDATE.
+> It isn't duplicate, we need to keep update_persistent_clock to support
+> non-class RTC machines.
+>
+> I thought about this:
+>
+>          if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec / 2) {
+> 	        fail = -1;
+> #ifdef CONFIG_RTC_SYSTOHC
+> 	        fail = rtc_update_persistent_clock(now);
+> #endif
+> #ifdef CONFIG_GENERIC_CMOS_UPDATE
+>                  if (fail)
+>                           fail = update_persistent_clock(now);
+> #endif
+>         }
+>
+> Try the RTC function first, then fall back to the legacy platform
+> function if it didn't work.
+>
+> That seems better to me, do you agree?
 
-greg k-h
+I do, although again, in the case where the arch specific implementation 
+is "better", we end up losing granularity (s390 is the specific example 
+I'm thinking of), since this prefers the RTC implementation over the 
+arch specific one.  So maybe I'd suggest switching it so we prefer the 
+arch specific one, and then remove the arch specific implementations 
+where they are inferior to the RTC one.
+
+>
+>> So this might need a slightly deeper rework?
+>> I'd suggest the following:
+>> 1) Convert GENERIC_CMOS_UPDATE into SUPPORTS_UPDATE_PERSISTENT_CLOCK.
+>> 2) Add RTC_SYSTOHC but make it depend on !SUPPORTS_UPDATE_PERSISTENT_CLOCK
+> This would only work for ARM, not PPC..
+>
+> Ultimately I suspect the clean up needed is to convert more things to
+> class rtc drivers and remove update_persistent_clock.
+> ppc is pretty close already, and I think ARM is already there.
+As long as we have a clear iterative path forward, with a solution for 
+the cases where the arch method is actually preferred, I think it sounds 
+like a reasonable approach.
+
+thanks
+-john
