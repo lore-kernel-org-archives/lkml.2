@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab2LMOo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:44:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932486Ab2LMOom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:44:42 -0500
-Date: Thu, 13 Dec 2012 14:44:38 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
-Message-ID: <20121213144438.GC9887@suse.de>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
- <50C8FCE0.1060408@redhat.com>
- <20121212222844.GA10257@cmpxchg.org>
- <20121213100704.GV1009@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121213100704.GV1009@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932549Ab2LMOpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:45:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44513 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab2LMOHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:07:44 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 113/241] xfs: drop buffer io reference when a bad bio is built
+Date: Thu, 13 Dec 2012 11:57:58 -0200
+Message-Id: <1355407206-17100-114-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 10:07:04AM +0000, Mel Gorman wrote:
-> On Wed, Dec 12, 2012 at 05:28:44PM -0500, Johannes Weiner wrote:
-> > On Wed, Dec 12, 2012 at 04:53:36PM -0500, Rik van Riel wrote:
-> > > On 12/12/2012 04:43 PM, Johannes Weiner wrote:
-> > > >dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
-> 
-> You are using some internal tree for that commit. Now that it's upstream
-> it is commit e9868505987a03a26a3979f27b82911ccc003752.
-> 
-> > > >a point of not going for anonymous memory while there is still enough
-> > > >inactive cache around.
-> > > >
-> > > >The check was added only for global reclaim, but it is just as useful
-> > > >for memory cgroup reclaim.
-> > > >
-> > > >Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > >---
-> > > >  mm/vmscan.c | 19 ++++++++++---------
-> > > >  1 file changed, 10 insertions(+), 9 deletions(-)
-> > > >
-> > > <SNIP>
-> > > 
-> > > I believe the if() block should be moved to AFTER
-> > > the check where we make sure we actually have enough
-> > > file pages.
-> > 
-> > You are absolutely right, this makes more sense.  Although I'd figure
-> > the impact would be small because if there actually is that little
-> > file cache, it won't be there for long with force-file scanning... :-)
-> > 
-> 
-> Does it actually make sense? Lets take the global reclaim case.
-> 
-> <stupidity snipped>
+3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
 
-I made a stupid mistake that Michal Hocko pointed out to me. The goto
-out means that it should be fine either way.
+------------------
 
-> I'm not being super thorough because I'm not quite sure this is the right
-> patch if the motivation is for memcg to use the same logic. Instead of
-> moving this if, why do you not estimate "free" for the memcg based on the
-> hard limit and current usage? 
-> 
+From: Dave Chinner <dchinner@redhat.com>
 
-I'm still curious about this part.
+commit d69043c42d8c6414fa28ad18d99973aa6c1c2e24 upstream.
 
+Error handling in xfs_buf_ioapply_map() does not handle IO reference
+counts correctly. We increment the b_io_remaining count before
+building the bio, but then fail to decrement it in the failure case.
+This leads to the buffer never running IO completion and releasing
+the reference that the IO holds, so at unmount we can leak the
+buffer. This leak is captured by this assert failure during unmount:
+
+XFS: Assertion failed: atomic_read(&pag->pag_ref) == 0, file: fs/xfs/xfs_mount.c, line: 273
+
+This is not a new bug - the b_io_remaining accounting has had this
+problem for a long, long time - it's just very hard to get a
+zero length bio being built by this code...
+
+Further, the buffer IO error can be overwritten on a multi-segment
+buffer by subsequent bio completions for partial sections of the
+buffer. Hence we should only set the buffer error status if the
+buffer is not already carrying an error status. This ensures that a
+partial IO error on a multi-segment buffer will not be lost. This
+part of the problem is a regression, however.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ fs/xfs/xfs_buf.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
+index 269b35c..9fade8c 100644
+--- a/fs/xfs/xfs_buf.c
++++ b/fs/xfs/xfs_buf.c
+@@ -1135,9 +1135,14 @@ xfs_buf_bio_end_io(
+ {
+ 	xfs_buf_t		*bp = (xfs_buf_t *)bio->bi_private;
+ 
+-	xfs_buf_ioerror(bp, -error);
++	/*
++	 * don't overwrite existing errors - otherwise we can lose errors on
++	 * buffers that require multiple bios to complete.
++	 */
++	if (!bp->b_error)
++		xfs_buf_ioerror(bp, -error);
+ 
+-	if (!error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
++	if (!bp->b_error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
+ 		invalidate_kernel_vmap_range(bp->b_addr, xfs_buf_vmap_len(bp));
+ 
+ 	_xfs_buf_ioend(bp, 1);
+@@ -1213,6 +1218,11 @@ next_chunk:
+ 		if (size)
+ 			goto next_chunk;
+ 	} else {
++		/*
++		 * This is guaranteed not to be the last io reference count
++		 * because the caller (xfs_buf_iorequest) holds a count itself.
++		 */
++		atomic_dec(&bp->b_io_remaining);
+ 		xfs_buf_ioerror(bp, EIO);
+ 		bio_put(bio);
+ 	}
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
