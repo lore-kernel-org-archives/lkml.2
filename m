@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2LMXKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 18:10:12 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40145 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab2LMXKK (ORCPT
+	id S1755519Ab2LMXPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 18:15:45 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:31311 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab2LMXPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 18:10:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121213150015.e497a585.akpm@linux-foundation.org>
-References: <1355432225-5878-1-git-send-email-fweisbec@gmail.com>
-	<20121213131809.122fdd61.akpm@linux-foundation.org>
-	<CAFTL4hxPAq0pNOAhMc01iOygqdx=Ja=b5u9ozzdRmPLbtxMn+A@mail.gmail.com>
-	<20121213150015.e497a585.akpm@linux-foundation.org>
-Date: Fri, 14 Dec 2012 00:10:09 +0100
-Message-ID: <CAFTL4hw=OorY4=Y4RRQv5qZVZCmv201dpNECGH37neDArc4wpg@mail.gmail.com>
-Subject: Re: [PATCH] context_tracking: Add comments on interface and internals
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Dec 2012 18:15:44 -0500
+Message-ID: <1355440542.1823.21.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mm: add node physical memory range to sysfs
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Thu, 13 Dec 2012 15:15:42 -0800
+In-Reply-To: <50C95E4A.9010509@linux.vnet.ibm.com>
+References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net>
+	 <20121207155125.d3117244.akpm@linux-foundation.org>
+	 <50C28720.3070205@linux.vnet.ibm.com>
+	 <1355361524.5255.9.camel@buesod1.americas.hpqcorp.net>
+	 <50C933E9.2040707@linux.vnet.ibm.com>
+	 <1355364222.9244.3.camel@buesod1.americas.hpqcorp.net>
+	 <50C95E4A.9010509@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/14 Andrew Morton <akpm@linux-foundation.org>:
-> On Thu, 13 Dec 2012 23:50:23 +0100
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
->> >
->> >> + * This call supports re-entrancy.
->> >
->> > Presumably the explanation for user_exit() applies here.
->>
->> Not sure what you mean here.
->
-> It's unclear what it means to say "user_enter() supports reentrancy".
-> I mean, zillions of kernel functions are surely reentrant - so what?
-> It appears that you had something in mind when pointing this out, but
-> what was it?  The comment over user_exit() appears to tell us.
+On Wed, 2012-12-12 at 20:49 -0800, Dave Hansen wrote:
+> On 12/12/2012 06:03 PM, Davidlohr Bueso wrote:
+> > On Wed, 2012-12-12 at 17:48 -0800, Dave Hansen wrote:
+> >> But if we went and did it per-DIMM (showing which physical addresses and
+> >> NUMA nodes a DIMM maps to), wouldn't that be redundant with this
+> >> proposed interface?
+> > 
+> > If DIMMs overlap between nodes, then we wouldn't have an exact range for
+> > a node in question. Having both approaches would complement each other.
+> 
+> How is that possible?  If NUMA nodes are defined by distances from CPUs
+> to memory, how could a DIMM have more than a single distance to any
+> given CPU?
 
-Ah ok. Yeah indeed, the fact user_exit() is reentrant is very
-important because I have precise usecases in mind. For user_enter() I
-don't, so probably I don't need to inform about it.
+Can't this occur when interleaving emulated nodes with physical ones?
 
->
->> > It's mainly this bit which makes me wonder why the code is in lib/.  Is
->> > there any conceivable prospect that any other subsystem will use this
->> > code for anything?
->>
->> So that's because of that cputime accounting on dynticks CPUs which
->> will need to know about user/kernel transitions. I'm preparing that
->> for the 3.9 merge window.
->
-> Oh.  That's really the entire reason for the patch and should have been
-> in the changelog!
+> 
+> >> How do you plan to use this in practice, btw?
+> > 
+> > It started because I needed to recognize the address of a node to remove
+> > it from the e820 mappings and have the system "ignore" the node's
+> > memory.
+> 
+> Actually, now that I think about it, can you check in the
+> /sys/devices/system/ directories for memory and nodes?  We have linkages
+> there for each memory section to every NUMA node, and you can also
+> derive the physical address from the phys_index in each section.  That
+> should allow you to work out physical addresses for a given node.
+> 
 
-I mentioned it in the changelog:
+I had looked at the memory-hotplug interface but found that this
+'phys_index' doesn't include holes, while ->node_spanned_pages does.
 
-commit 91d1aa43d30505b0b825db8898ffc80a8eca96c7 "context_tracking: New
-context tracking susbsystem"
-"""
-    We need to pull this up from RCU into this new level of indirection
-    because this tracking is also going to be used to implement an "on
-    demand" generic virtual cputime accounting. A necessary step to
-    shutdown the tick while still accounting the cputime.
-"""
+Thanks,
+Davidlohr
 
-Another reason, more implicit this time, was to avoid that RCU handles
-those reentrancy things and context tracking all around by itself.
