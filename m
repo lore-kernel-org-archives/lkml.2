@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab2LMOHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:07:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44518 "EHLO
+	id S932522Ab2LMOH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:07:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44528 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332Ab2LMOHt (ORCPT
+	with ESMTP id S932498Ab2LMOHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:07:49 -0500
+	Thu, 13 Dec 2012 09:07:55 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 114/241] m68k: fix sigset_t accessor functions
-Date: Thu, 13 Dec 2012 11:57:59 -0200
-Message-Id: <1355407206-17100-115-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 116/241] sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
+Date: Thu, 13 Dec 2012 11:58:01 -0200
+Message-Id: <1355407206-17100-117-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,56 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 34fa78b59c52d1db3513db4c1a999db26b2e9ac2 upstream.
+commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
 
-The sigaddset/sigdelset/sigismember functions that are implemented with
-bitfield insn cannot allow the sigset argument to be placed in a data
-register since the sigset is wider than 32 bits.  Remove the "d"
-constraint from the asm statements.
+If a signal handler is executed on altstack and another signal comes,
+we will end up with rt_sigreturn() on return from the second handler
+getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
+are not asking to change the settings; in fact, they couldn't have been
+changed during the second handler execution exactly because we'd been
+on altstack all along.  64bit sigreturn on sparc treats any error from
+do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
+we are using on other architectures.
 
-The effect of the bug is that sending RT signals does not work, the signal
-number is truncated modulo 32.
-
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/m68k/include/asm/signal.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/signal_64.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/m68k/include/asm/signal.h b/arch/m68k/include/asm/signal.h
-index 60e8866..93fe83e 100644
---- a/arch/m68k/include/asm/signal.h
-+++ b/arch/m68k/include/asm/signal.h
-@@ -156,7 +156,7 @@ typedef struct sigaltstack {
- static inline void sigaddset(sigset_t *set, int _sig)
- {
- 	asm ("bfset %0{%1,#1}"
--		: "+od" (*set)
-+		: "+o" (*set)
- 		: "id" ((_sig - 1) ^ 31)
- 		: "cc");
- }
-@@ -164,7 +164,7 @@ static inline void sigaddset(sigset_t *set, int _sig)
- static inline void sigdelset(sigset_t *set, int _sig)
- {
- 	asm ("bfclr %0{%1,#1}"
--		: "+od" (*set)
-+		: "+o" (*set)
- 		: "id" ((_sig - 1) ^ 31)
- 		: "cc");
- }
-@@ -180,7 +180,7 @@ static inline int __gen_sigismember(sigset_t *set, int _sig)
- 	int ret;
- 	asm ("bfextu %1{%2,#1},%0"
- 		: "=d" (ret)
--		: "od" (*set), "id" ((_sig-1) ^ 31)
-+		: "o" (*set), "id" ((_sig-1) ^ 31)
- 		: "cc");
- 	return ret;
- }
+diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
+index 867de2f..689e1ba 100644
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -295,9 +295,7 @@ void do_rt_sigreturn(struct pt_regs *regs)
+ 		err |= restore_fpu_state(regs, fpu_save);
+ 
+ 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
+-	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
+-
+-	if (err)
++	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
+ 		goto segv;
+ 
+ 	err |= __get_user(rwin_save, &sf->rwin_save);
 -- 
 1.7.9.5
 
