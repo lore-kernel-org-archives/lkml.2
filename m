@@ -1,184 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab2LMIoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 03:44:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60307 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353Ab2LMIoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 03:44:37 -0500
-Date: Thu, 13 Dec 2012 09:44:31 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] sched: cputime: avoid multiplication overflow (in common
- cases)
-Message-ID: <20121213084430.GA2297@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753289Ab2LMIqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 03:46:06 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48280 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab2LMIqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 03:46:05 -0500
+Message-ID: <1355388358.31434.5.camel@phoenix>
+Subject: [RFC/RFT][PATCH 2/4] regulator: 88pm8607: Use activate_[reg|bit]
+ with regmap based voltage_sel operations
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Dec 2012 16:45:58 +0800
+In-Reply-To: <1355388248.31434.3.camel@phoenix>
+References: <1355388248.31434.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We scale stime, utime values based on rtime (sum_exec_runtime converted
-to jiffies). During scaling we multiple rtime * utime, what seems to be
-fine, since both values are converted to u64, but is not.
-
-Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
-for 1 day, threads utilize 100% cpu on user space. Machine has 64 CPUs.
-
-Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
-0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
-which can not be covered in 64 bits.
-
-Result of overflow is stall of utime values visible in user space
-(prev_utime in kernel), even if application still consume lot of CPU
-time.
-
-Probably good fix for the problem, will be using 128 bit variable and
-proper mul128 and div_u128_u64 primitives. While mul128 is on it's
-way to kernel, there is no 128 bit division yet. I'm not sure, if we
-want to add it to kernel. Perhaps we could also change the way how
-stime and utime are calculated, but I don't know how, so I come with
-the below solution for the problem.
-
-To avoid overflow patch change value we scale to min(stime, utime). This
-is more like workaround, but will work for processes, which perform
-mostly on user space or mostly on kernel space. Unfortunately processes,
-which perform on kernel and user space equally, and additionally utilize
-lot of CPU time, still will hit this overflow pretty quickly. However
-such processes seems to be uncommon.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- kernel/sched/cputime.c |   92 +++++++++++++++++++++++++++++------------------
- 1 files changed, 57 insertions(+), 35 deletions(-)
+ drivers/regulator/88pm8607.c |   43 ++++++++++++------------------------------
+ 1 file changed, 12 insertions(+), 31 deletions(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 81b763b..6e23daf 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -463,40 +463,72 @@ EXPORT_SYMBOL_GPL(vtime_account);
- #ifndef nsecs_to_cputime
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
--
--static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-+/*
-+ * Scale utime and stime values to reflect sum_exec_runtime accounted precisely
-+ * by CFS's. We use the following proportion:
-+ *
-+ *	Xtime / total = scaled_Xtime / rtime
-+ *
-+ * where total is stime + utime, rtime is sum_exec_runtime converted to
-+ * cputime_t units. To avoid overflow in Xtime * rtime multiplication, we chose
-+ * Xtime as smaller from {utime, stime} pair. Scaled value of second entry from
-+ * the pair is calculated by simple subtraction from rtime.
-+ */
-+static void scale_cputimes(struct task_cputime *cputime, cputime_t *prev_ut,
-+			   cputime_t *prev_st)
- {
--	u64 temp = (__force u64) rtime;
-+	cputime_t rtime = nsecs_to_cputime(cputime->sum_exec_runtime);
-+	cputime_t utime = cputime->utime;
-+	cputime_t stime = cputime->stime;
-+	cputime_t scaled_time, total;
-+	bool utime_scale;
-+	u64 tmp;
-+
-+	if (utime == stime) {
-+		utime_scale = true;
-+		scaled_time = rtime / 2;
-+	} else {
-+		tmp = (__force u64) rtime;
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index 2b55711..21a7334 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -30,8 +30,6 @@ struct pm8607_regulator_info {
+ 	unsigned int	*vol_table;
+ 	unsigned int	*vol_suspend;
  
--	temp *= (__force u64) utime;
-+		if (utime < stime) {
-+			tmp *= utime;
-+			utime_scale = true;
-+		} else {
-+			tmp *= stime;
-+			utime_scale = false;
-+		}
+-	int	update_reg;
+-	int	update_bit;
+ 	int	slope_double;
+ };
  
--	if (sizeof(cputime_t) == 4)
--		temp = div_u64(temp, (__force u32) total);
--	else
--		temp = div64_u64(temp, (__force u64) total);
-+		total = utime + stime;
+@@ -222,29 +220,6 @@ static int pm8607_list_voltage(struct regulator_dev *rdev, unsigned index)
+ 	return ret;
+ }
  
--	return (__force cputime_t) temp;
--}
-+		if (sizeof(cputime_t) == 4)
-+			tmp = div_u64(tmp, (__force u32) total);
-+		else
-+			tmp = div64_u64(tmp, (__force u64) total);
- 
--void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
 -{
--	cputime_t rtime, utime = p->utime, total = utime + p->stime;
-+		scaled_time = (__force cputime_t) tmp;
-+	}
- 
- 	/*
--	 * Use CFS's precise accounting:
-+	 * Compare with previous values, to keep monotonicity:
- 	 */
--	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
-+	if (utime_scale) {
-+		*prev_ut = max(*prev_ut, scaled_time);
-+		*prev_st = max(*prev_st, rtime - *prev_ut);
-+	} else {
-+		*prev_st = max(*prev_st, scaled_time);
-+		*prev_ut = max(*prev_ut, rtime - *prev_st);
-+	}
-+}
- 
--	if (total)
--		utime = scale_utime(utime, rtime, total);
--	else
--		utime = rtime;
-+void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+{
-+	struct task_cputime cputime = {
-+		.utime = p->utime,
-+		.stime = p->stime,
-+		.sum_exec_runtime = p->se.sum_exec_runtime,
-+	};
- 
--	/*
--	 * Compare with previous values, to keep monotonicity:
--	 */
--	p->prev_utime = max(p->prev_utime, utime);
--	p->prev_stime = max(p->prev_stime, rtime - p->prev_utime);
-+	scale_cputimes(&cputime, &p->prev_utime, &p->prev_stime);
- 
- 	*ut = p->prev_utime;
- 	*st = p->prev_stime;
-@@ -509,20 +541,10 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
+-	uint8_t val;
+-	int ret;
+-
+-	val = (uint8_t)(selector << (ffs(rdev->desc->vsel_mask) - 1));
+-
+-	ret = pm860x_set_bits(info->i2c, rdev->desc->vsel_reg,
+-			      rdev->desc->vsel_mask, val);
+-	if (ret)
+-		return ret;
+-	switch (info->desc.id) {
+-	case PM8607_ID_BUCK1:
+-	case PM8607_ID_BUCK3:
+-		ret = pm860x_set_bits(info->i2c, info->update_reg,
+-				      1 << info->update_bit,
+-				      1 << info->update_bit);
+-		break;
+-	}
+-	return ret;
+-}
+-
+ static int pm8606_preg_enable(struct regulator_dev *rdev)
  {
- 	struct signal_struct *sig = p->signal;
- 	struct task_cputime cputime;
--	cputime_t rtime, utime, total;
+ 	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
+@@ -276,7 +251,7 @@ static int pm8606_preg_is_enabled(struct regulator_dev *rdev)
  
- 	thread_group_cputime(p, &cputime);
+ static struct regulator_ops pm8607_regulator_ops = {
+ 	.list_voltage	= pm8607_list_voltage,
+-	.set_voltage_sel = pm8607_set_voltage_sel,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -313,11 +288,11 @@ static struct regulator_ops pm8606_preg_ops = {
+ 		.n_voltages = ARRAY_SIZE(vreg##_table),			\
+ 		.vsel_reg = PM8607_##vreg,				\
+ 		.vsel_mask = ARRAY_SIZE(vreg##_table) - 1,		\
++		.activate_reg = PM8607_##ureg,				\
++		.activate_bit = (ubit),					\
+ 		.enable_reg = PM8607_##ereg,				\
+ 		.enable_mask = 1 << (ebit),				\
+ 	},								\
+-	.update_reg	= PM8607_##ureg,				\
+-	.update_bit	= (ubit),					\
+ 	.slope_double	= (0),						\
+ 	.vol_table	= (unsigned int *)&vreg##_table,		\
+ 	.vol_suspend	= (unsigned int *)&vreg##_suspend_table,	\
+@@ -343,9 +318,15 @@ static struct regulator_ops pm8606_preg_ops = {
+ }
  
--	total = cputime.utime + cputime.stime;
--	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
--
--	if (total)
--		utime = scale_utime(cputime.utime, rtime, total);
--	else
--		utime = rtime;
--
--	sig->prev_utime = max(sig->prev_utime, utime);
--	sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
-+	scale_cputimes(&cputime, &sig->prev_utime, &sig->prev_stime);
+ static struct pm8607_regulator_info pm8607_regulator_info[] = {
+-	PM8607_DVC(BUCK1, GO, 0, SUPPLIES_EN11, 0),
+-	PM8607_DVC(BUCK2, GO, 1, SUPPLIES_EN11, 1),
+-	PM8607_DVC(BUCK3, GO, 2, SUPPLIES_EN11, 2),
++	PM8607_DVC(BUCK1, GO, BIT(0), SUPPLIES_EN11, 0),
++	/*
++	 * BUCK2 is designed to control voltage of CP domain.
++	 * Linux only runs in AP side, so we don't need to control BUCK2 in AP
++	 * side. Thus set the activate bit to be 0 instead of BIT(1) to avoid
++	 * updating activate_bit for BUCK2
++	 */
++	PM8607_DVC(BUCK2, GO, 0, SUPPLIES_EN11, 1),
++	PM8607_DVC(BUCK3, GO, BIT(2), SUPPLIES_EN11, 2),
  
- 	*ut = sig->prev_utime;
- 	*st = sig->prev_stime;
+ 	PM8607_LDO(1,         LDO1, 0, SUPPLIES_EN11, 3),
+ 	PM8607_LDO(2,         LDO2, 0, SUPPLIES_EN11, 4),
 -- 
-1.7.1
+1.7.9.5
+
+
 
