@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab2LMDnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:43:19 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43930 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab2LMDnS (ORCPT
+	id S1754064Ab2LMDqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:46:49 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:14773 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab2LMDqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:43:18 -0500
-Message-ID: <50C94ECD.6020504@gmail.com>
-Date: Wed, 12 Dec 2012 20:43:09 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.8
-References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com> <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
-In-Reply-To: <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 12 Dec 2012 22:46:47 -0500
+Message-ID: <1355369864.18964.68.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 00/11] Hot-plug and Online/Offline framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: rjw@sisk.pl, lenb@kernel.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Wed, 12 Dec 2012 20:37:44 -0700
+In-Reply-To: <20121213005510.GA9220@kroah.com>
+References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
+	 <20121212235657.GD22764@kroah.com>
+	 <1355359176.18964.41.camel@misato.fc.hp.com>
+	 <20121213005510.GA9220@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/12 8:34 PM, Linus Torvalds wrote:
-> On Wed, Dec 12, 2012 at 7:25 PM, David Ahern <dsahern@gmail.com> wrote:
->>
->> Are you running an older perf binary on the 3.8 kernel?
->
-> I am.. I don't tend to rebuild 'perf'..
->
->> Does this work: perf record -e cycles:ppH  ...
->
-> Yes it does. What is 'H' and why should anybody care? Especially since
-> I'm not running virtualized.
->
-> That whole "exclude_guest" test is insane when there isn't any
-> virtualization going on. Very annoying.
+On Wed, 2012-12-12 at 16:55 -0800, Greg KH wrote:
+> On Wed, Dec 12, 2012 at 05:39:36PM -0700, Toshi Kani wrote:
+> > On Wed, 2012-12-12 at 15:56 -0800, Greg KH wrote:
+> > > On Wed, Dec 12, 2012 at 04:17:12PM -0700, Toshi Kani wrote:
+> > > > This patchset is an initial prototype of proposed hot-plug framework
+> > > > for design review.  The hot-plug framework is designed to provide 
+> > > > the common framework for hot-plugging and online/offline operations
+> > > > of system devices, such as CPU, Memory and Node.  While this patchset
+> > > > only supports ACPI-based hot-plug operations, the framework itself is
+> > > > designed to be platform-neural and can support other FW architectures
+> > > > as necessary.
+> > > > 
+> > > > The patchset has not been fully tested yet, esp. for memory hot-plug.
+> > > > Any help for testing will be very appreciated since my test setup
+> > > > is limited.
+> > > > 
+> > > > The patchset is based on the linux-next branch of linux-pm.git tree.
+> > > > 
+> > > > Overview of the Framework
+> > > > =========================
+> > > 
+> > > <snip>
+> > > 
+> > > Why all the new framework, doesn't the existing bus infrastructure
+> > > provide everything you need here?  Shouldn't you just be putting your
+> > > cpus and memory sticks on a bus and handle stuff that way?  What makes
+> > > these types of devices so unique from all other devices that Linux has
+> > > been handling in a dynamic manner (i.e. hotplugging them) for many many
+> > > years?
+> > > 
+> > > Why are you reinventing the wheel?
+> > 
+> > Good question.  Yes, USB and PCI hotplug operate based on their bus
+> > structures.  USB and PCI cards only work under USB and PCI bus
+> > controllers.  So, their framework can be composed within the bus
+> > structures as you pointed out.
+> > 
+> > However, system devices such CPU and memory do not have their standard
+> > bus.  ACPI allows these system devices to be enumerated, but it does not
+> > make ACPI as the HW bus hierarchy for CPU and memory, unlike PCI and
+> > USB.  Therefore, CPU and memory modules manage CPU and memory outside of
+> > ACPI.  This makes sense because CPU and memory can be used without ACPI.
+> > 
+> > This leads us an issue when we try to manage system device hotplug
+> > within ACPI, because ACPI does not control everything.  This patchset
+> > provides a common hotplug framework for system devices, which both ACPI
+> > and non-ACPI modules (i.e. CPU and memory modules) can participate and
+> > are coordinated for their hotplug operations.  This is analogous to the
+> > boot-up sequence, which ACPI and non-ACPI modules can participate to
+> > enable CPU and memory.
+> 
+> Then create a "virtual" bus and put the devices you wish to control on
+> that.  That is what the "system bus" devices were supposed to be, it's
+> about time someone took that code and got it all working properly in
+> this way, that is why it was created oh so long ago.
 
-you know what's worse? All of your VMs blowing up because anyone runs 
-perf with precise attribute. Virtualization and and performance 
-monitoring collide. From the log message for commit 1342798.
+It may be the ideal, but it will take us great effort to make such
+things to happen based on where we are now.  It is going to be a long
+way.  I believe the first step is to make the boot-up flow and hot-plug
+flow consistent for system devices.  This is what this patchset is
+trying to do.
 
-"Intel PEBS in VT-x context uses the DS address as a guest linear 
-address, even though its programmed by the host as a host linear 
-address. This either results in guest memory corruption and or the 
-hardware faulting and 'crashing' the virtual machine.  Therefore we have 
-to disable PEBS on VT-x enter and re-enable on VT-x exit, enforcing a 
-strict exclude_guest."
+Thanks,
+-Toshi
 
-David
 
