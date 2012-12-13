@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab2LMOBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:01:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44022 "EHLO
+	id S932158Ab2LMOBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:01:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43981 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab2LMOBq (ORCPT
+	with ESMTP id S932068Ab2LMOBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:01:46 -0500
+	Thu, 13 Dec 2012 09:01:18 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Roland Dreier <roland@purestorage.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>, Arun Easi <arun.easi@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 017/241] ath9k: fix stale pointers potentially causing access to free'd skbs
-Date: Thu, 13 Dec 2012 11:56:22 -0200
-Message-Id: <1355407206-17100-18-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 009/241] qla2xxx: Update target lookup session tables when a target session changes
+Date: Thu, 13 Dec 2012 11:56:14 -0200
+Message-Id: <1355407206-17100-10-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,45 +29,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 8c6e30936a7893a85f6222084f0f26aceb81137a upstream.
+commit c8292d1da53fa60c7516ab03a9d83f7ea266d335 upstream.
 
-bf->bf_next is only while buffers are chained as part of an A-MPDU
-in the tx queue. When a tid queue is flushed (e.g. on tearing down
-an aggregation session), frames can be enqueued again as normal
-transmission, without bf_next being cleared. This can lead to the
-old pointer being dereferenced again later.
+It is possible for the target code to change the loop_id or s_id of a
+target session in reaction to an FC fabric change.  However, the
+session structures are stored in tables that are indexed by these two
+keys, and if we just change the session structure but leave the
+pointers to it in the old places in the table, havoc can ensue.  For
+example, a new session might come along that should go in the old slot
+in the table and overwrite the old session pointer.
 
-This patch might fix crashes and "Failed to stop TX DMA!" messages.
+To handle this, add a new tgt_ops->update_sess() method that also
+updates the "by loop_id" and "by s_id" lookup tables when a session
+changes, so that the keys where a session pointer is stored in these
+tables always matches the keys in the session structure itself.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+(nab: Drop unnecessary double inversion with FCF_CONF_COMP_SUPPORTED
+      usage)
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Chad Dupuis <chad.dupuis@qlogic.com>
+Cc: Arun Easi <arun.easi@qlogic.com>
+Cc: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/qla2xxx/qla_target.c  |   25 ++++++------
+ drivers/scsi/qla2xxx/qla_target.h  |    1 +
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c |   73 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 85 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index b78773b..11f252f 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -337,6 +337,7 @@ static struct ath_buf *ath_tx_get_buffer(struct ath_softc *sc)
+diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+index 5a71e84..f6021cd 100644
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -557,6 +557,7 @@ static bool qlt_check_fcport_exist(struct scsi_qla_host *vha,
+ 	int pmap_len;
+ 	fc_port_t *fcport;
+ 	int global_resets;
++	unsigned long flags;
+ 
+ retry:
+ 	global_resets = atomic_read(&ha->tgt.qla_tgt->tgt_global_resets_count);
+@@ -625,10 +626,10 @@ retry:
+ 	    sess->s_id.b.area, sess->loop_id, fcport->d_id.b.domain,
+ 	    fcport->d_id.b.al_pa, fcport->d_id.b.area, fcport->loop_id);
+ 
+-	sess->s_id = fcport->d_id;
+-	sess->loop_id = fcport->loop_id;
+-	sess->conf_compl_supported = !!(fcport->flags &
+-	    FCF_CONF_COMP_SUPPORTED);
++	spin_lock_irqsave(&ha->hardware_lock, flags);
++	ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
++				(fcport->flags & FCF_CONF_COMP_SUPPORTED));
++	spin_unlock_irqrestore(&ha->hardware_lock, flags);
+ 
+ 	res = true;
+ 
+@@ -740,10 +741,9 @@ static struct qla_tgt_sess *qlt_create_sess(
+ 				qlt_undelete_sess(sess);
+ 
+ 			kref_get(&sess->se_sess->sess_kref);
+-			sess->s_id = fcport->d_id;
+-			sess->loop_id = fcport->loop_id;
+-			sess->conf_compl_supported = !!(fcport->flags &
+-			    FCF_CONF_COMP_SUPPORTED);
++			ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
++						(fcport->flags & FCF_CONF_COMP_SUPPORTED));
++
+ 			if (sess->local && !local)
+ 				sess->local = 0;
+ 			spin_unlock_irqrestore(&ha->hardware_lock, flags);
+@@ -796,8 +796,7 @@ static struct qla_tgt_sess *qlt_create_sess(
+ 	 */
+ 	kref_get(&sess->se_sess->sess_kref);
+ 
+-	sess->conf_compl_supported = !!(fcport->flags &
+-	    FCF_CONF_COMP_SUPPORTED);
++	sess->conf_compl_supported = (fcport->flags & FCF_CONF_COMP_SUPPORTED);
+ 	BUILD_BUG_ON(sizeof(sess->port_name) != sizeof(fcport->port_name));
+ 	memcpy(sess->port_name, fcport->port_name, sizeof(sess->port_name));
+ 
+@@ -869,10 +868,8 @@ void qlt_fc_port_added(struct scsi_qla_host *vha, fc_port_t *fcport)
+ 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf007,
+ 			    "Reappeared sess %p\n", sess);
+ 		}
+-		sess->s_id = fcport->d_id;
+-		sess->loop_id = fcport->loop_id;
+-		sess->conf_compl_supported = !!(fcport->flags &
+-		    FCF_CONF_COMP_SUPPORTED);
++		ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
++					(fcport->flags & FCF_CONF_COMP_SUPPORTED));
  	}
  
- 	bf = list_first_entry(&sc->tx.txbuf, struct ath_buf, list);
-+	bf->bf_next = NULL;
- 	list_del(&bf->list);
+ 	if (sess && sess->local) {
+diff --git a/drivers/scsi/qla2xxx/qla_target.h b/drivers/scsi/qla2xxx/qla_target.h
+index 9f9ef16..f76d7d3 100644
+--- a/drivers/scsi/qla2xxx/qla_target.h
++++ b/drivers/scsi/qla2xxx/qla_target.h
+@@ -648,6 +648,7 @@ struct qla_tgt_func_tmpl {
  
- 	spin_unlock_bh(&sc->tx.txbuflock);
-@@ -1760,6 +1761,7 @@ static void ath_tx_send_normal(struct ath_softc *sc, struct ath_txq *txq,
- 	list_add_tail(&bf->list, &bf_head);
- 	bf->bf_state.bf_type = 0;
+ 	int (*check_initiator_node_acl)(struct scsi_qla_host *, unsigned char *,
+ 					void *, uint8_t *, uint16_t);
++	void (*update_sess)(struct qla_tgt_sess *, port_id_t, uint16_t, bool);
+ 	struct qla_tgt_sess *(*find_sess_by_loop_id)(struct scsi_qla_host *,
+ 						const uint16_t);
+ 	struct qla_tgt_sess *(*find_sess_by_s_id)(struct scsi_qla_host *,
+diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.c b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+index 6e64314..6c864ea 100644
+--- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
++++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+@@ -1482,6 +1482,78 @@ static int tcm_qla2xxx_check_initiator_node_acl(
+ 	return 0;
+ }
  
-+	bf->bf_next = NULL;
- 	bf->bf_lastbf = bf;
- 	ath_tx_fill_desc(sc, bf, txq, fi->framelen);
- 	ath_tx_txqaddbuf(sc, txq, &bf_head, false);
++static void tcm_qla2xxx_update_sess(struct qla_tgt_sess *sess, port_id_t s_id,
++				    uint16_t loop_id, bool conf_compl_supported)
++{
++	struct qla_tgt *tgt = sess->tgt;
++	struct qla_hw_data *ha = tgt->ha;
++	struct tcm_qla2xxx_lport *lport = ha->tgt.target_lport_ptr;
++	struct se_node_acl *se_nacl = sess->se_sess->se_node_acl;
++	struct tcm_qla2xxx_nacl *nacl = container_of(se_nacl,
++			struct tcm_qla2xxx_nacl, se_node_acl);
++	u32 key;
++
++
++	if (sess->loop_id != loop_id || sess->s_id.b24 != s_id.b24)
++		pr_info("Updating session %p from port %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x loop_id %d -> %d s_id %x:%x:%x -> %x:%x:%x\n",
++			sess,
++			sess->port_name[0], sess->port_name[1],
++			sess->port_name[2], sess->port_name[3],
++			sess->port_name[4], sess->port_name[5],
++			sess->port_name[6], sess->port_name[7],
++			sess->loop_id, loop_id,
++			sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa,
++			s_id.b.domain, s_id.b.area, s_id.b.al_pa);
++
++	if (sess->loop_id != loop_id) {
++		/*
++		 * Because we can shuffle loop IDs around and we
++		 * update different sessions non-atomically, we might
++		 * have overwritten this session's old loop ID
++		 * already, and we might end up overwriting some other
++		 * session that will be updated later.  So we have to
++		 * be extra careful and we can't warn about those things...
++		 */
++		if (lport->lport_loopid_map[sess->loop_id].se_nacl == se_nacl)
++			lport->lport_loopid_map[sess->loop_id].se_nacl = NULL;
++
++		lport->lport_loopid_map[loop_id].se_nacl = se_nacl;
++
++		sess->loop_id = loop_id;
++	}
++
++	if (sess->s_id.b24 != s_id.b24) {
++		key = (((u32) sess->s_id.b.domain << 16) |
++		       ((u32) sess->s_id.b.area   <<  8) |
++		       ((u32) sess->s_id.b.al_pa));
++
++		if (btree_lookup32(&lport->lport_fcport_map, key))
++			WARN(btree_remove32(&lport->lport_fcport_map, key) != se_nacl,
++			     "Found wrong se_nacl when updating s_id %x:%x:%x\n",
++			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
++		else
++			WARN(1, "No lport_fcport_map entry for s_id %x:%x:%x\n",
++			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
++
++		key = (((u32) s_id.b.domain << 16) |
++		       ((u32) s_id.b.area   <<  8) |
++		       ((u32) s_id.b.al_pa));
++
++		if (btree_lookup32(&lport->lport_fcport_map, key)) {
++			WARN(1, "Already have lport_fcport_map entry for s_id %x:%x:%x\n",
++			     s_id.b.domain, s_id.b.area, s_id.b.al_pa);
++			btree_update32(&lport->lport_fcport_map, key, se_nacl);
++		} else {
++			btree_insert32(&lport->lport_fcport_map, key, se_nacl, GFP_ATOMIC);
++		}
++
++		sess->s_id = s_id;
++		nacl->nport_id = key;
++	}
++
++	sess->conf_compl_supported = conf_compl_supported;
++}
++
+ /*
+  * Calls into tcm_qla2xxx used by qla2xxx LLD I/O path.
+  */
+@@ -1492,6 +1564,7 @@ static struct qla_tgt_func_tmpl tcm_qla2xxx_template = {
+ 	.free_cmd		= tcm_qla2xxx_free_cmd,
+ 	.free_mcmd		= tcm_qla2xxx_free_mcmd,
+ 	.free_session		= tcm_qla2xxx_free_session,
++	.update_sess		= tcm_qla2xxx_update_sess,
+ 	.check_initiator_node_acl = tcm_qla2xxx_check_initiator_node_acl,
+ 	.find_sess_by_s_id	= tcm_qla2xxx_find_sess_by_s_id,
+ 	.find_sess_by_loop_id	= tcm_qla2xxx_find_sess_by_loop_id,
 -- 
 1.7.9.5
 
