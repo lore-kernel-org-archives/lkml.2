@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab2LMOCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:02:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44091 "EHLO
+	id S932186Ab2LMOCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:02:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44104 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756022Ab2LMOCj (ORCPT
+	with ESMTP id S1756060Ab2LMOCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:02:39 -0500
+	Thu, 13 Dec 2012 09:02:51 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 031/241] Input: tsc40 - remove wrong announcement of pressure support
-Date: Thu, 13 Dec 2012 11:56:36 -0200
-Message-Id: <1355407206-17100-32-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 034/241] NFS: Wait for session recovery to finish before returning
+Date: Thu, 13 Dec 2012 11:56:39 -0200
+Message-Id: <1355407206-17100-35-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,35 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit 32ed1911fc79908d704023317d4ddeb3883fd07e upstream.
+commit 399f11c3d872bd748e1575574de265a6304c7c43 upstream.
 
-The tsc40 driver announces it supports the pressure event, but will never
-send one. The announcement will cause tslib to wait for such events and
-sending all touch events with a pressure of 0. Removing the announcement
-will make tslib fall back to emulating the pressure on touch events so
-everything works as expected.
+Currently, we will schedule session recovery and then return to the
+caller of nfs4_handle_exception.  This works for most cases, but causes
+a hang on the following test case:
 
-Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	Client				Server
+	------				------
+	Open file over NFS v4.1
+	Write to file
+					Expire client
+	Try to lock file
+
+The server will return NFS4ERR_BADSESSION, prompting the client to
+schedule recovery.  However, the client will continue placing lock
+attempts and the open recovery never seems to be scheduled.  The
+simplest solution is to wait for session recovery to run before retrying
+the lock.
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/input/touchscreen/tsc40.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/nfs/nfs4proc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/input/touchscreen/tsc40.c b/drivers/input/touchscreen/tsc40.c
-index 63209aa..eb96f16 100644
---- a/drivers/input/touchscreen/tsc40.c
-+++ b/drivers/input/touchscreen/tsc40.c
-@@ -107,7 +107,6 @@ static int tsc_connect(struct serio *serio, struct serio_driver *drv)
- 	__set_bit(BTN_TOUCH, input_dev->keybit);
- 	input_set_abs_params(ptsc->dev, ABS_X, 0, 0x3ff, 0, 0);
- 	input_set_abs_params(ptsc->dev, ABS_Y, 0, 0x3ff, 0, 0);
--	input_set_abs_params(ptsc->dev, ABS_PRESSURE, 0, 0, 0, 0);
- 
- 	serio_set_drvdata(serio, ptsc);
- 
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index dd372e2..aa321ac 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -329,8 +329,7 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
+ 			dprintk("%s ERROR: %d Reset session\n", __func__,
+ 				errorcode);
+ 			nfs4_schedule_session_recovery(clp->cl_session, errorcode);
+-			exception->retry = 1;
+-			break;
++			goto wait_on_recovery;
+ #endif /* defined(CONFIG_NFS_V4_1) */
+ 		case -NFS4ERR_FILE_OPEN:
+ 			if (exception->timeout > HZ) {
 -- 
 1.7.9.5
 
