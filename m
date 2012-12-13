@@ -1,79 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab2LML2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 06:28:16 -0500
-Received: from mga03.intel.com ([143.182.124.21]:50015 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab2LML2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 06:28:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,273,1355126400"; 
-   d="asc'?scan'208";a="231009559"
-Message-ID: <1355398149.3400.47.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] block2mtd: throttle writes by calling
- balance_dirty_pages_ratelimited.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: NeilBrown <neilb@suse.de>
-Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 13 Dec 2012 13:29:09 +0200
-In-Reply-To: <20121212193215.645da577@notabene.brown>
-References: <20121212193215.645da577@notabene.brown>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Mq+iaXYt9dXaBFDHb54j"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1754967Ab2LML2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 06:28:09 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:59738 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2LML2G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 06:28:06 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.70.154.20]
+In-Reply-To: <1355350178-22315-1-git-send-email-mats.petersson@citrix.com>
+References: <1355350178-22315-1-git-send-email-mats.petersson@citrix.com>
+From: Vasiliy Tolstov <v.tolstov@selfip.ru>
+Date: Thu, 13 Dec 2012 15:27:49 +0400
+X-Google-Sender-Auth: fsoQFu0gwEk1GN4gJBlo4HYK3dw
+Message-ID: <CACaajQu9VexhRWXK8U_fjtjFSL6Bwk=0e8OdWhshh7UERmiuQg@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH V4] xen/privcmd: improve-performance-of-mapping-of-guest
+To: Mats Petersson <mats.petersson@citrix.com>
+Cc: xen-devel@lists.xen.org, Ian.Campbell@citrix.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        david.vrabel@citrix.com, mats@planetcatfish.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If i apply this patch to kernel 3.6.7 does it needs to apply another
+patches to work?
 
---=-Mq+iaXYt9dXaBFDHb54j
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+2012/12/13 Mats Petersson <mats.petersson@citrix.com>:
+> One comment asked for more details on the improvements:
+> Using a small test program to map Guest memory into Dom0 (repeatedly
+> for "Iterations" mapping the same first "Num Pages")
+> Iterations    Num Pages    Time 3.7rc4  Time With this patch
+> 5000          4096         76.107       37.027
+> 10000         2048         75.703       37.177
+> 20000         1024         75.893       37.247
+> So a little better than twice as fast.
+>
+> Using this patch in migration, using "time" to measure the overall
+> time it take to migrate a guest (Debian Squeeze 6.0, 1024MB guest
+> memory, one network card, one disk, guest at login prompt):
+> Time 3.7rc5             Time With this patch
+> 6.697                   5.667
+> Since migration involves a whole lot of other things, it's only about
+> 15% faster - but still a good improvement. Similar measurement with a
+> guest that is running code to "dirty" memory shows about 23%
+> improvement, as it spends more time copying dirtied memory.
+>
+> As discussed elsewhere, a good deal more can be had from improving the
+> munmap system call, but it is a little tricky to get this in without
+> worsening non-PVOPS kernel, so I will have another look at this.
+>
+> ---
+> Update since last posting:
+> I have just run some benchmarks of a 16GB guest, and the improvement
+> with this patch is around 23-30% for the overall copy time, and 42%
+> shorter downtime on a "busy" guest (writing in a loop to about 8GB of
+> memory). I think this is definitely worth having.
+>
+> The V4 patch consists of cosmetic adjustments (spelling mistake in
+> comment and reversing condition in an if-statement to avoid having an
+> "else" branch, a random empty line added by accident now reverted back
+> to previous state). Thanks to Jan Beulich for the comments.
+>
+> The V3 of the patch contains suggested improvements from:
+> David Vrabel - make it two distinct external functions, doc-comments.
+> Ian Campbell - use one common function for the main work.
+> Jan Beulich  - found a bug and pointed out some whitespace problems.
+>
+>
+>
+> Signed-off-by: Mats Petersson <mats.petersson@citrix.com>
+>
+> ---
+>  arch/x86/xen/mmu.c    |  132 +++++++++++++++++++++++++++++++++++++++++++------
+>  drivers/xen/privcmd.c |   55 +++++++++++++++++----
+>  include/xen/xen-ops.h |    5 ++
+>  3 files changed, 169 insertions(+), 23 deletions(-)
+>
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index dcf5f2d..a67774f 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -2477,7 +2477,8 @@ void __init xen_hvm_init_mmu_ops(void)
+>  #define REMAP_BATCH_SIZE 16
+>
+>  struct remap_data {
+> -       unsigned long mfn;
+> +       unsigned long *mfn;
+> +       bool contiguous;
+>         pgprot_t prot;
+>         struct mmu_update *mmu_update;
+>  };
+> @@ -2486,7 +2487,13 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
+>                                  unsigned long addr, void *data)
+>  {
+>         struct remap_data *rmd = data;
+> -       pte_t pte = pte_mkspecial(pfn_pte(rmd->mfn++, rmd->prot));
+> +       pte_t pte = pte_mkspecial(pfn_pte(*rmd->mfn, rmd->prot));
+> +       /* If we have a contigious range, just update the mfn itself,
+> +          else update pointer to be "next mfn". */
+> +       if (rmd->contiguous)
+> +               (*rmd->mfn)++;
+> +       else
+> +               rmd->mfn++;
+>
+>         rmd->mmu_update->ptr = virt_to_machine(ptep).maddr;
+>         rmd->mmu_update->val = pte_val_ma(pte);
+> @@ -2495,16 +2502,34 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
+>         return 0;
+>  }
+>
+> -int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+> -                              unsigned long addr,
+> -                              unsigned long mfn, int nr,
+> -                              pgprot_t prot, unsigned domid)
+> -{
+> +/* do_remap_mfn() - helper function to map foreign pages
+> + * @vma:     the vma for the pages to be mapped into
+> + * @addr:    the address at which to map the pages
+> + * @mfn:     pointer to array of MFNs to map
+> + * @nr:      the number entries in the MFN array
+> + * @err_ptr: pointer to array
+> + * @prot:    page protection mask
+> + * @domid:   id of the domain that we are mapping from
+> + *
+> + * This function takes an array of mfns and maps nr pages from that into
+> + * this kernel's memory. The owner of the pages is defined by domid. Where the
+> + * pages are mapped is determined by addr, and vma is used for "accounting" of
+> + * the pages.
+> + *
+> + * Return value is zero for success, negative for failure.
+> + *
+> + * Note that err_ptr is used to indicate whether *mfn
+> + * is a list or a "first mfn of a contiguous range". */
+> +static int do_remap_mfn(struct vm_area_struct *vma,
+> +                       unsigned long addr,
+> +                       unsigned long *mfn, int nr,
+> +                       int *err_ptr, pgprot_t prot,
+> +                       unsigned domid)
+> +{
+> +       int err, last_err = 0;
+>         struct remap_data rmd;
+>         struct mmu_update mmu_update[REMAP_BATCH_SIZE];
+> -       int batch;
+>         unsigned long range;
+> -       int err = 0;
+>
+>         if (xen_feature(XENFEAT_auto_translated_physmap))
+>                 return -EINVAL;
+> @@ -2515,9 +2540,15 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>
+>         rmd.mfn = mfn;
+>         rmd.prot = prot;
+> +       /* We use the err_ptr to indicate if there we are doing a contigious
+> +        * mapping or a discontigious mapping. */
+> +       rmd.contiguous = !err_ptr;
+>
+>         while (nr) {
+> -               batch = min(REMAP_BATCH_SIZE, nr);
+> +               int index = 0;
+> +               int done = 0;
+> +               int batch = min(REMAP_BATCH_SIZE, nr);
+> +               int batch_left = batch;
+>                 range = (unsigned long)batch << PAGE_SHIFT;
+>
+>                 rmd.mmu_update = mmu_update;
+> @@ -2526,19 +2557,92 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>                 if (err)
+>                         goto out;
+>
+> -               err = HYPERVISOR_mmu_update(mmu_update, batch, NULL, domid);
+> -               if (err < 0)
+> -                       goto out;
+> +               /* We record the error for each page that gives an error, but
+> +                * continue mapping until the whole set is done */
+> +               do {
+> +                       err = HYPERVISOR_mmu_update(&mmu_update[index],
+> +                                                   batch_left, &done, domid);
+> +                       if (err < 0) {
+> +                               if (!err_ptr)
+> +                                       goto out;
+> +                               /* increment done so we skip the error item */
+> +                               done++;
+> +                               last_err = err_ptr[index] = err;
+> +                       }
+> +                       batch_left -= done;
+> +                       index += done;
+> +               } while (batch_left);
+>
+>                 nr -= batch;
+>                 addr += range;
+> +               if (err_ptr)
+> +                       err_ptr += batch;
+>         }
+>
+> -       err = 0;
+> +       err = last_err;
+>  out:
+>
+>         xen_flush_tlb_all();
+>
+>         return err;
+>  }
+> +
+> +/* xen_remap_domain_mfn_range() - Used to map foreign pages
+> + * @vma:   the vma for the pages to be mapped into
+> + * @addr:  the address at which to map the pages
+> + * @mfn:   the first MFN to map
+> + * @nr:    the number of consecutive mfns to map
+> + * @prot:  page protection mask
+> + * @domid: id of the domain that we are mapping from
+> + *
+> + * This function takes a mfn and maps nr pages on from that into this kernel's
+> + * memory. The owner of the pages is defined by domid. Where the pages are
+> + * mapped is determined by addr, and vma is used for "accounting" of the
+> + * pages.
+> + *
+> + * Return value is zero for success, negative ERRNO value for failure.
+> + */
+> +int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+> +                              unsigned long addr,
+> +                              unsigned long mfn, int nr,
+> +                              pgprot_t prot, unsigned domid)
+> +{
+> +       return do_remap_mfn(vma, addr, &mfn, nr, NULL, prot, domid);
+> +}
+>  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
+> +
+> +/* xen_remap_domain_mfn_array() - Used to map an array of foreign pages
+> + * @vma:     the vma for the pages to be mapped into
+> + * @addr:    the address at which to map the pages
+> + * @mfn:     pointer to array of MFNs to map
+> + * @nr:      the number entries in the MFN array
+> + * @err_ptr: pointer to array of integers, one per MFN, for an error
+> + *           value for each page. The err_ptr must not be NULL.
+> + * @prot:    page protection mask
+> + * @domid:   id of the domain that we are mapping from
+> + *
+> + * This function takes an array of mfns and maps nr pages from that into this
+> + * kernel's memory. The owner of the pages is defined by domid. Where the pages
+> + * are mapped is determined by addr, and vma is used for "accounting" of the
+> + * pages. The err_ptr array is filled in on any page that is not sucessfully
+> + * mapped in.
+> + *
+> + * Return value is zero for success, negative ERRNO value for failure.
+> + * Note that the error value -ENOENT is considered a "retry", so when this
+> + * error code is seen, another call should be made with the list of pages that
+> + * are marked as -ENOENT in the err_ptr array.
+> + */
+> +int xen_remap_domain_mfn_array(struct vm_area_struct *vma,
+> +                              unsigned long addr,
+> +                              unsigned long *mfn, int nr,
+> +                              int *err_ptr, pgprot_t prot,
+> +                              unsigned domid)
+> +{
+> +       /* We BUG_ON because it's a programmer error to pass a NULL err_ptr,
+> +        * and the consequences later is quite hard to detect what the actual
+> +        * cause of "wrong memory was mapped in".
+> +        */
+> +       BUG_ON(err_ptr == NULL);
+> +       return do_remap_mfn(vma, addr, mfn, nr, err_ptr, prot, domid);
+> +}
+> +EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_array);
+> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+> index 71f5c45..75f6e86 100644
+> --- a/drivers/xen/privcmd.c
+> +++ b/drivers/xen/privcmd.c
+> @@ -151,6 +151,40 @@ static int traverse_pages(unsigned nelem, size_t size,
+>         return ret;
+>  }
+>
+> +/*
+> + * Similar to traverse_pages, but use each page as a "block" of
+> + * data to be processed as one unit.
+> + */
+> +static int traverse_pages_block(unsigned nelem, size_t size,
+> +                               struct list_head *pos,
+> +                               int (*fn)(void *data, int nr, void *state),
+> +                               void *state)
+> +{
+> +       void *pagedata;
+> +       unsigned pageidx;
+> +       int ret = 0;
+> +
+> +       BUG_ON(size > PAGE_SIZE);
+> +
+> +       pageidx = PAGE_SIZE;
+> +
+> +       while (nelem) {
+> +               int nr = (PAGE_SIZE/size);
+> +               struct page *page;
+> +               if (nr > nelem)
+> +                       nr = nelem;
+> +               pos = pos->next;
+> +               page = list_entry(pos, struct page, lru);
+> +               pagedata = page_address(page);
+> +               ret = (*fn)(pagedata, nr, state);
+> +               if (ret)
+> +                       break;
+> +               nelem -= nr;
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+>  struct mmap_mfn_state {
+>         unsigned long va;
+>         struct vm_area_struct *vma;
+> @@ -250,7 +284,7 @@ struct mmap_batch_state {
+>          *      0 for no errors
+>          *      1 if at least one error has happened (and no
+>          *          -ENOENT errors have happened)
+> -        *      -ENOENT if at least 1 -ENOENT has happened.
+> +        *      -ENOENT if at least one -ENOENT has happened.
+>          */
+>         int global_error;
+>         /* An array for individual errors */
+> @@ -260,17 +294,20 @@ struct mmap_batch_state {
+>         xen_pfn_t __user *user_mfn;
+>  };
+>
+> -static int mmap_batch_fn(void *data, void *state)
+> +static int mmap_batch_fn(void *data, int nr, void *state)
+>  {
+>         xen_pfn_t *mfnp = data;
+>         struct mmap_batch_state *st = state;
+>         int ret;
+>
+> -       ret = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
+> -                                        st->vma->vm_page_prot, st->domain);
+> +       BUG_ON(nr < 0);
+>
+> -       /* Store error code for second pass. */
+> -       *(st->err++) = ret;
+> +       ret = xen_remap_domain_mfn_array(st->vma,
+> +                                        st->va & PAGE_MASK,
+> +                                        mfnp, nr,
+> +                                        st->err,
+> +                                        st->vma->vm_page_prot,
+> +                                        st->domain);
+>
+>         /* And see if it affects the global_error. */
+>         if (ret < 0) {
+> @@ -282,7 +319,7 @@ static int mmap_batch_fn(void *data, void *state)
+>                                 st->global_error = 1;
+>                 }
+>         }
+> -       st->va += PAGE_SIZE;
+> +       st->va += PAGE_SIZE * nr;
+>
+>         return 0;
+>  }
+> @@ -378,8 +415,8 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
+>         state.err           = err_array;
+>
+>         /* mmap_batch_fn guarantees ret == 0 */
+> -       BUG_ON(traverse_pages(m.num, sizeof(xen_pfn_t),
+> -                            &pagelist, mmap_batch_fn, &state));
+> +       BUG_ON(traverse_pages_block(m.num, sizeof(xen_pfn_t),
+> +                                   &pagelist, mmap_batch_fn, &state));
+>
+>         up_write(&mm->mmap_sem);
+>
+> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> index 6a198e4..22cad75 100644
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -29,4 +29,9 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>                                unsigned long mfn, int nr,
+>                                pgprot_t prot, unsigned domid);
+>
+> +int xen_remap_domain_mfn_array(struct vm_area_struct *vma,
+> +                              unsigned long addr,
+> +                              unsigned long *mfn, int nr,
+> +                              int *err_ptr, pgprot_t prot,
+> +                              unsigned domid);
+>  #endif /* INCLUDE_XEN_OPS_H */
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-On Wed, 2012-12-12 at 19:32 +1100, NeilBrown wrote:
->=20
-> If you create a block2mtd device that is larger than main memory,
-> and write to all of it, then lots of pages will be dirtied but
-> they will never be flushed out as nothing calls any variant of
-> balance_dirty_pages.
->=20
-> It would be nice to call set_page_dirty_balance(), but that isn't exporte=
-d,
-> so just call balance_dirty_pages_ratelimited() directly.
->=20
-> Signed-off-by: NeilBrown <neilb@suse.de>
 
-Pushed to l2-mtd.git, thanks!
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-Mq+iaXYt9dXaBFDHb54j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQybwFAAoJECmIfjd9wqK0aCgQALfCsMgt3VMDlnEt871opmHk
-6Mui4CPbJiLkfQiG5XqcRHZRZ6JCI33kVfCm25MWD+xA4KZ5SMh3Oud+2zK2QSN2
-KwyfQH/YY7SgEMleU02Qta33Ev5Z/rBxptCiXWFJ7j/p2qhZGl7i+lY/SoLTE4Sf
-UrrtyWBWVWPtwXccyAxt6MVoizAXaXqJ78LlNS7apfbk/izVdKTdXpbcot3Z1iQI
-4iU3Qo1aEY6Ezb40Hs3PGVi+KrVOHQocVzDqeZ0ex9Xi4d6wsAQiN9nOq2GZW1tn
-cr0oTYbQxVpj36vZyzX+ZIb8nD+ReBnXP8AghbhgDUlfACd3eGrIE/Z4O7Kh0e6c
-i6jG8OE9ltaseWZyd/TsNhgP6YoyMomaOhf3mTuRsylgGSh8HqmoKweUXkRnSAa1
-RgDc7dUDckZl+nC1JJWXZjCBavt/8yF33d4Jn3lCOyfZFR9LF5x7j7tDve/BnpRv
-z3h6fd4J2Gg4n8iqSWcnp7CjY/hpbid8Dy9bPvDpehHRlbQ4xoV0BdattYErJkJ8
-NFZqEh8x90FXXxxWnvZAOYZmk4EDjiiXL0V93ezXRpBdO8Jb6aDjhKYU/tTMvmik
-QEl3kfjfwvBrlQlqGHdCrYGVl9DDqFvLgs8ztx9ks2BGP0WmLZYqUiq5DQHFOqY9
-MiQdXECdVkyanVG5mcAZ
-=1kEM
------END PGP SIGNATURE-----
-
---=-Mq+iaXYt9dXaBFDHb54j--
-
+-- 
+Vasiliy Tolstov,
+Clodo.ru
+e-mail: v.tolstov@selfip.ru
+jabber: vase@selfip.ru
