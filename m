@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab2LMTci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 14:32:38 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45800 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab2LMTch (ORCPT
+	id S932215Ab2LMTcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 14:32:45 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:48035 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755598Ab2LMTcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 14:32:37 -0500
+	Thu, 13 Dec 2012 14:32:41 -0500
+Date: Thu, 13 Dec 2012 14:32:38 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: NFSv4 WARNING: at linux/fs/inode.c:280 drop_nlink+0x23/0x44()
+Message-ID: <20121213193238.GA5155@elliptictech.com>
+References: <20120818175750.GA12736@elliptictech.com>
 MIME-Version: 1.0
-In-Reply-To: <1355383038.18653.2.camel@wall-e>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
- <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
- <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e>
- <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Dec 2012 11:32:16 -0800
-Message-ID: <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com>
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-To: Stefani Seibold <stefani@seibold.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120818175750.GA12736@elliptictech.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 11:17 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> Am Mittwoch, den 12.12.2012, 22:47 -0800 schrieb H. Peter Anvin:
->> Should be a simple matter of sharing pages.  Look perhaps at the x32 vdso for a hint.
->>
->
->
->> >
->> >Any idea or clean solution how i can map the 64 bit vgtod into the 32
->> >bit address space? Thats the only problem i see.
->> >
->
-> No, i see no special handling for x32 vdso to do this. I am not sure if
-> x32 vdso can access the 64 bit address space of vsyscall_gtod_data. I
-> can't test this due the lack of a x32 abi system.
->
->
+On 2012-08-18 13:57 -0400, Nick Bowler wrote:
+> I just noticed the following WARNING in my logs.  Looking through the
+> older logs, I see quite a few of these going (at least) all the way back
+> to 3.3.x days.  The process which triggers the warning always seems to
+> be the same (icecat).
+> 
+> This is on a Linux 3.5.2 NFSv4 client machine using sec=krb5.  Other
+> than the log noise, there seems to be no adverse effects.
 
-x32's vdso cheats -- x32 code can see high addresses just fine.  The
-toolchain just makes it difficult.
+FWIW, I'm still seeing this on 3.7.0; this time on a machine with NFSv3
+mounts and sec=sys.  Still apparently caused by firefox/icecat.
 
-Your best bet is probably to just map the vvar page twice -- once at
-the same address as native 32-bit mode (but only for compat tasks)
-would use and once in the usual fixmap location.  You can't use the
-fixmap for the compat mapping, though, since it would be a *user*
-address.
-
-For HPET support, you'd have to have special support.  I'd say to skip
-it for compat mode.
-
---Andy
-
+> ------------[ cut here ]------------
+> WARNING: at /home/nbowler/misc/linux/fs/inode.c:280 drop_nlink+0x23/0x44()
+> Hardware name: System Product Name
+> Modules linked in: sha1_ssse3 sha1_generic hmac aes_x86_64 aes_generic cbc cts rpcsec_gss_krb5 nfs lockd auth_rpcgss nfs_acl sunrpc ipv6 nls_iso8859_1 nls_cp437 vfat fat w83627ehf hwmon_vid snd_pcm_oss snd_mixer_oss acpi_cpufreq mperf i915 drm_kms_helper drm snd_hda_codec_hdmi snd_hda_codec_realtek arc4 ath9k mac80211 ath9k_common ath9k_hw intel_agp i2c_algo_bit intel_gtt snd_hda_intel snd_hda_codec snd_pcm snd_timer coretemp agpgart hwmon kvm_intel snd ath cfg80211 soundcore snd_page_alloc i2c_i801 r8169 mii psmouse kvm evdev video sg
+> Pid: 1995, comm: icecat Not tainted 3.5.2 #46
+> Call Trace:
+>  [<ffffffff8102b8b3>] warn_slowpath_common+0x80/0x98
+>  [<ffffffff8102b8e0>] warn_slowpath_null+0x15/0x17
+>  [<ffffffff810c5195>] drop_nlink+0x23/0x44
+>  [<ffffffffa03aa2a1>] nfs_dentry_iput+0x35/0x4d [nfs]
+>  [<ffffffff810c25d0>] dentry_kill+0x149/0x171
+>  [<ffffffff810c2850>] dput+0xed/0xfe
+>  [<ffffffff810b2ff4>] fput+0x1a5/0x1bd
+>  [<ffffffff810b0454>] filp_close+0x6b/0x76
+>  [<ffffffff810b04f1>] sys_close+0x92/0xd4
+>  [<ffffffff8131efa2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace b160c7dc08b4910c ]---
+> 
+> Please let me know if you need any more info,
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
