@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2LMDWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:22:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53262 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab2LMDWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:22:46 -0500
-Message-ID: <1355368956.3224.357.camel@bling.home>
-Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, David Gibson <david@gibson.dropbear.id.au>
-Date: Wed, 12 Dec 2012 20:22:36 -0700
-In-Reply-To: <1355367458.19932.84.camel@pasglop>
-References: <1354901926.3224.96.camel@bling.home>
-	 <1355315657-31153-1-git-send-email-aik@ozlabs.ru>
-	 <1355355035.3224.343.camel@bling.home> <1355367458.19932.84.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1755585Ab2LMDZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:25:24 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33524 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab2LMDZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 22:25:23 -0500
+Message-ID: <50C94A9C.2050900@gmail.com>
+Date: Wed, 12 Dec 2012 20:25:16 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.8
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+In-Reply-To: <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 13:57 +1100, Benjamin Herrenschmidt wrote:
-> On Wed, 2012-12-12 at 16:30 -0700, Alex Williamson wrote:
-> > Locked page accounting in this version is very, very broken.  How do
-> > powerpc folks feel about seemingly generic kernel iommu interfaces
-> > messing with the current task mm?  Besides that, more problems
-> > below...
-> 
-> After a second look & thought...
-> 
-> This whole accounting business is fucked. First, we simply can't just
-> randomly return errors from H_PUT_TCE because the process reached some
-> rlimit. This is not a proper failure mode. That means that the guest
-> will probably panic() ... possibly right in the middle of some disk
-> writeback or god knows what. Not good.
-> 
-> Also the overhead of doing all that crap on every TCE map/unmap is
-> ridiculous.
-> 
-> Finally, it's just not going to work for real mode which we really want,
-> since we can't take the mmap-sem in real mode anyway, so unless we
-> convert that counter to an atomic, we can't do it.
-> 
-> I'd suggest just not bothering, or if you want to bother, check once
-> when creating a TCE table that the rlimit is enough to bolt as many
-> pages as can be populated in that table and fail to create *that*. The
-> failure mode is much better, ie, qemu failing to create a PCI bus due to
-> insufficient rlimits.
+On 12/12/12 7:53 PM, Linus Torvalds wrote:
+> Hmm. This may be entirely unrelated to this particular pull request, but
+>
+>     perf record -e cycles:pp
+>
+> no longer works on my westmere machine (Operation not supported). It
+> used to work, but I haven't tried to bisect it, since I hope somebody
+> will just go "oh, I know what's up".
 
-I agree, we don't seem to be headed in the right direction.  x86 needs
-to track rlimits or else a user can exploit the interface to pin all the
-memory in the system.  On power, only the iova window can be pinned, so
-it's a fixed amount.  I could see it as granting access to a group
-implicitly grants access to pinning the iova window.  We can still make
-it more explicit by handling the rlimit accounting upfront.  Thanks,
+One last "I may know what's up" question. I wonder if you are tripping 
+on this:
 
-Alex
+     if (event->attr.precise_ip) {
+         int precise = 0;
 
+         if (!event->attr.exclude_guest)
+             return -EOPNOTSUPP;
+
+Are you running an older perf binary on the 3.8 kernel?
+
+Does this work: perf record -e cycles:ppH  ...
+
+David
