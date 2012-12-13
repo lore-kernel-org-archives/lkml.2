@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752Ab2LMOJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:09:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44659 "EHLO
+	id S932784Ab2LMOJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:09:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44669 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932623Ab2LMOJd (ORCPT
+	with ESMTP id S932755Ab2LMOJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:09:33 -0500
+	Thu, 13 Dec 2012 09:09:41 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 142/241] iwlwifi: fix the basic CCK rates calculation
-Date: Thu, 13 Dec 2012 11:58:27 -0200
-Message-Id: <1355407206-17100-143-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 144/241] Dove: Fix irq_to_pmu()
+Date: Thu, 13 Dec 2012 11:58:29 -0200
+Message-Id: <1355407206-17100-145-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,44 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 
-commit 5edd0b946a0afeb1d0364a3654328b046fb818a2 upstream.
+commit d356cf5a74afa32b40decca3c9dd88bc3cd63eb5 upstream.
 
-Fix a copy paste error in iwl_calc_basic_rates which leads
-to a wrong calculation of CCK basic rates.
+PMU interrupts start at IRQ_DOVE_PMU_START, not IRQ_DOVE_PMU_START + 1.
+Fix the condition.  (It may have been less likely to occur had the code
+been written "if (irq >= IRQ_DOVE_PMU_START" which imho is the easier
+to understand notation, and matches the normal way of thinking about
+these things.)
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ herton: adjust file name, code is in iwl-agn-rxon.c ]
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/mach-dove/include/mach/pm.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-index 0a3aa7c..beaf5fa 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-@@ -1019,12 +1019,12 @@ static void iwl_calc_basic_rates(struct iwl_priv *priv,
- 	 * As a consequence, it's not as complicated as it sounds, just add
- 	 * any lower rates to the ACK rate bitmap.
- 	 */
--	if (IWL_RATE_11M_INDEX < lowest_present_ofdm)
--		ofdm |= IWL_RATE_11M_MASK >> IWL_FIRST_CCK_RATE;
--	if (IWL_RATE_5M_INDEX < lowest_present_ofdm)
--		ofdm |= IWL_RATE_5M_MASK >> IWL_FIRST_CCK_RATE;
--	if (IWL_RATE_2M_INDEX < lowest_present_ofdm)
--		ofdm |= IWL_RATE_2M_MASK >> IWL_FIRST_CCK_RATE;
-+	if (IWL_RATE_11M_INDEX < lowest_present_cck)
-+		cck |= IWL_RATE_11M_MASK >> IWL_FIRST_CCK_RATE;
-+	if (IWL_RATE_5M_INDEX < lowest_present_cck)
-+		cck |= IWL_RATE_5M_MASK >> IWL_FIRST_CCK_RATE;
-+	if (IWL_RATE_2M_INDEX < lowest_present_cck)
-+		cck |= IWL_RATE_2M_MASK >> IWL_FIRST_CCK_RATE;
- 	/* 1M already there or needed so always add */
- 	cck |= IWL_RATE_1M_MASK >> IWL_FIRST_CCK_RATE;
+diff --git a/arch/arm/mach-dove/include/mach/pm.h b/arch/arm/mach-dove/include/mach/pm.h
+index 3ad9f94..11799c3 100644
+--- a/arch/arm/mach-dove/include/mach/pm.h
++++ b/arch/arm/mach-dove/include/mach/pm.h
+@@ -45,7 +45,7 @@ static inline int pmu_to_irq(int pin)
  
+ static inline int irq_to_pmu(int irq)
+ {
+-	if (IRQ_DOVE_PMU_START < irq && irq < NR_IRQS)
++	if (IRQ_DOVE_PMU_START <= irq && irq < NR_IRQS)
+ 		return irq - IRQ_DOVE_PMU_START;
+ 
+ 	return -EINVAL;
 -- 
 1.7.9.5
 
