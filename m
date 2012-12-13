@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab2LMIhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 03:37:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60705 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab2LMIhd (ORCPT
+	id S1753269Ab2LMIoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 03:44:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64330 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab2LMIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 03:37:33 -0500
-Date: Thu, 13 Dec 2012 00:36:54 -0800
-From: tip-bot for Stephen Rothwell <sfr@canb.auug.org.au>
-Message-ID: <tip-8df383108f7b7eafcf89f26be5460b404c70ff29@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        akpm@linux-foundation.org, peterz@infradead.org, sfr@canb.auug.org.au,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, peterz@infradead.org, tglx@linutronix.de,
-        sfr@canb.auug.org.au
-In-Reply-To: <20121210195402.1042a8ea5bfb57bb758007ac@canb.auug.org.au>
-References: <20121210195402.1042a8ea5bfb57bb758007ac@canb.auug.org.au>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] mm/migrate: Fix update_mmu_cache_pmd() use
-Git-Commit-ID: 8df383108f7b7eafcf89f26be5460b404c70ff29
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 13 Dec 2012 00:36:59 -0800 (PST)
+	Thu, 13 Dec 2012 03:44:19 -0500
+Message-ID: <1355388248.31434.3.camel@phoenix>
+Subject: [RFC/RFT][PATCH 1/4] regulator: core: Allow specify
+ activate_[reg|bit] for regmap based voltage_sel operations
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Mike Rapoport <mike@compulab.co.il>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Dec 2012 16:44:08 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8df383108f7b7eafcf89f26be5460b404c70ff29
-Gitweb:     http://git.kernel.org/tip/8df383108f7b7eafcf89f26be5460b404c70ff29
-Author:     Stephen Rothwell <sfr@canb.auug.org.au>
-AuthorDate: Mon, 10 Dec 2012 19:54:02 +1100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 10 Dec 2012 13:37:30 +0100
+Some DVM regulators needs to update activate_bit after setting vsel_reg to
+initiate voltage change on the output.  This patch adds activate_reg and
+activate_bit to struct regulator_desc and update
+regulator_set_voltage_sel_regmap() to set activate_bit of activate_reg when
+activate_bit is set.
 
-mm/migrate: Fix update_mmu_cache_pmd() use
-
-Stephen Rothwell reported this linux-next build failure:
-
-  mm/migrate.c: In function 'migrate_misplaced_transhuge_page_put':
-  mm/migrate.c:1666:2: error: incompatible type for argument 3 of 'update_mmu_cache_pmd'
-
-Caused by commit 7f7f03ce3820 ("mm, numa: Implement
-migrate-on-fault lazy NUMA strategy for regular and THP pages")
-from the tip tree and exposed by commit "x86: convert
-update_mmu_cache() and update_mmu_cache_pmd() to functions" from
-the akpm tree.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20121210195402.1042a8ea5bfb57bb758007ac@canb.auug.org.au
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- mm/migrate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/core.c         |   12 +++++++++++-
+ include/linux/regulator/driver.h |    6 ++++++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 9562fa8..d599657 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1625,7 +1625,7 @@ int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
- 	page_add_new_anon_rmap(new_page, vma, haddr);
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 0f65b24..2021086 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2074,10 +2074,20 @@ EXPORT_SYMBOL_GPL(regulator_get_voltage_sel_regmap);
+  */
+ int regulator_set_voltage_sel_regmap(struct regulator_dev *rdev, unsigned sel)
+ {
++	int ret;
++
+ 	sel <<= ffs(rdev->desc->vsel_mask) - 1;
  
- 	set_pmd_at(mm, haddr, pmd, entry);
--	update_mmu_cache_pmd(vma, address, entry);
-+	update_mmu_cache_pmd(vma, address, &entry);
- 	page_remove_rmap(page);
- 	/*
- 	 * Finish the charge transaction under the page table lock to
+-	return regmap_update_bits(rdev->regmap, rdev->desc->vsel_reg,
++	ret = regmap_update_bits(rdev->regmap, rdev->desc->vsel_reg,
+ 				  rdev->desc->vsel_mask, sel);
++	if (ret)
++		return ret;
++
++	if (rdev->desc->activate_bit)
++		ret = regmap_update_bits(rdev->regmap, rdev->desc->activate_reg,
++					 rdev->desc->activate_bit,
++					 rdev->desc->activate_bit);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regulator_set_voltage_sel_regmap);
+ 
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index d10bb0f..ba5a535 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -193,6 +193,10 @@ enum regulator_type {
+  *
+  * @vsel_reg: Register for selector when using regulator_regmap_X_voltage_
+  * @vsel_mask: Mask for register bitfield used for selector
++ * @activate_reg: Register for initiate voltage change on the output when
++ *                using regulator_set_voltage_sel_regmap
++ * @activate_bit: Register bitfield used for initiate voltage change on the
++ *                output when using regulator_set_voltage_sel_regmap
+  * @enable_reg: Register for control when using regmap enable/disable ops
+  * @enable_mask: Mask for control when using regmap enable/disable ops
+  *
+@@ -218,6 +222,8 @@ struct regulator_desc {
+ 
+ 	unsigned int vsel_reg;
+ 	unsigned int vsel_mask;
++	unsigned int activate_reg;
++	unsigned int activate_bit;
+ 	unsigned int enable_reg;
+ 	unsigned int enable_mask;
+ 	unsigned int bypass_reg;
+-- 
+1.7.9.5
+
+
+
