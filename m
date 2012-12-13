@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab2LMCpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:45:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37327 "EHLO mx2.suse.de"
+	id S1756532Ab2LMCqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:46:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:33859 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755435Ab2LMCps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:45:48 -0500
-Date: Thu, 13 Dec 2012 13:45:34 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jon Hunter <jon-hunter@ti.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Erickson <marathon96@gmail.com>, <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] OMAP: add pwm driver using dmtimers.
-Message-ID: <20121213134534.0cd32544@notabene.brown>
-In-Reply-To: <50C8AED2.4040204@ti.com>
-References: <20121212192430.50cea126@notabene.brown>
-	<20121212113145.GA23598@avionic-0098.adnet.avionic-design.de>
-	<50C8AED2.4040204@ti.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/+jRewPJj3fv1Iceo6EM4oKq"; protocol="application/pgp-signature"
+	id S1756152Ab2LMCqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:46:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,270,1355126400"; 
+   d="scan'208";a="180227392"
+Message-ID: <50C940E8.2020001@intel.com>
+Date: Thu, 13 Dec 2012 10:43:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, preeti@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
+        arjan@linux.intel.com, amit.kucheria@linaro.org,
+        viresh.kumar@linaro.org
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org> <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org> <50C93AC1.1060202@intel.com>
+In-Reply-To: <50C93AC1.1060202@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+jRewPJj3fv1Iceo6EM4oKq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 12/13/2012 10:17 AM, Alex Shi wrote:
+> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
+>> During the creation of sched_domain, we define a pack buddy CPU for each CPU
+>> when one is available. We want to pack at all levels where a group of CPU can
+>> be power gated independently from others.
+>> On a system that can't power gate a group of CPUs independently, the flag is
+>> set at all sched_domain level and the buddy is set to -1. This is the default
+>> behavior.
+>> On a dual clusters / dual cores system which can power gate each core and
+>> cluster independently, the buddy configuration will be :
+>>
+>>       | Cluster 0   | Cluster 1   |
+>>       | CPU0 | CPU1 | CPU2 | CPU3 |
+>> -----------------------------------
+>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+>>
+>> Small tasks tend to slip out of the periodic load balance so the best place
+>> to choose to migrate them is during their wake up. The decision is in O(1) as
+>> we only check again one buddy CPU
+> 
+> Just have a little worry about the scalability on a big machine, like on
+> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
+> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
+> is different on task distribution decision.
 
-On Wed, 12 Dec 2012 10:20:34 -0600 Jon Hunter <jon-hunter@ti.com> wrote:
-
->=20
-> On 12/12/2012 05:31 AM, Thierry Reding wrote:
-> > On Wed, Dec 12, 2012 at 07:24:30PM +1100, NeilBrown wrote:
->=20
-> [snip]
->=20
-> >> +static int omap_pwm_enable(struct pwm_chip *chip, struct pwm_device *=
-pwm)
-> >> +{
-> >> +	struct omap_chip *omap =3D to_omap_chip(chip);
-> >> +	int status =3D 0;
-> >> +
-> >> +	/* Enable the counter--always--before attempting to write its
-> >> +	 * registers and then set the timer to its minimum load value to
-> >> +	 * ensure we get an overflow event right away once we start it.
-> >> +	 */
-> >=20
-> > Block comments should be in the following format:
-> >=20
-> > 	/*
-> > 	 * foo...
-> > 	 * bar...
-> > 	 */
-> >=20
-> >> +
-> >> +	omap_dm_timer_enable(omap->dm_timer);
-> >> +	omap_dm_timer_write_counter(omap->dm_timer, DM_TIMER_LOAD_MIN);
-> >> +	omap_dm_timer_start(omap->dm_timer);
-> >> +	omap_dm_timer_disable(omap->dm_timer);
-> >=20
-> > So omap_dm_timer_disable() doesn't actually stop the timer? It just
-> > disables the access to the registers?
->=20
-> I thought this looked odd too ;-)
->=20
-> So what is going on here is that omap_dm_timer_start() calls
-> omap_dm_timer_enable() but does not call omap_dm_timer_disable(). So the
-> last disable really just complements the first enable (ie. decrements
-> the use count), but the timer will not actually be disabled, because the
-> start has called an extra enable.
->=20
-> These four function calls can be replaced by one call to
-> omap_dm_timer_set_load_start() and I think that will be much clearer and
-> concise.
-
-So it now reads:
+In above big machine example, only one buddy cpu is not sufficient on
+each of level, like for 4 sockets level, maybe tasks can just full fill
+2 sockets, then we just use 2 sockets, that is more performance/power
+efficient. But one buddy cpu here need to spread tasks to 4 sockets all.
 
 
-	/*
-	 * Set the timer to its minimum load value to ensure we get an
-	 * overflow event right away once we start it.
-	 */
-
-	omap_dm_timer_set_load_start(omap->dm_timer, true, DM_TIMER_LOAD_MIN);
-
-
-Certainly more concise - thanks.
-
-
->=20
-> In general, it should not be necessary to call these
-> omap_dm_timer_enable/disable APIs directly. I am not sure what the
-> history is or if there is a use-case that really requires this. So in
-> the future may be I should make them static so they cannot be used
-> directly :-)
-
-I've removed the other instance of these calls - in omap_pwm_config.
-
-
-Thanks,
-NeilBrown
-
---Sig_/+jRewPJj3fv1Iceo6EM4oKq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUMlBTjnsnt1WYoG5AQI3FBAArOTN+D8oCyj2CcbWCaKwIeRvkNVL7B7K
-GtqMTFObDsev5RJRtW93S5B+cxKPsQovTpu3KxVTKXPN2BXLHZ5TBuG6ZYrOSE2R
-raZykojOBe6dzvIVf2omqPyLTDlWGM+R9pGnMim2a2mv8rao5LcVzRKv2NcFpeW9
-o9k6bblgpkNaCYxYj48cCcPvLKr/SIL7dVoZgXwrQWPvj7ljPLhrgVJI0Bz7OLpG
-A8OXyxE8lLRUy8VVBDk7zx19vEfQ2fJp5gI074jOWrJNgEGMEdTAY0Rcl/56Ee6t
-Q1sx0pxZCJdE0U2eIO0iEazQOBeEThiLC1knKzRSilrksn8kuTmVm/lF/1zbSCqK
-V2/JbX0qFPgKr5Yn8/OJVUI1Y3g/sVezTEt/3IyXT0+6s258J1Q/chuQYHVaAGsW
-Y0x1gmU/Kxtai+0n6p165jDGrsesnykVie0QGP0q2fxUVBFlY/zQzIGQNXhkzYte
-LSh0ZDNMmLqRurFOxQLw5CLU1jmQAbC2maLvRY9CqUwji7kOVsDNHZqNw5IR9MgS
-U9FYFASMoxM0WwjYFGP1Y+6BRwIK8CHcumr9Xqt2Y52LMUEFMNjPDdJQYOymLedU
-QIe/a/VShwHDFSQdYTN7CqSU+jMxp0y/TdR2CuO9hICqmG0wBYkYbLObbGGtu6i0
-rtKegC9Fv4U=
-=SGx0
------END PGP SIGNATURE-----
-
---Sig_/+jRewPJj3fv1Iceo6EM4oKq--
