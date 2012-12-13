@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2LMWCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:02:55 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50441 "EHLO
+	id S1756667Ab2LMWCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:02:53 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50425 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab2LMWCt (ORCPT
+	with ESMTP id S1756460Ab2LMWCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:49 -0500
+	Thu, 13 Dec 2012 17:02:48 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 09/27] x86, boot: add get_cmd_line_ptr()
-Date: Thu, 13 Dec 2012 14:02:03 -0800
-Message-Id: <1355436141-8668-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v6 02/27] x86, mm: make pgd next calculation consistent with pud/pmd
+Date: Thu, 13 Dec 2012 14:01:56 -0800
+Message-Id: <1355436141-8668-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-later will check ext_cmd_line_ptr at the same time.
+Just like PUD_SIZE, and PMD_SIZE next calculation, aka
+round down and add size.
+
+also remove not need next checking, just pass end instead.
+later phys_pud_init uses PTRS_PER_PUD checking to exit early
+if end is too big.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/boot/compressed/cmdline.c |   10 ++++++++--
- arch/x86/kernel/head64.c           |   13 +++++++++++--
- 2 files changed, 19 insertions(+), 4 deletions(-)
+ arch/x86/mm/init_64.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
-index 10f6b11..b4c913c 100644
---- a/arch/x86/boot/compressed/cmdline.c
-+++ b/arch/x86/boot/compressed/cmdline.c
-@@ -13,13 +13,19 @@ static inline char rdfs8(addr_t addr)
- 	return *((char *)(fs + addr));
- }
- #include "../cmdline.c"
-+static unsigned long get_cmd_line_ptr(void)
-+{
-+	unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
-+
-+	return cmd_line_ptr;
-+}
- int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
-+	return __cmdline_find_option(get_cmd_line_ptr(), option, buffer, bufsize);
- }
- int cmdline_find_option_bool(const char *option)
- {
--	return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
-+	return __cmdline_find_option_bool(get_cmd_line_ptr(), option);
- }
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 4178530..91f116a 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -530,9 +530,7 @@ kernel_physical_mapping_init(unsigned long start,
+ 		pgd_t *pgd = pgd_offset_k(start);
+ 		pud_t *pud;
  
- #endif
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index fbb68d4..0e83fc9 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -51,13 +51,22 @@ static void __init clear_bss(void)
- 	       (unsigned long) __bss_stop - (unsigned long) __bss_start);
- }
+-		next = (start + PGDIR_SIZE) & PGDIR_MASK;
+-		if (next > end)
+-			next = end;
++		next = (start & PGDIR_MASK) + PGDIR_SIZE;
  
-+static unsigned long get_cmd_line_ptr(void)
-+{
-+	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+	return cmd_line_ptr;
-+}
-+
- static void __init copy_bootdata(char *real_mode_data)
- {
- 	char * command_line;
-+	unsigned long cmd_line_ptr;
+ 		if (pgd_val(*pgd)) {
+ 			pud = (pud_t *)pgd_page_vaddr(*pgd);
+@@ -542,7 +540,7 @@ kernel_physical_mapping_init(unsigned long start,
+ 		}
  
- 	memcpy(&boot_params, real_mode_data, sizeof boot_params);
--	if (boot_params.hdr.cmd_line_ptr) {
--		command_line = __va(boot_params.hdr.cmd_line_ptr);
-+	cmd_line_ptr = get_cmd_line_ptr();
-+	if (cmd_line_ptr) {
-+		command_line = __va(cmd_line_ptr);
- 		memcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
- 	}
- }
+ 		pud = alloc_low_page();
+-		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
++		last_map_addr = phys_pud_init(pud, __pa(start), __pa(end),
+ 						 page_size_mask);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
 -- 
 1.7.10.4
 
