@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab2LMOTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:19:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45127 "EHLO
+	id S1756686Ab2LMOUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:20:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45098 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933460Ab2LMOOu (ORCPT
+	with ESMTP id S933279Ab2LMOOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:14:50 -0500
+	Thu, 13 Dec 2012 09:14:31 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: liu chuansheng <chuansheng.liu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Szymon Janc <szymon.janc@tieto.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 227/241] watchdog: using u64 in get_sample_period()
-Date: Thu, 13 Dec 2012 11:59:52 -0200
-Message-Id: <1355407206-17100-228-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 222/241] NFC: pn533: Fix use after free
+Date: Thu, 13 Dec 2012 11:59:47 -0200
+Message-Id: <1355407206-17100-223-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,54 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Szymon Janc <szymon.janc@tieto.com>
 
-commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 usptream.
+commit 770f750bc2b8312489c8e45306f551d08a319d3c upstream.
 
-In get_sample_period(), unsigned long is not enough:
+cmd was freed in pn533_dep_link_up regardless of
+pn533_send_cmd_frame_async return code. Cmd is passed as argument to
+pn533_in_dep_link_up_complete callback and should be freed there.
 
-  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
-
-case1:
-  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
-
-case2:
- set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
-
-In case2, we need use u64 to express the sample period.  Otherwise,
-changing the threshold thru proc often can not be successful.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/watchdog.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/nfc/pn533.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 4b1dfba..775fa0f 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -113,7 +113,7 @@ static unsigned long get_timestamp(int this_cpu)
- 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
- }
+diff --git a/drivers/nfc/pn533.c b/drivers/nfc/pn533.c
+index 19110f0..3811d60 100644
+--- a/drivers/nfc/pn533.c
++++ b/drivers/nfc/pn533.c
+@@ -1395,12 +1395,8 @@ static int pn533_dep_link_up(struct nfc_dev *nfc_dev, struct nfc_target *target,
+ 	rc = pn533_send_cmd_frame_async(dev, dev->out_frame, dev->in_frame,
+ 				dev->in_maxlen,	pn533_in_dep_link_up_complete,
+ 				cmd, GFP_KERNEL);
+-	if (rc)
+-		goto out;
+-
+-
+-out:
+-	kfree(cmd);
++	if (rc < 0)
++		kfree(cmd);
  
--static unsigned long get_sample_period(void)
-+static u64 get_sample_period(void)
- {
- 	/*
- 	 * convert watchdog_thresh from seconds to ns
-@@ -122,7 +122,7 @@ static unsigned long get_sample_period(void)
- 	 * and hard thresholds) to increment before the
- 	 * hardlockup detector generates a warning
- 	 */
--	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
-+	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
+ 	return rc;
  }
- 
- /* Commands for resetting the watchdog */
 -- 
 1.7.9.5
 
