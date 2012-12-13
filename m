@@ -1,299 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab2LMWEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:04:01 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50534 "EHLO
+	id S1756729Ab2LMWEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:04:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50526 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab2LMWC7 (ORCPT
+	with ESMTP id S1756717Ab2LMWC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:02:59 -0500
+	Thu, 13 Dec 2012 17:02:58 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Rob Landley <rob@landley.net>, Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH v6 18/27] x86, boot: add fields to support load bzImage and ramdisk above 4G
-Date: Thu, 13 Dec 2012 14:02:12 -0800
-Message-Id: <1355436141-8668-19-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v6 24/27] x86: Add swiotlb force off support
+Date: Thu, 13 Dec 2012 14:02:18 -0800
+Message-Id: <1355436141-8668-25-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext_ramdisk_image/size will record high 32bits for ramdisk info.
-
-xloadflags bit0 will be set if relocatable with 64bit.
-
-Let get_ramdisk_image/size to use ext_ramdisk_image/size to get
-right positon for ramdisk.
-
-bootloader will fill value to ext_ramdisk_image/size when it load
-ramdisk above 4G.
-
-Also bootloader will check if xloadflags bit0 is set to decicde if
-it could load ramdisk high above 4G.
-
-sentinel is used to make sure kernel have ext_* valid values set
-
-Update header version to 2.12.
-
--v2: add ext_cmd_line_ptr for above 4G support.
--v3: update to xloadflags from HPA.
--v4: use fields from bootparam instead setup_header according to HPA.
--v5: add checking for USE_EXT_BOOT_PARAMS
--v6: use sentinel to check if ext_* are valid suggested by HPA.
-     HPA said:
-	1. add a field in the uninitialized portion, call it "sentinel";
-	2. make sure the byte position corresponding to the "sentinel" field is
-	   nonzero in the bzImage file;
-	3. if the kernel boots up and sentinel is nonzero, erase those fields
-	   that you identified as uninitialized;
+So use could disable swiotlb from command line, even swiotlb support
+is compiled in.  Just like we have intel_iommu=on and intel_iommu=off.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- Documentation/x86/boot.txt         |   15 ++++++++++++++-
- Documentation/x86/zero-page.txt    |    4 ++++
- arch/x86/boot/compressed/cmdline.c |    2 ++
- arch/x86/boot/compressed/misc.c    |   12 ++++++++++++
- arch/x86/boot/header.S             |   12 ++++++++++--
- arch/x86/boot/setup.ld             |    8 +++++++-
- arch/x86/include/asm/bootparam.h   |   12 +++++++++---
- arch/x86/kernel/head64.c           |    2 ++
- arch/x86/kernel/setup.c            |    4 ++++
- 9 files changed, 64 insertions(+), 7 deletions(-)
+ Documentation/kernel-parameters.txt |    7 +++++++
+ arch/x86/kernel/pci-swiotlb.c       |   10 +++++-----
+ drivers/iommu/amd_iommu.c           |    1 +
+ include/linux/swiotlb.h             |    1 +
+ lib/swiotlb.c                       |    5 ++++-
+ 5 files changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index f15cb74..696da56 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -57,6 +57,9 @@ Protocol 2.10:	(Kernel 2.6.31) Added a protocol for relaxed alignment
- Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
- 		protocol entry point.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 20e248c..08b4c9d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2832,6 +2832,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
  
-+Protocol 2.12:	(Kernel 3.9) Added three fields for loading bzImage and
-+		 ramdisk above 4G with 64bit in bootparam.
-+
- **** MEMORY LAYOUT
+ 	swiotlb=	[IA-64] Number of I/O TLB slabs
  
- The traditional memory map for the kernel loader, used for Image or
-@@ -182,7 +185,7 @@ Offset	Proto	Name		Meaning
- 0230/4	2.05+	kernel_alignment Physical addr alignment required for kernel
- 0234/1	2.05+	relocatable_kernel Whether kernel is relocatable or not
- 0235/1	2.10+	min_alignment	Minimum alignment, as a power of two
--0236/2	N/A	pad3		Unused
-+0236/2	2.12+	xloadflags	Boot protocol option flags
- 0238/4	2.06+	cmdline_size	Maximum size of the kernel command line
- 023C/4	2.07+	hardware_subarch Hardware subarchitecture
- 0240/8	2.07+	hardware_subarch_data Subarchitecture-specific data
-@@ -581,6 +584,16 @@ Protocol:	2.10+
-   misaligned kernel.  Therefore, a loader should typically try each
-   power-of-two alignment from kernel_alignment down to this alignment.
++	swiotlb=[force|off|on] [KNL] disable or enable swiotlb.
++		force
++		on
++			Enable swiotlb.
++		off
++			Disable swiotlb.
++
+ 	switches=	[HW,M68k]
  
-+Field name:     xloadflags
-+Type:           modify (obligatory)
-+Offset/size:    0x236/2
-+Protocol:       2.12+
-+
-+  This field is a bitmask.
-+
-+  Bit 0 (read): CAN_BE_LOADED_ABOVE_4G
-+        - If 1, kernel/boot_params/cmdline/ramdisk can be above 4g,
-+
- Field name:	cmdline_size
- Type:		read
- Offset/size:	0x238/4
-diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-index cf5437d..bc713a5 100644
---- a/Documentation/x86/zero-page.txt
-+++ b/Documentation/x86/zero-page.txt
-@@ -19,6 +19,9 @@ Offset	Proto	Name		Meaning
- 090/010	ALL	hd1_info	hd1 disk parameter, OBSOLETE!!
- 0A0/010	ALL	sys_desc_table	System description table (struct sys_desc_table)
- 0B0/010	ALL	olpc_ofw_header	OLPC's OpenFirmware CIF and friends
-+0C0/004	ALL	ext_ramdisk_image ramdisk_image high 32bits
-+0C4/004	ALL	ext_ramdisk_size  ramdisk_size high 32bits
-+0C8/004	ALL	ext_cmd_line_ptr  cmd_line_ptr high 32bits
- 140/080	ALL	edid_info	Video mode setup (struct edid_info)
- 1C0/020	ALL	efi_info	EFI 32 information (struct efi_info)
- 1E0/004	ALL	alk_mem_k	Alternative mem check, in KB
-@@ -27,6 +30,7 @@ Offset	Proto	Name		Meaning
- 1E9/001	ALL	eddbuf_entries	Number of entries in eddbuf (below)
- 1EA/001	ALL	edd_mbr_sig_buf_entries	Number of entries in edd_mbr_sig_buffer
- 				(below)
-+1F0/001	ALL	sentinel	0: states _ext_* fields are valid
- 290/040	ALL	edd_mbr_sig_buffer EDD MBR signatures
- 2D0/A00	ALL	e820_map	E820 memory map table
- 				(array of struct e820entry)
-diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
-index b4c913c..bffd73b 100644
---- a/arch/x86/boot/compressed/cmdline.c
-+++ b/arch/x86/boot/compressed/cmdline.c
-@@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
+ 	sysfs.deprecated=0|1 [KNL]
+diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
+index 6f93eb7..80afd3b 100644
+--- a/arch/x86/kernel/pci-swiotlb.c
++++ b/arch/x86/kernel/pci-swiotlb.c
+@@ -58,12 +58,12 @@ static struct dma_map_ops swiotlb_dma_ops = {
+  */
+ int __init pci_swiotlb_detect_override(void)
  {
- 	unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+-	int use_swiotlb = swiotlb | swiotlb_force;
+-
+ 	if (swiotlb_force)
+ 		swiotlb = 1;
++	else if (swiotlb_force_off)
++		swiotlb = 0;
  
-+	cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
-+
- 	return cmd_line_ptr;
+-	return use_swiotlb;
++	return swiotlb;
  }
- int cmdline_find_option(const char *option, char *buffer, int bufsize)
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 88f7ff6..f714576 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -318,6 +318,16 @@ static void parse_elf(void *output)
- 	free(phdrs);
- }
- 
-+static void sanitize_real_mode(struct boot_params *real_mode)
-+{
-+	if (real_mode->sentinel) {
-+		/* ext_* fields in boot_params are not valid, clear them */
-+		real_mode->ext_ramdisk_image = 0;
-+		real_mode->ext_ramdisk_size  = 0;
-+		real_mode->ext_cmd_line_ptr  = 0;
-+	}
-+}
-+
- asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 				  unsigned char *input_data,
- 				  unsigned long input_len,
-@@ -325,6 +335,8 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ IOMMU_INIT_FINISH(pci_swiotlb_detect_override,
+ 		  pci_xen_swiotlb_detect,
+@@ -76,9 +76,9 @@ IOMMU_INIT_FINISH(pci_swiotlb_detect_override,
+  */
+ int __init pci_swiotlb_detect_4gb(void)
  {
- 	real_mode = rmode;
- 
-+	sanitize_real_mode(real_mode);
-+
- 	if (real_mode->screen_info.orig_video_mode == 7) {
- 		vidmem = (char *) 0xb0000;
- 		vidport = 0x3b4;
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index 8c132a6..0d5790f 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -279,7 +279,7 @@ _start:
- 	# Part 2 of the header, from the old setup.S
- 
- 		.ascii	"HdrS"		# header signature
--		.word	0x020b		# header version number (>= 0x0105)
-+		.word	0x020c		# header version number (>= 0x0105)
- 					# or else old loadlin-1.5 will fail)
- 		.globl realmode_swtch
- realmode_swtch:	.word	0, 0		# default_switch, SETUPSEG
-@@ -369,7 +369,15 @@ relocatable_kernel:    .byte 1
- relocatable_kernel:    .byte 0
+-	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
++	/* don't initialize swiotlb if iommu=off (no_iommu=1) or force off */
+ #ifdef CONFIG_X86_64
+-	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
++	if (!no_iommu && !swiotlb_force_off && max_pfn > MAX_DMA32_PFN)
+ 		swiotlb = 1;
  #endif
- min_alignment:		.byte MIN_KERNEL_ALIGN_LG2	# minimum alignment
--pad3:			.word 0
-+
-+xloadflags:
-+CAN_BE_LOADED_ABOVE_4G	= 1		# If set, the kernel/boot_param/
-+					# ramdisk could be loaded above 4g
-+#if defined(CONFIG_X86_64) && defined(CONFIG_RELOCATABLE)
-+			.word CAN_BE_LOADED_ABOVE_4G
-+#else
-+			.word 0
-+#endif
+ 	return swiotlb;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 55074cb..4f370d3 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3082,6 +3082,7 @@ int __init amd_iommu_init_dma_ops(void)
+ 	unhandled = device_dma_ops_init();
+ 	if (unhandled && max_pfn > MAX_DMA32_PFN) {
+ 		/* There are unhandled devices - initialize swiotlb for them */
++		WARN(swiotlb_force_off, "Please remove swiotlb=off\n");
+ 		swiotlb = 1;
+ 	}
  
- cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
-                                                 #added with boot protocol
-diff --git a/arch/x86/boot/setup.ld b/arch/x86/boot/setup.ld
-index 03c0683..cbfefa8 100644
---- a/arch/x86/boot/setup.ld
-+++ b/arch/x86/boot/setup.ld
-@@ -13,7 +13,13 @@ SECTIONS
- 	.bstext		: { *(.bstext) }
- 	.bsdata		: { *(.bsdata) }
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index f7535d1..dd7cf65 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -8,6 +8,7 @@ struct dma_attrs;
+ struct scatterlist;
  
--	. = 497;
-+	/* sentinel: make sure if boot_params from bootloader is right */
-+	. = 496;
-+	.sentinel	: {
-+		sentinel = .;
-+		BYTE(0xff);
-+	}
-+
- 	.header		: { *(.header) }
- 	.entrytext	: { *(.entrytext) }
- 	.inittext	: { *(.inittext) }
-diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
-index 92862cd..ae2708b 100644
---- a/arch/x86/include/asm/bootparam.h
-+++ b/arch/x86/include/asm/bootparam.h
-@@ -58,7 +58,9 @@ struct setup_header {
- 	__u32	initrd_addr_max;
- 	__u32	kernel_alignment;
- 	__u8	relocatable_kernel;
--	__u8	_pad2[3];
-+	__u8	min_alignment;
-+	__u16	xloadflags;
-+#define CAN_BE_LOADED_ABOVE_4G	(1<<0)
- 	__u32	cmdline_size;
- 	__u32	hardware_subarch;
- 	__u64	hardware_subarch_data;
-@@ -106,7 +108,10 @@ struct boot_params {
- 	__u8  hd1_info[16];	/* obsolete! */		/* 0x090 */
- 	struct sys_desc_table sys_desc_table;		/* 0x0a0 */
- 	struct olpc_ofw_header olpc_ofw_header;		/* 0x0b0 */
--	__u8  _pad4[128];				/* 0x0c0 */
-+	__u32 ext_ramdisk_image;			/* 0x0c0 */
-+	__u32 ext_ramdisk_size;				/* 0x0c4 */
-+	__u32 ext_cmd_line_ptr;				/* 0x0c8 */
-+	__u8  _pad4[116];				/* 0x0cc */
- 	struct edid_info edid_info;			/* 0x140 */
- 	struct efi_info efi_info;			/* 0x1c0 */
- 	__u32 alt_mem_k;				/* 0x1e0 */
-@@ -115,7 +120,8 @@ struct boot_params {
- 	__u8  eddbuf_entries;				/* 0x1e9 */
- 	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
- 	__u8  kbd_status;				/* 0x1eb */
--	__u8  _pad6[5];					/* 0x1ec */
-+	__u8  _pad6[4];					/* 0x1ec */
-+	__u8  sentinel;					/* 0x1f0 */
- 	struct setup_header hdr;    /* setup header */	/* 0x1f1 */
- 	__u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
- 	__u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];	/* 0x290 */
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 16eb325..b8b6ad9 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -55,6 +55,8 @@ static unsigned long get_cmd_line_ptr(void)
- {
- 	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+ extern int swiotlb_force;
++extern int swiotlb_force_off;
  
-+	cmd_line_ptr |= (u64)boot_params.ext_cmd_line_ptr << 32;
-+
- 	return cmd_line_ptr;
+ /*
+  * Maximum allowable number of contiguous slabs to map,
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 6b99ea7..3f51b2c 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -51,6 +51,7 @@
+ #define IO_TLB_MIN_SLABS ((1<<20) >> IO_TLB_SHIFT)
+ 
+ int swiotlb_force;
++int swiotlb_force_off;
+ 
+ /*
+  * Used to do a quick range check in swiotlb_tbl_unmap_single and
+@@ -102,8 +103,10 @@ setup_io_tlb_npages(char *str)
+ 	}
+ 	if (*str == ',')
+ 		++str;
+-	if (!strcmp(str, "force"))
++	if (!strcmp(str, "force") || !strcmp(str, "on"))
+ 		swiotlb_force = 1;
++	if (!strcmp(str, "off"))
++		swiotlb_force_off = 1;
+ 
+ 	return 1;
  }
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index e636c83..efb33dd 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -298,12 +298,16 @@ static u64 __init get_ramdisk_image(void)
- {
- 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
- 
-+	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+
- 	return ramdisk_image;
- }
- static u64 __init get_ramdisk_size(void)
- {
- 	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
- 
-+	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+
- 	return ramdisk_size;
- }
- 
 -- 
 1.7.10.4
 
