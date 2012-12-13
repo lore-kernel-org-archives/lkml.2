@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab2LMOKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:10:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44722 "EHLO
+	id S932883Ab2LMOKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:10:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44751 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932853Ab2LMOKP (ORCPT
+	with ESMTP id S932853Ab2LMOKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:10:15 -0500
+	Thu, 13 Dec 2012 09:10:30 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Mike Galbraith <efault@gmx.de>, Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 150/241] futex: avoid wake_futex() for a PI futex_q
-Date: Thu, 13 Dec 2012 11:58:35 -0200
-Message-Id: <1355407206-17100-151-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 156/241] Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
+Date: Thu, 13 Dec 2012 11:58:41 -0200
+Message-Id: <1355407206-17100-157-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,100 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Mike Galbraith <efault@gmx.de>
 
-commit aa10990e028cac3d5e255711fb9fb47e00700e35 upstream.
+commit fd8ef11730f1d03d5d6555aa53126e9e34f52f12 upstream.
 
-Dave Jones reported a bug with futex_lock_pi() that his trinity test
-exposed.  Sometime between queue_me() and taking the q.lock_ptr, the
-lock_ptr became NULL, resulting in a crash.
+This reverts commit 800d4d30c8f20bd728e5741a3b77c4859a613f7c.
 
-While futex_wake() is careful to not call wake_futex() on futex_q's with
-a pi_state or an rt_waiter (which are either waiting for a
-futex_unlock_pi() or a PI futex_requeue()), futex_wake_op() and
-futex_requeue() do not perform the same test.
+Between commits 8323f26ce342 ("sched: Fix race in task_group()") and
+800d4d30c8f2 ("sched, autogroup: Stop going ahead if autogroup is
+disabled"), autogroup is a wreck.
 
-Update futex_wake_op() and futex_requeue() to test for q.pi_state and
-q.rt_waiter and abort with -EINVAL if detected.  To ensure any future
-breakage is caught, add a WARN() to wake_futex() if the same condition
-is true.
+With both applied, all you have to do to crash a box is disable
+autogroup during boot up, then reboot..  boom, NULL pointer dereference
+due to commit 800d4d30c8f2 not allowing autogroup to move things, and
+commit 8323f26ce342 making that the only way to switch runqueues:
 
-This fix has seen 3 hours of testing with "trinity -c futex" on an
-x86_64 VM with 4 CPUS.
+  BUG: unable to handle kernel NULL pointer dereference at           (null)
+  IP: [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+  Pid: 7047, comm: systemd-user-se Not tainted 3.6.8-smp #7 MEDIONPC MS-7502/MS-7502
+  RIP: effective_load.isra.43+0x50/0x90
+  Process systemd-user-se (pid: 7047, threadinfo ffff880221dde000, task ffff88022618b3a0)
+  Call Trace:
+    select_task_rq_fair+0x255/0x780
+    try_to_wake_up+0x156/0x2c0
+    wake_up_state+0xb/0x10
+    signal_wake_up+0x28/0x40
+    complete_signal+0x1d6/0x250
+    __send_signal+0x170/0x310
+    send_signal+0x40/0x80
+    do_send_sig_info+0x47/0x90
+    group_send_sig_info+0x4a/0x70
+    kill_pid_info+0x3a/0x60
+    sys_kill+0x97/0x1a0
+    ? vfs_read+0x120/0x160
+    ? sys_read+0x45/0x90
+    system_call_fastpath+0x16/0x1b
+  Code: 49 0f af 41 50 31 d2 49 f7 f0 48 83 f8 01 48 0f 46 c6 48 2b 07 48 8b bf 40 01 00 00 48 85 ff 74 3a 45 31 c0 48 8b 8f 50 01 00 00 <48> 8b 11 4c 8b 89 80 00 00 00 49 89 d2 48 01 d0 45 8b 59 58 4c
+  RIP  [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+   RSP <ffff880221ddfbd8>
+  CR2: 0000000000000000
 
-[akpm@linux-foundation.org: tidy up the WARN()]
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Reported-by: Dave Jones <davej@redat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: John Kacur <jkacur@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/futex.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ kernel/sched/auto_group.c |    4 ----
+ kernel/sched/auto_group.h |    5 -----
+ 2 files changed, 9 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 20ef219..19eb089 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -843,6 +843,9 @@ static void wake_futex(struct futex_q *q)
- {
- 	struct task_struct *p = q->task;
+diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
+index 0984a21..15f60d0 100644
+--- a/kernel/sched/auto_group.c
++++ b/kernel/sched/auto_group.c
+@@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
  
-+	if (WARN(q->pi_state || q->rt_waiter, "refusing to wake PI futex\n"))
-+		return;
-+
- 	/*
- 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
- 	 * a non-futex wake up happens on another CPU then the task
-@@ -1078,6 +1081,10 @@ retry_private:
+ 	p->signal->autogroup = autogroup_kref_get(ag);
  
- 	plist_for_each_entry_safe(this, next, head, list) {
- 		if (match_futex (&this->key, &key1)) {
-+			if (this->pi_state || this->rt_waiter) {
-+				ret = -EINVAL;
-+				goto out_unlock;
-+			}
- 			wake_futex(this);
- 			if (++ret >= nr_wake)
- 				break;
-@@ -1090,6 +1097,10 @@ retry_private:
- 		op_ret = 0;
- 		plist_for_each_entry_safe(this, next, head, list) {
- 			if (match_futex (&this->key, &key2)) {
-+				if (this->pi_state || this->rt_waiter) {
-+					ret = -EINVAL;
-+					goto out_unlock;
-+				}
- 				wake_futex(this);
- 				if (++op_ret >= nr_wake2)
- 					break;
-@@ -1098,6 +1109,7 @@ retry_private:
- 		ret += op_ret;
- 	}
+-	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+-		goto out;
+-
+ 	t = p;
+ 	do {
+ 		sched_move_task(t);
+ 	} while_each_thread(p, t);
  
-+out_unlock:
- 	double_unlock_hb(hb1, hb2);
- out_put_keys:
- 	put_futex_key(&key2);
-@@ -1387,9 +1399,13 @@ retry_private:
- 		/*
- 		 * FUTEX_WAIT_REQEUE_PI and FUTEX_CMP_REQUEUE_PI should always
- 		 * be paired with each other and no other futex ops.
-+		 *
-+		 * We should never be requeueing a futex_q with a pi_state,
-+		 * which is awaiting a futex_unlock_pi().
- 		 */
- 		if ((requeue_pi && !this->rt_waiter) ||
--		    (!requeue_pi && this->rt_waiter)) {
-+		    (!requeue_pi && this->rt_waiter) ||
-+		    this->pi_state) {
- 			ret = -EINVAL;
- 			break;
- 		}
+-out:
+ 	unlock_task_sighand(p, &flags);
+ 	autogroup_kref_put(prev);
+ }
+diff --git a/kernel/sched/auto_group.h b/kernel/sched/auto_group.h
+index 8bd0471..443232e 100644
+--- a/kernel/sched/auto_group.h
++++ b/kernel/sched/auto_group.h
+@@ -4,11 +4,6 @@
+ #include <linux/rwsem.h>
+ 
+ struct autogroup {
+-	/*
+-	 * reference doesn't mean how many thread attach to this
+-	 * autogroup now. It just stands for the number of task
+-	 * could use this autogroup.
+-	 */
+ 	struct kref		kref;
+ 	struct task_group	*tg;
+ 	struct rw_semaphore	lock;
 -- 
 1.7.9.5
 
