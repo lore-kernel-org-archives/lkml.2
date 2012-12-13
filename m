@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab2LMDWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:22:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:33554 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2LMDWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:22:40 -0500
-Date: Wed, 12 Dec 2012 22:22:39 -0500 (EST)
-Message-Id: <20121212.222239.1677083852440112819.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nhorman@tuxdriver.com,
-        vyasevich@gmail.com
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFxvHrNYB_J851XTkZ4EiwZ68Fb64DEU1JJmxPV-zB+9Vw@mail.gmail.com>
-References: <CA+55aFwzUgxQAze=mYbEx8b61V542tzm06Df=mR1BtYVbJy0mg@mail.gmail.com>
-	<20121212.212734.917363230032045212.davem@davemloft.net>
-	<CA+55aFxvHrNYB_J851XTkZ4EiwZ68Fb64DEU1JJmxPV-zB+9Vw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1755681Ab2LMDWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:22:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755585Ab2LMDWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 22:22:46 -0500
+Message-ID: <1355368956.3224.357.camel@bling.home>
+Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, David Gibson <david@gibson.dropbear.id.au>
+Date: Wed, 12 Dec 2012 20:22:36 -0700
+In-Reply-To: <1355367458.19932.84.camel@pasglop>
+References: <1354901926.3224.96.camel@bling.home>
+	 <1355315657-31153-1-git-send-email-aik@ozlabs.ru>
+	 <1355355035.3224.343.camel@bling.home> <1355367458.19932.84.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Dec 2012 18:37:08 -0800
+On Thu, 2012-12-13 at 13:57 +1100, Benjamin Herrenschmidt wrote:
+> On Wed, 2012-12-12 at 16:30 -0700, Alex Williamson wrote:
+> > Locked page accounting in this version is very, very broken.  How do
+> > powerpc folks feel about seemingly generic kernel iommu interfaces
+> > messing with the current task mm?  Besides that, more problems
+> > below...
+> 
+> After a second look & thought...
+> 
+> This whole accounting business is fucked. First, we simply can't just
+> randomly return errors from H_PUT_TCE because the process reached some
+> rlimit. This is not a proper failure mode. That means that the guest
+> will probably panic() ... possibly right in the middle of some disk
+> writeback or god knows what. Not good.
+> 
+> Also the overhead of doing all that crap on every TCE map/unmap is
+> ridiculous.
+> 
+> Finally, it's just not going to work for real mode which we really want,
+> since we can't take the mmap-sem in real mode anyway, so unless we
+> convert that counter to an atomic, we can't do it.
+> 
+> I'd suggest just not bothering, or if you want to bother, check once
+> when creating a TCE table that the rlimit is enough to bolt as many
+> pages as can be populated in that table and fail to create *that*. The
+> failure mode is much better, ie, qemu failing to create a PCI bus due to
+> insufficient rlimits.
 
-> On Wed, Dec 12, 2012 at 6:27 PM, David Miller <davem@davemloft.net> wrote:
->>
->> There are two SCTP HMAC cookie algorithms, MD5 and SHA1.
->>
->> What used to happen is that you had to choose one at build
->> time, and then you were stuck with that decision and it was
->> all that you could use.
->>
->> Now, it's selectable at run time.
->>
->> If there's anything you find particularly anti-social about
->> this, I'm sure we can adjust it.
-> 
-> So I'd suggest doing the same thing that the new thermal throttling
-> Kconfig does: start off by asking for the default algorithm, then ask
-> about the others.
-> 
-> The "choice" part selects the one that is default (so it never gets
-> asked about and is obviously compiled in), and the rest default to no
-> like we should.
-> 
-> See drivers/thermal/Kconfig for an example of this. I think we do it
-> in other places too, but that one happens to be new so I picked it as
-> an example.
-> 
-> The rule should be that we *never* default anything to 'yes', unless
-> it's old functionality that we always compiled in before too, and now
-> it got made conditional. So if you see a "default y" on new options,
-> you should basically consider it broken.
-> 
-> We're already bloating too much, we should not encourage people to
-> make things more bloated than necessary.
-> 
-> Btw, that Kconfig option has basically no useful help text either.
-> What's the point of repeating the question as a "help" message?
-> 
-> If people can't explain why anybody should enable it, it sure as hell
-> shouldn't default to 'y'. Maybe it shouldn't exist at all?
+I agree, we don't seem to be headed in the right direction.  x86 needs
+to track rlimits or else a user can exploit the interface to pin all the
+memory in the system.  On power, only the iova window can be pinned, so
+it's a fixed amount.  I could see it as granting access to a group
+implicitly grants access to pinning the iova window.  We can still make
+it more explicit by handling the rlimit accounting upfront.  Thanks,
 
-Neil and Vlad, please take care of this.
+Alex
 
-Thanks.
