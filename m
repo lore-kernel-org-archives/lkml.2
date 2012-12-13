@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab2LMAoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 19:44:30 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:12322 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab2LMAo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 19:44:28 -0500
-X-IronPort-AV: E=Sophos;i="4.84,269,1355126400"; 
-   d="scan'208";a="718716105"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Sven Wegener <sven.wegener@stealer.net>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] NFSv4: Check for buffer length in
- __nfs4_get_acl_uncached
-Thread-Topic: [PATCH] NFSv4: Check for buffer length in
- __nfs4_get_acl_uncached
-Thread-Index: AQHN2L55EH39ydWvLEy/Vd1g8d70vpgV5CEQ
-Date: Thu, 13 Dec 2012 00:44:26 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA911929358@SACEXCMBX04-PRD.hq.netapp.com>
-References: <alpine.LNX.2.02.1212130009400.10324@titan.int.lan.stealer.net>
-In-Reply-To: <alpine.LNX.2.02.1212130009400.10324@titan.int.lan.stealer.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
+	id S1755389Ab2LMAqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 19:46:35 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:58503 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab2LMAqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 19:46:33 -0500
+Date: Thu, 13 Dec 2012 09:46:28 +0900
+From: Simon Horman <horms+renesas@verge.net.au>
+To: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH] ARM: clocksource: Initialise early (repost)
+Message-ID: <20121213004628.GA26680@verge.net.au>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBD0iVpS022364
 
-> -----Original Message-----
-> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-
-> owner@vger.kernel.org] On Behalf Of Sven Wegener
-> Sent: Wednesday, December 12, 2012 6:15 PM
-> To: Myklebust, Trond
-> Cc: linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH] NFSv4: Check for buffer length in
-> __nfs4_get_acl_uncached
-> 
-> Commit 1f1ea6c "NFSv4: Fix buffer overflow checking in
-> __nfs4_get_acl_uncached" accidently dropped the checking for too small
-> result buffer length.
-> 
-> If someone uses getxattr on "system.nfs4_acl" on an NFSv4 mount
-> supporting ACLs, the ACL has not been cached and the buffer suplied is too
-> short, we still copy the complete ACL, resulting in kernel and user space
-> memory corruption.
-> 
-> Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-> Cc: stable@kernel.org
-> ---
->  fs/nfs/nfs4proc.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> Resending, because it did not get any response.
+Initialise clock sources early, since some subsystems rely on them to initialize
 
-Sorry. I've already applied it to the nfs-for-next branch on git.linux-nfs.org, so it should go in during this merge window.
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 
-Cheers
-  Trond
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+---
+
+Repost to add LKML to CC list.
+
+v3
+* Initial post
+---
+ drivers/Makefile |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/Makefile b/drivers/Makefile
+index a16a8d0..eba9b58 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -37,6 +37,11 @@ obj-$(CONFIG_XEN)		+= xen/
+ # regulators early, since some subsystems rely on them to initialize
+ obj-$(CONFIG_REGULATOR)		+= regulator/
+ 
++# clocksource early, since some subsystems rely on them to initialize
++ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
++obj-y				+= clocksource/
++endif
++
+ # tty/ comes before char/ so that the VT console is the boot-time
+ # default.
+ obj-y				+= tty/
+@@ -114,9 +119,6 @@ obj-y				+= firmware/
+ obj-$(CONFIG_CRYPTO)		+= crypto/
+ obj-$(CONFIG_SUPERH)		+= sh/
+ obj-$(CONFIG_ARCH_SHMOBILE)	+= sh/
+-ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
+-obj-y				+= clocksource/
+-endif
+ obj-$(CONFIG_DCA)		+= dca/
+ obj-$(CONFIG_HID)		+= hid/
+ obj-$(CONFIG_PPC_PS3)		+= ps3/
+-- 
+1.7.10.4
+
