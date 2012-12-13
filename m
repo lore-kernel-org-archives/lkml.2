@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab2LMOIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:08:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44574 "EHLO
+	id S932725Ab2LMOlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:41:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44589 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab2LMOIe (ORCPT
+	with ESMTP id S932514Ab2LMOIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:08:34 -0500
+	Thu, 13 Dec 2012 09:08:41 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Bolle <pebolle@tiscali.nl>, Alex Deucher <alexander.deucher@amd.com>,
+Cc: Robert Richter <robert.richter@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jun Zhang <jun.zhang@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 126/241] radeon: add AGPMode 1 quirk for RV250
-Date: Thu, 13 Dec 2012 11:58:11 -0200
-Message-Id: <1355407206-17100-127-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 128/241] x86-32: Fix invalid stack address while in softirq
+Date: Thu, 13 Dec 2012 11:58:13 -0200
+Message-Id: <1355407206-17100-129-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,41 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Robert Richter <robert.richter@amd.com>
 
-commit 45171002b01b2e2ec4f991eca81ffd8430fd0aec upstream.
+commit 1022623842cb72ee4d0dbf02f6937f38c92c3f41 upstream.
 
-The Intel 82855PM host bridge / Mobility FireGL 9000 RV250 combination
-in an (outdated) ThinkPad T41 needs AGPMode 1 for suspend/resume (under
-KMS, that is). So add a quirk for it.
+In 32 bit the stack address provided by kernel_stack_pointer() may
+point to an invalid range causing NULL pointer access or page faults
+while in NMI (see trace below). This happens if called in softirq
+context and if the stack is empty. The address at &regs->sp is then
+out of range.
 
-(Change R250 to RV250 in comment for preceding quirk too.)
+Fixing this by checking if regs and &regs->sp are in the same stack
+context. Otherwise return the previous stack pointer stored in struct
+thread_info. If that address is invalid too, return address of regs.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+ BUG: unable to handle kernel NULL pointer dereference at 0000000a
+ IP: [<c1004237>] print_context_stack+0x6e/0x8d
+ *pde = 00000000
+ Oops: 0000 [#1] SMP
+ Modules linked in:
+ Pid: 4434, comm: perl Not tainted 3.6.0-rc3-oprofile-i386-standard-g4411a05 #4 Hewlett-Packard HP xw9400 Workstation/0A1Ch
+ EIP: 0060:[<c1004237>] EFLAGS: 00010093 CPU: 0
+ EIP is at print_context_stack+0x6e/0x8d
+ EAX: ffffe000 EBX: 0000000a ECX: f4435f94 EDX: 0000000a
+ ESI: f4435f94 EDI: f4435f94 EBP: f5409ec0 ESP: f5409ea0
+  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+ CR0: 8005003b CR2: 0000000a CR3: 34ac9000 CR4: 000007d0
+ DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+ DR6: ffff0ff0 DR7: 00000400
+ Process perl (pid: 4434, ti=f5408000 task=f5637850 task.ti=f4434000)
+ Stack:
+  000003e8 ffffe000 00001ffc f4e39b00 00000000 0000000a f4435f94 c155198c
+  f5409ef0 c1003723 c155198c f5409f04 00000000 f5409edc 00000000 00000000
+  f5409ee8 f4435f94 f5409fc4 00000001 f5409f1c c12dce1c 00000000 c155198c
+ Call Trace:
+  [<c1003723>] dump_trace+0x7b/0xa1
+  [<c12dce1c>] x86_backtrace+0x40/0x88
+  [<c12db712>] ? oprofile_add_sample+0x56/0x84
+  [<c12db731>] oprofile_add_sample+0x75/0x84
+  [<c12ddb5b>] op_amd_check_ctrs+0x46/0x260
+  [<c12dd40d>] profile_exceptions_notify+0x23/0x4c
+  [<c1395034>] nmi_handle+0x31/0x4a
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13950ed>] do_nmi+0xa0/0x2ff
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13949e5>] nmi_stack_correct+0x28/0x2d
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c1003603>] ? do_softirq+0x4b/0x7f
+  <IRQ>
+  [<c102a06f>] irq_exit+0x35/0x5b
+  [<c1018f56>] smp_apic_timer_interrupt+0x6c/0x7a
+  [<c1394746>] apic_timer_interrupt+0x2a/0x30
+ Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 ad 42 03 00 85 c0 8b 55 e0 75 a6 eb cc
+ EIP: [<c1004237>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5409ea0
+ CR2: 000000000000000a
+ ---[ end trace 62afee3481b00012 ]---
+ Kernel panic - not syncing: Fatal exception in interrupt
+
+V2:
+* add comments to kernel_stack_pointer()
+* always return a valid stack address by falling back to the address
+  of regs
+
+Reported-by: Yang Wei <wei.yang@windriver.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Link: http://lkml.kernel.org/r/20120912135059.GZ8285@erda.amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Jun Zhang <jun.zhang@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_agp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/ptrace.h |   15 ++++-----------
+ arch/x86/kernel/ptrace.c      |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_agp.c b/drivers/gpu/drm/radeon/radeon_agp.c
-index bd2f33e..bc6b64f 100644
---- a/drivers/gpu/drm/radeon/radeon_agp.c
-+++ b/drivers/gpu/drm/radeon/radeon_agp.c
-@@ -70,9 +70,12 @@ static struct radeon_agpmode_quirk radeon_agpmode_quirk_list[] = {
- 	/* Intel 82830 830 Chipset Host Bridge / Mobility M6 LY Needs AGPMode 2 (fdo #17360)*/
- 	{ PCI_VENDOR_ID_INTEL, 0x3575, PCI_VENDOR_ID_ATI, 0x4c59,
- 		PCI_VENDOR_ID_DELL, 0x00e3, 2},
--	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 R250 Needs AGPMode 1 (lp #296617) */
-+	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 (lp #296617) */
- 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4c66,
- 		PCI_VENDOR_ID_DELL, 0x0149, 1},
-+	/* Intel 82855PM host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 for suspend/resume */
-+	{ PCI_VENDOR_ID_INTEL, 0x3340, PCI_VENDOR_ID_ATI, 0x4c66,
-+		PCI_VENDOR_ID_IBM, 0x0531, 1},
- 	/* Intel 82852/82855 host bridge / Mobility 9600 M10 RV350 Needs AGPMode 1 (deb #467460) */
- 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4e50,
- 		0x1025, 0x0061, 1},
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index dcfde52..19f16eb 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -205,21 +205,14 @@ static inline bool user_64bit_mode(struct pt_regs *regs)
+ }
+ #endif
+ 
+-/*
+- * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
+- * when it traps.  The previous stack will be directly underneath the saved
+- * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
+- *
+- * This is valid only for kernel mode traps.
+- */
+-static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
+-{
+ #ifdef CONFIG_X86_32
+-	return (unsigned long)(&regs->sp);
++extern unsigned long kernel_stack_pointer(struct pt_regs *regs);
+ #else
++static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
+ 	return regs->sp;
+-#endif
+ }
++#endif
+ 
+ #define GET_IP(regs) ((regs)->ip)
+ #define GET_FP(regs) ((regs)->bp)
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index c4c6a5c..947cf90 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -165,6 +165,34 @@ static inline bool invalid_selector(u16 value)
+ 
+ #define FLAG_MASK		FLAG_MASK_32
+ 
++/*
++ * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
++ * when it traps.  The previous stack will be directly underneath the saved
++ * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
++ *
++ * Now, if the stack is empty, '&regs->sp' is out of range. In this
++ * case we try to take the previous stack. To always return a non-null
++ * stack pointer we fall back to regs as stack if no previous stack
++ * exists.
++ *
++ * This is valid only for kernel mode traps.
++ */
++unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
++	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
++	unsigned long sp = (unsigned long)&regs->sp;
++	struct thread_info *tinfo;
++
++	if (context == (sp & ~(THREAD_SIZE - 1)))
++		return sp;
++
++	tinfo = (struct thread_info *)context;
++	if (tinfo->previous_esp)
++		return tinfo->previous_esp;
++
++	return (unsigned long)regs;
++}
++
+ static unsigned long *pt_regs_access(struct pt_regs *regs, unsigned long regno)
+ {
+ 	BUILD_BUG_ON(offsetof(struct pt_regs, bx) != 0);
 -- 
 1.7.9.5
 
