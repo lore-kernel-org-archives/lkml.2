@@ -1,720 +1,474 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab2LMCiq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:38:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37181 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932505Ab2LMCim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:38:42 -0500
-Date: Thu, 13 Dec 2012 13:38:28 +1100
-From: NeilBrown <neilb@suse.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Grant Erickson <marathon96@gmail.com>, linux-omap@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] OMAP: add pwm driver using dmtimers.
-Message-ID: <20121213133828.55e50220@notabene.brown>
-In-Reply-To: <20121212113145.GA23598@avionic-0098.adnet.avionic-design.de>
-References: <20121212192430.50cea126@notabene.brown>
-	<20121212113145.GA23598@avionic-0098.adnet.avionic-design.de>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Q_Wj2VK8cvdETqTAdz5QGuj"; protocol="application/pgp-signature"
+	id S932255Ab2LMCZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:25:00 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44381 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196Ab2LMCYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:24:54 -0500
+Message-ID: <50C93C6F.1090104@ozlabs.ru>
+Date: Thu, 13 Dec 2012 13:24:47 +1100
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
+References: <1354901926.3224.96.camel@bling.home>  <1355315657-31153-1-git-send-email-aik@ozlabs.ru> <1355355035.3224.343.camel@bling.home>
+In-Reply-To: <1355355035.3224.343.camel@bling.home>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Q_Wj2VK8cvdETqTAdz5QGuj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 12 Dec 2012 12:31:45 +0100 Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-
-> On Wed, Dec 12, 2012 at 07:24:30PM +1100, NeilBrown wrote:
-> >=20
-> >=20
-> > This patch is based on an earlier patch by Grant Erickson
-> > which provided pwm devices using the 'legacy' interface.
-> >=20
-> > This driver instead uses the new framework interface.
->=20
-> I'd prefer some kind of description about the driver here.
-
-I'm not really sure what more there is to say.  There was a bit of text in a
-comment at the top of the file which I've copied to the commit comment.
-
-
->                                                            Also the
-> subject should be something like:
->=20
-> 	pwm: Add OMAP support using dual-mode timers
->=20
-> or
->=20
-> 	pwm: omap: Add PWM support using dual-mode timers
-
-Done - I chose the second.
-
->=20
-> I take this description to mean that OMAP doesn't have dedicated PWM
-> hardware? Otherwise it might be bad to call this pwm-omap.
-
-Correct.  The timers can be used for a number of things which explicitly
-includes PWM.
-
->=20
-> Also please use all-caps when referring to PWM devices in prose. A few
-> other comments inline below.
-
-OK.
-
->=20
-> > Cc: Grant Erickson <marathon96@gmail.com>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> >=20
-> > diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> > index ed81720..7df573a 100644
-> > --- a/drivers/pwm/Kconfig
-> > +++ b/drivers/pwm/Kconfig
-> > @@ -85,6 +85,15 @@ config PWM_MXS
-> >  	  To compile this driver as a module, choose M here: the module
-> >  	  will be called pwm-mxs.
-> > =20
-> > +config PWM_OMAP
-> > +	tristate "OMAP pwm support"
->=20
-> "OMAP PWM support"
-
-Fixed.
-
->=20
-> > diff --git a/drivers/pwm/pwm-omap.c b/drivers/pwm/pwm-omap.c
-> [...]
-> > + *    The 'id' number for the device encodes the number of the dm timer
-> > + *    to use, and the polarity of the output.
-> > + *    lsb is '1' of active-high, and '0' for active low
-> > + *    remaining bit a timer number and need to be shifted down before =
-use.
->=20
-> I don't know if this is such a good idea. Usually you number platform
-> devices sequentially, while this would leave gaps in the numbering. I
-> know that adding platform data may sound a bit like overkill, but I
-> really think the added clarity and consistency is worth it.
-
-I guess so.  No other PWM driver seems to use platform data, and I needed so
-little...
-I'll see what I can do.
-
-
->=20
-> > +#define pr_fmt(fmt) "pwm-omap: " fmt
->=20
-> You don't seem to be using any of the pr_*() logging functions, so this
-> isn't needed.
-
-Gone now, thanks.
-
-
->=20
-> > +#include <linux/export.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/err.h>
-> > +#include <linux/clk.h>
-> > +#include <linux/io.h>
-> > +#include <linux/pwm.h>
-> > +#include <linux/module.h>
-> > +
-> > +#include <plat/dmtimer.h>
-> > +
-> > +#define DM_TIMER_LOAD_MIN		0xFFFFFFFE
-> > +
-> > +struct omap_chip {
-> > +	struct platform_device	*pdev;
+On 13/12/12 10:30, Alex Williamson wrote:
+> On Wed, 2012-12-12 at 23:34 +1100, Alexey Kardashevskiy wrote:
+>> This patch initializes IOMMU groups based on the IOMMU
+>> configuration discovered during the PCI scan on POWERNV
+>> (POWER non virtualized) platform. The IOMMU groups are
+>> to be used later by VFIO driver (PCI pass through).
+>>
+>> It also implements an API for mapping/unmapping pages for
+>> guest PCI drivers and providing DMA window properties.
+>> This API is going to be used later by QEMU-VFIO to handle
+>> h_put_tce hypercalls from the KVM guest.
+>>
+>> Although this driver has been tested only on the POWERNV
+>> platform, it should work on any platform which supports
+>> TCE tables.
+>>
+>> To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
+>> option and configure VFIO as required.
+>>
+>> Cc: David Gibson <david@gibson.dropbear.id.au>
+>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>> ---
+>>   arch/powerpc/include/asm/iommu.h     |   10 ++
+>>   arch/powerpc/kernel/iommu.c          |  329 ++++++++++++++++++++++++++++++++++
+>>   arch/powerpc/platforms/powernv/pci.c |  134 ++++++++++++++
+>>   drivers/iommu/Kconfig                |    8 +
+>>   4 files changed, 481 insertions(+)
+>>
+>> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+>> index cbfe678..3c861ae 100644
+>> --- a/arch/powerpc/include/asm/iommu.h
+>> +++ b/arch/powerpc/include/asm/iommu.h
+>> @@ -76,6 +76,9 @@ struct iommu_table {
+>>   	struct iommu_pool large_pool;
+>>   	struct iommu_pool pools[IOMMU_NR_POOLS];
+>>   	unsigned long *it_map;       /* A simple allocation bitmap for now */
+>> +#ifdef CONFIG_IOMMU_API
+>> +	struct iommu_group *it_group;
+>> +#endif
+>>   };
+>>
+>>   struct scatterlist;
+>> @@ -147,5 +150,12 @@ static inline void iommu_restore(void)
+>>   }
+>>   #endif
+>>
+>> +extern void iommu_reset_table(struct iommu_table *tbl, bool restore);
+>> +extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long ioba,
+>> +		unsigned long size);
+>> +extern long iommu_put_tces(struct iommu_table *tbl, unsigned long ioba,
+>> +		uint64_t tce, enum dma_data_direction direction,
+>> +		unsigned long size);
+>> +
+>>   #endif /* __KERNEL__ */
+>>   #endif /* _ASM_IOMMU_H */
+>> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+>> index ff5a6ce..f3bb2e7 100644
+>> --- a/arch/powerpc/kernel/iommu.c
+>> +++ b/arch/powerpc/kernel/iommu.c
+>> @@ -36,6 +36,7 @@
+>>   #include <linux/hash.h>
+>>   #include <linux/fault-inject.h>
+>>   #include <linux/pci.h>
+>> +#include <linux/uaccess.h>
+>>   #include <asm/io.h>
+>>   #include <asm/prom.h>
+>>   #include <asm/iommu.h>
+>> @@ -44,6 +45,7 @@
+>>   #include <asm/kdump.h>
+>>   #include <asm/fadump.h>
+>>   #include <asm/vio.h>
+>> +#include <asm/tce.h>
+>>
+>>   #define DBG(...)
+>>
+>> @@ -856,3 +858,330 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
+>>   		free_pages((unsigned long)vaddr, get_order(size));
+>>   	}
+>>   }
+>> +
+>> +#ifdef CONFIG_IOMMU_API
+>> +/*
+>> + * SPAPR TCE API
+>> + */
+>> +
+>> +struct vwork {
+>> +	struct mm_struct	*mm;
+>> +	long			npage;
+>> +	struct work_struct	work;
+>> +};
+>> +
+>> +/* delayed decrement/increment for locked_vm */
+>> +static void lock_acct_bg(struct work_struct *work)
+>> +{
+>> +	struct vwork *vwork = container_of(work, struct vwork, work);
+>> +	struct mm_struct *mm;
+>> +
+>> +	mm = vwork->mm;
+>> +	down_write(&mm->mmap_sem);
+>> +	mm->locked_vm += vwork->npage;
+>> +	up_write(&mm->mmap_sem);
+>> +	mmput(mm);
+>> +	kfree(vwork);
+>> +}
+>> +
+>> +static void lock_acct(long npage)
+>> +{
+>> +	struct vwork *vwork;
+>> +	struct mm_struct *mm;
+>> +
+>> +	if (!current->mm)
+>> +		return; /* process exited */
+>> +
+>> +	if (down_write_trylock(&current->mm->mmap_sem)) {
+>> +		current->mm->locked_vm += npage;
+>> +		up_write(&current->mm->mmap_sem);
+>> +		return;
+>> +	}
+>> +
+>> +	/*
+>> +	 * Couldn't get mmap_sem lock, so must setup to update
+>> +	 * mm->locked_vm later. If locked_vm were atomic, we
+>> +	 * wouldn't need this silliness
+>> +	 */
+>> +	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
+>> +	if (!vwork)
+>> +		return;
+>> +	mm = get_task_mm(current);
+>> +	if (!mm) {
+>> +		kfree(vwork);
+>> +		return;
+>> +	}
+>> +	INIT_WORK(&vwork->work, lock_acct_bg);
+>> +	vwork->mm = mm;
+>> +	vwork->npage = npage;
+>> +	schedule_work(&vwork->work);
+>> +}
 >
-> I don't see this field being used anywhere.
-
-No.  Gone.
-
->=20
-> > +	struct omap_dm_timer	*dm_timer;
-> > +	unsigned int		polarity;
->=20
-> The PWM subsystem already has enum pwm_polarity for this.
->=20
-
-I'll use that then .... and as there  is a pwm_set_polarity() interface, th=
-at
-probably means that I don't need to configure the polarity via the platform
-data?  That would be a lot cleaner.
-
-
-> > +	const char		*label;
->=20
-> This isn't used anywhere either.
-
-Gone.
-
->=20
-> > +
-> > +	unsigned int		duty_ns, period_ns;
-> > +	struct pwm_chip		chip;
-> > +};
-> > +
-> > +#define to_omap_chip(chip)	container_of(chip, struct omap_chip, chip)
-> > +
-> > +#define	pwm_dbg(_pwm, msg...) dev_dbg(&(_pwm)->pdev->dev, msg)
->=20
-> This is never used.
-
-:-)  There is a theme here.
-
-
->=20
-> > +
-> > +/**
-> > + * pwm_calc_value - determines the counter value for a clock rate and =
-period.
->=20
-> Nit: You should either start the sentence with a capital or not
-> terminate it with a full stop.
-
-In this case the sentence really includes the function name which is
-case-sensitive so cannot be capitalised ;-)
-I'll rephrase a bit and find something to capitalise.
-
->=20
-> > + * @clk_rate: The clock rate, in Hz, of the PWM's clock source to comp=
-ute the
-> > + *            counter value for.
-> > + * @ns: The period, in nanoseconds, to computer the counter value for.
->=20
-> "compute"
-
-Yep.
-
->=20
-> > + *
-> > + * Returns the PWM counter value for the specified clock rate and peri=
-od.
-> > + */
-> > +static inline int pwm_calc_value(unsigned long clk_rate, int ns)
-> > +{
-> > +	const unsigned long nanoseconds_per_second =3D 1000000000;
->=20
-> Maybe use NSEC_PER_SEC instead?
-
-Good idea, thanks.
-
->=20
-> > +	int cycles;
-> > +	__u64 c;
->=20
-> I think for in-kernel use, the custom is to stick with simply u64.
-
-It is, yes.
-
-
->=20
-> > +
-> > +	c =3D (__u64)clk_rate * ns;
-> > +	do_div(c, nanoseconds_per_second);
-> > +	cycles =3D c;
-> > +
-> > +	return DM_TIMER_LOAD_MIN - cycles;
->=20
-> Can't you just do "DM_TIMER_LOAD_MIN - c" and get rid of the cycles
-> variable altogether?
-
-Yep.
-
->=20
-> > +static int omap_pwm_enable(struct pwm_chip *chip, struct pwm_device *p=
-wm)
-> > +{
-> > +	struct omap_chip *omap =3D to_omap_chip(chip);
-> > +	int status =3D 0;
-> > +
-> > +	/* Enable the counter--always--before attempting to write its
-> > +	 * registers and then set the timer to its minimum load value to
-> > +	 * ensure we get an overflow event right away once we start it.
-> > +	 */
->=20
-> Block comments should be in the following format:
->=20
-> 	/*
-> 	 * foo...
-> 	 * bar...
-> 	 */
-
-OK, I fixed all of those.
-
->=20
-> > +
-> > +	omap_dm_timer_enable(omap->dm_timer);
-> > +	omap_dm_timer_write_counter(omap->dm_timer, DM_TIMER_LOAD_MIN);
-> > +	omap_dm_timer_start(omap->dm_timer);
-> > +	omap_dm_timer_disable(omap->dm_timer);
->=20
-> So omap_dm_timer_disable() doesn't actually stop the timer? It just
-> disables the access to the registers?
->=20
-> > +	return status;
->=20
-> "return 0;" and drop the status variable.
->=20
-
-Done.
-
-> > +static int omap_pwm_config(struct pwm_chip *chip, struct pwm_device *p=
-wm,
-> > +			   int duty_ns, int period_ns)
-> > +{
-> > +	struct omap_chip *omap =3D to_omap_chip(chip);
-> > +	int status =3D 0;
->=20
-> This one can be dropped as well.
->=20
-> > +	const bool enable =3D true;
-> > +	const bool autoreload =3D true;
-> > +	const bool toggle =3D true;
-> > +	const int trigger =3D OMAP_TIMER_TRIGGER_OVERFLOW_AND_COMPARE;
->=20
-> I understand that these extra variables are supposed to "document" the
-> parameters of the functions below. I'm not a huge fan of this approach
-> because instead the API would better be designed to make it obvious what
-> the parameters are. Or people can just look at the prototypes to find
-> out the meaning. But if you really prefer this way I won't object.
-
-I've removed the 'trigger' const as the name is self-descriptive.
-I might leave the others.
-
->=20
-> > +	int load_value, match_value;
-> > +	unsigned long clk_rate;
-> > +
-> > +	dev_dbg(chip->dev,
-> > +		"duty cycle: %d, period %d\n",
-> > +		duty_ns, period_ns);
->=20
-> This all fits on a single line, so no need to break it up.
-
-Indeed.
-
->=20
-> > +
-> > +	if (omap->duty_ns =3D=3D duty_ns &&
-> > +	    omap->period_ns =3D=3D period_ns)
-> > +		/* No change - don't cause any transients */
-> > +		return 0;
->=20
-> Note to self: this might be a candidate to put in the core.
-
-might be useful, though the core doesn't currently "know" the current value=
-s.
-
->=20
-> > +	clk_rate =3D clk_get_rate(omap_dm_timer_get_fclk(omap->dm_timer));
-> > +
-> > +	/* Calculate the appropriate load and match values based on the
-> > +	 * specified period and duty cycle. The load value determines the
-> > +	 * cycle time and the match value determines the duty cycle.
-> > +	 */
->=20
-> Again wrong block comment style.
->=20
-> > +
-> > +	load_value =3D pwm_calc_value(clk_rate, period_ns);
-> > +	match_value =3D pwm_calc_value(clk_rate, period_ns - duty_ns);
-> > +
-> > +	/* We MUST enable yet stop the associated dual-mode timer before
-> > +	 * attempting to write its registers.  Hopefully it is already
-> > +	 * disabled, but call the (idempotent) pwm_disable just in case
-> > +	 */
->=20
-> And here as well. While at it you might want to terminate the last
-> sentence with a full stop.
->=20
-
-I check the sentences in other comments too.
-
-> > +	pwm_disable(pwm);
-> > +
-> > +	omap_dm_timer_enable(omap->dm_timer);
-> > +
-> > +	omap_dm_timer_set_load(omap->dm_timer, autoreload, load_value);
-> > +	omap_dm_timer_set_match(omap->dm_timer, enable, match_value);
-> > +
-> > +	dev_dbg(chip->dev,
-> > +			"load value: %#08x (%d), "
-> > +			"match value: %#08x (%d)\n",
-> > +			load_value, load_value,
-> > +			match_value, match_value);
->=20
-> Again this doesn't need so much wrapping.
->=20
-
-Nope.
-
-> > +
-> > +	omap_dm_timer_set_pwm(omap->dm_timer,
-> > +			      !omap->polarity,
-> > +			      toggle,
-> > +			      trigger);
->=20
-> This doesn't either. Also you should be explicit about the polarity
-> parameter, since enum pwm_polarity is an enum and therefore negating it
-> isn't very nice (it should work though).
->=20
-> You could solve this by doing something like:
->=20
-> 	if (omap->polarity =3D=3D PWM_POLARITY_NORMAL)
-> 		polarity =3D 1;
-> 	else
-> 		polarity =3D 0;
-
-(omap->polarity =3D=3D PWM_POLARITY_NORMAL)
-
-would have the same effect.
-
->=20
-> > +	/* Set the counter to generate an overflow event immediately. */
-> > +
-> > +	omap_dm_timer_write_counter(omap->dm_timer, DM_TIMER_LOAD_MIN);
-> > +
-> > +	/* Now that we're done configuring the dual-mode timer, disable it
-> > +	 * again. We'll enable and start it later, when requested.
-> > +	 */
->=20
-> Also wrong style.
->=20
-> > +	omap_dm_timer_disable(omap->dm_timer);
-> > +	omap->duty_ns =3D duty_ns;
-> > +	omap->period_ns =3D period_ns;
-> > +
-> > +	return status;
->=20
-> "return 0;"
->=20
-> > +}
-> > +
-> > +
->=20
-> Gratuitous newline.
->=20
-> > +static struct pwm_ops omap_pwm_ops =3D {
->=20
-> Should be "static const".
->=20
-> > +	.enable	=3D omap_pwm_enable,
-> > +	.disable=3D omap_pwm_disable,
->=20
-> There should be a space between .disable and =3D.
-
-OK.
-
->=20
-> > +	.config	=3D omap_pwm_config,
-> > +	.owner	=3D THIS_MODULE,
-> > +};
-> > +
-> > +/**
-> > + * omap_pwm_probe - check for the PWM and bind it to the driver.
-> > + * @pdev: A pointer to the platform device node associated with the
-> > + *        PWM instance to be probed for driver binding.
-> > + *
-> > + * Returns 0 if the PWM instance was successfully bound to the driver;
-> > + * otherwise, < 0 on error.
-> > + */
->=20
-> I'm not sure how useful this kerneldoc comment really is. It isn't about
-> an exported function and developers usually know what the .probe() does.
-
-True.  Gone.
-
->=20
-> > +static int __devinit omap_pwm_probe(struct platform_device *pdev)
->=20
-> No more __devinit, please.
-
-If you say so (having no idea what it did :-)
-
-
->=20
-> > +{
-> > +	struct device *dev =3D &pdev->dev;
-> > +	struct omap_chip *omap;
-> > +	int status =3D 0;
-> > +	unsigned int id =3D pdev->id;
-> > +	unsigned int timer =3D id >> 1; /* lsb is polarity */
->=20
-> I've said this before, I don't think it's a good idea.
->=20
-> > +
-> > +	omap =3D kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-> > +
->=20
-> Gratuituous newline.
->=20
-> > +	if (omap =3D=3D NULL) {
-> > +		dev_err(dev, "Could not allocate memory.\n");
-> > +		status =3D -ENOMEM;
-> > +		goto done;
-> > +	}
-> > +
-> > +	/* Request the OMAP dual-mode timer that will be bound to and
-> > +	 * associated with this generic PWM.
-> > +	 */
->=20
-> Block comment style again.
->=20
-> > +
-> > +	omap->dm_timer =3D omap_dm_timer_request_specific(timer);
-> > +
->=20
-> Gratuitous newline.
-
-Gone.
-
->=20
-> > +	if (omap->dm_timer =3D=3D NULL) {
-> > +		status =3D -EPROBE_DEFER;
-> > +		goto err_free;
-> > +	}
-> > +
-> > +	/* Configure the source for the dual-mode timer backing this
-> > +	 * generic PWM device. The clock source will ultimately determine
-> > +	 * how small or large the PWM frequency can be.
-> > +	 *
-> > +	 * At some point, it's probably worth revisiting moving this to
-> > +	 * the configure method and choosing either the slow- or
-> > +	 * system-clock source as appropriate for the desired PWM period.
-> > +	 */
->=20
-> And again.
->=20
-> > +
-> > +	omap_dm_timer_set_source(omap->dm_timer, OMAP_TIMER_SRC_SYS_CLK);
-> > +
-> > +	/* Cache away other miscellaneous driver-private data and state
-> > +	 * information and add the driver-private data to the platform
-> > +	 * device.
-> > +	 */
->=20
-> And again. =3D)
->=20
-> > +
-> > +	omap->chip.dev =3D dev;
-> > +	omap->chip.ops =3D &omap_pwm_ops;
-> > +	omap->chip.base =3D -1;
-> > +	omap->chip.npwm =3D 1;
-> > +	omap->polarity =3D id & 1;
-> > +
-> > +	status =3D pwmchip_add(&omap->chip);
-> > +	if (status < 0) {
-> > +		dev_err(dev, "failed to register pwm\n");
-> > +		omap_dm_timer_free(omap->dm_timer);
-> > +		goto err_free;
-> > +	}
-> > +
-> > +	platform_set_drvdata(pdev, omap);
-> > +
-> > +	status =3D 0;
-> > +	goto done;
->=20
-> This can just be "return 0;".
-
-Yep.
-
->=20
-> > +
-> > + err_free:
-> > +	kfree(omap);
-> > + done:
-> > +	return status;
-> > +}
-> > +
-> > +/**
-> > + * omap_pwm_remove - unbind the specified PWM platform device from the=
- driver.
-> > + * @pdev: A pointer to the platform device node associated with the
-> > + *        PWM instance to be unbound/removed.
-> > + *
-> > + * Returns 0 if the PWM was successfully removed as a platform device;
-> > + * otherwise, < 0 on error.
-
-
-> > + */
-> > +static int __devexit omap_pwm_remove(struct platform_device *pdev)
->=20
-> No __devexit, please.
->=20
-> > +{
-> > +	struct omap_chip *omap =3D platform_get_drvdata(pdev);
-> > +	int status =3D 0;
->=20
-> Just drop this.
->=20
-> > +
-> > +	status =3D pwmchip_remove(&omap->chip);
-> > +	if (status < 0)
-> > +		goto done;
->=20
-> "return status;"
-
-Fixed.
-
->=20
-> > +
-> > +	omap_dm_timer_free(omap->dm_timer);
-> > +
-> > +	kfree(omap);
-> > +
-> > + done:
-> > +	return status;
->=20
-> Just "return 0;". No label required.
->=20
-> > +}
-> > +
-> > +#if CONFIG_PM
-> > +static int omap_pwm_suspend(struct platform_device *pdev, pm_message_t=
- state)
-> > +{
-> > +	struct omap_chip *omap =3D platform_get_drvdata(pdev);
-> > +	/* No one preserve these values during suspend so reset them
-> > +	 * Otherwise driver leaves PWM unconfigured if same values
-> > +	 * passed to pwm_config
-> > +	 */
-> > +	omap->period_ns =3D 0;
-> > +	omap->duty_ns =3D 0;
-> > +
-> > +	return 0;
-> > +}
-> > +#else
-> > +#define omap_pwm_suspend	NULL
-> > +#endif
->=20
-> This doesn't look right. You should implement .resume() if you really
-> care, in which case the resume callback would have to reconfigure with
-> the cached values. In that case maybe you should switch to dev_pm_ops
-> and SIMPLE_DEV_PM_OPS() as well.
->=20
-> If you don't, just resetting these values will not make the PWM work
-> properly after resume either since it will have to be explicitly
-> reconfigured.
-
-I just copied that from pwm-samsung.c
-
-I think the point is to avoid the "no transients" short-circuit in
-omap_pwm_config if the config is unchanged.
-
-The assumption is that pwm_disable() will be called before suspend and
-pwm_config()/pwm_enable() after resume.  So there is no point actually
-configuring anything in .resume() - it makes sense to wait until pwm_config=
-()
-is called (if ever).  But we want to make sure that pwm_config actually does
-something.
-
-But yes, I should change to dev_pm_ops.
-
->=20
-> > +static struct platform_driver omap_pwm_driver =3D {
-> > +	.driver.name	=3D "omap-pwm",
-> > +	.driver.owner	=3D THIS_MODULE,
->=20
-> The more idiomatic way of writing this is:
->=20
-> 	.driver =3D {
-> 		.name =3D "omap-pwm",
-> 		.owner =3D THIS_MODULE,
-> 	},
->=20
-
-I guess... though I think my way is a lot neater.  But conformity is good.
-
-> > +	.probe		=3D omap_pwm_probe,
-> > +	.remove		=3D __devexit_p(omap_pwm_remove),
->=20
-> No __devexit_p anymore.
->=20
-
-OK.
-
-> > +	.suspend	=3D omap_pwm_suspend,
-> > +	.resume		=3D NULL,
-> > +};
-> > +
-> > +static int __init omap_pwm_init(void)
-> > +{
-> > +	return platform_driver_register(&omap_pwm_driver);
-> > +}
-> > +
-> > +static void __exit omap_pwm_exit(void)
-> > +{
-> > +	platform_driver_unregister(&omap_pwm_driver);
-> > +}
-> > +
-> > +arch_initcall(omap_pwm_init);
->=20
-> This should probably be module_init() instead. You already return
-> -EPROBE_DEFER if the dual-mode timer isn't ready yet so you should bite
-> the bullet and get all the dependencies to behave properly as well. New
-> code shouldn't be using this kind of dependency handling.
->=20
-> In that case you could also just run module_platform_driver().
->=20
-> Thierry
->=20
-> > +module_exit(omap_pwm_exit);
-> > +
-> > +MODULE_AUTHOR("Grant Erickson <marathon96@gmail.com>");
-> > +MODULE_AUTHOR("NeilBrown <neilb@suse.de>");
->=20
-> Shouldn't this be "Neil Brown"? I noticed you use the concatenated form
-> in the email address as well, so maybe that's on purpose?
-
-Yes, it is on purpose.  With a surname like "Brown", one likes finding ways
-to be distinctive :-)
-
->=20
-> > +MODULE_LICENSE("GPLv2");
->=20
-> This should be "GPL v2". Maybe MODULE_DESCRIPTION() would be nice too.
-
-Fixed.
-
->=20
-> Thierry
-
-Thanks for your very thorough review!  I'll send an updated version once I'=
-ve
-resolved other comments and tested again.
-
-NeilBrown
-
---Sig_/Q_Wj2VK8cvdETqTAdz5QGuj
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUMk/pDnsnt1WYoG5AQKJyQ//WaS1C68c23W2VhiqagMBAc6b7kxa2dWc
-VFxarXvytz4QzS4ChWbyOaJVfaehYlIEgBX0KR9oH0xyIbpp53gX4HZEMbgLzC83
-KWYBGu6wWNykYtpbmrai3RowaMSIFRma//zQdgT1FtLcLGxdKskY+2hR34e16/13
-EI2tSkAzhVWccrxnNaYc1+1sW+htuipeXLEyQmUHJ76Gl24Nzbu1OMv5bKXeTUFV
-013Ddv33T/aXwUsziZWWYXSQ6p2ZPTLiLhuZT2CcB6JnX19GLzqjy4k21u30NkX2
-kE+26J3avWoCtpRjg76FgFUPqkJ1EJuvjvzpXyI3pub/dRlaJsBakEsYrt/KPyoc
-8G0piRnD/G+L6RT3sI88mJf9duUMfcmFFvmTLqpzhX3AV6S7RylV20M/MXfKeIOZ
-tPuwkWfmHH/7XaaV5T6/ViuHcUSWOMBd3Emhzz2menLF/AA2zIpp4uTMoicE3WWp
-VD+/zVtN4ITPAFaJxfVBt3hHIzPG9aiwBhhYvslp8IVLa3zNBfnqhQxHvA4IkwEu
-MCLQwx1v4dvU4m1YRO/uZLW+8YB4qMchhcJ+ptuA4BW6Gq3WSJ+OaZO+C1mKnzBB
-pBPtQlRHLg5C3iQ9yRBexXkmoeROt8nmfoUTkfUKVdtRd6SlasBzLAjRXA2myN43
-FIpngW5H2x4=
-=PW8H
------END PGP SIGNATURE-----
-
---Sig_/Q_Wj2VK8cvdETqTAdz5QGuj--
+> Locked page accounting in this version is very, very broken.  How do
+> powerpc folks feel about seemingly generic kernel iommu interfaces
+> messing with the current task mm?  Besides that, more problems below...
+>
+>> +
+>> +/*
+>> + * iommu_reset_table is called when it started/stopped being used.
+>> + *
+>> + * restore==true says to bring the iommu_table into the state as it was
+>> + * before being used by VFIO.
+>> + */
+>> +void iommu_reset_table(struct iommu_table *tbl, bool restore)
+>> +{
+>> +	/* Page#0 is marked as used in iommu_init_table, so we clear it... */
+>> +	if (!restore && (tbl->it_offset == 0))
+>> +		clear_bit(0, tbl->it_map);
+>> +
+>> +	iommu_clear_tces(tbl, tbl->it_offset, tbl->it_size);
+>
+> This does locked page accounting and unpins pages, even on startup when
+> the pages aren't necessarily pinned or accounted against the current
+> process.
+ >
+>> +
+>> +	/* ... or restore  */
+>> +	if (restore && (tbl->it_offset == 0))
+>> +		set_bit(0, tbl->it_map);
+>> +}
+>> +EXPORT_SYMBOL_GPL(iommu_reset_table);
+>> +
+>> +/*
+>> + * Returns the number of used IOMMU pages (4K) within
+>> + * the same system page (4K or 64K).
+>> + *
+>> + * syspage_weight_zero is optimized for expected case == 0
+>> + * syspage_weight_one is optimized for expected case > 1
+>> + * Other case are not used in this file.
+>> + */
+>> +#if PAGE_SIZE == IOMMU_PAGE_SIZE
+>> +
+>> +#define syspage_weight_zero(map, offset)	test_bit((map), (offset))
+>> +#define syspage_weight_one(map, offset)		test_bit((map), (offset))
+>> +
+>> +#elif PAGE_SIZE/IOMMU_PAGE_SIZE == 16
+>> +
+>> +static int syspage_weight_zero(unsigned long *map, unsigned long offset)
+>> +{
+>> +	offset &= PAGE_MASK >> IOMMU_PAGE_SHIFT;
+>> +	return 0xffffUL & (map[BIT_WORD(offset)] >>
+>> +			(offset & (BITS_PER_LONG-1)));
+>> +}
+>
+> I would have expected these to be bools and return true if the weight
+> matches the value.
+
+My expectation was different but ok, I'll fix :)
+
+
+> If you replaced 0xffff above w/ this, would you need the #error below?
+> (1UL << (PAGE_SIZE/IOMMU_PAGE_SIZE)) - 1)
+
+
+We have 3 pages size on POWER - 4K, 64K and 16MB. We already handle 4K and 
+64K and the 16MB case will require much different approach and I am not 
+sure how/when we will add this so I'd keep it as an error.
+
+
+>> +
+>> +static int syspage_weight_one(unsigned long *map, unsigned long offset)
+>> +{
+>> +	int ret = 0, nbits = PAGE_SIZE/IOMMU_PAGE_SIZE;
+>> +
+>> +	/* Aligns TCE entry number to system page boundary */
+>> +	offset &= PAGE_MASK >> IOMMU_PAGE_SHIFT;
+>> +
+>> +	/* Count used 4K pages */
+>> +	while (nbits && (ret < 2)) {
+>
+> Don't you have a ffs()?  Could also be used for _zero.  Surely there are
+> some bitops helpers that could help here even on big endian.  hweight
+> really doesn't work?
+>
+>> +		if (test_bit(offset, map))
+>> +			++ret;
+>> +
+>> +		--nbits;
+>> +		++offset;
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +#else
+>> +#error TODO: support other page size
+>> +#endif
+>> +
+>> +static void tce_flush(struct iommu_table *tbl)
+>> +{
+>> +	/* Flush/invalidate TLB caches if necessary */
+>> +	if (ppc_md.tce_flush)
+>> +		ppc_md.tce_flush(tbl);
+>> +
+>> +	/* Make sure updates are seen by hardware */
+>> +	mb();
+>> +}
+>> +
+>> +/*
+>> + * iommu_clear_tces clears tces and returned the number of system pages
+>> + * which it called put_page() on
+>> + */
+>> +static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
+>> +		unsigned long pages)
+>> +{
+>> +	int i, retpages = 0, clr;
+>> +	unsigned long oldtce, oldweight;
+>> +	struct page *page;
+>> +
+>> +	for (i = 0; i < pages; ++i, ++entry) {
+>> +		if (!test_bit(entry - tbl->it_offset, tbl->it_map))
+>> +			continue;
+>> +
+>> +		oldtce = ppc_md.tce_get(tbl, entry);
+>> +		ppc_md.tce_free(tbl, entry, 1);
+>> +
+>> +		oldweight = syspage_weight_one(tbl->it_map,
+>> +				entry - tbl->it_offset);
+>> +		clr = __test_and_clear_bit(entry - tbl->it_offset,
+>> +				tbl->it_map);
+>> +
+>> +		if (WARN_ON(!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ))))
+>> +			continue;
+>> +
+>> +		page = pfn_to_page(oldtce >> PAGE_SHIFT);
+>> +
+>> +		if (WARN_ON(!page))
+>> +			continue;
+>> +
+>> +		if (oldtce & TCE_PCI_WRITE)
+>> +			SetPageDirty(page);
+>> +
+>> +		put_page(page);
+>> +
+>> +		/* That was the last IOMMU page within the system page */
+>> +		if ((oldweight == 1) && clr)
+>> +			++retpages;
+>> +	}
+>> +
+>> +	return retpages;
+>> +}
+>> +
+>> +/*
+>> + * iommu_clear_tces clears tces and returned the number
+>> + * of released system pages
+>> + */
+>> +long iommu_clear_tces(struct iommu_table *tbl, unsigned long ioba,
+>> +		unsigned long size)
+>> +{
+>> +	int ret;
+>> +	unsigned long entry = ioba >> IOMMU_PAGE_SHIFT;
+>> +	unsigned long npages = size >> IOMMU_PAGE_SHIFT;
+>> +	struct iommu_pool *pool = get_pool(tbl, entry);
+>> +
+>> +	if ((size & ~IOMMU_PAGE_MASK) || (ioba & ~IOMMU_PAGE_MASK))
+>> +		return -EINVAL;
+>> +
+>> +	if ((ioba + size) > ((tbl->it_offset + tbl->it_size)
+>> +			<< IOMMU_PAGE_SHIFT))
+>> +		return -EINVAL;
+>> +
+>> +	if (ioba < (tbl->it_offset << IOMMU_PAGE_SHIFT))
+>> +		return -EINVAL;
+>> +
+>> +	spin_lock(&(pool->lock));
+>> +	ret = clear_tces_nolock(tbl, entry, npages);
+>> +	tce_flush(tbl);
+>> +	spin_unlock(&(pool->lock));
+>> +
+>> +	if (ret > 0) {
+>> +		lock_acct(-ret);
+>> +		return 0;
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(iommu_clear_tces);
+>> +
+>> +static int put_tce(struct iommu_table *tbl, unsigned long entry,
+>> +		uint64_t tce, enum dma_data_direction direction)
+>> +{
+>> +	int ret;
+>> +	struct page *page = NULL;
+>> +	unsigned long kva, offset, oldweight;
+>> +
+>> +	/* Map new TCE */
+>> +	offset = tce & IOMMU_PAGE_MASK & ~PAGE_MASK;
+>> +	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
+>> +			direction != DMA_TO_DEVICE, &page);
+>> +	if (ret != 1) {
+>> +		pr_err("tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
+>> +				tce, entry << IOMMU_PAGE_SHIFT, ret);
+>> +		return -EFAULT;
+>> +	}
+>> +
+>> +	kva = (unsigned long) page_address(page);
+>> +	kva += offset;
+>> +
+>> +	/* tce_build receives a virtual address */
+>> +	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
+>> +
+>> +	/* tce_build() only returns non-zero for transient errors */
+>> +	if (unlikely(ret)) {
+>> +		pr_err("tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
+>> +				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
+>> +		put_page(page);
+>> +		return -EIO;
+>> +	}
+>> +
+>> +	/* Calculate if new system page has been locked */
+>> +	oldweight = syspage_weight_zero(tbl->it_map, entry - tbl->it_offset);
+>> +	__set_bit(entry - tbl->it_offset, tbl->it_map);
+>> +
+>> +	return (oldweight == 0) ? 1 : 0;
+>> +}
+>> +
+>> +/*
+>> + * iommu_put_tces builds tces and returned the number of actually
+>> + * locked system pages
+>> + */
+>> +long iommu_put_tces(struct iommu_table *tbl, unsigned long ioba,
+>> +		uint64_t tce, enum dma_data_direction direction,
+>> +		unsigned long size)
+>> +{
+>> +	int i, ret = 0, retpages = 0;
+>> +	unsigned long entry = ioba >> IOMMU_PAGE_SHIFT;
+>> +	unsigned long npages = size >> IOMMU_PAGE_SHIFT;
+>> +	struct iommu_pool *pool = get_pool(tbl, entry);
+>> +	unsigned long locked, lock_limit;
+>> +
+>> +	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
+>> +	BUG_ON(direction == DMA_NONE);
+>> +
+>> +	if ((size & ~IOMMU_PAGE_MASK) ||
+>> +			(ioba & ~IOMMU_PAGE_MASK) ||
+>> +			(tce & ~IOMMU_PAGE_MASK))
+>> +		return -EINVAL;
+>> +
+>> +	if ((ioba + size) > ((tbl->it_offset + tbl->it_size)
+>> +			 << IOMMU_PAGE_SHIFT))
+>> +		return -EINVAL;
+>> +
+>> +	if (ioba < (tbl->it_offset << IOMMU_PAGE_SHIFT))
+>> +		return -EINVAL;
+>> +
+>> +	/* Account for locked pages */
+>> +	locked = current->mm->locked_vm +
+>> +		(_ALIGN_UP(size, PAGE_SIZE) >> PAGE_SHIFT);
+>
+> Looks like we just over penalize upfront and correct when mapped, that's
+> better, but not great.
+
+What would be great? :)
+
+
+>> +	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+>> +	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
+>> +		pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
+>> +				rlimit(RLIMIT_MEMLOCK));
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	spin_lock(&(pool->lock));
+>> +
+>> +	/* Check if any is in use */
+>> +	for (i = 0; i < npages; ++i) {
+>> +		if (test_bit(entry + i - tbl->it_offset, tbl->it_map)) {
+>> +			spin_unlock(&(pool->lock));
+>> +			return -EBUSY;
+>> +		}
+>> +	}
+>> +
+>> +	/* Put tces to the table */
+>> +	for (i = 0; (i < npages) && (ret >= 0); ++i, tce += IOMMU_PAGE_SIZE) {
+>> +		ret = put_tce(tbl, entry + i, tce, direction);
+>> +		if (ret == 1)
+>> +			++retpages;
+>> +	}
+>> +
+>> +	/*
+>> +	 * If failed, release locked pages, otherwise return the number
+>> +	 * of locked system pages
+>> +	 */
+>> +	if (ret < 0) {
+>> +		clear_tces_nolock(tbl, entry, i);
+>> +	} else {
+>> +		if (retpages)
+>> +			lock_acct(retpages);
+>> +		ret = 0;
+>> +	}
+>
+> Bug, if it fails we clear, which decrements our locked pages, but we
+> haven't incremented them yet.  Thanks,
+
+
+static clear_tces_nolock does not touch the counter, extern 
+iommu_clear_tces does or I missed your point.
+
+
+-- 
+Alexey
