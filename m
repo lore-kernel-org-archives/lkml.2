@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab2LMGLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 01:11:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58949 "EHLO mail.zytor.com"
+	id S1752937Ab2LMGO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 01:14:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58969 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab2LMGLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 01:11:21 -0500
+	id S1750720Ab2LMGO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 01:14:58 -0500
 User-Agent: K-9 Mail for Android
 In-Reply-To: <1355378005.24283.11.camel@wall-e>
 References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
@@ -15,17 +15,19 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8bit
 Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 12 Dec 2012 22:10:52 -0800
+Date: Wed, 12 Dec 2012 22:14:25 -0800
 To: Stefani Seibold <stefani@seibold.net>
 CC: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
         mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
         john.stultz@linaro.org, luto@amacapital.net
-Message-ID: <ac005b18-0503-4390-9b76-0a5a4c34539c@email.android.com>
+Message-ID: <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, let's not.  Why?  Because if we do that we may inadvertently create an ABI which is hard to support across the board.
+This is too late for 3.8 anyway, so there is time to make it work correctly before tge 3.9 merge window anyway.  After this merge window is over I may pull tjis into a testing branch, but compat support is a precondition.
+
+The vdso is only optional if you build in backwards compatibility anyway, and software has a right to expect a specific numeric kernel version to export a single ABI.
 
 Stefani Seibold <stefani@seibold.net> wrote:
 
