@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2LMOBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:01:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44011 "EHLO
+	id S1755856Ab2LMOBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:01:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43995 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab2LMOBk (ORCPT
+	with ESMTP id S932171Ab2LMOB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:01:40 -0500
+	Thu, 13 Dec 2012 09:01:27 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 015/241] target: Fix double-free of se_cmd in target_complete_tmr_failure
-Date: Thu, 13 Dec 2012 11:56:20 -0200
-Message-Id: <1355407206-17100-16-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 012/241] mac80211: check management frame header length
+Date: Thu, 13 Dec 2012 11:56:17 -0200
+Message-Id: <1355407206-17100-13-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,43 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit e13d5fef88c40b87c8430f8274c3a9ca32ef90bc upstream.
+commit 4a4f1a5808c8bb0b72a4f6e5904c53fb8c9cd966 upstream.
 
-Fabric drivers currently expect to internally release se_cmd in the event
-of a TMR failure during target_submit_tmr(), which means the immediate call
-to transport_generic_free_cmd() after TFO->queue_tm_rsp() from within
-target_complete_tmr_failure() workqueue context is wrong.
+Due to pskb_may_pull() checking the skb length, all
+non-management frames are checked on input whether
+their 802.11 header is fully present. Also add that
+check for management frames and remove a check that
+is now duplicate. This prevents accessing skb data
+beyond the frame end.
 
-This is done as some fabrics expect TMR operations to be acknowledged
-before releasing the descriptor, so the assumption that core is releasing
-se_cmd associated TMR memory is incorrect.  This fixes a OOPs where
-transport_generic_free_cmd() was being called more than once.
-
-This bug was originally observed with tcm_qla2xxx fabric ports.
-
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ herton: unfuzz patch ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/target/target_core_transport.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/mac80211/rx.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 0981707..7879ff4 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1617,7 +1617,6 @@ static void target_complete_tmr_failure(struct work_struct *work)
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 4e4fc93..38800d3 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1473,7 +1473,6 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
+ 	frag = sc & IEEE80211_SCTL_FRAG;
  
- 	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
- 	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
--	transport_generic_free_cmd(se_cmd, 0);
- }
+ 	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
+-		   (rx->skb)->len < 24 ||
+ 		   is_multicast_ether_addr(hdr->addr1))) {
+ 		/* not fragmented */
+ 		goto out;
+@@ -2923,10 +2922,15 @@ static void __ieee80211_rx_handle_packet(struct ieee80211_hw *hw,
+ 		     test_bit(SCAN_SW_SCANNING, &local->scanning)))
+ 		status->rx_flags |= IEEE80211_RX_IN_SCAN;
  
- /**
+-	if (ieee80211_is_mgmt(fc))
+-		err = skb_linearize(skb);
+-	else
++	if (ieee80211_is_mgmt(fc)) {
++		/* drop frame if too short for header */
++		if (skb->len < ieee80211_hdrlen(fc))
++			err = -ENOBUFS;
++		else
++			err = skb_linearize(skb);
++	} else {
+ 		err = !pskb_may_pull(skb, ieee80211_hdrlen(fc));
++	}
+ 
+ 	if (err) {
+ 		dev_kfree_skb(skb);
 -- 
 1.7.9.5
 
