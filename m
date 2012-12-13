@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab2LMSvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 13:51:04 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53162 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab2LMSvC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 13:51:02 -0500
-Subject: Re: question about drivers/power/88pm860x_charger.c
-From: anish kumar <anish198519851985@gmail.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.02.1212081731080.1984@hadrien>
-References: <alpine.DEB.2.02.1212081731080.1984@hadrien>
+	id S932172Ab2LMS5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 13:57:16 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:52565 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932121Ab2LMS5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 13:57:14 -0500
+Message-ID: <1355425027.13796.31.camel@joe-AO722>
+Subject: Re: [TRIVIAL PATCH 16/26] x86: Convert print_symbol to %pSR
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Jiri Kosina <trivial@kernel.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>
+Date: Thu, 13 Dec 2012 10:57:07 -0800
+In-Reply-To: <20121213183659.GC31485@liondog.tnic>
+References: <cover.1355335227.git.joe@perches.com>
+	 <054f8a88fe46ae0b4c2669d0e155d84c11b66115.1355335228.git.joe@perches.com>
+	 <20121212210959.GH8760@liondog.tnic> <1355347803.8538.16.camel@joe-AO722>
+	 <3908561D78D1C84285E8C5FCA982C28F1C969495@ORSMSX108.amr.corp.intel.com>
+	 <1355351039.27571.2.camel@joe-AO722> <20121212224550.GJ8760@liondog.tnic>
+	 <1355422990.13796.9.camel@joe-AO722> <20121213183659.GC31485@liondog.tnic>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Dec 2012 10:50:55 -0800
-Message-ID: <1355424655.26515.8.camel@anish-Inspiron-N5050>
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-08 at 17:37 +0100, Julia Lawall wrote:
-> The function pm860x_charger_probe in the file 
-> drivers/power/88pm860x_charger.c contains the following code:
+On Thu, 2012-12-13 at 19:37 +0100, Borislav Petkov wrote:
+> On Thu, Dec 13, 2012 at 10:23:10AM -0800, Joe Perches wrote:
+> > m->ip is a u64 so, when compiling x86-32, there's a new warning
+> > "cast to pointer from integer of different size".  This isn't new
+> > different behavior, just a new warning.  The previous print_symbol
+> > took a ulong and the u64 was silently truncated.
+> > 
+> >   CC      arch/x86/kernel/cpu/mcheck/mce.o
+> > arch/x86/kernel/cpu/mcheck/mce.c: In function ‘print_mce’:
+> > arch/x86/kernel/cpu/mcheck/mce.c:246:4: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+> > 
+> > If appropriate, the code could be changed to
+> > 
+> > 	(void *)(unsigned long)m->ip
 > 
->          count = pdev->num_resources;
->          for (i = 0, j = 0; i < count; i++) {
->                  info->irq[j] = platform_get_irq(pdev, i);
->                  if (info->irq[j] < 0)
->                          continue;
->                  j++;
->          }
->          info->irq_nums = j;
+> Can we explicitly cast it to what it is so that we can be explicit as to
+> what we're casting it? IOW:
 > 
-> and then later the following code:
+> 	(void *)(__u64)m->ip;
 > 
->         for (i = 0; i < ARRAY_SIZE(info->irq); i++) {
-This seems to be wrong.We already know this size which is 7 so why
-use ARRAY_SIZE?I think the intention is as below
->                  ret = request_threaded_irq(info->irq[i], NULL,
->                          pm860x_irq_descs[i].handler,
->                          IRQF_ONESHOT, pm860x_irq_descs[i].name, info);
->  		...
->          }
-> 
-> and finally, in the function pm860x_charger_remove, the code:
-> 
->          free_irq(info->irq[0], info);
->          for (i = 0; i < info->irq_nums; i++)
->                  free_irq(info->irq[i], info);
-> 
-> It looks like the irq_nums field is being used to record how many 
-> platform_get_irq calls were successful, but this information is not used 
-> in the second block of code, where request_threaded_irq is called.  So it 
-> would seem that all of the requested irqs should be freed, and not just 
-> the first irq_nums of them.
-> 
-> The remove code also looks like a double free of info->irq[0].
-> 
-> Could I just get rid of the irq_nums field completely?  It doesn't seem to 
-diff --git a/drivers/power/88pm860x_charger.c
-b/drivers/power/88pm860x_charger.c
-index 2dbeb14..821629f 100644
---- a/drivers/power/88pm860x_charger.c
-+++ b/drivers/power/88pm860x_charger.c
-@@ -698,7 +698,7 @@ static __devinit int pm860x_charger_probe(struct
-platform_device *pdev)
- 
-        pm860x_init_charger(info);
- 
--       for (i = 0; i < ARRAY_SIZE(info->irq); i++) {
-+       for (i = 0; i < info->irq_nums; i++) {
-                ret = request_threaded_irq(info->irq[i], NULL,
-                        pm860x_irq_descs[i].handler,
-                        IRQF_ONESHOT, pm860x_irq_descs[i].name, info);
+> Does that even work on 32bit?
 
-> be used elsewhere.  Also, I was planning to use devm_request_threaded_irq, 
-> so then there won't be a need for the explicit frees at all.
+No, it already is __u64.  You need (unsigned long)
+or something else the same size as (void *)
 
-> 
-> This file also contains a kfree of devm_kzalloc'd data, which is why I 
-> looked at it in the first place.
-> 
-> thanks,
-> julia
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+from: arch/x86/include/asm/mce.h
 
+/* Fields are zero when not available */
+struct mce {
+...
+	__u64 ip;
+
+> Also, does the compiler bitch about this useless cast when building with
+> W=123?
+
+For x86-32:
+
+With the cast the line is silent.
+Without the cast, just the warning about cast.
 
