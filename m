@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab2LMP3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 10:29:19 -0500
-Received: from vm-emlprdomg-06.its.yale.edu ([130.132.50.169]:44185 "EHLO
-	vm-emlprdomg-06.its.yale.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031Ab2LMP3S convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 10:29:18 -0500
+	id S1755864Ab2LMPaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 10:30:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60769 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753277Ab2LMPaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 10:30:01 -0500
+Date: Thu, 13 Dec 2012 16:29:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+Message-ID: <20121213152959.GE21644@dhcp22.suse.cz>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
+ <20121213103420.GW1009@suse.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: epoll with ONESHOT possibly fails to deliver events
-From: Andreas Voellmy <andreas.voellmy@yale.edu>
-In-Reply-To: <20121213093242.GA25436@dcvr.yhbt.net>
-Date: Thu, 13 Dec 2012 10:29:17 -0500
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2F8919C4-395F-4029-8D4F-AD16A3815FC5@yale.edu>
-References: <BC680BE9-F6EB-4278-819C-C552009CA884@yale.edu> <AF8622CA-CF9D-4F57-B4EB-FE088A752D80@yale.edu> <20121213093242.GA25436@dcvr.yhbt.net>
-To: Eric Wong <normalperson@yhbt.net>
-X-Mailer: Apple Mail (2.1499)
-X-Proofpoint-SPF-Result: neutral
-X-Proofpoint-SPF-Record: v=spf1 ip4:130.132.50.0/24 ip4:130.132.232.0/24 include:_spf.google.com
- ?all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-13_06:2012-12-13,2012-12-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1211240000 definitions=main-1212130119
-X-Yale-Not-Spam: For more info see: http://www.yale.edu/email/spam/content.html
+Content-Disposition: inline
+In-Reply-To: <20121213103420.GW1009@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric, 
-
-On Dec 13, 2012, at 4:32 AM, Eric Wong <normalperson@yhbt.net> wrote:
-
-> Andreas Voellmy <andreas.voellmy@yale.edu> wrote:
+On Thu 13-12-12 10:34:20, Mel Gorman wrote:
+> On Wed, Dec 12, 2012 at 04:43:34PM -0500, Johannes Weiner wrote:
+> > When a reclaim scanner is doing its final scan before giving up and
+> > there is swap space available, pay no attention to swappiness
+> > preference anymore.  Just swap.
+> > 
+> > Note that this change won't make too big of a difference for general
+> > reclaim: anonymous pages are already force-scanned when there is only
+> > very little file cache left, and there very likely isn't when the
+> > reclaimer enters this final cycle.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > 
->>> Another thread, distinct from all of the threads serving particular
->>> sockets, is perfoming epoll_wait calls. When sockets are returned as
->>> being ready from an epoll_wait call, the thread signals to the
->>> condition variable for the socket.
+> Ok, I see the motivation for your patch but is the block inside still
+> wrong for what you want? After your patch the block looks like this
 > 
-> Perhaps there is a bug in the way your epoll_wait thread
-> uses the condition variable to notify other threads?
+>                 if (sc->priority || noswap) {
+>                         scan >>= sc->priority;
+>                         if (!scan && force_scan)
+>                                 scan = SWAP_CLUSTER_MAX;
+>                         scan = div64_u64(scan * fraction[file], denominator);
+>                 }
 > 
-
-This is possible; I've tried very hard (e.g. I added assertions to check various error conditions) to ensure that there is problem in signaling the other threads. From everything I can tell, it is working properly.
-
+> if sc->priority == 0 and swappiness==0 then you enter this block but
+> fraction[0] for anonymous pages will also be 0 and because of the ordering
+> of statements there, scan will be
 > 
->>> The problem I am encountering is that sometimes a thread will block
->>> waiting for the readiness signal and will never get notified, even
->>> though there is data to be read. This behavior seems to go away when
->>> I remove EPOLLONESHOT flag when registering the event. 
+> scan = scan * 0 / denominator
 > 
-> Is the thread the one waiting on the condition variable or epoll_wait?
-> In your situation (stream I/O via multiple threads, single epoll
-> descriptor), I think EPOLLONESHOT is the /only/ sane thing to do.
+> so you are still not reclaiming anonymous pages in the swappiness=0
+> case. What did I miss?
 
-The one waiting on the condition variable.
+Yes, now that you have mentioned that I realized that it really doesn't
+make any sense. fraction[0] is _always_ 0 for swappiness==0. So we just
+made a bigger pressure on file LRUs. So this sounds like a misuse of the
+swappiness. This all has been introduced with fe35004f (mm: avoid
+swapping out with swappiness==0).
 
-I think I've narrowed down the problem a bit more. In my program I have multiple epoll instances. Most of the epoll instances are for monitoring sockets. One is used for monitoring an eventfd that is written to by other threads. The problem only occurs when I write to the eventfd after servicing each http request on a socket; i.e. the epoll monitoring the eventfd is returning from a blocking epoll_wait call very frequently . If I don't do that write, or if I use a different notification facility, for example poll, to monitor the eventfd, then the problem goes away.  So it looks like there may be some way in which different epoll instances can interfere with each other. 
-
-Probably this setup sounds weird to you, but I'm trying to spare you from understanding my whole application;  this is part of a multicore runtime system for a programming language with user-level threads and to explain the full story of this would probably take more time than you want to spend.   But I can provide more detail if you like. 
-
--Andi
+I think that removing swappiness check make sense but I am not sure it
+does what the changelog says. It should have said that checking
+swappiness doesn't make any sense for small LRUs.
+-- 
+Michal Hocko
+SUSE Labs
