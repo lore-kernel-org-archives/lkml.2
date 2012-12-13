@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab2LMOEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:04:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44233 "EHLO
+	id S1756280Ab2LMOEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:04:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44251 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab2LMOEV (ORCPT
+	with ESMTP id S1756260Ab2LMOEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:04:21 -0500
+	Thu, 13 Dec 2012 09:04:32 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Ball <cjb@laptop.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 059/241] mmc: sdhci: fix NULL dereference in sdhci_request() tuning
-Date: Thu, 13 Dec 2012 11:57:04 -0200
-Message-Id: <1355407206-17100-60-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 062/241] ALSA: Fix card refcount unbalance
+Date: Thu, 13 Dec 2012 11:57:07 -0200
+Message-Id: <1355407206-17100-63-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,55 +26,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <cjb@laptop.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 14efd957209461bbdf285bf0d67e931955d04a4c upstream.
+commit 8bb4d9ce08b0a92ca174e41d92c180328f86173f upstream.
 
-Commit 473b095a72a9 ("mmc: sdhci: fix incorrect command used in tuning")
-introduced a NULL dereference at resume-time if an SD 3.0 host controller
-raises the SDHCI_NEEDS_TUNING flag while no card is inserted.  Seen on an
-OLPC XO-4 with sdhci-pxav3, but presumably affects other controllers too.
+There are uncovered cases whether the card refcount introduced by the
+commit a0830dbd isn't properly increased or decreased:
+- OSS PCM and mixer success paths
+- When lookup function gets NULL
 
-Signed-off-by: Chris Ball <cjb@laptop.org>
+This patch fixes these places.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=50251
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/mmc/host/sdhci.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ sound/core/oss/mixer_oss.c |    1 +
+ sound/core/oss/pcm_oss.c   |    1 +
+ sound/core/pcm_native.c    |    6 ++++--
+ sound/core/sound.c         |    2 +-
+ sound/core/sound_oss.c     |    2 +-
+ 5 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 1dffebe..732ab1a 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1294,16 +1294,19 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 		 */
- 		if ((host->flags & SDHCI_NEEDS_RETUNING) &&
- 		    !(present_state & (SDHCI_DOING_WRITE | SDHCI_DOING_READ))) {
--			/* eMMC uses cmd21 while sd and sdio use cmd19 */
--			tuning_opcode = mmc->card->type == MMC_TYPE_MMC ?
--				MMC_SEND_TUNING_BLOCK_HS200 :
--				MMC_SEND_TUNING_BLOCK;
--			spin_unlock_irqrestore(&host->lock, flags);
--			sdhci_execute_tuning(mmc, tuning_opcode);
--			spin_lock_irqsave(&host->lock, flags);
--
--			/* Restore original mmc_request structure */
--			host->mrq = mrq;
-+			if (mmc->card) {
-+				/* eMMC uses cmd21 but sd and sdio use cmd19 */
-+				tuning_opcode =
-+					mmc->card->type == MMC_TYPE_MMC ?
-+					MMC_SEND_TUNING_BLOCK_HS200 :
-+					MMC_SEND_TUNING_BLOCK;
-+				spin_unlock_irqrestore(&host->lock, flags);
-+				sdhci_execute_tuning(mmc, tuning_opcode);
-+				spin_lock_irqsave(&host->lock, flags);
-+
-+				/* Restore original mmc_request structure */
-+				host->mrq = mrq;
-+			}
- 		}
+diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
+index 05395aa..c353768 100644
+--- a/sound/core/oss/mixer_oss.c
++++ b/sound/core/oss/mixer_oss.c
+@@ -76,6 +76,7 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
+ 		snd_card_unref(card);
+ 		return -EFAULT;
+ 	}
++	snd_card_unref(card);
+ 	return 0;
+ }
  
- 		if (mrq->sbc && !(host->flags & SDHCI_AUTO_CMD23))
+diff --git a/sound/core/oss/pcm_oss.c b/sound/core/oss/pcm_oss.c
+index f337b66..4c1cc51 100644
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -2454,6 +2454,7 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
+ 	mutex_unlock(&pcm->open_mutex);
+ 	if (err < 0)
+ 		goto __error;
++	snd_card_unref(pcm->card);
+ 	return err;
+ 
+       __error:
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index d15e5be..bf3bf43 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -2121,7 +2121,8 @@ static int snd_pcm_playback_open(struct inode *inode, struct file *file)
+ 	pcm = snd_lookup_minor_data(iminor(inode),
+ 				    SNDRV_DEVICE_TYPE_PCM_PLAYBACK);
+ 	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_PLAYBACK);
+-	snd_card_unref(pcm->card);
++	if (pcm)
++		snd_card_unref(pcm->card);
+ 	return err;
+ }
+ 
+@@ -2134,7 +2135,8 @@ static int snd_pcm_capture_open(struct inode *inode, struct file *file)
+ 	pcm = snd_lookup_minor_data(iminor(inode),
+ 				    SNDRV_DEVICE_TYPE_PCM_CAPTURE);
+ 	err = snd_pcm_open(file, pcm, SNDRV_PCM_STREAM_CAPTURE);
+-	snd_card_unref(pcm->card);
++	if (pcm)
++		snd_card_unref(pcm->card);
+ 	return err;
+ }
+ 
+diff --git a/sound/core/sound.c b/sound/core/sound.c
+index 7c0640e..3700d96 100644
+--- a/sound/core/sound.c
++++ b/sound/core/sound.c
+@@ -115,7 +115,7 @@ void *snd_lookup_minor_data(unsigned int minor, int type)
+ 	mreg = snd_minors[minor];
+ 	if (mreg && mreg->type == type) {
+ 		private_data = mreg->private_data;
+-		if (mreg->card_ptr)
++		if (private_data && mreg->card_ptr)
+ 			atomic_inc(&mreg->card_ptr->refcount);
+ 	} else
+ 		private_data = NULL;
+diff --git a/sound/core/sound_oss.c b/sound/core/sound_oss.c
+index e1d79ee..726a49a 100644
+--- a/sound/core/sound_oss.c
++++ b/sound/core/sound_oss.c
+@@ -54,7 +54,7 @@ void *snd_lookup_oss_minor_data(unsigned int minor, int type)
+ 	mreg = snd_oss_minors[minor];
+ 	if (mreg && mreg->type == type) {
+ 		private_data = mreg->private_data;
+-		if (mreg->card_ptr)
++		if (private_data && mreg->card_ptr)
+ 			atomic_inc(&mreg->card_ptr->refcount);
+ 	} else
+ 		private_data = NULL;
 -- 
 1.7.9.5
 
