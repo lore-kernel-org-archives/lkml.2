@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933406Ab2LMOOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:14:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45075 "EHLO
+	id S933311Ab2LMOUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:20:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45088 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab2LMOOP (ORCPT
+	with ESMTP id S933405Ab2LMOOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:14:15 -0500
+	Thu, 13 Dec 2012 09:14:24 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Andrey Vagin <avagin@openvz.org>,
+Cc: Josh Hay <joshua.a.hay@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 216/241] tcp: fix retransmission in repair mode
-Date: Thu, 13 Dec 2012 11:59:41 -0200
-Message-Id: <1355407206-17100-217-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 220/241] ixgbe: add support for X540-AT1
+Date: Thu, 13 Dec 2012 11:59:45 -0200
+Message-Id: <1355407206-17100-221-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -31,89 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Vagin <avagin@openvz.org>
+From: "joshua.a.hay@intel.com" <joshua.a.hay@intel.com>
 
-commit ec34232575083fd0f43d3a101e8ebb041b203761 upstream.
+commit df376f0de167754da9b3ece4afdb5bb8bf3fbf3e upstream.
 
-Currently if a socket was repaired with a few packet in a write queue,
-a kernel bug may be triggered:
+This patch adds device support for Ethernet Controller X540-AT1.
 
-kernel BUG at net/ipv4/tcp_output.c:2330!
-RIP: 0010:[<ffffffff8155784f>] tcp_retransmit_skb+0x5ff/0x610
-
-According to the initial realization v3.4-rc2-963-gc0e88ff,
-all skb-s should look like already posted. This patch fixes code
-according with this sentence.
-
-Here are three points, which were not done in the initial patch:
-1. A tcp send head should not be changed
-2. Initialize TSO state of a skb
-3. Reset the retransmission time
-
-This patch moves logic from tcp_sendmsg to tcp_write_xmit. A packet
-passes the ussual way, but isn't sent to network. This patch solves
-all described problems and handles tcp_sendpages.
-
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ herton: adjust context ]
+Signed-off-by: Josh Hay <joshua.a.hay@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/ipv4/tcp.c        |    4 ++--
- net/ipv4/tcp_output.c |    4 ++++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_common.c |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |    2 ++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |    1 +
+ 3 files changed, 4 insertions(+)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index d758741..34b23da 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1180,7 +1180,7 @@ new_segment:
- wait_for_sndbuf:
- 			set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
- wait_for_memory:
--			if (copied && likely(!tp->repair))
-+			if (copied)
- 				tcp_push(sk, flags & ~MSG_MORE, mss_now, TCP_NAGLE_PUSH);
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+index 77ac41f..4352b2a 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+@@ -70,6 +70,7 @@ static s32 ixgbe_device_supports_autoneg_fc(struct ixgbe_hw *hw)
  
- 			if ((err = sk_stream_wait_memory(sk, &timeo)) != 0)
-@@ -1191,7 +1191,7 @@ wait_for_memory:
- 	}
+ 	switch (hw->device_id) {
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		return 0;
+ 	case IXGBE_DEV_ID_82599_T3_LOM:
+ 		return 0;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index e242104..7c0878f 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -114,6 +114,7 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci_tbl) = {
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP), board_82599 },
++	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_X540T1), board_X540 },
+ 	/* required last entry */
+ 	{0, }
+ };
+@@ -6953,6 +6954,7 @@ int ixgbe_wol_supported(struct ixgbe_adapter *adapter, u16 device_id,
+ 		is_wol_supported = 1;
+ 		break;
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		/* check eeprom to see if enabled wol */
+ 		if ((wol_cap == IXGBE_DEVICE_CAPS_WOL_PORT0_1) ||
+ 		    ((wol_cap == IXGBE_DEVICE_CAPS_WOL_PORT0) &&
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+index 204848d..118f4db 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+@@ -67,6 +67,7 @@
+ #define IXGBE_DEV_ID_82599_LS            0x154F
+ #define IXGBE_DEV_ID_X540T               0x1528
+ #define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
++#define IXGBE_DEV_ID_X540T1              0x1560
  
- out:
--	if (copied && likely(!tp->repair))
-+	if (copied)
- 		tcp_push(sk, flags, mss_now, tp->nonagle);
- 	release_sock(sk);
- 	return copied;
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 90b10d0..305aafe 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1784,6 +1784,9 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
- 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
- 		BUG_ON(!tso_segs);
- 
-+		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
-+			goto repair; /* Skip network transmission */
-+
- 		cwnd_quota = tcp_cwnd_test(tp, skb);
- 		if (!cwnd_quota)
- 			break;
-@@ -1817,6 +1820,7 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
- 		if (unlikely(tcp_transmit_skb(sk, skb, 1, gfp)))
- 			break;
- 
-+repair:
- 		/* Advance the send_head.  This one is sent out.
- 		 * This call will increment packets_out.
- 		 */
+ /* VF Device IDs */
+ #define IXGBE_DEV_ID_82599_VF           0x10ED
 -- 
 1.7.9.5
 
