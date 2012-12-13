@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab2LMOkj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:40:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44602 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932660Ab2LMOIs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:08:48 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 130/241] x86, microcode, AMD: Add support for family 16h processors
-Date: Thu, 13 Dec 2012 11:58:15 -0200
-Message-Id: <1355407206-17100-131-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	id S932717Ab2LMOkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:40:37 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38962 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932230Ab2LMOke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 09:40:34 -0500
+Date: Thu, 13 Dec 2012 19:39:49 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes: Introduce uprobe->register_rwsem
+Message-ID: <20121213140949.GA3902@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121124180213.GA30963@redhat.com>
+ <20121124180228.GA30980@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121124180228.GA30980@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121314-7182-0000-0000-000003C328D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+* Oleg Nesterov <oleg@redhat.com> [2012-11-24 19:02:28]:
 
-------------------
+> Introduce uprobe->register_rwsem. It is taken for writing around
+> __uprobe_register/unregister.
+> 
+> Change handler_chain() to use this sem rather than consumer_rwsem.
+> 
+> The main reason for this change is that we have the nasty problem
+> with mmap_sem/consumer_rwsem dependency. filter_chain() needs to
+> protect uprobe->consumers like handler_chain(), but they can not
+> use the same lock. filter_chain() can be called under ->mmap_sem
+> (currently this is always true), but we want to allow ->handler()
+> to play with the probed task's memory, and this needs ->mmap_sem.
+> 
+> Alternatively we could use srcu, but synchronize_srcu() is very
+> slow and ->register_rwsem allows us to do more. In particular, we
+> can teach handler_chain() to do remove_breakpoint() if this bp is
+> "nacked" by all consumers, we know that we can't race with the
+> new consumer which does uprobe_register().
+> 
+> See also the next patches. uprobes_mutex[] is almost ready to die.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-commit 36c46ca4f322a7bf89aad5462a3a1f61713edce7 upstream.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Add valid patch size for family 16h processors.
-
-[ hpa: promoting to urgent/stable since it is hw enabling and trivial ]
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Acked-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Link: http://lkml.kernel.org/r/1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- arch/x86/kernel/microcode_amd.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 82746f9..5d8cf0d 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -97,6 +97,7 @@ static unsigned int verify_ucode_size(int cpu, u32 patch_size,
- #define F1XH_MPB_MAX_SIZE 2048
- #define F14H_MPB_MAX_SIZE 1824
- #define F15H_MPB_MAX_SIZE 4096
-+#define F16H_MPB_MAX_SIZE 3458
- 
- 	switch (c->x86) {
- 	case 0x14:
-@@ -105,6 +106,9 @@ static unsigned int verify_ucode_size(int cpu, u32 patch_size,
- 	case 0x15:
- 		max_size = F15H_MPB_MAX_SIZE;
- 		break;
-+	case 0x16:
-+		max_size = F16H_MPB_MAX_SIZE;
-+		break;
- 	default:
- 		max_size = F1XH_MPB_MAX_SIZE;
- 		break;
--- 
-1.7.9.5
+> ---
+>  kernel/events/uprobes.c |   10 ++++++++--
+>  1 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index c80507d..03ffbb5 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -91,6 +91,7 @@ static atomic_t uprobe_events = ATOMIC_INIT(0);
+>  struct uprobe {
+>  	struct rb_node		rb_node;	/* node in the rb tree */
+>  	atomic_t		ref;
+> +	struct rw_semaphore	register_rwsem;
+>  	struct rw_semaphore	consumer_rwsem;
+>  	struct mutex		copy_mutex;	/* TODO: kill me and UPROBE_COPY_INSN */
+>  	struct list_head	pending_list;
+> @@ -449,6 +450,7 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
+> 
+>  	uprobe->inode = igrab(inode);
+>  	uprobe->offset = offset;
+> +	init_rwsem(&uprobe->register_rwsem);
+>  	init_rwsem(&uprobe->consumer_rwsem);
+>  	mutex_init(&uprobe->copy_mutex);
+>  	/* For now assume that the instruction need not be single-stepped */
+> @@ -476,10 +478,10 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+>  	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
+>  		return;
+> 
+> -	down_read(&uprobe->consumer_rwsem);
+> +	down_read(&uprobe->register_rwsem);
+>  	for (uc = uprobe->consumers; uc; uc = uc->next)
+>  		uc->handler(uc, regs);
+> -	up_read(&uprobe->consumer_rwsem);
+> +	up_read(&uprobe->register_rwsem);
+>  }
+> 
+>  static void consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
+> @@ -873,9 +875,11 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+>  	mutex_lock(uprobes_hash(inode));
+>  	uprobe = alloc_uprobe(inode, offset);
+>  	if (uprobe) {
+> +		down_write(&uprobe->register_rwsem);
+>  		ret = __uprobe_register(uprobe, uc);
+>  		if (ret)
+>  			__uprobe_unregister(uprobe, uc);
+> +		up_write(&uprobe->register_rwsem);
+>  	}
+>  	mutex_unlock(uprobes_hash(inode));
+>  	if (uprobe)
+> @@ -899,7 +903,9 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+>  		return;
+> 
+>  	mutex_lock(uprobes_hash(inode));
+> +	down_write(&uprobe->register_rwsem);
+>  	__uprobe_unregister(uprobe, uc);
+> +	up_write(&uprobe->register_rwsem);
+>  	mutex_unlock(uprobes_hash(inode));
+>  	put_uprobe(uprobe);
+>  }
+> -- 
+> 1.5.5.1
+> 
 
