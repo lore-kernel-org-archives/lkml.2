@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab2LMChc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:37:32 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41021 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab2LMCh1 (ORCPT
+	id S1756521Ab2LMChw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:37:52 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:51465 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab2LMCha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:37:27 -0500
-Message-ID: <50C93F64.1090906@gmail.com>
-Date: Wed, 12 Dec 2012 21:37:24 -0500
-From: "draekko.dev" <draekko.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 12 Dec 2012 21:37:30 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, trivial@kernel.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] USB: adds support for Novatek wireless mouse to usbhid
-References: <CAKPZWXc55MWN3ajpvf0vLXP9KebFo17bGAmD8X=mavxyWJui1w@mail.gmail.com> <20121213015025.GA10991@kroah.com>
-In-Reply-To: <20121213015025.GA10991@kroah.com>
+In-Reply-To: <20121212.212734.917363230032045212.davem@davemloft.net>
+References: <20121212.151116.143443755590581447.davem@davemloft.net>
+ <CA+55aFwzUgxQAze=mYbEx8b61V542tzm06Df=mR1BtYVbJy0mg@mail.gmail.com> <20121212.212734.917363230032045212.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Dec 2012 18:37:08 -0800
+X-Google-Sender-Auth: 4K994HATcRYe-Qskk4LZ4bhZQO4
+Message-ID: <CA+55aFxvHrNYB_J851XTkZ4EiwZ68Fb64DEU1JJmxPV-zB+9Vw@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I followed what was listed here
-http://www.kernel.org/doc/Documentation/SubmittingPatches i won't be
-resubmitting, i've already spent way too much time for a few lines of
-code, I've already been through this with the Ubuntu guys amongst other
-reasons. I can email you the file as attachment but that's the extent of
-my involvement at this point.
-
-Wishing you y'all a nice evening,
-Ben
-
-PS. Resubmitting this email as it for some reason was only sent to Greg.
-
-On Wed, Dec 12, 2012 at 8:50 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Dec 12, 2012 at 08:43:32PM -0500, Benoit Touchette wrote:
->> This patch adds support for the Novatek wireless mouse (device id
->> 0603:1602) to usbhid and fixes bug
->> https://bugzilla.kernel.org/show_bug.cgi?id=47031
->>
->> Reported-by: Benoit Touchette <draekko.dev@gmail.com>
->> Signed-off-by: Benoit Touchette <draekko.dev@gmail.com>
->>
->> ---
->>
->> --- linux-3.6.10/drivers/hid/hid-ids.h.orig    2012-12-10
->> 14:13:27.000000000 -0500
->> +++ linux-3.6.10/drivers/hid/hid-ids.h    2012-12-12 20:06:41.000000000 -0500
+On Wed, Dec 12, 2012 at 6:27 PM, David Miller <davem@davemloft.net> wrote:
 >
-> Please use the scripts/get_maintainer.pl tool to send this patch to the
-> correct people and mailing list.
+> There are two SCTP HMAC cookie algorithms, MD5 and SHA1.
 >
-> Also, your patch is line-wrapped, and can't be applied, you need to look
-> into fixing your email client to not do this if you wish to get patches
-> accepted.
+> What used to happen is that you had to choose one at build
+> time, and then you were stuck with that decision and it was
+> all that you could use.
 >
-> greg k-h
+> Now, it's selectable at run time.
+>
+> If there's anything you find particularly anti-social about
+> this, I'm sure we can adjust it.
+
+So I'd suggest doing the same thing that the new thermal throttling
+Kconfig does: start off by asking for the default algorithm, then ask
+about the others.
+
+The "choice" part selects the one that is default (so it never gets
+asked about and is obviously compiled in), and the rest default to no
+like we should.
+
+See drivers/thermal/Kconfig for an example of this. I think we do it
+in other places too, but that one happens to be new so I picked it as
+an example.
+
+The rule should be that we *never* default anything to 'yes', unless
+it's old functionality that we always compiled in before too, and now
+it got made conditional. So if you see a "default y" on new options,
+you should basically consider it broken.
+
+We're already bloating too much, we should not encourage people to
+make things more bloated than necessary.
+
+Btw, that Kconfig option has basically no useful help text either.
+What's the point of repeating the question as a "help" message?
+
+If people can't explain why anybody should enable it, it sure as hell
+shouldn't default to 'y'. Maybe it shouldn't exist at all?
+
+            Linus
