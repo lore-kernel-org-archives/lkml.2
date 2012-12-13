@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2LMOHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:07:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44469 "EHLO
+	id S932454Ab2LMOHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:07:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44488 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254Ab2LMOHP (ORCPT
+	with ESMTP id S932332Ab2LMOHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:07:15 -0500
+	Thu, 13 Dec 2012 09:07:25 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Betker <thomas.betker@rohde-schwarz.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 105/241] jffs2: Fix lock acquisition order bug in jffs2_write_begin
-Date: Thu, 13 Dec 2012 11:57:50 -0200
-Message-Id: <1355407206-17100-106-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 108/241] iwlwifi: fix monitor mode FCS flag
+Date: Thu, 13 Dec 2012 11:57:53 -0200
+Message-Id: <1355407206-17100-109-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,145 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Betker <thomas.betker@freenet.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 5ffd3412ae5536a4c57469cb8ea31887121dcb2e upstream.
+commit 04baaa27b43d389879237b32f8bd194a94cf1ca7 upstream.
 
-jffs2_write_begin() first acquires the page lock, then f->sem. This
-causes an AB-BA deadlock with jffs2_garbage_collect_live(), which first
-acquires f->sem, then the page lock:
+When the firmware is in SNIFFER mode, it leaves
+the FCS at the end of frame. Not telling mac80211
+means it won't add the right flag to the radiotap
+header and that confuses wireshark.
 
-jffs2_garbage_collect_live
-    mutex_lock(&f->sem)                         (A)
-    jffs2_garbage_collect_dnode
-        jffs2_gc_fetch_page
-            read_cache_page_async
-                do_read_cache_page
-                    lock_page(page)             (B)
+Since mac80211 doesn't have a per-packet flag, set
+the HW flag dynamically. This works as the monitor
+vif can only be present in the driver by itself.
 
-jffs2_write_begin
-    grab_cache_page_write_begin
-        find_lock_page
-            lock_page(page)                     (B)
-    mutex_lock(&f->sem)                         (A)
+This fixes a regression introduced by my
 
-We fix this by restructuring jffs2_write_begin() to take f->sem before
-the page lock. However, we make sure that f->sem is not held when
-calling jffs2_reserve_space(), as this is not permitted by the locking
-rules.
+commit 578977264199de9815ace51ade87cec4894cf010
+Author: Johannes Berg <johannes.berg@intel.com>
+Date:   Fri May 11 10:53:18 2012 +0200
 
-The deadlock above was observed multiple times on an SoC with a dual
-ARMv7 (Cortex-A9), running the long-term 3.4.11 kernel; it occurred
-when using scp to copy files from a host system to the ARM target
-system. The fix was heavily tested on the same target system.
+    iwlwifi: support explicit monitor interface
 
-Signed-off-by: Thomas Betker <thomas.betker@rohde-schwarz.com>
-Acked-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: MARK PHILLIPS <mark.phillips@virgin.net>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ herton: adjust file name to be patched ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/jffs2/file.c |   39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-mac80211.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/fs/jffs2/file.c b/fs/jffs2/file.c
-index db3889b..8608f87 100644
---- a/fs/jffs2/file.c
-+++ b/fs/jffs2/file.c
-@@ -138,33 +138,39 @@ static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
- 	struct page *pg;
- 	struct inode *inode = mapping->host;
- 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
-+	struct jffs2_raw_inode ri;
-+	uint32_t alloc_len = 0;
- 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
- 	uint32_t pageofs = index << PAGE_CACHE_SHIFT;
- 	int ret = 0;
+diff --git a/drivers/net/wireless/iwlwifi/iwl-mac80211.c b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
+index 0136803..a0b0b78 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-mac80211.c
++++ b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
+@@ -1343,6 +1343,20 @@ static int iwlagn_mac_add_interface(struct ieee80211_hw *hw,
+ 	vif_priv->ctx = ctx;
+ 	ctx->vif = vif;
  
-+	jffs2_dbg(1, "%s()\n", __func__);
++	/*
++	 * In SNIFFER device type, the firmware reports the FCS to
++	 * the host, rather than snipping it off. Unfortunately,
++	 * mac80211 doesn't (yet) provide a per-packet flag for
++	 * this, so that we have to set the hardware flag based
++	 * on the interfaces added. As the monitor interface can
++	 * only be present by itself, and will be removed before
++	 * other interfaces are added, this is safe.
++	 */
++	if (vif->type == NL80211_IFTYPE_MONITOR)
++		priv->hw->flags |= IEEE80211_HW_RX_INCLUDES_FCS;
++	else
++		priv->hw->flags &= ~IEEE80211_HW_RX_INCLUDES_FCS;
 +
-+	if (pageofs > inode->i_size) {
-+		ret = jffs2_reserve_space(c, sizeof(ri), &alloc_len,
-+					  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	mutex_lock(&f->sem);
- 	pg = grab_cache_page_write_begin(mapping, index, flags);
--	if (!pg)
-+	if (!pg) {
-+		if (alloc_len)
-+			jffs2_complete_reservation(c);
-+		mutex_unlock(&f->sem);
- 		return -ENOMEM;
-+	}
- 	*pagep = pg;
- 
--	jffs2_dbg(1, "%s()\n", __func__);
--
--	if (pageofs > inode->i_size) {
-+	if (alloc_len) {
- 		/* Make new hole frag from old EOF to new page */
--		struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
--		struct jffs2_raw_inode ri;
- 		struct jffs2_full_dnode *fn;
--		uint32_t alloc_len;
- 
- 		jffs2_dbg(1, "Writing new hole frag 0x%x-0x%x between current EOF and new page\n",
- 			  (unsigned int)inode->i_size, pageofs);
- 
--		ret = jffs2_reserve_space(c, sizeof(ri), &alloc_len,
--					  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
--		if (ret)
--			goto out_page;
--
--		mutex_lock(&f->sem);
- 		memset(&ri, 0, sizeof(ri));
- 
- 		ri.magic = cpu_to_je16(JFFS2_MAGIC_BITMASK);
-@@ -191,7 +197,6 @@ static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
- 		if (IS_ERR(fn)) {
- 			ret = PTR_ERR(fn);
- 			jffs2_complete_reservation(c);
--			mutex_unlock(&f->sem);
- 			goto out_page;
- 		}
- 		ret = jffs2_add_full_dnode_to_inode(c, f, fn);
-@@ -206,12 +211,10 @@ static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
- 			jffs2_mark_node_obsolete(c, fn->raw);
- 			jffs2_free_full_dnode(fn);
- 			jffs2_complete_reservation(c);
--			mutex_unlock(&f->sem);
- 			goto out_page;
- 		}
- 		jffs2_complete_reservation(c);
- 		inode->i_size = pageofs;
--		mutex_unlock(&f->sem);
- 	}
- 
- 	/*
-@@ -220,18 +223,18 @@ static int jffs2_write_begin(struct file *filp, struct address_space *mapping,
- 	 * case of a short-copy.
- 	 */
- 	if (!PageUptodate(pg)) {
--		mutex_lock(&f->sem);
- 		ret = jffs2_do_readpage_nolock(inode, pg);
--		mutex_unlock(&f->sem);
- 		if (ret)
- 			goto out_page;
- 	}
-+	mutex_unlock(&f->sem);
- 	jffs2_dbg(1, "end write_begin(). pg->flags %lx\n", pg->flags);
- 	return ret;
- 
- out_page:
- 	unlock_page(pg);
- 	page_cache_release(pg);
-+	mutex_unlock(&f->sem);
- 	return ret;
- }
- 
+ 	err = iwl_setup_interface(priv, ctx);
+ 	if (!err || reset)
+ 		goto out;
 -- 
 1.7.9.5
 
