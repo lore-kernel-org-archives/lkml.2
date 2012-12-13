@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab2LMDug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 22:50:36 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58330 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab2LMDue (ORCPT
+	id S1754400Ab2LMDwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 22:52:15 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:51801 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab2LMDwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 22:50:34 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc: added DSCR support to ptrace
-Date: Thu, 13 Dec 2012 14:50:23 +1100
-Message-Id: <1355370623-22707-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 12 Dec 2012 22:52:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <50C94ECD.6020504@gmail.com>
+References: <20121211090910.GA22985@gmail.com> <CA+55aFw=sifEKVJwDvmfV317+RNrf9Z88xZ5pu0SwggrQrubTw@mail.gmail.com>
+ <50C94A9C.2050900@gmail.com> <CA+55aFxpLJ=gVUSiu04sTzDDrR75B89pzE35MyEyj3pVi5UbiQ@mail.gmail.com>
+ <50C94ECD.6020504@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Dec 2012 19:51:52 -0800
+X-Google-Sender-Auth: G_7IFA9IIr-J_lO9S6q3Chy1rQ4
+Message-ID: <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com>
+Subject: Re: [GIT PULL] perf changes for v3.8
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DSCR (aka Data Stream Control Register) is supported on some
-server PowerPC chips and allow some control over the prefetch
-of data streams.
+On Wed, Dec 12, 2012 at 7:43 PM, David Ahern <dsahern@gmail.com> wrote:
+>
+> you know what's worse? All of your VMs blowing up because anyone runs perf
+> with precise attribute. Virtualization and and performance monitoring
+> collide. From the log message for commit 1342798.
+>
+> "Intel PEBS in VT-x context uses the DS address as a guest linear address,
+> even though its programmed by the host as a host linear address. This either
+> results in guest memory corruption and or the hardware faulting and
+> 'crashing' the virtual machine.  Therefore we have to disable PEBS on VT-x
+> enter and re-enable on VT-x exit, enforcing a strict exclude_guest."
 
-The kernel already supports DSCR value per thread but there is also
-a need in a ability to change it from an external process for
-the specific pid.
+Right.
 
-The patch adds new register index PT_DSCR (index=44) which can be
-set/get by:
-  ptrace(PTRACE_POKEUSER, traced_process, PT_DSCR << 3, dscr);
-  dscr = ptrace(PTRACE_PEEKUSER, traced_process, PT_DSCR << 3, NULL);
+SO WHY DON'T YOU JUST DO THAT THEN?
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- arch/powerpc/include/asm/ptrace.h |    1 +
- arch/powerpc/kernel/ptrace.c      |   16 ++++++++++++++++
- 2 files changed, 17 insertions(+)
+Disable PEBS on Vt-x enter and re-enable it on exit. End of story.
+Exactly like you say.
 
-diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
-index 9c21ed4..340fe36 100644
---- a/arch/powerpc/include/asm/ptrace.h
-+++ b/arch/powerpc/include/asm/ptrace.h
-@@ -276,6 +276,7 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
- #define PT_DAR	41
- #define PT_DSISR 42
- #define PT_RESULT 43
-+#define PT_DSCR 44
- #define PT_REGS_COUNT 44
- 
- #define PT_FPR0	48	/* each FP reg occupies 2 slots in this space */
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index c10fc28..d3ba67b 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -179,6 +179,17 @@ static int set_user_msr(struct task_struct *task, unsigned long msr)
- 	return 0;
- }
- 
-+static unsigned long get_user_dscr(struct task_struct *task)
-+{
-+	return task->thread.dscr;
-+}
-+
-+static int set_user_dscr(struct task_struct *task, unsigned long dscr)
-+{
-+	task->thread.dscr = dscr;
-+	return 0;
-+}
-+
- /*
-  * We prevent mucking around with the reserved area of trap
-  * which are used internally by the kernel.
-@@ -200,6 +211,9 @@ unsigned long ptrace_get_reg(struct task_struct *task, int regno)
- 	if (regno == PT_MSR)
- 		return get_user_msr(task);
- 
-+	if (regno == PT_DSCR)
-+		return get_user_dscr(task);
-+
- 	if (regno < (sizeof(struct pt_regs) / sizeof(unsigned long)))
- 		return ((unsigned long *)task->thread.regs)[regno];
- 
-@@ -218,6 +232,8 @@ int ptrace_put_reg(struct task_struct *task, int regno, unsigned long data)
- 		return set_user_msr(task, data);
- 	if (regno == PT_TRAP)
- 		return set_user_trap(task, data);
-+	if (regno == PT_DSCR)
-+		return set_user_dscr(task, data);
- 
- 	if (regno <= PT_MAX_PUT_REG) {
- 		((unsigned long *)task->thread.regs)[regno] = data;
--- 
-1.7.10.4
+But don't in the process screw up people WHO DON'T EVEN DO VIRTUALIZATION!
 
+So please, just remove that idiotic "if (!event->attr.exclude_guest)"
+test. It's wrong. It cannot possibly do the right thing.  It is
+totally misdesigned, exactly because you don't even know beforehand if
+somebody uses virtualization or not.
+
+Now, if the feature had been done the sane way around, and you'd have
+an explicit flag that says "force this even on entry to virtualized
+guests", then you could have said "Dave, I can't do that combination
+of precise and virtualized guests". At that point you have - at perf
+record time - a valid reason to say EOPNOTSUPP.
+
+But doing it this way was wrong. Switch that "exclude_guest" attribute
+around, and admit that "H" was bogus, and that the right thing to do
+was to add a "V" flag that sets the "force_guest" flag instead.
+
+Problem solved, without screwing people who have no reason to ever care.
+
+               Linus
