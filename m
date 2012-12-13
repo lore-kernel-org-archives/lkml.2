@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab2LMOFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:05:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44305 "EHLO
+	id S1756034Ab2LMOyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:54:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44310 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab2LMOFO (ORCPT
+	with ESMTP id S1756418Ab2LMOFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:05:14 -0500
+	Thu, 13 Dec 2012 09:05:17 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 073/241] UBIFS: fix mounting problems after power cuts
-Date: Thu, 13 Dec 2012 11:57:18 -0200
-Message-Id: <1355407206-17100-74-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 074/241] USB: usb_wwan: fix bulk-urb allocation
+Date: Thu, 13 Dec 2012 11:57:19 -0200
+Message-Id: <1355407206-17100-75-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
@@ -26,62 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a28ad42a4a0c6f302f488f26488b8b37c9b30024 upstream.
+commit 8e493ca1767d4951ed1322abaa74d6edbca29918 upstream.
 
-This is a bugfix for a problem with the following symptoms:
+Make sure we do not allocate urbs if we do not have a bulk endpoint.
 
-1. A power cut happens
-2. After reboot, we try to mount UBIFS
-3. Mount fails with "No space left on device" error message
+Legacy code used incorrect assumption to test for bulk endpoints.
 
-UBIFS complains like this:
-
-UBIFS error (pid 28225): grab_empty_leb: could not find an empty LEB
-
-The root cause of this problem is that when we mount, not all LEBs are
-categorized. Only those which were read are. However, the
-'ubifs_find_free_leb_for_idx()' function assumes that all LEBs were
-categorized and 'c->freeable_cnt' is valid, which is a false assumption.
-
-This patch fixes the problem by teaching 'ubifs_find_free_leb_for_idx()'
-to always fall back to LPT scanning if no freeable LEBs were found.
-
-This problem was reported by few people in the past, but Brent Taylor
-was able to reproduce it and send me a flash image which cannot be mounted,
-which made it easy to hunt the bug. Kudos to Brent.
-
-Reported-by: Brent Taylor <motobud@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ herton: backport for 3.5: allocation splitted in attach (in
+  usb_wwan_setup_urbs and usb_wwan_startup), so patch two
+  locations with the size checking. ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/ubifs/find.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/serial/usb_wwan.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ubifs/find.c b/fs/ubifs/find.c
-index 28ec13a..2dcf3d4 100644
---- a/fs/ubifs/find.c
-+++ b/fs/ubifs/find.c
-@@ -681,8 +681,16 @@ int ubifs_find_free_leb_for_idx(struct ubifs_info *c)
- 	if (!lprops) {
- 		lprops = ubifs_fast_find_freeable(c);
- 		if (!lprops) {
--			ubifs_assert(c->freeable_cnt == 0);
--			if (c->lst.empty_lebs - c->lst.taken_empty_lebs > 0) {
-+			/*
-+			 * The first condition means the following: go scan the
-+			 * LPT if there are uncategorized lprops, which means
-+			 * there may be freeable LEBs there (UBIFS does not
-+			 * store the information about freeable LEBs in the
-+			 * master node).
-+			 */
-+			if (c->in_a_category_cnt != c->main_lebs ||
-+			    c->lst.empty_lebs - c->lst.taken_empty_lebs > 0) {
-+				ubifs_assert(c->freeable_cnt == 0);
- 				lprops = scan_for_leb_for_idx(c);
- 				if (IS_ERR(lprops)) {
- 					err = PTR_ERR(lprops);
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index f35971d..da28535 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -453,9 +453,6 @@ static struct urb *usb_wwan_setup_urb(struct usb_serial *serial, int endpoint,
+ {
+ 	struct urb *urb;
+ 
+-	if (endpoint == -1)
+-		return NULL;	/* endpoint not needed */
+-
+ 	urb = usb_alloc_urb(0, GFP_KERNEL);	/* No ISO */
+ 	if (urb == NULL) {
+ 		dbg("%s: alloc for endpoint %d failed.", __func__, endpoint);
+@@ -483,6 +480,9 @@ static void usb_wwan_setup_urbs(struct usb_serial *serial)
+ 
+ 		/* Do indat endpoints first */
+ 		for (j = 0; j < N_IN_URB; ++j) {
++			if (!port->bulk_in_size)
++				break;
++
+ 			portdata->in_urbs[j] = usb_wwan_setup_urb(serial,
+ 								  port->
+ 								  bulk_in_endpointAddress,
+@@ -496,6 +496,9 @@ static void usb_wwan_setup_urbs(struct usb_serial *serial)
+ 
+ 		/* outdat endpoints */
+ 		for (j = 0; j < N_OUT_URB; ++j) {
++			if (!port->bulk_out_size)
++				break;
++
+ 			portdata->out_urbs[j] = usb_wwan_setup_urb(serial,
+ 								   port->
+ 								   bulk_out_endpointAddress,
+@@ -529,6 +532,9 @@ int usb_wwan_startup(struct usb_serial *serial)
+ 		init_usb_anchor(&portdata->delayed);
+ 
+ 		for (j = 0; j < N_IN_URB; j++) {
++			if (!port->bulk_in_size)
++				break;
++
+ 			buffer = (u8 *) __get_free_page(GFP_KERNEL);
+ 			if (!buffer)
+ 				goto bail_out_error;
+@@ -536,6 +542,9 @@ int usb_wwan_startup(struct usb_serial *serial)
+ 		}
+ 
+ 		for (j = 0; j < N_OUT_URB; j++) {
++			if (!port->bulk_out_size)
++				break;
++
+ 			buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
+ 			if (!buffer)
+ 				goto bail_out_error2;
 -- 
 1.7.9.5
 
