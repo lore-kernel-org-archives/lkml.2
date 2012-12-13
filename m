@@ -1,314 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab2LMXC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 18:02:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12021 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755794Ab2LMXC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 18:02:57 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Borislav Petkov <bp@alien8.de>,
-        Simon Jeons <simon.jeons@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: clean up soft_offline_page()
-Date: Thu, 13 Dec 2012 18:01:46 -0500
-Message-Id: <1355439706-23726-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1755964Ab2LMXDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 18:03:21 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:53287 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab2LMXDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 18:03:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <87mwxhtxve.fsf@xmission.com>
+References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net> <87mwxhtxve.fsf@xmission.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Dec 2012 15:02:58 -0800
+Message-ID: <CALCETrWxXZ1OzZeH_SGeg1E16rssxBwg+hjG09N5dkqweVKeRA@mail.gmail.com>
+Subject: Re: [GIT PULL] user namespace and namespace infrastructure changes
+ for 3.8
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        containers@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Dec 13, 2012 at 2:01 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On 12/11/2012 01:17 PM, Eric W. Biederman wrote:
+>>>
+>>> Linus,
+>>>
+>>> Please pull the for-linus git tree from:
+>>>
+>>>    git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
+>>>
+>>>    HEAD: 98f842e675f96ffac96e6c50315790912b2812be proc: Usable inode numbers for the namespace file descriptors.
+>>>
+>>>    This tree is against v3.7-rc3
+>>
+>> You've just allowed unprivileged users to create new pid namespaces,
+>> etc, by creating a new userns, then creating a new pid namespace inside
+>> that userns, then setns-ing from outside the userns into the pid ns.  Is
+>> this intentional?  (The mount ns is okay -- it checks for CAP_CHROOT on
+>> setns.)
+>
+> Absolutely.  My commit messages talk about this.  I allow creating other
+> namespaces once inside a user namespace deliberately.  There is no
+> reason I know of to ban creation of pid and other namespaces once you
+> are inside of a user namespace.
+>
 
-I wrote this patch inspired by the discussion about fixing mce_bad_pages bug.
-https://lkml.org/lkml/2012/12/7/66
-As mentioned by Andrew, this bug seemed to be undetected because of the
-messiness of soft_offline_page(), so with this patch we can deal with the problem.
+I must be looking at the wrong commit message.
 
-Thanks,
-Naoya
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Thu, 13 Dec 2012 16:08:54 -0500
-Subject: [PATCH] mm: clean up soft_offline_page()
+> But please also note the difference between capable and ns_capable.  Any
+> security check that is capable() still requires priviliges in the
+> initial user namespace.
 
-Currently soft_offline_page() is hard to maintain because it has many
-return points and goto statements. All of this mess come from get_any_page().
-This function should only get page refcount as the name implies, but it does
-some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
-This patch corrects it and introduces some internal subroutines to make
-soft offlining code more readable and maintainable.
+Huh?
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/memory-failure.c | 189 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 101 insertions(+), 88 deletions(-)
+I'm talking about:
 
-diff --git v3.7.orig/mm/memory-failure.c v3.7/mm/memory-failure.c
-index 8b20278..8cef032 100644
---- v3.7.orig/mm/memory-failure.c
-+++ v3.7/mm/memory-failure.c
-@@ -1368,7 +1368,7 @@ static struct page *new_page(struct page *p, unsigned long private, int **x)
-  * that is not free, and 1 for any other page type.
-  * For 1 the page is returned with increased page count, otherwise not.
-  */
--static int get_any_page(struct page *p, unsigned long pfn, int flags)
-+static int __get_any_page(struct page *p, unsigned long pfn, int flags)
- {
- 	int ret;
- 
-@@ -1393,11 +1393,9 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	if (!get_page_unless_zero(compound_head(p))) {
- 		if (PageHuge(p)) {
- 			pr_info("%s: %#lx free huge page\n", __func__, pfn);
--			ret = dequeue_hwpoisoned_huge_page(compound_head(p));
-+			ret = 0;
- 		} else if (is_free_buddy_page(p)) {
- 			pr_info("%s: %#lx free buddy page\n", __func__, pfn);
--			/* Set hwpoison bit while page is still isolated */
--			SetPageHWPoison(p);
- 			ret = 0;
- 		} else {
- 			pr_info("%s: %#lx: unknown zero refcount page type %lx\n",
-@@ -1413,23 +1411,45 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	return ret;
- }
- 
-+static int get_any_page(struct page *page, unsigned long pfn, int flags)
-+{
-+	int ret = __get_any_page(page, pfn, flags);
-+
-+	if (ret == 1 && !PageHuge(page) && !PageLRU(page)) {
-+		/*
-+		 * Try to free it.
-+		 */
-+		put_page(page);
-+		shake_page(page, 1);
-+
-+		/*
-+		 * Did it turn free?
-+		 */
-+		ret = __get_any_page(page, pfn, 0);
-+		if (!PageLRU(page)) {
-+			pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
-+				pfn, page->flags);
-+			return -EIO;
-+		}
-+	}
-+	return ret;
-+}
-+
- static int soft_offline_huge_page(struct page *page, int flags)
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_head(page);
- 
--	ret = get_any_page(page, pfn, flags);
--	if (ret < 0)
--		return ret;
--	if (ret == 0)
--		goto done;
--
-+	/* Synchronized using the page lock with memory_failure() */
-+	lock_page(hpage);
- 	if (PageHWPoison(hpage)) {
-+		unlock_page(hpage);
- 		put_page(hpage);
- 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
- 		return -EBUSY;
- 	}
-+	unlock_page(hpage);
- 
- 	/* Keep page count to indicate a given hugepage is isolated. */
- 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
-@@ -1439,85 +1459,19 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
- 			pfn, ret, page->flags);
- 		return ret;
-+	} else {
-+		set_page_hwpoison_huge_page(hpage);
-+		dequeue_hwpoisoned_huge_page(hpage);
-+		atomic_long_add(1<<compound_trans_order(hpage), &mce_bad_pages);
- 	}
--done:
--	if (!PageHWPoison(hpage))
--		atomic_long_add(1 << compound_trans_order(hpage),
--				&mce_bad_pages);
--	set_page_hwpoison_huge_page(hpage);
--	dequeue_hwpoisoned_huge_page(hpage);
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
- 
--/**
-- * soft_offline_page - Soft offline a page.
-- * @page: page to offline
-- * @flags: flags. Same as memory_failure().
-- *
-- * Returns 0 on success, otherwise negated errno.
-- *
-- * Soft offline a page, by migration or invalidation,
-- * without killing anything. This is for the case when
-- * a page is not corrupted yet (so it's still valid to access),
-- * but has had a number of corrected errors and is better taken
-- * out.
-- *
-- * The actual policy on when to do that is maintained by
-- * user space.
-- *
-- * This should never impact any application or cause data loss,
-- * however it might take some time.
-- *
-- * This is not a 100% solution for all memory, but tries to be
-- * ``good enough'' for the majority of memory.
-- */
--int soft_offline_page(struct page *page, int flags)
-+int __soft_offline_page(struct page *page, int flags)
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
--	struct page *hpage = compound_trans_head(page);
--
--	if (PageHuge(page))
--		return soft_offline_huge_page(page, flags);
--	if (PageTransHuge(hpage)) {
--		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
--			pr_info("soft offline: %#lx: failed to split THP\n",
--				pfn);
--			return -EBUSY;
--		}
--	}
--
--	ret = get_any_page(page, pfn, flags);
--	if (ret < 0)
--		return ret;
--	if (ret == 0)
--		goto done;
--
--	/*
--	 * Page cache page we can handle?
--	 */
--	if (!PageLRU(page)) {
--		/*
--		 * Try to free it.
--		 */
--		put_page(page);
--		shake_page(page, 1);
--
--		/*
--		 * Did it turn free?
--		 */
--		ret = get_any_page(page, pfn, 0);
--		if (ret < 0)
--			return ret;
--		if (ret == 0)
--			goto done;
--	}
--	if (!PageLRU(page)) {
--		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
--			pfn, page->flags);
--		return -EIO;
--	}
- 
- 	lock_page(page);
- 	wait_on_page_writeback(page);
-@@ -1544,9 +1498,10 @@ int soft_offline_page(struct page *page, int flags)
- 	 */
- 	if (ret == 1) {
- 		put_page(page);
--		ret = 0;
- 		pr_info("soft_offline: %#lx: invalidated\n", pfn);
--		goto done;
-+		SetPageHWPoison(page);
-+		atomic_long_inc(&mce_bad_pages);
-+		return 0;
- 	}
- 
- 	/*
-@@ -1573,17 +1528,75 @@ int soft_offline_page(struct page *page, int flags)
- 				pfn, ret, page->flags);
- 			if (ret > 0)
- 				ret = -EIO;
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&mce_bad_pages);
- 		}
- 	} else {
- 		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
- 			pfn, ret, page_count(page), page->flags);
- 	}
--	if (ret)
--		return ret;
-+	return ret;
-+}
-+
-+/**
-+ * soft_offline_page - Soft offline a page.
-+ * @page: page to offline
-+ * @flags: flags. Same as memory_failure().
-+ *
-+ * Returns 0 on success, otherwise negated errno.
-+ *
-+ * Soft offline a page, by migration or invalidation,
-+ * without killing anything. This is for the case when
-+ * a page is not corrupted yet (so it's still valid to access),
-+ * but has had a number of corrected errors and is better taken
-+ * out.
-+ *
-+ * The actual policy on when to do that is maintained by
-+ * user space.
-+ *
-+ * This should never impact any application or cause data loss,
-+ * however it might take some time.
-+ *
-+ * This is not a 100% solution for all memory, but tries to be
-+ * ``good enough'' for the majority of memory.
-+ */
-+int soft_offline_page(struct page *page, int flags)
-+{
-+	int ret;
-+	unsigned long pfn = page_to_pfn(page);
-+	struct page *hpage = compound_trans_head(page);
- 
--done:
--	atomic_long_add(1, &mce_bad_pages);
--	SetPageHWPoison(page);
-+	if (PageHWPoison(page)) {
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
-+	}
-+	if (!PageHuge(page) && PageTransHuge(hpage)) {
-+		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-+			pr_info("soft offline: %#lx: failed to split THP\n",
-+				pfn);
-+			return -EBUSY;
-+		}
-+	}
-+	ret = get_any_page(page, pfn, flags);
-+	if (ret < 0)
-+		return ret;
-+	if (ret) { /* for in-use pages */
-+		if (PageHuge(page))
-+			soft_offline_huge_page(page, flags);
-+		else
-+			__soft_offline_page(page, flags);
-+	} else { /* for free pages */
-+		if (PageHuge(page)) {
-+			set_page_hwpoison_huge_page(hpage);
-+			dequeue_hwpoisoned_huge_page(hpage);
-+			atomic_long_add(1 << compound_trans_order(hpage),
-+					&mce_bad_pages);
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&mce_bad_pages);
-+		}
-+	}
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
--- 
-1.7.11.7
+clone with CLONE_NEWUSER
+ - child does unshare(CLONE_NEWPID)
+ - parent does setfd(child's pid namespace)
 
+Now the parent is running in the init userns with a different pid ns.
+Setuid binaries will work but will see the unexpected pid ns.  With
+mount namespaces, this would be Really Bad (tm).  With pid or ipc or
+net, it's less obviously dangerous, but I'm not convinced it's safe.
+
+I sort of think that setns on a *non*-userns should require
+CAP_SYS_ADMIN in the current userns, at least if no_new_privs isn't
+set.
+
+>
+>> In user_namespace.c:
+>>
+>>         /* Threaded many not enter a different user namespace */
+>>         if (atomic_read(&current->mm->mm_users) > 1)
+>>                 return -EINVAL;
+>>
+>> The comment has a typo.  Also, you're checking the wrong condition:
+>> that's whether the vm is shared, not whether the thread group has more
+>> than one member.
+>
+> Yes the comment should say.
+>
+> Threaded processes may not enter a different user namespace.
+>
+> As for the condition.  mm_users will equal one for a non-threaded
+> process.  And mm_users is the check we use in unshare to detect if
+> a threaded process calls unshare so I think the check seems perfectly
+> reasonable.  Especially since the vm must have more than one member if
+> there is more than one member in the thread group.
+
+A non-threaded process can have mm_users == 2 with CLONE_VM.  I'm not
+sure this is a problem, though.
+
+>
+>> In any case, why are threads special here?
+>
+> You know I don't think I stopped to think about it.   The combination
+> of CLONE_NEWUSER and CLONE_THREAD have been denined since the first user
+> namespace support was merged in 2008.
+>
+> I do know that things can get really strange when you mix multiple
+> namespaces in a process.  tkill of your own threads will stop working.
+> Which access permissions should apply to files you mmap, file handles
+> you have open, the core dumper etc.
+>
+> We do allow setresuid per thread so we might be able to cope
+> with a process that mixes with user namespaces in different threads,
+> but I would want a close review of things before we allow that kind of
+> sharing.
+>
+
+Fair enough.
+
+I'd personally be more concerned about shared signal handlers than
+shared tgid, though.  The signal handler set has all kinds of weird
+things like session id.
+
+>> I think, although I haven't verified it, that these changes allow
+>> CAP_SYS_ADMIN to bypass the bounding set (and, in particular, to gain
+>> CAP_MODULE): unshare the user namespace and then setfd yourself back.  I
+>> think that setns should only grant caps when changing to a descendent
+>> namespace.
+>
+> (See the end.  A significant bug in cap_capable slipped in about
+>  3.5. cap_capable is only supposed to grant permissions to the owner
+>  of a user namespace if it is a child user namespace).
+
+[snipping lots of stuff]
+
+If the intended semantics of cap_capable are, indeed:
+
+If targ_ns is equals or is a descendent of cred->user_ns and the cap
+is effective, return true.  If targ_ns is owned by cred->euid and
+targ_ns is a descendent of cred->user_ns (but is not equal to
+cred->user_ns), then return true.  Else return false
+
+then I agree with you on almost everything you said.  I assumed that
+the actual semantics were intended.
+
+>
+>> unshare has a bug.  This code:
+>
+> Interesting...
+>
+> Looking at it this is a very small misfeature.
+>
+> What is happening is that commit_creds is setting is making the task
+> undumpable because we changed the set of capabilities in struct cred.
+>
+> This in turn results in pid_revalidate setting the owner of
+> of /proc/self/uid_map to GLOBAL_ROOT_UID.
+>
+> From the outside the permissions on /proc/self/uid_map look like:
+> -rw-r--r-- 1 root root 0 2012-12-13 12:43 /proc/30530/uid_map
+>
+> Then since /proc/self/uid_map uses the default permission function
+> and the test program below is not run as root the read-write open
+> of uid_map fails.
+
+It's probably either worth fixing this or disabling unshare of userns.
+ This makes it hard to use.  IMO non-dumpable tasks should still be
+able to access the contents of /proc/self -- i.e. I'd call this a more
+general bug.
+
+But I'd also argue that unsharing userns shouldn't set non-dumpable --
+cap_permitted increased, but the new capabilities are still logically
+a subset of the old ones.
+
+>
+>> (Of course, the fact that caps don't usefully inherit is an issue --
+>> there's a loooong thread going on right now about that.)  But doing this
+>> enshrines root-has-caps even farther into ABI.  At least please make
+>> this depend on !SECURE_NOROOT.
+>
+> With the bug fixed there is nothing new here.  On creation of a user
+> namespace of course the initial process with have all capabilities just
+> like init starts out with all capabilities.
+>
+> The owner of a user namespace when outside of a user namespace also
+> has all capabilities over a user namespace, and has since March of 2011.
+>
+> When entering a user namespace what happens is that the owner permanently
+> drops whatever privileges the owner has to their previous user namespace
+> and their implied capabilites get put into the capability bitmask.
+>
+> This has absolutely nothing to do with SECURE_NOROOT and the case where
+> becomming root gains privileges.  What does happen from a global
+> perspective is that there are some capabilities that a process has that
+> it will not be able to drop (capabilities over the user namespaces it
+> owns), and if the owner of the process has created user namespaces.
+
+I think I agree with you.  This would still be more useful with
+capability inheritance, though :).
+
+
+One more issue: the requirement that both upper and lower uids (etc.)
+in the maps are in order is rather limiting.  I have no objection if
+you only require upper ids to be monotonic, but currently there's no
+way to may root outside to uid n (for n > 0) and some nonroot user
+outside to uid 0.
+
+Also, the fact that you can remap onto the unmapped id is a little
+strange.  I haven't found any reason it would be a security bug, but
+it's still odd.
+
+
+--Andy
