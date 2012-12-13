@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab2LMWLH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 17:11:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9624 "EHLO mx1.redhat.com"
+	id S1753818Ab2LMWSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 17:18:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:32808 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab2LMWLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 17:11:06 -0500
-Date: Thu, 13 Dec 2012 17:10:57 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
-Subject: Re: XFS corruption on post 3.7 tree.
-Message-ID: <20121213221057.GA22049@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-	xfs@oss.sgi.com
-References: <20121213205522.GA28455@redhat.com>
+	id S1751120Ab2LMWSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 17:18:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH rev.2 6/6] ACPI: Change the ordering of acpi_bus_check_add()
+Date: Thu, 13 Dec 2012 23:23:18 +0100
+Message-ID: <6413261.mhm3NBAO0r@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1499423.ez5cZl2uAf@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <1499423.ez5cZl2uAf@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213205522.GA28455@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 03:55:22PM -0500, Dave Jones wrote:
- > Doing a kernel build while running on a 3.7+ tree from last night and I hit this...
- > 
- > 
- > [22637.787422] XFS: Internal error XFS_WANT_CORRUPTED_RETURN at line 163 of file fs/xfs/xfs_dir2_data.c.  Caller 0xffffffffa070086a
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I unmounted, remounted, unmounted, and then ran xfs_repair on it, as prompted.
-xfs_repair noted..
+If acpi_bus_check_add() is called for a handle already having an
+existing struct acpi_device object attached, it is not necessary to
+check the type and status of the device correspondig to it, so
+change the ordering of acpi_bus_check_add() to avoid that.
 
-bad hash table for directory inode 201328949 (bad stale count): rebuilding
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-After remounting, things seemed ok again.
-I blew away my .ccache on that drive, and restarted my compile,
-and then hit the same bug again.
-
-	Dave
+Index: linux/drivers/acpi/scan.c
+===================================================================
+--- linux.orig/drivers/acpi/scan.c
++++ linux/drivers/acpi/scan.c
+@@ -1582,6 +1582,10 @@ static acpi_status acpi_bus_check_add(ac
+ 	acpi_status status;
+ 	int result;
+ 
++	acpi_bus_get_device(handle, &device);
++	if (device)
++		goto out;
++
+ 	result = acpi_bus_type_and_status(handle, &type, &sta);
+ 	if (result)
+ 		return AE_OK;
+@@ -1598,17 +1602,13 @@ static acpi_status acpi_bus_check_add(ac
+ 		return AE_CTRL_DEPTH;
+ 	}
+ 
+-	acpi_bus_get_device(handle, &device);
+-	if (!device) {
+-		acpi_add_single_object(&device, handle, type, sta,
+-				       ACPI_BUS_ADD_BASIC);
+-		if (!device)
+-			return AE_CTRL_DEPTH;
++	acpi_add_single_object(&device, handle, type, sta, ACPI_BUS_ADD_BASIC);
++	if (!device)
++		return AE_CTRL_DEPTH;
+ 
+-		device->add_type = context ?
+-					ACPI_BUS_ADD_START : ACPI_BUS_ADD_MATCH;
+-	}
++	device->add_type = context ? ACPI_BUS_ADD_START : ACPI_BUS_ADD_MATCH;
+ 
++ out:
+ 	if (!*return_value)
+ 		*return_value = device;
+ 
 
