@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab2LMO7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 09:59:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44227 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094Ab2LMOER (ORCPT
+	id S1756359Ab2LMO7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 09:59:20 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65361 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab2LMO7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 09:04:17 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 057/241] ALSA: hda - Fix invalid connections in VT1802 codec
-Date: Thu, 13 Dec 2012 11:57:02 -0200
-Message-Id: <1355407206-17100-58-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	Thu, 13 Dec 2012 09:59:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Joe Perches <joe@perches.com>
+Subject: Re: [TRIVIAL PATCH 11/26] powerpc: Convert print_symbol to %pSR
+Date: Thu, 13 Dec 2012 11:58:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+References: <cover.1355335227.git.joe@perches.com> <8c901014a0f571011023ed98b9a22bc690925b73.1355335228.git.joe@perches.com>
+In-Reply-To: <8c901014a0f571011023ed98b9a22bc690925b73.1355335228.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212131158.46055.arnd@arndb.de>
+X-Provags-ID: V02:K0:TTuXYtWznOkVb+tbxdvAq62nqZkfmpH28nYhuI3PGCj
+ ZfVrr3G1xp1glCbKLL4eHJkWI089LELoV1twXiSbJritB63pkB
+ 9VKIrVwCbHAp+/sK9/SKz/iwQOcCYOMOef7peme4ivw/I//dyR
+ tLIZ7Xp7vgr2vNCk2T/LZUyjLFXrARKHymtXhQqsaXjtNE26Rq
+ gZ9vzJTf1aDgex1I1ayjGXRnZLtaD7ykCM93hWGIcHaVSqAWrF
+ 8zvaLXrCg1uKXuQZW24Mgr1vgvJtMeq3QKkszwMJsAnhcnTF7W
+ lYKeisbzBEasPvCFbSU2BefFAoEJAHpIRFHHRcgcR1Ad7EZ9rp
+ e38gY8kUNfwWtcL9JC1A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.2 -stable review patch.  If anyone has any objections, please let me know.
+On Wednesday 12 December 2012, Joe Perches wrote:
+> Use the new vsprintf extension to avoid any possible
+> message interleaving.
+> 
+> Convert the #ifdef DEBUG block to a single pr_debug.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-------------------
+nice cleanup!
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit ef4da45828603df57e5e21b8aa21a66ce309f79b upstream.
-
-VT1802 codec provides the invalid connection lists of NID 0x24 and
-0x33 containing the routes to a non-exist widget 0x3e.  This confuses
-the auto-parser.  Fix it up in the driver by overriding these
-connections.
-
-Reported-by: Massimo Del Fedele <max@veneto.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- sound/pci/hda/patch_via.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/sound/pci/hda/patch_via.c b/sound/pci/hda/patch_via.c
-index b601888..a0e708d 100644
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -3688,6 +3688,18 @@ static const struct snd_pci_quirk vt2002p_fixups[] = {
- 	{}
- };
- 
-+/* NIDs 0x24 and 0x33 on VT1802 have connections to non-existing NID 0x3e
-+ * Replace this with mixer NID 0x1c
-+ */
-+static void fix_vt1802_connections(struct hda_codec *codec)
-+{
-+	static hda_nid_t conn_24[] = { 0x14, 0x1c };
-+	static hda_nid_t conn_33[] = { 0x1c };
-+
-+	snd_hda_override_conn_list(codec, 0x24, ARRAY_SIZE(conn_24), conn_24);
-+	snd_hda_override_conn_list(codec, 0x33, ARRAY_SIZE(conn_33), conn_33);
-+}
-+
- /* patch for vt2002P */
- static int patch_vt2002P(struct hda_codec *codec)
- {
-@@ -3702,6 +3714,8 @@ static int patch_vt2002P(struct hda_codec *codec)
- 	spec->aa_mix_nid = 0x21;
- 	override_mic_boost(codec, 0x2b, 0, 3, 40);
- 	override_mic_boost(codec, 0x29, 0, 3, 40);
-+	if (spec->codec_type == VT1802)
-+		fix_vt1802_connections(codec);
- 	add_secret_dac_path(codec);
- 
- 	snd_hda_pick_fixup(codec, NULL, vt2002p_fixups, via_fixups);
--- 
-1.7.9.5
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
