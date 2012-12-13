@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab2LMCFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Dec 2012 21:05:23 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:50623 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab2LMCFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Dec 2012 21:05:21 -0500
-Date: Thu, 13 Dec 2012 13:05:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafael Aquini <aquini@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: linux-next: manual merge of the virtio tree with Linus' tree
-Message-Id: <20121213130503.3432e2e1715439a49962873b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2"
+	id S1755489Ab2LMCFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Dec 2012 21:05:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:59521 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755359Ab2LMCFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Dec 2012 21:05:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,269,1355126400"; 
+   d="scan'208";a="261429955"
+From: Feng Tang <feng.tang@intel.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
+Cc: alek.du@intel.com, Feng Tang <feng.tang@intel.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: [PATCH 2/3] rtc: Skip the suspend/resume handling if persistent clock exist
+Date: Thu, 13 Dec 2012 10:05:27 +0800
+Message-Id: <1355364328-19550-2-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
+References: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+All the RTC suspend and resume functions are to compensate the
+sleep time, but this is already done in timekeeping.c if persistent
+clock exist.
 
-Hi Rusty,
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ drivers/rtc/class.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Today's linux-next merge of the virtio tree got a conflict in
-drivers/virtio/virtio_balloon.c between commit e22504296d4f
-("virtio_balloon: introduce migration primitives to balloon pages") from
-Linus' tree and commit 41395dfb3d35 ("virtio: Convert dev_printk
-(KERN_<LEVEL> to dev_<level>(") from the virtio tree.
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index f8a0aab..bf4c6d3 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -50,6 +50,10 @@ static int rtc_suspend(struct device *dev, pm_message_t mesg)
+ 	struct rtc_device	*rtc = to_rtc_device(dev);
+ 	struct rtc_time		tm;
+ 	struct timespec		delta, delta_delta;
++
++	if (persistent_clock_exist)
++		return 0;
++
+ 	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
+ 		return 0;
+ 
+@@ -88,6 +92,9 @@ static int rtc_resume(struct device *dev)
+ 	struct timespec		new_system, new_rtc;
+ 	struct timespec		sleep_time;
+ 
++	if (persistent_clock_exist)
++		return 0;
++
+ 	rtc_hctosys_ret = -ENODEV;
+ 	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
+ 		return 0;
+-- 
+1.7.9.5
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/virtio/virtio_balloon.c
-index 2a70558,586395c..0000000
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@@ -133,16 -125,14 +133,15 @@@ static void fill_balloon(struct virtio_
-  	/* We can only do one array worth at a time. */
-  	num =3D min(num, ARRAY_SIZE(vb->pfns));
- =20
- +	mutex_lock(&vb->balloon_lock);
-  	for (vb->num_pfns =3D 0; vb->num_pfns < num;
-  	     vb->num_pfns +=3D VIRTIO_BALLOON_PAGES_PER_PAGE) {
- -		struct page *page =3D alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
- -					__GFP_NOMEMALLOC | __GFP_NOWARN);
- +		struct page *page =3D balloon_page_enqueue(vb_dev_info);
- +
-  		if (!page) {
-- 			if (printk_ratelimit())
-- 				dev_printk(KERN_INFO, &vb->vdev->dev,
-- 					   "Out of puff! Can't get %u pages\n",
-- 					   VIRTIO_BALLOON_PAGES_PER_PAGE);
-+ 			dev_info_ratelimited(&vb->vdev->dev,
- -					     "Out of puff! Can't get %zu pages\n",
- -					     num);
-++					     "Out of puff! Can't get %u pages\n",
-++					     VIRTIO_BALLOON_PAGES_PER_PAGE);
-  			/* Sleep for at least 1/5 of a second before retry. */
-  			msleep(200);
-  			break;
-
---Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQyTfPAAoJEECxmPOUX5FEfg4P/R3sdKwXHaVoxIGQYLfukShp
-9LKAeFlf7xPwIbg7IntJsAQqtajlEddSVgt0A86PgaQuYehkiXdS8qFWHqOUZ7e2
-quCJ1f48F3YTP6ECBm/crIXM2uq8sCUbLSpfLRs9zIVTEChrrU9+mYQh4cXLnn1z
-YUEOAOOyNoDzYsHjLOaMhJ/guY31eZakr3JiiDgUyBSXWhco8zMOsBGB4eydi8M0
-C/v5JwHOM4g7ppexm2D+qC4QMEZSLJ3wU+eZ7UVF0KIJw23+oZUNpI4mhWZQ8tN0
-Lr0eHhn+9d6PPSGe+ORKkzCXthr1DyMdOBJLmYMmtMkmjVppZY2Cv08nYBSRuLuI
-bp2rXxAeTblhvKjTvxmxRfWwvknqFB2UETvlXa4uxCP1gznMMb+OWqdCOiUiZGOL
-Ks5mZrx/yxwEdHgfx70uF3N93Rqp2TKHIy/nsEji746ZCCGa/3yra+9Q1erORQb+
-qF/5+ND3RcTDfZ8MWKzJvYON+ufA+ysWtQFGoso+099cs6+7c5jmPBc0gT8nIHxl
-Lcbs1wXCT48IATLgmvrgc+wg/HQoWH6DX3iv9MALkAJhmRwJXxRvD+2t1XNrrMiW
-8eQUk60SEuUyhRY2Y07WQCMZjNHYffouI2o+fNWdsUHJ+MHGLHzBIo1uxObbCL7q
-pApomrCSPGEnC9TuD5pY
-=fVaz
------END PGP SIGNATURE-----
-
---Signature=_Thu__13_Dec_2012_13_05_03_+1100_iWyRJ+pFYZ9=yoX2--
