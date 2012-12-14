@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab2LNUaU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:30:20 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47319 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab2LNUaR (ORCPT
+	id S932352Ab2LNUb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:31:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52813 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab2LNUb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:30:17 -0500
-From: Kamal Mostafa <kamal@whence.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fbcon: clear the logo bitmap from the margin area
-Date: Fri, 14 Dec 2012 12:30:15 -0800
-Message-Id: <1355517015-4926-1-git-send-email-kamal@whence.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 14 Dec 2012 15:31:26 -0500
+Message-ID: <50CB8C74.3090102@canonical.com>
+Date: Fri, 14 Dec 2012 15:30:44 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: martin.petersen@oracle.com
+CC: Kernel Team <kernel-team@lists.ubuntu.com>, linux-kernel@vger.kernel.org,
+        snitzer@redhat.com, jgarzik@redhat.com, JBottomley@Parallels.com
+Subject: [v3.7 Regression]  [SCSI] sd: Implement support for WRITE SAME
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Explicitly clear_margins when clearing the logo, in case the font dimensions
-are non-integral to the framebuffer dimensions.
+Hi Martin,
 
-Signed-off-by: Kamal Mostafa <kamal@whence.com>
----
- drivers/video/console/fbcon.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+A bug was opened against the Ubuntu kernel[0].  After a kernel bisect, 
+it was found that reverting the following commit resolved this bug:
 
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index 8745637..b51a4bd 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -1236,8 +1236,16 @@ static void fbcon_clear(struct vc_data *vc, int sy, int sx, int height,
- 	if (!height || !width)
- 		return;
- 
--	if (sy < vc->vc_top && vc->vc_top == logo_lines)
-+	if (sy < vc->vc_top && vc->vc_top == logo_lines) {
- 		vc->vc_top = 0;
-+		/*
-+		 * If the font dimensions are not an integral of the display
-+		 * dimensions then the ops->clear below won't end up clearing
-+		 * the margins.  Call clear_margins here in case the logo
-+		 * bitmap stretched into the margin area.
-+		 */
-+		fbcon_clear_margins(vc, 0);
-+	}
- 
- 	/* Split blits that cross physical y_wrap boundary */
- 
--- 
-1.7.10.4
+commit 5db44863b6ebbb400c5e61d56ebe8f21ef48b1bd
+Author: Martin K. Petersen <martin.petersen@oracle.com>
+Date:   Tue Sep 18 12:19:32 2012 -0400
+[SCSI] sd: Implement support for WRITE SAME
 
+The regression was introduced as of v3.7-rc7.
+
+The bug can be reproduced with the following commands, which will 
+operate on a virtual scsi_debug device, so they won't change any data on 
+the test system. However, this will completely crash the system:
+
+sudo modprobe scsi_debug
+sudo luksformat -t ext4 /dev/sdb <- Or whatever device gets assigned 
+after inserting scsi_debug.
+sudo cryptsetup luksOpen /dev/sdb treasure
+
+Everything works fine up to here, but the following will cause the crash:
+
+sudo mount /dev/mapper/treasure /mnt
+
+The bug can be reproduced on bare metal, in a VM and on i386 or amd64.
+
+I see that you are the author of this patch, so I wanted to run this by 
+you.  I was thinking of requesting a revert for v3.7, but I wanted to 
+get your feedback first.
+
+
+Thanks,
+
+Joe
+
+
+[0] https://bugs.launchpad.net/bugs/1089818
