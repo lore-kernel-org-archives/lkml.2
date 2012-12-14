@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2LNIdl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:33:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42569 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab2LNIdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:33:40 -0500
-Date: Fri, 14 Dec 2012 00:33:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH 2/2] dmatest: check for dma mapping error
-Message-Id: <20121214003328.46cba41c.akpm@linux-foundation.org>
-In-Reply-To: <CAHp75VfxyyqaAOTsXQfEaiQm8tPetG2JZUm-XrezzdL01qoYiA@mail.gmail.com>
-References: <1355139464-6855-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1355139464-6855-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20121213153437.b8b0198d.akpm@linux-foundation.org>
-	<CAHp75VfxyyqaAOTsXQfEaiQm8tPetG2JZUm-XrezzdL01qoYiA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753894Ab2LNIfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:35:09 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:40226 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab2LNIfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 03:35:08 -0500
+Message-ID: <50CAE485.5020608@parallels.com>
+Date: Fri, 14 Dec 2012 12:34:13 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, aarcange@redhat.com, ak@linux.intel.com,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
+In-Reply-To: <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Dec 2012 09:06:03 +0200 Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
-
-> On Fri, Dec 14, 2012 at 1:34 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Mon, 10 Dec 2012 13:37:44 +0200
-> > Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
-> >
-> >> We get a warning if CONFIG_DMA_API_DEBUG=y
-> >>
-> >> [   28.150631] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
-> >> [   28.157058] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x0000000035698305] [size=14365 bytes] [mapped as single]
+On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
+> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
+> really need more control I'd almost push for a device/filesystem node
+> that could be mmapped the usual way.
 > 
-> >> --- a/drivers/dma/dmatest.c
-> >> +++ b/drivers/dma/dmatest.c
-> >> @@ -378,15 +378,35 @@ static int dmatest_func(void *data)
-> >>
-> >>                       dma_srcs[i] = dma_map_single(dev->dev, buf, len,
-> >>                                                    DMA_TO_DEVICE);
-> >> +                     ret = dma_mapping_error(dev->dev, dma_srcs[i]);
-> >> +                     if (ret) {
-> >> +                             unmap_src(dev->dev, dma_srcs, len, i);
-> >> +                             pr_warn("%s: #%u: mapping error %d with "
-> >> +                                     "src_off=0x%x len=0x%x\n",
-> >> +                                     thread_name, total_tests - 1, ret,
-> >> +                                     src_off, len);
-> >> +                             failed_tests++;
-> >> +                             continue;
-> >> +                     }
-> >
-> > The changelog and the code don't match.  Which one is out of date?
-> 
-> I'm afraid I didn't get what is wrong.
-> 
+> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
+> criu is stable enough yet that we should care.  Criu people?
 
-The above code will not emit the string "dw_dmac dw_dmac.0: DMA-API:
-device driver failed to check map error[device
-address=0x0000000035698305] [size=14365 bytes] [mapped as single]".
+It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
 
-Oh I see what you did.  That string is emitted by the kernel at
-present, and the patch prevents this.  And it also emits a new warning
-if the mapping attempt failed, and that new warning wasn't described.
+> (In brief summary: how annoying would it be if the vdso was no longer
+> just a bunch of constant bytes that lived somewhere?)
 
-I updated the changelog:
+It depends on what vdso is going to be. In the perfect case it should
+a) be mremap-able to any address (or be at fixed address _forever_, but
+   I assume this is not feasible);
+b) have entry points at fixed (or somehow movable) places.
 
+I admit that I didn't understand your question properly, if I did,
+please correct me.
 
-: The kernel emits a warning if CONFIG_DMA_API_DEBUG=y:
-: 
-: [   28.150631] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
-: [   28.157058] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x0000000035698305] [size=14365 bytes] [mapped as single]
-: 
-: Fix this by adding the required checking of the dma_map_single() return
-: value.
-
+Thanks,
+Pavel
