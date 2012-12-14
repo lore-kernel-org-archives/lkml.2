@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab2LNXDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:03:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40764 "EHLO mail.kernel.org"
+	id S932864Ab2LNXDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:03:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40791 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932298Ab2LNXDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:03:40 -0500
+	id S932298Ab2LNXDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:03:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 18/37] USB: option: blacklist network interface on Huawei E173
-Date: Fri, 14 Dec 2012 15:00:55 -0800
-Message-Id: <20121214222256.637363583@linuxfoundation.org>
+        Martin Teichmann <lkb.teichmann@gmail.com>
+Subject: [ 19/37] USB: ftdi_sio: Add support for Newport AGILIS motor drivers
+Date: Fri, 14 Dec 2012 15:00:56 -0800
+Message-Id: <20121214222256.788408737@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,50 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Martin Teichmann <lkb.teichmann@gmail.com>
 
-commit f36446cf9bbebaa03a80d95cfeeafbaf68218249 upstream.
+commit d7e14b375b40c04cd735b115713043b69a2c68ac upstream.
 
-The Huawei E173 will normally appear as 12d1:1436 in Linux.  But
-the modem has another mode with different device ID and a slightly
-different set of descriptors. This is the mode used by Windows like
-this:
+The Newport AGILIS model AG-UC8 compact piezo motor controller
+(http://search.newport.com/?q=*&x2=sku&q2=AG-UC8)
+is yet another device using an FTDI USB-to-serial chip. It works
+fine with the ftdi_sio driver when adding
 
-  3Modem:      USB\VID_12D1&PID_140C&MI_00\6&3A1D2012&0&0000
-  Networkcard: USB\VID_12D1&PID_140C&MI_01\6&3A1D2012&0&0001
-  Appli.Inter: USB\VID_12D1&PID_140C&MI_02\6&3A1D2012&0&0002
-  PC UI Inter: USB\VID_12D1&PID_140C&MI_03\6&3A1D2012&0&0003
+  options ftdi-sio product=0x3000 vendor=0x104d
 
-All interfaces have the same ff/ff/ff class codes in this mode.
-Blacklisting the network interface to allow it to be picked up by
-the network driver.
+to modprobe.d. udevadm reports "Newport" as the manufacturer,
+and "Agilis" as the product name.
 
-Reported-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Martin Teichmann <lkb.teichmann@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -81,6 +81,7 @@ static void option_instat_callback(struc
- #define OPTION_PRODUCT_GTM380_MODEM		0x7201
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -197,6 +197,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -752,6 +752,12 @@
+ #define TTI_VID			0x103E	/* Vendor Id */
+ #define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
  
- #define HUAWEI_VENDOR_ID			0x12D1
-+#define HUAWEI_PRODUCT_E173			0x140C
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_K4605			0x14C6
-@@ -553,6 +554,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
++/*
++ * Newport Cooperation (www.newport.com)
++ */
++#define NEWPORT_VID			0x104D
++#define NEWPORT_AGILIS_PID		0x3000
++
+ /* Interbiometrics USB I/O Board */
+ /* Developed for Interbiometrics by Rudolf Gugler */
+ #define INTERBIOMETRICS_VID              0x1209
 
 
