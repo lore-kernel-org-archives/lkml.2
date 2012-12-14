@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab2LNWcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:32:25 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:37541 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab2LNWcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:32:21 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-security-module@vger.kernel.org
-References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
-	<87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
-	<20121214032820.GA5115@mail.hallyn.com> <87bodxi9zw.fsf@xmission.com>
-	<20121214152607.GA9266@mail.hallyn.com> <87bodwd4aw.fsf@xmission.com>
-	<20121214161514.GA9962@mail.hallyn.com> <87r4ms5wpm.fsf@xmission.com>
-	<20121214202921.GA11450@mail.hallyn.com>
-Date: Fri, 14 Dec 2012 14:32:12 -0800
-In-Reply-To: <20121214202921.GA11450@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 14 Dec 2012 20:29:21 +0000")
-Message-ID: <87bodww9hv.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932682Ab2LNWc5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:32:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38815 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932168Ab2LNWap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:30:45 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?S=C3=A9bastien=20Wilmet?= <swilmet@gnome.org>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 20/28] ACPI / PM: Add Sony Vaio VPCEB1S1E to nonvs blacklist.
+Date: Fri, 14 Dec 2012 14:26:37 -0800
+Message-Id: <20121214222255.141316007@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
+References: <20121214222250.501309822@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+0WCL8+ql0WVktDNDncJsJDBQGdrQW7m0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0005]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent user namespace to have caps.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
+------------------
 
->> A child user namespace having capabilities against processes in it's
->> parent seems totally bizarre and pretty dangerous from a capabilities
->> standpoint.
->
-> How would it have them against its parent?
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-init_user_ns
-   userns a --- created by kuid 1
-     userns b -- created by kuid 2
-        process c in userns b with kuid 1
+commit 876ab79055019e248508cfd0dee7caa3c0c831ed upstream.
 
-Serge read the first permisison check in common_cap. 
-Think what happens in the above example.
+Sony Vaio VPCEB1S1E does not resume correctly without
+acpi_sleep=nonvs, so add it to the ACPI sleep blacklist.
 
-For the rest I understand your concern.
+References: https://bugzilla.kernel.org/show_bug.cgi?id=48781
+Reported-by: Sébastien Wilmet <swilmet@gnome.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Serge please read and look at the patches I have posted to fix
-the issues Andy found with the user namespace tree.  Especially
-the fix to commit_creds.
+---
+ drivers/acpi/sleep.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-After you have looked at the patches to fix the issues I will
-be happy to discuss things further with you.
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -508,6 +508,14 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VPCEB1S1E",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1S1E"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VGN-FW520F",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 
-Eric
 
