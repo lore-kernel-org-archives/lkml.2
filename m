@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2LNW2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:28:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38426 "EHLO mail.kernel.org"
+	id S1757270Ab2LNW2Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:28:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38411 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab2LNW20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:28:26 -0500
+	id S1757232Ab2LNW2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:28:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        A Sh <smr.ash1991@gmail.com>
-Subject: [ 19/22] xhci: Extend Fresco Logic MSI quirk.
-Date: Fri, 14 Dec 2012 14:26:04 -0800
-Message-Id: <20121214222254.258983867@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Haren Myneni <haren@us.ibm.com>
+Subject: [ 22/22] powerpc: Keep thread.dscr and thread.dscr_inherit in sync
+Date: Fri, 14 Dec 2012 14:26:07 -0800
+Message-Id: <20121214222254.945238804@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -26,83 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 upstream.
+commit 00ca0de02f80924dfff6b4f630e1dff3db005e35 upstream.
 
-Ali reports that plugging a device into the Fresco Logic xHCI host with
-PCI device ID 1400 produces an IRQ error:
+When we update the DSCR either via emulation of mtspr(DSCR) or via
+a change to dscr_default in sysfs we don't update thread.dscr.
+We will eventually update it at context switch time but there is
+a period where thread.dscr is incorrect.
 
- do_IRQ: 3.176 No irq handler for vector (irq -1)
+If we fork at this point we will copy the old value of thread.dscr
+into the child. To avoid this, always keep thread.dscr in sync with
+reality.
 
-Other early Fresco Logic host revisions don't support MSI, even though
-their PCI config space claims they do.  Extend the quirk to disabling
-MSI to this chipset revision.  Also enable the short transfer quirk,
-since it's likely this revision also has that quirk, and it should be
-harmless to enable.
+This issue was found with the following testcase:
 
-04:00.0 0c03: 1b73:1400 (rev 01) (prog-if 30 [XHCI])
-        Subsystem: 1d5c:1000
-        Physical Slot: 3
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 64 bytes
-        Interrupt: pin A routed to IRQ 51
-        Region 0: Memory at d4600000 (32-bit, non-prefetchable) [size=64K]
-        Capabilities: [50] Power Management version 3
-                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-        Capabilities: [68] MSI: Enable+ Count=1/1 Maskable- 64bit+
-                Address: 00000000feeff00c  Data: 41b1
-        Capabilities: [80] Express (v1) Endpoint, MSI 00
-                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
-                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-                        MaxPayload 128 bytes, MaxReadReq 512 bytes
-                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
-                        ClockPM- Surprise- LLActRep- BwNot-
-                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-        Kernel driver in use: xhci_hcd
+http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
 
-This patch should be backported to stable kernels as old as 2.6.36, that
-contain the commit f5182b4155b9d686c5540a6822486400e34ddd98 "xhci:
-Disable MSI for some Fresco Logic hosts."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: A Sh <smr.ash1991@gmail.com>
-Tested-by: A Sh <smr.ash1991@gmail.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Haren Myneni <haren@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/sysfs.c |    4 +++-
+ arch/powerpc/kernel/traps.c |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -28,6 +28,7 @@
- /* Device for a quirk */
- #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
- #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
-+#define PCI_DEVICE_ID_FRESCO_LOGIC_FL1400	0x1400
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -194,8 +194,10 @@ static ssize_t show_dscr_default(struct
  
- #define PCI_VENDOR_ID_ETRON		0x1b6f
- #define PCI_DEVICE_ID_ASROCK_P67	0x7023
-@@ -109,8 +110,10 @@ static int xhci_pci_setup(struct usb_hcd
+ static void update_dscr(void *dummy)
+ {
+-	if (!current->thread.dscr_inherit)
++	if (!current->thread.dscr_inherit) {
++		current->thread.dscr = dscr_default;
+ 		mtspr(SPRN_DSCR, dscr_default);
++	}
+ }
  
- 	/* Look for vendor-specific quirks */
- 	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
--			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK) {
--		if (pdev->revision == 0x0) {
-+			(pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK ||
-+			 pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_FL1400)) {
-+		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
-+				pdev->revision == 0x0) {
- 			xhci->quirks |= XHCI_RESET_EP_QUIRK;
- 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
- 					" endpoint cmd after reset endpoint\n");
+ static ssize_t __used store_dscr_default(struct sysdev_class *class,
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -935,8 +935,9 @@ static int emulate_instruction(struct pt
+ 			cpu_has_feature(CPU_FTR_DSCR)) {
+ 		PPC_WARN_EMULATED(mtdscr, regs);
+ 		rd = (instword >> 21) & 0x1f;
+-		mtspr(SPRN_DSCR, regs->gpr[rd]);
++		current->thread.dscr = regs->gpr[rd];
+ 		current->thread.dscr_inherit = 1;
++		mtspr(SPRN_DSCR, current->thread.dscr);
+ 		return 0;
+ 	}
+ #endif
 
 
