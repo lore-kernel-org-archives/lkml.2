@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946078Ab2LNXIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:08:44 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37269 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946048Ab2LNXIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:08:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121214120707.GG6898@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
-	<1353955671-14385-4-git-send-email-mhocko@suse.cz>
-	<CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
-	<20121211155432.GC1612@dhcp22.suse.cz>
-	<CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
-	<20121212090652.GB32081@dhcp22.suse.cz>
-	<20121212192441.GD10374@dhcp22.suse.cz>
-	<CALWz4iygkxRUJX2bEhHp6nyEwyVA8w8WxNcQqzmXuMeH8kMuYA@mail.gmail.com>
-	<20121214120707.GG6898@dhcp22.suse.cz>
-Date: Fri, 14 Dec 2012 15:08:40 -0800
-Message-ID: <CALWz4ix9-j3rf4JRfBXo8cc3wCgBnOY5APm7h6p5NOBH2j=6WQ@mail.gmail.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup iterators
-From: Ying Han <yinghan@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1946036Ab2LNXJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:09:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41329 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945993Ab2LNXHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:07:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 18/27] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
+Date: Fri, 14 Dec 2012 15:01:31 -0800
+Message-Id: <20121214222255.428009233@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
+References: <20121214222251.229078963@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 4:07 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Thu 13-12-12 17:14:13, Ying Han wrote:
-> [...]
->> I haven't tried this patch set yet. Before I am doing that, I am
->> curious whether changing the target reclaim to be consistent with
->> global reclaim something worthy to consider based my last reply:
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 53dcde9..3f158c5 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1911,20 +1911,6 @@ static void shrink_zone(struct zone *zone,
->> struct scan_control *sc)
->>
->>                 shrink_lruvec(lruvec, sc);
->>
->> -               /*
->> -                * Limit reclaim has historically picked one memcg and
->> -                * scanned it with decreasing priority levels until
->> -                * nr_to_reclaim had been reclaimed.  This priority
->> -                * cycle is thus over after a single memcg.
->> -                *
->> -                * Direct reclaim and kswapd, on the other hand, have
->> -                * to scan all memory cgroups to fulfill the overall
->> -                * scan target for the zone.
->> -                */
->> -               if (!global_reclaim(sc)) {
->> -                       mem_cgroup_iter_break(root, memcg);
->> -                       break;
->> -               }
->>                 memcg = mem_cgroup_iter(root, memcg, &reclaim);
->
-> This wouldn't work because you would over-reclaim proportionally to the
-> number of groups in the hierarchy.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Don't get it and especially of why it is different from global
-reclaim? I view the global reclaim should be viewed as target reclaim,
-just a matter of the root cgroup is under memory pressure.
+------------------
 
-Anyway, don't want to distract you from working on the next post. So
-feel free to not follow up on this.
+From: Alan Stern <stern@rowland.harvard.edu>
 
---Ying
+commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
 
->
->>         } while (memcg);
->>  }
->>
->> --Ying
->
-> --
-> Michal Hocko
-> SUSE Labs
+This patch (as1636) is a partial workaround for a hardware bug
+affecting OHCI controllers by NVIDIA at least, maybe others too.  When
+the controller retires a Transfer Descriptor, it is supposed to add
+the TD onto the Done Queue.  But sometimes this doesn't happen, with
+the result that ohci-hcd never realizes the corresponding transfer has
+finished.  Symptoms can vary; a typical result is that USB audio stops
+working after a while.
+
+The patch works around the problem by recognizing that TDs are always
+processed in order.  Therefore, if a later TD is found on the Done
+Queue than all the earlier TDs for the same endpoint must be finished
+as well.
+
+Unfortunately this won't solve the problem in cases where the missing
+TD is the last one in the endpoint's queue.  A complete fix would
+require a signficant amount of change to the driver.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -1128,6 +1128,25 @@ dl_done_list (struct ohci_hcd *ohci)
+ 
+ 	while (td) {
+ 		struct td	*td_next = td->next_dl_td;
++		struct ed	*ed = td->ed;
++
++		/*
++		 * Some OHCI controllers (NVIDIA for sure, maybe others)
++		 * occasionally forget to add TDs to the done queue.  Since
++		 * TDs for a given endpoint are always processed in order,
++		 * if we find a TD on the donelist then all of its
++		 * predecessors must be finished as well.
++		 */
++		for (;;) {
++			struct td	*td2;
++
++			td2 = list_first_entry(&ed->td_list, struct td,
++					td_list);
++			if (td2 == td)
++				break;
++			takeback_td(ohci, td2);
++		}
++
+ 		takeback_td(ohci, td);
+ 		td = td_next;
+ 	}
+
+
