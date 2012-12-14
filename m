@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab2LNWoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:44:07 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41681 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932619Ab2LNWlt (ORCPT
+	id S932615Ab2LNWlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:41:47 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:33050 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab2LNWlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:41:49 -0500
+	Fri, 14 Dec 2012 17:41:39 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/12] cfq-iosched: implement cfq_group->nr_active and ->level_weight
-Date: Fri, 14 Dec 2012 14:41:19 -0800
-Message-Id: <1355524885-22719-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/12] blkcg: reorganize blkg_lookup_create() and friends
+Date: Fri, 14 Dec 2012 14:41:15 -0800
+Message-Id: <1355524885-22719-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
 References: <1355524885-22719-1-git-send-email-tj@kernel.org>
@@ -22,149 +22,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prepare for blkcg hierarchy support, add cfqg->nr_active and
-->level_weight.  cfqg->nr_active counts the number of active cfqgs at
-the cfqg's level and ->level_weight is sum of weights of those cfqgs.
-The level covers itself (cfqg->leaf_weight) and immediate children.
+Reorganize such that
 
-The two values are updated when a cfqg enters and leaves the group
-service tree.  Unless the hierarchy is very deep, the added overhead
-should be negligible.
+* __blkg_lookup() takes bool param @update_hint to determine whether
+  to update hint.
 
-Currently, the parent is determined using cfqg_flat_parent() which
-makes the root cfqg the parent of all other cfqgs.  This is to make
-the transition to hierarchy-aware scheduling gradual.  Scheduling
-logic will be converted to use cfqg->level_weight without actually
-changing the behavior.  When everything is ready,
-blkcg_weight_parent() will be replaced with proper parent function.
+* __blkg_lookup_create() no longer performs lookup before trying to
+  create.  Renamed to blkg_create().
 
-This patch doesn't introduce any behavior chagne.
+* blkg_lookup_create() now performs lookup and then invokes
+  blkg_create() if lookup fails.
+
+* root_blkg creation in blkcg_activate_policy() updated accordingly.
+  Note that blkcg_activate_policy() no longer updates lookup hint if
+  root_blkg already exists.
+
+Except for the last lookup hint bit which is immaterial, this is pure
+reorganization and doesn't introduce any visible behavior change.
+This is to prepare for proper hierarchy support.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/cfq-iosched.c | 76 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 76 insertions(+)
+ block/blk-cgroup.c | 75 +++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 52 insertions(+), 23 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 5f23763..eb290a0 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -225,6 +225,18 @@ struct cfq_group {
- 	u64 vdisktime;
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index feda49f..ffbd237 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -126,7 +126,7 @@ err_free:
+ }
+ 
+ static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
+-				      struct request_queue *q)
++				      struct request_queue *q, bool update_hint)
+ {
+ 	struct blkcg_gq *blkg;
+ 
+@@ -135,14 +135,19 @@ static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
+ 		return blkg;
  
  	/*
-+	 * The number of active cfqgs and sum of their weights under this
-+	 * cfqg.  This covers this cfqg's leaf_weight and all children's
-+	 * weights, but does not cover weights of further descendants.
-+	 *
-+	 * If a cfqg is on the service tree, it's active.  An active cfqg
-+	 * also activates its parent and contributes to the level_weight of
-+	 * the parent.
-+	 */
-+	int nr_active;
-+	unsigned int level_weight;
-+
-+	/*
- 	 * There are two weights - (internal) weight is the weight of this
- 	 * cfqg against the sibling cfqgs.  leaf_weight is the wight of
- 	 * this cfqg against the child cfqgs.  For the root cfqg, both
-@@ -583,6 +595,22 @@ static inline struct cfq_group *blkg_to_cfqg(struct blkcg_gq *blkg)
- 	return pd_to_cfqg(blkg_to_pd(blkg, &blkcg_policy_cfq));
+-	 * Hint didn't match.  Look up from the radix tree.  Note that we
+-	 * may not be holding queue_lock and thus are not sure whether
+-	 * @blkg from blkg_tree has already been removed or not, so we
+-	 * can't update hint to the lookup result.  Leave it to the caller.
++	 * Hint didn't match.  Look up from the radix tree.  Note that the
++	 * hint can only be updated under queue_lock as otherwise @blkg
++	 * could have already been removed from blkg_tree.  The caller is
++	 * responsible for grabbing queue_lock if @update_hint.
+ 	 */
+ 	blkg = radix_tree_lookup(&blkcg->blkg_tree, q->id);
+-	if (blkg && blkg->q == q)
++	if (blkg && blkg->q == q) {
++		if (update_hint) {
++			lockdep_assert_held(q->queue_lock);
++			rcu_assign_pointer(blkcg->blkg_hint, blkg);
++		}
+ 		return blkg;
++	}
+ 
+ 	return NULL;
+ }
+@@ -162,7 +167,7 @@ struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, struct request_queue *q)
+ 
+ 	if (unlikely(blk_queue_bypass(q)))
+ 		return NULL;
+-	return __blkg_lookup(blkcg, q);
++	return __blkg_lookup(blkcg, q, false);
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup);
+ 
+@@ -170,9 +175,9 @@ EXPORT_SYMBOL_GPL(blkg_lookup);
+  * If @new_blkg is %NULL, this function tries to allocate a new one as
+  * necessary using %GFP_ATOMIC.  @new_blkg is always consumed on return.
+  */
+-static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+-					     struct request_queue *q,
+-					     struct blkcg_gq *new_blkg)
++static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
++				    struct request_queue *q,
++				    struct blkcg_gq *new_blkg)
+ {
+ 	struct blkcg_gq *blkg;
+ 	int ret;
+@@ -180,13 +185,6 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
+ 
+-	/* lookup and update hint on success, see __blkg_lookup() for details */
+-	blkg = __blkg_lookup(blkcg, q);
+-	if (blkg) {
+-		rcu_assign_pointer(blkcg->blkg_hint, blkg);
+-		goto out_free;
+-	}
+-
+ 	/* blkg holds a reference to blkcg */
+ 	if (!css_tryget(&blkcg->css)) {
+ 		blkg = ERR_PTR(-EINVAL);
+@@ -223,16 +221,39 @@ out_free:
+ 	return blkg;
  }
  
-+/*
-+ * Determine the parent cfqg for weight calculation.  Currently, cfqg
-+ * scheduling is flat and the root is the parent of everyone else.
++/**
++ * blkg_lookup_create - lookup blkg, try to create one if not there
++ * @blkcg: blkcg of interest
++ * @q: request_queue of interest
++ *
++ * Lookup blkg for the @blkcg - @q pair.  If it doesn't exist, try to
++ * create one.  This function should be called under RCU read lock and
++ * @q->queue_lock.
++ *
++ * Returns pointer to the looked up or created blkg on success, ERR_PTR()
++ * value on error.  If @q is dead, returns ERR_PTR(-EINVAL).  If @q is not
++ * dead and bypassing, returns ERR_PTR(-EBUSY).
 + */
-+static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg)
-+{
-+	struct blkcg_gq *blkg = cfqg_to_blkg(cfqg);
-+	struct cfq_group *root;
-+
-+	while (blkg->parent)
-+		blkg = blkg->parent;
-+	root = blkg_to_cfqg(blkg);
-+
-+	return root != cfqg ? root : NULL;
-+}
-+
- static inline void cfqg_get(struct cfq_group *cfqg)
+ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
+ 				    struct request_queue *q)
  {
- 	return blkg_get(cfqg_to_blkg(cfqg));
-@@ -683,6 +711,7 @@ static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
- 
- #else	/* CONFIG_CFQ_GROUP_IOSCHED */
- 
-+static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg) { return NULL; }
- static inline void cfqg_get(struct cfq_group *cfqg) { }
- static inline void cfqg_put(struct cfq_group *cfqg) { }
- 
-@@ -1208,11 +1237,33 @@ cfq_update_group_weight(struct cfq_group *cfqg)
- static void
- cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- {
-+	struct cfq_group *pos = cfqg;
-+	bool propagate;
++	struct blkcg_gq *blkg;
 +
-+	/* add to the service tree */
- 	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
- 
- 	cfq_update_group_weight(cfqg);
- 	__cfq_group_service_tree_add(st, cfqg);
- 	st->total_weight += cfqg->weight;
++	WARN_ON_ONCE(!rcu_read_lock_held());
++	lockdep_assert_held(q->queue_lock);
 +
-+	/*
-+	 * Activate @cfqg and propagate activation upwards until we meet an
-+	 * already activated node or reach root.
-+	 */
-+	propagate = !pos->nr_active++;
-+	pos->level_weight += pos->leaf_weight;
+ 	/*
+ 	 * This could be the first entry point of blkcg implementation and
+ 	 * we shouldn't allow anything to go through for a bypassing queue.
+ 	 */
+ 	if (unlikely(blk_queue_bypass(q)))
+ 		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
+-	return __blkg_lookup_create(blkcg, q, NULL);
 +
-+	while (propagate) {
-+		struct cfq_group *parent = cfqg_flat_parent(pos);
++	blkg = __blkg_lookup(blkcg, q, true);
++	if (blkg)
++		return blkg;
 +
-+		if (!parent)
-+			break;
-+
-+		propagate = !parent->nr_active++;
-+		parent->level_weight += pos->weight;
-+		pos = parent;
-+	}
++	return blkg_create(blkcg, q, NULL);
  }
+ EXPORT_SYMBOL_GPL(blkg_lookup_create);
  
- static void
-@@ -1243,6 +1294,31 @@ cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- static void
- cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
+@@ -777,7 +798,7 @@ int blkcg_activate_policy(struct request_queue *q,
+ 			  const struct blkcg_policy *pol)
  {
-+	struct cfq_group *pos = cfqg;
-+	bool propagate;
-+
+ 	LIST_HEAD(pds);
+-	struct blkcg_gq *blkg;
++	struct blkcg_gq *blkg, *new_blkg;
+ 	struct blkg_policy_data *pd, *n;
+ 	int cnt = 0, ret;
+ 	bool preloaded;
+@@ -786,19 +807,27 @@ int blkcg_activate_policy(struct request_queue *q,
+ 		return 0;
+ 
+ 	/* preallocations for root blkg */
+-	blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
+-	if (!blkg)
++	new_blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
++	if (!new_blkg)
+ 		return -ENOMEM;
+ 
+ 	preloaded = !radix_tree_preload(GFP_KERNEL);
+ 
+ 	blk_queue_bypass_start(q);
+ 
+-	/* make sure the root blkg exists and count the existing blkgs */
 +	/*
-+	 * Undo activation from cfq_group_service_tree_add().  Deactivate
-+	 * @cfqg and propagate deactivation upwards.
++	 * Make sure the root blkg exists and count the existing blkgs.  As
++	 * @q is bypassing at this point, blkg_lookup_create() can't be
++	 * used.  Open code it.
 +	 */
-+	propagate = !--pos->nr_active;
-+	pos->level_weight -= pos->leaf_weight;
-+
-+	while (propagate) {
-+		struct cfq_group *parent = cfqg_flat_parent(pos);
-+
-+		/* @pos has 0 nr_active at this point */
-+		WARN_ON_ONCE(pos->level_weight);
-+
-+		if (!parent)
-+			break;
-+
-+		propagate = !--parent->nr_active;
-+		parent->level_weight -= pos->weight;
-+		pos = parent;
-+	}
-+
-+	/* remove from the service tree */
- 	st->total_weight -= cfqg->weight;
- 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
- 		cfq_rb_erase(&cfqg->rb_node, st);
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	rcu_read_lock();
+-	blkg = __blkg_lookup_create(&blkcg_root, q, blkg);
++	blkg = __blkg_lookup(&blkcg_root, q, false);
++	if (blkg)
++		blkg_free(new_blkg);
++	else
++		blkg = blkg_create(&blkcg_root, q, new_blkg);
+ 	rcu_read_unlock();
+ 
+ 	if (preloaded)
 -- 
 1.7.11.7
 
