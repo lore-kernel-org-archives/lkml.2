@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab2LNQpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:45:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26663 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab2LNQpo (ORCPT
+	id S1756806Ab2LNRAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 12:00:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37318 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756715Ab2LNRAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:45:44 -0500
-X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=aMxrRGBvQbYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=cAgnu1O8zo8A:10 a=QyXUC8HyAAAA:8 a=l6TdlRWzQdANE4CJKAwA:9 a=PUjeQqilurYA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355503542.17101.398.camel@gandalf.local.home>
-Subject: [PATCH] staging: Enable parport sb105x drivers if parport is
- configured
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Date: Fri, 14 Dec 2012 11:45:42 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Dec 2012 12:00:36 -0500
+Date: Fri, 14 Dec 2012 19:58:30 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jennifer Naumann 
+	<Jennifer.Naumann@informatik.stud.uni-erlangen.de>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, amwang@redhat.com,
+        jkosina@suse.cz, linux-kernel@vger.kernel.org, Julia.Lawall@lip6.fr,
+        yongjun_wei@trendmicro.com.cn, justinmattock@gmail.com,
+        Sebastian Hahn <snsehahn@cip.cs.fau.de>, joe@perches.com,
+        adam.buchbinder@gmail.com, linux-kernel@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 0/6] staging:rtl8192u: begin cleanup of some checkpatch
+ errors
+Message-ID: <20121214165830.GC5032@mwanda>
+References: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de>
+ <50CB5B12.4040105@informatik.stud.uni-erlangen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CB5B12.4040105@informatik.stud.uni-erlangen.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the drivers that the sb105x SystemBase handles are for parallel
-port cards. If PARPORT isn't configured, the build fails. Only
-initialize the parallel port cards if PARPORT is configured in.
+On Fri, Dec 14, 2012 at 06:00:02PM +0100, Jennifer Naumann wrote:
+> On 12/05/2012 09:40 PM, Sebastian Hahn wrote:
+> >Jennifer and I have started making the rtl8192u driver conform with the
+> >CodingStyle rules a little better. We started out with a cleanfile run,
+> >then did corrections for individual issues, grouped into patches by
+> >specific issue fixed.
+> 
+> Thanks for the feedback we've received so far, is there anything else we
+> need to do from here? We've verified the series still applies to the
+> current staging-next tree and would be happy to further improve the
+> patches as necessary.
 
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+The merge window is open.  Nothing is going to happen until after
+New Years.
 
-
-diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-index edb2a85..131afd0c 100644
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -3054,6 +3054,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 				sbdev->nr_ports = ((portnum_hex/16)*10) + (portnum_hex % 16);
- 			}
- 			break;
-+#ifdef CONFIG_PARPORT
- 		case PCI_DEVICE_ID_MP2S1P :
- 			sbdev->nr_ports = 2;
- 
-@@ -3073,6 +3074,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 			/* add PC compatible parallel port */
- 			parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
- 			break;
-+#endif
- 	}
- 
- 	ret = request_region(sbdev->uart_access_addr, (8*sbdev->nr_ports), sbdev->name);
-
-
+regards,
+dan carpenter
