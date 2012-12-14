@@ -1,52 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab2LNSZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:25:59 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35930 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab2LNSZ5 (ORCPT
+	id S1756865Ab2LNS3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:29:07 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:21745 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756624Ab2LNS3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:25:57 -0500
+	Fri, 14 Dec 2012 13:29:04 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18cjsXiwnzHdPvfCkXBs3SS
+Date: Fri, 14 Dec 2012 10:28:56 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, sameo@linux.intel.com, paul@pwsan.com, keshava_mgowda@ti.com,
+        sshtylyov@mvista.com, bjorn@mork.no, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Mike Turquette <mturquette@gmail.com>
+Subject: Re: [PATCH v4 16/23] ARM: OMAP2+: clock data: Merge utmi_px_gfclk
+ into usb_host_hs_utmi_px_clk
+Message-ID: <20121214182855.GB4989@atomide.com>
+References: <1355134833-5199-1-git-send-email-rogerq@ti.com>
+ <1355134833-5199-17-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <23916.1355356085@warthog.procyon.org.uk>
-References: <201212122211.qBCMBRxl027895@terminus.zytor.com> <23916.1355356085@warthog.procyon.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 14 Dec 2012 10:25:36 -0800
-X-Google-Sender-Auth: 6BsfgZbAuYrK_S7Mn46yGj0aW7I
-Message-ID: <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/uapi for 3.8
-To: David Howells <dhowells@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355134833-5199-17-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 3:48 PM, David Howells <dhowells@redhat.com> wrote:
-> H. Peter Anvin <hpa@linux.intel.com> wrote:
->
->> The following changes since commit 7e5530af11be68f3109672aed59243f82e1272f0:
->>
->>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-12-02 16:39:00 -0800)
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-uapi-for-linus
->
-> Unfortunately, that is broken by Al Viro's mass signalling changes.  I've
-> regenerated it based on Linus's current master.  Pull request below.
->
-> The same merge conflict with tip/master still exists, I imagine, due to the
-> changes in tipbot for asm/mce.h, so if tip/master is merged first, then it
-> might be worth me regenerating my changes.
+* Roger Quadros <rogerq@ti.com> [121210 02:23]:
+> There is no such clock as utmi_p1_gfclk. It is only a clock selector
+> bit to select th the parent of usb_host_hs_utmi_p1_clk.
+> So we get rid of utmi_p1_gfclk and utmi_p2_gfclk by merging them into
+> usb_host_hs_utmi_p1_clk and usb_host_hs_utmi_p2_clk respectively.
+> 
+> CC: Paul Walmsley <paul@pwsan.com>
+> CC: Rajendra Nayak <rnayak@ti.com>
+> CC: Benoit Cousson <b-cousson@ti.com>
+> CC: Mike Turquette <mturquette@gmail.com>
 
-Yeah, I think I have most of the x86 stuff merged now (just merged the
-EFI and ACPI trees), and at this point it might be worth regenerating
-it and getting this over and done with.
+Paul, what about this patch? Looks like you've acked the other
+clock patches in this series but not this one?
 
-          Linus
+Regards,
+
+Tony
+ 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/mach-omap2/cclock3xxx_data.c |    2 -
+>  arch/arm/mach-omap2/cclock44xx_data.c |   47 +++++++++++++++++++++++----------
+>  2 files changed, 33 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
+> index bdf3948..5655414 100644
+> --- a/arch/arm/mach-omap2/cclock3xxx_data.c
+> +++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+> @@ -3392,8 +3392,6 @@ static struct omap_clk omap3xxx_clks[] = {
+>  	CLK(NULL,	"usbhost_48m_fck", &usbhost_48m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+>  	CLK(NULL,	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+>  	CLK("usbhs_omap",	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+> -	CLK(NULL,	"utmi_p1_gfclk",	&dummy_ck,	CK_3XXX),
+> -	CLK(NULL,	"utmi_p2_gfclk",	&dummy_ck,	CK_3XXX),
+>  	CLK(NULL,	"xclk60mhsp1_ck",	&dummy_ck,	CK_3XXX),
+>  	CLK(NULL,	"xclk60mhsp2_ck",	&dummy_ck,	CK_3XXX),
+>  	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&dummy_ck,	CK_3XXX),
+> diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
+> index aa56c3e..74535fe 100644
+> --- a/arch/arm/mach-omap2/cclock44xx_data.c
+> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
+> @@ -1366,31 +1366,52 @@ static struct clk_hw_omap usb_host_fs_fck_hw = {
+>  DEFINE_STRUCT_CLK(usb_host_fs_fck, usb_host_fs_fck_parent_names,
+>  		  usb_host_fs_fck_ops);
+>  
+> +static const struct clk_ops utmi_clk_ops = {
+> +	.enable		= &omap2_dflt_clk_enable,
+> +	.disable	= &omap2_dflt_clk_disable,
+> +	.is_enabled	= &omap2_dflt_clk_is_enabled,
+> +	.recalc_rate	= &omap2_clksel_recalc,
+> +	.get_parent	= &omap2_clksel_find_parent_index,
+> +	.set_parent	= &omap2_clksel_set_parent,
+> +};
+> +
+>  static const char *utmi_p1_gfclk_parents[] = {
+>  	"init_60m_fclk", "xclk60mhsp1_ck",
+>  };
+>  
+> -DEFINE_CLK_MUX(utmi_p1_gfclk, utmi_p1_gfclk_parents, NULL, 0x0,
+> -	       OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> -	       OMAP4430_CLKSEL_UTMI_P1_SHIFT, OMAP4430_CLKSEL_UTMI_P1_WIDTH,
+> -	       0x0, NULL);
+> +static const struct clksel utmi_p1_clk_mux_sel[] = {
+> +	{ .parent = &init_60m_fclk, .rates = div_1_0_rates },
+> +	{ .parent = &xclk60mhsp1_ck, .rates = div_1_1_rates },
+> +	{ .parent = NULL },
+> +};
+>  
+> -DEFINE_CLK_GATE(usb_host_hs_utmi_p1_clk, "utmi_p1_gfclk", &utmi_p1_gfclk, 0x0,
+> +/* Merged utmi_p1_gfclk into usb_host_hs_utmi_p1_clk */
+> +DEFINE_CLK_OMAP_MUX_GATE(usb_host_hs_utmi_p1_clk, "l3_init_clkdm",
+> +		utmi_p1_clk_mux_sel,
+> +		OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> +		OMAP4430_CLKSEL_UTMI_P1_MASK,
+>  		OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> -		OMAP4430_OPTFCLKEN_UTMI_P1_CLK_SHIFT, 0x0, NULL);
+> +		OMAP4430_OPTFCLKEN_UTMI_P1_CLK_SHIFT, NULL,
+> +		utmi_p1_gfclk_parents, utmi_clk_ops);
+>  
+>  static const char *utmi_p2_gfclk_parents[] = {
+>  	"init_60m_fclk", "xclk60mhsp2_ck",
+>  };
+>  
+> -DEFINE_CLK_MUX(utmi_p2_gfclk, utmi_p2_gfclk_parents, NULL, 0x0,
+> -	       OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> -	       OMAP4430_CLKSEL_UTMI_P2_SHIFT, OMAP4430_CLKSEL_UTMI_P2_WIDTH,
+> -	       0x0, NULL);
+> +static const struct clksel utmi_p2_clk_mux_sel[] = {
+> +	{ .parent = &init_60m_fclk, .rates = div_1_0_rates },
+> +	{ .parent = &xclk60mhsp2_ck, .rates = div_1_1_rates },
+> +	{ .parent = NULL },
+> +};
+>  
+> -DEFINE_CLK_GATE(usb_host_hs_utmi_p2_clk, "utmi_p2_gfclk", &utmi_p2_gfclk, 0x0,
+> +/* Merged utmi_p2_gfclk into usb_host_hs_utmi_p2_clk */
+> +DEFINE_CLK_OMAP_MUX_GATE(usb_host_hs_utmi_p2_clk, "l3_init_clkdm",
+> +		utmi_p2_clk_mux_sel,
+> +		OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> +		OMAP4430_CLKSEL_UTMI_P2_MASK,
+>  		OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> -		OMAP4430_OPTFCLKEN_UTMI_P2_CLK_SHIFT, 0x0, NULL);
+> +		OMAP4430_OPTFCLKEN_UTMI_P2_CLK_SHIFT, NULL,
+> +		utmi_p2_gfclk_parents, utmi_clk_ops);
+>  
+>  DEFINE_CLK_GATE(usb_host_hs_utmi_p3_clk, "init_60m_fclk", &init_60m_fclk, 0x0,
+>  		OMAP4430_CM_L3INIT_USB_HOST_CLKCTRL,
+> @@ -1838,9 +1859,7 @@ static struct omap_clk omap44xx_clks[] = {
+>  	CLK(NULL,	"uart4_fck",			&uart4_fck,	CK_443X),
+>  	CLK(NULL,	"usb_host_fs_fck",		&usb_host_fs_fck,	CK_443X),
+>  	CLK("usbhs_omap",	"fs_fck",		&usb_host_fs_fck,	CK_443X),
+> -	CLK(NULL,	"utmi_p1_gfclk",		&utmi_p1_gfclk,	CK_443X),
+>  	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&usb_host_hs_utmi_p1_clk,	CK_443X),
+> -	CLK(NULL,	"utmi_p2_gfclk",		&utmi_p2_gfclk,	CK_443X),
+>  	CLK(NULL,	"usb_host_hs_utmi_p2_clk",	&usb_host_hs_utmi_p2_clk,	CK_443X),
+>  	CLK(NULL,	"usb_host_hs_utmi_p3_clk",	&usb_host_hs_utmi_p3_clk,	CK_443X),
+>  	CLK(NULL,	"usb_host_hs_hsic480m_p1_clk",	&usb_host_hs_hsic480m_p1_clk,	CK_443X),
+> -- 
+> 1.7.4.1
+> 
