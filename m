@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab2LNW0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:26:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38014 "EHLO mail.kernel.org"
+	id S1756866Ab2LNW0c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:26:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38022 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755876Ab2LNW0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:26:20 -0500
+	id S1756534Ab2LNW03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:26:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/22] 3.0.57-stable review
-Date: Fri, 14 Dec 2012 14:25:45 -0800
-Message-Id: <20121214222249.889051473@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        =?UTF-8?q?M=C3=A5ns=20Rullg=C3=A5rd?= <mans.rullgard@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 01/22] ARM: 7566/1: vfp: fix save and restore when running on pre-VFPv3 and CONFIG_VFPv3 set
+Date: Fri, 14 Dec 2012 14:25:46 -0800
+Message-Id: <20121214222250.109716571@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
+References: <20121214222249.889051473@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -23,125 +29,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.57 release.
-There are 22 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Dec 16 22:16:57 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.57-rc1.gz
-and the diffstat can be found below.
+From: Paul Walmsley <paul@pwsan.com>
 
-thanks,
+commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
 
-greg k-h
+After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
+saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
+started crashing during boot with omap2plus_defconfig:
 
--------------
-Pseudo-Shortlog of commits:
+[    3.875122] mmcblk0: mmc0:e624 SD04G 3.69 GiB
+[    3.915954]  mmcblk0: p1
+[    4.086639] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
+[    4.093719] Modules linked in:
+[    4.096954] CPU: 0    Not tainted  (3.6.0-02232-g759e00b #570)
+[    4.103149] PC is at vfp_reload_hw+0x1c/0x44
+[    4.107666] LR is at __und_usr_fault_32+0x0/0x8
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.57-rc1
+It turns out that the context save/restore fix unmasked a latent bug
+in commit 5aaf254409f8d58229107b59507a8235b715a960 ("ARM: 6203/1: Make
+VFPv3 usable on ARMv6").  When CONFIG_VFPv3 is set, but the kernel is
+booted on a pre-VFPv3 core, the code attempts to save and restore the
+d16-d31 VFP registers.  These are only present on non-D16 VFPv3+, so
+this results in an undefined instruction exception.  The code didn't
+crash before commit 846a136 because the save and restore code was
+only touching d0-d15, present on all VFP.
 
-Anton Blanchard <anton@samba.org>
-    powerpc: Keep thread.dscr and thread.dscr_inherit in sync
+Fix by implementing a request from Russell King to add a new HWCAP
+flag that affirmatively indicates the presence of the d16-d31
+registers:
 
-Anton Blanchard <anton@samba.org>
-    powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
+   http://marc.info/?l=linux-arm-kernel&m=135013547905283&w=2
 
-Dan Carpenter <dan.carpenter@oracle.com>
-    ftrace: Clear bits properly in reset_iter_read()
+and some feedback from Måns to clarify the name of the HWCAP flag.
 
-Sarah Sharp <sarah.a.sharp@linux.intel.com>
-    xhci: Extend Fresco Logic MSI quirk.
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Måns Rullgård <mans.rullgard@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Alan Stern <stern@rowland.harvard.edu>
-    USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
+---
+ arch/arm/include/asm/hwcap.h     |    3 ++-
+ arch/arm/include/asm/vfpmacros.h |   12 ++++++------
+ arch/arm/vfp/vfpmodule.c         |    9 ++++++---
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
-Zhang Rui <rui.zhang@intel.com>
-    ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
-
-Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    ACPI / PNP: Do not crash due to stale pointer use during system resume
-
-Kamil Iskra <kamil@iskra.name>
-    ACPI / battery: Correct battery capacity values on Thinkpads
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    USB: mark uas driver as BROKEN
-
-Markus Becker <mab@comnets.uni-bremen.de>
-    USB: cp210x: add Virtenio Preon32 device id
-
-Peter Korsgaard <jacmet@sunsite.dk>
-    usb: ftdi_sio: fixup BeagleBone A5+ quirk
-
-Martin Teichmann <lkb.teichmann@gmail.com>
-    USB: ftdi_sio: Add support for Newport AGILIS motor drivers
-
-Bjørn Mork <bjorn@mork.no>
-    USB: option: blacklist network interface on Huawei E173
-
-li.rui27@zte.com.cn <li.rui27@zte.com.cn>
-    USB: add new zte 3g-dongle's pid to option.c
-
-Jan Beulich <JBeulich@suse.com>
-    x86: hpet: Fix masking of MSI interrupts
-
-Mel Gorman <mgorman@suse.de>
-    tmpfs: fix shared mempolicy leak
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    telephony: ijx: buffer overflow in ixj_write_cid()
-
-Boris Ostrovsky <boris.ostrovsky@amd.com>
-    x86,AMD: Power driver support for AMD's family 16h processors
-
-Marek Szyprowski <m.szyprowski@samsung.com>
-    mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
-
-Tejun Heo <tj@kernel.org>
-    workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
-
-Benjamin Herrenschmidt <benh@kernel.crashing.org>
-    powerpc/ptrace: Fix build with gcc 4.6
-
-Paul Walmsley <paul@pwsan.com>
-    ARM: 7566/1: vfp: fix save and restore when running on pre-VFPv3 and CONFIG_VFPv3 set
-
-
--------------
-
-Diffstat:
-
- Makefile                          |  4 +-
- arch/arm/include/asm/hwcap.h      |  3 +-
- arch/arm/include/asm/vfpmacros.h  | 12 +++---
- arch/arm/vfp/vfpmodule.c          |  9 +++--
- arch/powerpc/kernel/ptrace.c      | 18 +++++++--
- arch/powerpc/kernel/sysfs.c       | 10 +++++
- arch/powerpc/kernel/traps.c       |  3 +-
- arch/x86/kernel/hpet.c            |  4 +-
- drivers/acpi/battery.c            | 77 +++++++++++++++++++++++++++++++++++++++
- drivers/acpi/video.c              | 14 +++++++
- drivers/hwmon/fam15h_power.c      |  4 ++
- drivers/pnp/pnpacpi/core.c        |  3 ++
- drivers/telephony/ixj.c           | 24 ++++++------
- drivers/usb/host/ohci-q.c         | 19 ++++++++++
- drivers/usb/host/xhci-pci.c       |  7 +++-
- drivers/usb/serial/cp210x.c       |  1 +
- drivers/usb/serial/ftdi_sio.c     |  3 +-
- drivers/usb/serial/ftdi_sio_ids.h |  6 +++
- drivers/usb/serial/option.c       | 25 +++++++++++++
- drivers/usb/storage/Kconfig       |  2 +-
- include/linux/mempolicy.h         | 16 --------
- kernel/trace/ftrace.c             |  2 +-
- kernel/workqueue.c                |  4 +-
- mm/dmapool.c                      | 31 ++++------------
- mm/mempolicy.c                    | 22 -----------
- mm/shmem.c                        | 22 ++++++-----
- 26 files changed, 236 insertions(+), 109 deletions(-)
+--- a/arch/arm/include/asm/hwcap.h
++++ b/arch/arm/include/asm/hwcap.h
+@@ -18,8 +18,9 @@
+ #define HWCAP_THUMBEE	2048
+ #define HWCAP_NEON	4096
+ #define HWCAP_VFPv3	8192
+-#define HWCAP_VFPv3D16	16384
++#define HWCAP_VFPv3D16	(1 << 14)	/* also set for VFPv4-D16 */
+ #define HWCAP_TLS	32768
++#define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
+ 
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ /*
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -27,9 +27,9 @@
+ #if __LINUX_ARM_ARCH__ <= 6
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+-	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+-	addne	\base, \base, #32*4		    @ step over unused register space
++	tst	\tmp, #HWCAP_VFPD32
++	ldcnel	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	addeq	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+ 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
+@@ -51,9 +51,9 @@
+ #if __LINUX_ARM_ARCH__ <= 6
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+-	tst	\tmp, #HWCAP_VFPv3D16
+-	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+-	addne	\base, \base, #32*4		    @ step over unused register space
++	tst	\tmp, #HWCAP_VFPD32
++	stcnel	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	addeq	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+ 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -575,11 +575,14 @@ static int __init vfp_init(void)
+ 			elf_hwcap |= HWCAP_VFPv3;
+ 
+ 			/*
+-			 * Check for VFPv3 D16. CPUs in this configuration
+-			 * only have 16 x 64bit registers.
++			 * Check for VFPv3 D16 and VFPv4 D16.  CPUs in
++			 * this configuration only have 16 x 64bit
++			 * registers.
+ 			 */
+ 			if (((fmrx(MVFR0) & MVFR0_A_SIMD_MASK)) == 1)
+-				elf_hwcap |= HWCAP_VFPv3D16;
++				elf_hwcap |= HWCAP_VFPv3D16; /* also v4-D16 */
++			else
++				elf_hwcap |= HWCAP_VFPD32;
+ 		}
+ #endif
+ #ifdef CONFIG_NEON
 
 
