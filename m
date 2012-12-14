@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab2LNW2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:28:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38346 "EHLO mail.kernel.org"
+	id S1757261Ab2LNW2S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:28:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38387 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab2LNW2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:28:03 -0500
+	id S1757232Ab2LNW2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:28:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Soeren Moch <smoch@web.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: [ 04/22] mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
-Date: Fri, 14 Dec 2012 14:25:49 -0800
-Message-Id: <20121214222250.713057744@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Haren Myneni <haren@us.ibm.com>
+Subject: [ 21/22] powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
+Date: Fri, 14 Dec 2012 14:26:06 -0800
+Message-Id: <20121214222254.729285780@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -28,124 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 387870f2d6d679746020fa8e25ef786ff338dc98 upstream.
+commit 1b6ca2a6fe56e7697d57348646e07df08f43b1bb upstream.
 
-dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
-regardless the flags provided by the caller. This causes excessive
-pruning of emergency memory pools without any good reason. Additionaly,
-on ARM architecture any driver which is using dmapools will sooner or
-later  trigger the following error:
-"ERROR: 256 KiB atomic DMA coherent pool is too small!
-Please increase it with coherent_pool= kernel parameter!".
-Increasing the coherent pool size usually doesn't help much and only
-delays such error, because all GFP_ATOMIC DMA allocations are always
-served from the special, very limited memory pool.
+Writing to dscr_default in sysfs doesn't actually change the DSCR -
+we rely on a context switch on each CPU to do the work. There is no
+guarantee we will get a context switch in a reasonable amount of time
+so fire off an IPI to force an immediate change.
 
-This patch changes the dmapool code to correctly use gfp flags provided
-by the dmapool caller.
+This issue was found with the following test case:
 
-Reported-by: Soeren Moch <smoch@web.de>
-Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Tested-by: Andrew Lunn <andrew@lunn.ch>
-Tested-by: Soeren Moch <smoch@web.de>
+http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Haren Myneni <haren@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/dmapool.c |   31 +++++++------------------------
- 1 file changed, 7 insertions(+), 24 deletions(-)
+ arch/powerpc/kernel/sysfs.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/mm/dmapool.c
-+++ b/mm/dmapool.c
-@@ -49,7 +49,6 @@ struct dma_pool {		/* the pool */
- 	size_t allocation;
- 	size_t boundary;
- 	char name[32];
--	wait_queue_head_t waitq;
- 	struct list_head pools;
- };
- 
-@@ -61,8 +60,6 @@ struct dma_page {		/* cacheable header f
- 	unsigned int offset;
- };
- 
--#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
--
- static DEFINE_MUTEX(pools_lock);
- 
- static ssize_t
-@@ -171,7 +168,6 @@ struct dma_pool *dma_pool_create(const c
- 	retval->size = size;
- 	retval->boundary = boundary;
- 	retval->allocation = allocation;
--	init_waitqueue_head(&retval->waitq);
- 
- 	if (dev) {
- 		int ret;
-@@ -226,7 +222,6 @@ static struct dma_page *pool_alloc_page(
- 		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
- #endif
- 		pool_initialise_page(pool, page);
--		list_add(&page->page_list, &pool->page_list);
- 		page->in_use = 0;
- 		page->offset = 0;
- 	} else {
-@@ -314,30 +309,21 @@ void *dma_pool_alloc(struct dma_pool *po
- 	might_sleep_if(mem_flags & __GFP_WAIT);
- 
- 	spin_lock_irqsave(&pool->lock, flags);
-- restart:
- 	list_for_each_entry(page, &pool->page_list, page_list) {
- 		if (page->offset < pool->allocation)
- 			goto ready;
- 	}
--	page = pool_alloc_page(pool, GFP_ATOMIC);
--	if (!page) {
--		if (mem_flags & __GFP_WAIT) {
--			DECLARE_WAITQUEUE(wait, current);
- 
--			__set_current_state(TASK_UNINTERRUPTIBLE);
--			__add_wait_queue(&pool->waitq, &wait);
--			spin_unlock_irqrestore(&pool->lock, flags);
-+	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
-+	spin_unlock_irqrestore(&pool->lock, flags);
- 
--			schedule_timeout(POOL_TIMEOUT_JIFFIES);
-+	page = pool_alloc_page(pool, mem_flags);
-+	if (!page)
-+		return NULL;
- 
--			spin_lock_irqsave(&pool->lock, flags);
--			__remove_wait_queue(&pool->waitq, &wait);
--			goto restart;
--		}
--		retval = NULL;
--		goto done;
--	}
-+	spin_lock_irqsave(&pool->lock, flags);
- 
-+	list_add(&page->page_list, &pool->page_list);
-  ready:
- 	page->in_use++;
- 	offset = page->offset;
-@@ -347,7 +333,6 @@ void *dma_pool_alloc(struct dma_pool *po
- #ifdef	DMAPOOL_DEBUG
- 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
- #endif
-- done:
- 	spin_unlock_irqrestore(&pool->lock, flags);
- 	return retval;
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -192,6 +192,12 @@ static ssize_t show_dscr_default(struct
+ 	return sprintf(buf, "%lx\n", dscr_default);
  }
-@@ -434,8 +419,6 @@ void dma_pool_free(struct dma_pool *pool
- 	page->in_use--;
- 	*(int *)vaddr = page->offset;
- 	page->offset = offset;
--	if (waitqueue_active(&pool->waitq))
--		wake_up_locked(&pool->waitq);
- 	/*
- 	 * Resist a temptation to do
- 	 *    if (!is_page_busy(page)) pool_free_page(pool, page);
+ 
++static void update_dscr(void *dummy)
++{
++	if (!current->thread.dscr_inherit)
++		mtspr(SPRN_DSCR, dscr_default);
++}
++
+ static ssize_t __used store_dscr_default(struct sysdev_class *class,
+ 		struct sysdev_class_attribute *attr, const char *buf,
+ 		size_t count)
+@@ -204,6 +210,8 @@ static ssize_t __used store_dscr_default
+ 		return -EINVAL;
+ 	dscr_default = val;
+ 
++	on_each_cpu(update_dscr, NULL, 1);
++
+ 	return count;
+ }
+ 
 
 
