@@ -1,132 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab2LNOfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 09:35:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754116Ab2LNOfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 09:35:00 -0500
-Date: Thu, 13 Dec 2012 22:29:44 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
- target runqueue has one task
-Message-ID: <20121214002944.GB17513@amt.cnet>
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
- <20121126120754.2595.37316.sendpatchset@codeblue>
+	id S1756074Ab2LNOlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 09:41:06 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56311 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097Ab2LNOlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 09:41:03 -0500
+Message-ID: <50CB3A7A.9040400@pobox.com>
+Date: Fri, 14 Dec 2012 09:40:58 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126120754.2595.37316.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiaotian Feng <xtfeng@gmail.com>
+CC: Xiaotian Feng <dannyfeng@tencent.com>, Jeff Garzik <jgarzik@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>, stable@kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [libata] scsi: fix Null pointer dereference on disk error
+References: <1355386339-11411-1-git-send-email-xtfeng@gmail.com>
+In-Reply-To: <1355386339-11411-1-git-send-email-xtfeng@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raghavendra,
-
-Please get this integrate through x86 tree (Ingo CC'ed).
-
-On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> 
-> In case of undercomitted scenarios, especially in large guests
-> yield_to overhead is significantly high. when run queue length of
-> source and target is one, take an opportunity to bail out and return
-> -ESRCH. This return condition can be further exploited to quickly come
-> out of PLE handler.
-> 
-> (History: Raghavendra initially worked on break out of kvm ple handler upon
->  seeing source runqueue length = 1, but it had to export rq length).
->  Peter came up with the elegant idea of return -ESRCH in scheduler core.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
-> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+On 12/13/2012 03:12 AM, Xiaotian Feng wrote:
+> Following oops were observed when disk error happened:
+>
+> [ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
+> [ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+> [ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
+> [ 4272.896951] end_request: I/O error, dev sda, sector 5955239
+> [ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
+> [ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
+> [ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
+> [ 4291.783408] Oops: 0000 [#1] SMP
+> [ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
+> [ 4291.934235] CPU 9
+> [ 4291.958301] Pid: 27942, comm: hwinfo ......
+>
+> ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
+>
+> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+> Cc: Jeff Garzik <jgarzik@redhat.com>
+> Cc: James Bottomley <JBottomley@Parallels.com>
+> Cc: stable@kernel.org
+> Cc: linux-ide@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 > ---
-> 
->  kernel/sched/core.c |   25 +++++++++++++++++++------
->  1 file changed, 19 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 2d8927f..fc219a5 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
->   * It's the caller's job to ensure that the target task struct
->   * can't go away on us before we can do any checks.
->   *
-> - * Returns true if we indeed boosted the target task.
-> + * Returns:
-> + *	true (>0) if we indeed boosted the target task.
-> + *	false (0) if we failed to boost the target.
-> + *	-ESRCH if there's no task to yield to.
->   */
->  bool __sched yield_to(struct task_struct *p, bool preempt)
->  {
-> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->  
->  again:
->  	p_rq = task_rq(p);
-> +	/*
-> +	 * If we're the only runnable task on the rq and target rq also
-> +	 * has only one task, there's absolutely no point in yielding.
-> +	 */
-> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
-> +		yielded = -ESRCH;
-> +		goto out_irq;
-> +	}
-> +
->  	double_rq_lock(rq, p_rq);
->  	while (task_rq(p) != p_rq) {
->  		double_rq_unlock(rq, p_rq);
-> @@ -4310,13 +4322,13 @@ again:
->  	}
->  
->  	if (!curr->sched_class->yield_to_task)
-> -		goto out;
-> +		goto out_unlock;
->  
->  	if (curr->sched_class != p->sched_class)
-> -		goto out;
-> +		goto out_unlock;
->  
->  	if (task_running(p_rq, p) || p->state)
-> -		goto out;
-> +		goto out_unlock;
->  
->  	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->  	if (yielded) {
-> @@ -4329,11 +4341,12 @@ again:
->  			resched_task(p_rq->curr);
->  	}
->  
-> -out:
-> +out_unlock:
->  	double_rq_unlock(rq, p_rq);
-> +out_irq:
->  	local_irq_restore(flags);
->  
-> -	if (yielded)
-> +	if (yielded > 0)
->  		schedule();
->  
->  	return yielded;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   drivers/ata/libata-scsi.c |    6 ++++--
+>   1 file changed, 4 insertions(+), 2 deletions(-)
+
+applied
+
+
+
