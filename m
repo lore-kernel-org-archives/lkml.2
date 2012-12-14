@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab2LNUS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:18:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab2LNUS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:18:58 -0500
-Message-ID: <50CB8931.2000305@redhat.com>
-Date: Fri, 14 Dec 2012 15:16:49 -0500
-From: Brian Foster <bfoster@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S932366Ab2LNUTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:19:06 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:46785 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab2LNUTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 15:19:01 -0500
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+Thread-Topic: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+Thread-Index: AQHN2LHkBEwhfYwtskuvG7nk0rbXIZgW3T8AgABSm4CAAAnhgIAAFiQwgAC/pACAAD92AIAAdxqA///4ZSA=
+Date: Fri, 14 Dec 2012 20:17:27 +0000
+Message-ID: <8631DC5930FA9E468F04F3FD3A5D007214AD7388@USINDEM103.corp.hds.com>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
+ <20121213103420.GW1009@suse.de> <20121213152959.GE21644@dhcp22.suse.cz>
+ <20121213160521.GG21644@dhcp22.suse.cz>
+ <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
+ <20121214045030.GE6317@cmpxchg.org> <20121214083738.GA6898@dhcp22.suse.cz>
+ <50CB493B.8000900@redhat.com>
+In-Reply-To: <50CB493B.8000900@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Maxim V. Patlasov" <MPatlasov@parallels.com>
-CC: miklos@szeredi.hu, dev@parallels.com, xemul@parallels.com,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH 5/6] fuse: truncate file if async dio failed
-References: <20121214151424.27155.45971.stgit@maximpc.sw.ru> <20121214152113.27155.58793.stgit@maximpc.sw.ru>
-In-Reply-To: <20121214152113.27155.58793.stgit@maximpc.sw.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-14_05:2012-12-14,2012-12-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1212140188
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBEKJECo002337
 
-On 12/14/2012 10:21 AM, Maxim V. Patlasov wrote:
-> The patch improves error handling in fuse_direct_IO(): if we successfully
-> submitted several fuse requests on behalf of synchronous direct write
-> extending file and some of them failed, let's try to do our best to clean-up.
+On 12/14/2012 10:43 AM, Rik van Riel wrote:
+> On 12/14/2012 03:37 AM, Michal Hocko wrote:
 > 
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-> ---
->  fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 files changed, 53 insertions(+), 2 deletions(-)
+>> I can answer the later. Because memsw comes with its price and 
+>> swappiness is much cheaper. On the other hand it makes sense that
+>> swappiness==0 doesn't swap at all. Or do you think we should get back 
+>> to _almost_ doesn't swap at all?
 > 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 05eed23..b6e9b8d 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -2340,6 +2340,53 @@ int fuse_notify_poll_wakeup(struct fuse_conn *fc,
->  	return 0;
->  }
->  
-> +static void fuse_do_truncate(struct file *file)
-> +{
-> +	struct fuse_file *ff = file->private_data;
-> +	struct inode *inode = file->f_mapping->host;
-> +	struct fuse_conn *fc = get_fuse_conn(inode);
-> +	struct fuse_req *req;
-> +	struct fuse_setattr_in inarg;
-> +	struct fuse_attr_out outarg;
-> +	int err;
-> +
-> +	req = fuse_get_req_nopages(fc);
-> +	if (IS_ERR(req)) {
-> +		printk(KERN_WARNING "failed to allocate req for truncate "
-> +		       "(%ld)\n", PTR_ERR(req));
-> +		return;
-> +	}
-> +
-> +	memset(&inarg, 0, sizeof(inarg));
-> +	memset(&outarg, 0, sizeof(outarg));
-> +
-> +	inarg.valid |= FATTR_SIZE;
-> +	inarg.size = i_size_read(inode);
-> +
-> +	inarg.valid |= FATTR_FH;
-> +	inarg.fh = ff->fh;
-> +
-> +	req->in.h.opcode = FUSE_SETATTR;
-> +	req->in.h.nodeid = get_node_id(inode);
-> +	req->in.numargs = 1;
-> +	req->in.args[0].size = sizeof(inarg);
-> +	req->in.args[0].value = &inarg;
-> +	req->out.numargs = 1;
-> +	if (fc->minor < 9)
-> +		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
-> +	else
-> +		req->out.args[0].size = sizeof(outarg);
-> +	req->out.args[0].value = &outarg;
-> +
-> +	fuse_request_send(fc, req);
-> +	err = req->out.h.error;
-> +	fuse_put_request(fc, req);
-> +
-> +	if (err)
-> +		printk(KERN_WARNING "failed to truncate to %lld with error "
-> +		       "%d\n", i_size_read(inode), err);
-> +}
-> +
-
-fuse_do_truncate() looks fairly close to fuse_do_setattr(). Is there any
-reason we couldn't make fuse_do_setattr() non-static, change the dentry
-parameter to an inode and use that?
-
-Brian
-
->  static ssize_t
->  fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  			loff_t offset, unsigned long nr_segs)
-> @@ -2400,8 +2447,12 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
->  		kfree(io);
->  	}
->  
-> -	if (rw == WRITE && ret > 0)
-> -		fuse_write_update_size(inode, pos);
-> +	if (rw == WRITE) {
-> +		if (ret > 0)
-> +			fuse_write_update_size(inode, pos);
-> +		else if (ret < 0 && offset + count > i_size)
-> +			fuse_do_truncate(file);
-> +	}
->  
->  	return ret;
->  }
+> swappiness==0 will swap in emergencies, specifically when we have 
+> almost no page cache left, we will still swap things out:
 > 
+>         if (global_reclaim(sc)) {
+>                 free  = zone_page_state(zone, NR_FREE_PAGES);
+>                 if (unlikely(file + free <= high_wmark_pages(zone))) {
+>                         /*
+>                          * If we have very few page cache pages, force-scan
+>                          * anon pages.
+>                          */
+>                         fraction[0] = 1;
+>                         fraction[1] = 0;
+>                         denominator = 1;
+>                         goto out;
+> 
+> This makes sense, because people who set swappiness==0 but do have 
+> swap space available would probably prefer some emergency swapping 
+> over an OOM kill.
 
+This behavior is reasonable for global reclaim to me. But when
+we hit this condition, it may be better to print some messages
+to notify the user who set swappiness==0 of anon page scan.
+
+Regards,
+Satoru
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
