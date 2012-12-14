@@ -1,35 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab2LNNU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 08:20:59 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36874 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab2LNNU4 (ORCPT
+	id S1755521Ab2LNNiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 08:38:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41914 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab2LNNiW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 08:20:56 -0500
-Date: Fri, 14 Dec 2012 13:26:00 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Denis Kirjanov <kirjanov@gmail.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 12/12] edac: fix kernel panic on module unloading
-Message-ID: <20121214132600.1b32b02d@pyramind.ukuu.org.uk>
-In-Reply-To: <50CB13B5.6090203@openvz.org>
-References: <20121214110229.11019.63713.stgit@zurg>
-	<20121214110310.11019.21098.stgit@zurg>
-	<20121214112657.6c1b74e9@pyramind.ukuu.org.uk>
-	<50CB13B5.6090203@openvz.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Dec 2012 08:38:22 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: RE: linux-next: manual merge of the l2-mtd tree with Linus' tree
+Thread-Topic: linux-next: manual merge of the l2-mtd tree with Linus' tree
+Thread-Index: AQHN2NKANN2f4lvgYkKZQ9O3bO2BN5gWNDBQgABHWgCAAc3oRA==
+Date: Fri, 14 Dec 2012 13:38:12 +0000
+Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412A3538@DBDE01.ent.ti.com>
+References: <20121213123755.db3d38128e0593a372ccf17f@canb.auug.org.au>
+ <F3DBB1B3EF102E4994C89758CFCA32412A304D@DBDE01.ent.ti.com>,<50C9F114.4050502@ti.com>
+In-Reply-To: <50C9F114.4050502@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.41]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Dec 2012 15:55:33 +0400
 
-> Seems like this is different bugs, that was in "i7core_edac", this one in "edac_core"
+________________________________________
+From: Karicheri, Muralidharan
+Sent: Thursday, December 13, 2012 8:45 PM
+To: Kumar, Anil
+Cc: Stephen Rothwell; Artem Bityutskiy; linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Grant Likely
+Subject: Re: linux-next: manual merge of the l2-mtd tree with Linus' tree
 
-Agreed
+On 12/13/2012 12:38 AM, Kumar, Anil wrote:
+> On Thu, Dec 13, 2012 at 07:07:55, Stephen Rothwell wrote:
+>> Hi Artem,
+>>
+>> Today's linux-next merge of the l2-mtd tree got a conflict in
+>> Documentation/devicetree/bindings/arm/davinci/nand.txt between commit
+>> fed16bba8726 ("mtd: nand: davinci: fix the binding documentation") from
+>> Linus' tree and commit 192afdbfbc5c ("mtd: davinci: add support for
+>> parition binding nodes") from the l2-mtd tree.
+>>
+>> I fixed it up (maybe- see below) and can carry the fix as necessary (no
+>> action is required).
+>>
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>>
+>> diff --cc Documentation/devicetree/bindings/arm/davinci/nand.txt
+>> index 49fc7ad,4746452..0000000
+>> --- a/Documentation/devicetree/bindings/arm/davinci/nand.txt
+>> +++ b/Documentation/devicetree/bindings/arm/davinci/nand.txt
+>> @@@ -23,16 -23,37 +23,24 @@@ Recommended properties
+>>    - ti,davinci-nand-buswidth: buswidth 8 or 16
+>>    - ti,davinci-nand-use-bbt: use flash based bad block table support.
+>>
+>> + nand device bindings may contain additional sub-nodes describing
+>> + partitions of the address space. See partition.txt for more detail.
+>> +
+>>   -Example (enbw_cmc board):
+>>   -aemif@60000000 {
+>>   -  compatible = "ti,davinci-aemif";
+>>   -  #address-cells =<2>;
+>>   -  #size-cells =<1>;
+>>   -  reg =<0x68000000 0x80000>;
+>>   -  ranges =<2 0 0x60000000 0x02000000
+>>   -            3 0 0x62000000 0x02000000
+>>   -            4 0 0x64000000 0x02000000
+>>   -            5 0 0x66000000 0x02000000
+>>   -            6 0 0x68000000 0x02000000>;
+>>   -  nand@3,0 {
+>>   -          compatible = "ti,davinci-nand";
+>>   -          reg =<3 0x0 0x807ff
+>>   -                  6 0x0 0x8000>;
+>>   -          #address-cells =<1>;
+>>   -          #size-cells =<1>;
+>>   -          ti,davinci-chipselect =<1>;
+>>   -          ti,davinci-mask-ale =<0>;
+>>   -          ti,davinci-mask-cle =<0>;
+>>   -          ti,davinci-mask-chipsel =<0>;
+>>   -          ti,davinci-ecc-mode = "hw";
+>>   -          ti,davinci-ecc-bits =<4>;
+>>   -          ti,davinci-nand-use-bbt;
+>>   +Example(da850 EVM ):
+>>   +nand_cs3@62000000 {
+>>   +  compatible = "ti,davinci-nand";
+>>   +  reg =<0x62000000 0x807ff
+>>   +          0x68000000 0x8000>;
+>>   +  ti,davinci-chipselect =<1>;
+>>   +  ti,davinci-mask-ale =<0>;
+>>   +  ti,davinci-mask-cle =<0>;
+>>   +  ti,davinci-mask-chipsel =<0>;
+>>   +  ti,davinci-ecc-mode = "hw";
+>>   +  ti,davinci-ecc-bits =<4>;
+>>   +  ti,davinci-nand-use-bbt;
+>> +
+>>   -          partition@180000 {
+>>   -                  label = "ubifs";
+>>   -                  reg =<0x180000 0x7e80000>;
+>>   -          };
+>> ++   partition@180000 {
+>> ++           label = "ubifs";
+>> ++           reg =<0x180000 0x7e80000>;
+> partition@180000 is sub-node of nand_cs3@62000000.
+> nand_cs3@62000000 needs to use below properties
+>
+> #address-cells =<1>;
+> #size-cells =<1>;
+>
+> Without these properties DT build will give reg format Warning.
+>
+>> +    };
+>>    };
+>>
+>Anul,
+
+>Could you point me to a corresponding driver commit id?
+
+from
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+commit ID : cdeadd712f52b16a9285386d61ee26fd14eb4085
+add OF support for the davinci nand controller
+
+Thanks,
+Anil
