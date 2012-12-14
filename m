@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab2LNXBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:01:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40405 "EHLO mail.kernel.org"
+	id S1757061Ab2LNXBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:01:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40423 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756970Ab2LNXBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:01:43 -0500
+	id S1757011Ab2LNXBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:01:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Xiaotian Feng <xtfeng@gmail.com>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 10/37] workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
-Date: Fri, 14 Dec 2012 15:00:47 -0800
-Message-Id: <20121214222255.217526887@linuxfoundation.org>
+        Chris Ball <cjb@laptop.org>
+Subject: [ 02/37] Revert misapplied "mmc: sh-mmcif: avoid oops on spurious interrupts"
+Date: Fri, 14 Dec 2012 15:00:39 -0800
+Message-Id: <20121214222253.345728423@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -26,47 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Chris Ball <cjb@laptop.org>
 
-commit fc4b514f2727f74a4587c31db87e0e93465518c3 upstream.
+commit 6984f3c31bb57cb7491dbec1be44b74bd00f4648 upstream.
 
-8852aac25e ("workqueue: mod_delayed_work_on() shouldn't queue timer on
-0 delay") unexpectedly uncovered a very nasty abuse of delayed_work in
-megaraid - it allocated work_struct, casted it to delayed_work and
-then pass that into queue_delayed_work().
+This reverts commit 8464dd52d3198dd05, which was a misapplied debugging
+version of the patch, not the final patch itself.
 
-Previously, this was okay because 0 @delay short-circuited to
-queue_work() before doing anything with delayed_work.  8852aac25e
-moved 0 @delay test into __queue_delayed_work() after sanity check on
-delayed_work making megaraid trigger BUG_ON().
-
-Although megaraid is already fixed by c1d390d8e6 ("megaraid: fix
-BUG_ON() from incorrect use of delayed work"), this patch converts
-BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s so that such
-abusers, if there are more, trigger warning but don't crash the
-machine.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sh_mmcif.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1143,8 +1143,8 @@ int queue_delayed_work_on(int cpu, struc
- 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
- 		unsigned int lcpu;
- 
--		BUG_ON(timer_pending(timer));
--		BUG_ON(!list_empty(&work->entry));
-+		WARN_ON_ONCE(timer_pending(timer));
-+		WARN_ON_ONCE(!list_empty(&work->entry));
- 
- 		timer_stats_timer_set_start_info(&dwork->timer);
- 
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1229,10 +1229,6 @@ static irqreturn_t sh_mmcif_intr(int irq
+ 		host->sd_error = true;
+ 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
+ 	}
+-	if (host->state == STATE_IDLE) {
+-		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
+-		return IRQ_HANDLED;
+-	}
+ 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE)) {
+ 		if (!host->dma_active)
+ 			return IRQ_WAKE_THREAD;
 
 
