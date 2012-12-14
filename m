@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab2LNWnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:43:17 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33645 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab2LNWnN (ORCPT
+	id S932713Ab2LNWn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:43:28 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48334 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab2LNWnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:43:13 -0500
-Date: Sat, 15 Dec 2012 02:43:07 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-Message-ID: <20121214224307.GH6582@moon>
-References: <50CAE485.5020608@parallels.com>
- <50CB716D.6020501@zytor.com>
- <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
- <50CB7459.7010107@zytor.com>
- <20121214201217.GE6582@moon>
- <50CB9553.7050808@zytor.com>
- <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com>
- <50CBA171.4080403@zytor.com>
- <20121214222517.GG6582@moon>
- <50CBA7BC.4020001@zytor.com>
+	Fri, 14 Dec 2012 17:43:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50CBA7BC.4020001@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 14 Dec 2012 22:43:00 +0000
+X-Google-Sender-Auth: 5ME1-X3Zy4qmSjxNUzKVIlz-s8c
+Message-ID: <CACxGe6u56QU8RdJNvq=1qSESj9g=Hh_12zP_Astr1pcP1gs=LA@mail.gmail.com>
+Subject: [GIT PULL] devicetree for v3.8 part 2
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 02:27:08PM -0800, H. Peter Anvin wrote:
-> On 12/14/2012 02:25 PM, Cyrill Gorcunov wrote:
-> > 
-> > this would allow us to defer checkpoint until task finish vdso code. Peter,
-> > if I understand you correctly you propose we provide some own proxy-vdso
-> > which would redirect calls to real ones, right? But the main problem
-> > is that is exactly the idea to be able to c/r existing programs without
-> > recompiling and such (or I miss something here?).
-> 
-> No, I'm proposing that you use a proxy-vdso which does nothing but
-> system calls, and therefore can be stable indefinitely.
+Hi Linus,
 
-This won't help in case of scenario you've been pointing in
-previous email (where c/r happens in a middle of vdso),
-would it? Because we still need somehow to be sure we're not
-checkpointing in a middle of signal handler which will return
-to some vdso place.
+Here's a couple more devicetree changes that I missed in the first
+pull by putting the tag in the wrong place. Please pull.
+
+g.
+
+The following changes since commit 58fea354d887fddddd342a8d14b02069161ca904:
+
+  arm64: Fix the dtbs target building (2012-12-10 20:24:57 -0600)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 tags/devicetree-for-linus
+
+for you to fetch changes up to 93c667ca2598bd84f1bd3f2fa176af69707699fe:
+
+  of: *node argument to of_parse_phandle_with_args should be const
+(2012-12-11 17:30:16 +0000)
+
+----------------------------------------------------------------
+Two minor devicetree fixups for v3.8. Addition of dummy inlines and
+constification of node argument to of_parse_phandle_with_args().
+
+----------------------------------------------------------------
+Guennadi Liakhovetski (2):
+      of/i2c: add dummy inline functions for when
+CONFIG_OF_I2C(_MODULE) isn't defined
+      of: *node argument to of_parse_phandle_with_args should be const
+
+ drivers/of/base.c      |    2 +-
+ include/linux/of.h     |    2 +-
+ include/linux/of_i2c.h |   12 ++++++++++++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
