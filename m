@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab2LNIZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:25:56 -0500
-Received: from 216-250-63-74.static.reverse.lstn.net ([74.63.250.216]:57198
-	"EHLO sv.linguistics.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751589Ab2LNIZz (ORCPT
+	id S1753979Ab2LNIdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:33:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42569 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab2LNIdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:25:55 -0500
-X-Greylist: delayed 70500 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Dec 2012 03:25:55 EST
-Message-ID: <c9b41d75917487692eba02517b82366d.squirrel@74.63.250.216>
-Date: Fri, 14 Dec 2012 06:35:27 +0400
-Subject: WARNING!! WEBMAIL AUTOMATIC DELETION OF VIRUS AND SPY, UPGRADE NOW
- !!!
-From: "Webmail System Administrator" <centralafricana@africa-online.net>
-Reply-To: section_uba@hotmail.fr
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - sv.linguistics.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - africa-online.net
-X-Get-Message-Sender-Via: sv.linguistics.net: authenticated_id: rehabili/only user confirmed/virtual account not confirmed
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 14 Dec 2012 03:33:40 -0500
+Date: Fri, 14 Dec 2012 00:33:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: Re: [PATCH 2/2] dmatest: check for dma mapping error
+Message-Id: <20121214003328.46cba41c.akpm@linux-foundation.org>
+In-Reply-To: <CAHp75VfxyyqaAOTsXQfEaiQm8tPetG2JZUm-XrezzdL01qoYiA@mail.gmail.com>
+References: <1355139464-6855-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1355139464-6855-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20121213153437.b8b0198d.akpm@linux-foundation.org>
+	<CAHp75VfxyyqaAOTsXQfEaiQm8tPetG2JZUm-XrezzdL01qoYiA@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Help protect unwanted spam and delete virus from your webmail account by
-clicking the link below to upgrade and protect your account from unwanted
-spam and spy, virus from your account. Your webmail account is corrupted
-by virus, you are to advise to upgrade.  You need to upgrade your email
-limit quota to 10GB within the next 48 hours. Use the below web link to
-upgrade your valid email account:
+On Fri, 14 Dec 2012 09:06:03 +0200 Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHpHWk1kN1pRaUxDLWNoR0xFTzUtLUE6MQ
+> On Fri, Dec 14, 2012 at 1:34 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Mon, 10 Dec 2012 13:37:44 +0200
+> > Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
+> >
+> >> We get a warning if CONFIG_DMA_API_DEBUG=y
+> >>
+> >> [   28.150631] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
+> >> [   28.157058] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x0000000035698305] [size=14365 bytes] [mapped as single]
+> 
+> >> --- a/drivers/dma/dmatest.c
+> >> +++ b/drivers/dma/dmatest.c
+> >> @@ -378,15 +378,35 @@ static int dmatest_func(void *data)
+> >>
+> >>                       dma_srcs[i] = dma_map_single(dev->dev, buf, len,
+> >>                                                    DMA_TO_DEVICE);
+> >> +                     ret = dma_mapping_error(dev->dev, dma_srcs[i]);
+> >> +                     if (ret) {
+> >> +                             unmap_src(dev->dev, dma_srcs, len, i);
+> >> +                             pr_warn("%s: #%u: mapping error %d with "
+> >> +                                     "src_off=0x%x len=0x%x\n",
+> >> +                                     thread_name, total_tests - 1, ret,
+> >> +                                     src_off, len);
+> >> +                             failed_tests++;
+> >> +                             continue;
+> >> +                     }
+> >
+> > The changelog and the code don't match.  Which one is out of date?
+> 
+> I'm afraid I didn't get what is wrong.
+> 
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+The above code will not emit the string "dw_dmac dw_dmac.0: DMA-API:
+device driver failed to check map error[device
+address=0x0000000035698305] [size=14365 bytes] [mapped as single]".
+
+Oh I see what you did.  That string is emitted by the kernel at
+present, and the patch prevents this.  And it also emits a new warning
+if the mapping attempt failed, and that new warning wasn't described.
+
+I updated the changelog:
+
+
+: The kernel emits a warning if CONFIG_DMA_API_DEBUG=y:
+: 
+: [   28.150631] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
+: [   28.157058] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x0000000035698305] [size=14365 bytes] [mapped as single]
+: 
+: Fix this by adding the required checking of the dma_map_single() return
+: value.
 
