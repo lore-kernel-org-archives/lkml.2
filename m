@@ -1,52 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab2LNURM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:17:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52536 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200Ab2LNURL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:17:11 -0500
+	id S932345Ab2LNUS7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:18:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932157Ab2LNUS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 15:18:58 -0500
+Message-ID: <50CB8931.2000305@redhat.com>
+Date: Fri, 14 Dec 2012 15:16:49 -0500
+From: Brian Foster <bfoster@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1bdaf70f-7271-4aed-a985-0b455ccafab1@email.android.com>
-References: <20121211170605.GD28827@liondog.tnic>
-	<CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com>
-	<50C76F9E.4080001@zytor.com>
-	<CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com>
-	<50C7C859.60405@zytor.com>
-	<CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
-	<50C82ABF.3020907@zytor.com>
-	<20121212133853.GC8760@liondog.tnic>
-	<50C963B1.3040609@zytor.com>
-	<50C96717.3020407@zytor.com>
-	<20121213191317.GE31485@liondog.tnic>
-	<50CA4A7A.10104@zytor.com>
-	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
-	<50CB8213.9000908@zytor.com>
-	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
-	<1bdaf70f-7271-4aed-a985-0b455ccafab1@email.android.com>
-Date: Fri, 14 Dec 2012 12:17:09 -0800
-X-Google-Sender-Auth: mtxuJ64ceWZgOVm8TCxLBJjx2tA
-Message-ID: <CAE9FiQXf8eq=zwoSPvN4oBuRShirS57STFuPTNcKm7Gf+Bs2Vg@mail.gmail.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+CC: miklos@szeredi.hu, dev@parallels.com, xemul@parallels.com,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH 5/6] fuse: truncate file if async dio failed
+References: <20121214151424.27155.45971.stgit@maximpc.sw.ru> <20121214152113.27155.58793.stgit@maximpc.sw.ru>
+In-Reply-To: <20121214152113.27155.58793.stgit@maximpc.sw.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 12:10 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> What info are you referring to?
+On 12/14/2012 10:21 AM, Maxim V. Patlasov wrote:
+> The patch improves error handling in fuse_direct_IO(): if we successfully
+> submitted several fuse requests on behalf of synchronous direct write
+> extending file and some of them failed, let's try to do our best to clean-up.
+> 
+> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> ---
+>  fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 53 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 05eed23..b6e9b8d 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -2340,6 +2340,53 @@ int fuse_notify_poll_wakeup(struct fuse_conn *fc,
+>  	return 0;
+>  }
+>  
+> +static void fuse_do_truncate(struct file *file)
+> +{
+> +	struct fuse_file *ff = file->private_data;
+> +	struct inode *inode = file->f_mapping->host;
+> +	struct fuse_conn *fc = get_fuse_conn(inode);
+> +	struct fuse_req *req;
+> +	struct fuse_setattr_in inarg;
+> +	struct fuse_attr_out outarg;
+> +	int err;
+> +
+> +	req = fuse_get_req_nopages(fc);
+> +	if (IS_ERR(req)) {
+> +		printk(KERN_WARNING "failed to allocate req for truncate "
+> +		       "(%ld)\n", PTR_ERR(req));
+> +		return;
+> +	}
+> +
+> +	memset(&inarg, 0, sizeof(inarg));
+> +	memset(&outarg, 0, sizeof(outarg));
+> +
+> +	inarg.valid |= FATTR_SIZE;
+> +	inarg.size = i_size_read(inode);
+> +
+> +	inarg.valid |= FATTR_FH;
+> +	inarg.fh = ff->fh;
+> +
+> +	req->in.h.opcode = FUSE_SETATTR;
+> +	req->in.h.nodeid = get_node_id(inode);
+> +	req->in.numargs = 1;
+> +	req->in.args[0].size = sizeof(inarg);
+> +	req->in.args[0].value = &inarg;
+> +	req->out.numargs = 1;
+> +	if (fc->minor < 9)
+> +		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
+> +	else
+> +		req->out.args[0].size = sizeof(outarg);
+> +	req->out.args[0].value = &outarg;
+> +
+> +	fuse_request_send(fc, req);
+> +	err = req->out.h.error;
+> +	fuse_put_request(fc, req);
+> +
+> +	if (err)
+> +		printk(KERN_WARNING "failed to truncate to %lld with error "
+> +		       "%d\n", i_size_read(inode), err);
+> +}
+> +
 
-pointer to init_level4_pgt page.
+fuse_do_truncate() looks fairly close to fuse_do_setattr(). Is there any
+reason we couldn't make fuse_do_setattr() non-static, change the dentry
+parameter to an inode and use that?
+
+Brian
+
+>  static ssize_t
+>  fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+>  			loff_t offset, unsigned long nr_segs)
+> @@ -2400,8 +2447,12 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+>  		kfree(io);
+>  	}
+>  
+> -	if (rw == WRITE && ret > 0)
+> -		fuse_write_update_size(inode, pos);
+> +	if (rw == WRITE) {
+> +		if (ret > 0)
+> +			fuse_write_update_size(inode, pos);
+> +		else if (ret < 0 && offset + count > i_size)
+> +			fuse_do_truncate(file);
+> +	}
+>  
+>  	return ret;
+>  }
+> 
+
