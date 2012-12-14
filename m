@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab2LNMIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 07:08:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55981 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2LNMIh (ORCPT
+	id S1755196Ab2LNMJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 07:09:18 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:16229 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab2LNMJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 07:08:37 -0500
-Message-ID: <1355486912.3475.4.camel@phoenix>
-Subject: [PATCH v2 5/6] iio: dac: ad5686: Don't set error code to voltage_uv
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Dec 2012 20:08:32 +0800
-In-Reply-To: <1355486789.3475.1.camel@phoenix>
-References: <1355486789.3475.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 14 Dec 2012 07:09:17 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-91-50cb16eb3838
+From: Tomasz Figa <t.figa@samsung.com>
+To: Joonyoung Shim <jy0922.shim@samsung.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH] gpio: samsung: remove exynos_gpio_cfg
+Date: Fri, 14 Dec 2012 13:09:10 +0100
+Message-id: <135551836.smSUskQTBC@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.9.3 (Linux/3.5.7-gentoo; KDE/4.9.3; x86_64; ; )
+In-reply-to: <1355481842-17952-1-git-send-email-jy0922.shim@samsung.com>
+References: <1355481842-17952-1-git-send-email-jy0922.shim@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jAd3XYqcDDLZsNbe4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq4vb+PqWAzS0V/93G2BsYTzF2MnBwSAiYSDTM6oGwx
+	iQv31rN1MXJxCAksYpQ4ffYKE0hCSKCFSWLVWRsQm01ATeJzwyOgIg4OEQEdiQ0n2UHqmQXW
+	MUp0TfnEDlIjLGAl8fvUMrBeFgFVie89N1hA6nkFtCWa71WDhPkF1CXebXsKViIq4Cyx7/oH
+	RhCbU8BD4sLBNjaIte4SV/umg9XwCghK/Jh8jwXEZhaQl9i3fyorhK0lsX7ncaYJjIKzkJTN
+	QlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBAfpMegfjqgaLQ4wCHIxKPLwf
+	hE4FCLEmlhVX5h5ilOBgVhLh/SJyOkCINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpi
+	SWp2ampBahFMlomDU6qBUaunZsLuppW3p12fcvjAtj8rZc0XSumHv26KkJRaX7k7f+5NDr4C
+	36+/sl4kieyenLJ/rWqZxBOfifEWe79un38/LuD2veDP/8QZu9iZg44kL/omPCOL/7BIYrPS
+	K0vzmNV8bRb91hazZ05MdHY5OWF58Hv5orQ24Y6AifelAljfvHm+/3jvWiWW4oxEQy3mouJE
+	APHaGOZMAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator_get_voltage() may return negative error code.
-Add error checking to avoid setting error code to voltage_uv.
+Hi Joonyoung,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-v2: check if ret is negative value
- drivers/iio/dac/ad5686.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+On Friday 14 of December 2012 19:44:01 Joonyoung Shim wrote:
+> The exynos_gpio_cfg can be substituted to samsung_gpio_cfgs[8].
+> 
+> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
 
-diff --git a/drivers/iio/dac/ad5686.c b/drivers/iio/dac/ad5686.c
-index bc92ff9..28f2e59 100644
---- a/drivers/iio/dac/ad5686.c
-+++ b/drivers/iio/dac/ad5686.c
-@@ -332,7 +332,11 @@ static int __devinit ad5686_probe(struct spi_device *spi)
- 		if (ret)
- 			goto error_put_reg;
- 
--		voltage_uv = regulator_get_voltage(st->reg);
-+		ret = regulator_get_voltage(st->reg);
-+		if (ret < 0)
-+			goto error_disable_reg;
-+
-+		voltage_uv = ret;
- 	}
- 
- 	st->chip_info =
+Since recently Thomas Abraham posted patches for pin control support of 
+Exynos5250, basically making the legacy GPIO support useless, I think 
+there is no need to extend it.
+
+Instead existing boards should be made to use the pinctrl driver.
+
+Best regards,
 -- 
-1.7.9.5
-
-
+Tomasz Figa
+Samsung Poland R&D Center
+SW Solution Development, Linux Platform
 
