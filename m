@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2LNThZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 14:37:25 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36701 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195Ab2LNThY (ORCPT
+	id S932259Ab2LNTlv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 14:41:51 -0500
+Received: from reverse.techspace.com ([216.174.116.17]:63340 "EHLO
+	hdasch-dt.enmotus.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932133Ab2LNTlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 14:37:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355155456-21577-1-git-send-email-ajax@redhat.com>
-References: <1355155456-21577-1-git-send-email-ajax@redhat.com>
-Date: Fri, 14 Dec 2012 11:37:20 -0800
-Message-ID: <CAFDufb9DK5J0NeAh=pd1SyykKSfcE8otKRjUbVnZhmNWOWW=4A@mail.gmail.com>
-Subject: Re: [PATCH] vt: Add VC_MUTE (v2)
-From: Arthur Taylor <art@ified.ca>
-To: Adam Jackson <ajax@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 Dec 2012 14:41:49 -0500
+X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Dec 2012 14:41:49 EST
+From: Hugh Daschbach <hugh.daschbach@enmotus.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Daschbach <hugh.daschbach@enmotus.com>
+Subject: [PATCH 3.7.0] Add AHCI support for Enmotus Bobcat device.
+Date: Fri, 14 Dec 2012 11:29:51 -0800
+Message-Id: <1355513391-29458-1-git-send-email-hugh.daschbach@enmotus.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The "don't enqueue stuff" semantics of K_OFF shouldn't be a function of
-> the keyboard map state; we should be able to switch among cooked/raw/
-> unicode without changing whether events are delivered.  Otherwise - if
-> changing to K_UNICODE undoes K_OFF - then suddenly Alt-F2 under
-> Gnome will switch VT instead of summoning the "run command" dialog.
+Silicon does not support standard AHCI BAR assignment.  Add
+vendor/device exception to force BAR 2.
 
-A patch to disable the muting should be added to the SysRq handler for
-the "unRaw" action.
+Signed-off-by: Hugh Daschbach <hugh.daschbach@enmotus.com>
+---
+ drivers/ata/ahci.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-I do not think that KBMODE is only about the keyboard map. The
-behaviours that KBMODE influences are:
--Whether input is generated.
--Whether input is buffered by line.
--Whether key events are put through the keymap and translated by
-modifiers or sent as raw keyup/down events.
--Whether the keymap is unicode.
--Whether special keys are interpreted by the kernel.
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 7862d17..3cb008f 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -53,6 +53,7 @@
+ 
+ enum {
+ 	AHCI_PCI_BAR_STA2X11	= 0,
++	AHCI_PCI_BAR_ENMOTUS	= 2,
+ 	AHCI_PCI_BAR_STANDARD	= 5,
+ };
+ 
+@@ -410,6 +411,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 
++	/* Enmotus */
++	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
++
+ 	/* Generic, PCI class code for AHCI */
+ 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	  PCI_CLASS_STORAGE_SATA_AHCI, 0xffffff, board_ahci },
+@@ -1101,6 +1105,8 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	/* The Connext uses non-standard BAR */
+ 	if (pdev->vendor == PCI_VENDOR_ID_STMICRO && pdev->device == 0xCC06)
+ 		ahci_pci_bar = AHCI_PCI_BAR_STA2X11;
++	else if (pdev->vendor == 0x1c44 && pdev->device == 0x8000)
++		ahci_pci_bar = AHCI_PCI_BAR_ENMOTUS;
+ 
+ 	/* acquire resources */
+ 	rc = pcim_enable_device(pdev);
+-- 
+1.7.11.7
 
-The meaning of KBMODE is a bit overloaded It does make sense to split
-the generate / don't generate input into its own ioctl. However, IMO
-this change is part of an incomplete fix to a user space problem.
-
-The issue creating a need for moving the generate / don't generate
-input to its own ioctl was that through some plumbing, when changing
-the keymap setting in an X graphical environment session systemd is
-told to switch the console keymap. As part of switching the keymap, if
-unicode is selected, systemd blindly calls KDSKBMODE with K_UNICODE.
-This currently messes up X, which this change attempts to address.
-
-I'm not sure if letting systemd freely meddle with KBMODE and moving
-the important-for-X behaviour to another ioctl is such a wise idea.
-systemd already changes the kernel default KBMODE to/from unicode by a
-module parameter. Further, this will only work with newer or patched X
-servers.
-
-Depending on the input configuration and drivers used by X, either the
-input system is used directly and the virtual console keyboard is
-ignored, or X uses the virtual console keyboard for input and switches
-it into RAW mode.
-
-In both modes X does not want the kernel to interpret special keys. In
-the former mode X doesn't want the kernel to generate input (as
-otherwise it needs to periodically flush a buffer it never reads to
-stop it from overflowing and causing a kworker to go nuts), in the
-later mode X wants raw key up/down events which are not line buffered.
-
-Setting the console to K_UNICODE is none of these things and causes
-one of many possible problems.
-
-KBMODE (like the console keymap) is a virtual console setting which is
-stored in the virtual terminal and saved/restored from the console
-upon a VT switch.
-
-X is usually run on a VT it allocates and then closes on exit, but you
-can also specify a VT for X to run on which could already have been
-open by another process (say getty.) In either case, X saves the
-KBMODE of the VT during initialization and restores it upon exit.
-
-systemd calling KDSKBMODE on a VT which X is running either has no
-affect or a negative affect on X. In the rare case that X is started
-on a VT with another text mode cooked input process, KBMODE is
-unaffected after X exits.
-
--Art
