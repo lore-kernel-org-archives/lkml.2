@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab2LNW1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:27:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38147 "EHLO mail.kernel.org"
+	id S1757125Ab2LNW1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:27:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38196 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757054Ab2LNW1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:27:07 -0500
+	id S1757110Ab2LNW1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:27:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 18/22] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
-Date: Fri, 14 Dec 2012 14:26:03 -0800
-Message-Id: <20121214222254.012667086@linuxfoundation.org>
+        Chen Gang <gang.chen@asianux.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [ 06/22] telephony: ijx: buffer overflow in ixj_write_cid()
+Date: Fri, 14 Dec 2012 14:25:51 -0800
+Message-Id: <20121214222251.174732899@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -26,62 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+[Not needed in 3.8 or newer as this driver is removed there. - gregkh]
 
-commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
+We get this from user space and nothing has been done to ensure that
+these strings are NUL terminated.
 
-This patch (as1636) is a partial workaround for a hardware bug
-affecting OHCI controllers by NVIDIA at least, maybe others too.  When
-the controller retires a Transfer Descriptor, it is supposed to add
-the TD onto the Done Queue.  But sometimes this doesn't happen, with
-the result that ohci-hcd never realizes the corresponding transfer has
-finished.  Symptoms can vary; a typical result is that USB audio stops
-working after a while.
-
-The patch works around the problem by recognizing that TDs are always
-processed in order.  Therefore, if a later TD is found on the Done
-Queue than all the earlier TDs for the same endpoint must be finished
-as well.
-
-Unfortunately this won't solve the problem in cases where the missing
-TD is the last one in the endpoint's queue.  A complete fix would
-require a signficant amount of change to the driver.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Oliver Neukum <oneukum@suse.de>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/telephony/ixj.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/host/ohci-q.c
-+++ b/drivers/usb/host/ohci-q.c
-@@ -1130,6 +1130,25 @@ dl_done_list (struct ohci_hcd *ohci)
+--- a/drivers/telephony/ixj.c
++++ b/drivers/telephony/ixj.c
+@@ -3190,12 +3190,12 @@ static void ixj_write_cid(IXJ *j)
  
- 	while (td) {
- 		struct td	*td_next = td->next_dl_td;
-+		struct ed	*ed = td->ed;
-+
-+		/*
-+		 * Some OHCI controllers (NVIDIA for sure, maybe others)
-+		 * occasionally forget to add TDs to the done queue.  Since
-+		 * TDs for a given endpoint are always processed in order,
-+		 * if we find a TD on the donelist then all of its
-+		 * predecessors must be finished as well.
-+		 */
-+		for (;;) {
-+			struct td	*td2;
-+
-+			td2 = list_first_entry(&ed->td_list, struct td,
-+					td_list);
-+			if (td2 == td)
-+				break;
-+			takeback_td(ohci, td2);
-+		}
-+
- 		takeback_td(ohci, td);
- 		td = td_next;
+ 	ixj_fsk_alloc(j);
+ 
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
+@@ -3340,12 +3340,12 @@ static void ixj_write_cidcw(IXJ *j)
+ 		ixj_pre_cid(j);
  	}
+ 	j->flags.cidcw_ack = 0;
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
 
 
