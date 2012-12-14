@@ -1,168 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab2LNWox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:44:53 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41259 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab2LNWlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:41:45 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/12] blkcg: make blkcg_gq's hierarchical
-Date: Fri, 14 Dec 2012 14:41:17 -0800
-Message-Id: <1355524885-22719-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+	id S932515Ab2LNWrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:47:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51381 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932173Ab2LNWrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:47:46 -0500
+Message-ID: <50CBAC61.5010600@zytor.com>
+Date: Fri, 14 Dec 2012 14:46:57 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, Stefani Seibold <stefani@seibold.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
+        mingo@redhat.com, john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com>
+In-Reply-To: <50CAE485.5020608@parallels.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently a child blkg (blkcg_gq) can be created even if its parent
-doesn't exist.  ie. Given a blkg, it's not guaranteed that its
-ancestors will exist.  This makes it difficult to implement proper
-hierarchy support for blkcg policies.
+On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
+> On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
+>> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
+>> really need more control I'd almost push for a device/filesystem node
+>> that could be mmapped the usual way.
+>>
+>> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
+>> criu is stable enough yet that we should care.  Criu people?
+> 
+> It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
+> 
+>> (In brief summary: how annoying would it be if the vdso was no longer
+>> just a bunch of constant bytes that lived somewhere?)
+> 
+> It depends on what vdso is going to be. In the perfect case it should
+> a) be mremap-able to any address (or be at fixed address _forever_, but
+>    I assume this is not feasible);
+> b) have entry points at fixed (or somehow movable) places.
+> 
+> I admit that I didn't understand your question properly, if I did,
+> please correct me.
+> 
 
-Always create blkgs recursively and make a child blkg hold a reference
-to its parent.  blkg->parent is added so that finding the parent is
-easy.  blkcg_parent() is also added in the process.
+Either way... criu on the side, we should proceed with this vdso
+redesign and get support for the 32-bit entry points including compat
+mode on x86-64.
 
-This change can be visible to userland.  e.g. while issuing IO in a
-nested cgroup didn't affect the ancestors at all, now it will
-initialize all ancestor blkgs and zero stats for the request_queue
-will always appear on them.  While this is userland visible, this
-shouldn't cause any functional difference.
+	-hpa
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-cgroup.c | 42 +++++++++++++++++++++++++++++++++++++-----
- block/blk-cgroup.h | 18 ++++++++++++++++++
- 2 files changed, 55 insertions(+), 5 deletions(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index fde2286..c858628 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -201,7 +201,16 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	}
- 	blkg = new_blkg;
- 
--	/* insert */
-+	/* link parent and insert */
-+	if (blkcg_parent(blkcg)) {
-+		blkg->parent = __blkg_lookup(blkcg_parent(blkcg), q, false);
-+		if (WARN_ON_ONCE(!blkg->parent)) {
-+			blkg = ERR_PTR(-EINVAL);
-+			goto err_put_css;
-+		}
-+		blkg_get(blkg->parent);
-+	}
-+
- 	spin_lock(&blkcg->lock);
- 	ret = radix_tree_insert(&blkcg->blkg_tree, q->id, blkg);
- 	if (likely(!ret)) {
-@@ -213,6 +222,10 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	if (!ret)
- 		return blkg;
- 
-+	/* @blkg failed fully initialized, use the usual release path */
-+	blkg_put(blkg);
-+	return ERR_PTR(ret);
-+
- err_put_css:
- 	css_put(&blkcg->css);
- err_free_blkg:
-@@ -226,8 +239,9 @@ err_free_blkg:
-  * @q: request_queue of interest
-  *
-  * Lookup blkg for the @blkcg - @q pair.  If it doesn't exist, try to
-- * create one.  This function should be called under RCU read lock and
-- * @q->queue_lock.
-+ * create one.  blkg creation is performed recursively from blkcg_root such
-+ * that all non-root blkg's have access to the parent blkg.  This function
-+ * should be called under RCU read lock and @q->queue_lock.
-  *
-  * Returns pointer to the looked up or created blkg on success, ERR_PTR()
-  * value on error.  If @q is dead, returns ERR_PTR(-EINVAL).  If @q is not
-@@ -252,7 +266,23 @@ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
- 	if (blkg)
- 		return blkg;
- 
--	return blkg_create(blkcg, q, NULL);
-+	/*
-+	 * Create blkgs walking down from blkcg_root to @blkcg, so that all
-+	 * non-root blkgs have access to their parents.
-+	 */
-+	while (true) {
-+		struct blkcg *pos = blkcg;
-+		struct blkcg *parent = blkcg_parent(blkcg);
-+
-+		while (parent && !__blkg_lookup(parent, q, false)) {
-+			pos = parent;
-+			parent = blkcg_parent(parent);
-+		}
-+
-+		blkg = blkg_create(pos, q, NULL);
-+		if (pos == blkcg || IS_ERR(blkg))
-+			return blkg;
-+	}
- }
- EXPORT_SYMBOL_GPL(blkg_lookup_create);
- 
-@@ -321,8 +351,10 @@ static void blkg_rcu_free(struct rcu_head *rcu_head)
- 
- void __blkg_release(struct blkcg_gq *blkg)
- {
--	/* release the extra blkcg reference this blkg has been holding */
-+	/* release the blkcg and parent blkg refs this blkg has been holding */
- 	css_put(&blkg->blkcg->css);
-+	if (blkg->parent)
-+		blkg_put(blkg->parent);
- 
- 	/*
- 	 * A group is freed in rcu manner. But having an rcu lock does not
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 2459730..b26ed58 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -94,8 +94,13 @@ struct blkcg_gq {
- 	struct list_head		q_node;
- 	struct hlist_node		blkcg_node;
- 	struct blkcg			*blkcg;
-+
-+	/* all non-root blkcg_gq's are guaranteed to have access to parent */
-+	struct blkcg_gq			*parent;
-+
- 	/* request allocation list for this blkcg-q pair */
- 	struct request_list		rl;
-+
- 	/* reference count */
- 	int				refcnt;
- 
-@@ -181,6 +186,19 @@ static inline struct blkcg *bio_blkcg(struct bio *bio)
- }
- 
- /**
-+ * blkcg_parent - get the parent of a blkcg
-+ * @blkcg: blkcg of interest
-+ *
-+ * Return the parent blkcg of @blkcg.  Can be called anytime.
-+ */
-+static inline struct blkcg *blkcg_parent(struct blkcg *blkcg)
-+{
-+	struct cgroup *pcg = blkcg->css.cgroup->parent;
-+
-+	return pcg ? cgroup_to_blkcg(pcg) : NULL;
-+}
-+
-+/**
-  * blkg_to_pdata - get policy private data
-  * @blkg: blkg of interest
-  * @pol: policy of interest
--- 
-1.7.11.7
 
