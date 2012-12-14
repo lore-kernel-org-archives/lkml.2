@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2LNVJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 16:09:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50268 "EHLO mail.zytor.com"
+	id S932422Ab2LNVMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 16:12:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49279 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932241Ab2LNVJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 16:09:16 -0500
-Message-ID: <50CB9553.7050808@zytor.com>
-Date: Fri, 14 Dec 2012 13:08:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932367Ab2LNVMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 16:12:07 -0500
+Date: Fri, 14 Dec 2012 16:11:59 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: martin.petersen@oracle.com, Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, jgarzik@redhat.com,
+        JBottomley@Parallels.com, Milan Broz <mbroz@redhat.com>
+Subject: Re: [v3.7 Regression]  [SCSI] sd: Implement support for WRITE SAME
+Message-ID: <20121214211159.GA4204@redhat.com>
+References: <50CB8C74.3090102@canonical.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon>
-In-Reply-To: <20121214201217.GE6582@moon>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CB8C74.3090102@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 12:12 PM, Cyrill Gorcunov wrote:
->>>
->> The real issue is that happens if the process is checkpointed while
->> inside the vdso and now eip/rip or a stack frame points into the vdso.
->> This is not impossible or even unlikely, especially on 32 bits it is
->> downright likely.
+On Fri, Dec 14 2012 at  3:30pm -0500,
+Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+
+> Hi Martin,
 > 
-> I fear if there are stacked ip which point to vdso -- we simply won't
-> be able to restore properly if vdso internal format changed significantly
-> between kernel versions. (At moment we restore vdso exactly at same position
-> it was on checkpoint stage with same content, iirc).
+> A bug was opened against the Ubuntu kernel[0].  After a kernel
+> bisect, it was found that reverting the following commit resolved
+> this bug:
 > 
+> commit 5db44863b6ebbb400c5e61d56ebe8f21ef48b1bd
+> Author: Martin K. Petersen <martin.petersen@oracle.com>
+> Date:   Tue Sep 18 12:19:32 2012 -0400
+> [SCSI] sd: Implement support for WRITE SAME
+> 
+> The regression was introduced as of v3.7-rc7.
+> 
+> The bug can be reproduced with the following commands, which will
+> operate on a virtual scsi_debug device, so they won't change any
+> data on the test system. However, this will completely crash the
+> system:
+> 
+> sudo modprobe scsi_debug
+> sudo luksformat -t ext4 /dev/sdb <- Or whatever device gets assigned
+> after inserting scsi_debug.
+> sudo cryptsetup luksOpen /dev/sdb treasure
+> 
+> Everything works fine up to here, but the following will cause the crash:
+> 
+> sudo mount /dev/mapper/treasure /mnt
+> 
+> The bug can be reproduced on bare metal, in a VM and on i386 or amd64.
+> 
+> I see that you are the author of this patch, so I wanted to run this
+> by you.  I was thinking of requesting a revert for v3.7, but I
+> wanted to get your feedback first.
+> 
+> 
+> Thanks,
+> 
+> Joe
+> 
+> 
+> [0] https://bugs.launchpad.net/bugs/1089818
 
-I don't think there is a way around that.  It is completely unreasonable
-to say that the vdso cannot change between kernel versions, for obvious
-reasons.  It's worse than "significantly"... changing even one
-instruction makes it plausible your eip/rip will point into the middle
-of an instruction.
+The WRITE SAME change was introduced long before v3.7-rc7.  I think your
+bisect is somehow wrong.
 
-	-hpa
+Milan Broz recently pointed out issues he found with luks when using a
+late 3.7-rc (rc7 afaik).  Linus fixed that issue with this commit (which
+landed in the final v3.7):
+http://git.kernel.org/linus/684c9aaebbb0ea3a9954
 
+That may not be _the_ problem though.  But have you tried the final
+v3.7?
 
+Mike
