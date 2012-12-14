@@ -1,150 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab2LNSMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:12:14 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43295 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2LNSMM (ORCPT
+	id S1756834Ab2LNSNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:13:04 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:54399 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab2LNSNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:12:12 -0500
-Date: Fri, 14 Dec 2012 19:11:49 +0100
-From: Mathieu Chouquet-Stringer <mathieu@csetco.com>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sami.liedes@iki.fi, chris.mason@fusionio.com, sensille@gmx.net,
-        list.btrfs@jan-o-sch.net
-Subject: Re: GPF in read_extent_buffer while scrubbing on
- 3.7.0-rc8-00014-g27d7c2a
-Message-ID: <20121214181149.GA15378@kashmir>
-Mail-Followup-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-	sami.liedes@iki.fi, chris.mason@fusionio.com, sensille@gmx.net,
-	list.btrfs@jan-o-sch.net
-References: <20121206143458.GA24396@kashmir>
- <20121210222125.GA20072@kashmir>
+	Fri, 14 Dec 2012 13:13:00 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        containers@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        linux-security-module@vger.kernel.org
+References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
+	<87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
+	<20121214032820.GA5115@mail.hallyn.com> <87bodxi9zw.fsf@xmission.com>
+	<20121214152607.GA9266@mail.hallyn.com> <87bodwd4aw.fsf@xmission.com>
+	<20121214161514.GA9962@mail.hallyn.com>
+Date: Fri, 14 Dec 2012 10:12:53 -0800
+In-Reply-To: <20121214161514.GA9962@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Fri, 14 Dec 2012 16:15:14 +0000")
+Message-ID: <87r4ms5wpm.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210222125.GA20072@kashmir>
-X-Face: %JOeya=Dg!}[/#Go&*&cQ+)){p1c8}u\Fg2Q3&)kothIq|JnWoVzJtCFo~4X<uJ\9cHK'.w
- 3:{EoxBR
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19NdXMHdV4R0cnCWFbdaBPyjySfpG7EbD8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0651]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent user namespace to have caps.
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi,
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-Anyone has any idea about what I should try next regarding this bug?
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>> 
+>> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> >> "Serge E. Hallyn" <serge@hallyn.com> writes:
+>> >> 
+>> >> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> >> >> 
+>> >> >> Andy Lutomirski pointed out that the current behavior of allowing the
+>> >> >> owner of a user namespace to have all caps when that owner is not in a
+>> >> >> parent user namespace is wrong.
+>> >> >
+>> >> > To make sure I understand right, the issue is when a uid is mapped
+>> >> > into multiple namespaces.
+>> >> 
+>> >> Yes.
+>> >> 
+>> >> i.e. uid 1000 in ns1 may own ns2, but uid 1000 in ns3 does not?
+>> >> 
+>> >> I am not certain of your example.
+>> >> 
+>> >> The simple case is:
+>> >> 
+>> >> init_user_ns:
+>> >>      child_user_ns1 (owned by uid == 0 [in all user namespaces])
+>> >>            child_user_ns2 (owned by uid == 0 [ in all user namespaces])
+>> >> 
+>> >> 
+>> >> root (uid == 0) in child_user_ns2 has all rights over anything in
+>> >> child_user_ns1.
+>> >
+>> > Well that is only if there was no mapping.  (since we're comparing
+>> > kuids, not uid_ts).  right?  If you didn't map uid 0 in child_user_ns2
+>> > to another id in the parent ns, you weren't all *that* serious about
+>> > isolating the ns.
+>> >
+>> > The case I was thinking is
+>> >
+>> >   init_user_ns:  [0-uidmax]
+>> >       child_user_ns1  [100000-199999]
+>> >       child_user_ns2  [100000-199999]
+>> >         child_user_ns3  [200000-299999]
+>
+> Wait is my example above possible?  Or does child_user_ns3's range need
+> to be a subset of child_user_ns2's?
+>
+> In which case it would be
+>
+>        child_user_ns1  [100000-199999]
+>        child_user_ns2  [100000-199999]
+>          child_user_ns3  [120000-129999]
+>
 
-On Mon, Dec 10, 2012 at 11:21:25PM +0100, Mathieu Chouquet-Stringer wrote:
-> after enabling page alloc and slub debug, I was able to capture an error
-> followed by the "usual" GPF.  More below.
-> 
-> On Thu, Dec 06, 2012 at 03:34:58PM +0100, Mathieu Chouquet-Stringer wrote:
-> > Using the last couple of kernels (3.6 or 3.7), scrubbing my btrfs fs (which is
-> > on a luks based lvm device) will always end up crashing my pc.
-> > [...]
-> 
-> The warning:
-> WARNING: at fs/btrfs/extent_io.c:4680 read_extent_buffer+0xee/0x120()
-> Hardware name: 2392CTO
-> Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT lockd sunrpc nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack rfcomm bnep arc4 iwldvm mac80211 iTCO_wdt iTCO_vendor_support snd_hda_codec_realtek coretemp kvm_intel kvm microcode uvcvideo videobuf2_vmalloc videobuf2_memops pcspkr videobuf2_core videodev btusb media i2c_i801 bluetooth snd_hda_intel snd_hda_codec cdc_ncm usbnet mii cdc_wdm cdc_acm snd_hwdep snd_seq snd_seq_device snd_pcm lpc_ich mfd_core iwlwifi cfg80211 e1000e snd_page_alloc mei snd_timer thinkpad_acpi snd soundcore rfkill uinput dm_crypt crc32c_intel nouveau ghash_clmulni_intel mxm_wmi ttm i915 i2c_algo_bit drm_kms_helper firewire_ohci drm sdhci_pci firewire_core sdhci mmc_core crc_itu_t i2c_core wmi video
-> Pid: 536, comm: btrfs-endio-met Not tainted 3.7.0-rc8-00039-ged23ec4 #4
-> Call Trace:
->  [<ffffffff8104bebf>] warn_slowpath_common+0x7f/0xc0
->  [<ffffffff8104bf1a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff812aae9e>] read_extent_buffer+0xee/0x120
->  [<ffffffff812a1bb2>] btrfs_node_key+0x22/0x30
->  [<ffffffff812dd720>] __readahead_hook.isra.5+0x3a0/0x3f0
->  [<ffffffff812ddb14>] btree_readahead_hook+0x24/0x40
->  [<ffffffff81286069>] btree_readpage_end_io_hook+0x139/0x290
->  [<ffffffff812a6ff3>] end_bio_extent_readpage+0xd3/0xa40
->  [<ffffffff812853a6>] ? end_workqueue_fn+0x36/0x50
->  [<ffffffff811b27ed>] bio_endio+0x1d/0x30
->  [<ffffffff812853b1>] end_workqueue_fn+0x41/0x50
->  [<ffffffff812b5916>] worker_loop+0x136/0x580
->  [<ffffffff812b57e0>] ? btrfs_queue_worker+0x300/0x300
->  [<ffffffff8106f480>] kthread+0xc0/0xd0
->  [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
->  [<ffffffff8168e8ec>] ret_from_fork+0x7c/0xb0
->  [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
-> 
-> gdb says it's this WARN ON:
-> (gdb) l *(read_extent_buffer + 0xee)
-> 0x726e is in read_extent_buffer (fs/btrfs/extent_io.c:4680).
-> 4675            char *kaddr;
-> 4676            char *dst = (char *)dstv;
-> 4677            size_t start_offset = eb->start & ((u64)PAGE_CACHE_SIZE - 1);
-> 4678            unsigned long i = (start_offset + start) >> PAGE_CACHE_SHIFT;
-> 4679
-> 
-> 4680            WARN_ON(start > eb->len);
-> 
-> 4681            WARN_ON(start + len > eb->start + eb->len);
-> 4682
-> 4683            offset = (start_offset + start) & ((unsigned long)PAGE_CACHE_SIZE - 1);
-> 4684
-> 
-> The GPF which follows right after is:
-> general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-> Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT lockd sunrpc nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack rfcomm bnep arc4 iwldvm mac80211 iTCO_wdt iTCO_vendor_support snd_hda_codec_realtek coretemp kvm_intel kvm microcode uvcvideo videobuf2_vmalloc videobuf2_memops pcspkr videobuf2_core videodev btusb media i2c_i801 bluetooth snd_hda_intel snd_hda_codec cdc_ncm usbnet mii cdc_wdm cdc_acm snd_hwdep snd_seq snd_seq_device snd_pcm lpc_ich mfd_core iwlwifi cfg80211 e1000e snd_page_alloc mei snd_timer thinkpad_acpi snd soundcore rfkill uinput dm_crypt crc32c_intel nouveau ghash_clmulni_intel mxm_wmi ttm i915 i2c_algo_bit drm_kms_helper firewire_ohci drm sdhci_pci firewire_core sdhci mmc_core crc_itu_t i2c_core wmi video
-> CPU 1 
-> Pid: 536, comm: btrfs-endio-met Tainted: G        W    3.7.0-rc8-00039-ged23ec4 #4 LENOVO 2392CTO/2392CTO
-> RIP: 0010:[<ffffffff8136c756>]  [<ffffffff8136c756>] memcpy+0x6/0x110
-> RSP: 0018:ffff8804215a9b70  EFLAGS: 00010207
-> RAX: ffff8804215a9c57 RBX: 0000000000000011 RCX: 0000000000000011
-> RDX: 0000000000000011 RSI: 0005080000000003 RDI: ffff8804215a9c57
-> RBP: ffff8804215a9bb8 R08: 0000000000000000 R09: 0000000000000486
-> R10: 0000000000000001 R11: 0000000000aaaaaa R12: ffff8804215a9c68
-> R13: ffff8803f4c5cfc0 R14: 0000000000000048 R15: 0000000000000011
-> FS:  0000000000000000(0000) GS:ffff88043e240000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00007fe992197000 CR3: 0000000001c0b000 CR4: 00000000001407e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process btrfs-endio-met (pid: 536, threadinfo ffff8804215a8000, task ffff8804224eb0e0)
-> Stack:
->  ffffffff812aae73 ffff8804105ea000 0000000000008003 0000000000001000
->  ffff8804215a9c20 00000000000003dd ffff88041232a7c0 ffff8804215a9c20
->  aeb3f3fe4e814d8e ffff8804215a9bc8 ffffffff812a1bb2 ffff8804215a9c98
-> Call Trace:
->  [<ffffffff812aae73>] ? read_extent_buffer+0xc3/0x120
->  [<ffffffff812a1bb2>] btrfs_node_key+0x22/0x30
->  [<ffffffff812dd720>] __readahead_hook.isra.5+0x3a0/0x3f0
->  [<ffffffff812ddb14>] btree_readahead_hook+0x24/0x40
->  [<ffffffff81286069>] btree_readpage_end_io_hook+0x139/0x290
->  [<ffffffff812a6ff3>] end_bio_extent_readpage+0xd3/0xa40
->  [<ffffffff812853a6>] ? end_workqueue_fn+0x36/0x50
->  [<ffffffff811b27ed>] bio_endio+0x1d/0x30
->  [<ffffffff812853b1>] end_workqueue_fn+0x41/0x50
->  [<ffffffff812b5916>] worker_loop+0x136/0x580
->  [<ffffffff812b57e0>] ? btrfs_queue_worker+0x300/0x300
->  [<ffffffff8106f480>] kthread+0xc0/0xd0
->  [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
->  [<ffffffff8168e8ec>] ret_from_fork+0x7c/0xb0
->  [<ffffffff8106f3c0>] ? kthread_create_on_node+0x120/0x120
-> Code: 74 13 48 8b 43 58 48 2b 43 50 88 43 4e 48 83 c4 08 5b 5d c3 90 e8 eb fb ff ff eb e6 90 90 90 90 90 90 90 90 90 48 89 f8 48 89 d1 <f3> a4 c3 03 83 e2 07 f3 48 a5 89 d1 f3 a4 c3 20 4c 8b 06 4c 8b 
-> RIP  [<ffffffff8136c756>] memcpy+0x6/0x110
->  RSP <ffff8804215a9b70>
-> 
-> memcpy is called from here:
-> (gdb) l *(read_extent_buffer + 0xc3)
-> 0x7243 is in read_extent_buffer (fs/btrfs/extent_io.c:4694).
-> 4689                    kaddr = page_address(page);
-> 4690                    memcpy(dst, kaddr + offset, cur);
-> 4691
-> 4692                    dst += cur;
-> 4693                    len -= cur;
-> 4694                    offset = 0;
-> 4695                    i++;
-> 4696            }
-> 4697    }
-> 4698
-> 
-> Any idea what to do next?  If you think I should be adding debug printk
-> statements, feel free to send them my way.
+Yes.  You have to nest uids.
 
--- 
-Mathieu Chouquet-Stringer                         mathieu@csetco.com
-            The sun itself sees not till heaven clears.
-	             -- William Shakespeare --
+>> > with unfortunate mappings  - ns1 and ns2 should have had nonoverlapping
+>> > ranges, but in any case now uid 1000 in ns1 can exert privilege over
+>> > ns3.  Again, uids comparisons will succeed for file access anyway, so
+>> > ns1 can 0wn ns2 and ns3 other ways.
+>> 
+>> Yes yours is the more realistic scenario.  Mine was simplified to be clear.
+>> 
+>> > Heck I'm starting to think the bug is a feature - surely given the
+>> > mappings above I meant for ns1 and ns2 to bleed privilege to each
+>> > other?
+>> 
+>> The serious problem is that privileges can bleed up. A user in 
+>> ns3 can wind up owning ns2 or ns1.  Which totally defeats the permission
+>> model.  You have CAP_DAC_OVERRIDE so you don't even need access to files
+>> you own, etc, etc.
+>
+> Would that not require intervention from the init_user_ns?  In my
+> example above (let's add that ns2 is owned by kuid.uid=1000 in
+> init_user_ns), root in child_user_ns2 cannot map kuid.val=0 or
+> kuid.val=1000 into ns3 because 0 and 1000 are not in the range
+> 100000-199999.  So there is no uid in child_user_ns3 which is able
+> to spoof uid=0 in child_user_ns1.
+
+Right.  It does require having the uid of the owner of ns1 or ns2 in
+ns3.  So you have to explicitly allow it.
+
+What I don't see is any point in allowing something like that.
+
+
+After taking a second look I just realized that this is completely
+unexploitable with the code that is currently merged.  As creating
+a grand child user namespace is competelely impossible.  Creating
+a user namespace is requires capable(CAP_SYS_ADMIN) which is never
+present in anything but the initial user namespace.
+
+
+That said I think the current semantics of cap_capable are completely
+fatal to reasoning about user namespaces.
+
+A child user namespace having capabilities against processes in it's
+parent seems totally bizarre and pretty dangerous from a capabilities
+standpoint.
+
+That said Serge I think I have lost track of the point of your question.
+
+Eric
