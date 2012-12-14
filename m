@@ -1,76 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab2LNCP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:15:57 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50570 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2LNCPz (ORCPT
+	id S1756115Ab2LNCPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:15:31 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15355 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755730Ab2LNCPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:15:55 -0500
+	Thu, 13 Dec 2012 21:15:24 -0500
+Message-ID: <50CA8B96.4000208@huawei.com>
+Date: Fri, 14 Dec 2012 10:14:46 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <50CA6478.20008@zytor.com>
-References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-	<1355436141-8668-20-git-send-email-yinghai@kernel.org>
-	<50CA6478.20008@zytor.com>
-Date: Thu, 13 Dec 2012 18:15:54 -0800
-X-Google-Sender-Auth: 1NbjDGmK5nQ7VsRJ_w6NhIDc0GI
-Message-ID: <CAE9FiQVwse9Un5wE1Qxc867dxLuX0RNptuHzd1xJjK_OiN7QxQ@mail.gmail.com>
-Subject: Re: [PATCH v6 19/27] x86, boot: update comments about entries for
- 64bit image
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+To: Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
+        Liujiang <jiang.liu@huawei.com>, Simon Jeons <simon.jeons@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <n-horiguchi@ah.jp.nec.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V4 1/3 RESEND] MCE: fix an error of mce_bad_pages statistics
+References: <50C7FB7D.2060801@huawei.com>
+In-Reply-To: <50C7FB7D.2060801@huawei.com>
+X-Forwarded-Message-Id: <50C7FB7D.2060801@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> if we depend on other
-> things we should make that explicit, not just here but in boot.txt.
+Move poisoned page check at the beginning of the function in order to
+fix the error.
 
-please check lines for boot.txt
-
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
+ mm/memory-failure.c |   38 +++++++++++++++++---------------------
+ 1 files changed, 17 insertions(+), 21 deletions(-)
 
-**** 64-bit BOOT PROTOCOL
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 8b20278..3a8b4b2 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1419,18 +1419,17 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_head(page);
 
-For machine with 64bit cpus and 64bit kernel, we could use 64bit bootloader
-We need a 64-bit boot protocol.
++	if (PageHWPoison(hpage)) {
++		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
++		return -EBUSY;
++	}
++
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+ 		return ret;
+ 	if (ret == 0)
+ 		goto done;
 
-In 64-bit boot protocol, the first step in loading a Linux kernel
-should be to setup the boot parameters (struct boot_params,
-traditionally known as "zero page"). The memory for struct boot_params
-should be allocated under or above 4G and initialized to all zero.
-Then the setup header from offset 0x01f1 of kernel image on should be
-loaded into struct boot_params and examined. The end of setup header
-can be calculated as follow:
+-	if (PageHWPoison(hpage)) {
+-		put_page(hpage);
+-		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+-		return -EBUSY;
+-	}
+-
+ 	/* Keep page count to indicate a given hugepage is isolated. */
+ 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
+ 				MIGRATE_SYNC);
+@@ -1441,12 +1440,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 		return ret;
+ 	}
+ done:
+-	if (!PageHWPoison(hpage))
+-		atomic_long_add(1 << compound_trans_order(hpage),
+-				&mce_bad_pages);
++	/* keep elevated page count for bad page */
++	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
+ 	set_page_hwpoison_huge_page(hpage);
+ 	dequeue_hwpoisoned_huge_page(hpage);
+-	/* keep elevated page count for bad page */
++
+ 	return ret;
+ }
 
-        0x0202 + byte value at offset 0x0201
+@@ -1488,6 +1486,11 @@ int soft_offline_page(struct page *page, int flags)
+ 		}
+ 	}
 
-In addition to read/modify/write the setup header of the struct
-boot_params as that of 16-bit boot protocol, the boot loader should
-also fill the additional fields of the struct boot_params as that
-described in zero-page.txt.
++	if (PageHWPoison(page)) {
++		pr_info("soft offline: %#lx page already poisoned\n", pfn);
++		return -EBUSY;
++	}
++
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+ 		return ret;
+@@ -1519,19 +1522,11 @@ int soft_offline_page(struct page *page, int flags)
+ 		return -EIO;
+ 	}
 
-After setting up the struct boot_params, the boot loader can load the
-64-bit kernel in the same way as that of 16-bit boot protocol, but
-kernel could be above 4G.
+-	lock_page(page);
+-	wait_on_page_writeback(page);
+-
+ 	/*
+ 	 * Synchronized using the page lock with memory_failure()
+ 	 */
+-	if (PageHWPoison(page)) {
+-		unlock_page(page);
+-		put_page(page);
+-		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+-		return -EBUSY;
+-	}
+-
++	lock_page(page);
++	wait_on_page_writeback(page);
+ 	/*
+ 	 * Try to invalidate first. This should work for
+ 	 * non dirty unmapped page cache pages.
+@@ -1582,8 +1577,9 @@ int soft_offline_page(struct page *page, int flags)
+ 		return ret;
 
-In 64-bit boot protocol, the kernel is started by jumping to the
-64-bit kernel entry point, which is the start address of loaded
-64-bit kernel plus 0x200.
+ done:
++	/* keep elevated page count for bad page */
+ 	atomic_long_add(1, &mce_bad_pages);
+ 	SetPageHWPoison(page);
+-	/* keep elevated page count for bad page */
++
+ 	return ret;
+ }
+-- 
+1.7.1
 
-At entry, the CPU must be in 64-bit mode with paging enabled.
-The range with setup_header.init_size from start address of loaded
-kernel and zero page and command line buffer get ident mapping;
-a GDT must be loaded with the descriptors for selectors
-__BOOT_CS(0x10) and __BOOT_DS(0x18); both descriptors must be 4G flat
-segment; __BOOT_CS must have execute/read permission, and __BOOT_DS
-must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
-must be __BOOT_DS; interrupt must be disabled; %rsi must hold the base
-address of the struct boot_params.
----
+
+
+.
+
+
