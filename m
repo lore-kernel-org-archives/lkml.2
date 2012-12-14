@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2LNCP3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:15:29 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:63799 "EHLO
+	id S1756072Ab2LNCP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:15:28 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:63801 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab2LNCPY (ORCPT
+	with ESMTP id S1755845Ab2LNCPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Dec 2012 21:15:24 -0500
-Message-ID: <50CA8B92.6070001@huawei.com>
-Date: Fri, 14 Dec 2012 10:14:42 +0800
+Message-ID: <50CA8BA3.4050100@huawei.com>
+Date: Fri, 14 Dec 2012 10:14:59 +0800
 From: Xishi Qiu <qiuxishi@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -19,10 +19,10 @@ To: Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
         Fengguang Wu <fengguang.wu@intel.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>, <n-horiguchi@ah.jp.nec.com>,
         <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V4 0/3 RESEND] MCE: fix an error of mce_bad_pages statistics
-References: <50C7FB6A.9030209@huawei.com>
-In-Reply-To: <50C7FB6A.9030209@huawei.com>
-X-Forwarded-Message-Id: <50C7FB6A.9030209@huawei.com>
+Subject: [PATCH V4 3/3 RESEND] MCE: use num_poisoned_pages instead of mce_bad_pages
+References: <50C7FB85.8040008@huawei.com>
+In-Reply-To: <50C7FB85.8040008@huawei.com>
+X-Forwarded-Message-Id: <50C7FB85.8040008@huawei.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.74.196]
@@ -31,41 +31,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-$ echo paddr > /sys/devices/system/memory/soft_offline_page to offline a
-*free* page, the value of mce_bad_pages will be added, and the page is set
-HWPoison flag, but it is still managed by page buddy alocator.
+Since MCE is an x86 concept, and this code is in mm/, it would be
+better to use the name num_poisoned_pages instead of mce_bad_pages.
 
-$ cat /proc/meminfo | grep HardwareCorrupted shows the value.
-
-If we offline the same page, the value of mce_bad_pages will be added
-*again*, this means the value is incorrect now. Assume the page is
-still free during this short time.
-
-soft_offline_page()
-	get_any_page()
-		"else if (is_free_buddy_page(p))" branch return 0
-			"goto done";
-				"atomic_long_add(1, &mce_bad_pages);"
-
-Changelog:
-V4:
-	-use num_poisoned_pages instead of mce_bad_pages
-	-remove page lock
-V3:
-	-add page lock when set HWPoison flag
-	-adjust the function structure
-V2 and V1:
-	-fix the error
-
-Xishi Qiu (3):
-  move-poisoned-page-check-at-the-beginning-of-the-function
-  fix-function-structure
-  use-num_poisoned_pages-instead-of-mce_bad_pages
-
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Suggested-by: Borislav Petkov <bp@alien8.de>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
  fs/proc/meminfo.c   |    2 +-
  include/linux/mm.h  |    2 +-
- mm/memory-failure.c |   76 ++++++++++++++++++++++++++-------------------------
- 3 files changed, 41 insertions(+), 39 deletions(-)
+ mm/memory-failure.c |   16 ++++++++--------
+ 3 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 80e4645..c3dac61 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -158,7 +158,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 		vmi.used >> 10,
+ 		vmi.largest_chunk >> 10
+ #ifdef CONFIG_MEMORY_FAILURE
+-		,atomic_long_read(&mce_bad_pages) << (PAGE_SHIFT - 10)
++		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+ #endif
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 5432a3e..8ccc477 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1653,7 +1653,7 @@ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+ extern int sysctl_memory_failure_recovery;
+ extern void shake_page(struct page *p, int access);
+-extern atomic_long_t mce_bad_pages;
++extern atomic_long_t num_poisoned_pages;
+ extern int soft_offline_page(struct page *page, int flags);
+
+ extern void dump_page(struct page *page);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index e513a7b..ff5e611 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -61,7 +61,7 @@ int sysctl_memory_failure_early_kill __read_mostly = 0;
+
+ int sysctl_memory_failure_recovery __read_mostly = 1;
+
+-atomic_long_t mce_bad_pages __read_mostly = ATOMIC_LONG_INIT(0);
++atomic_long_t num_poisoned_pages __read_mostly = ATOMIC_LONG_INIT(0);
+
+ #if defined(CONFIG_HWPOISON_INJECT) || defined(CONFIG_HWPOISON_INJECT_MODULE)
+
+@@ -1040,7 +1040,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	}
+
+ 	nr_pages = 1 << compound_trans_order(hpage);
+-	atomic_long_add(nr_pages, &mce_bad_pages);
++	atomic_long_add(nr_pages, &num_poisoned_pages);
+
+ 	/*
+ 	 * We need/can do nothing about count=0 pages.
+@@ -1070,7 +1070,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 			if (!PageHWPoison(hpage)
+ 			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+ 			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+-				atomic_long_sub(nr_pages, &mce_bad_pages);
++				atomic_long_sub(nr_pages, &num_poisoned_pages);
+ 				return 0;
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+@@ -1128,7 +1128,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	}
+ 	if (hwpoison_filter(p)) {
+ 		if (TestClearPageHWPoison(p))
+-			atomic_long_sub(nr_pages, &mce_bad_pages);
++			atomic_long_sub(nr_pages, &num_poisoned_pages);
+ 		unlock_page(hpage);
+ 		put_page(hpage);
+ 		return 0;
+@@ -1323,7 +1323,7 @@ int unpoison_memory(unsigned long pfn)
+ 			return 0;
+ 		}
+ 		if (TestClearPageHWPoison(p))
+-			atomic_long_sub(nr_pages, &mce_bad_pages);
++			atomic_long_sub(nr_pages, &num_poisoned_pages);
+ 		pr_info("MCE: Software-unpoisoned free page %#lx\n", pfn);
+ 		return 0;
+ 	}
+@@ -1337,7 +1337,7 @@ int unpoison_memory(unsigned long pfn)
+ 	 */
+ 	if (TestClearPageHWPoison(page)) {
+ 		pr_info("MCE: Software-unpoisoned page %#lx\n", pfn);
+-		atomic_long_sub(nr_pages, &mce_bad_pages);
++		atomic_long_sub(nr_pages, &num_poisoned_pages);
+ 		freeit = 1;
+ 		if (PageHuge(page))
+ 			clear_page_hwpoison_huge_page(page);
+@@ -1442,7 +1442,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	}
+ done:
+ 	/* keep elevated page count for bad page */
+-	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
++	atomic_long_add(1 << compound_trans_order(hpage), &num_poisoned_pages);
+ 	set_page_hwpoison_huge_page(hpage);
+ 	dequeue_hwpoisoned_huge_page(hpage);
+ out:
+@@ -1584,7 +1584,7 @@ int soft_offline_page(struct page *page, int flags)
+
+ done:
+ 	/* keep elevated page count for bad page */
+-	atomic_long_inc(&mce_bad_pages);
++	atomic_long_inc(&num_poisoned_pages);
+ 	SetPageHWPoison(page);
+ out:
+ 	return ret;
+-- 
+1.7.1
+
 
 
 .
