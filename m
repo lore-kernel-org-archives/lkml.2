@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab2LNXCw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:02:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40570 "EHLO mail.kernel.org"
+	id S1422690Ab2LNXDE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:03:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932655Ab2LNXCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:02:49 -0500
+	id S1422653Ab2LNXDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:03:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 23/37] ACPI / battery: Correct battery capacity values on Thinkpads
-Date: Fri, 14 Dec 2012 15:01:00 -0800
-Message-Id: <20121214222257.260829514@linuxfoundation.org>
+Subject: [ 25/37] ACPI / PNP: Do not crash due to stale pointer use during system resume
+Date: Fri, 14 Dec 2012 15:01:02 -0800
+Message-Id: <20121214222257.457391907@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -26,219 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamil Iskra <kamil@iskra.name>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 4000e626156935dfb626321ce09cae2c833eabbb upstream.
+commit a6b5e88c0e42093b9057856f35770966c8c591e3 upstream.
 
-Add a quirk to correctly report battery capacity on 2010 and 2011
-Lenovo Thinkpad models.
+During resume from system suspend the 'data' field of
+struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
+due to removal of the associated ACPI device node object in the
+previous suspend-resume cycle.  This happens, for example, if a
+dockable machine is booted in the docking station and then suspended
+and resumed and suspended again.  If that happens,
+pnpacpi_build_resource_template() called from pnpacpi_set_resources()
+attempts to use that pointer and crashes.
 
-The affected models that I tested (x201, t410, t410s, and x220)
-exhibit a problem where, when battery capacity reporting unit is mAh,
-the values being reported are wrong.  Pre-2010 and 2012 models appear
-to always report in mWh and are thus unaffected.  Also, in mid-2012
-Lenovo issued a BIOS update for the 2011 models that fixes the issue
-(tested on x220 with a post-1.29 BIOS).  No such update is available
-for the 2010 models, so those still need this patch.
+However, pnpacpi_set_resources() actually checks the device's ACPI
+handle, attempts to find the ACPI device node object attached to it
+and returns an error code if that fails, so in fact it knows what the
+correct value of dev->data should be.  Use this observation to update
+dev->data with the correct value if necessary and dump a call trace
+if that's the case (once).
 
-Problem description: for some reason, the affected Thinkpads switch
-the reporting unit between mAh and mWh; generally, mAh is used when a
-laptop is plugged in and mWh when it's unplugged, although a
-suspend/resume or rmmod/modprobe is needed for the switch to take
-effect.  The values reported in mAh are *always* wrong.  This does
-not appear to be a kernel regression; I believe that the values were
-never reported correctly.  I tested back to kernel 2.6.34, with
-multiple machines and BIOS versions.
+We still need to fix the root cause of this issue, but preventing
+systems from crashing because of it is an improvement too.
 
-Simply plugging a laptop into mains before turning it on is enough to
-reproduce the problem.  Here's a sample /proc/acpi/battery/BAT0/info
-from Thinkpad x220 (before a BIOS update) with a 4-cell battery:
-
-present:                 yes
-design capacity:         2886 mAh
-last full capacity:      2909 mAh
-battery technology:      rechargeable
-design voltage:          14800 mV
-design capacity warning: 145 mAh
-design capacity low:     13 mAh
-cycle count:              0
-capacity granularity 1:  1 mAh
-capacity granularity 2:  1 mAh
-model number:            42T4899
-serial number:           21064
-battery type:            LION
-OEM info:                SANYO
-
-Once the laptop switches the unit to mWh (unplug from mains, suspend,
-resume), the output changes to:
-
-present:                 yes
-design capacity:         28860 mWh
-last full capacity:      29090 mWh
-battery technology:      rechargeable
-design voltage:          14800 mV
-design capacity warning: 1454 mWh
-design capacity low:     200 mWh
-cycle count:              0
-capacity granularity 1:  1 mWh
-capacity granularity 2:  1 mWh
-model number:            42T4899
-serial number:           21064
-battery type:            LION
-OEM info:                SANYO
-
-Can you see how the values for "design capacity", etc., differ by a
-factor of 10 instead of 14.8 (the design voltage of this battery)?
-On the battery itself it says: 14.8V, 1.95Ah, 29Wh, so clearly the
-values reported in mWh are correct and the ones in mAh are not.
-
-My guess is that this problem has been around ever since those
-machines were released, but because the most common Thinkpad
-batteries are rated at 10.8V, the error (8%) is small enough that it
-simply hasn't been noticed or at least nobody could be bothered to
-look into it.
-
-My patch works around the problem by adjusting the incorrectly
-reported mAh values by "10000 / design_voltage".  The patch also has
-code to figure out if it should be activated or not.  It only
-activates on Lenovo Thinkpads, only when the unit is mAh, and, as an
-extra precaution, only when the battery capacity reported through
-ACPI does not match what is reported through DMI (I've never
-encountered a machine where the first two conditions would be true
-but the last would not, but better safe than sorry).
-
-I've been using this patch for close to a year on several systems
-without any problems.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=41062
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/battery.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
+ drivers/pnp/pnpacpi/core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <asm/unaligned.h>
- 
- #ifdef CONFIG_ACPI_PROCFS_POWER
- #include <linux/proc_fs.h>
-@@ -95,6 +96,18 @@ enum {
- 	ACPI_BATTERY_ALARM_PRESENT,
- 	ACPI_BATTERY_XINFO_PRESENT,
- 	ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY,
-+	/* On Lenovo Thinkpad models from 2010 and 2011, the power unit
-+	   switches between mWh and mAh depending on whether the system
-+	   is running on battery or not.  When mAh is the unit, most
-+	   reported values are incorrect and need to be adjusted by
-+	   10000/design_voltage.  Verified on x201, t410, t410s, and x220.
-+	   Pre-2010 and 2012 models appear to always report in mWh and
-+	   are thus unaffected (tested with t42, t61, t500, x200, x300,
-+	   and x230).  Also, in mid-2012 Lenovo issued a BIOS update for
-+	   the 2011 models that fixes the issue (tested on x220 with a
-+	   post-1.29 BIOS), but as of Nov. 2012, no such update is
-+	   available for the 2010 models.  */
-+	ACPI_BATTERY_QUIRK_THINKPAD_MAH,
- };
- 
- struct acpi_battery {
-@@ -438,6 +451,21 @@ static int acpi_battery_get_info(struct
- 	kfree(buffer.pointer);
- 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags))
- 		battery->full_charge_capacity = battery->design_capacity;
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
-+	    battery->power_unit && battery->design_voltage) {
-+		battery->design_capacity = battery->design_capacity *
-+		    10000 / battery->design_voltage;
-+		battery->full_charge_capacity = battery->full_charge_capacity *
-+		    10000 / battery->design_voltage;
-+		battery->design_capacity_warning =
-+		    battery->design_capacity_warning *
-+		    10000 / battery->design_voltage;
-+		/* Curiously, design_capacity_low, unlike the rest of them,
-+		   is correct.  */
-+		/* capacity_granularity_* equal 1 on the systems tested, so
-+		   it's impossible to tell if they would need an adjustment
-+		   or not if their values were higher.  */
-+	}
- 	return result;
- }
- 
-@@ -486,6 +514,11 @@ static int acpi_battery_get_state(struct
- 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
- 		battery->capacity_now = (battery->capacity_now *
- 				battery->full_charge_capacity) / 100;
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
-+	    battery->power_unit && battery->design_voltage) {
-+		battery->capacity_now = battery->capacity_now *
-+		    10000 / battery->design_voltage;
-+	}
- 	return result;
- }
- 
-@@ -595,6 +628,24 @@ static void sysfs_remove_battery(struct
- 	mutex_unlock(&battery->sysfs_lock);
- }
- 
-+static void find_battery(const struct dmi_header *dm, void *private)
-+{
-+	struct acpi_battery *battery = (struct acpi_battery *)private;
-+	/* Note: the hardcoded offsets below have been extracted from
-+	   the source code of dmidecode.  */
-+	if (dm->type == DMI_ENTRY_PORTABLE_BATTERY && dm->length >= 8) {
-+		const u8 *dmi_data = (const u8 *)(dm + 1);
-+		int dmi_capacity = get_unaligned((const u16 *)(dmi_data + 6));
-+		if (dm->length >= 18)
-+			dmi_capacity *= dmi_data[17];
-+		if (battery->design_capacity * battery->design_voltage / 1000
-+		    != dmi_capacity &&
-+		    battery->design_capacity * 10 == dmi_capacity)
-+			set_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
-+				&battery->flags);
-+	}
-+}
-+
- /*
-  * According to the ACPI spec, some kinds of primary batteries can
-  * report percentage battery remaining capacity directly to OS.
-@@ -620,6 +671,32 @@ static void acpi_battery_quirks(struct a
- 		battery->capacity_now = (battery->capacity_now *
- 				battery->full_charge_capacity) / 100;
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -95,6 +95,9 @@ static int pnpacpi_set_resources(struct
+ 		return -ENODEV;
  	}
-+
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags))
-+		return ;
-+
-+	if (battery->power_unit && dmi_name_in_vendors("LENOVO")) {
-+		const char *s;
-+		s = dmi_get_system_info(DMI_PRODUCT_VERSION);
-+		if (s && !strnicmp(s, "ThinkPad", 8)) {
-+			dmi_walk(find_battery, battery);
-+			if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
-+				     &battery->flags) &&
-+			    battery->design_voltage) {
-+				battery->design_capacity =
-+				    battery->design_capacity *
-+				    10000 / battery->design_voltage;
-+				battery->full_charge_capacity =
-+				    battery->full_charge_capacity *
-+				    10000 / battery->design_voltage;
-+				battery->design_capacity_warning =
-+				    battery->design_capacity_warning *
-+				    10000 / battery->design_voltage;
-+				battery->capacity_now = battery->capacity_now *
-+				    10000 / battery->design_voltage;
-+			}
-+		}
-+	}
- }
  
- static int acpi_battery_update(struct acpi_battery *battery)
++	if (WARN_ON_ONCE(acpi_dev != dev->data))
++		dev->data = acpi_dev;
++
+ 	ret = pnpacpi_build_resource_template(dev, &buffer);
+ 	if (ret)
+ 		return ret;
 
 
