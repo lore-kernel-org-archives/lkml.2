@@ -1,385 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab2LNWEI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:04:08 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:46049 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab2LNWEE (ORCPT
+	id S1756757Ab2LNWEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:04:39 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:32868 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534Ab2LNWEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:04:04 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 4/4 v5] rtc: add rtc-driver for HID sensors of type time
-Date: Fri, 14 Dec 2012 23:02:23 +0100
-Message-Id: <1355522543-25598-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <50CB98F3.9030509@ahsoftware.de>
-References: <50CB98F3.9030509@ahsoftware.de>
+	Fri, 14 Dec 2012 17:04:37 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: <linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Howells <dhowells@redhat.com>
+References: <87txroxpgq.fsf@xmission.com>
+Date: Fri, 14 Dec 2012 14:04:31 -0800
+In-Reply-To: <87txroxpgq.fsf@xmission.com> (Eric W. Biederman's message of
+	"Fri, 14 Dec 2012 14:01:57 -0800")
+Message-ID: <87bodwxpcg.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+ZLMnBMChSDV4apVQ6NqMN1zmHwkNXSCU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0409]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 3/4] userns: Add a more complete capability subset test to commit_creds
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver makes the time from HID sensors (hubs) which are offering
-such available like any other RTC does.
 
-It is necessary that all values like year, month etc, are send as
-8bit values (1 byte each) and all of them in 1 report. Also the
-spec HUTRR39b doesn't define the range of the year field, we
-tread it as 0 - 99 because that's what most RTCs I know about are
-offering.
+When unsharing a user namespace we reduce our credentials to just what
+can be done in that user namespace.  This is a subset of the credentials
+we previously had.  Teach commit_creds to recognize this is a subset
+of the credentials we have had before and don't clear the dumpability flag.
 
-Currently the time can only be read. Setting the time must be done
-through sending a report (or a feature). The spec currently doesn't
-define how and I'm not sure if I just should define something by myself.
+This allows an unprivileged  program to do:
+unshare(CLONE_NEWUSER);
+fd = open("/proc/self/uid_map", O_RDWR);
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Where previously opening the uid_map writable would fail because
+the the task had been made non-dumpable.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- drivers/rtc/Kconfig               |   16 ++
- drivers/rtc/Makefile              |    1 +
- drivers/rtc/rtc-hid-sensor-time.c |  291 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 308 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-hid-sensor-time.c
+ kernel/cred.c |   26 +++++++++++++++++++++++++-
+ 1 files changed, 25 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 19c03ab..e0d29b5 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1144,4 +1144,20 @@ config RTC_DRV_SNVS
- 	   This driver can also be built as a module, if so, the module
- 	   will be called "rtc-snvs".
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 48cea3d..993a7ea41 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -455,6 +455,30 @@ error_put:
+ 	return ret;
+ }
  
-+comment "HID Sensor RTC drivers"
-+
-+config RTC_DRV_HID_SENSOR_TIME
-+	tristate "HID Sensor Time"
-+	depends on USB_HID
-+	select IIO
-+	select HID_SENSOR_HUB
-+	select HID_SENSOR_IIO_COMMON
-+	help
-+	  Say yes here to build support for the HID Sensors of type Time.
-+	  This drivers makes such sensors available as RTCs.
-+
-+	  If this driver is compiled as a module, it will be named
-+	  rtc-hid-sensor-time.
-+
-+
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 56297f0..9d1658a 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_RTC_DRV_EM3027)	+= rtc-em3027.o
- obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
- obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
- obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
-+obj-$(CONFIG_RTC_DRV_HID_SENSOR_TIME) += rtc-hid-sensor-time.o
- obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
- obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
- obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-new file mode 100644
-index 0000000..25cac6e
---- /dev/null
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -0,0 +1,291 @@
-+/*
-+ * HID Sensor Time Driver
-+ * Copyright (c) 2012, Alexander Holler.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
-+#include <linux/hid-sensor-hub.h>
-+#include <linux/iio/iio.h>
-+#include <linux/rtc.h>
-+
-+/* Format: HID-SENSOR-usage_id_in_hex */
-+/* Usage ID from spec for Time: 0x2000A0 */
-+#define DRIVER_NAME "HID-SENSOR-2000a0" /* must be lowercase */
-+
-+enum hid_time_channel {
-+	CHANNEL_SCAN_INDEX_YEAR,
-+	CHANNEL_SCAN_INDEX_MONTH,
-+	CHANNEL_SCAN_INDEX_DAY,
-+	CHANNEL_SCAN_INDEX_HOUR,
-+	CHANNEL_SCAN_INDEX_MINUTE,
-+	CHANNEL_SCAN_INDEX_SECOND,
-+	TIME_RTC_CHANNEL_MAX,
-+};
-+
-+struct hid_time_state {
-+	struct hid_sensor_hub_callbacks callbacks;
-+	struct hid_sensor_iio_common common_attributes;
-+	struct hid_sensor_hub_attribute_info info[TIME_RTC_CHANNEL_MAX];
-+	struct rtc_time last_time;
-+	spinlock_t lock_last_time;
-+	struct completion comp_last_time;
-+	struct rtc_time time_buf;
-+	struct rtc_device *rtc;
-+};
-+
-+static const u32 hid_time_addresses[TIME_RTC_CHANNEL_MAX] = {
-+	HID_USAGE_SENSOR_TIME_YEAR,
-+	HID_USAGE_SENSOR_TIME_MONTH,
-+	HID_USAGE_SENSOR_TIME_DAY,
-+	HID_USAGE_SENSOR_TIME_HOUR,
-+	HID_USAGE_SENSOR_TIME_MINUTE,
-+	HID_USAGE_SENSOR_TIME_SECOND,
-+};
-+
-+/* Channel names for verbose error messages */
-+static const char * const hid_time_channel_names[TIME_RTC_CHANNEL_MAX] = {
-+	"year", "month", "day", "hour", "minute", "second",
-+};
-+
-+/* Callback handler to send event after all samples are received and captured */
-+static int hid_time_proc_event(struct hid_sensor_hub_device *hsdev,
-+				unsigned usage_id, void *priv)
++static bool cred_cap_issubset(const struct cred *set, const struct cred *subset)
 +{
-+	unsigned long flags;
-+	struct hid_time_state *time_state = platform_get_drvdata(priv);
++	const struct user_namespace *set_ns = set->user_ns;
++	const struct user_namespace *subset_ns = subset->user_ns;
 +
-+	spin_lock_irqsave(&time_state->lock_last_time, flags);
-+	time_state->last_time = time_state->time_buf;
-+	spin_unlock_irqrestore(&time_state->lock_last_time, flags);
-+	complete(&time_state->comp_last_time);
-+	return 0;
++	/* If the two credentials are in the same user namespace see if
++	 * the capabilities of subset are a subset of set.
++	 */
++	if (set_ns == subset_ns)
++		return cap_issubset(subset->cap_permitted, set->cap_permitted);
++
++	/* The credentials are in a different user namespaces
++	 * therefore one is a subset of the other only if a set is an
++	 * ancestor of subset.
++	 */
++	while (subset_ns != &init_user_ns) {
++		if (set_ns == subset_ns->parent)
++			return true;
++		subset_ns = subset_ns->parent;
++	}
++
++	return false;
 +}
 +
-+static int hid_time_capture_sample(struct hid_sensor_hub_device *hsdev,
-+				unsigned usage_id, size_t raw_len,
-+				char *raw_data, void *priv)
-+{
-+	struct hid_time_state *time_state = platform_get_drvdata(priv);
-+	struct rtc_time *time_buf = &time_state->time_buf;
-+
-+	switch (usage_id) {
-+	case HID_USAGE_SENSOR_TIME_YEAR:
-+		time_buf->tm_year = *(u8 *)raw_data;
-+		if (time_buf->tm_year < 70)
-+			/* assume we are in 1970...2069 */
-+			time_buf->tm_year += 100;
-+		break;
-+	case HID_USAGE_SENSOR_TIME_MONTH:
-+		/* sensor sending the month as 1-12, we need 0-11 */
-+		time_buf->tm_mon = *(u8 *)raw_data-1;
-+		break;
-+	case HID_USAGE_SENSOR_TIME_DAY:
-+		time_buf->tm_mday = *(u8 *)raw_data;
-+		break;
-+	case HID_USAGE_SENSOR_TIME_HOUR:
-+		time_buf->tm_hour = *(u8 *)raw_data;
-+		break;
-+	case HID_USAGE_SENSOR_TIME_MINUTE:
-+		time_buf->tm_min = *(u8 *)raw_data;
-+		break;
-+	case HID_USAGE_SENSOR_TIME_SECOND:
-+		time_buf->tm_sec = *(u8 *)raw_data;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+/* small helper, haven't found any other way */
-+static const char *hid_time_attrib_name(u32 attrib_id)
-+{
-+	static const char unknown[] = "unknown";
-+	unsigned i;
-+
-+	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i) {
-+		if (hid_time_addresses[i] == attrib_id)
-+			return hid_time_channel_names[i];
-+	}
-+	return unknown; /* should never happen */
-+}
-+
-+static int hid_time_parse_report(struct platform_device *pdev,
-+				struct hid_sensor_hub_device *hsdev,
-+				unsigned usage_id,
-+				struct hid_time_state *time_state)
-+{
-+	int report_id, i;
-+
-+	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i)
-+		if (sensor_hub_input_get_attribute_info(hsdev,
-+				HID_INPUT_REPORT, usage_id,
-+				hid_time_addresses[i],
-+				&time_state->info[i]) < 0)
-+			return -EINVAL;
-+	/* Check the (needed) attributes for sanity */
-+	report_id = time_state->info[0].report_id;
-+	if (report_id < 0) {
-+		dev_err(&pdev->dev, "bad report ID!\n");
-+		return -EINVAL;
-+	}
-+	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i) {
-+		if (time_state->info[i].report_id != report_id) {
-+			dev_err(&pdev->dev,
-+				"not all needed attributes inside the same report!\n");
-+			return -EINVAL;
-+		}
-+		if (time_state->info[i].size != 1) {
-+			dev_err(&pdev->dev,
-+				"attribute '%s' not 8 bits wide!\n",
-+				hid_time_attrib_name(
-+					time_state->info[i].attrib_id));
-+			return -EINVAL;
-+		}
-+		if (time_state->info[i].units !=
-+				HID_USAGE_SENSOR_UNITS_NOT_SPECIFIED &&
-+				/* allow attribute seconds with unit seconds */
-+				!(time_state->info[i].attrib_id ==
-+				HID_USAGE_SENSOR_TIME_SECOND &&
-+				time_state->info[i].units ==
-+				HID_USAGE_SENSOR_UNITS_SECOND)) {
-+			dev_err(&pdev->dev,
-+				"attribute '%s' hasn't a unit of type 'none'!\n",
-+				hid_time_attrib_name(
-+					time_state->info[i].attrib_id));
-+			return -EINVAL;
-+		}
-+		if (time_state->info[i].unit_expo) {
-+			dev_err(&pdev->dev,
-+				"attribute '%s' hasn't a unit exponent of 1!\n",
-+				hid_time_attrib_name(
-+					time_state->info[i].attrib_id));
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int hid_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned long flags;
-+	struct hid_time_state *time_state =
-+		platform_get_drvdata(to_platform_device(dev));
-+	int ret;
-+
-+	INIT_COMPLETION(time_state->comp_last_time);
-+	/* get a report with all values through requesting one value */
-+	sensor_hub_input_attr_get_raw_value(time_state->common_attributes.hsdev,
-+			HID_USAGE_SENSOR_TIME, hid_time_addresses[0],
-+			time_state->info[0].report_id);
-+	/* wait for all values (event) */
-+	ret = wait_for_completion_killable_timeout(
-+			&time_state->comp_last_time, HZ*6);
-+	if (ret > 0) {
-+		/* no error */
-+		spin_lock_irqsave(&time_state->lock_last_time, flags);
-+		*tm = time_state->last_time;
-+		spin_unlock_irqrestore(&time_state->lock_last_time, flags);
-+		return 0;
-+	}
-+	if (!ret)
-+		return -EIO; /* timeouted */
-+	return ret; /* killed (-ERESTARTSYS) */
-+}
-+
-+static const struct rtc_class_ops hid_time_rtc_ops = {
-+	.read_time = hid_rtc_read_time,
-+};
-+
-+static int hid_time_probe(struct platform_device *pdev)
-+{
-+	int ret = 0;
-+	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-+	struct hid_time_state *time_state = devm_kzalloc(&pdev->dev,
-+		sizeof(struct hid_time_state), GFP_KERNEL);
-+
-+	if (time_state == NULL)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, time_state);
-+
-+	init_completion(&time_state->comp_last_time);
-+	time_state->common_attributes.hsdev = hsdev;
-+	time_state->common_attributes.pdev = pdev;
-+
-+	ret = hid_sensor_parse_common_attributes(hsdev,
-+				HID_USAGE_SENSOR_TIME,
-+				&time_state->common_attributes);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to setup common attributes!\n");
-+		return ret;
-+	}
-+
-+	ret = hid_time_parse_report(pdev, hsdev, HID_USAGE_SENSOR_TIME,
-+					time_state);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to setup attributes!\n");
-+		return ret;
-+	}
-+
-+	time_state->callbacks.send_event = hid_time_proc_event;
-+	time_state->callbacks.capture_sample = hid_time_capture_sample;
-+	time_state->callbacks.pdev = pdev;
-+	ret = sensor_hub_register_callback(hsdev, HID_USAGE_SENSOR_TIME,
-+					&time_state->callbacks);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "register callback failed!\n");
-+		return ret;
-+	}
-+
-+	time_state->rtc = rtc_device_register("hid-sensor-time",
-+				&pdev->dev, &hid_time_rtc_ops, THIS_MODULE);
-+
-+	if (IS_ERR(time_state->rtc)) {
-+		dev_err(&pdev->dev, "rtc device register failed!\n");
-+		return PTR_ERR(time_state->rtc);
-+	}
-+
-+	return ret;
-+}
-+
-+static int hid_time_remove(struct platform_device *pdev)
-+{
-+	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-+	struct hid_time_state *time_state = platform_get_drvdata(pdev);
-+
-+	rtc_device_unregister(time_state->rtc);
-+	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver hid_time_platform_driver = {
-+	.driver = {
-+		.name	= DRIVER_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= hid_time_probe,
-+	.remove		= hid_time_remove,
-+};
-+module_platform_driver(hid_time_platform_driver);
-+
-+MODULE_DESCRIPTION("HID Sensor Time");
-+MODULE_AUTHOR("Alexander Holler <holler@ahsoftware.de>");
-+MODULE_LICENSE("GPL");
+ /**
+  * commit_creds - Install new credentials upon the current task
+  * @new: The credentials to be assigned
+@@ -493,7 +517,7 @@ int commit_creds(struct cred *new)
+ 	    !gid_eq(old->egid, new->egid) ||
+ 	    !uid_eq(old->fsuid, new->fsuid) ||
+ 	    !gid_eq(old->fsgid, new->fsgid) ||
+-	    !cap_issubset(new->cap_permitted, old->cap_permitted)) {
++	    !cred_cap_issubset(old, new)) {
+ 		if (task->mm)
+ 			set_dumpable(task->mm, suid_dumpable);
+ 		task->pdeath_signal = 0;
 -- 
-1.7.8.6
+1.7.5.4
 
