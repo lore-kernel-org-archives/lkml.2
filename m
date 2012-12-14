@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab2LNAUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 19:20:36 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51881 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab2LNAUf (ORCPT
+	id S1755907Ab2LNAWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 19:22:49 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:59399 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792Ab2LNAWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 19:20:35 -0500
+	Thu, 13 Dec 2012 19:22:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <50CA6E4C.6000305@zytor.com>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
- <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
- <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e>
- <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e>
- <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Dec 2012 16:20:14 -0800
-Message-ID: <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com>
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org
+In-Reply-To: <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 13 Dec 2012 17:22:25 -0700
+Message-ID: <CAErSpo5eFhpHwnYZvfXPLJ3hnViFXLtgkGXaGR2xNsVaSg0CKw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PCI Hotplug: workaround for Thunderbolt on Acer
+ Aspire S5
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Miles J Penner <miles.j.penner@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Tushar N Dave <tushar.n.dave@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 4:09 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/13/2012 11:32 AM, Andy Lutomirski wrote:
->>
->>
->> x32's vdso cheats -- x32 code can see high addresses just fine.  The
->> toolchain just makes it difficult.
->>
->> Your best bet is probably to just map the vvar page twice -- once at
->> the same address as native 32-bit mode (but only for compat tasks)
->> would use and once in the usual fixmap location.  You can't use the
->> fixmap for the compat mapping, though, since it would be a *user*
->> address.
->>
->> For HPET support, you'd have to have special support.  I'd say to skip
->> it for compat mode.
->>
+[+cc Rafael]
+
+On Thu, Dec 13, 2012 at 8:31 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 >
-> Whatever data you need you can just map it into the vdso range.  There
-> really shouldn't be anything special about that at all.
+> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> deeper in hierarchy:
 >
-> The fixmap stuff is an x86-64 legacy that you don't have to worry about,
-> obviously.
+> Device (RP05)
+> {
+>    // ...
+>    Device (HRUP)
+>    {
+>        // ...
+>        Device (HRDN)
+>        {
+>            // ...
+>            Device (EPUP)
+>            {
+>                // ...
+>                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+>                {
+>                    Return (One)
+>                }
+>            }
+>        }
+>    }
+> }
+>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  drivers/pci/hotplug/acpi_pcihp.c |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> index 2a47e82..d92ebfb 100644
+> --- a/drivers/pci/hotplug/acpi_pcihp.c
+> +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+>         status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+>         if (ACPI_SUCCESS(status) && removable)
+>                 return 1;
+> +
+> +       /*
+> +        * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> +        *
+> +        * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> +        * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> +        * deeper in hierarchy.
+> +        */
+> +       status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> +                       &removable);
 
-The fixmap page is new.  It's not ABI -- the layout can freely change,
-but the vdso needs to be able to see.  It would make no sense to cow
-that page, and it would be more complicated to make it be part of the
-(64-bit) vdso, so I left it as a fixmap when I did the vvar cleanups.
+I don't think encoding an ACPI path from the BIOS of a random machine
+here is the right approach.  The path components are completely
+implementation-dependent, and we'll end up carrying this test forever,
+long after the last Aspire S5 is in the landfill.
 
-For compat mode, though, I don't think it can be in the fixmap unless
-there are segmentation games that I think are impossible, or unless
-the vdso wants to do a far call (which I would guess is not much
-faster than a system call, although I haven't benchmarked it).  This
-is because there are no addresses at all that can be seen from 32-bit
-code segments and that are in the kernel address range.
+We need a more generic approach that covers this case.  It would be
+interesting to see the rest of the ACPI namespace details under
+RP05.HRUP.  I guess we have RP05.HRUP._ADR, at least.  I'm not sure
+what the BIOS is trying to tell us by providing
+RP05.HRUP.HRDN.EPUP._RMV, but maybe we could figure it out if we knew
+more about HRDN and EPUP.
 
-What you could do is probably arrange (using some linker script magic)
-for a symbol to exist that points at the page *before* the vdso
-starts.  Then just map the vvar page there when starting a compat
-task.  You could then address it using a normal symbol reference by
-tweaking the vvar macro.  (I think this'll access it via the GOT.)
-Alternatively, you could just pick an absolute address -- the page is
-NX, so you don't really need to worry about randomization.
-
---Andy
+> +       if (ACPI_SUCCESS(status) && removable)
+> +               return 1;
+> +
+>         return 0;
+>  }
+>
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
