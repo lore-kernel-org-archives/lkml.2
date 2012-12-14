@@ -1,66 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab2LNOWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 09:22:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59400 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755766Ab2LNOWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 09:22:21 -0500
-Message-ID: <50CB3662.5080100@redhat.com>
-Date: Fri, 14 Dec 2012 09:23:30 -0500
-From: Tony Camuso <tcamuso@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: minyard@acm.org
-CC: Corey Minyard <tcminyard@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        openipmi-developer@lists.sourceforge.net, grant.likely@secretlab.ca,
-        Robert Evans <Robert.Evans@stratus.com>,
-        Jim Paradis <jparadis@redhat.com>
-Subject: Re: [PATCH] ipmi: add new kernel options to prevent automatic ipmi
- init
-References: <1355424008-20491-1-git-send-email-tcamuso@redhat.com> <50CA31BB.2030507@acm.org>
-In-Reply-To: <50CA31BB.2030507@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756126Ab2LNO0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 09:26:54 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:55445 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755845Ab2LNO0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 09:26:53 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND 5/6 v10] gpio: Add device tree support to block GPIO API
+Date: Fri, 14 Dec 2012 15:26:24 +0100
+Message-Id: <1355495185-24220-6-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355495185-24220-1-git-send-email-stigge@antcom.de>
+References: <1355495185-24220-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RHEL builds the ipmi_si into the kernel by default, rather than as a
-module, because it is required early in order to be available for ACPI
-opregion access. However, it appears that some of our customers have
-custom ipmi drivers, and this gets in their way.
+This patch adds device tree support to the block GPIO API.
 
-Stratus is currently evaluating your suggestions, and we are expecting a
-response from them sometime today or early next week.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-On 12/13/2012 02:51 PM, Corey Minyard wrote:
-> Well, the built-in driver works on systems that have more than one interface
-> and more than one BMC, and multiple IPMBs (and all of the other channel
-> types for that matter, and the driver handles all the multiplexing and nasty
-> addressing).  There is, in fact, no arbitrary limit, and IBM tested
-> this fairly extensively with some of their systems.  I'm not sure why you
-> would need a custom driver, and if there are some custom things that need
-> to be done for your servers, I'd be happy to add that.  I've worked with a
-> number of other vendors to get changes like this in.  And then ipmitool,
-> freeipmi, openipmi, etc. will work with the device.
->
-> I don't have a big problem with this patch.  I wonder why you would want
-> to compile the standard driver into your kernel if you expected to load a
-> module with a custom driver later, though.  None of the distros I know of
-> compile it in, it's always a module.
->
-> You can also dynamically remove the device from the driver using the hot
-> add/remove capability.  To remove it, you can do:
->    echo remove,`cat /proc/ipmi/0/params`
-> and it will disassociate that device (IPMI interface 0 in this case) from the
-> driver.  So you can iterate through all the devices in /proc/ipmi and
-> remove them all at startup.
->
-> If none of the above options work for you, we can go ahead with this
-> patch.  Just wanted to let you know that current options exist, and see
-> if you wanted to take a different direction.
->
-> -corey
->
+---
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +++++++
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpioblock-of.c                           |   84 ++++++++++++++++++
+ 3 files changed, 121 insertions(+)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio-block.txt
+@@ -0,0 +1,36 @@
++Block GPIO definition
++=====================
++
++This binding specifies arbitrary blocks of gpios, combining gpios from one or
++more GPIO controllers together, to form a word for r/w access.
++
++Required property:
++- compatible: must be "linux,gpio-block"
++
++Required subnodes:
++- the name will be the registered name of the block
++- property "gpios" is a list of gpios for the respective block
++
++Example:
++
++        blockgpio {
++                compatible = "linux,gpio-block";
++
++                block0 {
++                        gpios = <&gpio 3 0 0>,
++                                <&gpio 3 1 0>;
++                };
++                block1 {
++                        gpios = <&gpio 4 1 0>,
++                                <&gpio 4 3 0>,
++                                <&gpio 4 2 0>,
++                                <&gpio 4 4 0>,
++                                <&gpio 4 5 0>,
++                                <&gpio 4 6 0>,
++                                <&gpio 4 7 0>,
++                                <&gpio 4 8 0>,
++                                <&gpio 4 9 0>,
++                                <&gpio 4 10 0>,
++                                <&gpio 4 19 0>;
++                };
++        };
+--- linux-2.6.orig/drivers/gpio/Makefile
++++ linux-2.6/drivers/gpio/Makefile
+@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ 
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
++obj-$(CONFIG_OF_GPIO)		+= gpioblock-of.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+ obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+--- /dev/null
++++ linux-2.6/drivers/gpio/gpioblock-of.c
+@@ -0,0 +1,84 @@
++/*
++ * OF implementation for Block GPIO
++ *
++ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++
++static int __devinit gpioblock_of_probe(struct platform_device *pdev)
++{
++	struct device_node *block;
++	unsigned *gpios;
++	int ngpio;
++	int ret;
++	struct gpio_block *gb;
++
++	for_each_available_child_of_node(pdev->dev.of_node, block) {
++		int i;
++
++		ngpio = of_gpio_count(block);
++		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
++		if (!gpios)
++			return -ENOMEM;
++		for (i = 0; i < ngpio; i++) {
++			ret = of_get_gpio(block, i);
++			if (ret < 0)
++				return ret; /* expect -EPROBE_DEFER */
++			gpios[i] = ret;
++		}
++		gb = gpio_block_create(gpios, ngpio, block->name);
++		if (IS_ERR(gb)) {
++			dev_err(&pdev->dev,
++				"Error creating GPIO block from device tree\n");
++			return PTR_ERR(gb);
++		}
++		ret = gpio_block_register(gb);
++		if (ret < 0) {
++			gpio_block_free(gb);
++			return ret;
++		}
++		kfree(gpios);
++		dev_info(&pdev->dev, "Registered gpio block %s: %d gpios\n",
++			 block->name, ngpio);
++	}
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static struct of_device_id gpioblock_of_match[] __devinitdata = {
++	{ .compatible = "linux,gpio-block", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, gpioblock_of_match);
++#endif
++
++static struct platform_driver gpioblock_of_driver = {
++	.driver	= {
++		.name = "gpio-block",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(gpioblock_of_match),
++
++	},
++	.probe	= gpioblock_of_probe,
++};
++
++module_platform_driver(gpioblock_of_driver);
++
++MODULE_DESCRIPTION("GPIO Block driver");
++MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:gpioblock-of");
