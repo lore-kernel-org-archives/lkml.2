@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab2LNQHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:07:32 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53643 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab2LNQH1 (ORCPT
+	id S1756744Ab2LNQKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:10:09 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:38252 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756425Ab2LNQKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:07:27 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur@brendeland.net>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv2 03/11] remoteproc: Set vring addresses in resource table
-Date: Fri, 14 Dec 2012 17:06:52 +0100
-Message-Id: <1355501220-4572-4-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
+	Fri, 14 Dec 2012 11:10:06 -0500
+Date: Fri, 14 Dec 2012 16:15:14 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        containers@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the
+ parent user namespace to have caps.
+Message-ID: <20121214161514.GA9962@mail.hallyn.com>
+References: <87ip88uw4n.fsf@xmission.com>
+ <50CA2B55.5070402@amacapital.net>
+ <87mwxhtxve.fsf@xmission.com>
+ <87zk1hshk7.fsf_-_@xmission.com>
+ <20121214032820.GA5115@mail.hallyn.com>
+ <87bodxi9zw.fsf@xmission.com>
+ <20121214152607.GA9266@mail.hallyn.com>
+ <87bodwd4aw.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bodwd4aw.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the vring addresses in the resource table so that
-the remote device can read the actual addresses used.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serge@hallyn.com> writes:
+> 
+> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> >> "Serge E. Hallyn" <serge@hallyn.com> writes:
+> >> 
+> >> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> >> >> 
+> >> >> Andy Lutomirski pointed out that the current behavior of allowing the
+> >> >> owner of a user namespace to have all caps when that owner is not in a
+> >> >> parent user namespace is wrong.
+> >> >
+> >> > To make sure I understand right, the issue is when a uid is mapped
+> >> > into multiple namespaces.
+> >> 
+> >> Yes.
+> >> 
+> >> i.e. uid 1000 in ns1 may own ns2, but uid 1000 in ns3 does not?
+> >> 
+> >> I am not certain of your example.
+> >> 
+> >> The simple case is:
+> >> 
+> >> init_user_ns:
+> >>      child_user_ns1 (owned by uid == 0 [in all user namespaces])
+> >>            child_user_ns2 (owned by uid == 0 [ in all user namespaces])
+> >> 
+> >> 
+> >> root (uid == 0) in child_user_ns2 has all rights over anything in
+> >> child_user_ns1.
+> >
+> > Well that is only if there was no mapping.  (since we're comparing
+> > kuids, not uid_ts).  right?  If you didn't map uid 0 in child_user_ns2
+> > to another id in the parent ns, you weren't all *that* serious about
+> > isolating the ns.
+> >
+> > The case I was thinking is
+> >
+> >   init_user_ns:  [0-uidmax]
+> >       child_user_ns1  [100000-199999]
+> >       child_user_ns2  [100000-199999]
+> >         child_user_ns3  [200000-299999]
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- drivers/remoteproc/remoteproc_core.c |    5 +++++
- include/linux/remoteproc.h           |    2 ++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+Wait is my example above possible?  Or does child_user_ns3's range need
+to be a subset of child_user_ns2's?
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 7d593a1..151e138 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -238,6 +238,8 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 	rvring->dma = dma;
- 	rvring->notifyid = notifyid;
- 
-+	rvdev->rsc->vring[i].da = dma;
-+	rvdev->rsc->vring[i].notifyid = notifyid;
- 	return 0;
- }
- 
-@@ -365,6 +367,9 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 	/* remember the device features */
- 	rvdev->dfeatures = rsc->dfeatures;
- 
-+	/* remember the resource entry */
-+	rvdev->rsc = rsc;
-+
- 	list_add_tail(&rvdev->node, &rproc->rvdevs);
- 
- 	/* it is now safe to add the virtio device */
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index faf3332..cdacd66 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -464,6 +464,7 @@ struct rproc_vring {
-  * @vring: the vrings for this vdev
-  * @dfeatures: virtio device features
-  * @gfeatures: virtio guest features
-+ * @rsc: vdev resource entry
-  */
- struct rproc_vdev {
- 	struct list_head node;
-@@ -472,6 +473,7 @@ struct rproc_vdev {
- 	struct rproc_vring vring[RVDEV_NUM_VRINGS];
- 	unsigned long dfeatures;
- 	unsigned long gfeatures;
-+	struct fw_rsc_vdev *rsc;
- };
- 
- struct rproc *rproc_alloc(struct device *dev, const char *name,
--- 
-1.7.5.4
+In which case it would be
 
+       child_user_ns1  [100000-199999]
+       child_user_ns2  [100000-199999]
+         child_user_ns3  [120000-129999]
+
+> > with unfortunate mappings  - ns1 and ns2 should have had nonoverlapping
+> > ranges, but in any case now uid 1000 in ns1 can exert privilege over
+> > ns3.  Again, uids comparisons will succeed for file access anyway, so
+> > ns1 can 0wn ns2 and ns3 other ways.
+> 
+> Yes yours is the more realistic scenario.  Mine was simplified to be clear.
+> 
+> > Heck I'm starting to think the bug is a feature - surely given the
+> > mappings above I meant for ns1 and ns2 to bleed privilege to each
+> > other?
+> 
+> The serious problem is that privileges can bleed up. A user in 
+> ns3 can wind up owning ns2 or ns1.  Which totally defeats the permission
+> model.  You have CAP_DAC_OVERRIDE so you don't even need access to files
+> you own, etc, etc.
+
+Would that not require intervention from the init_user_ns?  In my
+example above (let's add that ns2 is owned by kuid.uid=1000 in
+init_user_ns), root in child_user_ns2 cannot map kuid.val=0 or
+kuid.val=1000 into ns3 because 0 and 1000 are not in the range
+100000-199999.  So there is no uid in child_user_ns3 which is able
+to spoof uid=0 in child_user_ns1.
+
+-serge
