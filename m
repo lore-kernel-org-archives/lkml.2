@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab2LNWrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:47:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51381 "EHLO mail.zytor.com"
+	id S932551Ab2LNWtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:49:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51396 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab2LNWrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:47:46 -0500
-Message-ID: <50CBAC61.5010600@zytor.com>
-Date: Fri, 14 Dec 2012 14:46:57 -0800
+	id S932173Ab2LNWtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:49:17 -0500
+Message-ID: <50CBACD2.60307@zytor.com>
+Date: Fri, 14 Dec 2012 14:48:50 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
 CC: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, Stefani Seibold <stefani@seibold.net>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
-        mingo@redhat.com, john.stultz@linaro.org, tglx@linutronix.de
+        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        john.stultz@linaro.org, tglx@linutronix.de
 Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
  kernel
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com>
-In-Reply-To: <50CAE485.5020608@parallels.com>
+References: <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon> <50CB9553.7050808@zytor.com> <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com> <50CBA171.4080403@zytor.com> <20121214222517.GG6582@moon> <50CBA7BC.4020001@zytor.com> <20121214224307.GH6582@moon>
+In-Reply-To: <20121214224307.GH6582@moon>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -27,33 +28,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
-> On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
->> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
->> really need more control I'd almost push for a device/filesystem node
->> that could be mmapped the usual way.
+On 12/14/2012 02:43 PM, Cyrill Gorcunov wrote:
+> On Fri, Dec 14, 2012 at 02:27:08PM -0800, H. Peter Anvin wrote:
+>> On 12/14/2012 02:25 PM, Cyrill Gorcunov wrote:
+>>>
+>>> this would allow us to defer checkpoint until task finish vdso code. Peter,
+>>> if I understand you correctly you propose we provide some own proxy-vdso
+>>> which would redirect calls to real ones, right? But the main problem
+>>> is that is exactly the idea to be able to c/r existing programs without
+>>> recompiling and such (or I miss something here?).
 >>
->> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
->> criu is stable enough yet that we should care.  Criu people?
+>> No, I'm proposing that you use a proxy-vdso which does nothing but
+>> system calls, and therefore can be stable indefinitely.
 > 
-> It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
-> 
->> (In brief summary: how annoying would it be if the vdso was no longer
->> just a bunch of constant bytes that lived somewhere?)
-> 
-> It depends on what vdso is going to be. In the perfect case it should
-> a) be mremap-able to any address (or be at fixed address _forever_, but
->    I assume this is not feasible);
-> b) have entry points at fixed (or somehow movable) places.
-> 
-> I admit that I didn't understand your question properly, if I did,
-> please correct me.
-> 
+> This won't help in case of scenario you've been pointing in
+> previous email (where c/r happens in a middle of vdso),
+> would it? Because we still need somehow to be sure we're not
+> checkpointing in a middle of signal handler which will return
+> to some vdso place.
 
-Either way... criu on the side, we should proceed with this vdso
-redesign and get support for the 32-bit entry points including compat
-mode on x86-64.
+It is okay if and only if those vdso places never change... which I
+think is doable if they only contain trival system call wrappers, i.e.
+something like:
+
+	movl $__SYS_gettimeofday, %eax
+	syscall
+	ret
+
+These kinds of wrappers don't rely on live data provided by the kernel,
+and so can be checkpointed together with the rest of the process.
 
 	-hpa
 
