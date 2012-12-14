@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab2LNW3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:29:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38570 "EHLO mail.kernel.org"
+	id S1757377Ab2LNW3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:29:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38592 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755621Ab2LNW3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:29:11 -0500
+	id S1755621Ab2LNW3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:29:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Teichmann <lkb.teichmann@gmail.com>
-Subject: [ 15/28] USB: ftdi_sio: Add support for Newport AGILIS motor drivers
-Date: Fri, 14 Dec 2012 14:26:32 -0800
-Message-Id: <20121214222254.021437774@linuxfoundation.org>
+        Chris Ball <cjb@laptop.org>
+Subject: [ 02/28] Revert misapplied "mmc: sh-mmcif: avoid oops on spurious interrupts"
+Date: Fri, 14 Dec 2012 14:26:19 -0800
+Message-Id: <20121214222251.000647141@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -25,52 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Teichmann <lkb.teichmann@gmail.com>
+From: Chris Ball <cjb@laptop.org>
 
-commit d7e14b375b40c04cd735b115713043b69a2c68ac upstream.
+commit 6984f3c31bb57cb7491dbec1be44b74bd00f4648 upstream.
 
-The Newport AGILIS model AG-UC8 compact piezo motor controller
-(http://search.newport.com/?q=*&x2=sku&q2=AG-UC8)
-is yet another device using an FTDI USB-to-serial chip. It works
-fine with the ftdi_sio driver when adding
+This reverts commit 8464dd52d3198dd05, which was a misapplied debugging
+version of the patch, not the final patch itself.
 
-  options ftdi-sio product=0x3000 vendor=0x104d
-
-to modprobe.d. udevadm reports "Newport" as the manufacturer,
-and "Agilis" as the product name.
-
-Signed-off-by: Martin Teichmann <lkb.teichmann@gmail.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/mmc/host/sh_mmcif.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -752,6 +752,12 @@
- #define TTI_VID			0x103E	/* Vendor Id */
- #define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
- 
-+/*
-+ * Newport Cooperation (www.newport.com)
-+ */
-+#define NEWPORT_VID			0x104D
-+#define NEWPORT_AGILIS_PID		0x3000
-+
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
- #define INTERBIOMETRICS_VID              0x1209
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1191,10 +1191,6 @@ static irqreturn_t sh_mmcif_intr(int irq
+ 		host->sd_error = true;
+ 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
+ 	}
+-	if (host->state == STATE_IDLE) {
+-		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
+-		return IRQ_HANDLED;
+-	}
+ 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE)) {
+ 		if (!host->dma_active)
+ 			return IRQ_WAKE_THREAD;
 
 
