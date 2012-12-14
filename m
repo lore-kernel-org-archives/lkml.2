@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab2LNCAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:00:41 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:49930 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952Ab2LNCAk (ORCPT
+	id S1756028Ab2LNCBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:01:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37784 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab2LNCBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:00:40 -0500
-Message-ID: <50CA8837.5010800@linaro.org>
-Date: Thu, 13 Dec 2012 18:00:23 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 13 Dec 2012 21:01:19 -0500
 MIME-Version: 1.0
-To: Feng Tang <feng.tang@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        alek.du@intel.com, jgunthorpe@obsidianresearch.com
-Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
-References: <1355364328-19550-1-git-send-email-feng.tang@intel.com> <50CA7EE4.3000306@linaro.org> <20121214013725.GA11276@feng-snb>
-In-Reply-To: <20121214013725.GA11276@feng-snb>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1355415792.2229.7.camel@ul30vt.home>
+References: <CANmqhJAuLoi_Y2Hsz+UnddHXYd9TCW-7qxp3fybDayfh33Y3Zg@mail.gmail.com>
+	<1355415792.2229.7.camel@ul30vt.home>
+Date: Fri, 14 Dec 2012 10:01:16 +0800
+Message-ID: <CANmqhJBAxzVa5Ds0gojnYDDku5UbXGwfCNC=+z3XmVonF-_j2w@mail.gmail.com>
+Subject: Re: DMAR and DRHD errors[DMAR:[fault reason 06] PTE Read access is
+ not set] Vt-d & intel_iommu
+From: Jason Gao <pkill.2012@gmail.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        kvm <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 05:37 PM, Feng Tang wrote:
-> On Thu, Dec 13, 2012 at 05:20:36PM -0800, John Stultz wrote:
->> On 12/12/2012 06:05 PM, Feng Tang wrote:
->>> In current kernel, there are several places which need to check
->>> whether there is a persistent clock for the platform. Current check
->>> is done by calling the read_persistent_clock() and validating the
->>> return value.
->>>
->>> Add such a flag to make code more readable and call read_persistent_clock()
->>> only once for all the checks.
->> Sorry.. What  the actual benefit of this patch set?   (Usually with
->> changelogs its better to explain why you're doing something, rather
->> then just what you're doing.)
-> The main benefits is not bother to do the rtc_resume and rtc_suspend work
-> if persistent clock exists. Current RTC suspend/resume code will do many
-> time calculation and compensation work at first, and then call
-> timekeeping_inject_sleeptime() which will just return for platform with
-> persistent clock, what I did in this patchset is to put the check at
-> the start, also I save the persistent_clock_exist flag for all possible
-> check after timekeeping_init().
+On Fri, Dec 14, 2012 at 12:23 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+>
+> Device 03:00.0 is your raid controller:
+>
+> 03:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS 1078 (rev 04)
+>
+> For some reason it's trying to read from ffe65000, ffe8a000, ffe89000,
+> ffe86000, ffe87000, ffe84000.  Those are in reserved memory regions, so
+> it's not reading an OS allocated buffer, which probably means it's some
+> kind of side-band communication with a management controller.  I'd guess
+> it's a BIOS bug and there should be an RMRR covering those accesses.
+> Thanks,
 
-CC'ing Jason as his recent patch is conceptually connected here.
+First of all ,I want to known whether I can ignore these errors on the
+production server,and do these error may affect the system?
 
-Ok, Feng, so your patch set is a suspend/resume optimization for the 
-case where the architecture has a read_persistent_clock() 
-implementation, but the kernel config has also the rtc HCTOSYS_DEVICE 
-set, right?
+By the way,when I removed the "intel_iommu=on" from /etc/grub.conf,no
+DMAR related errors occur
 
-So we basically short-cut the rtc's HCTOSYS_DEVICE suspend/resume logic, 
-likely to speed up suspend/resume.
+It's a strange thing,other three Dell R710 servers with the same bios
+version v. 6.3.0, same kernel 2.6.32-279.14.1 on RHEL6u3(Centos 6u3)
+,but these errors don't appear on these tree servers
 
-So per Jason's related patch, he's made the point that the 
-persistent_clock and RTC class functionality are basically exclusive 
-(well, in his case, he said this with respect to updating the RTC, not 
-reading it - I don't mean to put words in his mouth - Please do correct 
-me here Jason. :).  In other words, we probably should avoid 
-configurations where both the rtc hctosys and persistent_clock 
-interfaces are both active.
-
-So my thought here is that this same behavioral change could be made via 
-Kconfig constraints rather then extra run-time conditionals. Basically 
-we add a HAS_PERSISTENT_CLOCK, that architectures select if they want to 
-use the read/update_persistent_clock calls. Then we make the HCTOSYS 
-option be dependent on !HAS_PERSISTENT_CLOCK. This way we avoid having 
-configs where there are conflicting paths that we chose from.
+Anyone have any idea for this ?
 
 thanks
--john
