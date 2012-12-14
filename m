@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945942Ab2LNXGC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:06:02 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41175 "EHLO mail.kernel.org"
+	id S1945959Ab2LNXGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:06:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41183 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945911Ab2LNXF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:05:58 -0500
+	id S1945911Ab2LNXGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:06:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 03/27] x86,AMD: Power driver support for AMDs family 16h processors
-Date: Fri, 14 Dec 2012 15:01:16 -0800
-Message-Id: <20121214222251.920467775@linuxfoundation.org>
+        Chen Gang <gang.chen@asianux.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [ 04/27] telephony: ijx: buffer overflow in ixj_write_cid()
+Date: Fri, 14 Dec 2012 15:01:17 -0800
+Message-Id: <20121214222252.137449013@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -26,40 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+[Not needed in 3.8 or newer as this driver is removed there. - gregkh]
 
-commit 22e32f4f57778ebc6e17812fa3008361c05d64f9 upstream.
+We get this from user space and nothing has been done to ensure that
+these strings are NUL terminated.
 
-Add family 16h PCI ID to AMD's power driver to allow it report
-power consumption on these processors.
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/telephony/ixj.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -31,6 +31,9 @@ MODULE_DESCRIPTION("AMD Family 15h CPU p
- MODULE_AUTHOR("Andreas Herrmann <herrmann.der.user@googlemail.com>");
- MODULE_LICENSE("GPL");
+--- a/drivers/staging/telephony/ixj.c
++++ b/drivers/staging/telephony/ixj.c
+@@ -3190,12 +3190,12 @@ static void ixj_write_cid(IXJ *j)
  
-+/* Family 16h Northbridge's function 4 PCI ID */
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
-+
- /* D18F3 */
- #define REG_NORTHBRIDGE_CAP		0xe8
+ 	ixj_fsk_alloc(j);
  
-@@ -248,6 +251,7 @@ static void __devexit fam15h_power_remov
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
  
- static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
+@@ -3340,12 +3340,12 @@ static void ixj_write_cidcw(IXJ *j)
+ 		ixj_pre_cid(j);
+ 	}
+ 	j->flags.cidcw_ack = 0;
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
 
 
