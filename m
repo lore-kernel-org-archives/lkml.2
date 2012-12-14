@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946036Ab2LNXJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:09:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41329 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945993Ab2LNXHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:07:13 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 18/27] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
-Date: Fri, 14 Dec 2012 15:01:31 -0800
-Message-Id: <20121214222255.428009233@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
-References: <20121214222251.229078963@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1945986Ab2LNXKg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:10:36 -0500
+Received: from www84.your-server.de ([213.133.104.84]:50892 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945905Ab2LNXKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:10:33 -0500
+Message-ID: <1355526568.758.5.camel@wall-e>
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        criu@openvz.org, mingo@redhat.com, john.stultz@linaro.org,
+        tglx@linutronix.de
+Date: Sat, 15 Dec 2012 00:09:28 +0100
+In-Reply-To: <50CBAC61.5010600@zytor.com>
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
+	 <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
+	 <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>
+	 <1355379433.24701.1.camel@wall-e>
+	 <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
+	 <1355383038.18653.2.camel@wall-e>
+	 <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com>
+	 <50CA6E4C.6000305@zytor.com>
+	 <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com>
+	 <50CA81A4.9040702@zytor.com>
+	 <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
+	 <50CA85BD.7070502@zytor.com>
+	 <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com>
+	 <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com>
+	 <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
+	 <50CAE485.5020608@parallels.com> <50CBAC61.5010600@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+Am Freitag, den 14.12.2012, 14:46 -0800 schrieb H. Peter Anvin:
+> On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
+> > On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
+> >> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
+> >> really need more control I'd almost push for a device/filesystem node
+> >> that could be mmapped the usual way.
+> >>
+> >> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
+> >> criu is stable enough yet that we should care.  Criu people?
+> > 
+> > It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
+> > 
+> >> (In brief summary: how annoying would it be if the vdso was no longer
+> >> just a bunch of constant bytes that lived somewhere?)
+> > 
+> > It depends on what vdso is going to be. In the perfect case it should
+> > a) be mremap-able to any address (or be at fixed address _forever_, but
+> >    I assume this is not feasible);
+> > b) have entry points at fixed (or somehow movable) places.
+> > 
+> > I admit that I didn't understand your question properly, if I did,
+> > please correct me.
+> > 
+> 
+> Either way... criu on the side, we should proceed with this vdso
+> redesign and get support for the 32-bit entry points including compat
+> mode on x86-64.
+> 
+> 	-hpa
+> 
+> 
 
-------------------
+Sorry for not following the discussion, but im am currently trying to
+compile the vclocktime.c as a 32 bit object. Most of the (clever) work
+is done.
 
-From: Alan Stern <stern@rowland.harvard.edu>
+After this the next step is to map the needed fixmaps into the 32 bit
+address space. Maybe this can be done with install_special_mapping().
 
-commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
+I think i will do this job in the next days.
 
-This patch (as1636) is a partial workaround for a hardware bug
-affecting OHCI controllers by NVIDIA at least, maybe others too.  When
-the controller retires a Transfer Descriptor, it is supposed to add
-the TD onto the Done Queue.  But sometimes this doesn't happen, with
-the result that ohci-hcd never realizes the corresponding transfer has
-finished.  Symptoms can vary; a typical result is that USB audio stops
-working after a while.
-
-The patch works around the problem by recognizing that TDs are always
-processed in order.  Therefore, if a later TD is found on the Done
-Queue than all the earlier TDs for the same endpoint must be finished
-as well.
-
-Unfortunately this won't solve the problem in cases where the missing
-TD is the last one in the endpoint's queue.  A complete fix would
-require a signficant amount of change to the driver.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
---- a/drivers/usb/host/ohci-q.c
-+++ b/drivers/usb/host/ohci-q.c
-@@ -1128,6 +1128,25 @@ dl_done_list (struct ohci_hcd *ohci)
- 
- 	while (td) {
- 		struct td	*td_next = td->next_dl_td;
-+		struct ed	*ed = td->ed;
-+
-+		/*
-+		 * Some OHCI controllers (NVIDIA for sure, maybe others)
-+		 * occasionally forget to add TDs to the done queue.  Since
-+		 * TDs for a given endpoint are always processed in order,
-+		 * if we find a TD on the donelist then all of its
-+		 * predecessors must be finished as well.
-+		 */
-+		for (;;) {
-+			struct td	*td2;
-+
-+			td2 = list_first_entry(&ed->td_list, struct td,
-+					td_list);
-+			if (td2 == td)
-+				break;
-+			takeback_td(ohci, td2);
-+		}
-+
- 		takeback_td(ohci, td);
- 		td = td_next;
- 	}
+- Stefani
 
 
