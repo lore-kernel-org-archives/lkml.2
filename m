@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab2LNHgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:36:24 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:35406 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab2LNHgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:36:22 -0500
-X-ASG-Debug-ID: 1355470581-03d6a50cb5dd08a0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <50CAD6D9.5070703@fusionio.com>
-Date: Fri, 14 Dec 2012 08:35:53 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Jack Wang <jack.wang.usish@gmail.com>
-CC: Kent Overstreet <koverstreet@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "zab@redhat.com" <zab@redhat.com>, "bcrl@kvack.org" <bcrl@kvack.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
-References: <1354568322-29029-1-git-send-email-koverstreet@google.com> <20121213211808.GJ25017@kernel.dk> <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
-In-Reply-To: <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1355470581
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -1.90
-X-Barracuda-Spam-Status: No, SCORE=-1.90 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116970
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.12 CN_BODY_332            BODY: CN_BODY_332
+	id S1753969Ab2LNHj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:39:56 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37951 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab2LNHjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 02:39:54 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-76-50cad7c8b5e2
+Message-id: <50CAD7D3.8030300@samsung.com>
+Date: Fri, 14 Dec 2012 16:40:03 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH v2] pwm: samsung: add missing s3c->pwm_id
+References: <1355468338-12611-1-git-send-email-jy0922.shim@samsung.com>
+ <20121214073425.GC24094@avionic-0098.adnet.avionic-design.de>
+In-reply-to: <20121214073425.GC24094@avionic-0098.adnet.avionic-design.de>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsVy+t8zHd0T108FGJzba2ZxedccNosZ5/cx
+	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJXR8fk5U8FS5oqJXXOZGxhvMHUxcnJICJhIXF/xGcoW
+	k7hwbz0biC0ksIxRYtmtBJiag7+/s3QxcgHFpzNKnPoxnxnCeckosWPlfUaQKl4BLYn2p8fA
+	JrEIqEq09+xlAbHZBPQk7mw7DhYXFfCTODv3HVS9oMSPyfeAajg4RARMJb7NEwEJMwuUS7T/
+	3s0MYgsL2Ep8ufUZanE7o0THtxlgCU4BL4m2dZMYIRqsJVZO2gZly0tsXvOWGeIGAYlvkw+B
+	zZcQkJXYdIAZ4pl2dom5fyshbEmJgytusExgFJuF5KJZSKbOQjJ1ASPzKkbR1ILkguKk9FxD
+	veLE3OLSvHS95PzcTYyQ2JDawbiyweIQowAHoxIP70ehUwFCrIllxZW5hxglOJiVRHgljwCF
+	eFMSK6tSi/Lji0pzUosPMfoAHTuRWUo0OR8Yt3kl8YbGBsaGhpaGZqaWpgY4hJXEeZs9UgKE
+	BNITS1KzU1MLUotgxjFxcEo1MLrovQ+YXvNzlpXiLJ6J1xKLDd2UPkx/q+44/dUf/lfeYazS
+	m77qT4kXFfvw76HnrNJjj2f2tjH0nb6banjDqOrB3bufZJbo7swXFmrf9px55Q6hExm3Zs+6
+	s3iG8H9nG4Mkm1wWqXQ9N9ZFRWdsMv7X3pqwctc2K47zGYsmBSnOFJ/WeSDy/U8lluKMREMt
+	5qLiRABTdUlNugIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t9jQd0T108FGExsNrK4vGsOm8WM8/uY
+	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM6Pj8nKlgKXPF
+	xK65zA2MN5i6GDk5JARMJA7+/s4CYYtJXLi3nq2LkYtDSGA6o8SpH/OZIZyXjBI7Vt5nBKni
+	FdCSaH96DKybRUBVor1nL1g3m4CexJ1tx8HiogJ+EmfnvoOqF5T4MfkeUA0Hh4iAqcS3eSIg
+	YWaBcon237uZQWxhAVuJL7c+s0DsameU6Pg2AyzBKeAl0bZuEiNEg7XEyknboGx5ic1r3jJP
+	YBSYhWTFLCRls5CULWBkXsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHH3PpHYwrmywOMQo
+	wMGoxMP7UehUgBBrYllxZe4hRgkOZiURXskjQCHelMTKqtSi/Pii0pzU4kOMPsAQmMgsJZqc
+	D0wMeSXxhsYmZkaWRmbGJubGxjiElcR5mz1SAoQE0hNLUrNTUwtSi2DGMXFwSjUw5n24VVR8
+	1036crhHAZtYRdC0y82zlEMcWo2izRjyqxYtZIwSrrwTsu7vlYwrPGd/pD6Ps5Bi53w6O+H/
+	vM0i02uOyPF/yzPfvuTsftWP7QbXpPctOdoiraOy/XSO57el95yum97crvWBX+OaQ1vGxIu3
+	vvW8fKZ77uyxowl7N72SSNu+1i9vjxJLcUaioRZzUXEiAA/1ixXrAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-14 03:26, Jack Wang wrote:
-> 2012/12/14 Jens Axboe <jaxboe@fusionio.com>:
->> On Mon, Dec 03 2012, Kent Overstreet wrote:
->>> Last posting: http://thread.gmane.org/gmane.linux.kernel.aio.general/3169
->>>
->>> Changes since the last posting should all be noted in the individual
->>> patch descriptions.
->>>
->>>  * Zach pointed out the aio_read_evt() patch was calling functions that
->>>    could sleep in TASK_INTERRUPTIBLE state, that patch is rewritten.
->>>  * Ben pointed out some synchronize_rcu() usage was problematic,
->>>    converted it to call_rcu()
->>>  * The flush_dcache_page() patch is new
->>>  * Changed the "use cancellation list lazily" patch so as to remove
->>>    ki_flags from struct kiocb.
+On 12/14/2012 04:34 PM, Thierry Reding wrote:
+> On Fri, Dec 14, 2012 at 03:58:58PM +0900, Joonyoung Shim wrote:
+>> The s3c->pwm_id is used to calculate offset of related register.
 >>
->> Kent, I ran a few tests, and the below patches still don't seem as fast
->> as the approach I took. To keep it fair, I used your aio branch and
->> applied by dio speedups too. As a sanity check, I ran with your branch
->> alone as well. The quick results below - kaio is kent-aio, just your
->> branch. kaio-dio is with the direct IO speedups too. jaio is my branch,
->> which already has the dio changes too.
->>
->> Devices         Branch          IOPS
->> 1               kaio            ~915K
->> 1               kaio-dio        ~930K
->> 1               jaio           ~1220K
->> 6               kaio           ~3050K
->> 6               kaio-dio       ~3080K
->> 6               jaio            3500K
->>
->> The box runs out of CPU driving power, which is why it doesn't scale
->> linearly, otherwise I know that jaio at least does. It's basically
->> completion limited for the 6 device test at the moment.
->>
->> I'll run some profiling tomorrow morning and get you some better
->> results. Just thought I'd share these at least.
->>
->> --
->> Jens Axboe
->>
-> 
-> A really good performance, woo.
-> 
-> I think the device tested is really fast PCIe SSD builded by fusionio
-> with fusionio in house block driver?
+>> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+> I've modified the subject a bit to make it clear the assignment of
+> s3c->pwm_id was missing, not the s3c->pwm_id field altogether.
+>
+> Applied, thanks.
 
-It is pci-e flash storage, but it is not fusion-io.
-
-> any compare number with current mainline?
-
-Sure, I should have included that. Here's the table again, this time
-with mainline as well.
-
-Devices         Branch          IOPS
-1               mainline        ~870K
-1               kaio            ~915K
-1               kaio-dio        ~930K
-1               jaio           ~1220K
-6               kaio           ~3050K
-6               kaio-dio       ~3080K
-6               jaio           ~3500K
-6               mainline       ~2850K
-
-
--- 
-Jens Axboe
-
+OK, thanks.
