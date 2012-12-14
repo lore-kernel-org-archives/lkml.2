@@ -1,102 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab2LNVn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 16:43:56 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:37835 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932282Ab2LNVnx (ORCPT
+	id S932436Ab2LNVtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 16:49:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49747 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab2LNVtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 16:43:53 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        LSM List <linux-security-module@vger.kernel.org>
-References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
-	<87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
-	<20121214032820.GA5115@mail.hallyn.com> <87bodxi9zw.fsf@xmission.com>
-	<20121214152607.GA9266@mail.hallyn.com> <87bodwd4aw.fsf@xmission.com>
-	<20121214161514.GA9962@mail.hallyn.com> <87r4ms5wpm.fsf@xmission.com>
-	<CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
-Date: Fri, 14 Dec 2012 13:43:41 -0800
-In-Reply-To: <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
-	(Linus Torvalds's message of "Fri, 14 Dec 2012 10:43:15 -0800")
-Message-ID: <87wqwkz4vm.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19ujWisIi8JEoszTM9NCO9XRM4yFqaQESw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0655]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent user namespace to have caps.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 14 Dec 2012 16:49:16 -0500
+Date: Fri, 14 Dec 2012 13:49:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Daniel Berrange <berrange@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH v2] core_pattern: set core helpers root and namespace to
+ crashing process
+Message-Id: <20121214134915.06ce91e3.akpm@linux-foundation.org>
+In-Reply-To: <1355519048-28473-1-git-send-email-nhorman@tuxdriver.com>
+References: <1355255996-25953-1-git-send-email-nhorman@tuxdriver.com>
+	<1355519048-28473-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Fri, 14 Dec 2012 16:04:08 -0500
+Neil Horman <nhorman@tuxdriver.com> wrote:
 
-> On Fri, Dec 14, 2012 at 10:12 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>
->> That said Serge I think I have lost track of the point of your question.
->
-> .. and I'm a bit unsure what I should do about this all. Including
-> pulling the pull request that actually can make this all matter.
->
-> Hmm? Any consensus?
+> As its currently implemented, redirection of core dumps to a pipe reader should
+> be executed such that the reader runs in the namespace of the crashing process,
+> and it currently does not. This is the only sane way to deal with namespaces
+> properly it seems to me, and this patch implements that functionality.
+> 
+> Theres one problem I currently see with it, and that is that I'm not sure we can
+> change the current behavior of how the root fs is set for the pipe reader, lest
+> we break some user space expectations.  As such I've made the switching of
+> namespaces configurable based on the addition of an extra '|' token in the
+> core_pattern sysctl.  1 '|' indicates a pipe using the global namespace, while
+> 2 '|' indicates that the namespace and root of the crashing process should be
+> used.
+> 
+> I've tested this using both settings for the new sysctl, and it works well.
+> 
+> For the sake of history, this was discussed before:
+> http://www.spinics.net/lists/linux-containers/msg21531.html
+> 
+> It seems there was some modicum of consensus as to how this should work, but
+> there was no action taken on it.
+> 
+> --- a/fs/coredump.c
+> +++ b/fs/coredump.c
+> @@ -164,6 +164,18 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+>  	if (!cn->corename)
+>  		return -ENOMEM;
+>  
+> +	if (ispipe) {
+> +		/*
+> + 		 * If we have 2 | tokens at the head of core_pattern, it
+> + 		 * indicates we are a pipe and the reader should inherit the
+> + 		 * namespaces of the crashing process
+> + 		 */
+> +		cprm->switch_ns = (*(pat_ptr+1) == '|') ? true : false;
+> +		if (cprm->switch_ns)
+> +			/* Advance pat_ptr so as not to mess up corename */
+> +			pat_ptr++;
+> +	}
+> +
 
-It looks like we have consensus (baring the color of the shed)
-of what the code should look like for v3.8.
+That was, umm, intricate.  How's about this?
 
->From the most embarrassingly timed, but most useful review by Andy I have
-4 fixes queued up in my development tree.
-
-Fixing cap_capable to test for the parent namespace.
-Fixing setns to require nsown_capable(CAP_SYS_ADMIN)
---
-Fixing commit_creds to not clear task dumpable unnecessarily.
-Fixing a typo in the description.
-
-What I would like to do is to do is what I would if this was not the
-middle of the merge window with changes like this.
-
-Toss those patches out for last round of review.
-
-Possibly toss the last two patches if there are any problems because
-they are not necessary.
-
-Put the patches in my for-next branch and have them sit in linux-next
-for a day or three. 
-
-Send you an updated pull request.
+	if (ispipe && pat_ptr[1] == '|') {
+		/*
+ 		 * We have 2 | tokens at the head of core_pattern which
+ 		 * indicates we are a pipe and the reader should inherit the
+ 		 * namespaces of the crashing process
+ 		 */
+		cprm->switch_ns = true;
+		pat_ptr++;
+	}
 
 
-I am recovering from a cold so I am running slower than I would like
-this week and would really rather not rush getting these patches out.
+--- a/Documentation/sysctl/kernel.txt~core_pattern-set-core-helpers-root-and-namespace-to-crashing-process-fix
++++ a/Documentation/sysctl/kernel.txt
+@@ -194,7 +194,7 @@ core_pattern is used to specify a core d
+   written to the standard input of that program instead of to a file.  Note that
+   when using |, the core pipe reader that is executed will be run in the global
+   namespace and root filesystem.  If two | tokens (i.e. ||) are supplied as the
+-  first two characters of the core_pattern sysctl, the kernel will preform the
++  first two characters of the core_pattern sysctl, the kernel will perform the
+   same pipe operation, but the core pipe reader will be executed using the
+   namespace and root fs of the crashing process.
+ 
+--- a/fs/coredump.c~core_pattern-set-core-helpers-root-and-namespace-to-crashing-process-fix
++++ a/fs/coredump.c
+@@ -164,16 +164,14 @@ static int format_corename(struct core_n
+ 	if (!cn->corename)
+ 		return -ENOMEM;
+ 
+-	if (ispipe) {
++	if (ispipe && pat_ptr[1] == '|') {
+ 		/*
+- 		 * If we have 2 | tokens at the head of core_pattern, it
++ 		 * We have 2 | tokens at the head of core_pattern which
+  		 * indicates we are a pipe and the reader should inherit the
+  		 * namespaces of the crashing process
+  		 */
+-		cprm->switch_ns = (*(pat_ptr+1) == '|') ? true : false;
+-		if (cprm->switch_ns)
+-			/* Advance pat_ptr so as not to mess up corename */
+-			pat_ptr++;
++		cprm->switch_ns = true;
++		pat_ptr++;
+ 	}
+ 
+ 	/* Repeat as long as we have more pattern to process and more output
+_
 
-What I don't want to be is so cautious and careful that you decide to
-pass on my pull request.  The code is harmless with user namespaces
-disabled.  The code has been baking for a long time, some of it for much
-too long and it is as solid as I think it will get out before being
-merged.  Nor is the code complex Andy managed to dig and figure it all
-out in about a day.
-
-Linus does that work for you?
-
-Eric
