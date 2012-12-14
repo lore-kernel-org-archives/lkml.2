@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab2LNWyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:54:32 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34158 "EHLO hydra.sisk.pl"
+	id S1756873Ab2LNW62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:58:28 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34165 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab2LNWya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:54:30 -0500
+	id S1756766Ab2LNW60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:58:26 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH rev.2 0/6] ACPI: Change the ACPI namespace scanning code ordering
-Date: Fri, 14 Dec 2012 23:59:36 +0100
-Message-ID: <2226860.gdCKHUSrjo@vostro.rjw.lan>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>
+Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PCIe/PM: Do not suspend port if any subordinate device need PME polling
+Date: Sat, 15 Dec 2012 00:03:33 +0100
+Message-ID: <3929168.xsIhODq3Fi@vostro.rjw.lan>
 User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50CAF7DE.8000203@huawei.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <1499423.ez5cZl2uAf@vostro.rjw.lan> <50CAF7DE.8000203@huawei.com>
+In-Reply-To: <20121214051131.GA31440@richard.>
+References: <1355453531-23348-1-git-send-email-ying.huang@intel.com> <20121214051131.GA31440@richard.>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,57 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 14, 2012 05:56:46 PM Yijing Wang wrote:
-> On 2012/12/14 6:15, Rafael J. Wysocki wrote:
-> > Hi All,
-> > 
-> > On Sunday, December 09, 2012 11:58:42 PM Rafael J. Wysocki wrote:
-> >> Hi,
-> >>
-> >> The following patches change the ordering of the ACPI namespace scanning code
-> >> so that all struct acpi_device objects in the given scope are registered before
-> >> ACPI drivers are probed against them.  They also do some simplifications and
-> >> clarifications of the code made possible by this main change.
-> >>
-> >> This is done for three basic reasons.  First, we need the boot ACPI namespace
-> >> scanning code to be as similar as reasonably possible to the hot-plug ACPI
-> >> namespace scanning code.  Second, the ordering of PCI devices enumeration
-> >> versus ACPI-backed platform devices registration needs to be such that the PCI
-> >> devices in the given scope are all registered first.  Finally, when we start to
-> >> actually manage ACPI device resources as appropriate (e.g. resolve resource
-> >> conflicts properly) we'll need all struct acpi_device nodes to be registered
-> >> before any "companion" physical nodes or ACPI drivers are bound to them.
-> >>
-> >> The patches have been tested on Toshiba Portege R500 without breaking stuff
-> >> (I used some additional debug code to verify that the ordering of device
-> >> discovery had not been modified by them), but if you see any problems with
-> >> them regarding hot-plug, please let me know.
-> >>
-> >> [1/6] - Separate adding ACPI device objects from probing ACPI drivers.
-> >> [2/6] - Change the ordering of PCI root bridge driver registration.
-> >> [3/6] - Make acpi_bus_add() and acpi_bus_start() visibly different.
-> >> [4/6] - Reduce the usage of struct acpi_bus_ops
-> >> [5/6] - Replace struct acpi_bus_ops with an enum type
-> >> [6/6] - Change the ordering of acpi_bus_check_add() to avoid unnecessary checks.
-> > 
-> > The second revision is necessary to address problems found by Yijing Wang
-> > during testing and explained by Jiang Liu (thanks guys!).
-> > 
-> > The problem is that acpi_walk_namespace() doesn't execute the pre_order_visit
-> > callback for the starting handle, so the callback routine has the be executed
-> > for it directly, if necessary.
-> > 
-> > I also modified a couple of changelogs to better explain the motivation of the
-> > patches.
-> > 
-> > Boot sequence tested on Toshiba Portege R500, but testing on systems with
-> > hotplug will be appreciated.
+On Friday, December 14, 2012 01:11:31 PM Richard Yang wrote:
+> On Fri, Dec 14, 2012 at 10:52:11AM +0800, Huang Ying wrote:
+> >In
+> >
+> >  http://www.mail-archive.com/linux-usb@vger.kernel.org/msg07976.html
+> >
+> >Ulrich reported that his USB3 cardreader does not work reliably when
+> >connected to the USB3 port.  It turns out that USB3 controller failed
+> >to be waken up when plugging in the USB3 cardreader.  Further
+> >experiment found that the USB3 host controller can only be waken up
+> >via polling, while not via PME interrupt.  But if the PCIe port that
+> >the USB3 host controller is connected is suspended, we can not poll
+> >the USB3 host controller because its config space is not accessible if
+> >the PCIe port is put into low power state.
+> >
+> >To solve the issue, the PCIe port will not be suspended if any
+> >subordinate device need PME polling.
+> >
+> >Reported-by: Ulrich Eckhardt <usb@uli-eckhardt.de>
+> >Signed-off-by: Huang Ying <ying.huang@intel.com>
+> >Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> >Cc: stable@vger.kernel.org	# 3.6+
+> >---
+> > drivers/pci/pcie/portdrv_pci.c |   18 +++++++++++++++++-
+> > 1 file changed, 17 insertions(+), 1 deletion(-)
+> >
+> >--- a/drivers/pci/pcie/portdrv_pci.c
+> >+++ b/drivers/pci/pcie/portdrv_pci.c
+> >@@ -134,10 +134,26 @@ static int pcie_port_runtime_resume(stru
+> > 	return 0;
+> > }
+> >
+> >+static int pci_dev_pme_poll(struct pci_dev *pdev, void *data)
+> >+{
+> >+	int *pme_poll = data;
+> >+	*pme_poll = *pme_poll || pdev->pme_poll;
+> >+	return 0;
+> >+}
+> >+
+> > static int pcie_port_runtime_idle(struct device *dev)
+> > {
+> >+	struct pci_dev *pdev = to_pci_dev(dev);
+> >+	int pme_poll = false;
 > 
-> Hi rafael,
->    I tested this version patchset in my ia64 hotplug machine, and the result looks ok.
+> You want to use int or bool? 
+> 
+> I think bool is better?
 
-Great, thanks a lot for testing!
+Well, bool would be nicer, but it's not a big deal.
 
+Thanks,
 Rafael
 
 
