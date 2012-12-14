@@ -1,176 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab2LNQZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:25:06 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:40958 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab2LNQTv (ORCPT
+	id S1756611Ab2LNQa2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:30:28 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57456 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756161Ab2LNQa1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:19:51 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: [PATCH 02/21] gpio: ab8500: Make pins configurable
-Date: Fri, 14 Dec 2012 16:19:20 +0000
-Message-Id: <1355501979-1157-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
-References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
+	Fri, 14 Dec 2012 11:30:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,282,1355126400"; 
+   d="scan'208";a="257482695"
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "swetland@google.com" <swetland@google.com>
+CC: "Zhang, Di" <di.zhang@intel.com>, "Zhang, Yanmin" <yanmin.zhang@intel.com>
+Subject: Subject: [PATCH] [lmk]  improve ANR produce rate caused by high io
+ wait on android,create a thread for lowmem killer instead of usingkswapd
+Thread-Topic: Subject: [PATCH] [lmk]  improve ANR produce rate caused by
+ high io wait on android,create a thread for lowmem killer instead of
+ usingkswapd
+Thread-Index: Ac3aGEdv/5133Wd5T0qGsUMTqzTW3A==
+Date: Fri, 14 Dec 2012 16:30:22 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FF11A9D@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Subject: [PATCH] [lmk] create a thread for low mem killer instead of using kswapd
 
-Make it possible to set the pin configuration either as gpio or specific
-functionality through the driver interface.
+Currently low mem killer is registered as a shrinker and will be
+invoked by kswapd. Since low mem killer and kswapd has different
+criteria to invoke to work -- kswap wakes up when watermark of some
+certain order in zone is low, and low mem killer should do its job
+when free memory is below the min free threshold. In the case that
+the kswapd isn't waked up and lmk is, the killed process selected
+by lmk will release memory so that the kswapd doesn't need to work
+any more.So it is not appropriate to mix them together. A 20 minutes
+average vmstat shows that the iowait/page fault has huge improvement.
+In this way, it can reduce the chance of ANR due to high iowait.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Signed-off-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
-Tested-by: Jonas ABERG <jonas.aberg@stericsson.com>
+orignal:
+flt    wa
+62.70 2.00
+
+with patch
+flt    wa
+2.32  0.01
+
+Signed-off-by: Zhang Di <di.zhang@intel.com>
+Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
 ---
- drivers/gpio/gpio-ab8500.c             |   63 ++++++++++++++++++++++++++++++++
- include/linux/mfd/abx500/ab8500-gpio.h |   51 ++++++++++++++++++++++++++
- 2 files changed, 114 insertions(+)
+ drivers/staging/android/lowmemorykiller.c |   92 ++++++++++++++++++++++++++--
+ 1 files changed, 85 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
-index db40acb..c3c7c5a 100644
---- a/drivers/gpio/gpio-ab8500.c
-+++ b/drivers/gpio/gpio-ab8500.c
-@@ -495,6 +495,69 @@ static int __devexit ab8500_gpio_remove(struct platform_device *pdev)
- 	return 0;
- }
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 2d8d2b7..8f29fe8 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -36,6 +36,8 @@
+ #include <linux/sched.h>
+ #include <linux/profile.h>
+ #include <linux/notifier.h>
++#include <linux/kthread.h>
++#include <linux/wait.h>
  
-+/*
-+ * ab8500_gpio_config_select()
-+ *
-+ * Configure functionality of pin, either specific use or GPIO.
-+ * @dev: device pointer
-+ * @gpio: gpio number
-+ * @gpio_select: true if the pin should be used as GPIO
-+ */
-+int ab8500_gpio_config_select(struct device *dev,
-+				enum ab8500_pin gpio, bool gpio_select)
-+{
-+	u8 offset = gpio - AB8500_PIN_GPIO1;
-+	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
-+	u8 pos = offset % 8;
-+	u8 val = gpio_select ? 1 : 0;
-+	int ret;
-+
-+	ret = abx500_mask_and_set_register_interruptible(dev,
-+		AB8500_MISC, reg, 1 << pos, val << pos);
-+	if (ret < 0)
-+		dev_err(dev, "%s write failed\n", __func__);
-+
-+	dev_vdbg(dev, "%s (bank, addr, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		__func__, AB8500_MISC, reg, 1 << pos, val << pos);
-+
-+	return ret;
-+}
-+
-+/*
-+ * ab8500_gpio_config_get_select()
-+ *
-+ * Read currently configured functionality, either specific use or GPIO.
-+ * @dev: device pointer
-+ * @gpio: gpio number
-+ * @gpio_select: pointer to pin selection status
-+ */
-+int ab8500_gpio_config_get_select(struct device *dev,
-+					enum ab8500_pin gpio, bool *gpio_select)
-+{
-+	u8 offset =  gpio - AB8500_PIN_GPIO1;
-+	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
-+	u8 pos = offset % 8;
-+	u8 val;
-+	int ret;
-+
-+	ret = abx500_get_register_interruptible(dev,
-+				AB8500_MISC, reg, &val);
-+	if (ret < 0) {
-+		dev_err(dev, "%s read failed\n", __func__);
-+		return ret;
-+	}
-+
-+	if (val & (1 << pos))
-+		*gpio_select = true;
-+	else
-+		*gpio_select = false;
-+
-+	dev_vdbg(dev, "%s (bank, addr, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		__func__, AB8500_MISC, reg, 1 << pos, val);
-+
-+	return 0;
-+}
-+
- static struct platform_driver ab8500_gpio_driver = {
- 	.driver = {
- 		.name = "ab8500-gpio",
-diff --git a/include/linux/mfd/abx500/ab8500-gpio.h b/include/linux/mfd/abx500/ab8500-gpio.h
-index 2387c20..5caa615 100644
---- a/include/linux/mfd/abx500/ab8500-gpio.h
-+++ b/include/linux/mfd/abx500/ab8500-gpio.h
-@@ -20,4 +20,55 @@ struct ab8500_gpio_platform_data {
- 	u8  config_reg[8];
+ static uint32_t lowmem_debug_level = 2;
+ static int lowmem_adj[6] = {
+@@ -68,17 +70,47 @@ static struct notifier_block task_nb = {
+ 	.notifier_call	= task_notify_func,
  };
  
-+enum ab8500_pin {
-+	AB8500_PIN_GPIO1 = 0,
-+	AB8500_PIN_GPIO2,
-+	AB8500_PIN_GPIO3,
-+	AB8500_PIN_GPIO4,
-+	AB8500_PIN_GPIO5,
-+	AB8500_PIN_GPIO6,
-+	AB8500_PIN_GPIO7,
-+	AB8500_PIN_GPIO8,
-+	AB8500_PIN_GPIO9,
-+	AB8500_PIN_GPIO10,
-+	AB8500_PIN_GPIO11,
-+	AB8500_PIN_GPIO12,
-+	AB8500_PIN_GPIO13,
-+	AB8500_PIN_GPIO14,
-+	AB8500_PIN_GPIO15,
-+	AB8500_PIN_GPIO16,
-+	AB8500_PIN_GPIO17,
-+	AB8500_PIN_GPIO18,
-+	AB8500_PIN_GPIO19,
-+	AB8500_PIN_GPIO20,
-+	AB8500_PIN_GPIO21,
-+	AB8500_PIN_GPIO22,
-+	AB8500_PIN_GPIO23,
-+	AB8500_PIN_GPIO24,
-+	AB8500_PIN_GPIO25,
-+	AB8500_PIN_GPIO26,
-+	AB8500_PIN_GPIO27,
-+	AB8500_PIN_GPIO28,
-+	AB8500_PIN_GPIO29,
-+	AB8500_PIN_GPIO30,
-+	AB8500_PIN_GPIO31,
-+	AB8500_PIN_GPIO32,
-+	AB8500_PIN_GPIO33,
-+	AB8500_PIN_GPIO34,
-+	AB8500_PIN_GPIO35,
-+	AB8500_PIN_GPIO36,
-+	AB8500_PIN_GPIO37,
-+	AB8500_PIN_GPIO38,
-+	AB8500_PIN_GPIO39,
-+	AB8500_PIN_GPIO40,
-+	AB8500_PIN_GPIO41,
-+	AB8500_PIN_GPIO42,
-+};
++static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc);  
 +
-+int ab8500_gpio_config_select(struct device *dev,
-+				enum ab8500_pin gpio, bool gpio_select);
++int lmk_involk()  
++{  
++	int other_free = global_page_state(NR_FREE_PAGES);  
++	int other_file = global_page_state(NR_INACTIVE_FILE);  
++	int array_max_idx = ARRAY_SIZE(lowmem_adj)-2;  
 +
-+int ab8500_gpio_config_get_select(struct device *dev,
-+				enum ab8500_pin	gpio, bool *gpio_select);
++	if (lowmem_deathpending &&  
++		time_before_eq(jiffies, lowmem_deathpending_timeout))  
++ 		return 0;  
 +
- #endif /* _AB8500_GPIO_H */
++	if (time_before_eq(jiffies, lowmem_timeout))  
++		return 0;  
++
++	if (other_free + other_file > lowmem_minfree[array_max_idx])  
++		return 0;  
++
++	lowmem_timeout = jiffies + HZ/2;  
++
++	return 1;  
++}
++
++void wakeup_lmkd();  
++
+ static int
+ task_notify_func(struct notifier_block *self, unsigned long val, void *data)
+ {
+ 	struct task_struct *task = data;
+-	if (task == lowmem_deathpending) {
++	struct shrink_control sc = {NULL, 1};  
++	if (task == lowmem_deathpending) {  
+ 		lowmem_deathpending = NULL;
+-		task_handoff_unregister(&task_nb);
+-	}
++		if (lmk_involk()) {  
++			wakeup_lmkd();  
++		}  
++	}  
+ 	return NOTIFY_OK;
+ }
+ 
++
++
+ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ {
+ 	struct task_struct *p;
+@@ -93,6 +125,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 	int other_free = global_page_state(NR_FREE_PAGES);
+ 	int other_file = global_page_state(NR_FILE_PAGES) -
+ 						global_page_state(NR_SHMEM);
++	int other_file_act = global_page_state(NR_ACTIVE_FILE);  
++	int other_anon = global_page_state(NR_ANON_PAGES);  
+ 
+ 	/*
+ 	 * If we already have a death outstanding, then
+@@ -105,7 +139,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 	 */
+ 	if (lowmem_deathpending)
+ 		return 0;
+-
++	lowmem_deathpending = NULL;
++	
+ 	if (lowmem_adj_size < array_size)
+ 		array_size = lowmem_adj_size;
+ 	if (lowmem_minfree_size < array_size)
+@@ -146,7 +181,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 			continue;
+ 		}
+ 		oom_adj = sig->oom_adj;
+-		if (oom_adj < min_adj) {
++		if (oom_adj < selected_oom_adj) {
+ 			task_unlock(p);
+ 			continue;
+ 		}
+@@ -155,8 +190,6 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 		if (tasksize <= 0)
+ 			continue;
+ 		if (selected) {
+-			if (oom_adj < selected_oom_adj)
+-				continue;
+ 			if (oom_adj == selected_oom_adj &&
+ 			    tasksize <= selected_tasksize)
+ 				continue;
+@@ -189,6 +222,51 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 	return rem;
+ }
+ 
++wait_queue_head_t lmkd_wait;  
++
++static void lmkd_try_to_sleep()  
++{  
++	long remaining;  
++	DEFINE_WAIT(wait);  
++ 
++	prepare_to_wait(&lmkd_wait, &wait, TASK_INTERRUPTIBLE);  
++	schedule();  
++	finish_wait(&lmkd_wait, &wait);  
++}  
++ 
++struct task_struct *lmkd_task;  
++static int lmkd();  
++int lmkd_run(int nid)  
++{  
++	int ret = 0;  
++	if (lmkd_task)  
++		return ret;  
++	init_waitqueue_head(&lmkd_wait);  
++	lowmem_timeout = jiffies;  
++	lmkd_task = kthread_run(lmkd, NULL , "lmkd");  
++	if (IS_ERR(lmkd_task)) {  
++		printk("Failed to start lmkd\n");  
++		ret = -1;  
++	}  
++	return ret;  
++}  
++  
++static int lmkd()  
++{  
++	struct shrink_control sc = {NULL, 1};  
++	while (1) {  
++		lowmem_shrink(NULL, &sc);  
++		lmkd_try_to_sleep();  
++	}  
++}  
++
++void wakeup_lmkd()  
++{  
++	if (!waitqueue_active(&lmkd_wait))  
++		return;  
++	wake_up_interruptible(&lmkd_wait);  
++}  
++
+ static struct shrinker lowmem_shrinker = {
+ 	.shrink = lowmem_shrink,
+ 	.seeks = DEFAULT_SEEKS * 16
 -- 
-1.7.9.5
+1.7.6
 
