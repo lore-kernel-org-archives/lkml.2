@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422766Ab2LNXG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:06:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41219 "EHLO mail.kernel.org"
+	id S1422782Ab2LNXGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:06:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41246 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932116Ab2LNXGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:06:20 -0500
+	id S1422768Ab2LNXGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:06:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rui li <li.rui27@zte.com.cn>
-Subject: [ 07/27] USB: add new zte 3g-dongles pid to option.c
-Date: Fri, 14 Dec 2012 15:01:20 -0800
-Message-Id: <20121214222252.759034672@linuxfoundation.org>
+        Martin Teichmann <lkb.teichmann@gmail.com>
+Subject: [ 09/27] USB: ftdi_sio: Add support for Newport AGILIS motor drivers
+Date: Fri, 14 Dec 2012 15:01:22 -0800
+Message-Id: <20121214222253.399255856@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -25,75 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "li.rui27@zte.com.cn" <li.rui27@zte.com.cn>
+From: Martin Teichmann <lkb.teichmann@gmail.com>
 
-commit 31b6a1048b7292efff8b5b53ae3d9d29adde385e upstream.
+commit d7e14b375b40c04cd735b115713043b69a2c68ac upstream.
 
-Signed-off-by: Rui li <li.rui27@zte.com.cn>
+The Newport AGILIS model AG-UC8 compact piezo motor controller
+(http://search.newport.com/?q=*&x2=sku&q2=AG-UC8)
+is yet another device using an FTDI USB-to-serial chip. It works
+fine with the ftdi_sio driver when adding
+
+  options ftdi-sio product=0x3000 vendor=0x104d
+
+to modprobe.d. udevadm reports "Newport" as the manufacturer,
+and "Agilis" as the product name.
+
+Signed-off-by: Martin Teichmann <lkb.teichmann@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -884,6 +884,10 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0126, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0128, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0135, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0136, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0137, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0139, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0142, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0143, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0144, 0xff, 0xff, 0xff) },
-@@ -904,20 +908,34 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0165, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0167, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0189, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0191, 0xff, 0xff, 0xff), /* ZTE EuFi890 */
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0196, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0197, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0199, 0xff, 0xff, 0xff), /* ZTE MF820S */
- 	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0200, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0201, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0254, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
- 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0330, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0395, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0414, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0417, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1018, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1021, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
-@@ -1097,6 +1115,10 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1298, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1299, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1300, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1301, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1302, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1303, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1333, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1401, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1402, 0xff, 0xff, 0xff),
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -192,6 +192,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -752,6 +752,12 @@
+ #define TTI_VID			0x103E	/* Vendor Id */
+ #define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
+ 
++/*
++ * Newport Cooperation (www.newport.com)
++ */
++#define NEWPORT_VID			0x104D
++#define NEWPORT_AGILIS_PID		0x3000
++
+ /* Interbiometrics USB I/O Board */
+ /* Developed for Interbiometrics by Rudolf Gugler */
+ #define INTERBIOMETRICS_VID              0x1209
 
 
