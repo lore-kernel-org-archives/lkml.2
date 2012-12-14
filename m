@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab2LNVWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 16:22:55 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56635 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932237Ab2LNVWx (ORCPT
+	id S932416Ab2LNVYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 16:24:33 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:50963 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab2LNVYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 16:22:53 -0500
-Message-ID: <50CB98AA.5090600@linaro.org>
-Date: Fri, 14 Dec 2012 13:22:50 -0800
-From: John Stultz <john.stultz@linaro.org>
+	Fri, 14 Dec 2012 16:24:31 -0500
+Message-ID: <50CB98F3.9030509@ahsoftware.de>
+Date: Fri, 14 Dec 2012 22:24:03 +0100
+From: Alexander Holler <holler@ahsoftware.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        alek.du@intel.com
-Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
-References: <1355364328-19550-1-git-send-email-feng.tang@intel.com> <50CA7EE4.3000306@linaro.org> <20121214013725.GA11276@feng-snb> <50CA8837.5010800@linaro.org> <20121214023826.GA31613@obsidianresearch.com> <20121214031330.GC11276@feng-snb> <20121214041024.GA1040@obsidianresearch.com>
-In-Reply-To: <20121214041024.GA1040@obsidianresearch.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4 v4] rtc: add rtc-driver for HID sensors of type time
+References: <50C8591A.3030301@ahsoftware.de> <1355310680-2466-1-git-send-email-holler@ahsoftware.de> <50CAF473.6040901@metafoo.de> <50CB24D4.3030606@ahsoftware.de> <50CB347B.80305@ahsoftware.de> <50CB37C5.4050008@ahsoftware.de> <50CB38F2.4050806@metafoo.de> <50CB44B3.8040601@ahsoftware.de> <50CB54C3.1090409@metafoo.de>
+In-Reply-To: <50CB54C3.1090409@metafoo.de>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 08:10 PM, Jason Gunthorpe wrote:
+Am 14.12.2012 17:33, schrieb Lars-Peter Clausen:
+> On 12/14/2012 04:24 PM, Alexander Holler wrote:
+>> Am 14.12.2012 15:34, schrieb Lars-Peter Clausen:
+>>> On 12/14/2012 03:29 PM, Alexander Holler wrote:
+>>>> Am 14.12.2012 15:15, schrieb Alexander Holler:
+>>>>> Am 14.12.2012 14:08, schrieb Alexander Holler:
+>>>>>> Am 14.12.2012 10:42, schrieb Lars-Peter Clausen:
+>>>>>
+>>>>>>> And another thing I've overlooked before:
+>>>>>>> wait_for_completion_interruptible_timeout can either return a positive
+>>>>>>> number when the completion was completed, 0 in case of an timeout, or a
+>>>>>>> negative error code in case it was interrupted. You need to handle all
+>>>>>>> three. E.g. something like this.
+>>>>>>>
+>>>>>>> ret = wait_for_completion_interruptible_timeout(...)
+>>>>>>> if (ret == 0)
+>>>>>>>      return -EIO;
+>>>>>>> if (ret < 0)
+>>>>>>>      return ret
+>>>>>>>
+>>>>>>
+>>>>>> Hmpf, the only working approach to use some in kernel functions really
+>>>>>> is to the read source yourself and don't trust anything else. :/
+>>>>>
+>>>>> Anyway, my approach doesn't work as it introduces a race condition:
+>>>>>
+>>>>>
+>>>>> /* get a report with all values through requesting one value */
+>>>>> sensor_hub_input_attr_get_raw_value(...)
+>>>>>
+>>>>> /* race if this task goes to slepp and the values were
+>>>>> received before it could call the below wait...
+>>>>>
+>>>>> /* wait for all values (event) */
+>>>>> if (!wait_for_completion_interruptible_timeout(...))
+>>>>>
+>>>>>
+>>>>> I'll have to look for a mechanism how to avoid that. So v5 might need
+>>>>> some time.
+>>>>
+>>>> Sorry for the noise. That INIT_COMPLETION() before the sensor...() does
+>>>> exactly that. So it's enough if I handle the different return situations of
+>>>> wait_for...().
+>>>>
+>>>> I will just use if(wait...()<=0) return -EIO.
+>>>>
+>>>
+>>> No, that's wrong. You should really return the error code returned by
+>>> wait_for_completion_interruptible_timeout(). This will make sure that
+>>> userspace restarts the syscall if necessary.
+>>
+>> Sorry for my ignorance, but which reasons for interruption do exist
+>> which doesn't kill the userspace too? The error number -ESYSRESTART
+>> doesn't offer a hint.
 >
-> Ah, I see, there is some duplication here, my earlier comments about
-> update_persistent_clock are not quite right, some places like PCs
-> stick a RTC driver and then continue to access the same hardware
-> directly outside the rtc driver context! That seems ugly :|
 >
-> I see the PC CMOS rtc driver does not implement the set_mmss
-> operation, instead running that code through update_persistent_clock..
-> That seems like a cleanup waiting to happen.
->
-> Regarding your problem - IMHO, it would be fantastic if the class RTC
-> driver could be used instead of read_persistent_clock on PC.
->
-> John mentioned that read_persistent_clock had a requirement to work
-> with IRQs off - that seems like it would be easy to incorporate into
-> class rtc - for hardware that supports it (and PC is not the only RTC
-> HW that can do this) Is that the only reason it still exists on pc?
->
-> I have to feel the long term direction should be to remove
-> *_persistent_clock in favor of class RTC?
-So yes, I'd love to see a cleanup here.
+> Well I'm not an expert on this either, but as far as I know any signal the
+> process is listening on can cause an interruption. Most signals won't kill
+> the process though. More on the whole restart stuff:
+> http://lwn.net/Articles/528935/
 
-Although from a timekeeping perspective, the read_persistent_clock() 
-interface is actually *much* preferred over the rtc HCTOSYS device.
+I've come to the conclusion that using 
+wait_for_completion_interruptible_timeout() isn't what should be used 
+here and will switch to wait_for_completion_killable_timeout(). Here are 
+my reasons:
 
-Since read_persistent_clock() has the requirement that its safe to call 
-with IRQs disabled, we can use it in the timekeeping suspend/resume 
-code, which allows for better time accuracy.
+1. I don't think any caller of rtc_ops.read_time will be prepared to 
+handle -ESYSRESTART.
 
-That said, many systems don't have a persistent clock that they can 
-access with irqs off, and so the timekeeping_inject_sleeptime code was 
-added to work with the rtc class drivers,  but it is more prone to problems.
+2. Someone wants the time. Beeing interruptible seems to mean the 
+process might be interrupted by signal processing with an unknown long 
+duration which could decrease the accuracy even below the desired one 
+second (which doesn't look unlikely, signal processing in userspace is 
+unpredictable and (mis)used for all kind of stuff).
 
-That's why I've been suggesting we add a HAS_PERSISTENT_CLOCK and make 
-the HCTOSYS_DEVICE depend on !HAS_PERSISTENT_CLOCK.  As it avoids these 
-weird cases we're we have possibly duplicated code paths.
+3. I've primarily used it to be friendly in means of killable, but 
+didn't know that ..._killable() does exist. ;)
 
-But there is the risk that some architectures may require both for some 
-system configs (ie: read_persistent_clock works on all but one SoC, 
-which has an rtc over a usb bus or something).  Although its not clear 
-yet that this is a situation that actually exists.  (And we could work 
-around it with something like HAS_EXCLUSIVE_PERSISTENT_CLOCK or something).
+Btw., here is a imho good and especially short introduction about the 
+task states along with some pointers to more comprehensive resources:
+http://www.ibm.com/developerworks/linux/library/l-task-killable/
 
-While we're suggesting cleanups, the RTC Kconfig choices probably need a 
-cleanup too, as  the list of all possible drivers can be confusing, when 
-usually each architecture has only a few that they exclusively support 
-(I know there are exceptions to this).  It makes it hard to even figure 
-out for a specific rtc driver what architecture one should look for in 
-order to test with (I usually have to look at the commit log, and then 
-try to associate email address with arch maintainers). A good number of 
-drivers are fine, and already depend on the SoC platform support being 
-there, but I suspect we could narrow a number of the drivers down to one 
-or two arches or even platforms that acutally make use of it.
+v5 of that patch will follow. Hopefully the last one necessary.
 
-thanks
--john
+Regards,
+
+Alexander
