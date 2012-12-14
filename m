@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2LNSrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:47:36 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34719 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab2LNSre (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:47:34 -0500
+	id S1757081Ab2LNSsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:48:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48920 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756687Ab2LNSsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 13:48:21 -0500
+Message-ID: <50CB7459.7010107@zytor.com>
+Date: Fri, 14 Dec 2012 10:47:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
-References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
- <87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
- <20121214032820.GA5115@mail.hallyn.com> <87bodxi9zw.fsf@xmission.com>
- <20121214152607.GA9266@mail.hallyn.com> <87bodwd4aw.fsf@xmission.com>
- <20121214161514.GA9962@mail.hallyn.com> <87r4ms5wpm.fsf@xmission.com> <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 14 Dec 2012 10:47:13 -0800
-Message-ID: <CALCETrVzkDi2tUZV6qtXrFtD+dDtkrR5dVL_Sij=9DVEqsOWmg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent
- user namespace to have caps.
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Pavel Emelyanov <xemul@parallels.com>, aarcange@redhat.com,
+        ak@linux.intel.com, Stefani Seibold <stefani@seibold.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
+        mingo@redhat.com, john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
+In-Reply-To: <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 10:43 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Dec 14, 2012 at 10:12 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
+On 12/14/2012 10:44 AM, Andy Lutomirski wrote:
 >>
->> That said Serge I think I have lost track of the point of your question.
->
-> .. and I'm a bit unsure what I should do about this all. Including
-> pulling the pull request that actually can make this all matter.
->
-> Hmm? Any consensus?
+>> mremap() should work.  At the same time, the code itself is not going to
+>> have any stability guarantees between kernel versions -- it obviously
+>> cannot.
+> 
+> We could guarantee that the symbols in the vdso resolve to particular
+> offsets within the vdso.  (Yes, this is ugly.)
+> 
+> Does criu support checkpointing with one version of a shared library
+> and restoring with another?  If there are no textrels (or whatever the
+> relocation type that actually modifies text as opposed to just the plt
+> or got) then, in principle, it should be doable.  Otherwise some
+> kernel help will be needed to checkpoint reliably on one kernel and
+> restore somewhere else.
+> 
+> (This isn't a regression -- it's already broken.)
+> 
 
-I think that, if Eric submits a newer version that renames the loop
-variable for added comprehensibility, I'm okay with it.
+The real issue is that happens if the process is checkpointed while
+inside the vdso and now eip/rip or a stack frame points into the vdso.
+This is not impossible or even unlikely, especially on 32 bits it is
+downright likely.
 
-Changing the semantics to a more expansive version like Serge was
-talking about later on wouldn't break anything.  But I don't think
-there's any reason to change it.
+	-hpa
 
---Andy
