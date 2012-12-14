@@ -1,180 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab2LNHP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:15:59 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:62079 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab2LNHP4 (ORCPT
+	id S1754282Ab2LNH17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:27:59 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52153 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2LNH17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:15:56 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>, randy.dunlap@oracle.com, trenn@suse.de,
-        Valdis.Kletnieks@vt.edu, Dennis.Jansen@web.de, airlied@redhat.com,
-        eric@anholt.net, alexdeucher@gmail.com, bskeggs@redhat.com,
-        chris@chris-wilson.co.uk, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [RESEND][PATCH] gpu: remove gma500 stub driver
-Date: Fri, 14 Dec 2012 15:14:37 +0800
-Message-Id: <1355469277-5519-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Fri, 14 Dec 2012 02:27:59 -0500
+Date: Fri, 14 Dec 2012 07:27:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, J??rn Engel <joern@logfs.org>
+Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on
+ mmap
+Message-ID: <20121214072755.GR4939@ZenIV.linux.org.uk>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In v3.3, the gma500 drm driver moved from staging to drm group by
-Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
-brightness well and don't need gma500 stub driver anymore.
+On Thu, Dec 13, 2012 at 09:49:43PM -0800, Andy Lutomirski wrote:
+> This is a serious cause of mmap_sem contention.  MAP_POPULATE
+> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+> 
+> Sensible people use anonymous mappings.  I write kernel patches :)
+> 
+> I'm not entirely thrilled by the aesthetics of this patch.  The MAP_POPULATE case
+> could also be improved by doing it without any lock at all.  This is still a big
+> improvement, though.
 
-Reference:
-http://lists.freedesktop.org/archives/dri-devel/2012-May/023426.html
-http://lists.freedesktop.org/archives/dri-devel/2012-May/023467.html
-
-Cc: randy.dunlap@oracle.com
-Cc: trenn@suse.de
-Cc: Valdis.Kletnieks@vt.edu
-Cc: Dennis.Jansen@web.de
-Cc: airlied@redhat.com
-Cc: eric@anholt.net
-Cc: alexdeucher@gmail.com
-Cc: bskeggs@redhat.com
-Cc: chris@chris-wilson.co.uk
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Acked-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/gpu/Makefile       |    2 +-
- drivers/gpu/stub/Kconfig   |   18 ------------
- drivers/gpu/stub/Makefile  |    1 -
- drivers/gpu/stub/poulsbo.c |   64 --------------------------------------------
- drivers/video/Kconfig      |    2 -
- 5 files changed, 1 insertions(+), 86 deletions(-)
- delete mode 100644 drivers/gpu/stub/Kconfig
- delete mode 100644 drivers/gpu/stub/Makefile
- delete mode 100644 drivers/gpu/stub/poulsbo.c
-
-diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
-index cc92778..30879df 100644
---- a/drivers/gpu/Makefile
-+++ b/drivers/gpu/Makefile
-@@ -1 +1 @@
--obj-y			+= drm/ vga/ stub/
-+obj-y			+= drm/ vga/
-diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-deleted file mode 100644
-index 4199179..0000000
---- a/drivers/gpu/stub/Kconfig
-+++ /dev/null
-@@ -1,18 +0,0 @@
--config STUB_POULSBO
--	tristate "Intel GMA500 Stub Driver"
--	depends on PCI
--	depends on NET # for THERMAL
--	# Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
--	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
--	select BACKLIGHT_CLASS_DEVICE if ACPI
--	select VIDEO_OUTPUT_CONTROL if ACPI
--	select INPUT if ACPI
--	select ACPI_VIDEO if ACPI
--	select THERMAL if ACPI
--	help
--	  Choose this option if you have a system that has Intel GMA500
--	  (Poulsbo) integrated graphics. If M is selected, the module will
--	  be called Poulsbo. This driver is a stub driver for Poulsbo that
--	  will call poulsbo.ko to enable the acpi backlight control sysfs
--	  entry file because there have no poulsbo native driver can support
--	  intel opregion.
-diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
-deleted file mode 100644
-index cd940cc..0000000
---- a/drivers/gpu/stub/Makefile
-+++ /dev/null
-@@ -1 +0,0 @@
--obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
-diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
-deleted file mode 100644
-index 7edfd27..0000000
---- a/drivers/gpu/stub/poulsbo.c
-+++ /dev/null
-@@ -1,64 +0,0 @@
--/*
-- * Intel Poulsbo Stub driver
-- *
-- * Copyright (C) 2010 Novell <jlee@novell.com>
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License version 2 as published by
-- * the Free Software Foundation.
-- *
-- */
--
--#include <linux/module.h>
--#include <linux/pci.h>
--#include <linux/acpi.h>
--#include <acpi/video.h>
--
--#define DRIVER_NAME "poulsbo"
--
--enum {
--	CHIP_PSB_8108 = 0,
--	CHIP_PSB_8109 = 1,
--};
--
--static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
--	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
--	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
--	{0, 0, 0}
--};
--
--static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
--{
--	return acpi_video_register();
--}
--
--static void poulsbo_remove(struct pci_dev *pdev)
--{
--	acpi_video_unregister();
--}
--
--static struct pci_driver poulsbo_driver = {
--	.name = DRIVER_NAME,
--	.id_table = pciidlist,
--	.probe = poulsbo_probe,
--	.remove = poulsbo_remove,
--};
--
--static int __init poulsbo_init(void)
--{
--	return pci_register_driver(&poulsbo_driver);
--}
--
--static void __exit poulsbo_exit(void)
--{
--	pci_unregister_driver(&poulsbo_driver);
--}
--
--module_init(poulsbo_init);
--module_exit(poulsbo_exit);
--
--MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
--MODULE_DESCRIPTION("Poulsbo Stub Driver");
--MODULE_LICENSE("GPL");
--
--MODULE_DEVICE_TABLE(pci, pciidlist);
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index d08d799..cc99f41 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -21,8 +21,6 @@ source "drivers/gpu/vga/Kconfig"
- 
- source "drivers/gpu/drm/Kconfig"
- 
--source "drivers/gpu/stub/Kconfig"
--
- config VGASTATE
-        tristate
-        default n
--- 
-1.6.0.2
-
+Wait a minute.  get_user_pages() relies on ->mmap_sem being held.  Unless
+I'm seriously misreading your patch it removes that protection.  And yes,
+I'm aware of execve-related exception; it's in special circumstances -
+bprm->mm is guaranteed to be not shared (and we need to rearchitect that
+area anyway, but that's a separate story).
