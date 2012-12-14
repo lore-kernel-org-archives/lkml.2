@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2LNA56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 19:57:58 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25310 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab2LNA54 (ORCPT
+	id S1755767Ab2LNBAQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:00:16 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58449 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755435Ab2LNBAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 19:57:56 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tNlbskdacWIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=fhAgPGMYB1wA:10 a=rOUgymgbAAAA:8 a=WomNyAZRArXkpGMvjdoA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355446675.17101.388.camel@gandalf.local.home>
-Subject: [PATCH] staging: Make SystemBase PCI Multiport UART only for x86
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>
-Date: Thu, 13 Dec 2012 19:57:55 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 20:00:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <50CA78AC.3060700@zytor.com>
+References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
+	<1355436141-8668-20-git-send-email-yinghai@kernel.org>
+	<50CA6478.20008@zytor.com>
+	<CAE9FiQURsKT8Ufy7NmWUzrzkYoH65Edk6e_kJkw_+YYx=1bXTg@mail.gmail.com>
+	<50CA7515.9080701@zytor.com>
+	<CAE9FiQXi6XZ9_7CDS_Ypgd59tSouhw8TCePCdJQNC7bhGMO8WQ@mail.gmail.com>
+	<CAE9FiQXSSbWOp=DqGiH2gyuR4FvTaLot4CnSm3KGqcgmj4p34A@mail.gmail.com>
+	<50CA78AC.3060700@zytor.com>
+Date: Thu, 13 Dec 2012 17:00:13 -0800
+X-Google-Sender-Auth: 2lGX_QbPBtMPR4zOJ2eOnoi4r-4
+Message-ID: <CAE9FiQXp8kiHus3s-TYtAKzzZHqgfmsv-PpHDqgd56b1Re3B-g@mail.gmail.com>
+Subject: Re: [PATCH v6 19/27] x86, boot: update comments about entries for
+ 64bit image
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sb105x SystemBase PCI UART driver in staging has code specific for
-x86. This breaks allyesconfig builds for other archs. For now, the quick
-fix is simply to make this driver depend on x86.
+On Thu, Dec 13, 2012 at 4:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/13/2012 04:51 PM, Yinghai Lu wrote:
 
-When I get time, I'll swap this card out of my main machine and put it
-into my PowerPC64 box, and get it working there. Then it may become a
-good samaritan and play nice with other archs.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/drivers/staging/sb105x/Kconfig b/drivers/staging/sb105x/Kconfig
-index ac87c5e..1facad6 100644
---- a/drivers/staging/sb105x/Kconfig
-+++ b/drivers/staging/sb105x/Kconfig
-@@ -2,6 +2,7 @@ config SB105X
- 	tristate "SystemBase PCI Multiport UART"
- 	select SERIAL_CORE
- 	depends on PCI
-+	depends on X86
- 	help
- 	  A driver for the SystemBase Multi-2/PCI serial card
- 
-
-
+>> also need to make sure zero page and command line get ident mapping.
+>> because arch/x86/boot/compressed/head_64.S is using them.
+>>
+>
+> ... or we need to do the same kind of thing there.
+>
+your #PF handler approach will  handle accessing kernel code together
+with zero_page, command_line, ramdisk ?
+so only need to map first 2M?
