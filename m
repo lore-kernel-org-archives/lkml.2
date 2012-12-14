@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2LNPKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 10:10:31 -0500
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:37950 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab2LNPKa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 10:10:30 -0500
-X-Greylist: delayed 693 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Dec 2012 10:10:29 EST
-Message-ID: <50CB3EAB.309@itwm.fraunhofer.de>
-Date: Fri, 14 Dec 2012 15:58:51 +0100
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756216Ab2LNPUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 10:20:32 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:30968 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755955Ab2LNPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 10:20:31 -0500
+Subject: [PATCH v2 0/6] fuse: process direct IO asynchronously
+To: miklos@szeredi.hu
+From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Fri, 14 Dec 2012 19:20:07 +0400
+Message-ID: <20121214151424.27155.45971.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [regression] 3.7 ends in APIC panic
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: UTF-8
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 01:16 PM, Bernd Schubert wrote:
-> Hello,
->
-> I just tried to boot 3.7 and it ends in an APIC panic. I tried to use
-> the recommended "apic=debug", but that does not change anything in the
-> output, at least not in the visible part. The last known kernel to boot
-> was 3.5. If it matters I can try to boot 3.6.
+Hi,
 
-So linux-3.6 also boots. Any idea what is going on or do I really need 
-to bisect?
+Existing fuse implementation always processes direct IO synchronously: it
+submits next request to userspace fuse only when previous is completed. This
+is suboptimal because: 1) libaio DIO works in blocking way; 2) userspace fuse
+can't achieve parallelism  processing several requests simultaneously (e.g.
+in case of distributed network storage); 3) userspace fuse can't merge
+requests before passing it to actual storage.
 
+The idea of the patch-set is to submit fuse requests in non-blocking way
+(where it's possible) and either return -EIOCBQUEUED or wait for their
+completion synchronously. The patch-set to be applied on top of for-next of
+Miklos' git repo.
+
+To estimate performance improvement I used slightly modified fusexmp over
+tmpfs (clearing O_DIRECT bit from fi->flags in xmp_open). For synchronous
+operations I used 'dd' like this:
+
+dd of=/dev/null if=/fuse/mnt/file bs=2M count=256 iflag=direct
+dd if=/dev/zero of=/fuse/mnt/file bs=2M count=256 oflag=direct conv=notrunc
+
+For AIO I used 'aio-stress' like this:
+
+aio-stress -s 512 -a 4 -b 1 -c 1 -O -o 1 /fuse/mnt/file
+aio-stress -s 512 -a 4 -b 1 -c 1 -O -o 0 /fuse/mnt/file
+
+The throughput on some commodity (rather feeble) server was (in MB/sec):
+
+             original / patched
+
+dd reads:    ~322     / ~382
+dd writes:   ~277     / ~288
+
+aio reads:   ~380     / ~459
+aio writes:  ~319     / ~353
+
+Changed in v2 - cleanups suggested by Brian:
+ - Updated fuse_io_priv with an async field and file pointer to preserve
+   the current style of interface (i.e., use this instead of iocb).
+ - Trigger the type of request submission based on the async field.
+ - Pulled up the fuse_write_update_size() call out of __fuse_direct_write()
+   to make the separate paths more consistent.
 
 Thanks,
-Bernd
+Maxim
+
+---
+
+Maxim V. Patlasov (6):
+      fuse: move fuse_release_user_pages() up
+      fuse: add support of async IO
+      fuse: make fuse_direct_io() aware about AIO
+      fuse: enable asynchronous processing direct IO
+      fuse: truncate file if async dio failed
+      fuse: optimize short direct reads
 
 
+ fs/fuse/cuse.c   |    6 +
+ fs/fuse/file.c   |  290 +++++++++++++++++++++++++++++++++++++++++++++++-------
+ fs/fuse/fuse_i.h |   19 +++-
+ 3 files changed, 276 insertions(+), 39 deletions(-)
 
+-- 
+Signature
