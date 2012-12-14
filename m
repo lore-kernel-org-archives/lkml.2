@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2LNMGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 07:06:43 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38515 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab2LNMGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 07:06:41 -0500
-Message-ID: <1355486789.3475.1.camel@phoenix>
-Subject: [PATCH v2 3/6] iio: dac: ad5504: Don't set error code to voltage_uv
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Dec 2012 20:06:29 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754451Ab2LNMHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 07:07:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39012 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab2LNMHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 07:07:10 -0500
+Date: Fri, 14 Dec 2012 13:07:07 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121214120707.GG6898@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
+ <20121211155432.GC1612@dhcp22.suse.cz>
+ <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
+ <20121212090652.GB32081@dhcp22.suse.cz>
+ <20121212192441.GD10374@dhcp22.suse.cz>
+ <CALWz4iygkxRUJX2bEhHp6nyEwyVA8w8WxNcQqzmXuMeH8kMuYA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALWz4iygkxRUJX2bEhHp6nyEwyVA8w8WxNcQqzmXuMeH8kMuYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator_get_voltage() may return negative error code.
-Add error checking to avoid setting error code to voltage_uv.
+On Thu 13-12-12 17:14:13, Ying Han wrote:
+[...]
+> I haven't tried this patch set yet. Before I am doing that, I am
+> curious whether changing the target reclaim to be consistent with
+> global reclaim something worthy to consider based my last reply:
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 53dcde9..3f158c5 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1911,20 +1911,6 @@ static void shrink_zone(struct zone *zone,
+> struct scan_control *sc)
+> 
+>                 shrink_lruvec(lruvec, sc);
+> 
+> -               /*
+> -                * Limit reclaim has historically picked one memcg and
+> -                * scanned it with decreasing priority levels until
+> -                * nr_to_reclaim had been reclaimed.  This priority
+> -                * cycle is thus over after a single memcg.
+> -                *
+> -                * Direct reclaim and kswapd, on the other hand, have
+> -                * to scan all memory cgroups to fulfill the overall
+> -                * scan target for the zone.
+> -                */
+> -               if (!global_reclaim(sc)) {
+> -                       mem_cgroup_iter_break(root, memcg);
+> -                       break;
+> -               }
+>                 memcg = mem_cgroup_iter(root, memcg, &reclaim);
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-v2: check if ret is negative value
- drivers/iio/dac/ad5504.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+This wouldn't work because you would over-reclaim proportionally to the
+number of groups in the hierarchy.
 
-diff --git a/drivers/iio/dac/ad5504.c b/drivers/iio/dac/ad5504.c
-index 242bdc7..1e9a1f4 100644
---- a/drivers/iio/dac/ad5504.c
-+++ b/drivers/iio/dac/ad5504.c
-@@ -296,7 +296,11 @@ static int __devinit ad5504_probe(struct spi_device *spi)
- 		if (ret)
- 			goto error_put_reg;
- 
--		voltage_uv = regulator_get_voltage(reg);
-+		ret = regulator_get_voltage(reg);
-+		if (ret < 0)
-+			goto error_disable_reg;
-+
-+		voltage_uv = ret;
- 	}
- 
- 	spi_set_drvdata(spi, indio_dev);
+>         } while (memcg);
+>  }
+> 
+> --Ying
+
 -- 
-1.7.9.5
-
-
-
+Michal Hocko
+SUSE Labs
