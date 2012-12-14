@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2LNANx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 19:13:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37707 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab2LNANv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 19:13:51 -0500
+	id S1755816Ab2LNAPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 19:15:08 -0500
+Received: from atl.turmel.org ([74.117.157.138]:51248 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753579Ab2LNAPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 19:15:06 -0500
+X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Dec 2012 19:15:06 EST
+Message-ID: <50CA6F86.30608@turmel.org>
+Date: Thu, 13 Dec 2012 19:15:02 -0500
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121103 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <50CA6478.20008@zytor.com>
-References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-	<1355436141-8668-20-git-send-email-yinghai@kernel.org>
-	<50CA6478.20008@zytor.com>
-Date: Thu, 13 Dec 2012 16:13:49 -0800
-X-Google-Sender-Auth: GhgzsmrSjlPu_4-_VPWh6DEEmTM
-Message-ID: <CAE9FiQURsKT8Ufy7NmWUzrzkYoH65Edk6e_kJkw_+YYx=1bXTg@mail.gmail.com>
-Subject: Re: [PATCH v6 19/27] x86, boot: update comments about entries for
- 64bit image
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Wong <normalperson@yhbt.net>
+CC: Andreas Voellmy <andreas.voellmy@yale.edu>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: epoll with ONESHOT possibly fails to deliver events
+References: <BC680BE9-F6EB-4278-819C-C552009CA884@yale.edu> <AF8622CA-CF9D-4F57-B4EB-FE088A752D80@yale.edu> <20121213093242.GA25436@dcvr.yhbt.net> <50CA6E04.1070105@turmel.org>
+In-Reply-To: <50CA6E04.1070105@turmel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/13/2012 02:02 PM, Yinghai Lu wrote:
->> +      * If we come here from a bootloader, kernel(text+data+bss+brk),
->> +      * ramdisk, zero_page, command line could be above 4G.
->> +      * We depend on an identity mapped page table being provided
->> +      * that maps our entire kernel(text+data+bss+brk), and hopefully
->> +      * all of memory.
->
-> We should make it explicit what we depend on.  We certainly *can* depend
-> only on text+data+bss+brk ... with the dynamic page table approach we
-> can do that, and that would be most conservative; if we depend on other
-> things we should make that explicit, not just here but in boot.txt.
+On 12/13/2012 07:08 PM, Phil Turmel wrote:
+> On 12/13/2012 04:32 AM, Eric Wong wrote:
+>> Andreas Voellmy <andreas.voellmy@yale.edu> wrote:
+> 
+> [trim /]
+> 
+>>>> Another thread, distinct from all of the threads serving particular
+>>>> sockets, is perfoming epoll_wait calls. When sockets are returned as
+>>>> being ready from an epoll_wait call, the thread signals to the
+>>>> condition variable for the socket.
+>>
+>> Perhaps there is a bug in the way your epoll_wait thread
+>> uses the condition variable to notify other threads?
+> 
+> Have you considered the possibility that data is arriving between
+> epoll_ctl and pthread_cond_wait ?  If your monitoring thread returns
+> from epoll_wait within this race window, it will call
+> pthread_cond_signal while the first thread is not yet waiting for it.
+> With the one-shot flag, the next iteration of epoll_wait won't see that
+> socket's new data.
 
-yes, in my version, only need kernel(text+data+bss+brk) get mapped.
-aka the INIT_SIZE for decompressing.
+Let me clarify:
+
+The read thread must perform the epoll_ctl between pthread_mutex_lock
+and pthread_cond_wait, while the monitoring thread must hold the mutex
+lock when signaling.
+
+pthread_cond_signal and pthread_cond_broadcast don't require the caller
+to hold the mutex in general, but your app needs it.
+
+Phil
+
