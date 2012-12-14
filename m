@@ -1,71 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab2LNQFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:05:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57891 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756252Ab2LNQFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:05:16 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>
-Subject: Re: [patch,v3,repost 00/10] make I/O path allocations more numa-friendly
-References: <1354034799-8460-1-git-send-email-jmoyer@redhat.com>
-	<x49zk1l6b5p.fsf@segfault.boston.devel.redhat.com>
-	<1355220811.2400.5.camel@dabdike.int.hansenpartnership.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 14 Dec 2012 11:05:04 -0500
-In-Reply-To: <1355220811.2400.5.camel@dabdike.int.hansenpartnership.com>
-	(James Bottomley's message of "Tue, 11 Dec 2012 10:13:31 +0000")
-Message-ID: <x49pq2czkjz.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756583Ab2LNQFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:05:55 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:33763 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab2LNQFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 11:05:54 -0500
+Message-ID: <50CB4E60.70200@monstr.eu>
+Date: Fri, 14 Dec 2012 17:05:52 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze changes for 3.8-rc1 v2
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+Hi Linus,
 
-> On Mon, 2012-12-10 at 12:59 -0500, Jeff Moyer wrote:
->> Jeff Moyer <jmoyer@redhat.com> writes:
->> 
->> > Hi,
->> >
->> > This patch set makes memory allocations for data structures used in
->> > the I/O path more numa friendly by allocating them from the same numa
->> > node as the storage device.  I've only converted a handful of drivers
->> > at this point.  My testing is limited by the hardware I have on hand.
->> > Using these patches, I was able to max out the bandwidth of the storage
->> > controller when issuing I/O from any node on my 4 node system.  Without
->> > the patch, I/O from nodes remote to the storage device would suffer a
->> > penalty ranging from 6-12%.  Given my relatively low-end setup[1], I
->> > wouldn't be surprised if others could show a more significant performance
->> > advantage.
->> >
->> > This is a repost of the last posting.  The only changes are additional
->> > reviewed-by/acked-by tags.  I think this version is ready for inclusion.
->> > James, would you mind taking a look?
->> 
->> James?  Do you have any objections to including this for 3.8?
->
-> Probably for 3.9 since the 3.8 merge window is upon us.
+please pull the following changes. I used wrong sha1 in original pull request
+which didn't include one of my patch.
 
-OK.
-
-> Do we actually have any performance numbers from the big system people?
-> That's really a must for this type of work.
-
-I'm working on getting some numbers.
-
-> It's missing acks from the affected drivers; that's not a show stopper
-> but it would be better to have them.
-
-Well, we could trim the driver list to those that have ACKs, but the
-driver changes are trivial.
+The main change is UAPI for Microblaze.
 
 Thanks,
-Jeff
+Michal
+
+
+The following changes since commit 6be35c700f742e911ecedd07fcc43d4439922334:
+   Linus Torvalds (1):
+         Merge git://git.kernel.org/.../davem/net-next
+
+are available in the git repository at:
+
+   git://git.monstr.eu/linux-2.6-microblaze.git next
+
+David Howells (1):
+       UAPI: (Scripted) Disintegrate arch/microblaze/include/asm
+
+Michal Simek (10):
+       microblaze: Remove BIP from childregs
+       microblaze: uaccess.h: Fix timerfd syscall
+       microblaze: Remove passing the second arg to schedule_tail
+       microblaze: Do not initialized regs->r1 twice in ELF_PLAT_INIT
+       microblaze: Fix intc_enable_or_unmask function
+       microblaze: Wire-up new system call kcmp
+       microblaze: Add static qualifiers
+       microblaze: lib: Remove helper macros
+       microblaze: lib: Add lib function declarations
+       microblaze: signal: Declare do_notify_resume
+
+  arch/microblaze/include/asm/Kbuild                 |    2 -
+  arch/microblaze/include/asm/elf.h                  |   97 +-----
+  arch/microblaze/include/asm/entry.h                |    2 +
+  arch/microblaze/include/asm/ptrace.h               |   62 +---
+  arch/microblaze/include/asm/setup.h                |    6 +-
+  arch/microblaze/include/asm/uaccess.h              |    3 +-
+  arch/microblaze/include/asm/unistd.h               |  390 +-------------------
+  arch/microblaze/include/uapi/asm/Kbuild            |   32 ++
+  arch/microblaze/include/{ => uapi}/asm/auxvec.h    |    0
+  .../include/{ => uapi}/asm/bitsperlong.h           |    0
+  arch/microblaze/include/{ => uapi}/asm/byteorder.h |    0
+  arch/microblaze/include/uapi/asm/elf.h             |  121 ++++++
+  arch/microblaze/include/{ => uapi}/asm/errno.h     |    0
+  arch/microblaze/include/{ => uapi}/asm/fcntl.h     |    0
+  arch/microblaze/include/{ => uapi}/asm/ioctl.h     |    0
+  arch/microblaze/include/{ => uapi}/asm/ioctls.h    |    0
+  arch/microblaze/include/{ => uapi}/asm/ipcbuf.h    |    0
+  arch/microblaze/include/{ => uapi}/asm/kvm_para.h  |    0
+  arch/microblaze/include/{ => uapi}/asm/param.h     |    0
+  arch/microblaze/include/{ => uapi}/asm/poll.h      |    0
+  .../include/{ => uapi}/asm/posix_types.h           |    0
+  arch/microblaze/include/uapi/asm/ptrace.h          |   72 ++++
+  arch/microblaze/include/{ => uapi}/asm/resource.h  |    0
+  arch/microblaze/include/{ => uapi}/asm/sembuf.h    |    0
+  arch/microblaze/include/uapi/asm/setup.h           |   19 +
+  arch/microblaze/include/{ => uapi}/asm/shmbuf.h    |    0
+  .../microblaze/include/{ => uapi}/asm/sigcontext.h |    0
+  arch/microblaze/include/{ => uapi}/asm/siginfo.h   |    0
+  arch/microblaze/include/{ => uapi}/asm/signal.h    |    0
+  arch/microblaze/include/{ => uapi}/asm/socket.h    |    0
+  arch/microblaze/include/{ => uapi}/asm/sockios.h   |    0
+  arch/microblaze/include/{ => uapi}/asm/stat.h      |    0
+  arch/microblaze/include/{ => uapi}/asm/statfs.h    |    0
+  arch/microblaze/include/{ => uapi}/asm/swab.h      |    0
+  arch/microblaze/include/{ => uapi}/asm/termbits.h  |    0
+  arch/microblaze/include/{ => uapi}/asm/termios.h   |    0
+  arch/microblaze/include/{ => uapi}/asm/types.h     |    0
+  arch/microblaze/include/uapi/asm/unistd.h          |  401 ++++++++++++++++++++
+  arch/microblaze/kernel/entry-nommu.S               |    1 -
+  arch/microblaze/kernel/intc.c                      |    5 +-
+  arch/microblaze/kernel/process.c                   |    1 -
+  arch/microblaze/kernel/prom.c                      |    4 +-
+  arch/microblaze/kernel/signal.c                    |    2 +-
+  arch/microblaze/kernel/syscall_table.S             |    1 +
+  arch/microblaze/lib/libgcc.h                       |    7 +
+  arch/microblaze/lib/muldi3.c                       |   28 +-
+  48 files changed, 679 insertions(+), 577 deletions(-)
+  rename arch/microblaze/include/{ => uapi}/asm/auxvec.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/bitsperlong.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/byteorder.h (100%)
+  create mode 100644 arch/microblaze/include/uapi/asm/elf.h
+  rename arch/microblaze/include/{ => uapi}/asm/errno.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/fcntl.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/ioctl.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/ioctls.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/ipcbuf.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/kvm_para.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/mman.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/msgbuf.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/param.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/poll.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/posix_types.h (100%)
+  create mode 100644 arch/microblaze/include/uapi/asm/ptrace.h
+  rename arch/microblaze/include/{ => uapi}/asm/resource.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/sembuf.h (100%)
+  create mode 100644 arch/microblaze/include/uapi/asm/setup.h
+  rename arch/microblaze/include/{ => uapi}/asm/shmbuf.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/sigcontext.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/siginfo.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/signal.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/socket.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/sockios.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/stat.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/statfs.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/swab.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/termbits.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/termios.h (100%)
+  rename arch/microblaze/include/{ => uapi}/asm/types.h (100%)
+  create mode 100644 arch/microblaze/include/uapi/asm/unistd.h
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
