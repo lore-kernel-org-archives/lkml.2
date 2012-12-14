@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945893Ab2LNWnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:43:49 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:47332 "EHLO
+	id S932728Ab2LNWoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:44:07 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41681 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab2LNWlz (ORCPT
+	with ESMTP id S932619Ab2LNWlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:41:55 -0500
+	Fri, 14 Dec 2012 17:41:49 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/12] cfq-iosched: convert cfq_group_slice() to use cfqg->vfraction
-Date: Fri, 14 Dec 2012 14:41:21 -0800
-Message-Id: <1355524885-22719-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/12] cfq-iosched: implement cfq_group->nr_active and ->level_weight
+Date: Fri, 14 Dec 2012 14:41:19 -0800
+Message-Id: <1355524885-22719-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
 References: <1355524885-22719-1-git-send-email-tj@kernel.org>
@@ -22,66 +22,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cfq_group_slice() calculates slice by taking a fraction of
-cfq_target_latency according to the ratio of cfqg->weight against
-service_tree->total_weight.  This currently works only because all
-cfqgs are treated to be at the same level.
+To prepare for blkcg hierarchy support, add cfqg->nr_active and
+->level_weight.  cfqg->nr_active counts the number of active cfqgs at
+the cfqg's level and ->level_weight is sum of weights of those cfqgs.
+The level covers itself (cfqg->leaf_weight) and immediate children.
 
-To prepare for proper hierarchy support, convert cfq_group_slice() to
-base the calculation on cfqg->vfraction.  As cfqg->vfraction is always
-a fraction of 1 and represents the fraction allocated to the cfqg with
-hierarchy considered, the slice can be simply calculated by
-multiplying cfqg->vfraction to cfq_target_latency (with fixed point
-shift factored in).
+The two values are updated when a cfqg enters and leaves the group
+service tree.  Unless the hierarchy is very deep, the added overhead
+should be negligible.
 
-As vfraction calculation currently treats all non-root cfqgs as
-children of the root cfqg, this patch doesn't introduce noticeable
-behavior difference.
+Currently, the parent is determined using cfqg_flat_parent() which
+makes the root cfqg the parent of all other cfqgs.  This is to make
+the transition to hierarchy-aware scheduling gradual.  Scheduling
+logic will be converted to use cfqg->level_weight without actually
+changing the behavior.  When everything is ready,
+blkcg_weight_parent() will be replaced with proper parent function.
+
+This patch doesn't introduce any behavior chagne.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/cfq-iosched.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ block/cfq-iosched.c | 76 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 76 insertions(+)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 663a0f0..fd2f4b4 100644
+index 5f23763..eb290a0 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -85,7 +85,6 @@ struct cfq_rb_root {
- 	struct rb_root rb;
- 	struct rb_node *left;
- 	unsigned count;
--	unsigned total_weight;
- 	u64 min_vdisktime;
- 	struct cfq_ttime ttime;
- };
-@@ -976,9 +975,7 @@ static inline unsigned cfq_group_get_avg_queues(struct cfq_data *cfqd,
- static inline unsigned
- cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
--	struct cfq_rb_root *st = &cfqd->grp_service_tree;
--
--	return cfqd->cfq_target_latency * cfqg->weight / st->total_weight;
-+	return cfqd->cfq_target_latency * cfqg->vfraction >> CFQ_SERVICE_SHIFT;
+@@ -225,6 +225,18 @@ struct cfq_group {
+ 	u64 vdisktime;
+ 
+ 	/*
++	 * The number of active cfqgs and sum of their weights under this
++	 * cfqg.  This covers this cfqg's leaf_weight and all children's
++	 * weights, but does not cover weights of further descendants.
++	 *
++	 * If a cfqg is on the service tree, it's active.  An active cfqg
++	 * also activates its parent and contributes to the level_weight of
++	 * the parent.
++	 */
++	int nr_active;
++	unsigned int level_weight;
++
++	/*
+ 	 * There are two weights - (internal) weight is the weight of this
+ 	 * cfqg against the sibling cfqgs.  leaf_weight is the wight of
+ 	 * this cfqg against the child cfqgs.  For the root cfqg, both
+@@ -583,6 +595,22 @@ static inline struct cfq_group *blkg_to_cfqg(struct blkcg_gq *blkg)
+ 	return pd_to_cfqg(blkg_to_pd(blkg, &blkcg_policy_cfq));
  }
  
- static inline unsigned
-@@ -1270,7 +1267,6 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
++/*
++ * Determine the parent cfqg for weight calculation.  Currently, cfqg
++ * scheduling is flat and the root is the parent of everyone else.
++ */
++static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg)
++{
++	struct blkcg_gq *blkg = cfqg_to_blkg(cfqg);
++	struct cfq_group *root;
++
++	while (blkg->parent)
++		blkg = blkg->parent;
++	root = blkg_to_cfqg(blkg);
++
++	return root != cfqg ? root : NULL;
++}
++
+ static inline void cfqg_get(struct cfq_group *cfqg)
+ {
+ 	return blkg_get(cfqg_to_blkg(cfqg));
+@@ -683,6 +711,7 @@ static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
+ 
+ #else	/* CONFIG_CFQ_GROUP_IOSCHED */
+ 
++static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg) { return NULL; }
+ static inline void cfqg_get(struct cfq_group *cfqg) { }
+ static inline void cfqg_put(struct cfq_group *cfqg) { }
+ 
+@@ -1208,11 +1237,33 @@ cfq_update_group_weight(struct cfq_group *cfqg)
+ static void
+ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ {
++	struct cfq_group *pos = cfqg;
++	bool propagate;
++
++	/* add to the service tree */
+ 	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
  
  	cfq_update_group_weight(cfqg);
  	__cfq_group_service_tree_add(st, cfqg);
--	st->total_weight += cfqg->weight;
+ 	st->total_weight += cfqg->weight;
++
++	/*
++	 * Activate @cfqg and propagate activation upwards until we meet an
++	 * already activated node or reach root.
++	 */
++	propagate = !pos->nr_active++;
++	pos->level_weight += pos->leaf_weight;
++
++	while (propagate) {
++		struct cfq_group *parent = cfqg_flat_parent(pos);
++
++		if (!parent)
++			break;
++
++		propagate = !parent->nr_active++;
++		parent->level_weight += pos->weight;
++		pos = parent;
++	}
+ }
  
- 	/*
- 	 * Activate @cfqg and calculate the portion of vfraction @cfqg is
-@@ -1356,7 +1352,6 @@ cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
- 	}
- 
- 	/* remove from the service tree */
--	st->total_weight -= cfqg->weight;
+ static void
+@@ -1243,6 +1294,31 @@ cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ static void
+ cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ {
++	struct cfq_group *pos = cfqg;
++	bool propagate;
++
++	/*
++	 * Undo activation from cfq_group_service_tree_add().  Deactivate
++	 * @cfqg and propagate deactivation upwards.
++	 */
++	propagate = !--pos->nr_active;
++	pos->level_weight -= pos->leaf_weight;
++
++	while (propagate) {
++		struct cfq_group *parent = cfqg_flat_parent(pos);
++
++		/* @pos has 0 nr_active at this point */
++		WARN_ON_ONCE(pos->level_weight);
++
++		if (!parent)
++			break;
++
++		propagate = !--parent->nr_active;
++		parent->level_weight -= pos->weight;
++		pos = parent;
++	}
++
++	/* remove from the service tree */
+ 	st->total_weight -= cfqg->weight;
  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
  		cfq_rb_erase(&cfqg->rb_node, st);
- }
 -- 
 1.7.11.7
 
