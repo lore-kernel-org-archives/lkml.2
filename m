@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2LNUCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:02:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab2LNUCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:02:48 -0500
-Date: Fri, 14 Dec 2012 21:02:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: bigeasy@linutronix.de, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
-        anton@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] uprobes/powerpc: Make use of generic routines
-	to enable single step
-Message-ID: <20121214200241.GA27195@redhat.com>
-References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150946.7727.82735.stgit@suzukikp>
+	id S932316Ab2LNUE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:04:29 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62729 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932239Ab2LNUE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 15:04:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121203150946.7727.82735.stgit@suzukikp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50CB8213.9000908@zytor.com>
+References: <20121211170605.GD28827@liondog.tnic>
+	<CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com>
+	<50C76F9E.4080001@zytor.com>
+	<CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com>
+	<50C7C859.60405@zytor.com>
+	<CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
+	<50C82ABF.3020907@zytor.com>
+	<20121212133853.GC8760@liondog.tnic>
+	<50C963B1.3040609@zytor.com>
+	<50C96717.3020407@zytor.com>
+	<20121213191317.GE31485@liondog.tnic>
+	<50CA4A7A.10104@zytor.com>
+	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
+	<50CB8213.9000908@zytor.com>
+Date: Fri, 14 Dec 2012 12:04:25 -0800
+X-Google-Sender-Auth: ZVMAl4GAqHitlvm2-M661l73P9k
+Message-ID: <CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03, Suzuki K. Poulose wrote:
+On Fri, Dec 14, 2012 at 11:46 AM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> Replace the ptrace helpers with the powerpc generic routines to
-> enable/disable single step. We save/restore the MSR (and DCBR for BookE)
-> across for the operation. We don't have to disable the single step,
-> as restoring the MSR/DBCR would restore the previous state.
+> That patch doesn't apply on top of the merge of x86/mm2 and
+> linus/master.  A trivial fixup is totally nonfunctional -- no
+> earlyprintk, just a null pointer death in setup_real_mode().
 
-Obviously I can't review this series (although it looks fine to me).
+just saw linus pulled efi fix that is touching real_mode/init.c.
+and there is something wrong with it.
 
-Just one note,
+will check that...
 
-> @@ -121,7 +132,7 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
 >
->  	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
->
-> -	uprobe_restore_context_sstep(&utask->autask);
-> +	uprobe_restore_context_sstep(&utask->autask, regs);
+> I suspect we don't need init_level4_pgt at all and should just plan to
+> get rid of it.  Is there any reason we can't just build the proper
+> kernel page table set in pagetable_init() and switch to it there?
 
-I am not sure ppc needs this, but note that x86 does a bit more.
-
-Not only we need to restore the "single-step" state, we need to
-send SIGTRAP if it was not set by us. The same for _skip_sstep.
-
-But even if I am right I do not suggest to change this series,
-this can be done as a separate patch.
-
-Oleg.
-
+then how to pass the info to AP?
