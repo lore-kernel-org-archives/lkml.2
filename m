@@ -1,48 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794Ab2LNXaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:30:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51765 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932552Ab2LNXaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:30:10 -0500
-Message-ID: <50CBB661.2020603@zytor.com>
-Date: Fri, 14 Dec 2012 15:29:37 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1945933Ab2LNXaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:30:18 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58686 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932763Ab2LNXaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:30:15 -0500
+Date: Fri, 14 Dec 2012 23:35:24 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 2/4] userns: Require CAP_SYS_ADMIN for most uses of
+ setns.
+Message-ID: <20121214233524.GA13659@mail.hallyn.com>
+References: <87txroxpgq.fsf@xmission.com>
+ <87hanoxpdh.fsf@xmission.com>
 MIME-Version: 1.0
-To: Stefani Seibold <stefani@seibold.net>
-CC: Pavel Emelyanov <xemul@parallels.com>,
-        Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        criu@openvz.org, mingo@redhat.com, john.stultz@linaro.org,
-        tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net>  <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>  <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>  <1355379433.24701.1.camel@wall-e>  <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>  <1355383038.18653.2.camel@wall-e>  <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com>  <50CA6E4C.6000305@zytor.com>  <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com>  <50CA81A4.9040702@zytor.com>  <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>  <50CA85BD.7070502@zytor.com>  <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com>  <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com>  <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>  <50CAE485.5020608@parallels.com> <50CBAC61.5010600@zytor.com> <1355526568.758.5.camel@wall-e>
-In-Reply-To: <1355526568.758.5.camel@wall-e>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hanoxpdh.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 03:09 PM, Stefani Seibold wrote:
+Quoting Eric W. Biederman (ebiederm@xmission.com):
 > 
-> Sorry for not following the discussion, but im am currently trying to
-> compile the vclocktime.c as a 32 bit object. Most of the (clever) work
-> is done.
+> Andy Lutomirski <luto@amacapital.net> found a nasty little bug in
+> the permissions of setns.  With unprivileged user namespaces it
+> became possible to create new namespaces without privilege.
 > 
-> After this the next step is to map the needed fixmaps into the 32 bit
-> address space. Maybe this can be done with install_special_mapping().
+> However the setns calls were relaxed to only require CAP_SYS_ADMIN in
+> the user nameapce of the targed namespace.
 > 
+> Which made the following nasty sequence possible.
+> 
+> pid = clone(CLONE_NEWUSER | CLONE_NEWNS);
+> if (pid == 0) { /* child */
+> 	system("mount --bind /home/me/passwd /etc/passwd");
+> }
+> else if (pid != 0) { /* parent */
+> 	char path[PATH_MAX];
+> 	snprintf(path, sizeof(path), "/proc/%u/ns/mnt");
+> 	fd = open(path, O_RDONLY);
+> 	setns(fd, 0);
+> 	system("su -");
+> }
+>
+> Prevent this possibility by requiring CAP_SYS_ADMIN
+> in the current user namespace when joing all but the user namespace.
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-install_special_mapping() is indeed how it is done.  The suggestion is
-to make the vvar page an actual section inside the vdso, and then just
-substitute the vvar page into the mapping array when installing the vdso
-into the process user space.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-	-hpa
-
-
+> ---
+>  fs/namespace.c           |    3 ++-
+>  ipc/namespace.c          |    3 ++-
+>  kernel/pid_namespace.c   |    3 ++-
+>  kernel/utsname.c         |    3 ++-
+>  net/core/net_namespace.c |    3 ++-
+>  5 files changed, 10 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index c1bbe86..398a50f 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -2781,7 +2781,8 @@ static int mntns_install(struct nsproxy *nsproxy, void *ns)
+>  	struct path root;
+>  
+>  	if (!ns_capable(mnt_ns->user_ns, CAP_SYS_ADMIN) ||
+> -	    !nsown_capable(CAP_SYS_CHROOT))
+> +	    !nsown_capable(CAP_SYS_CHROOT) ||
+> +	    !nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (fs->users != 1)
+> diff --git a/ipc/namespace.c b/ipc/namespace.c
+> index cf3386a..7c1fa45 100644
+> --- a/ipc/namespace.c
+> +++ b/ipc/namespace.c
+> @@ -170,7 +170,8 @@ static void ipcns_put(void *ns)
+>  static int ipcns_install(struct nsproxy *nsproxy, void *new)
+>  {
+>  	struct ipc_namespace *ns = new;
+> -	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
+> +	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
+> +	    !nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	/* Ditch state from the old ipc namespace */
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index 560da0d..fdbd0cd 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -325,7 +325,8 @@ static int pidns_install(struct nsproxy *nsproxy, void *ns)
+>  	struct pid_namespace *active = task_active_pid_ns(current);
+>  	struct pid_namespace *ancestor, *new = ns;
+>  
+> -	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN))
+> +	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN) ||
+> +	    !nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	/*
+> diff --git a/kernel/utsname.c b/kernel/utsname.c
+> index f6336d5..08b197e 100644
+> --- a/kernel/utsname.c
+> +++ b/kernel/utsname.c
+> @@ -113,7 +113,8 @@ static int utsns_install(struct nsproxy *nsproxy, void *new)
+>  {
+>  	struct uts_namespace *ns = new;
+>  
+> -	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
+> +	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
+> +	    !nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	get_uts_ns(ns);
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index 2e9a313..8acce01 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -649,7 +649,8 @@ static int netns_install(struct nsproxy *nsproxy, void *ns)
+>  {
+>  	struct net *net = ns;
+>  
+> -	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN))
+> +	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN) ||
+> +	    !nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	put_net(nsproxy->net_ns);
+> -- 
+> 1.7.5.4
