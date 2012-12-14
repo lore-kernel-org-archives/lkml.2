@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab2LNHsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:48:51 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40193 "EHLO
+	id S1754697Ab2LNHvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:51:15 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45614 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2LNHsu (ORCPT
+	with ESMTP id S1751312Ab2LNHvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:48:50 -0500
-Message-ID: <1355471324.11297.3.camel@phoenix>
-Subject: [PATCH 2/6] iio: dac: ad5380: Don't set error code to st->vref
+	Fri, 14 Dec 2012 02:51:13 -0500
+Message-ID: <1355471468.11297.6.camel@phoenix>
+Subject: [PATCH 3/6] iio: dac: ad5504: Don't set error code to voltage_uv
 From: Axel Lin <axel.lin@ingics.com>
 To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 14 Dec 2012 15:48:44 +0800
+Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 14 Dec 2012 15:51:08 +0800
 In-Reply-To: <1355471245.11297.1.camel@phoenix>
 References: <1355471245.11297.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -25,30 +25,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 regulator_get_voltage() may return negative error code.
-Add error checking to avoid setting error code to st->vref_uv.
+Add error checking to avoid setting error code to voltage_uv.
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/iio/dac/ad5380.c |    6 +++++-
+ drivers/iio/dac/ad5504.c |    6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iio/dac/ad5380.c b/drivers/iio/dac/ad5380.c
-index 14991ac..4aca189 100644
---- a/drivers/iio/dac/ad5380.c
-+++ b/drivers/iio/dac/ad5380.c
-@@ -406,7 +406,11 @@ static int __devinit ad5380_probe(struct device *dev, struct regmap *regmap,
- 			goto error_free_reg;
- 		}
+diff --git a/drivers/iio/dac/ad5504.c b/drivers/iio/dac/ad5504.c
+index 242bdc7..1e9a1f4 100644
+--- a/drivers/iio/dac/ad5504.c
++++ b/drivers/iio/dac/ad5504.c
+@@ -296,7 +296,11 @@ static int __devinit ad5504_probe(struct spi_device *spi)
+ 		if (ret)
+ 			goto error_put_reg;
  
--		st->vref = regulator_get_voltage(st->vref_reg);
-+		ret = regulator_get_voltage(st->vref_reg);
-+		if (ret < 0)
+-		voltage_uv = regulator_get_voltage(reg);
++		ret = regulator_get_voltage(reg);
++		if (ret)
 +			goto error_disable_reg;
 +
-+		st->vref = ret;
- 	} else {
- 		st->vref = st->chip_info->int_vref;
- 		ctrl |= AD5380_CTRL_INT_VREF_EN;
++		voltage_uv = ret;
+ 	}
+ 
+ 	spi_set_drvdata(spi, indio_dev);
 -- 
 1.7.9.5
 
