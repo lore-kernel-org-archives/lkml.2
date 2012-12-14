@@ -1,218 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab2LNSmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:42:21 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:36864 "EHLO e9.ny.us.ibm.com"
+	id S1757064Ab2LNSmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:42:39 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:51999 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756889Ab2LNSmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:42:18 -0500
-Subject: [RFC][PATCH 4/7] consolidate RCU debugging Kconfig options
+	id S1757019Ab2LNSmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 13:42:32 -0500
+Subject: [RFC][PATCH 1/7] move debugfs to filesystems menu (fs/Kconfig)
 To: linux-kernel@vger.kernel.org
 Cc: Dave Hansen <dave@linux.vnet.ibm.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 14 Dec 2012 13:42:05 -0500
+Date: Fri, 14 Dec 2012 13:42:01 -0500
 References: <20121214184200.8EC5168B@kernel.stglabs.ibm.com>
 In-Reply-To: <20121214184200.8EC5168B@kernel.stglabs.ibm.com>
-Message-Id: <20121214184204.B7F1D3E9@kernel.stglabs.ibm.com>
+Message-Id: <20121214184201.2D87BED3@kernel.stglabs.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121418-7182-0000-0000-000003CD048D
+x-cbid: 12121418-9360-0000-0000-00000DF53A7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-These were in two different places, and taking up too much of my
-valuable screen real-estate.  Banish them to their own menu.
+debugfs may have started out as a kernel hacking kind of option.  But,
+today, it is an integral part of lots of facilities like tracing that
+are far from kernel hacking.  Let's move it out of the very cluttered
+"Kernel Hacking" menu and but it next to its real family: other
+filesystems like sysfs, configfs, or /proc.
+
+Also, "Debug filesystem" sounds like a debugging option _for_
+filesystems code, not a filesystem for debugging.  We also never call
+it "the debug filesystem."  We always say "debugfs", so reflect the
+fact that we _call_ it debugfs in the menu text.
 
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
- linux-2.6.git-dave/lib/Kconfig.debug |  160 +++++++++++++++++------------------
- 1 file changed, 82 insertions(+), 78 deletions(-)
+ linux-2.6.git-dave/fs/Kconfig        |   12 ++++++++++++
+ linux-2.6.git-dave/lib/Kconfig.debug |   12 ------------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-diff -puN lib/Kconfig.debug~consolidat-rcu-debugging-configs lib/Kconfig.debug
---- linux-2.6.git/lib/Kconfig.debug~consolidat-rcu-debugging-configs	2012-12-14 13:32:32.474878413 -0500
-+++ linux-2.6.git-dave/lib/Kconfig.debug	2012-12-14 13:32:49.219018930 -0500
-@@ -720,6 +720,8 @@ config PROVE_LOCKING
+diff -puN lib/Kconfig.debug~be-clear-about-debugfs lib/Kconfig.debug
+--- linux-2.6.git/lib/Kconfig.debug~be-clear-about-debugfs	2012-12-14 13:32:20.782780277 -0500
++++ linux-2.6.git-dave/lib/Kconfig.debug	2012-12-14 13:32:22.890797974 -0500
+@@ -99,18 +99,6 @@ config UNUSED_SYMBOLS
+ 	  you really need it, and what the merge plan to the mainline kernel for
+ 	  your module is.
  
- 	 For more details, see Documentation/lockdep-design.txt.
+-config DEBUG_FS
+-	bool "Debug Filesystem"
+-	help
+-	  debugfs is a virtual file system that kernel developers use to put
+-	  debugging files into.  Enable this option to be able to read and
+-	  write to these files.
+-
+-	  For detailed documentation on the debugfs API, see
+-	  Documentation/DocBook/filesystems.
+-
+-	  If unsure, say N.
+-
+ config HEADERS_CHECK
+ 	bool "Run 'make headers_check' when building vmlinux"
+ 	depends on !UML
+diff -puN fs/Kconfig~be-clear-about-debugfs fs/Kconfig
+--- linux-2.6.git/fs/Kconfig~be-clear-about-debugfs	2012-12-14 13:32:20.782780277 -0500
++++ linux-2.6.git-dave/fs/Kconfig	2012-12-14 13:32:22.890797974 -0500
+@@ -176,6 +176,18 @@ config HUGETLBFS
+ config HUGETLB_PAGE
+ 	def_bool HUGETLBFS
  
-+menu "RCU Debugging"
++config DEBUG_FS
++	bool "Debug Filesystem (debugfs)"
++	help
++	  debugfs is a virtual file system that kernel developers use to put
++	  debugging files into.  Enable this option to be able to read and
++	  write to these files.
 +
- config PROVE_RCU
- 	bool "RCU debugging: prove RCU correctness"
- 	depends on PROVE_LOCKING
-@@ -775,6 +777,86 @@ config SPARSE_RCU_POINTER
++	  For detailed documentation on the debugfs API, see
++	  Documentation/DocBook/filesystems.
++
++	  If unsure, say N.
++
+ source "fs/configfs/Kconfig"
  
- 	 Say N if you are unsure.
- 
-+config RCU_TORTURE_TEST
-+	tristate "torture tests for RCU"
-+	depends on DEBUG_KERNEL
-+	default n
-+	help
-+	  This option provides a kernel module that runs torture tests
-+	  on the RCU infrastructure.  The kernel module may be built
-+	  after the fact on the running kernel to be tested, if desired.
-+
-+	  Say Y here if you want RCU torture tests to be built into
-+	  the kernel.
-+	  Say M if you want the RCU torture tests to build as a module.
-+	  Say N if you are unsure.
-+
-+config RCU_TORTURE_TEST_RUNNABLE
-+	bool "torture tests for RCU runnable by default"
-+	depends on RCU_TORTURE_TEST = y
-+	default n
-+	help
-+	  This option provides a way to build the RCU torture tests
-+	  directly into the kernel without them starting up at boot
-+	  time.  You can use /proc/sys/kernel/rcutorture_runnable
-+	  to manually override this setting.  This /proc file is
-+	  available only when the RCU torture tests have been built
-+	  into the kernel.
-+
-+	  Say Y here if you want the RCU torture tests to start during
-+	  boot (you probably don't).
-+	  Say N here if you want the RCU torture tests to start only
-+	  after being manually enabled via /proc.
-+
-+config RCU_CPU_STALL_TIMEOUT
-+	int "RCU CPU stall timeout in seconds"
-+	depends on TREE_RCU || TREE_PREEMPT_RCU
-+	range 3 300
-+	default 60
-+	help
-+	  If a given RCU grace period extends more than the specified
-+	  number of seconds, a CPU stall warning is printed.  If the
-+	  RCU grace period persists, additional CPU stall warnings are
-+	  printed at more widely spaced intervals.
-+
-+config RCU_CPU_STALL_VERBOSE
-+	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
-+	depends on TREE_PREEMPT_RCU
-+	default y
-+	help
-+	  This option causes RCU to printk detailed per-task information
-+	  for any tasks that are stalling the current RCU grace period.
-+
-+	  Say N if you are unsure.
-+
-+	  Say Y if you want to enable such checks.
-+
-+config RCU_CPU_STALL_INFO
-+	bool "Print additional diagnostics on RCU CPU stall"
-+	depends on (TREE_RCU || TREE_PREEMPT_RCU) && DEBUG_KERNEL
-+	default n
-+	help
-+	  For each stalled CPU that is aware of the current RCU grace
-+	  period, print out additional per-CPU diagnostic information
-+	  regarding scheduling-clock ticks, idle state, and,
-+	  for RCU_FAST_NO_HZ kernels, idle-entry state.
-+
-+	  Say N if you are unsure.
-+
-+	  Say Y if you want to enable such diagnostics.
-+
-+config RCU_TRACE
-+	bool "Enable tracing for RCU"
-+	depends on DEBUG_KERNEL
-+	help
-+	  This option provides tracing in RCU which presents stats
-+	  in debugfs for debugging RCU implementation.
-+
-+	  Say Y here if you want to enable RCU tracing
-+	  Say N if you are unsure.
-+
-+endmenu # RCU Debugging
-+
- config LOCKDEP
- 	bool
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
-@@ -990,84 +1072,6 @@ config BOOT_PRINTK_DELAY
- 	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
- 	  what it believes to be lockup conditions.
- 
--config RCU_TORTURE_TEST
--	tristate "torture tests for RCU"
--	depends on DEBUG_KERNEL
--	default n
--	help
--	  This option provides a kernel module that runs torture tests
--	  on the RCU infrastructure.  The kernel module may be built
--	  after the fact on the running kernel to be tested, if desired.
--
--	  Say Y here if you want RCU torture tests to be built into
--	  the kernel.
--	  Say M if you want the RCU torture tests to build as a module.
--	  Say N if you are unsure.
--
--config RCU_TORTURE_TEST_RUNNABLE
--	bool "torture tests for RCU runnable by default"
--	depends on RCU_TORTURE_TEST = y
--	default n
--	help
--	  This option provides a way to build the RCU torture tests
--	  directly into the kernel without them starting up at boot
--	  time.  You can use /proc/sys/kernel/rcutorture_runnable
--	  to manually override this setting.  This /proc file is
--	  available only when the RCU torture tests have been built
--	  into the kernel.
--
--	  Say Y here if you want the RCU torture tests to start during
--	  boot (you probably don't).
--	  Say N here if you want the RCU torture tests to start only
--	  after being manually enabled via /proc.
--
--config RCU_CPU_STALL_TIMEOUT
--	int "RCU CPU stall timeout in seconds"
--	depends on TREE_RCU || TREE_PREEMPT_RCU
--	range 3 300
--	default 21
--	help
--	  If a given RCU grace period extends more than the specified
--	  number of seconds, a CPU stall warning is printed.  If the
--	  RCU grace period persists, additional CPU stall warnings are
--	  printed at more widely spaced intervals.
--
--config RCU_CPU_STALL_VERBOSE
--	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
--	depends on TREE_PREEMPT_RCU
--	default y
--	help
--	  This option causes RCU to printk detailed per-task information
--	  for any tasks that are stalling the current RCU grace period.
--
--	  Say N if you are unsure.
--
--	  Say Y if you want to enable such checks.
--
--config RCU_CPU_STALL_INFO
--	bool "Print additional diagnostics on RCU CPU stall"
--	depends on (TREE_RCU || TREE_PREEMPT_RCU) && DEBUG_KERNEL
--	default n
--	help
--	  For each stalled CPU that is aware of the current RCU grace
--	  period, print out additional per-CPU diagnostic information
--	  regarding scheduling-clock ticks, idle state, and,
--	  for RCU_FAST_NO_HZ kernels, idle-entry state.
--
--	  Say N if you are unsure.
--
--	  Say Y if you want to enable such diagnostics.
--
--config RCU_TRACE
--	bool "Enable tracing for RCU"
--	depends on DEBUG_KERNEL
--	help
--	  This option provides tracing in RCU which presents stats
--	  in debugfs for debugging RCU implementation.
--
--	  Say Y here if you want to enable RCU tracing
--	  Say N if you are unsure.
--
- config KPROBES_SANITY_TEST
- 	bool "Kprobes sanity tests"
- 	depends on DEBUG_KERNEL
+ endmenu
 _
 
