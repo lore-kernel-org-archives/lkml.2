@@ -1,114 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2LNAWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 19:22:49 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:59399 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab2LNAWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 19:22:47 -0500
+	id S1756377Ab2LNAXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 19:23:23 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:35720 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755780Ab2LNAXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 19:23:22 -0500
+Date: Thu, 13 Dec 2012 16:23:20 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] CONFIG_EXPERIMENTAL removal for for 3.8
+Message-ID: <20121214002320.GA12209@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1355412708-20046-2-git-send-email-kirill.shutemov@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 13 Dec 2012 17:22:25 -0700
-Message-ID: <CAErSpo5eFhpHwnYZvfXPLJ3hnViFXLtgkGXaGR2xNsVaSg0CKw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PCI Hotplug: workaround for Thunderbolt on Acer
- Aspire S5
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Miles J Penner <miles.j.penner@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Tushar N Dave <tushar.n.dave@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Rafael]
+[This seems to have never made it's way to lkml, so I'm resending without
+the massive CC list, in case that was causing problems.]
 
-On Thu, Dec 13, 2012 at 8:31 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
-> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
-> deeper in hierarchy:
->
-> Device (RP05)
-> {
->    // ...
->    Device (HRUP)
->    {
->        // ...
->        Device (HRDN)
->        {
->            // ...
->            Device (EPUP)
->            {
->                // ...
->                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
->                {
->                    Return (One)
->                }
->            }
->        }
->    }
-> }
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  drivers/pci/hotplug/acpi_pcihp.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
->
-> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> index 2a47e82..d92ebfb 100644
-> --- a/drivers/pci/hotplug/acpi_pcihp.c
-> +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
->         status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
->         if (ACPI_SUCCESS(status) && removable)
->                 return 1;
-> +
-> +       /*
-> +        * Workaround for Thunderbolt implementation on Acer Aspire S5.
-> +        *
-> +        * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
-> +        * slot (device under pci bridge). In Acer Aspire S5 case we have it
-> +        * deeper in hierarchy.
-> +        */
-> +       status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
-> +                       &removable);
+Hi Linus,
 
-I don't think encoding an ACPI path from the BIOS of a random machine
-here is the right approach.  The path components are completely
-implementation-dependent, and we'll end up carrying this test forever,
-long after the last Aspire S5 is in the landfill.
+Please pull this tree of CONFIG_EXPERIMENTAL removals for 3.8. These are
+the Acked subset of patches of my larger "drop-experimental" tree that
+other maintainers were not interested in carrying, so I've carried them
+in my tree.
 
-We need a more generic approach that covers this case.  It would be
-interesting to see the rest of the ACPI namespace details under
-RP05.HRUP.  I guess we have RP05.HRUP._ADR, at least.  I'm not sure
-what the BIOS is trying to tell us by providing
-RP05.HRUP.HRDN.EPUP._RMV, but maybe we could figure it out if we knew
-more about HRDN and EPUP.
+Thanks!
 
-> +       if (ACPI_SUCCESS(status) && removable)
-> +               return 1;
-> +
->         return 0;
->  }
->
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-Kees
+
+The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
+
+  Linux 3.7 (2012-12-10 19:30:57 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/for-linus-3.8
+
+for you to fetch changes up to 6b81c0f59cf689e81f80d8a601b08c5316b96a1f:
+
+  tools/lguest: remove depends on CONFIG_EXPERIMENTAL (2012-12-11 16:38:26 -0800)
+
+----------------------------------------------------------------
+Initial batch of CONFIG_EXPERIMENTAL removals for 3.8.
+
+----------------------------------------------------------------
+Kees Cook (81):
+      make CONFIG_EXPERIMENTAL invisible and default
+      Documentation: remove depends on CONFIG_EXPERIMENTAL
+      arch/alpha: remove depends on CONFIG_EXPERIMENTAL
+      arch/cris/arch-v32/drivers: remove depends on CONFIG_EXPERIMENTAL
+      arch/ia64/kvm: remove depends on CONFIG_EXPERIMENTAL
+      arch/ia64: remove depends on CONFIG_EXPERIMENTAL
+      arch/ia64/xen: remove depends on CONFIG_EXPERIMENTAL
+      arch/powerpc/platforms/ps3: remove depends on CONFIG_EXPERIMENTAL
+      arch/s390: remove depends on CONFIG_EXPERIMENTAL
+      arch/s390/kvm: remove depends on CONFIG_EXPERIMENTAL
+      arch/um: remove depends on CONFIG_EXPERIMENTAL
+      arch/x86: remove depends on CONFIG_EXPERIMENTAL
+      arch/x86/um: remove depends on CONFIG_EXPERIMENTAL
+      crypto: remove depends on CONFIG_EXPERIMENTAL
+      drivers/cpufreq: remove depends on CONFIG_EXPERIMENTAL
+      drivers/gpu/drm/udl: remove depends on CONFIG_EXPERIMENTAL
+      drivers/i2c/muxes: remove depends on CONFIG_EXPERIMENTAL
+      drivers/ide: remove depends on CONFIG_EXPERIMENTAL
+      drivers/lguest: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mmc/core: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mmc/host: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/cx25821: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/pvrusb2: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/s5p-fimc: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/s5p-tv: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd/chips: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd/devices: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd/nand: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/8390: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/atheros: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/dec/tulip: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/i825xx: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/intel: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/natsemi: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/packetengines: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/realtek: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/silan: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/ti: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/team: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/wan: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/usb: remove depends on CONFIG_EXPERIMENTAL
+      drivers/pcmcia: remove depends on CONFIG_EXPERIMENTAL
+      drivers/ptp: remove depends on CONFIG_EXPERIMENTAL
+      drivers/rpmsg: remove depends on CONFIG_EXPERIMENTAL
+      drivers/sbus/char: remove depends on CONFIG_EXPERIMENTAL
+      drivers/virtio: remove depends on CONFIG_EXPERIMENTAL
+      fs/ceph: remove depends on CONFIG_EXPERIMENTAL
+      fs/ecryptfs: remove depends on CONFIG_EXPERIMENTAL
+      fs/nilfs2: remove depends on CONFIG_EXPERIMENTAL
+      fs/xfs: remove depends on CONFIG_EXPERIMENTAL
+      init: remove depends on CONFIG_EXPERIMENTAL
+      kernel/gcov: remove depends on CONFIG_EXPERIMENTAL
+      net: remove depends on CONFIG_EXPERIMENTAL
+      net/9p: remove depends on CONFIG_EXPERIMENTAL
+      net/ceph: remove depends on CONFIG_EXPERIMENTAL
+      net/dccp/ccids: remove depends on CONFIG_EXPERIMENTAL
+      net/dccp: remove depends on CONFIG_EXPERIMENTAL
+      net/decnet/netfilter: remove depends on CONFIG_EXPERIMENTAL
+      net/decnet: remove depends on CONFIG_EXPERIMENTAL
+      net/dsa: remove depends on CONFIG_EXPERIMENTAL
+      net/ieee802154: remove depends on CONFIG_EXPERIMENTAL
+      net/ipv4/netfilter: remove depends on CONFIG_EXPERIMENTAL
+      net/ipv4: remove depends on CONFIG_EXPERIMENTAL
+      net/ipv6: remove depends on CONFIG_EXPERIMENTAL
+      net/l2tp: remove depends on CONFIG_EXPERIMENTAL
+      net/lapb: remove depends on CONFIG_EXPERIMENTAL
+      net/mac80211: remove depends on CONFIG_EXPERIMENTAL
+      net/mac802154: remove depends on CONFIG_EXPERIMENTAL
+      net/netfilter: remove depends on CONFIG_EXPERIMENTAL
+      net/rds: remove depends on CONFIG_EXPERIMENTAL
+      net/rxrpc: remove depends on CONFIG_EXPERIMENTAL
+      net/sctp: remove depends on CONFIG_EXPERIMENTAL
+      net/sunrpc: remove depends on CONFIG_EXPERIMENTAL
+      net/tipc: remove depends on CONFIG_EXPERIMENTAL
+      net/wanrouter: remove depends on CONFIG_EXPERIMENTAL
+      net/x25: remove depends on CONFIG_EXPERIMENTAL
+      net/xfrm: remove depends on CONFIG_EXPERIMENTAL
+      tools/lguest: remove depends on CONFIG_EXPERIMENTAL
+
+ Documentation/CodingStyle                  |   10 +-----
+ Documentation/DocBook/kernel-hacking.tmpl  |    7 ----
+ Documentation/DocBook/kgdb.tmpl            |    6 ++--
+ Documentation/intel_txt.txt                |    2 +-
+ Documentation/zh_CN/CodingStyle            |    7 ----
+ arch/alpha/Kconfig                         |    3 +-
+ arch/cris/arch-v32/drivers/Kconfig         |    4 +--
+ arch/ia64/Kconfig                          |    8 ++---
+ arch/ia64/kvm/Kconfig                      |    2 +-
+ arch/ia64/xen/Kconfig                      |    2 +-
+ arch/powerpc/platforms/ps3/Kconfig         |    2 +-
+ arch/s390/Kconfig                          |    4 +--
+ arch/s390/kvm/Kconfig                      |    2 +-
+ arch/um/Kconfig.net                        |    2 +-
+ arch/um/Kconfig.um                         |    8 ++---
+ arch/x86/Kconfig                           |   22 ++++++------
+ arch/x86/um/Kconfig                        |    3 +-
+ crypto/Kconfig                             |   15 +++-----
+ drivers/cpufreq/Kconfig.arm                |    4 +--
+ drivers/cpufreq/Kconfig.x86                |    6 ++--
+ drivers/gpu/drm/udl/Kconfig                |    2 +-
+ drivers/i2c/muxes/Kconfig                  |    2 --
+ drivers/ide/Kconfig                        |    8 ++---
+ drivers/lguest/Kconfig                     |    2 +-
+ drivers/media/Kconfig                      |    7 ++--
+ drivers/media/pci/cx25821/Kconfig          |    2 +-
+ drivers/media/platform/s5p-fimc/Kconfig    |    1 -
+ drivers/media/platform/s5p-tv/Kconfig      |    3 +-
+ drivers/media/usb/pvrusb2/Kconfig          |    8 ++---
+ drivers/mmc/core/Kconfig                   |    3 +-
+ drivers/mmc/host/Kconfig                   |   20 +++++------
+ drivers/mtd/Kconfig                        |    2 +-
+ drivers/mtd/chips/Kconfig                  |    2 +-
+ drivers/mtd/devices/Kconfig                |    4 +--
+ drivers/mtd/nand/Kconfig                   |    7 ++--
+ drivers/net/Kconfig                        |    9 +++--
+ drivers/net/ethernet/8390/Kconfig          |   21 +++++------
+ drivers/net/ethernet/atheros/Kconfig       |    8 ++---
+ drivers/net/ethernet/dec/tulip/Kconfig     |    4 +--
+ drivers/net/ethernet/i825xx/Kconfig        |   12 +++----
+ drivers/net/ethernet/intel/Kconfig         |    9 ++---
+ drivers/net/ethernet/natsemi/Kconfig       |    3 --
+ drivers/net/ethernet/packetengines/Kconfig |    4 +--
+ drivers/net/ethernet/realtek/Kconfig       |    4 +--
+ drivers/net/ethernet/silan/Kconfig         |    6 ++--
+ drivers/net/ethernet/ti/Kconfig            |    4 +--
+ drivers/net/team/Kconfig                   |    3 +-
+ drivers/net/usb/Kconfig                    |   16 ++++-----
+ drivers/net/wan/Kconfig                    |    8 ++---
+ drivers/pcmcia/Kconfig                     |    4 +--
+ drivers/ptp/Kconfig                        |    1 -
+ drivers/rpmsg/Kconfig                      |    3 +-
+ drivers/sbus/char/Kconfig                  |    7 ++--
+ drivers/virtio/Kconfig                     |    8 ++---
+ fs/ceph/Kconfig                            |    4 +--
+ fs/ecryptfs/Kconfig                        |    4 +--
+ fs/nilfs2/Kconfig                          |    3 +-
+ fs/xfs/Kconfig                             |    4 +--
+ init/Kconfig                               |   54 +++++++---------------------
+ kernel/gcov/Kconfig                        |    2 +-
+ net/9p/Kconfig                             |    2 +-
+ net/Kconfig                                |    5 ++-
+ net/ceph/Kconfig                           |    4 +--
+ net/dccp/Kconfig                           |    4 +--
+ net/dccp/ccids/Kconfig                     |    5 ++-
+ net/decnet/Kconfig                         |    4 +--
+ net/decnet/netfilter/Kconfig               |    2 +-
+ net/dsa/Kconfig                            |    2 +-
+ net/ieee802154/Kconfig                     |    3 +-
+ net/ipv4/Kconfig                           |   11 +-----
+ net/ipv4/netfilter/Kconfig                 |    4 +--
+ net/ipv6/Kconfig                           |   24 ++++++-------
+ net/l2tp/Kconfig                           |    4 +--
+ net/lapb/Kconfig                           |    3 +-
+ net/mac80211/Kconfig                       |    2 +-
+ net/mac802154/Kconfig                      |    2 +-
+ net/netfilter/Kconfig                      |   24 +++++--------
+ net/rds/Kconfig                            |    4 +--
+ net/rxrpc/Kconfig                          |    2 +-
+ net/sctp/Kconfig                           |    4 +--
+ net/sunrpc/Kconfig                         |    2 +-
+ net/tipc/Kconfig                           |    4 +--
+ net/wanrouter/Kconfig                      |    1 -
+ net/x25/Kconfig                            |    3 +-
+ net/xfrm/Kconfig                           |   16 ++++-----
+ tools/lguest/lguest.txt                    |    8 ++---
+ 86 files changed, 209 insertions(+), 337 deletions(-)
+
+-- 
+Kees Cook
+Chrome OS Security
