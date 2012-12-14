@@ -1,335 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2LNDHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 22:07:25 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48346 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2LNDHX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 22:07:23 -0500
-Message-ID: <50CA97D0.4020401@huawei.com>
-Date: Fri, 14 Dec 2012 11:06:56 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755986Ab2LNDNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 22:13:43 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12251 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755609Ab2LNDNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 22:13:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,277,1355126400"; 
+   d="scan'208";a="233851002"
+Date: Fri, 14 Dec 2012 11:13:30 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        alek.du@intel.com
+Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
+Message-ID: <20121214031330.GC11276@feng-snb>
+References: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
+ <50CA7EE4.3000306@linaro.org>
+ <20121214013725.GA11276@feng-snb>
+ <50CA8837.5010800@linaro.org>
+ <20121214023826.GA31613@obsidianresearch.com>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Borislav Petkov <bp@alien8.de>,
-        Simon Jeons <simon.jeons@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: clean up soft_offline_page()
-References: <1355439706-23726-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1355439706-23726-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121214023826.GA31613@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/14 7:01, Naoya Horiguchi wrote:
-
-> Hi,
+On Thu, Dec 13, 2012 at 07:38:26PM -0700, Jason Gunthorpe wrote:
+> On Thu, Dec 13, 2012 at 06:00:23PM -0800, John Stultz wrote:
 > 
-> I wrote this patch inspired by the discussion about fixing mce_bad_pages bug.
-> https://lkml.org/lkml/2012/12/7/66
-> As mentioned by Andrew, this bug seemed to be undetected because of the
-> messiness of soft_offline_page(), so with this patch we can deal with the problem.
+> > So per Jason's related patch, he's made the point that the
+> > persistent_clock and RTC class functionality are basically exclusive
+> > (well, in his case, he said this with respect to updating the RTC,
+> > not reading it - I don't mean to put words in his mouth - Please do
+> > correct me here Jason. :).  In other words, we probably should avoid
+> > configurations where both the rtc hctosys and persistent_clock
+> > interfaces are both active.
 > 
-> Thanks,
-> Naoya
-> ---
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Thu, 13 Dec 2012 16:08:54 -0500
-> Subject: [PATCH] mm: clean up soft_offline_page()
+> I only studied update_persistent_clock, read_persistent_clock is
+> very much different.
 > 
-> Currently soft_offline_page() is hard to maintain because it has many
-> return points and goto statements. All of this mess come from get_any_page().
-> This function should only get page refcount as the name implies, but it does
-> some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
-> This patch corrects it and introduces some internal subroutines to make
-> soft offlining code more readable and maintainable.
+> Looking at it, I don't think that update_persistent_clock is in any
+> way related to read_persistent_clock..  update_persistent_clock is
+> *only* called by NTP, and its *only* purpose is to update the RTC with
+> NTP synchronized time. In many configurations it will never even be
+> called.
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  mm/memory-failure.c | 189 ++++++++++++++++++++++++++++------------------------
->  1 file changed, 101 insertions(+), 88 deletions(-)
+> I think update_persistent_clock is badly named, it should be called
+> platform_save_ntp_time_to_rtc(), keep it divorced from
+> read_presistent_clock :)
 > 
-> diff --git v3.7.orig/mm/memory-failure.c v3.7/mm/memory-failure.c
-> index 8b20278..8cef032 100644
-> --- v3.7.orig/mm/memory-failure.c
-> +++ v3.7/mm/memory-failure.c
-> @@ -1368,7 +1368,7 @@ static struct page *new_page(struct page *p, unsigned long private, int **x)
->   * that is not free, and 1 for any other page type.
->   * For 1 the page is returned with increased page count, otherwise not.
->   */
-> -static int get_any_page(struct page *p, unsigned long pfn, int flags)
-> +static int __get_any_page(struct page *p, unsigned long pfn, int flags)
->  {
->  	int ret;
->  
-> @@ -1393,11 +1393,9 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
->  	if (!get_page_unless_zero(compound_head(p))) {
->  		if (PageHuge(p)) {
->  			pr_info("%s: %#lx free huge page\n", __func__, pfn);
-> -			ret = dequeue_hwpoisoned_huge_page(compound_head(p));
-> +			ret = 0;
->  		} else if (is_free_buddy_page(p)) {
->  			pr_info("%s: %#lx free buddy page\n", __func__, pfn);
-> -			/* Set hwpoison bit while page is still isolated */
-> -			SetPageHWPoison(p);
->  			ret = 0;
->  		} else {
->  			pr_info("%s: %#lx: unknown zero refcount page type %lx\n",
-> @@ -1413,23 +1411,45 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
->  	return ret;
->  }
->  
-> +static int get_any_page(struct page *page, unsigned long pfn, int flags)
-> +{
-> +	int ret = __get_any_page(page, pfn, flags);
-> +
-> +	if (ret == 1 && !PageHuge(page) && !PageLRU(page)) {
-> +		/*
-> +		 * Try to free it.
-> +		 */
-> +		put_page(page);
-> +		shake_page(page, 1);
-> +
-> +		/*
-> +		 * Did it turn free?
-> +		 */
-> +		ret = __get_any_page(page, pfn, 0);
-> +		if (!PageLRU(page)) {
-> +			pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
-> +				pfn, page->flags);
-> +			return -EIO;
-> +		}
-> +	}
-> +	return ret;
-> +}
-> +
->  static int soft_offline_huge_page(struct page *page, int flags)
->  {
->  	int ret;
->  	unsigned long pfn = page_to_pfn(page);
->  	struct page *hpage = compound_head(page);
->  
-> -	ret = get_any_page(page, pfn, flags);
-> -	if (ret < 0)
-> -		return ret;
-> -	if (ret == 0)
-> -		goto done;
-> -
-> +	/* Synchronized using the page lock with memory_failure() */
-> +	lock_page(hpage);
->  	if (PageHWPoison(hpage)) {
-> +		unlock_page(hpage);
->  		put_page(hpage);
->  		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
->  		return -EBUSY;
->  	}
-> +	unlock_page(hpage);
->  
->  	/* Keep page count to indicate a given hugepage is isolated. */
->  	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
-> @@ -1439,85 +1459,19 @@ static int soft_offline_huge_page(struct page *page, int flags)
->  		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
->  			pfn, ret, page->flags);
->  		return ret;
-> +	} else {
-> +		set_page_hwpoison_huge_page(hpage);
-> +		dequeue_hwpoisoned_huge_page(hpage);
-> +		atomic_long_add(1<<compound_trans_order(hpage), &mce_bad_pages);
->  	}
-> -done:
-> -	if (!PageHWPoison(hpage))
-> -		atomic_long_add(1 << compound_trans_order(hpage),
-> -				&mce_bad_pages);
-> -	set_page_hwpoison_huge_page(hpage);
-> -	dequeue_hwpoisoned_huge_page(hpage);
->  	/* keep elevated page count for bad page */
->  	return ret;
->  }
->  
-> -/**
-> - * soft_offline_page - Soft offline a page.
-> - * @page: page to offline
-> - * @flags: flags. Same as memory_failure().
-> - *
-> - * Returns 0 on success, otherwise negated errno.
-> - *
-> - * Soft offline a page, by migration or invalidation,
-> - * without killing anything. This is for the case when
-> - * a page is not corrupted yet (so it's still valid to access),
-> - * but has had a number of corrected errors and is better taken
-> - * out.
-> - *
-> - * The actual policy on when to do that is maintained by
-> - * user space.
-> - *
-> - * This should never impact any application or cause data loss,
-> - * however it might take some time.
-> - *
-> - * This is not a 100% solution for all memory, but tries to be
-> - * ``good enough'' for the majority of memory.
-> - */
-> -int soft_offline_page(struct page *page, int flags)
-> +int __soft_offline_page(struct page *page, int flags)
->  {
->  	int ret;
->  	unsigned long pfn = page_to_pfn(page);
-> -	struct page *hpage = compound_trans_head(page);
-> -
-> -	if (PageHuge(page))
-> -		return soft_offline_huge_page(page, flags);
-> -	if (PageTransHuge(hpage)) {
-> -		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-> -			pr_info("soft offline: %#lx: failed to split THP\n",
-> -				pfn);
-> -			return -EBUSY;
-> -		}
-> -	}
-> -
-> -	ret = get_any_page(page, pfn, flags);
-> -	if (ret < 0)
-> -		return ret;
-> -	if (ret == 0)
-> -		goto done;
-> -
-> -	/*
-> -	 * Page cache page we can handle?
-> -	 */
-> -	if (!PageLRU(page)) {
-> -		/*
-> -		 * Try to free it.
-> -		 */
-> -		put_page(page);
-> -		shake_page(page, 1);
-> -
-> -		/*
-> -		 * Did it turn free?
-> -		 */
-> -		ret = get_any_page(page, pfn, 0);
-> -		if (ret < 0)
-> -			return ret;
-> -		if (ret == 0)
-> -			goto done;
-> -	}
-> -	if (!PageLRU(page)) {
-> -		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
-> -			pfn, page->flags);
-> -		return -EIO;
-> -	}
->  
->  	lock_page(page);
->  	wait_on_page_writeback(page);
-> @@ -1544,9 +1498,10 @@ int soft_offline_page(struct page *page, int flags)
->  	 */
->  	if (ret == 1) {
->  		put_page(page);
-> -		ret = 0;
->  		pr_info("soft_offline: %#lx: invalidated\n", pfn);
-> -		goto done;
-> +		SetPageHWPoison(page);
-> +		atomic_long_inc(&mce_bad_pages);
-> +		return 0;
->  	}
->  
->  	/*
-> @@ -1573,17 +1528,75 @@ int soft_offline_page(struct page *page, int flags)
->  				pfn, ret, page->flags);
->  			if (ret > 0)
->  				ret = -EIO;
-> +		} else {
-> +			SetPageHWPoison(page);
-> +			atomic_long_inc(&mce_bad_pages);
->  		}
->  	} else {
->  		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
->  			pfn, ret, page_count(page), page->flags);
->  	}
-> -	if (ret)
-> -		return ret;
-> +	return ret;
-> +}
-> +
-> +/**
-> + * soft_offline_page - Soft offline a page.
-> + * @page: page to offline
-> + * @flags: flags. Same as memory_failure().
-> + *
-> + * Returns 0 on success, otherwise negated errno.
-> + *
-> + * Soft offline a page, by migration or invalidation,
-> + * without killing anything. This is for the case when
-> + * a page is not corrupted yet (so it's still valid to access),
-> + * but has had a number of corrected errors and is better taken
-> + * out.
-> + *
-> + * The actual policy on when to do that is maintained by
-> + * user space.
-> + *
-> + * This should never impact any application or cause data loss,
-> + * however it might take some time.
-> + *
-> + * This is not a 100% solution for all memory, but tries to be
-> + * ``good enough'' for the majority of memory.
-> + */
-> +int soft_offline_page(struct page *page, int flags)
-> +{
-> +	int ret;
-> +	unsigned long pfn = page_to_pfn(page);
-> +	struct page *hpage = compound_trans_head(page);
->  
-> -done:
-> -	atomic_long_add(1, &mce_bad_pages);
-> -	SetPageHWPoison(page);
-> +	if (PageHWPoison(page)) {
-> +		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-> +		return -EBUSY;
-> +	}
-> +	if (!PageHuge(page) && PageTransHuge(hpage)) {
-> +		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-> +			pr_info("soft offline: %#lx: failed to split THP\n",
-> +				pfn);
-> +			return -EBUSY;
-> +		}
-> +	}
-> +	ret = get_any_page(page, pfn, flags);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (ret) { /* for in-use pages */
-> +		if (PageHuge(page))
-> +			soft_offline_huge_page(page, flags);
+> > make the HCTOSYS option be dependent on !HAS_PERSISTENT_CLOCK. This
+> > way we avoid having configs where there are conflicting paths that
+> > we chose from.
+> 
+> On ARM the read_presistent_clock is used to access a true monotonic
+> counter that is divorced from the system RTC - look at
+> arch/arm/plat-omap/counter_32k.c for instance.
+> 
+> This seems like a great use of that hardware resource, and no doubt
+> those mach's also have a class RTC driver available talking to
+> different hardware.
 
-ret = soft_offline_huge_page(page, flags);
+Interesting to know this, thanks for the info. For the x86 desktop
+and mobile processors I've used, the read_persistent_clock and rtc
+are the same on-board device (always power on), so I see many time
+related code are execuated twice, like init/suspend/resume if
+HCTOSYS config is enabled, that's why I came up with the patches.
 
-> +		else
-> +			__soft_offline_page(page, flags);
+> 
+> For mach's without that functionality ARM returns a fixed 0 value
+> from read_persistent_clock, persumably the kernel detects this and
+> falls back to using class rtc functions?
+> 
+> Maybe Feng would be better off adjusting read_persistent_clock to
+> return ENODEV in such cases??
 
-ret = __soft_offline_page(page, flags); right?
+For mach's without read_persistent_clock capability, there is already
+a weakly defined 
 
-Thanks
-Xishi Qiu
+	void __attribute__((weak)) read_persistent_clock(struct timespec *ts)
+	{
+		ts->tv_sec = 0;
+		ts->tv_nsec = 0;
+	}
+so those machs can simply do nothing, and let time core code to judge it.
 
-> +	} else { /* for free pages */
-> +		if (PageHuge(page)) {
-> +			set_page_hwpoison_huge_page(hpage);
-> +			dequeue_hwpoisoned_huge_page(hpage);
-> +			atomic_long_add(1 << compound_trans_order(hpage),
-> +					&mce_bad_pages);
-> +		} else {
-> +			SetPageHWPoison(page);
-> +			atomic_long_inc(&mce_bad_pages);
-> +		}
-> +	}
->  	/* keep elevated page count for bad page */
->  	return ret;
->  }
+> 
+> So, I think you have to keep your test as a run time test. To support
+> the single image ARM boot you can't make the distinction with kconfig.
 
+Good point. Figuring out the kconfig for all arm platforms is very
+challenging.
 
-
+Thanks,
+Feng
