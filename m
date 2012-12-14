@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2LNKnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 05:43:21 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14599 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab2LNKnT (ORCPT
+	id S1755847Ab2LNKnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 05:43:45 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:55446 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab2LNKnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 05:43:19 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 14 Dec 2012 02:43:12 -0800
-Date: Fri, 14 Dec 2012 12:43:10 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: debug clock tree
-Message-ID: <20121214104310.GW19258@tbergstrom-lnx.Nvidia.com>
-References: <1355370586-6600-1-git-send-email-pgaikwad@nvidia.com>
- <CAPtuhThBigSQMkNDf16Fo1tddTKo=rPEydHmzep0DqtgLrB+HA@mail.gmail.com>
- <50CA17FB.9060606@wwwdotorg.org>
+	Fri, 14 Dec 2012 05:43:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <50CA17FB.9060606@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1355471146.7641.13.camel@marge.simpson.net>
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
+	<1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
+	<50C93AC1.1060202@intel.com>
+	<CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
+	<50C9E552.1010600@intel.com>
+	<1355460356.5777.12.camel@marge.simpson.net>
+	<50CAC905.9070100@intel.com>
+	<1355471146.7641.13.camel@marge.simpson.net>
+Date: Fri, 14 Dec 2012 11:43:41 +0100
+Message-ID: <CAKfTPtDw6Tk6oVut5REBsbCoHD3JE0ajHKp=aYhwx0j9NiTKGQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Alex Shi <alex.shi@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, linux@arm.linux.org.uk,
+        pjt@google.com, santosh.shilimkar@ti.com, Morten.Rasmussen@arm.com,
+        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, viresh.kumar@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 07:01:31PM +0100, Stephen Warren wrote:
-> On 12/13/2012 09:27 AM, Mike Turquette wrote:
-> > On Wed, Dec 12, 2012 at 7:49 PM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
-> >> Adds debug file "clock_tree" in /sys/kernel/debug/clk dir.
-> >> It helps to view all the clock registered in tree format.
-> >>
-> > 
-> > Prashant,
-> > 
-> > Thanks for submitting this.  We've been talking about having a single
-> > file for representing the tree for some time.
-> > 
-> > Regarding the output format had you considered using a well known
-> > format which can be parsed using well known parsing libs?  This avoids
-> > needing a custom parser just for this one file.  JSON springs to mind
-> > as something lightweight and well-understood.
-> 
-> One advantage of the format below is that it's very easily
-> human-readable, and it's not too hard to parse (although I guess you'd
-> have to parse the indent level to get parent/child relation, which would
-> suck a bit). Is there room to provide both? Otherwise, I guess the
-> kernel could include a script to convert from JSON/whatever into the
-> format below.
+On 14 December 2012 08:45, Mike Galbraith <bitbucket@online.de> wrote:
+> On Fri, 2012-12-14 at 14:36 +0800, Alex Shi wrote:
+>> On 12/14/2012 12:45 PM, Mike Galbraith wrote:
+>> >> > Do you have further ideas for buddy cpu on such example?
+>> >>> > >
+>> >>> > > Which kind of sched_domain configuration have you for such system ?
+>> >>> > > and how many sched_domain level have you ?
+>> >> >
+>> >> > it is general X86 domain configuration. with 4 levels,
+>> >> > sibling/core/cpu/numa.
+>> > CPU is a bug that slipped into domain degeneration.  You should have
+>> > SIBLING/MC/NUMA (chasing that down is on todo).
+>>
+>> Maybe.
+>> the CPU/NUMA is different on domain flags, CPU has SD_PREFER_SIBLING.
+>
+> What I noticed during (an unrelated) bisection on a 40 core box was
+> domains going from so..
+>
+> 3.4.0-bisect (virgin)
+> [    5.056214] CPU0 attaching sched-domain:
+> [    5.065009]  domain 0: span 0,32 level SIBLING
+> [    5.075011]   groups: 0 (cpu_power = 589) 32 (cpu_power = 589)
+> [    5.088381]   domain 1: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level MC
+> [    5.107669]    groups: 0,32 (cpu_power = 1178)  4,36 (cpu_power = 1178)  8,40 (cpu_power = 1178) 12,44 (cpu_power = 1178)
+>                          16,48 (cpu_power = 1177) 20,52 (cpu_power = 1178) 24,56 (cpu_power = 1177) 28,60 (cpu_power = 1177)
+>                          64,72 (cpu_power = 1176) 68,76 (cpu_power = 1176)
+> [    5.162115]    domain 2: span 0-79 level NODE
+> [    5.171927]     groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11773)
+>                            1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77 (cpu_power = 11772)
+>                            2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62,66,70,74,78 (cpu_power = 11773)
+>                            3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63,67,71,75,79 (cpu_power = 11770)
+>
+> ..to so, which looks a little bent.  CPU and MC have identical spans, so
+> CPU should have gone away, as it used to do.
+>
+> 3.6.0-bisect (virgin)
+> [    3.978338] CPU0 attaching sched-domain:
+> [    3.987125]  domain 0: span 0,32 level SIBLING
+> [    3.997125]   groups: 0 (cpu_power = 588) 32 (cpu_power = 589)
+> [    4.010477]   domain 1: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level MC
+> [    4.029748]    groups: 0,32 (cpu_power = 1177)  4,36 (cpu_power = 1177)  8,40 (cpu_power = 1178) 12,44 (cpu_power = 1178)
+>                          16,48 (cpu_power = 1178) 20,52 (cpu_power = 1178) 24,56 (cpu_power = 1178) 28,60 (cpu_power = 1178)
+>                          64,72 (cpu_power = 1178) 68,76 (cpu_power = 1177)
+> [    4.084143]    domain 2: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level CPU
+> [    4.103796]     groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11777)
+> [    4.124373]     domain 3: span 0-79 level NUMA
+> [    4.134369]      groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11777)
+>                             1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77 (cpu_power = 11778)
+>                             2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62,66,70,74 ,78 (cpu_power = 11778)
+>                             3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63,67,71,75,79 (cpu_power = 11780)
+>
 
-We already have the clk directory for an easy to parse version. So I think
-this one should be focused on being human readable.
+Thanks. that's an interesting example of a numa topology
 
-Cheers,
+For your sched_domain difference,
+On 3.4, SD_PREFER_SIBLING was set for both MC and CPU level thanks to
+sd_balance_for_mc_power and  sd_balance_for_package_power
+On 3.6, SD_PREFER_SIBLING is only set for CPU level and this flag
+difference with MC level prevents the destruction of CPU sched_domain
+during the degeneration
 
-Peter.
+We may need to set SD_PREFER_SIBLING for MC level
+
+Vincent
+
+>         -Mike
+>
