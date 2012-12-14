@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945925Ab2LNXF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:05:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41153 "EHLO mail.kernel.org"
+	id S1945942Ab2LNXGC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:06:02 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41175 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945911Ab2LNXFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:05:52 -0500
+	id S1945911Ab2LNXF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:05:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Philippe Begnic <philippe.begnic@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [ 02/27] clk: ux500: fix bit error
-Date: Fri, 14 Dec 2012 15:01:15 -0800
-Message-Id: <20121214222251.691036864@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 03/27] x86,AMD: Power driver support for AMDs family 16h processors
+Date: Fri, 14 Dec 2012 15:01:16 -0800
+Message-Id: <20121214222251.920467775@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -28,40 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-commit 2630b17b6ee47ac79b4f5120ac49105027f644ea upstream.
+commit 22e32f4f57778ebc6e17812fa3008361c05d64f9 upstream.
 
-This fixes a bit error in the U8500 clock implementation: the
-unused p2_pclk12 registered at bit 12 in periphereral group 6
-was defined as using bit 11 rather than bit 12.
+Add family 16h PCI ID to AMD's power driver to allow it report
+power consumption on these processors.
 
-When walking over and disabling the unused clocks in the tree
-at late init time, p2_pclk12 was disabled, by effectively
-clearing the but for p2_pclk11 instead of bit 12 as it should
-have, thus disabling gpio block 6 and 7.
-
-Reported-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Philippe Begnic <philippe.begnic@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/ux500/u8500_clk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/fam15h_power.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/clk/ux500/u8500_clk.c
-+++ b/drivers/clk/ux500/u8500_clk.c
-@@ -323,7 +323,7 @@ void u8500_clk_init(void)
- 	clk_register_clkdev(clk, NULL, "gpioblock1");
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -31,6 +31,9 @@ MODULE_DESCRIPTION("AMD Family 15h CPU p
+ MODULE_AUTHOR("Andreas Herrmann <herrmann.der.user@googlemail.com>");
+ MODULE_LICENSE("GPL");
  
- 	clk = clk_reg_prcc_pclk("p2_pclk12", "per2clk", U8500_CLKRST2_BASE,
--				BIT(11), 0);
-+				BIT(12), 0);
++/* Family 16h Northbridge's function 4 PCI ID */
++#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
++
+ /* D18F3 */
+ #define REG_NORTHBRIDGE_CAP		0xe8
  
- 	clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", U8500_CLKRST3_BASE,
- 				BIT(0), 0);
+@@ -248,6 +251,7 @@ static void __devexit fam15h_power_remov
+ 
+ static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
 
 
