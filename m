@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab2LNME5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 07:04:57 -0500
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:21816 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751589Ab2LNME4 (ORCPT
+	id S1753970Ab2LNMGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 07:06:43 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38515 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab2LNMGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 07:04:56 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAOgUy1B8qkPM/2dsb2JhbAANOL8ZgxEBAQEEOEABEAsYCRYPCQMCAQIBRQYNAQcBAYd8AR6pXZN4jFeEQwOXJZIx
-X-IronPort-AV: E=Sophos;i="4.84,280,1355068800"; 
-   d="scan'208";a="298193124"
-Message-ID: <50CB15E3.8010902@westnet.com.au>
-Date: Fri, 14 Dec 2012 22:04:51 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] m68k updates for 3.8
-References: <1355476134.18402.5@driftwood>
-In-Reply-To: <1355476134.18402.5@driftwood>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 14 Dec 2012 07:06:41 -0500
+Message-ID: <1355486789.3475.1.camel@phoenix>
+Subject: [PATCH v2 3/6] iio: dac: ad5504: Don't set error code to voltage_uv
+From: Axel Lin <axel.lin@ingics.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 14 Dec 2012 20:06:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+regulator_get_voltage() may return negative error code.
+Add error checking to avoid setting error code to voltage_uv.
 
-On 12/14/2012 07:08 PM, Rob Landley wrote:
-> On 12/13/2012 01:44:14 PM, Geert Uytterhoeven wrote:
->>     Hi Linus,
->>
->> The following changes since commit
->> 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
->>   Linus Torvalds (1):
->>         Linux 3.7
->
-> Query: what's your test environment?
->
-> I've been trying to get m68k linux to boot in qemu on and off for years
-> (http://landley.net/aboriginal/bin/system-image-m68k.tar.bz2), but qemu
-> seems to be missing bits (mmu stuff mostly, some work's being done at
-> git://gitorious.org/qemu-m68k/qemu-m68k especially in the q800 branch,
-> but it throws a double MMU fault during kernel boot).
->
-> Somebody got one of my images to boot under aranym but they had to patch
-> the kernel fairly extensively to add the emulated device support that
-> emulator provided. It doesn't emulate real devices the way qemu does,
-> but qemu doesn't fully emulate the processor (just coldfire in mainline)...
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+v2: check if ret is negative value
+ drivers/iio/dac/ad5504.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-I use aranym for testing m68k. Though I don't really pound to heavily
-on the devices. I really only cross-compile small systems for testing
-on it.
+diff --git a/drivers/iio/dac/ad5504.c b/drivers/iio/dac/ad5504.c
+index 242bdc7..1e9a1f4 100644
+--- a/drivers/iio/dac/ad5504.c
++++ b/drivers/iio/dac/ad5504.c
+@@ -296,7 +296,11 @@ static int __devinit ad5504_probe(struct spi_device *spi)
+ 		if (ret)
+ 			goto error_put_reg;
+ 
+-		voltage_uv = regulator_get_voltage(reg);
++		ret = regulator_get_voltage(reg);
++		if (ret < 0)
++			goto error_disable_reg;
++
++		voltage_uv = ret;
+ 	}
+ 
+ 	spi_set_drvdata(spi, indio_dev);
+-- 
+1.7.9.5
 
-Regards
-Greg
 
 
