@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab2LNSxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:53:44 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:17277 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932106Ab2LNSxn (ORCPT
+	id S932221Ab2LNTGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 14:06:25 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11999 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab2LNTGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:53:43 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+GJkuGu82GUDSKC1S1vrKf
-Date: Fri, 14 Dec 2012 10:53:41 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] arch/arm/mach-omap2/dpll3xxx.c: drop if around
- WARN_ON
-Message-ID: <20121214185340.GJ4989@atomide.com>
-References: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
- <1351974625-10282-7-git-send-email-Julia.Lawall@lip6.fr>
+	Fri, 14 Dec 2012 14:06:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 14 Dec 2012 11:06:18 -0800
+From: Allen Martin <amartin@nvidia.com>
+To: <swarren@wwwdotorg.org>, <ldewangan@nvidia.com>
+CC: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Allen Martin <amartin@nvidia.com>
+Subject: [PATCH] dt: fix tegra SPI binding examples
+Date: Fri, 14 Dec 2012 11:05:12 -0800
+Message-ID: <1355511912-23733-1-git-send-email-amartin@nvidia.com>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351974625-10282-7-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Julia Lawall <Julia.Lawall@lip6.fr> [121103 13:32]:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Just use WARN_ON rather than an if containing only WARN_ON(1).
+Fix name of slink binding and address of sflash example to make it
+self consistent.
 
-Thanks applying this one into omap-for-v3.8/fixes-for-merge-window.
+Change-Id: Ia89c3017c958bdf670036caf516eabce6f893096
+Signed-off-by: Allen Martin <amartin@nvidia.com>
+---
+ Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt |    2 +-
+ Documentation/devicetree/bindings/spi/nvidia,tegra20-slink.txt  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Regards,
-
-Tony
+diff --git a/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt b/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
+index 8cf24f6..7b53da5 100644
+--- a/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
++++ b/Documentation/devicetree/bindings/spi/nvidia,tegra20-sflash.txt
+@@ -13,7 +13,7 @@ Recommended properties:
  
-> A simplified version of the semantic patch that makes this transformation
-> is as follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e;
-> @@
-> - if (e) WARN_ON(1);
-> + WARN_ON(e);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  arch/arm/mach-omap2/dpll3xxx.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xxx.c
-> index eacf51f..ed855b0 100644
-> --- a/arch/arm/mach-omap2/dpll3xxx.c
-> +++ b/arch/arm/mach-omap2/dpll3xxx.c
-> @@ -478,8 +478,7 @@ int omap3_noncore_dpll_set_rate(struct clk *clk, unsigned long rate)
->  		if (!soc_is_am33xx() && !cpu_is_omap44xx() && !cpu_is_omap3630()) {
->  			freqsel = _omap3_dpll_compute_freqsel(clk,
->  						dd->last_rounded_n);
-> -			if (!freqsel)
-> -				WARN_ON(1);
-> +			WARN_ON(!freqsel);
->  		}
->  
->  		pr_debug("clock: %s: set rate: locking rate to %lu.\n",
-> 
+ Example:
+ 
+-spi@7000d600 {
++spi@7000c380 {
+ 	compatible = "nvidia,tegra20-sflash";
+ 	reg = <0x7000c380 0x80>;
+ 	interrupts = <0 39 0x04>;
+diff --git a/Documentation/devicetree/bindings/spi/nvidia,tegra20-slink.txt b/Documentation/devicetree/bindings/spi/nvidia,tegra20-slink.txt
+index f5b1ad1..eefe15e 100644
+--- a/Documentation/devicetree/bindings/spi/nvidia,tegra20-slink.txt
++++ b/Documentation/devicetree/bindings/spi/nvidia,tegra20-slink.txt
+@@ -13,7 +13,7 @@ Recommended properties:
+ 
+ Example:
+ 
+-slink@7000d600 {
++spi@7000d600 {
+ 	compatible = "nvidia,tegra20-slink";
+ 	reg = <0x7000d600 0x200>;
+ 	interrupts = <0 82 0x04>;
+-- 
+1.7.10.4
+
