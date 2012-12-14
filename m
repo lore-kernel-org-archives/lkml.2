@@ -1,107 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab2LNMSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 07:18:30 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56712 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2LNMS2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 07:18:28 -0500
-Message-ID: <50CB1910.70502@linutronix.de>
-Date: Fri, 14 Dec 2012 13:18:24 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	id S1755245Ab2LNMhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 07:37:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40145 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753220Ab2LNMhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 07:37:40 -0500
+Date: Fri, 14 Dec 2012 13:37:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121214123738.GH6898@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
+ <20121211155432.GC1612@dhcp22.suse.cz>
+ <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
+ <20121212090652.GB32081@dhcp22.suse.cz>
+ <20121212192441.GD10374@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
-References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com> <50B5C821.4000406@linutronix.de> <xa1ta9u1naik.fsf@mina86.com> <50B61695.50207@linutronix.de> <20121207231828.GM22789@localhost>
-In-Reply-To: <20121207231828.GM22789@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121212192441.GD10374@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2012 12:18 AM, Joel Becker wrote:
-> Hey Guys,
+On Wed 12-12-12 20:24:41, Michal Hocko wrote:
+> On Wed 12-12-12 10:06:52, Michal Hocko wrote:
+> > On Tue 11-12-12 14:36:10, Ying Han wrote:
+> [...]
+> > > One exception is mem_cgroup_iter_break(), where the loop terminates
+> > > with *leaked* refcnt and that is what the iter_break() needs to clean
+> > > up. We can not rely on the next caller of the loop since it might
+> > > never happen.
+> > 
+> > Yes, this is true and I already have a half baked patch for that. I
+> > haven't posted it yet but it basically checks all node-zone-prio
+> > last_visited and removes itself from them on the way out in pre_destroy
+> > callback (I just need to cleanup "find a new last_visited" part and will
+> > post it).
+> 
+> And a half baked patch - just compile tested
 
-Hi Joel,
+please ignore this patch. It is totally bogus.
 
-you took quite some time to write this down.
+> ---
+> From 1c976c079c383175c679e00115aee0ab8e215bf2 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Tue, 11 Dec 2012 21:02:39 +0100
+> Subject: [PATCH] NOT READY YET - just compile tested
+> 
+> memcg: remove memcg from the reclaim iterators
+> 
+> Now that per-node-zone-priority iterator caches memory cgroups rather
+> than their css ids we have to be careful and remove them from the
+> iterator when they are on the way out otherwise they might hang for
+> unbounded amount of time (until the global reclaim triggers the zone
+> under priority to find out the group is dead and let it to find the
+> final rest).
+> 
+> This is solved by hooking into mem_cgroup_pre_destroy and checking all
+> per-node-zone-priority iterators. If the current memcg is found in
+> iter->last_visited then it is replaced by its left sibling or its parent
+> otherwise. This guarantees that no group gets more reclaiming than
+> necessary and the next iteration will continue seemingly.
+> 
+> Spotted-by: Ying Han <yinghan@google.com>
+> Not-signed-off-by-yet: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c |   38 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 38 insertions(+)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7134148..286db74 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -6213,12 +6213,50 @@ free_out:
+>  	return ERR_PTR(error);
+>  }
+>  
+> +static void mem_cgroup_remove_cached(struct mem_cgroup *memcg)
+> +{
+> +	int node, zone;
+> +
+> +	for_each_node(node) {
+> +		struct mem_cgroup_per_node *pn = memcg->info.nodeinfo[node];
+> +		int prio;
+> +
+> +		for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+> +			struct mem_cgroup_per_zone *mz;
+> +
+> +			mz = &pn->zoneinfo[zone];
+> +			for (prio = 0; prio < DEF_PRIORITY + 1; prio++) {
+> +				struct mem_cgroup_reclaim_iter *iter;
+> +
+> +				iter = &mz->reclaim_iter[prio];
+> +				rcu_read_lock();
+> +				spin_lock(&iter->iter_lock);
+> +				if (iter->last_visited == memcg) {
+> +					struct cgroup *cgroup, *prev;
+> +
+> +					cgroup = memcg->css.cgroup;
+> +					prev = list_entry_rcu(cgroup->sibling.prev, struct cgroup, sibling);
+> +					if (&prev->sibling == &prev->parent->children)
+> +						prev = prev->parent;
+> +					iter->last_visited = mem_cgroup_from_cont(prev);
+> +
+> +					/* TODO can we do this? */
+> +					css_put(&memcg->css);
+> +				}
+> +				spin_unlock(&iter->iter_lock);
+> +				rcu_read_unlock();
+> +			}
+> +		}
+> +	}
+> +}
+> +
+>  static void mem_cgroup_pre_destroy(struct cgroup *cont)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>  
+>  	mem_cgroup_reparent_charges(memcg);
+>  	mem_cgroup_destroy_all_caches(memcg);
+> +	mem_cgroup_remove_cached(memcg);
+>  }
+>  
+>  static void mem_cgroup_destroy(struct cgroup *cont)
+> -- 
+> 1.7.10.4
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> 	Please remember that configfs is not a "user" interface, it's a
-> userspace<->kernelspace interface.  Like sysfs, it's not required to be
-> convenient for someone at a bash prompt.  My goal is that it is *usable*
-> from a bash prompt.  So it must be that you can
-> create/destroy/configure objects via mkdir/rmkdir/cat/echo, but you
-> might have a lot of those mkdir/echo combos to configure something.
-> When it comes to the "user" interface, a wrapper script or library
-> should be converting a user intention into all that boilerplate.
-
-It is good that you say such things so people that want this things know 
-the reasons why it is not done.
-
->>>>> I think the question is of information flow direction.  If user gives
->>>>> some information to the kernel, she should be the one creating any
->>>>> necessary directories.  But if the information comes from kernel to the
->>>>> user, the kernel should create the structure.
->
-> 	This last paragraph actually describes the distinction between
-> configfs and sysfs.  More specifically, if userspace wants to create an
-> object in the kernel, it should use configfs.  If the kernel has created
-> an object on its own, it exposes it via sysfs.  It is a deliberate
-> non-goal for configfs to replicate sysfs behavior.
-
-So you are saying that I should expose my UDC hardware device via sysfs
-after the hardware is available because the kernel created it.
-How should I get then into configfs? mkdir a directory which is named
-like the HW? This would be painful to do manually but as you said, we
-should have a tool.
-
-> [What About the Patch?]
->
-> 	In general, attribute setting that turns into created configfs
-> objects is against the theory of configfs.  In practice, it's a
-> nightmare locking change.  Coming into this discussion, I though you
-> were doing dymanic things at ->make_group() time, but that is already
-> supported.
-> 	But I want to hear your thoughts.  I've dumped a bunch of
-> alternate approaches here.  Do any seem to fit?  What other challenges
-> do you see?
-
-I'm mostly fine with this. Part of the problem was/is that the user
-could create lun1 without lun0. Now, after looking at target they don't
-have this limitation so I don't think we should have it either. As nab
-explained, lun0 is always handled implicit for certain requests and not
-exposed as a lun if the user did not create it. So I think we can live
-with this. After all we can still return with -EINVAL if the user
-creates lun1 before lun0.
-
-Now one little question remains: We plan to expose interface numbers
-and endpoints. The current idea is to have one directory for each
-endpoint something like endpointXX where XX is the endpoint number.
-We create the gadget upfront and assign it later to the UDC via a
-symlink. We learn the interface number after the gadget has been
-assigned. I think you suggest that we create the directory via the tool
-once we exposed its details via sysfs or so. This might be okay since we 
-want it probably only for debugging. On the hand if we drop the
-endpooint number we don't have this. Got to keep thinking about this.
-
-Anyway, thank you for time and arguments pro / contra self-created
-directories.
-
->
-> Joel
->
-
-Sebastian
+-- 
+Michal Hocko
+SUSE Labs
