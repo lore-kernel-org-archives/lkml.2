@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2LNBu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 20:50:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41727 "EHLO mail.zytor.com"
+	id S1755811Ab2LNByu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:54:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13782 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444Ab2LNBu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 20:50:27 -0500
-Message-ID: <50CA85BD.7070502@zytor.com>
-Date: Thu, 13 Dec 2012 17:49:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753444Ab2LNBys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 20:54:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,277,1355126400"; 
+   d="scan'208";a="263798361"
+Message-ID: <50CA8746.5050604@intel.com>
+Date: Fri, 14 Dec 2012 09:56:22 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org
-Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
-In-Reply-To: <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Alex Shi <lkml.alex@gmail.com>, rob@landley.net, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        vincent.guittot@linaro.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into
+ LB and power awareness scheduling
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com> <50C722AC.3080806@intel.com> <20121211154819.GC8873@liondog.tnic> <50C75935.1040004@linux.intel.com> <20121211161320.GA28827@liondog.tnic> <50C76208.107@linux.intel.com> <20121212144140.GD8760@liondog.tnic> <50C9467F.3020205@intel.com> <20121213113549.GB31485@liondog.tnic>
+In-Reply-To: <20121213113549.GB31485@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 05:42 PM, Andy Lutomirski wrote:
+On 12/13/2012 07:35 PM, Borislav Petkov wrote:
+> On Thu, Dec 13, 2012 at 11:07:43AM +0800, Alex Shi wrote:
+>>>> now, on the other hand, if you have two threads of a process that
+>>>> share a bunch of data structures, and you'd spread these over 2
+>>>> sockets, you end up bouncing data between the two sockets a lot,
+>>>> running inefficient --> bad for power.
+>>>
+>>> Yeah, that should be addressed by the NUMA patches people are
+>>> working on right now.
+>>
+>> Yes, as to balance/powersaving policy, we can tight pack tasks
+>> firstly, then NUMA balancing will make memory follow us.
+>>
+>> BTW, NUMA balancing is more related with page in memory. not LLC.
 > 
-> The 64-bit/x32 case is currently very simple and fast because it uses
-> absolute addressing.  Admittedly, pcrel references are free, so
-> changing this wouldn't cost much.  For native, it'll be slower, but
-> maybe no one cares.  I seem to care about this more than anyone else,
-> and I don't use 32 bit code. :)
+> Sure, let's look at the worst and best cases:
 > 
+> * worst case: you have memory shared by multiple threads on one node
+> *and* working set doesn't fit in LLC.
+> 
+> Here, if you pack threads tightly only on one node, you still suffer the
+> working set kicking out parts of itself out of LLC.
+> 
+> If you spread threads around, you still cannot avoid the LLC thrashing
+> because the LLC of the node containing the shared memory needs to cache
+> all those transactions. *In* *addition*, you get the cross-node traffic
+> because the shared pages are on the first node.
+> 
+> Major suckage.
+> 
+> Does it matter? I don't know. It can be decided on a case-by-case basis.
+> If people care about singlethread perf, they would likely want to spread
+> around and buy in the cross-node traffic.
+> 
+> If they care for power, then maybe they don't want to turn on the second
+> socket yet.
+> 
+> * the optimal case is where memory follows threads and gets spread
+> around such that LLC doesn't get thrashed and cross-node traffic gets
+> avoided.
+> 
+> Now, you can think of all those other scenarios in between :-/
 
-pcrel is actually cheaper than absolute addressing in 64-bit mode.
+You are right. thanks for explanation! :)
 
-> The benefit of switching is that the vdso code could be the same in
-> all three cases.  (Actually, it's even better than that.  All of the
-> VVAR magic could be the same in the vdso and the kernel -- the kernel
-> linker script would just have to have an appropriate symbol to see the
-> appropriate mapping.)
+Actually, what I went to say is that numa balancing target is pages in
+different node memory, but of course, it may improve LLC performance.
 > 
+> Thanks.
 > 
-> This:
-> 
-> __attribute__((visibility("hidden"))) int foo;
-> 
-> int get_foo(void)
-> {
->   return foo;
-> }
-> 
-> generates a rip-relative access on 64 bits and GOTOFF on 32 bits.
-> 
-> The only reason I didn't use a real symbol in the first place is
-> because I couldn't figure out how to get gcc to emit an absolute
-> relocation in pic code.
-
-Well, then, we wouldn't need to do that... this is starting to sound
-like a significant win.
-
-	-hpa
 
