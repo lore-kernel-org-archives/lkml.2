@@ -1,153 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab2LNSNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:13:04 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:54399 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2LNSNA (ORCPT
+	id S1756837Ab2LNSP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:15:26 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:48254 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756648Ab2LNSPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:13:00 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-security-module@vger.kernel.org
-References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
-	<87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
-	<20121214032820.GA5115@mail.hallyn.com> <87bodxi9zw.fsf@xmission.com>
-	<20121214152607.GA9266@mail.hallyn.com> <87bodwd4aw.fsf@xmission.com>
-	<20121214161514.GA9962@mail.hallyn.com>
-Date: Fri, 14 Dec 2012 10:12:53 -0800
-In-Reply-To: <20121214161514.GA9962@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 14 Dec 2012 16:15:14 +0000")
-Message-ID: <87r4ms5wpm.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 14 Dec 2012 13:15:25 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19OKU5Ur8CMAT8oOOPUslui
+Date: Fri, 14 Dec 2012 10:15:19 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: oleg.matcovschi@ti.com
+Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] OMAP2+: mux: Fixed gpio mux mode analysis.
+Message-ID: <20121214181519.GZ4989@atomide.com>
+References: <1353978123-12936-1-git-send-email-oleg.matcovschi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19NdXMHdV4R0cnCWFbdaBPyjySfpG7EbD8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0651]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent user namespace to have caps.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353978123-12936-1-git-send-email-oleg.matcovschi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+* oleg.matcovschi@ti.com <oleg.matcovschi@ti.com> [121126 17:04]:
+> From: Oleg Matcovschi <oleg.matcovschi@ti.com>
+> 
+> OMAP_MODE_GPIO() macro verified only OMAP_MUX_MODE4.
+> It is not correct for following platforms:
+>     2430 - gpio mux mode 3
+>     44xx - gpio mux mode 3
+>     54xx - gpio mux mode 6
+> 
+> Patch reserves first 3 bits in partition flags for storing gpio mux
+> mode in same format as stored in control pad register.
+> Modified OMAP_MODE_GPIO() macro to handle all possible cases of gpio mux mode.
+> Modified omap_mux_init() flags of omap34xx to include OMAP_MUX_GPIO_IN_MODE4.
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> "Serge E. Hallyn" <serge@hallyn.com> writes:
->> 
->> > Quoting Eric W. Biederman (ebiederm@xmission.com):
->> >> "Serge E. Hallyn" <serge@hallyn.com> writes:
->> >> 
->> >> > Quoting Eric W. Biederman (ebiederm@xmission.com):
->> >> >> 
->> >> >> Andy Lutomirski pointed out that the current behavior of allowing the
->> >> >> owner of a user namespace to have all caps when that owner is not in a
->> >> >> parent user namespace is wrong.
->> >> >
->> >> > To make sure I understand right, the issue is when a uid is mapped
->> >> > into multiple namespaces.
->> >> 
->> >> Yes.
->> >> 
->> >> i.e. uid 1000 in ns1 may own ns2, but uid 1000 in ns3 does not?
->> >> 
->> >> I am not certain of your example.
->> >> 
->> >> The simple case is:
->> >> 
->> >> init_user_ns:
->> >>      child_user_ns1 (owned by uid == 0 [in all user namespaces])
->> >>            child_user_ns2 (owned by uid == 0 [ in all user namespaces])
->> >> 
->> >> 
->> >> root (uid == 0) in child_user_ns2 has all rights over anything in
->> >> child_user_ns1.
->> >
->> > Well that is only if there was no mapping.  (since we're comparing
->> > kuids, not uid_ts).  right?  If you didn't map uid 0 in child_user_ns2
->> > to another id in the parent ns, you weren't all *that* serious about
->> > isolating the ns.
->> >
->> > The case I was thinking is
->> >
->> >   init_user_ns:  [0-uidmax]
->> >       child_user_ns1  [100000-199999]
->> >       child_user_ns2  [100000-199999]
->> >         child_user_ns3  [200000-299999]
->
-> Wait is my example above possible?  Or does child_user_ns3's range need
-> to be a subset of child_user_ns2's?
->
-> In which case it would be
->
->        child_user_ns1  [100000-199999]
->        child_user_ns2  [100000-199999]
->          child_user_ns3  [120000-129999]
->
+Thanks applying into omap-for-v3.8/fixes-for-merge-window.
 
-Yes.  You have to nest uids.
+Regards,
 
->> > with unfortunate mappings  - ns1 and ns2 should have had nonoverlapping
->> > ranges, but in any case now uid 1000 in ns1 can exert privilege over
->> > ns3.  Again, uids comparisons will succeed for file access anyway, so
->> > ns1 can 0wn ns2 and ns3 other ways.
->> 
->> Yes yours is the more realistic scenario.  Mine was simplified to be clear.
->> 
->> > Heck I'm starting to think the bug is a feature - surely given the
->> > mappings above I meant for ns1 and ns2 to bleed privilege to each
->> > other?
->> 
->> The serious problem is that privileges can bleed up. A user in 
->> ns3 can wind up owning ns2 or ns1.  Which totally defeats the permission
->> model.  You have CAP_DAC_OVERRIDE so you don't even need access to files
->> you own, etc, etc.
->
-> Would that not require intervention from the init_user_ns?  In my
-> example above (let's add that ns2 is owned by kuid.uid=1000 in
-> init_user_ns), root in child_user_ns2 cannot map kuid.val=0 or
-> kuid.val=1000 into ns3 because 0 and 1000 are not in the range
-> 100000-199999.  So there is no uid in child_user_ns3 which is able
-> to spoof uid=0 in child_user_ns1.
-
-Right.  It does require having the uid of the owner of ns1 or ns2 in
-ns3.  So you have to explicitly allow it.
-
-What I don't see is any point in allowing something like that.
-
-
-After taking a second look I just realized that this is completely
-unexploitable with the code that is currently merged.  As creating
-a grand child user namespace is competelely impossible.  Creating
-a user namespace is requires capable(CAP_SYS_ADMIN) which is never
-present in anything but the initial user namespace.
-
-
-That said I think the current semantics of cap_capable are completely
-fatal to reasoning about user namespaces.
-
-A child user namespace having capabilities against processes in it's
-parent seems totally bizarre and pretty dangerous from a capabilities
-standpoint.
-
-That said Serge I think I have lost track of the point of your question.
-
-Eric
+Tony
+ 
+> Signed-off-by: Oleg Matcovschi <oleg.matcovschi@ti.com>
+> ---
+>  arch/arm/mach-omap2/mux.c     |   10 ++++------
+>  arch/arm/mach-omap2/mux.h     |   20 +++++++++++++++-----
+>  arch/arm/mach-omap2/mux34xx.c |    2 +-
+>  3 files changed, 20 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+> index 701e17c..1fa39dc 100644
+> --- a/arch/arm/mach-omap2/mux.c
+> +++ b/arch/arm/mach-omap2/mux.c
+> @@ -134,10 +134,7 @@ static int __init _omap_mux_init_gpio(struct omap_mux_partition *partition,
+>  
+>  	old_mode = omap_mux_read(partition, gpio_mux->reg_offset);
+>  	mux_mode = val & ~(OMAP_MUX_NR_MODES - 1);
+> -	if (partition->flags & OMAP_MUX_GPIO_IN_MODE3)
+> -		mux_mode |= OMAP_MUX_MODE3;
+> -	else
+> -		mux_mode |= OMAP_MUX_MODE4;
+> +	mux_mode |= partition->gpio;
+>  	pr_debug("%s: Setting signal %s.gpio%i 0x%04x -> 0x%04x\n", __func__,
+>  		 gpio_mux->muxnames[0], gpio, old_mode, mux_mode);
+>  	omap_mux_write(partition, mux_mode, gpio_mux->reg_offset);
+> @@ -799,7 +796,7 @@ int __init omap_mux_late_init(void)
+>  			struct omap_mux *m = &e->mux;
+>  			u16 mode = omap_mux_read(partition, m->reg_offset);
+>  
+> -			if (OMAP_MODE_GPIO(mode))
+> +			if (OMAP_MODE_GPIO(partition, mode))
+>  				continue;
+>  
+>  #ifndef CONFIG_DEBUG_FS
+> @@ -1064,7 +1061,7 @@ static void __init omap_mux_init_list(struct omap_mux_partition *partition,
+>  		}
+>  #else
+>  		/* Skip pins that are not muxed as GPIO by bootloader */
+> -		if (!OMAP_MODE_GPIO(omap_mux_read(partition,
+> +		if (!OMAP_MODE_GPIO(partition, omap_mux_read(partition,
+>  				    superset->reg_offset))) {
+>  			superset++;
+>  			continue;
+> @@ -1131,6 +1128,7 @@ int __init omap_mux_init(const char *name, u32 flags,
+>  
+>  	partition->name = name;
+>  	partition->flags = flags;
+> +	partition->gpio = flags & OMAP_MUX_MODE7;
+>  	partition->size = mux_size;
+>  	partition->phys = mux_pbase;
+>  	partition->base = ioremap(mux_pbase, mux_size);
+> diff --git a/arch/arm/mach-omap2/mux.h b/arch/arm/mach-omap2/mux.h
+> index 76f9b3c..5504e12 100644
+> --- a/arch/arm/mach-omap2/mux.h
+> +++ b/arch/arm/mach-omap2/mux.h
+> @@ -58,7 +58,8 @@
+>  #define OMAP_PIN_OFF_INPUT_PULLDOWN	(OMAP_OFF_EN | OMAP_OFF_PULL_EN)
+>  #define OMAP_PIN_OFF_WAKEUPENABLE	OMAP_WAKEUP_EN
+>  
+> -#define OMAP_MODE_GPIO(x)	(((x) & OMAP_MUX_MODE7) == OMAP_MUX_MODE4)
+> +#define OMAP_MODE_GPIO(partition, x)	(((x) & OMAP_MUX_MODE7) == \
+> +					  partition->gpio)
+>  #define OMAP_MODE_UART(x)	(((x) & OMAP_MUX_MODE7) == OMAP_MUX_MODE0)
+>  
+>  /* Flags for omapX_mux_init */
+> @@ -79,13 +80,20 @@
+>  /*
+>   * omap_mux_init flags definition:
+>   *
+> + * OMAP_GPIO_MUX_MODE, bits 0-2: gpio muxing mode, same like pad control
+> + *      register which includes values from 0-7.
+>   * OMAP_MUX_REG_8BIT: Ensure that access to padconf is done in 8 bits.
+>   * The default value is 16 bits.
+> - * OMAP_MUX_GPIO_IN_MODE3: The GPIO is selected in mode3.
+> - * The default is mode4.
+>   */
+> -#define OMAP_MUX_REG_8BIT		(1 << 0)
+> -#define OMAP_MUX_GPIO_IN_MODE3		(1 << 1)
+> +#define OMAP_MUX_GPIO_IN_MODE0		OMAP_MUX_MODE0
+> +#define OMAP_MUX_GPIO_IN_MODE1		OMAP_MUX_MODE1
+> +#define OMAP_MUX_GPIO_IN_MODE2		OMAP_MUX_MODE2
+> +#define OMAP_MUX_GPIO_IN_MODE3		OMAP_MUX_MODE3
+> +#define OMAP_MUX_GPIO_IN_MODE4		OMAP_MUX_MODE4
+> +#define OMAP_MUX_GPIO_IN_MODE5		OMAP_MUX_MODE5
+> +#define OMAP_MUX_GPIO_IN_MODE6		OMAP_MUX_MODE6
+> +#define OMAP_MUX_GPIO_IN_MODE7		OMAP_MUX_MODE7
+> +#define OMAP_MUX_REG_8BIT		(1 << 3)
+>  
+>  /**
+>   * struct omap_board_data - board specific device data
+> @@ -105,6 +113,7 @@ struct omap_board_data {
+>   * struct mux_partition - contain partition related information
+>   * @name: name of the current partition
+>   * @flags: flags specific to this partition
+> + * @gpio: gpio mux mode 
+>   * @phys: physical address
+>   * @size: partition size
+>   * @base: virtual address after ioremap
+> @@ -114,6 +123,7 @@ struct omap_board_data {
+>  struct omap_mux_partition {
+>  	const char		*name;
+>  	u32			flags;
+> +	u32			gpio;
+>  	u32			phys;
+>  	u32			size;
+>  	void __iomem		*base;
+> diff --git a/arch/arm/mach-omap2/mux34xx.c b/arch/arm/mach-omap2/mux34xx.c
+> index c47140b..c53609f4 100644
+> --- a/arch/arm/mach-omap2/mux34xx.c
+> +++ b/arch/arm/mach-omap2/mux34xx.c
+> @@ -2053,7 +2053,7 @@ int __init omap3_mux_init(struct omap_board_mux *board_subset, int flags)
+>  		return -EINVAL;
+>  	}
+>  
+> -	return omap_mux_init("core", 0,
+> +	return omap_mux_init("core", OMAP_MUX_GPIO_IN_MODE4,
+>  			     OMAP3_CONTROL_PADCONF_MUX_PBASE,
+>  			     OMAP3_CONTROL_PADCONF_MUX_SIZE,
+>  			     omap3_muxmodes, package_subset, board_subset,
+> -- 
+> 1.7.4.1
+> 
