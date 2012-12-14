@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab2LNH17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:27:59 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52153 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab2LNH17 (ORCPT
+	id S1754172Ab2LNHef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:34:35 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63972 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab2LNHed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:27:59 -0500
-Date: Fri, 14 Dec 2012 07:27:55 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, J??rn Engel <joern@logfs.org>
-Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on
- mmap
-Message-ID: <20121214072755.GR4939@ZenIV.linux.org.uk>
-References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+	Fri, 14 Dec 2012 02:34:33 -0500
+Date: Fri, 14 Dec 2012 08:34:25 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Joonyoung Shim <jy0922.shim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH v2] pwm: samsung: add missing s3c->pwm_id
+Message-ID: <20121214073425.GC24094@avionic-0098.adnet.avionic-design.de>
+References: <1355468338-12611-1-git-send-email-jy0922.shim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9Ek0hoCL9XbhcSqy"
 Content-Disposition: inline
-In-Reply-To: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+In-Reply-To: <1355468338-12611-1-git-send-email-jy0922.shim@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:gX92ShSj/98AFlsPk+tbOc+00WZRWo4Yvnj27yd8g8F
+ h35k9CzUS44FYhnYpFiWfvSiw5uiny6vkIIT/2XAIJ+5t70u6C
+ lTjPyAEArTBQPBZdV67+in5blvGfdeUzzPFXZ4BZEYU8/+7ko6
+ F8D8E6En9a2zZ3skNfiQBFRBcCSKfCiCDZHeJFlSPTs8uJV+Qz
+ MGwRW/w11z29Vkhd61jZkI+k27G62zD0Hu2qloTKUEJaCar1cK
+ 2oFXo1H1J8kQJ9zfz0FRxAarPPD5e38pg0cH5nQdp0bhqFsyhx
+ VFdlYTsfZYPvWlraKoC+IK+4Nl1XOthbWntmub/TgVgHboXUw8
+ Xou+GtxWbfIYOHMrxyqbHymyWMiXhJ+TCk+RslUKL4h+PH3tkm
+ T/tdHAoDuiHOdfKxIgk1XtuaTT5+t6eNIXMkOCKkxomt630Sdh
+ G4YU+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 09:49:43PM -0800, Andy Lutomirski wrote:
-> This is a serious cause of mmap_sem contention.  MAP_POPULATE
-> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> Sensible people use anonymous mappings.  I write kernel patches :)
-> 
-> I'm not entirely thrilled by the aesthetics of this patch.  The MAP_POPULATE case
-> could also be improved by doing it without any lock at all.  This is still a big
-> improvement, though.
 
-Wait a minute.  get_user_pages() relies on ->mmap_sem being held.  Unless
-I'm seriously misreading your patch it removes that protection.  And yes,
-I'm aware of execve-related exception; it's in special circumstances -
-bprm->mm is guaranteed to be not shared (and we need to rearchitect that
-area anyway, but that's a separate story).
+--9Ek0hoCL9XbhcSqy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Dec 14, 2012 at 03:58:58PM +0900, Joonyoung Shim wrote:
+> The s3c->pwm_id is used to calculate offset of related register.
+>=20
+> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+
+I've modified the subject a bit to make it clear the assignment of
+s3c->pwm_id was missing, not the s3c->pwm_id field altogether.
+
+Applied, thanks.
+
+Thierry
+
+--9Ek0hoCL9XbhcSqy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQytaBAAoJEN0jrNd/PrOhAlcP/14qb5YTkwpRW74RubZ3jIRS
+U7VK+3h1DCvzQUlvCiQCMexgkC2/pIn/2trtE1Jj8I76FgWog01pebBxmGrjh6xY
+dH2Iue6ak6U7tzUHeG2uJUARQPc/JVElfG36mM9/RSJ1XxZ3RDeBVhZzkckFLANW
+dXnM1aXV3HomGacy8k5IeJNlvm8NvzX7BwjAl1PTlZxlxUJZmCHDQRal/UxfNBt+
+JsOgSXAFDD/hTN2XjBHH6xJf54HFNuNx5KsCKCcqoyRy6TKJO+RjwvGW41sXlEhP
+stH2bwDgzhwa7W98UA/1WECb/xZtEgFtr31/rw+UxtHZ6gzceBvii8PoAHR8LPp1
+jNJQpmAaj7bL//BThLBx5+H7knH3Lrok70C39dh3f16BLul16gUaODnUcC/H4+vM
+VN7o/RSSTqHpWjUdVzdKR42jr6LDNkBtL4NvHstm5X9cGvtna9N9PERW0sAxjUN6
+t/jBOCJswl80K9Yt8uLRgBGF8JTPEQ3yTUm+sNVarZ01XuVZNQbJWZT9KsWfkeiL
+nU7NxJB5np3T0DQFLTEmCeVZgAobmrqESzGHz+LNucOcZRspLj3FKyK9nlGxzBZo
+1yfY3ttqtKKRF+E2O687BVO12UJjWHGNf8Gh7+o+B8Lu8WrW9jjQQZCxuJiXUC5F
+nlYTb07jTtP9MPGdXE7M
+=2BBC
+-----END PGP SIGNATURE-----
+
+--9Ek0hoCL9XbhcSqy--
