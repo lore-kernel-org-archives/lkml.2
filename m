@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422690Ab2LNXDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:03:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40608 "EHLO mail.kernel.org"
+	id S1422707Ab2LNXDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:03:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40631 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422653Ab2LNXDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:03:00 -0500
+	id S1422653Ab2LNXDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:03:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 25/37] ACPI / PNP: Do not crash due to stale pointer use during system resume
-Date: Fri, 14 Dec 2012 15:01:02 -0800
-Message-Id: <20121214222257.457391907@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 12/37] drm/i915: do not default to 18 bpp for eDP if missing from VBT
+Date: Fri, 14 Dec 2012 15:00:49 -0800
+Message-Id: <20121214222255.589920010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -25,49 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit a6b5e88c0e42093b9057856f35770966c8c591e3 upstream.
+commit 9a30a61f3516871c5c638fd7c025fbaa11ddf7fe upstream.
 
-During resume from system suspend the 'data' field of
-struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
-due to removal of the associated ACPI device node object in the
-previous suspend-resume cycle.  This happens, for example, if a
-dockable machine is booted in the docking station and then suspended
-and resumed and suspended again.  If that happens,
-pnpacpi_build_resource_template() called from pnpacpi_set_resources()
-attempts to use that pointer and crashes.
+commit 500a8cc466a24e2fbc4c86ef9c6467ae2ffdeb0c
+Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+Date:   Wed Jan 13 11:19:52 2010 +0800
 
-However, pnpacpi_set_resources() actually checks the device's ACPI
-handle, attempts to find the ACPI device node object attached to it
-and returns an error code if that fails, so in fact it knows what the
-correct value of dev->data should be.  Use this observation to update
-dev->data with the correct value if necessary and dump a call trace
-if that's the case (once).
+    drm/i915: parse eDP panel color depth from VBT block
 
-We still need to fix the root cause of this issue, but preventing
-systems from crashing because of it is an improvement too.
+originally introduced parsing bpp for eDP from VBT, with a default of 18
+bpp if the eDP BIOS data block is not present. Turns out that default seems
+to break the Macbook Pro with retina display, as noted in
 
-Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+commit 4344b813f105a19f793f1fd93ad775b784648b95
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Aug 10 11:10:20 2012 +0200
+
+    drm/i915: ignore eDP bpc settings from vbt
+
+Since we can't ignore bpc settings from VBT completely after all, get rid
+of the default. Do not clamp eDP to 18 bpp by default if the eDP BDB is
+missing from VBT.
+
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Henrik Rydberg <rydberg@euromail.se>
+[danvet: paste in the updated commit message from irc.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/pnpacpi/core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_bios.c    |   11 ++---------
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -95,6 +95,9 @@ static int pnpacpi_set_resources(struct
- 		return -ENODEV;
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -500,12 +500,8 @@ parse_edp(struct drm_i915_private *dev_p
+ 
+ 	edp = find_section(bdb, BDB_EDP);
+ 	if (!edp) {
+-		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
+-			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
+-				      "supported, assume %dbpp panel color "
+-				      "depth.\n",
+-				      dev_priv->edp.bpp);
+-		}
++		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
++			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
+ 		return;
  	}
  
-+	if (WARN_ON_ONCE(acpi_dev != dev->data))
-+		dev->data = acpi_dev;
-+
- 	ret = pnpacpi_build_resource_template(dev, &buffer);
- 	if (ret)
- 		return ret;
+@@ -658,9 +654,6 @@ init_vbt_defaults(struct drm_i915_privat
+ 	dev_priv->lvds_use_ssc = 1;
+ 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+-
+-	/* eDP data */
+-	dev_priv->edp.bpp = 18;
+ }
+ 
+ static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3795,7 +3795,7 @@ static bool intel_choose_pipe_bpp_dither
+ 			/* Use VBT settings if we have an eDP panel */
+ 			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
+ 
+-			if (edp_bpc < display_bpc) {
++			if (edp_bpc && edp_bpc < display_bpc) {
+ 				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+ 				display_bpc = edp_bpc;
+ 			}
 
 
