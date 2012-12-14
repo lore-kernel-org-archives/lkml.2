@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2LNWDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:03:15 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:48204 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2LNWDN (ORCPT
+	id S1756470Ab2LNWEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:04:04 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:37776 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab2LNWEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:03:13 -0500
+	Fri, 14 Dec 2012 17:04:02 -0500
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Linux Containers <containers@lists.linux-foundation.org>
 Cc: <linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -14,29 +14,30 @@ Cc: <linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>,
         David Howells <dhowells@redhat.com>
 References: <87txroxpgq.fsf@xmission.com>
-Date: Fri, 14 Dec 2012 14:03:05 -0800
+Date: Fri, 14 Dec 2012 14:03:54 -0800
 In-Reply-To: <87txroxpgq.fsf@xmission.com> (Eric W. Biederman's message of
 	"Fri, 14 Dec 2012 14:01:57 -0800")
-Message-ID: <87obhwxpeu.fsf@xmission.com>
+Message-ID: <87hanoxpdh.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+NvOZ9I06Cv1opnzvUGqGcNVCMG88VRh0=
+X-XM-AID: U2FsdGVkX1+aRMyLmshQ70Fjo7ovbVJrUbIs9jPwqow=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0093]
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0140]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
 	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 1/4] Fix cap_capable to only allow owners in the parent user namespace to have caps.
+Subject: [PATCH 2/4] userns: Require CAP_SYS_ADMIN for most uses of setns.
 X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -44,90 +45,109 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Andy Lutomirski pointed out that the current behavior of allowing the
-owner of a user namespace to have all caps when that owner is not in a
-parent user namespace is wrong.  Add a test to ensure the owner of a user
-namespace is in the parent of the user namespace to fix this bug.
+Andy Lutomirski <luto@amacapital.net> found a nasty little bug in
+the permissions of setns.  With unprivileged user namespaces it
+became possible to create new namespaces without privilege.
 
-Thankfully this bug did not apply to the initial user namespace, keeping
-the mischief that can be caused by this bug quite small.
+However the setns calls were relaxed to only require CAP_SYS_ADMIN in
+the user nameapce of the targed namespace.
 
-This is bug was introduced in v3.5 by commit 783291e6900
-"Simplify the user_namespace by making userns->creator a kuid."
-But did not matter until the permisions required to create
-a user namespace were relaxed allowing a user namespace to be created
-inside of a user namespace.
+Which made the following nasty sequence possible.
 
-The bug made it possible for the owner of a user namespace to be
-present in a child user namespace.  Since the owner of a user nameapce
-is granted all capabilities it became possible for users in a
-grandchild user namespace to have all privilges over their parent user
-namspace.
+pid = clone(CLONE_NEWUSER | CLONE_NEWNS);
+if (pid == 0) { /* child */
+	system("mount --bind /home/me/passwd /etc/passwd");
+}
+else if (pid != 0) { /* parent */
+	char path[PATH_MAX];
+	snprintf(path, sizeof(path), "/proc/%u/ns/mnt");
+	fd = open(path, O_RDONLY);
+	setns(fd, 0);
+	system("su -");
+}
 
-Reorder the checks in cap_capable.  This should make the common case
-faster and make it clear that nothing magic happens in the initial
-user namespace.  The reordering is safe because cred->user_ns
-can only be in targ_ns or targ_ns->parent but not both.
+Prevent this possibility by requiring CAP_SYS_ADMIN
+in the current user namespace when joing all but the user namespace.
 
-Add a comment a the top of the loop to make the logic of
-the code clear.
-
-Add a distinct variable ns that changes as we walk up
-the user namespace hierarchy to make it clear which variable
-is changing.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- security/commoncap.c |   25 +++++++++++++++++--------
- 1 files changed, 17 insertions(+), 8 deletions(-)
+ fs/namespace.c           |    3 ++-
+ ipc/namespace.c          |    3 ++-
+ kernel/pid_namespace.c   |    3 ++-
+ kernel/utsname.c         |    3 ++-
+ net/core/net_namespace.c |    3 ++-
+ 5 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 6dbae46..7ee08c7 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -76,24 +76,33 @@ int cap_netlink_send(struct sock *sk, struct sk_buff *skb)
- int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
- 		int cap, int audit)
+diff --git a/fs/namespace.c b/fs/namespace.c
+index c1bbe86..398a50f 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2781,7 +2781,8 @@ static int mntns_install(struct nsproxy *nsproxy, void *ns)
+ 	struct path root;
+ 
+ 	if (!ns_capable(mnt_ns->user_ns, CAP_SYS_ADMIN) ||
+-	    !nsown_capable(CAP_SYS_CHROOT))
++	    !nsown_capable(CAP_SYS_CHROOT) ||
++	    !nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	if (fs->users != 1)
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index cf3386a..7c1fa45 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -170,7 +170,8 @@ static void ipcns_put(void *ns)
+ static int ipcns_install(struct nsproxy *nsproxy, void *new)
  {
--	for (;;) {
--		/* The owner of the user namespace has all caps. */
--		if (targ_ns != &init_user_ns && uid_eq(targ_ns->owner, cred->euid))
--			return 0;
-+	struct user_namespace *ns = targ_ns;
+ 	struct ipc_namespace *ns = new;
+-	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
++	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
++	    !nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
-+	/* See if cred has the capability in the target user namespace
-+	 * by examining the target user namespace and all of the target
-+	 * user namespace's parents.
-+	 */
-+	for (;;) {
- 		/* Do we have the necessary capabilities? */
--		if (targ_ns == cred->user_ns)
-+		if (ns == cred->user_ns)
- 			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
+ 	/* Ditch state from the old ipc namespace */
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index 560da0d..fdbd0cd 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -325,7 +325,8 @@ static int pidns_install(struct nsproxy *nsproxy, void *ns)
+ 	struct pid_namespace *active = task_active_pid_ns(current);
+ 	struct pid_namespace *ancestor, *new = ns;
  
- 		/* Have we tried all of the parent namespaces? */
--		if (targ_ns == &init_user_ns)
-+		if (ns == &init_user_ns)
- 			return -EPERM;
+-	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN))
++	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN) ||
++	    !nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
-+		/* 
-+		 * The owner of the user namespace in the parent of the
-+		 * user namespace has all caps.
-+		 */
-+		if ((ns->parent == cred->user_ns) && uid_eq(ns->owner, cred->euid))
-+			return 0;
-+
- 		/*
--		 *If you have a capability in a parent user ns, then you have
-+		 * If you have a capability in a parent user ns, then you have
- 		 * it over all children user namespaces as well.
- 		 */
--		targ_ns = targ_ns->parent;
-+		ns = ns->parent;
- 	}
+ 	/*
+diff --git a/kernel/utsname.c b/kernel/utsname.c
+index f6336d5..08b197e 100644
+--- a/kernel/utsname.c
++++ b/kernel/utsname.c
+@@ -113,7 +113,8 @@ static int utsns_install(struct nsproxy *nsproxy, void *new)
+ {
+ 	struct uts_namespace *ns = new;
  
- 	/* We never get here */
+-	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
++	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
++	    !nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	get_uts_ns(ns);
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 2e9a313..8acce01 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -649,7 +649,8 @@ static int netns_install(struct nsproxy *nsproxy, void *ns)
+ {
+ 	struct net *net = ns;
+ 
+-	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN))
++	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN) ||
++	    !nsown_capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	put_net(nsproxy->net_ns);
 -- 
 1.7.5.4
 
