@@ -1,156 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab2LNKX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 05:23:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753671Ab2LNKX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 05:23:27 -0500
-Date: Fri, 14 Dec 2012 11:23:21 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH v2] sched: cputime: avoid multiplication overflow (in common
- cases)
-Message-ID: <20121214102257.GA2572@redhat.com>
+	id S1753719Ab2LNK2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 05:28:47 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:16004 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2LNK2p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 05:28:45 -0500
+From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+To: Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        Huqiao <huqiao36@huawei.com>
+Subject: RE: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage
+ devices and support new switch command
+Thread-Topic: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage
+ devices and support new switch command
+Thread-Index: AQHN2FaweIm5oeNb4kuKUXcBKWvQ25gXlv4g///t3YCAAACNgIAAkuEw
+Date: Fri, 14 Dec 2012 10:28:31 +0000
+Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F326FC0242@szxeml546-mbs.china.huawei.com>
+References: <fe8c905bb12.b12fe8c905b@huawei.com>
+ <910F9D9E13B84F4C8FA771DC9BDE99F326FBFB54@szxeml546-mbs.china.huawei.com>
+ <20121214093141.7e4eba61@pyramind.ukuu.org.uk>
+ <1758237.OLMhWhauCd@linux-lqwf.site>
+In-Reply-To: <1758237.OLMhWhauCd@linux-lqwf.site>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.11.34.182]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBEASqLt032420
 
-We scale stime, utime values based on rtime (sum_exec_runtime converted
-to jiffies). During scaling we multiple rtime * utime, what seems to be
-fine, since both values are converted to u64, but is not.
+Dear Oliver:
 
-Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
-for 1 day, threads utilize 100% cpu on user space. Machine has 64 cpus.
+> -----Original Message-----
+> From: Oliver Neukum [mailto:oneukum@suse.de]
+> Sent: Friday, December 14, 2012 5:34 PM
+> To: Alan Cox
+> Cc: Fangxiaozhi (Franko); linux-usb@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Xueguiying (Zihan); Linlei (Lei Lin);
+> greg@kroah.com; Yili (Neil); Wangyuhua (Roger, Credit); Huqiao
+> Subject: Re: [PATCH 1/1]linux-usb: optimize to match the Huawei USB
+> storage devices and support new switch command
+> 
+> On Friday 14 December 2012 09:31:41 Alan Cox wrote:
+> > On Fri, 14 Dec 2012 03:01:24 +0000
+> > "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com> wrote:
+> >
+> > > Dear Alan:
+> > >
+> > > 	This prevents people getting access to the storage device if they want.
+> > > 	----In our device, after its switching, it will keep the cdrom port
+> together with other ports (such as modem port). So you can access the
+> storage device too, after our switch.
+> >
+> > Ok so the behaviour is
+> >
+> > 	plug in device
+> > 	"I am a CD-ROM"
+> > 	command sent
+> > 	"I am a CD-ROM, I am a modem, I am other things"
+> >
+> > with the newer devices ?
+> 
+> For such devices we should put the switching code into generic code, not a
+> device driver so that we have a chance to do reset_resume() on those
+> devices.
+--------------Because in many embedded linux system, they don't include such switch tools themselves. 
+			So I think it is better to put the switching code in device driver.
+--------------By the way, because our device will response the switching command for once, 
+			so I think you can do reset_resume() as you want.
 
-Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
-0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
-which can not be covered in 64 bits.
+> 	Regards
+> 		Oliver
 
-Result of overflow is stall of utime values visible in user space
-(prev_utime in kernel), even if application still consume lot of CPU
-time.
+Best Regards,
+Franko Fang
 
-Probably good fix for the problem, will be using 128 bit variable and
-proper mul128 and div_u128_u64 primitives. While mul128 is on it's
-way to kernel, there is no 128 bit division yet. I'm not sure, if we
-want to add it to kernel. Perhaps we could also change the way how
-stime and utime are calculated, but I don't know how, so I come with
-the below solution for the problem.
-
-To avoid overflow patch change value we scale to min(stime, utime). This
-is more like workaround, but will work for processes, which perform
-mostly on user space or mostly on kernel space. Unfortunately processes,
-which perform on kernel and user space equally, and additionally utilize
-lot of CPU time, still will hit this overflow pretty quickly. However
-such processes seems to be uncommon.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-v1 -> v2: rebase to current Linus source
-
- kernel/sched/cputime.c |   61 +++++++++++++++++++++++++++++-------------------
- 1 files changed, 37 insertions(+), 24 deletions(-)
-
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 293b202..5e2309a 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -509,20 +509,6 @@ EXPORT_SYMBOL_GPL(vtime_account);
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
- 
--static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
--{
--	u64 temp = (__force u64) rtime;
--
--	temp *= (__force u64) utime;
--
--	if (sizeof(cputime_t) == 4)
--		temp = div_u64(temp, (__force u32) total);
--	else
--		temp = div64_u64(temp, (__force u64) total);
--
--	return (__force cputime_t) temp;
--}
--
- /*
-  * Adjust tick based cputime random precision against scheduler
-  * runtime accounting.
-@@ -531,10 +517,11 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, utime, total;
--
--	utime = curr->utime;
--	total = utime + curr->stime;
-+	cputime_t utime = curr->utime;
-+	cputime_t stime = curr->stime;
-+	cputime_t rtime, total, scaled_time;
-+	bool utime_scale = false;
-+	u64 tmp;
- 
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -548,18 +535,44 @@ static void cputime_adjust(struct task_cputime *curr,
- 	 */
- 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
- 
--	if (total)
--		utime = scale_utime(utime, rtime, total);
--	else
--		utime = rtime;
-+	if (utime == stime) {
-+		scaled_time = rtime / 2;
-+	} else {
-+		tmp = (__force u64) rtime;
-+
-+		/*
-+		 * Choose smaller value to avoid possible overflow during
-+		 * multiplication.
-+		 */
-+		if (utime < stime) {
-+			tmp *= utime;
-+			utime_scale = true;
-+		} else {
-+			tmp *= stime;
-+		}
-+
-+		total = utime + stime;
-+
-+		if (sizeof(cputime_t) == 4)
-+			tmp = div_u64(tmp, (__force u32) total);
-+		else
-+			tmp = div64_u64(tmp, (__force u64) total);
-+
-+		scaled_time = (__force cputime_t) tmp;
-+	}
- 
- 	/*
- 	 * If the tick based count grows faster than the scheduler one,
- 	 * the result of the scaling may go backward.
- 	 * Let's enforce monotonicity.
- 	 */
--	prev->utime = max(prev->utime, utime);
--	prev->stime = max(prev->stime, rtime - prev->utime);
-+	if (utime_scale) {
-+		prev->utime = max(prev->utime, scaled_time);
-+		prev->stime = max(prev->stime, rtime - prev->utime);
-+	} else {
-+		prev->stime = max(prev->stime, scaled_time);
-+		prev->utime = max(prev->utime, rtime - prev->stime);
-+	}
- 
- 	*ut = prev->utime;
- 	*st = prev->stime;
--- 
-1.7.1
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
