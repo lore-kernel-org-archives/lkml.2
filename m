@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab2LNSam (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:30:42 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:63290 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756624Ab2LNSak (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:30:40 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+yWhnpTy1ulzrJpxD8Prmz
-Date: Fri, 14 Dec 2012 10:30:28 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: balbi@ti.com, paul@pwsan.com, keshava_mgowda@ti.com, sshtylyov@mvista.com,
-        bjorn@mork.no, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH v4 01/23] mfd: omap-usb-host: get rid of
- cpu_is_omap..() macros
-Message-ID: <20121214183027.GC4989@atomide.com>
-References: <1355134833-5199-1-git-send-email-rogerq@ti.com>
- <1355134833-5199-2-git-send-email-rogerq@ti.com>
- <20121213214949.GH4989@atomide.com>
- <20121214005450.GO26699@sortiz-mobl>
+	id S1756887Ab2LNSgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:36:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48741 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756683Ab2LNSgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 13:36:09 -0500
+Message-ID: <50CB716D.6020501@zytor.com>
+Date: Fri, 14 Dec 2012 10:35:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121214005450.GO26699@sortiz-mobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, Stefani Seibold <stefani@seibold.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
+        mingo@redhat.com, john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com>
+In-Reply-To: <50CAE485.5020608@parallels.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Samuel Ortiz <sameo@linux.intel.com> [121213 16:57]:
-> Hi Tony,
+On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
+> On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
+>> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
+>> really need more control I'd almost push for a device/filesystem node
+>> that could be mmapped the usual way.
+>>
+>> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
+>> criu is stable enough yet that we should care.  Criu people?
 > 
-> On Thu, Dec 13, 2012 at 01:49:49PM -0800, Tony Lindgren wrote:
-> > Hi Samuel,
-> > 
-> > * Roger Quadros <rogerq@ti.com> [121210 02:23]:
-> > > Instead of using cpu_is_omap..() macros in the device driver we
-> > > rely on information provided in the platform data.
-> > > 
-> > > The only information we need is whether the USB Host module has
-> > > a single ULPI bypass control bit for all ports or individual bypass
-> > > control bits for each port. OMAP3 REV2.1 and earlier have the former.
-> > 
-> > I'd like to apply this patch as a fix so I can finally nuke plat/cpu.h
-> > for omaps by -rc1 before more drivers start using it again.
-> > 
-> > That is assuming nobody else is planning on merging this series for
-> > v3.8 presumably. 
-> This should go into 3.9, yes.
+> It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
+> 
+>> (In brief summary: how annoying would it be if the vdso was no longer
+>> just a bunch of constant bytes that lived somewhere?)
+> 
+> It depends on what vdso is going to be. In the perfect case it should
+> a) be mremap-able to any address (or be at fixed address _forever_, but
+>    I assume this is not feasible);
+> b) have entry points at fixed (or somehow movable) places.
+> 
+> I admit that I didn't understand your question properly, if I did,
+> please correct me.
+> 
 
-OK looks like you have all the necessary acks except for one
-clock change. I replied to that one. 
- 
-> > Want to ack this one?
-> Looks fine to me:
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+mremap() should work.  At the same time, the code itself is not going to
+have any stability guarantees between kernel versions -- it obviously
+cannot.
 
-Thanks, I'll queue that one and then after -rc1 hopefully
-you have all the necessary acks to queue this one via your
-mfd tree.
+Incidentally, the MAYWRITE bit which is there to allow breakpoints is
+obviously problematic for the vvar page.  We could mark the vvar page
+differently, meaning more vmas, or we could decide it just doesn't
+matter and that if you mprotect() the vvar page and write to it you get
+exactly what you asked for...
 
-Regards,
+	-hpa
 
-Tony
+
