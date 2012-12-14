@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422828Ab2LNXGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:06:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41279 "EHLO mail.kernel.org"
+	id S1945982Ab2LNXHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:07:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41306 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422797Ab2LNXGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:06:51 -0500
+	id S1945964Ab2LNXHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:07:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [ 26/27] rcu: Fix batch-limit size problem
-Date: Fri, 14 Dec 2012 15:01:39 -0800
-Message-Id: <20121214222256.742122943@linuxfoundation.org>
+        Stefan Nagy <public@stefan-nagy.at>, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 16/27] ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
+Date: Fri, 14 Dec 2012 15:01:29 -0800
+Message-Id: <20121214222255.050615384@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -26,64 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 878d7439d0f45a95869e417576774673d1fa243f upstream.
+commit 129ff8f8d58297b04f47b5d6fad81aa2d08404e1 upstream.
 
-Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
-invocation) added a regression in rcu_do_batch()
+Or else the laptop will boot with a dimmed screen.
 
-Under stress, RCU is supposed to allow to process all items in queue,
-instead of a batch of 10 items (blimit), but an integer overflow makes
-the effective limit being 1.  So, unless there is frequent idle periods
-(during which RCU ignores batch limits), RCU can be forced into a
-state where it cannot keep up with the callback-generation rate,
-eventually resulting in OOM.
-
-This commit therefore converts a few variables in rcu_do_batch() from
-int to long to fix this problem, along with the module parameters
-controlling the batch limits.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51141
+Tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/rcutree.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/acpi/video.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -212,13 +212,13 @@ DEFINE_PER_CPU(struct rcu_dynticks, rcu_
- #endif
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -389,6 +389,12 @@ static int __init video_set_bqc_offset(c
+ 	return 0;
+ }
+ 
++static int video_ignore_initial_backlight(const struct dmi_system_id *d)
++{
++	use_bios_initial_backlight = 0;
++	return 0;
++}
++
+ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	/*
+ 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
+@@ -433,6 +439,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Folio 13-2000",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
++		},
++	},
+ 	{}
  };
  
--static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
--static int qhimark = 10000;	/* If this many pending, ignore blimit. */
--static int qlowmark = 100;	/* Once only this many pending, use blimit. */
--
--module_param(blimit, int, 0444);
--module_param(qhimark, int, 0444);
--module_param(qlowmark, int, 0444);
-+static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
-+static long qhimark = 10000;	/* If this many pending, ignore blimit. */
-+static long qlowmark = 100;	/* Once only this many pending, use blimit. */
-+
-+module_param(blimit, long, 0444);
-+module_param(qhimark, long, 0444);
-+module_param(qlowmark, long, 0444);
- 
- int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
- int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
-@@ -1769,7 +1769,8 @@ static void rcu_do_batch(struct rcu_stat
- {
- 	unsigned long flags;
- 	struct rcu_head *next, *list, **tail;
--	int bl, count, count_lazy, i;
-+	long bl, count, count_lazy;
-+	int i;
- 
- 	/* If no callbacks are ready, just return.*/
- 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
 
 
