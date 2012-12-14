@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab2LNImb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:42:31 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6938 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2LNIm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:42:29 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 14 Dec 2012 00:40:36 -0800
-From: Sivaram Nair <sivaramn@nvidia.com>
-To: <ccross@android.com>, <santosh.shilimkar@ti.com>, <khilman@ti.com>,
-        <rjw@sisk.pl>, <daniel.lezcano@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, Sivaram Nair <sivaramn@nvidia.com>
-Subject: [PATCH 1/1] cpuidle: coupled: fix ready counter decrement
-Date: Fri, 14 Dec 2012 10:42:08 +0200
-Message-ID: <1355474528-13094-1-git-send-email-sivaramn@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	id S1752134Ab2LNIqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:46:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60085 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab2LNIql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 03:46:41 -0500
+Date: Fri, 14 Dec 2012 09:46:37 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/8] mm: vmscan: save work scanning (almost) empty LRU
+ lists
+Message-ID: <20121214084637.GB6898@dhcp22.suse.cz>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-4-git-send-email-hannes@cmpxchg.org>
+ <20121213154346.GF21644@dhcp22.suse.cz>
+ <20121213193820.GC6317@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121213193820.GC6317@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ready_waiting_counts atomic variable is compared against the wrong
-online cpu count. The latter is computed incorrectly using logical-OR
-instead of bit-OR. This patch fixes that.
+On Thu 13-12-12 14:38:20, Johannes Weiner wrote:
+> On Thu, Dec 13, 2012 at 04:43:46PM +0100, Michal Hocko wrote:
+> > On Wed 12-12-12 16:43:35, Johannes Weiner wrote:
+> > > In certain cases (kswapd reclaim, memcg target reclaim), a fixed
+> > > minimum amount of pages is scanned from the LRU lists on each
+> > > iteration, to make progress.
+> > > 
+> > > Do not make this minimum bigger than the respective LRU list size,
+> > > however, and save some busy work trying to isolate and reclaim pages
+> > > that are not there.
+> > > 
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > 
+> > Hmm, shrink_lruvec would do:
+> > 	nr_to_scan = min_t(unsigned long,
+> > 			   nr[lru], SWAP_CLUSTER_MAX);
+> > 	nr[lru] -= nr_to_scan;
+> > and isolate_lru_pages does
+> > 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++)
+> > so it shouldn't matter and we shouldn't do any additional loops, right?
+> > 
+> > Anyway it would be beter if get_scan_count wouldn't ask for more than is
+> > available.
+> 
+> Consider the inactive_list_is_low() check (especially expensive for
+> memcg anon), lru_add_drain(), lru lock acquisition...
 
-Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
----
- drivers/cpuidle/coupled.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ohh, I totally missed that. Thanks for pointing out (maybe s/some busy
+wok/$WITH_ALL_THIS/)?
 
-diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index 3265844..2a297f8 100644
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -209,7 +209,7 @@ inline int cpuidle_coupled_set_not_ready(struct cpuidle_coupled *coupled)
- 	int all;
- 	int ret;
- 
--	all = coupled->online_count || (coupled->online_count << WAITING_BITS);
-+	all = coupled->online_count | (coupled->online_count << WAITING_BITS);
- 	ret = atomic_add_unless(&coupled->ready_waiting_counts,
- 		-MAX_WAITING_CPUS, all);
- 
+Thanks for clarification!
+
+> And as I wrote to Mel in the other email, this can happen a lot when
+> you have memory cgroups in a multi-node environment.
+> 
+> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Thanks!
+> 
+> > > @@ -1748,15 +1748,17 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+> > >  out:
+> > >  	for_each_evictable_lru(lru) {
+> > >  		int file = is_file_lru(lru);
+> > > +		unsigned long size;
+> > >  		unsigned long scan;
+> > >  
+> > > -		scan = get_lru_size(lruvec, lru);
+> > > +		size = get_lru_size(lruvec, lru);
+> > +		size = scan = get_lru_size(lruvec, lru);
+> > 
+> > >  		if (sc->priority || noswap) {
+> > > -			scan >>= sc->priority;
+> > > +			scan = size >> sc->priority;
+> > >  			if (!scan && force_scan)
+> > > -				scan = SWAP_CLUSTER_MAX;
+> > > +				scan = min(size, SWAP_CLUSTER_MAX);
+> > >  			scan = div64_u64(scan * fraction[file], denominator);
+> > > -		}
+> > > +		} else
+> > > +			scan = size;
+> > 
+> > And this is not necessary then but this is totally nit.
+> 
+> Do you actually find this more readable?  Setting size = scan and then
+> later scan = size >> sc->priority? :-)
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
