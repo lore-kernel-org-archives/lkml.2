@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab2LNWaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:30:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38736 "EHLO mail.kernel.org"
+	id S932469Ab2LNWa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:30:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38772 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757467Ab2LNWaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:30:12 -0500
+	id S932282Ab2LNWaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:30:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>, Oliver Neukum <oneukum@suse.de>,
-        Aleksander Morgado <aleksander@gnu.org>
-Subject: [ 26/28] cdc-acm: implement TIOCSSERIAL to avoid blocking close(2)
-Date: Fri, 14 Dec 2012 14:26:43 -0800
-Message-Id: <20121214222256.228866860@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [ 28/28] rcu: Fix batch-limit size problem
+Date: Fri, 14 Dec 2012 14:26:45 -0800
+Message-Id: <20121214222256.580372798@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -26,88 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit ba2d8ce9db0a61505362bb17b8899df3d3326146 upstream.
+commit 878d7439d0f45a95869e417576774673d1fa243f upstream.
 
-Some devices (ex Nokia C7) simply don't respond at all when data is sent
-to some of their USB interfaces.  The data gets stuck in the TTYs queue
-and sits there until close(2), which them blocks because closing_wait
-defaults to 30 seconds (even though the fd is O_NONBLOCK).  This is
-rarely desired.  Implement the standard mechanism to adjust closing_wait
-and let applications handle it how they want to.
+Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
+invocation) added a regression in rcu_do_batch()
 
-See also 02303f73373aa1da19dbec510ec5a4e2576f9610 for usb_wwan.c.
+Under stress, RCU is supposed to allow to process all items in queue,
+instead of a batch of 10 items (blimit), but an integer overflow makes
+the effective limit being 1.  So, unless there is frequent idle periods
+(during which RCU ignores batch limits), RCU can be forced into a
+state where it cannot keep up with the callback-generation rate,
+eventually resulting in OOM.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Aleksander Morgado <aleksander@gnu.org>
+This commit therefore converts a few variables in rcu_do_batch() from
+int to long to fix this problem, along with the module parameters
+controlling the batch limits.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+ kernel/rcutree.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -788,6 +788,10 @@ static int get_serial_info(struct acm *a
- 	tmp.flags = ASYNC_LOW_LATENCY;
- 	tmp.xmit_fifo_size = acm->writesize;
- 	tmp.baud_base = le32_to_cpu(acm->line.dwDTERate);
-+	tmp.close_delay	= acm->port.close_delay / 10;
-+	tmp.closing_wait = acm->port.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+				ASYNC_CLOSING_WAIT_NONE :
-+				acm->port.closing_wait / 10;
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -202,13 +202,13 @@ DEFINE_PER_CPU(struct rcu_dynticks, rcu_
+ 	.dynticks = ATOMIC_INIT(1),
+ };
  
- 	if (copy_to_user(info, &tmp, sizeof(tmp)))
- 		return -EFAULT;
-@@ -795,6 +799,37 @@ static int get_serial_info(struct acm *a
- 		return 0;
- }
+-static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+-static int qhimark = 10000;	/* If this many pending, ignore blimit. */
+-static int qlowmark = 100;	/* Once only this many pending, use blimit. */
+-
+-module_param(blimit, int, 0);
+-module_param(qhimark, int, 0);
+-module_param(qlowmark, int, 0);
++static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
++static long qhimark = 10000;	/* If this many pending, ignore blimit. */
++static long qlowmark = 100;	/* Once only this many pending, use blimit. */
++
++module_param(blimit, long, 0);
++module_param(qhimark, long, 0);
++module_param(qlowmark, long, 0);
  
-+static int set_serial_info(struct acm *acm,
-+				struct serial_struct __user *newinfo)
-+{
-+	struct serial_struct new_serial;
-+	unsigned int closing_wait, close_delay;
-+	int retval = 0;
-+
-+	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
-+		return -EFAULT;
-+
-+	close_delay = new_serial.close_delay * 10;
-+	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+			ASYNC_CLOSING_WAIT_NONE : new_serial.closing_wait * 10;
-+
-+	mutex_lock(&acm->port.mutex);
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		if ((close_delay != acm->port.close_delay) ||
-+		    (closing_wait != acm->port.closing_wait))
-+			retval = -EPERM;
-+		else
-+			retval = -EOPNOTSUPP;
-+	} else {
-+		acm->port.close_delay  = close_delay;
-+		acm->port.closing_wait = closing_wait;
-+	}
-+
-+	mutex_unlock(&acm->port.mutex);
-+	return retval;
-+}
-+
- static int acm_tty_ioctl(struct tty_struct *tty,
- 					unsigned int cmd, unsigned long arg)
+ int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
+ int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
+@@ -1476,7 +1476,7 @@ static void rcu_do_batch(struct rcu_stat
  {
-@@ -805,6 +840,9 @@ static int acm_tty_ioctl(struct tty_stru
- 	case TIOCGSERIAL: /* gets serial port data */
- 		rv = get_serial_info(acm, (struct serial_struct __user *) arg);
- 		break;
-+	case TIOCSSERIAL:
-+		rv = set_serial_info(acm, (struct serial_struct __user *) arg);
-+		break;
- 	}
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy;
++	long bl, count, count_lazy;
  
- 	return rv;
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
 
 
