@@ -1,68 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab2LNQVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:21:30 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52983 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756516Ab2LNQV2 (ORCPT
+	id S1756479Ab2LNQUP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:20:15 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:51870 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab2LNQUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:21:28 -0500
-Message-ID: <50CB5205.1030303@wwwdotorg.org>
-Date: Fri, 14 Dec 2012 09:21:25 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de> <50C99677.6090306@nvidia.com> <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de> <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com>
-In-Reply-To: <50CAC2AC.1010704@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 14 Dec 2012 11:20:12 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org,
+        Alexandre Torgue <alexandre.torgue@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, Yang QU <yang.qu@stericsson.com>
+Subject: [PATCH 16/21] gpio: ab8500: Add internal pull up on GPIO of ab8540
+Date: Fri, 14 Dec 2012 16:19:34 +0000
+Message-Id: <1355501979-1157-17-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
+References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 11:09 PM, Terje Bergström wrote:
-> On 13.12.2012 19:58, Stephen Warren wrote:
->> On 12/13/2012 01:57 AM, Thierry Reding wrote:
->>> After some more discussion with Stephen on IRC we came to the
->>> conclusion that the easiest might be to have tegra-drm call into
->>> host1x with something like:
->>>
->>> void host1x_set_drm_device(struct host1x *host1x, struct device
->>> *dev);
->>
->> If host1x is registering the dummy device that causes tegradrm to be
->> instantiated, then presumably there's no need for the API above, since
->> host1x will already have the struct device * for tegradrm, since it
->> created it?
-> 
-> I didn't add the dummy device in my latest patch set. I first set out to
-> add it, and moved the drm global data to be drvdata of that device. Then
-> I noticed that it doesn't actually help at all.
-> 
-> The critical accesses to the global data are from probes of DC, HDMI,
-> etc.
+From: Alexandre Torgue <alexandre.torgue@stericsson.com>
 
-OK
+Add 4 GPIOs named GPIOx_VBAT which have both internal pull up
+and pull down capability on ab8540. We can also select different
+voltage domains for GPIOx_VBAT.
 
-> They want to get the global data by getting drvdata of their parent.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Yang QU <yang.qu@stericsson.com>
+Reviewed-by: Alexandre TORGUE <alexandre.torgue@stericsson.com>
+Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
+Tested-by: Alexandre TORGUE <alexandre.torgue@stericsson.com>
+Tested-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
+---
+ drivers/gpio/gpio-ab8500.c             |   64 ++++++++++++++++++++++++++++
+ include/linux/mfd/abx500/ab8500-gpio.h |   71 +++++++++++---------------------
+ 2 files changed, 87 insertions(+), 48 deletions(-)
 
-There's no reason that /has/ to be so; they can get any information from
-wherever it is, rather than trying to require it to be somewhere it isn't.
+diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
+index 757ae34..ff8df1f 100644
+--- a/drivers/gpio/gpio-ab8500.c
++++ b/drivers/gpio/gpio-ab8500.c
+@@ -72,6 +72,8 @@
+ #define AB8500_GPIO_IN5_REG	0x44
+ #define AB8500_GPIO_IN6_REG	0x45
+ #define AB9540_GPIO_IN7_REG	0x46
++#define AB8540_GPIO_VINSEL_REG	0x47
++#define AB8540_GPIO_PULL_UPDOWN_REG	0x48
+ #define AB8500_GPIO_ALTFUN_REG	0x50
+ #define AB8500_ALTFUN_REG_INDEX	6
+ #define AB9540_ALTFUN_REG_INDEX	7
+@@ -80,6 +82,8 @@
+ #define AB8505_NUM_GPIO		53
+ #define AB8540_NUM_GPIO		56
+ #define AB8500_NUM_VIR_GPIO_IRQ	16
++#define AB8540_GPIO_PULL_UPDOWN_MASK	0x03
++#define AB8540_GPIO_VINSEL_MASK	0x03
+ 
+ enum ab8500_gpio_action {
+ 	NONE,
+@@ -552,6 +556,20 @@ static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
+ 		if (ret < 0)
+ 			goto out_free;
+ 	}
++
++	if (is_ab8540(parent)) {
++		ret = abx500_set_register_interruptible(ab8500_gpio->dev,
++				AB8500_MISC, AB8540_GPIO_VINSEL_REG,
++				pdata->config_vinsel);
++		if (ret < 0)
++			goto out_free;
++		ret = abx500_set_register_interruptible(ab8500_gpio->dev,
++				AB8500_MISC, AB8540_GPIO_PULL_UPDOWN_REG,
++				pdata->config_pullupdown);
++		if (ret < 0)
++			goto out_free;
++	}
++
+ 	ret = abx500_set_register_interruptible(ab8500_gpio->dev, AB8500_MISC,
+ 				AB8500_GPIO_ALTFUN_REG,
+ 				pdata->config_reg[altfun_reg_index]);
+@@ -619,6 +637,52 @@ int ab8500_config_pulldown(struct device *dev,
+ EXPORT_SYMBOL(ab8500_config_pulldown);
+ 
+ /*
++ * ab8540_config_pull_updown() only available for following GPIOs:
++ * GPIO51(GPIO1_VBAT)
++ * GPIO52(GPIO2_VBAT)
++ * GPIO53(GPIO3_VBAT)
++ * GPIO54(GPIO4_VBAT)
++ */
++int ab8540_config_pull_updown(struct device *dev,
++				int gpio, enum ab8540_gpio_pull_updown reg)
++{
++	u8 offset =  gpio - AB8500_PIN_GPIO(51);
++	u8 pos = 2 * offset;
++	int ret;
++
++	ret = abx500_mask_and_set_register_interruptible(dev,
++			AB8500_MISC, AB8540_GPIO_PULL_UPDOWN_REG,
++			AB8540_GPIO_PULL_UPDOWN_MASK << pos, reg << pos);
++	if (ret < 0)
++		dev_err(dev, "%s failed (%d)\n", __func__, ret);
++	return ret;
++}
++EXPORT_SYMBOL(ab8540_config_pull_updown);
++
++/*
++ * ab8540_gpio_config_vinsel() only available for following GPIOs:
++ * GPIO51(GPIO1_VBAT)
++ * GPIO52(GPIO2_VBAT)
++ * GPIO53(GPIO3_VBAT)
++ * GPIO54(GPIO4_VBAT)
++ */
++int ab8540_gpio_config_vinsel(struct device *dev,
++				int gpio, enum ab8540_gpio_vinsel reg)
++{
++	u8 offset =  gpio - AB8500_PIN_GPIO(51);
++	u8 pos = 2 * offset;
++	int ret;
++
++	ret = abx500_mask_and_set_register_interruptible(dev,
++			AB8500_MISC, AB8540_GPIO_VINSEL_REG,
++			AB8540_GPIO_VINSEL_MASK << pos, reg << pos);
++	if (ret < 0)
++		dev_err(dev, "%s failed (%d)\n", __func__, ret);
++	return ret;
++}
++EXPORT_SYMBOL(ab8540_gpio_config_vinsel);
++
++/*
+  * ab8500_gpio_config_select()
+  *
+  * Configure functionality of pin, either specific use or GPIO.
+diff --git a/include/linux/mfd/abx500/ab8500-gpio.h b/include/linux/mfd/abx500/ab8500-gpio.h
+index 48325db..20df07d 100644
+--- a/include/linux/mfd/abx500/ab8500-gpio.h
++++ b/include/linux/mfd/abx500/ab8500-gpio.h
+@@ -18,62 +18,37 @@ struct ab8500_gpio_platform_data {
+ 	int gpio_base;
+ 	u32 irq_base;
+ 	u8  config_reg[8];
+-	u8  config_direction[6];
+-	u8  config_pullups[6];
++	u8  config_direction[7];
++	u8  config_pullups[7];
++	u8  config_vinsel;
++	u8  config_pullupdown;
+ };
+ 
+-enum ab8500_pin {
+-	AB8500_PIN_GPIO1 = 0,
+-	AB8500_PIN_GPIO2,
+-	AB8500_PIN_GPIO3,
+-	AB8500_PIN_GPIO4,
+-	AB8500_PIN_GPIO5,
+-	AB8500_PIN_GPIO6,
+-	AB8500_PIN_GPIO7,
+-	AB8500_PIN_GPIO8,
+-	AB8500_PIN_GPIO9,
+-	AB8500_PIN_GPIO10,
+-	AB8500_PIN_GPIO11,
+-	AB8500_PIN_GPIO12,
+-	AB8500_PIN_GPIO13,
+-	AB8500_PIN_GPIO14,
+-	AB8500_PIN_GPIO15,
+-	AB8500_PIN_GPIO16,
+-	AB8500_PIN_GPIO17,
+-	AB8500_PIN_GPIO18,
+-	AB8500_PIN_GPIO19,
+-	AB8500_PIN_GPIO20,
+-	AB8500_PIN_GPIO21,
+-	AB8500_PIN_GPIO22,
+-	AB8500_PIN_GPIO23,
+-	AB8500_PIN_GPIO24,
+-	AB8500_PIN_GPIO25,
+-	AB8500_PIN_GPIO26,
+-	AB8500_PIN_GPIO27,
+-	AB8500_PIN_GPIO28,
+-	AB8500_PIN_GPIO29,
+-	AB8500_PIN_GPIO30,
+-	AB8500_PIN_GPIO31,
+-	AB8500_PIN_GPIO32,
+-	AB8500_PIN_GPIO33,
+-	AB8500_PIN_GPIO34,
+-	AB8500_PIN_GPIO35,
+-	AB8500_PIN_GPIO36,
+-	AB8500_PIN_GPIO37,
+-	AB8500_PIN_GPIO38,
+-	AB8500_PIN_GPIO39,
+-	AB8500_PIN_GPIO40,
+-	AB8500_PIN_GPIO41,
+-	AB8500_PIN_GPIO42,
++enum ab8540_gpio_pull_updown {
++	AB8540_GPIO_PULL_DOWN = 0x0,
++	AB8540_GPIO_PULL_NONE = 0x1,
++	AB8540_GPIO_PULL_UP = 0x3,
++};
++
++enum ab8540_gpio_vinsel {
++	AB8540_GPIO_VINSEL_VBAT = 0x0,
++	AB8540_GPIO_VINSEL_VIN_1V8 = 0x1,
++	AB8540_GPIO_VINSEL_VDD_BIF = 0x2,
+ };
+ 
+ int ab8500_config_pulldown(struct device *dev,
+-				enum ab8500_pin gpio, bool enable);
++				int gpio, bool enable);
++
++int ab8540_config_pull_updown(struct device *dev,
++				int gpio, enum ab8540_gpio_pull_updown reg);
++
++int ab8540_gpio_config_vinsel(struct device *dev,
++				int gpio, enum ab8540_gpio_vinsel reg);
+ 
+ int ab8500_gpio_config_select(struct device *dev,
+-				enum ab8500_pin gpio, bool gpio_select);
++				int gpio, bool gpio_select);
+ 
+ int ab8500_gpio_config_get_select(struct device *dev,
+-				enum ab8500_pin	gpio, bool *gpio_select);
++				int gpio, bool *gpio_select);
+ 
+ #endif /* _AB8500_GPIO_H */
+-- 
+1.7.9.5
 
-> The dummy device is not their parent - host1x is. There's no
-> connection between the dummy and the real client devices.
-
-It's quite possible for the client devices to ask their actual parent
-(host1x) for the tegradrm struct device *, by calling a host1x API, and
-have host1x implement that API by returning the dummy/virtual device
-that it created. That should be just 1-2 lines of code to implement in
-host1x, plus maybe a couple more to correctly return -EPROBE_DEFERRED
-when appropriate.
