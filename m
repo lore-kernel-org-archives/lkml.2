@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab2LNLBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 06:01:18 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53302 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab2LNLBQ (ORCPT
+	id S1755999Ab2LNLB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 06:01:27 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:37776 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab2LNLBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 06:01:16 -0500
-Subject: [PATCH] mm/swap: abort swapoff after disk error
+	Fri, 14 Dec 2012 06:01:25 -0500
+Subject: [PATCH] mm/swap: add independed bio pool for swap
 To: linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>
-Date: Fri, 14 Dec 2012 15:01:10 +0400
-Message-ID: <20121214110110.8181.70783.stgit@zurg>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+Date: Fri, 14 Dec 2012 15:01:18 +0400
+Message-ID: <20121214110118.8387.66431.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,44 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Content of non-uptodate pages completely random, we cannot expose them into
-userspace. This leads to information leak and will crash userspace for sure.
-Probably we can reuse hwpoison entries here, but tmpfs already too complex.
+This bio pool guarantees reclaiming progress for anonymous pages.
+All avaliable bio in fs_bio_set may be borrowed by writeback which may
+never ends, because disk too slow or broken. I have seen this situation in
+real life in system where was a lot of bio requests to a loop device which
+laying on top of special fuse-based filesystem.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Original-patch-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Hugh Dickins <hughd@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>
 ---
- mm/swapfile.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ mm/page_io.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index e97a0e5..98fc2fd 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1127,6 +1127,22 @@ int try_to_unuse(unsigned int type, bool frontswap,
- 		wait_on_page_writeback(page);
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 78eee32..699f85e 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -22,12 +22,14 @@
+ #include <linux/frontswap.h>
+ #include <asm/pgtable.h>
  
- 		/*
-+		 * If read failed we cannot map not-uptodate page to
-+		 * user space. Actually, we are in serious troubles,
-+		 * we do not even know what process to kill. So, the only
-+		 * variant remains: to stop swapoff() and allow someone
-+		 * to kill processes to zap invalid pages.
-+		 *
-+		 * TODO replace page with hwpoison entry in pte and shmem.
-+		 */
-+		if (unlikely(!PageUptodate(page))) {
-+			unlock_page(page);
-+			page_cache_release(page);
-+			retval = -EIO;
-+			break;
-+		}
++static struct bio_set *swap_bio_set;
 +
-+		/*
- 		 * Remove all references to entry.
- 		 */
- 		swcount = *swap_map;
+ static struct bio *get_swap_bio(gfp_t gfp_flags,
+ 				struct page *page, bio_end_io_t end_io)
+ {
+ 	struct bio *bio;
+ 
+-	bio = bio_alloc(gfp_flags, 1);
++	bio = bio_alloc_bioset(gfp_flags, 1, swap_bio_set);
+ 	if (bio) {
+ 		bio->bi_sector = map_swap_page(page, &bio->bi_bdev);
+ 		bio->bi_sector <<= PAGE_SHIFT - 9;
+@@ -290,3 +292,12 @@ int swap_set_page_dirty(struct page *page)
+ 		return __set_page_dirty_no_writeback(page);
+ 	}
+ }
++
++static int __init swap_bio_init(void)
++{
++	swap_bio_set = bioset_create(SWAP_CLUSTER_MAX, 0);
++	if (!swap_bio_set)
++		panic("can't allocate swap_bio_set\n");
++	return 0;
++}
++late_initcall(swap_bio_init);
 
