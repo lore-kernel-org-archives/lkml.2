@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab2LNBRO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 20:17:14 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9055 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab2LNBRN (ORCPT
+	id S1755551Ab2LNBUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:20:41 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55279 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab2LNBUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 20:17:13 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YXxC6ppya9MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=jeKsYFhGskIA:10 a=VwQbUJbxAAAA:8 a=o2YJhybyzS7DZUXLfAUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355447831.17101.391.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/3] [GIT PULL] tracing: Some more updates
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 13 Dec 2012 20:17:11 -0500
-In-Reply-To: <20121129012340.602023062@goodmis.org>
-References: <20121129012340.602023062@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Thu, 13 Dec 2012 20:20:40 -0500
+Message-ID: <50CA7EE4.3000306@linaro.org>
+Date: Thu, 13 Dec 2012 17:20:36 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Feng Tang <feng.tang@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        alek.du@intel.com
+Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
+References: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
+In-Reply-To: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 20:23 -0500, Steven Rostedt wrote:
-> Ingo,
-> 
-> This is based off of my last pull request on tip/perf/core.
-> 
-> Please pull the latest tip/perf/core-2 tree, which can be found at:
+On 12/12/2012 06:05 PM, Feng Tang wrote:
+> In current kernel, there are several places which need to check
+> whether there is a persistent clock for the platform. Current check
+> is done by calling the read_persistent_clock() and validating the
+> return value.
+>
+> Add such a flag to make code more readable and call read_persistent_clock()
+> only once for all the checks.
+Sorry.. What  the actual benefit of this patch set?   (Usually with 
+changelogs its better to explain why you're doing something, rather then 
+just what you're doing.)
 
-Ping?
+Maybe I'm missing something, but it seems this doesn't change the 
+resulting logic of the code, does it?  As I thought we already check 
+read_persistent_clocks() output (and make sure its null) before using 
+the rtc HCTOSYS_DEVICE.
 
-This has been in linux-next for a few weeks too. It's all ready to go in
-this merge window.
-
--- Steve
-
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/core-2
-> 
-> Head SHA1: bf3071f5a054db9e5bab873355d27a7330ce5187
-> 
-> 
-> Anton Vorontsov (1):
->       tracing: Remove unneeded checks from the stack tracer
-> 
-> Dave Jones (1):
->       tracing: Remove unnecessary WARN_ONCE's from tracing_buffers_splice_read
-> 
-> Hiraku Toyooka (1):
->       tracing: Add a resize function to make one buffer equivalent to another buffer
-> 
-> ----
->  kernel/trace/trace.c       |   60 +++++++++++++++++++++++---------------------
->  kernel/trace/trace_stack.c |    4 ---
->  2 files changed, 31 insertions(+), 33 deletions(-)
-
+thanks
+-john
 
