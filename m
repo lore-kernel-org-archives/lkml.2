@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946041Ab2LNXHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:07:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41364 "EHLO mail.kernel.org"
+	id S1946056Ab2LNXHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:07:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41384 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945964Ab2LNXHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:07:30 -0500
+	id S1945964Ab2LNXHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:07:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 21/27] ring-buffer: Fix NULL pointer if rb_set_head_page() fails
-Date: Fri, 14 Dec 2012 15:01:34 -0800
-Message-Id: <20121214222255.945457675@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>, Oliver Neukum <oneukum@suse.de>,
+        Aleksander Morgado <aleksander@gnu.org>
+Subject: [ 23/27] cdc-acm: implement TIOCSSERIAL to avoid blocking close(2)
+Date: Fri, 14 Dec 2012 15:01:36 -0800
+Message-Id: <20121214222256.267310579@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -25,64 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 54f7be5b831254199522523ccab4c3d954bbf576 upstream.
+commit ba2d8ce9db0a61505362bb17b8899df3d3326146 upstream.
 
-The function rb_set_head_page() searches the list of ring buffer
-pages for a the page that has the HEAD page flag set. If it does
-not find it, it will do a WARN_ON(), disable the ring buffer and
-return NULL, as this should never happen.
+Some devices (ex Nokia C7) simply don't respond at all when data is sent
+to some of their USB interfaces.  The data gets stuck in the TTYs queue
+and sits there until close(2), which them blocks because closing_wait
+defaults to 30 seconds (even though the fd is O_NONBLOCK).  This is
+rarely desired.  Implement the standard mechanism to adjust closing_wait
+and let applications handle it how they want to.
 
-But if this bug happens to happen, not all callers of this function
-can handle a NULL pointer being returned from it. That needs to be
-fixed.
+See also 02303f73373aa1da19dbec510ec5a4e2576f9610 for usb_wwan.c.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Aleksander Morgado <aleksander@gnu.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-acm.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1396,6 +1396,8 @@ rb_insert_pages(struct ring_buffer_per_c
- 		struct list_head *head_page_with_bit;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -787,6 +787,10 @@ static int get_serial_info(struct acm *a
+ 	tmp.flags = ASYNC_LOW_LATENCY;
+ 	tmp.xmit_fifo_size = acm->writesize;
+ 	tmp.baud_base = le32_to_cpu(acm->line.dwDTERate);
++	tmp.close_delay	= acm->port.close_delay / 10;
++	tmp.closing_wait = acm->port.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
++				ASYNC_CLOSING_WAIT_NONE :
++				acm->port.closing_wait / 10;
  
- 		head_page = &rb_set_head_page(cpu_buffer)->list;
-+		if (!head_page)
-+			break;
- 		prev_page = head_page->prev;
- 
- 		first_page = pages->next;
-@@ -2934,7 +2936,7 @@ unsigned long ring_buffer_oldest_event_t
- 	unsigned long flags;
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct buffer_page *bpage;
--	unsigned long ret;
-+	unsigned long ret = 0;
- 
- 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 	if (copy_to_user(info, &tmp, sizeof(tmp)))
+ 		return -EFAULT;
+@@ -794,6 +798,37 @@ static int get_serial_info(struct acm *a
  		return 0;
-@@ -2949,7 +2951,8 @@ unsigned long ring_buffer_oldest_event_t
- 		bpage = cpu_buffer->reader_page;
- 	else
- 		bpage = rb_set_head_page(cpu_buffer);
--	ret = bpage->page->time_stamp;
-+	if (bpage)
-+		ret = bpage->page->time_stamp;
- 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ }
  
- 	return ret;
-@@ -3260,6 +3263,8 @@ rb_get_reader_page(struct ring_buffer_pe
- 	 * Splice the empty reader page into the list around the head.
- 	 */
- 	reader = rb_set_head_page(cpu_buffer);
-+	if (!reader)
-+		goto out;
- 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
- 	cpu_buffer->reader_page->list.prev = reader->list.prev;
++static int set_serial_info(struct acm *acm,
++				struct serial_struct __user *newinfo)
++{
++	struct serial_struct new_serial;
++	unsigned int closing_wait, close_delay;
++	int retval = 0;
++
++	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
++		return -EFAULT;
++
++	close_delay = new_serial.close_delay * 10;
++	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
++			ASYNC_CLOSING_WAIT_NONE : new_serial.closing_wait * 10;
++
++	mutex_lock(&acm->port.mutex);
++
++	if (!capable(CAP_SYS_ADMIN)) {
++		if ((close_delay != acm->port.close_delay) ||
++		    (closing_wait != acm->port.closing_wait))
++			retval = -EPERM;
++		else
++			retval = -EOPNOTSUPP;
++	} else {
++		acm->port.close_delay  = close_delay;
++		acm->port.closing_wait = closing_wait;
++	}
++
++	mutex_unlock(&acm->port.mutex);
++	return retval;
++}
++
+ static int acm_tty_ioctl(struct tty_struct *tty,
+ 					unsigned int cmd, unsigned long arg)
+ {
+@@ -804,6 +839,9 @@ static int acm_tty_ioctl(struct tty_stru
+ 	case TIOCGSERIAL: /* gets serial port data */
+ 		rv = get_serial_info(acm, (struct serial_struct __user *) arg);
+ 		break;
++	case TIOCSSERIAL:
++		rv = set_serial_info(acm, (struct serial_struct __user *) arg);
++		break;
+ 	}
  
+ 	return rv;
 
 
