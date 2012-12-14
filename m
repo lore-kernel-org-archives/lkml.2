@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab2LNEpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 23:45:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754292Ab2LNEpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 23:45:53 -0500
-Message-ID: <1355460351.2229.20.camel@ul30vt.home>
-Subject: Re: DMAR and DRHD errors[DMAR:[fault reason 06] PTE Read access is
- not set] Vt-d & intel_iommu
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Jason Gao <pkill.2012@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        kvm <kvm@vger.kernel.org>
-Date: Thu, 13 Dec 2012 21:45:51 -0700
-In-Reply-To: <CANmqhJBAxzVa5Ds0gojnYDDku5UbXGwfCNC=+z3XmVonF-_j2w@mail.gmail.com>
-References: <CANmqhJAuLoi_Y2Hsz+UnddHXYd9TCW-7qxp3fybDayfh33Y3Zg@mail.gmail.com>
-	 <1355415792.2229.7.camel@ul30vt.home>
-	 <CANmqhJBAxzVa5Ds0gojnYDDku5UbXGwfCNC=+z3XmVonF-_j2w@mail.gmail.com>
+	id S1756108Ab2LNEqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 23:46:15 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:63677 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756036Ab2LNEqN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 23:46:13 -0500
+Message-ID: <1355460356.5777.12.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+From: Mike Galbraith <bitbucket@online.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, linux@arm.linux.org.uk,
+        pjt@google.com, santosh.shilimkar@ti.com, Morten.Rasmussen@arm.com,
+        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, viresh.kumar@linaro.org
+Date: Fri, 14 Dec 2012 05:45:56 +0100
+In-Reply-To: <50C9E552.1010600@intel.com>
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
+	 <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
+	 <50C93AC1.1060202@intel.com>
+	 <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
+	 <50C9E552.1010600@intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:35/a4KmgaDRVWeuF4WHLC0el11mr12F+0jZsOdEA1aH
+ +On4rpyZaXNJaqcs5QPsxONEmXar7xsuWDidTKKnG07voaYfet
+ q/gh+0UZVWs65+0k83QGv+tdia/uatxoxkW3j+UsICkW4FCo9Z
+ cyzpC40bGlALGs2zHCR6tuU8UFPxyjlwZz0KPP+H5wv5yHgvaN
+ G11/u0D5Gz+9fbE7IJ0JfXNUgLwCn52I/W7gtjdo2y/5j3S5tv
+ coYVvIClwuuEaAr4DdzoOju3D3VvYIf1FdYFg1p4eSAeMpa3C3
+ BTfGqNCdBu9CQio2Dnv+Zf11V+DXZS4z+bN0QeKQ7KRXXclzOh
+ 26ZUp7YlGQ+XRUntoL516cqP4WPfbr1UPJTRLkTcII+vfQ1tnn
+ uMLPhx8yjSTsA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-14 at 10:01 +0800, Jason Gao wrote:
-> On Fri, Dec 14, 2012 at 12:23 AM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> >
-> > Device 03:00.0 is your raid controller:
-> >
-> > 03:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS 1078 (rev 04)
-> >
-> > For some reason it's trying to read from ffe65000, ffe8a000, ffe89000,
-> > ffe86000, ffe87000, ffe84000.  Those are in reserved memory regions, so
-> > it's not reading an OS allocated buffer, which probably means it's some
-> > kind of side-band communication with a management controller.  I'd guess
-> > it's a BIOS bug and there should be an RMRR covering those accesses.
-> > Thanks,
+On Thu, 2012-12-13 at 22:25 +0800, Alex Shi wrote: 
+> On 12/13/2012 06:11 PM, Vincent Guittot wrote:
+> > On 13 December 2012 03:17, Alex Shi <alex.shi@intel.com> wrote:
+> >> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
+> >>> During the creation of sched_domain, we define a pack buddy CPU for each CPU
+> >>> when one is available. We want to pack at all levels where a group of CPU can
+> >>> be power gated independently from others.
+> >>> On a system that can't power gate a group of CPUs independently, the flag is
+> >>> set at all sched_domain level and the buddy is set to -1. This is the default
+> >>> behavior.
+> >>> On a dual clusters / dual cores system which can power gate each core and
+> >>> cluster independently, the buddy configuration will be :
+> >>>
+> >>>       | Cluster 0   | Cluster 1   |
+> >>>       | CPU0 | CPU1 | CPU2 | CPU3 |
+> >>> -----------------------------------
+> >>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+> >>>
+> >>> Small tasks tend to slip out of the periodic load balance so the best place
+> >>> to choose to migrate them is during their wake up. The decision is in O(1) as
+> >>> we only check again one buddy CPU
+> >>
+> >> Just have a little worry about the scalability on a big machine, like on
+> >> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
+> >> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
+> >> is different on task distribution decision.
+> > 
+> > The buddy CPU should probably not be the same for all 64 LCPU it
+> > depends on where it's worth packing small tasks
 > 
-> First of all ,I want to known whether I can ignore these errors on the
-> production server,and do these error may affect the system?
+> Do you have further ideas for buddy cpu on such example?
+> > 
+> > Which kind of sched_domain configuration have you for such system ?
+> > and how many sched_domain level have you ?
+> 
+> it is general X86 domain configuration. with 4 levels,
+> sibling/core/cpu/numa.
 
-You'll have to make that call, the device is being blocked from reading
-a memory address, we don't know what it's reading or why.
+CPU is a bug that slipped into domain degeneration.  You should have
+SIBLING/MC/NUMA (chasing that down is on todo).
 
-> By the way,when I removed the "intel_iommu=on" from /etc/grub.conf,no
-> DMAR related errors occur
-
-Of course.  One option you have is to use the iommu in passthrough mode
-which allows host used devices unrestricted, identity mapped access to
-the system while still offering PCI device assignment.  I wouldn't try
-assigning device 3:00.0 though.  Add iommu=pt to enable this.
-
-> It's a strange thing,other three Dell R710 servers with the same bios
-> version v. 6.3.0, same kernel 2.6.32-279.14.1 on RHEL6u3(Centos 6u3)
-> ,but these errors don't appear on these tree servers
-
-Is the MegaRAID firmware and system management firmware the same as
-well?  Thanks,
-
-Alex
+-Mike
 
