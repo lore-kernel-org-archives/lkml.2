@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab2LNXNq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:13:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41090 "EHLO mail.kernel.org"
+	id S932898Ab2LNXOS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:14:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41068 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932882Ab2LNXFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:05:24 -0500
+	id S1756892Ab2LNXFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:05:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Markus Becker <mab@comnets.uni-bremen.de>
-Subject: [ 11/27] USB: cp210x: add Virtenio Preon32 device id
-Date: Fri, 14 Dec 2012 15:01:24 -0800
-Message-Id: <20121214222253.819722750@linuxfoundation.org>
+        Stefan Nagy <public@stefan-nagy.at>, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 26/37] ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
+Date: Fri, 14 Dec 2012 15:01:03 -0800
+Message-Id: <20121214222257.556362792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
-References: <20121214222251.229078963@linuxfoundation.org>
+In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
+References: <20121214222252.781413287@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Markus Becker <mab@comnets.uni-bremen.de>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 356fe44f4b8ece867bdb9876b1854d7adbef9de2 upstream.
+commit 129ff8f8d58297b04f47b5d6fad81aa2d08404e1 upstream.
 
-Signed-off-by: Markus Becker <mab@comnets.uni-bremen.de>
+Or else the laptop will boot with a dimmed screen.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51141
+Tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/video.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -118,6 +118,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
- 	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
- 	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
-+	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -389,6 +389,12 @@ static int __init video_set_bqc_offset(c
+ 	return 0;
+ }
+ 
++static int video_ignore_initial_backlight(const struct dmi_system_id *d)
++{
++	use_bios_initial_backlight = 0;
++	return 0;
++}
++
+ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	/*
+ 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
+@@ -433,6 +439,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Folio 13-2000",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
++		},
++	},
+ 	{}
+ };
+ 
 
 
