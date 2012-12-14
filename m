@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab2LNW2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:28:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38364 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab2LNW2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757233Ab2LNW2I (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Dec 2012 17:28:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38346 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756888Ab2LNW2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:28:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 20/22] ftrace: Clear bits properly in reset_iter_read()
-Date: Fri, 14 Dec 2012 14:26:05 -0800
-Message-Id: <20121214222254.459419060@linuxfoundation.org>
+        Soeren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [ 04/22] mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
+Date: Fri, 14 Dec 2012 14:25:49 -0800
+Message-Id: <20121214222250.713057744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -26,35 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit 70f77b3f7ec010ff9624c1f2e39a81babc9e2429 upstream.
+commit 387870f2d6d679746020fa8e25ef786ff338dc98 upstream.
 
-There is a typo here where '&' is used instead of '|' and it turns the
-statement into a noop.  The original code is equivalent to:
+dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+regardless the flags provided by the caller. This causes excessive
+pruning of emergency memory pools without any good reason. Additionaly,
+on ARM architecture any driver which is using dmapools will sooner or
+later  trigger the following error:
+"ERROR: 256 KiB atomic DMA coherent pool is too small!
+Please increase it with coherent_pool= kernel parameter!".
+Increasing the coherent pool size usually doesn't help much and only
+delays such error, because all GFP_ATOMIC DMA allocations are always
+served from the special, very limited memory pool.
 
-	iter->flags &= ~((1 << 2) & (1 << 4));
+This patch changes the dmapool code to correctly use gfp flags provided
+by the dmapool caller.
 
-Link: http://lkml.kernel.org/r/20120609161027.GD6488@elgon.mountain
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Soeren Moch <smoch@web.de>
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Tested-by: Soeren Moch <smoch@web.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/dmapool.c |   31 +++++++------------------------
+ 1 file changed, 7 insertions(+), 24 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2058,7 +2058,7 @@ static void reset_iter_read(struct ftrac
- {
- 	iter->pos = 0;
- 	iter->func_pos = 0;
--	iter->flags &= ~(FTRACE_ITER_PRINTALL & FTRACE_ITER_HASH);
-+	iter->flags &= ~(FTRACE_ITER_PRINTALL | FTRACE_ITER_HASH);
- }
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -49,7 +49,6 @@ struct dma_pool {		/* the pool */
+ 	size_t allocation;
+ 	size_t boundary;
+ 	char name[32];
+-	wait_queue_head_t waitq;
+ 	struct list_head pools;
+ };
  
- static void *t_start(struct seq_file *m, loff_t *pos)
+@@ -61,8 +60,6 @@ struct dma_page {		/* cacheable header f
+ 	unsigned int offset;
+ };
+ 
+-#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
+-
+ static DEFINE_MUTEX(pools_lock);
+ 
+ static ssize_t
+@@ -171,7 +168,6 @@ struct dma_pool *dma_pool_create(const c
+ 	retval->size = size;
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+-	init_waitqueue_head(&retval->waitq);
+ 
+ 	if (dev) {
+ 		int ret;
+@@ -226,7 +222,6 @@ static struct dma_page *pool_alloc_page(
+ 		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+ #endif
+ 		pool_initialise_page(pool, page);
+-		list_add(&page->page_list, &pool->page_list);
+ 		page->in_use = 0;
+ 		page->offset = 0;
+ 	} else {
+@@ -314,30 +309,21 @@ void *dma_pool_alloc(struct dma_pool *po
+ 	might_sleep_if(mem_flags & __GFP_WAIT);
+ 
+ 	spin_lock_irqsave(&pool->lock, flags);
+- restart:
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
+ 		if (page->offset < pool->allocation)
+ 			goto ready;
+ 	}
+-	page = pool_alloc_page(pool, GFP_ATOMIC);
+-	if (!page) {
+-		if (mem_flags & __GFP_WAIT) {
+-			DECLARE_WAITQUEUE(wait, current);
+ 
+-			__set_current_state(TASK_UNINTERRUPTIBLE);
+-			__add_wait_queue(&pool->waitq, &wait);
+-			spin_unlock_irqrestore(&pool->lock, flags);
++	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
++	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-			schedule_timeout(POOL_TIMEOUT_JIFFIES);
++	page = pool_alloc_page(pool, mem_flags);
++	if (!page)
++		return NULL;
+ 
+-			spin_lock_irqsave(&pool->lock, flags);
+-			__remove_wait_queue(&pool->waitq, &wait);
+-			goto restart;
+-		}
+-		retval = NULL;
+-		goto done;
+-	}
++	spin_lock_irqsave(&pool->lock, flags);
+ 
++	list_add(&page->page_list, &pool->page_list);
+  ready:
+ 	page->in_use++;
+ 	offset = page->offset;
+@@ -347,7 +333,6 @@ void *dma_pool_alloc(struct dma_pool *po
+ #ifdef	DMAPOOL_DEBUG
+ 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+ #endif
+- done:
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 	return retval;
+ }
+@@ -434,8 +419,6 @@ void dma_pool_free(struct dma_pool *pool
+ 	page->in_use--;
+ 	*(int *)vaddr = page->offset;
+ 	page->offset = offset;
+-	if (waitqueue_active(&pool->waitq))
+-		wake_up_locked(&pool->waitq);
+ 	/*
+ 	 * Resist a temptation to do
+ 	 *    if (!is_page_busy(page)) pool_free_page(pool, page);
 
 
