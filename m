@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab2LNII5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:08:57 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:30101 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab2LNIIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:08:55 -0500
-From: Adrian Huang <adrian.huang@hp.com>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Adrian Huang <adrian.huang@hp.com>
-Subject: [PATCH 1/1] ACPI/APEI: Fix the returned value in erst_dbg_read
-Date: Fri, 14 Dec 2012 16:08:34 +0800
-Message-Id: <1355472514-8172-1-git-send-email-adrian.huang@hp.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753122Ab2LNIWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:22:01 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:45656 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986Ab2LNIWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 03:22:00 -0500
+Date: Fri, 14 Dec 2012 09:21:50 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jamie Lentin <jm@lentin.co.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Simon Baatz <gmbnomis@gmail.com>, Jason Cooper <jason@lakedaemon.net>
+Subject: Re: power: Add simple poweroff-gpio driver
+Message-ID: <20121214082150.GA7717@lunn.ch>
+References: <20121213202157.8106C66071E@gitolite.kernel.org>
+ <20121213205159.GA21825@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121213205159.GA21825@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the persistent store is empty initially, the function 'erst_dbg_read'
-returns a nonzero value. The better way is to return a zero indicating the
-read operation reaches EOF.
+On Thu, Dec 13, 2012 at 03:51:59PM -0500, Dave Jones wrote:
+> On Thu, Dec 13, 2012 at 08:21:57PM +0000, Linux Kernel wrote:
+>  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=96ff0f5c7efd4a2205c48a76a6a1fcd2731e6128
+>  > Commit:     96ff0f5c7efd4a2205c48a76a6a1fcd2731e6128
+>  > Parent:     f4a00139b7cbeff538e616a21f6b57249a9d3ed8
+>  > Author:     Jamie Lentin <jm@lentin.co.uk>
+>  > AuthorDate: Sat Nov 17 09:51:04 2012 +0100
+>  > Committer:  Jason Cooper <jason@lakedaemon.net>
+>  > CommitDate: Sat Nov 24 02:56:38 2012 +0000
+>  > 
+>  >     power: Add simple poweroff-gpio driver
+>  >     
+>  >     Given appropriate devicetree bindings, this driver registers a
+>  >     pm_power_off function to set a GPIO line high/low to power down
+>  >     your board.
+> 
+> Given this seems to be dependant on device-tree, shouldn't there be
+> some 'depends on' in the kconfig to prevent this showing up on architectures
+> that don't implement it ? 
+> 
+>  > +menuconfig POWER_RESET
+>  > +	bool "Board level reset or power off"
+>  > +	help
+>  > +	  Provides a number of drivers which either reset a complete board
+>  > +	  or shut it down, by manipulating the main power supply on the board.
+>  > +
+>  > +	  Say Y here to enable board reset and power off
+>  > +
+>  > +config POWER_RESET_GPIO
+>  > +	bool "GPIO power-off driver"
+>  > +	depends on OF_GPIO && POWER_RESET
 
-Tested on two different servers.
+Hi Dave
 
-Signed-off-by: Adrian Huang <adrian.huang@hp.com>
----
- drivers/acpi/apei/erst-dbg.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+Don't these depends on here do what you want?
 
-diff --git a/drivers/acpi/apei/erst-dbg.c b/drivers/acpi/apei/erst-dbg.c
-index 903549d..04ab5c9 100644
---- a/drivers/acpi/apei/erst-dbg.c
-+++ b/drivers/acpi/apei/erst-dbg.c
-@@ -111,8 +111,17 @@ retry_next:
- 	if (rc)
- 		goto out;
- 	/* no more record */
--	if (id == APEI_ERST_INVALID_RECORD_ID)
-+	if (id == APEI_ERST_INVALID_RECORD_ID) {
-+		/*
-+		 * If the persistent store is empty initially, the function
-+		 * 'erst_read' below will return "-ENOENT" value. This causes
-+		 * 'retry_next' label is entered again. The returned value
-+		 * should be zero indicating the read operation is EOF.
-+		 */
-+		len = 0;
-+
- 		goto out;
-+	}
- retry:
- 	rc = len = erst_read(id, erst_dbg_buf, erst_dbg_buf_len);
- 	/* The record may be cleared by others, try read next record */
--- 
-1.7.10.4
+>  > +	help
+>  > +	  This driver supports turning off your board via a GPIO line.
+>  > +	  If your board needs a GPIO high/low to power down, say Y and
+>  > +	  create a binding in your devicetree.
+> 
+> If not, upon seeing this, I suspect many users will ask "how do I know if I need this?"
+> given there's no mention of the sort of hardware this is useful on.
 
+Its a generic driver. I know its useful on various Marvell kirkwood
+and orion5x devices. I've also heard it useful on some Tegra boards.
+
+Are you asking i list these boards?
+
+    Thanks
+	Andrew
