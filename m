@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab2LNXiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:38:46 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34213 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932550Ab2LNXip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:38:45 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] PCIe/PM: Do not suspend port if any subordinate device need PME polling
-Date: Sat, 15 Dec 2012 00:43:51 +0100
-Message-ID: <1488189.MmZvkLhUAM@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1355453531-23348-1-git-send-email-ying.huang@intel.com>
-References: <1355453531-23348-1-git-send-email-ying.huang@intel.com>
+	id S1945948Ab2LNXlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:41:16 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:62838 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932550Ab2LNXlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:41:14 -0500
+Message-ID: <50CBB917.7090502@linaro.org>
+Date: Fri, 14 Dec 2012 15:41:11 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2] NTP: Add a CONFIG_RTC_SYSTOHC configuration
+References: <20121214231933.GA15796@obsidianresearch.com>
+In-Reply-To: <20121214231933.GA15796@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 14, 2012 10:52:11 AM Huang Ying wrote:
-> In
-> 
->   http://www.mail-archive.com/linux-usb@vger.kernel.org/msg07976.html
-> 
-> Ulrich reported that his USB3 cardreader does not work reliably when
-> connected to the USB3 port.  It turns out that USB3 controller failed
-> to be waken up when plugging in the USB3 cardreader.  Further
-> experiment found that the USB3 host controller can only be waken up
-> via polling, while not via PME interrupt.  But if the PCIe port that
-> the USB3 host controller is connected is suspended, we can not poll
-> the USB3 host controller because its config space is not accessible if
-> the PCIe port is put into low power state.
-> 
-> To solve the issue, the PCIe port will not be suspended if any
-> subordinate device need PME polling.
-> 
-> Reported-by: Ulrich Eckhardt <usb@uli-eckhardt.de>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> Cc: stable@vger.kernel.org	# 3.6+
-> ---
->  drivers/pci/pcie/portdrv_pci.c |   18 +++++++++++++++++-
->  1 file changed, 17 insertions(+), 1 deletion(-)
-> 
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -134,10 +134,26 @@ static int pcie_port_runtime_resume(stru
->  	return 0;
->  }
->  
-> +static int pci_dev_pme_poll(struct pci_dev *pdev, void *data)
-> +{
-> +	int *pme_poll = data;
-> +	*pme_poll = *pme_poll || pdev->pme_poll;
+On 12/14/2012 03:19 PM, Jason Gunthorpe wrote:
+> The purpose of this option is to allow ARM/etc systems that rely on the
+> class RTC subsystem to have the same kind of automatic NTP based
+> synchronization that we have on PC platforms. Today ARM does not
+> implement update_persistent_clock and makes extensive use of the class
+> RTC system.
+>
+> When enabled CONFIG_RTC_SYSTOHC will provide a generic
+> rtc_update_persistent_clock that stores the current time in the RTC and
+> is intended complement the existing CONFIG_RTC_HCTOSYS option that loads
+> the RTC at boot.
+>
+> Like with RTC_HCTOSYS the platform's update_persistent_clock is used
+> first, if it works. Platforms with mixed class RTC and non-RTC drivers
+> need to return ENODEV when class RTC should be used. Such an update for
+> PPC is included in this patch.
+>
+> Long term, implementations of update_persistent_clock should migrate to
+> proper class RTC drivers and use CONFIG_RTC_SYSTOHC instead.
 
-I would write that as
+Ok. This all sounds good.
 
-	*pme_poll ||= pdev->pme_poll;
 
-It is not a big deal, though.
+Still one minor question below.
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> index 19c03ab..7b3702b 100644
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -28,6 +28,7 @@ config RTC_HCTOSYS
+>   config RTC_HCTOSYS_DEVICE
+>   	string "RTC used to set the system time"
+>   	depends on RTC_HCTOSYS = y
+> +	depends on RTC_SYSTOHC = y
 
-> +	return 0;
-> +}
+Is this right?
+
+This should probably be a depends on RTC_HCTOSYS OR RTC_SYSTOCH.. 
+Otherwise you have to select both in order to change the default device.
+
+> diff --git a/drivers/rtc/systohc.c b/drivers/rtc/systohc.c
+> new file mode 100644
+> index 0000000..a625740
+> --- /dev/null
+> +++ b/drivers/rtc/systohc.c
+> @@ -0,0 +1,44 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + *
+> + */
+> +#include <linux/rtc.h>
+> +#include <linux/time.h>
 > +
->  static int pcie_port_runtime_idle(struct device *dev)
->  {
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +	int pme_poll = false;
-> +
-> +	/*
-> +	 * If any subordinate device needs pme poll, we should keep
-> +	 * the port in D0, because we need port in D0 to poll it.
-> +	 */
-> +	pci_walk_bus(pdev->subordinate, pci_dev_pme_poll, &pme_poll);
->  	/* Delay for a short while to prevent too frequent suspend/resume */
-> -	pm_schedule_suspend(dev, 10);
-> +	if (!pme_poll)
-> +		pm_schedule_suspend(dev, 10);
->  	return -EBUSY;
->  }
->  #else
+> +/**
+> + * rtc_update_persistent_clock - Save NTP synchronized time to the RTC
+> + * @now: Current time of day
+> + *
+> + * Replacement for the NTP platform function update_persistent_clock
+> + * that stores time for later retrieval by rtc_hctosys
+> + *
+> + * Returns 0 on successful RTC update, -ENODEV if a RTC update is not
+> + * possible at all, and various other -errno for specific temporary failure
+> + * cases.
+> + *
+> + * If temporary failure is indicated the caller should try again 'soon'
+> + */
+> +int rtc_update_persistent_clock(struct timespec now)
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+If we're going to move away from update_persistent_clock across the 
+board (and as the update path doesn't have the same constraints of the 
+read_persistent_clock interface), might it be better just to name this: 
+rtc_update_clock()  (or something similar)?
 
+That way if/when we do finally remove the other users of 
+update_persistent_clock() and move them to an RTC driver, we will avoid 
+any confusion between read/update.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This is in the similar vein of your suggestion of changing 
+update_persistent_clock to platform_save_ntp_time_to_rtc()..
+
+Sorry for the last minute nit! Other then these two issues, I'm happy to 
+queue this (if Alessandro doesn't object).  Although with the merge 
+window already open it may have to wait to 3.9, but I'll see what Thomas 
+says.
+
+thanks
+-john
+
