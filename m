@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab2LNXDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:03:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40791 "EHLO mail.kernel.org"
+	id S1756964Ab2LNXDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:03:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40806 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932298Ab2LNXDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:03:46 -0500
+	id S932298Ab2LNXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:03:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Teichmann <lkb.teichmann@gmail.com>
-Subject: [ 19/37] USB: ftdi_sio: Add support for Newport AGILIS motor drivers
-Date: Fri, 14 Dec 2012 15:00:56 -0800
-Message-Id: <20121214222256.788408737@linuxfoundation.org>
+        Peter Korsgaard <jacmet@sunsite.dk>
+Subject: [ 20/37] usb: ftdi_sio: fixup BeagleBone A5+ quirk
+Date: Fri, 14 Dec 2012 15:00:57 -0800
+Message-Id: <20121214222256.933486789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -25,52 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Teichmann <lkb.teichmann@gmail.com>
+From: Peter Korsgaard <jacmet@sunsite.dk>
 
-commit d7e14b375b40c04cd735b115713043b69a2c68ac upstream.
+commit 1a88d5eee2ef2ad1d3c4e32043e9c4c5347d4fc1 upstream.
 
-The Newport AGILIS model AG-UC8 compact piezo motor controller
-(http://search.newport.com/?q=*&x2=sku&q2=AG-UC8)
-is yet another device using an FTDI USB-to-serial chip. It works
-fine with the ftdi_sio driver when adding
+BeagleBone A5+ devices ended up getting shipped with the
+'BeagleBone/XDS100V2' product string, and not XDS100 like it
+was agreed, so adjust the quirk to match.
 
-  options ftdi-sio product=0x3000 vendor=0x104d
+For details, see the thread on the beagle list:
 
-to modprobe.d. udevadm reports "Newport" as the manufacturer,
-and "Agilis" as the product name.
+https://groups.google.com/forum/#!msg/beagleboard/zrFPew9_Wvo/ibWr1-eE8JwJ
 
-Signed-off-by: Martin Teichmann <lkb.teichmann@gmail.com>
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -752,6 +752,12 @@
- #define TTI_VID			0x103E	/* Vendor Id */
- #define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
+@@ -1788,7 +1788,7 @@ static int ftdi_8u2232c_probe(struct usb
+ 	struct usb_device *udev = serial->dev;
  
-+/*
-+ * Newport Cooperation (www.newport.com)
-+ */
-+#define NEWPORT_VID			0x104D
-+#define NEWPORT_AGILIS_PID		0x3000
-+
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
- #define INTERBIOMETRICS_VID              0x1209
+ 	if ((udev->manufacturer && !strcmp(udev->manufacturer, "CALAO Systems")) ||
+-	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100")))
++	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100V2")))
+ 		return ftdi_jtag_probe(serial);
+ 
+ 	return 0;
 
 
