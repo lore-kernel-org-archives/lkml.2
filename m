@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab2LNU0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:26:36 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65149 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab2LNU0f (ORCPT
+	id S932313Ab2LNUaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:30:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47319 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab2LNUaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:26:35 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: Support a PCI device that is compatible with 'simple-bus'
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-In-Reply-To: <20121210215119.GA32011@obsidianresearch.com>
-References: <20121210215119.GA32011@obsidianresearch.com>
-Date: Fri, 14 Dec 2012 20:26:29 +0000
-Message-Id: <20121214202629.BD40C3E0BDD@localhost>
+	Fri, 14 Dec 2012 15:30:17 -0500
+From: Kamal Mostafa <kamal@whence.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fbcon: clear the logo bitmap from the margin area
+Date: Fri, 14 Dec 2012 12:30:15 -0800
+Message-Id: <1355517015-4926-1-git-send-email-kamal@whence.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Dec 2012 14:51:19 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> The intended use for this feature is to let a PCI device declare
-> itself a 'simple-bus' and then describe additional devices
-> (such as GPIOs, I2C, etc) nested below itself.
-> 
-> The devices nested below the PCI device will use 'reg' addressing
-> with the 5 dw format used by PCI.
-> 
-> This is for embedded cases where the PCI device may be a complex
-> SOC with no PCI based partitioning of sub-functionality.
-> 
-> Tested on an ARM kirkwood system
-> 
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> ---
->  drivers/of/address.c |   29 +++++++++++++++++++++++++++++
->  1 files changed, 29 insertions(+), 0 deletions(-)
-> 
-> Grant:
-> 
-> > If the soc_devices are getting triggered on that and they shouldn't be,
-> > then we need a mechanism in the soc_bridge node to kick out of that
-> > behavoir for its children.
-> 
-> Is this what you were thinking?
+Explicitly clear_margins when clearing the logo, in case the font dimensions
+are non-integral to the framebuffer dimensions.
 
-Not really. I see what you're trying to do, but doing it this way forces
-all children of PCI nodes to use the PCI addressing space. Others have
-had simple children of PCI devices and didn't use the PCI address layout
-at all. Those users would break with this approach.
+Signed-off-by: Kamal Mostafa <kamal@whence.com>
+---
+ drivers/video/console/fbcon.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-However, if you want to pass a unity mapping from the PCI device to the
-a child of it, it should be sufficient to use an empty 'ranges;'
-property in the PCI device node instead of listing out the ranges that
-you want to translate.
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index 8745637..b51a4bd 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -1236,8 +1236,16 @@ static void fbcon_clear(struct vc_data *vc, int sy, int sx, int height,
+ 	if (!height || !width)
+ 		return;
+ 
+-	if (sy < vc->vc_top && vc->vc_top == logo_lines)
++	if (sy < vc->vc_top && vc->vc_top == logo_lines) {
+ 		vc->vc_top = 0;
++		/*
++		 * If the font dimensions are not an integral of the display
++		 * dimensions then the ops->clear below won't end up clearing
++		 * the margins.  Call clear_margins here in case the logo
++		 * bitmap stretched into the margin area.
++		 */
++		fbcon_clear_margins(vc, 0);
++	}
+ 
+ 	/* Split blits that cross physical y_wrap boundary */
+ 
+-- 
+1.7.10.4
 
-g.
