@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab2LNWUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:20:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22788 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab2LNWUA (ORCPT
+	id S1756784Ab2LNWZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:25:23 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59216 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab2LNWZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:20:00 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=h99SOY78h90A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=CGgBco54DJ0A:10 a=VwQbUJbxAAAA:8 a=HFXECD1-VPInmgyM84QA:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1355523597.17101.407.camel@gandalf.local.home>
-Subject: Re: [PATCH RT 0/2] [ANNOUNCE] 3.4.22-rt34-rc1 stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>
-Date: Fri, 14 Dec 2012 17:19:57 -0500
-In-Reply-To: <20121212004557.110050982@goodmis.org>
-References: <20121212004557.110050982@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Dec 2012 17:25:21 -0500
+Date: Sat, 15 Dec 2012 02:25:17 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+Message-ID: <20121214222517.GG6582@moon>
+References: <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com>
+ <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
+ <50CAE485.5020608@parallels.com>
+ <50CB716D.6020501@zytor.com>
+ <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
+ <50CB7459.7010107@zytor.com>
+ <20121214201217.GE6582@moon>
+ <50CB9553.7050808@zytor.com>
+ <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com>
+ <50CBA171.4080403@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CBA171.4080403@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 19:45 -0500, Steven Rostedt wrote:
-> Dear RT Folks,
+On Fri, Dec 14, 2012 at 02:00:17PM -0800, H. Peter Anvin wrote:
+> On 12/14/2012 01:27 PM, Andy Lutomirski wrote:
+> > 
+> > I don't know all that much about the linux vm.  Can we create a
+> > special vdso address_space or struct inode or something so that a
+> > single vma can contain pages with different flags?
+> > 
 > 
-> This is the RT stable review cycle of patch 3.4.22-rt34-rc1.
+> No, that is still different vmas, but it probably isn't a big deal.
 > 
-> Please scream at me if I messed something up. Please test the patches too.
+> The advantage of having an inode/namespace is that it lets you use
+> mmap() as opposed to mremap() with it, which might be useful, I don't know.
 > 
-> The -rc release will be uploaded to kernel.org and will be deleted when
-> the final release is out. This is just a review release (or release candidate).
+> One option for the checkpoint people might actually be to not use the
+> vdso for a process that needs to be checkpointed and restarted on a
+> different machine or different kernel version.  Instead they can install
+> a pseudo-vdso which just calls normal system calls, and is simply a
+> static piece of code that makes normal system calls ... since the
+> internals of the kernel are hidden from userspace it is "clean" that way.
 > 
-> The pre-releases will not be pushed to the git repository, only the
-> final release is.
-> 
-> If all goes well, this patch will be converted to the next main release
-> on 12/14/2012, let's hope it's not an unexpected journey!
+> With any actual vdso you risk something like:
 > 
 
-Sure enough I was taken on an unexpected journey today. Unfortunately it
-wasn't in the theaters.
+Is there a chance to make it something like that (assuming the
+dumpee is ptraced)
 
-I guess there's a small bug with one of the patches, with a fix sent to
-me by Mike. This needs to be in Thomas's latest before it goes into
-stable.
+> 	-> vdso entry
 
-        oldprio = p->prio;
--       if (oldprio == param->sched_priority)
-+       if (oldprio == (MAX_RT_PRIO - 1) - param->sched_priority)
-                goto out;
+mark task as vdso-entered
 
+> 	-> signal received, transfer to signal handler
+> 	-> signal handler exit
 
--- Steve
+before task leave vdso the task mark vdso-entered get cleaned
+and if ptraced, the ptracing task is notified
 
+> ... and now you return to the address in the old vdso, but the internals
+> of the vdso may have changed.
 
+this would allow us to defer checkpoint until task finish vdso code. Peter,
+if I understand you correctly you propose we provide some own proxy-vdso
+which would redirect calls to real ones, right? But the main problem
+is that is exactly the idea to be able to c/r existing programs without
+recompiling and such (or I miss something here?).
+
+	Cyrill
