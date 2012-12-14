@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945982Ab2LNXHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:07:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41306 "EHLO mail.kernel.org"
+	id S1945998Ab2LNXHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:07:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41317 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945964Ab2LNXHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:07:02 -0500
+	id S1945964Ab2LNXHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:07:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stefan Nagy <public@stefan-nagy.at>, Zhang Rui <rui.zhang@intel.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 16/27] ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
-Date: Fri, 14 Dec 2012 15:01:29 -0800
-Message-Id: <20121214222255.050615384@linuxfoundation.org>
+Subject: [ 17/27] ACPI / video: Add "Asus UL30VT" to ACPI video detect blacklist
+Date: Fri, 14 Dec 2012 15:01:30 -0800
+Message-Id: <20121214222255.228523215@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -26,50 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 129ff8f8d58297b04f47b5d6fad81aa2d08404e1 upstream.
+commit d0c2ce16bec0afa6013b4c5220ca4c9c67210215 upstream.
 
-Or else the laptop will boot with a dimmed screen.
+The ACPI video driver can't control backlight correctly on
+Asus UL30VT.  Vendor driver (asus-laptop) can work.  This patch is to
+add "Asus UL30VT" to ACPI video detect blacklist in order to use
+asus-laptop for video control on the "Asus UL30VT" rather than ACPI
+video driver.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51141
-Tested-by: Stefan Nagy <public@stefan-nagy.at>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=32592
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/acpi/video_detect.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -389,6 +389,12 @@ static int __init video_set_bqc_offset(c
- 	return 0;
- }
- 
-+static int video_ignore_initial_backlight(const struct dmi_system_id *d)
-+{
-+	use_bios_initial_backlight = 0;
-+	return 0;
-+}
-+
- static struct dmi_system_id video_dmi_table[] __initdata = {
- 	/*
- 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
-@@ -433,6 +439,14 @@ static struct dmi_system_id video_dmi_ta
- 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -156,6 +156,14 @@ static struct dmi_system_id video_detect
+ 		DMI_MATCH(DMI_BOARD_NAME, "X360"),
  		},
  	},
 +	{
-+	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Folio 13-2000",
-+	 .matches = {
-+		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
++	.callback = video_detect_force_vendor,
++	.ident = "Asus UL30VT",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "UL30VT"),
 +		},
 +	},
- 	{}
+ 	{ },
  };
  
 
