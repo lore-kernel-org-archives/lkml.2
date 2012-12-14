@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab2LNEuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 23:50:20 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34591 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab2LNEuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 23:50:18 -0500
-Message-ID: <50CAB001.2040106@linux.vnet.ibm.com>
-Date: Fri, 14 Dec 2012 12:50:09 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1755988Ab2LNEvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 23:51:25 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36318 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753931Ab2LNEvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 23:51:24 -0500
+Date: Thu, 13 Dec 2012 23:50:30 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Satoru Moriya <satoru.moriya@hds.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+Message-ID: <20121214045030.GE6317@cmpxchg.org>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
+ <20121213103420.GW1009@suse.de>
+ <20121213152959.GE21644@dhcp22.suse.cz>
+ <20121213160521.GG21644@dhcp22.suse.cz>
+ <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] KVM: x86: improve reexecute_instruction
-References: <50C5A747.1020105@linux.vnet.ibm.com> <20121211233641.GA14520@amt.cnet> <50C8E3A3.4050106@linux.vnet.ibm.com> <20121213225408.GB11385@amt.cnet>
-In-Reply-To: <20121213225408.GB11385@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121404-9264-0000-0000-000002D8BB68
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 06:54 AM, Marcelo Tosatti wrote:
-> On Thu, Dec 13, 2012 at 04:05:55AM +0800, Xiao Guangrong wrote:
->> On 12/12/2012 07:36 AM, Marcelo Tosatti wrote:
->>> On Mon, Dec 10, 2012 at 05:11:35PM +0800, Xiao Guangrong wrote:
->>>> Changelog:
->>>> There are some changes from Marcelo and Gleb's review, thank you all!
->>>> - access indirect_shadow_pages in the protection of mmu-lock
->>>> - fix the issue when unhandleable instruction access on large page
->>>> - add a new test case for large page
->>>>
->>>> The current reexecute_instruction can not well detect the failed instruction
->>>> emulation. It allows guest to retry all the instructions except it accesses
->>>> on error pfn.
->>>>
->>>> For example, these cases can not be detected:
->>>> - for tdp used
->>>>   currently, it refused to retry all instructions. If nested npt is used, the
->>>>   emulation may be caused by shadow page, it can be fixed by unshadow the
->>>>   shadow page.
->>>>
->>>> - for shadow mmu
->>>>   some cases are nested-write-protect, for example, if the page we want to
->>>>   write is used as PDE but it chains to itself. Under this case, we should
->>>>   stop the emulation and report the case to userspace.
->>>>
->>>> There are two test cases based on kvm-unit-test can trigger a infinite loop on
->>>> current code (ept = 0), after this patchset, it can report the error to Qemu.
->>>>
->>>> Subject: [PATCH] access test: test unhandleable instruction
->>>>
->>>> Test the instruction which can not be handled by kvm
->>>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>
->>> Please submit the test for inclusion. There should be some way to make
->>> it fail.. 
->>
->> Yes.
->>
->> But it is not easy. If the test cases run normally, kvm will report a error to Qemu
->> then Qemu will exit the vcpu thread after dumping the vcpu state.
->>
->> We need to do something to let guest can be aware that the error report is triggered.
->> I guess we can add a option in Qemu, say '-notify-guest' and allow Qemu to inject #GP
->> to guest with a special ERROR_CODE if error is reported.
->>
->>> program a timer interrupt and #GP? 
->>
->> Could you please explain the detail?
+On Thu, Dec 13, 2012 at 10:25:43PM +0000, Satoru Moriya wrote:
 > 
-> Before the instruction which writes continuously to the pagetable, arm
-> say lapic timer. #GP on the interrupt handler and test with failure.
+> On 12/13/2012 11:05 AM, Michal Hocko wrote:> On Thu 13-12-12 16:29:59, Michal Hocko wrote:
+> >> On Thu 13-12-12 10:34:20, Mel Gorman wrote:
+> >>> On Wed, Dec 12, 2012 at 04:43:34PM -0500, Johannes Weiner wrote:
+> >>>> When a reclaim scanner is doing its final scan before giving up and 
+> >>>> there is swap space available, pay no attention to swappiness 
+> >>>> preference anymore.  Just swap.
+> >>>>
+> >>>> Note that this change won't make too big of a difference for 
+> >>>> general
+> >>>> reclaim: anonymous pages are already force-scanned when there is 
+> >>>> only very little file cache left, and there very likely isn't when 
+> >>>> the reclaimer enters this final cycle.
+> >>>>
+> >>>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> >>>
+> >>> Ok, I see the motivation for your patch but is the block inside 
+> >>> still wrong for what you want? After your patch the block looks like 
+> >>> this
+> >>>
+> >>>                 if (sc->priority || noswap) {
+> >>>                         scan >>= sc->priority;
+> >>>                         if (!scan && force_scan)
+> >>>                                 scan = SWAP_CLUSTER_MAX;
+> >>>                         scan = div64_u64(scan * fraction[file], denominator);
+> >>>                 }
+> >>>
+> >>> if sc->priority == 0 and swappiness==0 then you enter this block but 
+> >>> fraction[0] for anonymous pages will also be 0 and because of the 
+> >>> ordering of statements there, scan will be
+> >>>
+> >>> scan = scan * 0 / denominator
+> >>>
+> >>> so you are still not reclaiming anonymous pages in the swappiness=0 
+> >>> case. What did I miss?
+> >>
+> >> Yes, now that you have mentioned that I realized that it really 
+> >> doesn't make any sense. fraction[0] is _always_ 0 for swappiness==0. 
+> >> So we just made a bigger pressure on file LRUs. So this sounds like a 
+> >> misuse of the swappiness. This all has been introduced with fe35004f 
+> >> (mm: avoid swapping out with swappiness==0).
+> >>
+> >> I think that removing swappiness check make sense but I am not sure 
+> >> it does what the changelog says. It should have said that checking 
+> >> swappiness doesn't make any sense for small LRUs.
+> >
+> > Bahh, wait a moment. Now I remember why the check made sense 
+> > especially for memcg.
+> > It made "don't swap _at all_ for swappiness==0" for real - you are 
+> > even willing to sacrifice OOM. Maybe this is OK for the global case 
+> > because noswap would safe you here (assuming that there is no swap if 
+> > somebody doesn't want to swap at all and swappiness doesn't play such 
+> > a big role) but for memcg you really might want to prevent from 
+> > swapping - not everybody has memcg swap extension enabled and swappiness is handy then.
+> > So I am not sure this is actually what we want. Need to think about it.
+> 
+> I introduced swappiness check here with fe35004f because, in some
+> cases, we prefer OOM to swap out pages to detect problems as soon
+> as possible. Basically, we design the system not to swap out and
+> so if it causes swapping, something goes wrong.
 
-Sorry, I am confused about this. After Qemu exits due to KVM_EXIT_INTERNAL_ERROR,
-the vm is stopped then interrupt can not be injected to guest. Or i missed something?
-
-
-
+I might be missing something terribly obvious, but... why do you add
+swap space to the system in the first place?  Or in case of cgroups,
+why not set the memsw limit equal to the memory limit?
