@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab2LNWc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:32:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38815 "EHLO mail.kernel.org"
+	id S932623Ab2LNWdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:33:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38786 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932168Ab2LNWap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:30:45 -0500
+	id S932401Ab2LNWa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:30:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?S=C3=A9bastien=20Wilmet?= <swilmet@gnome.org>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 20/28] ACPI / PM: Add Sony Vaio VPCEB1S1E to nonvs blacklist.
-Date: Fri, 14 Dec 2012 14:26:37 -0800
-Message-Id: <20121214222255.141316007@linuxfoundation.org>
+        Markus Becker <mab@comnets.uni-bremen.de>
+Subject: [ 17/28] USB: cp210x: add Virtenio Preon32 device id
+Date: Fri, 14 Dec 2012 14:26:34 -0800
+Message-Id: <20121214222254.465782732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,39 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Markus Becker <mab@comnets.uni-bremen.de>
 
-commit 876ab79055019e248508cfd0dee7caa3c0c831ed upstream.
+commit 356fe44f4b8ece867bdb9876b1854d7adbef9de2 upstream.
 
-Sony Vaio VPCEB1S1E does not resume correctly without
-acpi_sleep=nonvs, so add it to the ACPI sleep blacklist.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=48781
-Reported-by: Sébastien Wilmet <swilmet@gnome.org>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Markus Becker <mab@comnets.uni-bremen.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/sleep.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -508,6 +508,14 @@ static struct dmi_system_id __initdata a
- 	},
- 	{
- 	.callback = init_nvs_nosave,
-+	.ident = "Sony Vaio VPCEB1S1E",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1S1E"),
-+		},
-+	},
-+	{
-+	.callback = init_nvs_nosave,
- 	.ident = "Sony Vaio VGN-FW520F",
- 	.matches = {
- 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -120,6 +120,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
+ 	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
+ 	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
++	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
 
 
