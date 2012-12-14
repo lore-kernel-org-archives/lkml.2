@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab2LNXDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:03:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40676 "EHLO mail.kernel.org"
+	id S1422750Ab2LNXDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:03:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40723 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422653Ab2LNXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:03:17 -0500
+	id S1422734Ab2LNXD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:03:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 14/37] x86,AMD: Power driver support for AMDs family 16h processors
-Date: Fri, 14 Dec 2012 15:00:51 -0800
-Message-Id: <20121214222255.957916552@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 16/37] x86: hpet: Fix masking of MSI interrupts
+Date: Fri, 14 Dec 2012 15:00:53 -0800
+Message-Id: <20121214222256.300455321@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -26,40 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit 22e32f4f57778ebc6e17812fa3008361c05d64f9 upstream.
+commit 6acf5a8c931da9d26c8dd77d784daaf07fa2bff0 upstream.
 
-Add family 16h PCI ID to AMD's power driver to allow it report
-power consumption on these processors.
+HPET_TN_FSB is not a proper mask bit; it merely toggles between MSI and
+legacy interrupt delivery. The proper mask bit is HPET_TN_ENABLE, so
+use both bits when (un)masking the interrupt.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/5093E09002000078000A60E6@nat28.tlf.novell.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/hpet.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -31,6 +31,9 @@ MODULE_DESCRIPTION("AMD Family 15h CPU p
- MODULE_AUTHOR("Andreas Herrmann <andreas.herrmann3@amd.com>");
- MODULE_LICENSE("GPL");
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -434,7 +434,7 @@ void hpet_msi_unmask(struct irq_data *da
  
-+/* Family 16h Northbridge's function 4 PCI ID */
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
-+
- /* D18F3 */
- #define REG_NORTHBRIDGE_CAP		0xe8
+ 	/* unmask it */
+ 	cfg = hpet_readl(HPET_Tn_CFG(hdev->num));
+-	cfg |= HPET_TN_FSB;
++	cfg |= HPET_TN_ENABLE | HPET_TN_FSB;
+ 	hpet_writel(cfg, HPET_Tn_CFG(hdev->num));
+ }
  
-@@ -257,6 +260,7 @@ static void __devexit fam15h_power_remov
+@@ -445,7 +445,7 @@ void hpet_msi_mask(struct irq_data *data
  
- static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
+ 	/* mask it */
+ 	cfg = hpet_readl(HPET_Tn_CFG(hdev->num));
+-	cfg &= ~HPET_TN_FSB;
++	cfg &= ~(HPET_TN_ENABLE | HPET_TN_FSB);
+ 	hpet_writel(cfg, HPET_Tn_CFG(hdev->num));
+ }
+ 
 
 
