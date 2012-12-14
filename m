@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab2LNEqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 23:46:15 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63677 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab2LNEqN (ORCPT
+	id S1755930Ab2LNEuU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 23:50:20 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34591 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab2LNEuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 23:46:13 -0500
-Message-ID: <1355460356.5777.12.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
-From: Mike Galbraith <bitbucket@online.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, linux@arm.linux.org.uk,
-        pjt@google.com, santosh.shilimkar@ti.com, Morten.Rasmussen@arm.com,
-        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, viresh.kumar@linaro.org
-Date: Fri, 14 Dec 2012 05:45:56 +0100
-In-Reply-To: <50C9E552.1010600@intel.com>
-References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
-	 <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
-	 <50C93AC1.1060202@intel.com>
-	 <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
-	 <50C9E552.1010600@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Thu, 13 Dec 2012 23:50:18 -0500
+Message-ID: <50CAB001.2040106@linux.vnet.ibm.com>
+Date: Fri, 14 Dec 2012 12:50:09 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] KVM: x86: improve reexecute_instruction
+References: <50C5A747.1020105@linux.vnet.ibm.com> <20121211233641.GA14520@amt.cnet> <50C8E3A3.4050106@linux.vnet.ibm.com> <20121213225408.GB11385@amt.cnet>
+In-Reply-To: <20121213225408.GB11385@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:35/a4KmgaDRVWeuF4WHLC0el11mr12F+0jZsOdEA1aH
- +On4rpyZaXNJaqcs5QPsxONEmXar7xsuWDidTKKnG07voaYfet
- q/gh+0UZVWs65+0k83QGv+tdia/uatxoxkW3j+UsICkW4FCo9Z
- cyzpC40bGlALGs2zHCR6tuU8UFPxyjlwZz0KPP+H5wv5yHgvaN
- G11/u0D5Gz+9fbE7IJ0JfXNUgLwCn52I/W7gtjdo2y/5j3S5tv
- coYVvIClwuuEaAr4DdzoOju3D3VvYIf1FdYFg1p4eSAeMpa3C3
- BTfGqNCdBu9CQio2Dnv+Zf11V+DXZS4z+bN0QeKQ7KRXXclzOh
- 26ZUp7YlGQ+XRUntoL516cqP4WPfbr1UPJTRLkTcII+vfQ1tnn
- uMLPhx8yjSTsA==
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121404-9264-0000-0000-000002D8BB68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 22:25 +0800, Alex Shi wrote: 
-> On 12/13/2012 06:11 PM, Vincent Guittot wrote:
-> > On 13 December 2012 03:17, Alex Shi <alex.shi@intel.com> wrote:
-> >> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
-> >>> During the creation of sched_domain, we define a pack buddy CPU for each CPU
-> >>> when one is available. We want to pack at all levels where a group of CPU can
-> >>> be power gated independently from others.
-> >>> On a system that can't power gate a group of CPUs independently, the flag is
-> >>> set at all sched_domain level and the buddy is set to -1. This is the default
-> >>> behavior.
-> >>> On a dual clusters / dual cores system which can power gate each core and
-> >>> cluster independently, the buddy configuration will be :
-> >>>
-> >>>       | Cluster 0   | Cluster 1   |
-> >>>       | CPU0 | CPU1 | CPU2 | CPU3 |
-> >>> -----------------------------------
-> >>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
-> >>>
-> >>> Small tasks tend to slip out of the periodic load balance so the best place
-> >>> to choose to migrate them is during their wake up. The decision is in O(1) as
-> >>> we only check again one buddy CPU
-> >>
-> >> Just have a little worry about the scalability on a big machine, like on
-> >> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
-> >> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
-> >> is different on task distribution decision.
-> > 
-> > The buddy CPU should probably not be the same for all 64 LCPU it
-> > depends on where it's worth packing small tasks
+On 12/14/2012 06:54 AM, Marcelo Tosatti wrote:
+> On Thu, Dec 13, 2012 at 04:05:55AM +0800, Xiao Guangrong wrote:
+>> On 12/12/2012 07:36 AM, Marcelo Tosatti wrote:
+>>> On Mon, Dec 10, 2012 at 05:11:35PM +0800, Xiao Guangrong wrote:
+>>>> Changelog:
+>>>> There are some changes from Marcelo and Gleb's review, thank you all!
+>>>> - access indirect_shadow_pages in the protection of mmu-lock
+>>>> - fix the issue when unhandleable instruction access on large page
+>>>> - add a new test case for large page
+>>>>
+>>>> The current reexecute_instruction can not well detect the failed instruction
+>>>> emulation. It allows guest to retry all the instructions except it accesses
+>>>> on error pfn.
+>>>>
+>>>> For example, these cases can not be detected:
+>>>> - for tdp used
+>>>>   currently, it refused to retry all instructions. If nested npt is used, the
+>>>>   emulation may be caused by shadow page, it can be fixed by unshadow the
+>>>>   shadow page.
+>>>>
+>>>> - for shadow mmu
+>>>>   some cases are nested-write-protect, for example, if the page we want to
+>>>>   write is used as PDE but it chains to itself. Under this case, we should
+>>>>   stop the emulation and report the case to userspace.
+>>>>
+>>>> There are two test cases based on kvm-unit-test can trigger a infinite loop on
+>>>> current code (ept = 0), after this patchset, it can report the error to Qemu.
+>>>>
+>>>> Subject: [PATCH] access test: test unhandleable instruction
+>>>>
+>>>> Test the instruction which can not be handled by kvm
+>>>>
+>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>
+>>> Please submit the test for inclusion. There should be some way to make
+>>> it fail.. 
+>>
+>> Yes.
+>>
+>> But it is not easy. If the test cases run normally, kvm will report a error to Qemu
+>> then Qemu will exit the vcpu thread after dumping the vcpu state.
+>>
+>> We need to do something to let guest can be aware that the error report is triggered.
+>> I guess we can add a option in Qemu, say '-notify-guest' and allow Qemu to inject #GP
+>> to guest with a special ERROR_CODE if error is reported.
+>>
+>>> program a timer interrupt and #GP? 
+>>
+>> Could you please explain the detail?
 > 
-> Do you have further ideas for buddy cpu on such example?
-> > 
-> > Which kind of sched_domain configuration have you for such system ?
-> > and how many sched_domain level have you ?
-> 
-> it is general X86 domain configuration. with 4 levels,
-> sibling/core/cpu/numa.
+> Before the instruction which writes continuously to the pagetable, arm
+> say lapic timer. #GP on the interrupt handler and test with failure.
 
-CPU is a bug that slipped into domain degeneration.  You should have
-SIBLING/MC/NUMA (chasing that down is on todo).
+Sorry, I am confused about this. After Qemu exits due to KVM_EXIT_INTERNAL_ERROR,
+the vm is stopped then interrupt can not be injected to guest. Or i missed something?
 
--Mike
+
 
