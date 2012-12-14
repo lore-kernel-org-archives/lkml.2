@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab2LNXCW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:02:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40460 "EHLO mail.kernel.org"
+	id S932736Ab2LNXCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:02:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40495 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932658Ab2LNXCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:02:08 -0500
+	id S932561Ab2LNXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:02:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: [ 05/37] ASoC: dmaengine: Correct Makefile when sound is built as module
-Date: Fri, 14 Dec 2012 15:00:42 -0800
-Message-Id: <20121214222254.000522007@linuxfoundation.org>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 08/37] i82975x_edac: Fix dimm label initialization
+Date: Fri, 14 Dec 2012 15:00:45 -0800
+Message-Id: <20121214222254.727675041@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -27,35 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 961a7aeafab477f63d9eef26afde9cbb8badcd0f upstream.
+commit 479696840239e0cc43efb3c917bdcad2174d2215 upstream.
 
-soc-dmaengine-pcm library need to be part of the snd-soc-core in order to
-be able to compile ASoC as modules when dmaengine is enabled on the platform.
+The driver has only 4 hardcoded labels, but allows much more memory.
+Fix it by removing the hardcoded logic, using snprintf() instead.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Florian Fainelli <florian@openwrt.org>
+[   19.833972] general protection fault: 0000 [#1] SMP
+[   19.837733] Modules linked in: i82975x_edac(+) edac_core firewire_ohci firewire_core crc_itu_t nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
+[   19.837733] CPU 0
+[   19.837733] Pid: 390, comm: udevd Not tainted 3.6.1-1.fc17.x86_64.debug #1 Dell Inc.                 Precision WorkStation 390    /0MY510
+[   19.837733] RIP: 0010:[<ffffffff813463a8>]  [<ffffffff813463a8>] strncpy+0x18/0x30
+[   19.837733] RSP: 0018:ffff880078535b68  EFLAGS: 00010202
+[   19.837733] RAX: ffff880069fa9708 RBX: ffff880078588000 RCX: ffff880069fa9708
+[   19.837733] RDX: 000000000000001f RSI: 5f706f5f63616465 RDI: ffff880069fa9708
+[   19.837733] RBP: ffff880078535b68 R08: ffff880069fa9727 R09: 000000000000fffe
+[   19.837733] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
+[   19.837733] R13: 0000000000000000 R14: ffff880069fa9290 R15: ffff880079624a80
+[   19.837733] FS:  00007f3de01ee840(0000) GS:ffff88007c400000(0000) knlGS:0000000000000000
+[   19.837733] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   19.837733] CR2: 00007f3de00b9000 CR3: 0000000078dbc000 CR4: 00000000000007f0
+[   19.837733] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   19.837733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   19.837733] Process udevd (pid: 390, threadinfo ffff880078534000, task ffff880079642450)
+[   19.837733] Stack:
+[   19.837733]  ffff880078535c18 ffffffffa017c6b8 00040000816d627f ffff880079624a88
+[   19.837733]  ffffc90004cd6000 ffff880079624520 ffff88007ac21148 0000000000000000
+[   19.837733]  0000000000000000 0004000000000000 feda000078535bc8 ffffffff810d696d
+[   19.837733] Call Trace:
+[   19.837733]  [<ffffffffa017c6b8>] i82975x_init_one+0x2e6/0x3e6 [i82975x_edac]
+...
+
+Fix bug reported at:
+	https://bugzilla.redhat.com/show_bug.cgi?id=848149
+And, very likely:
+	https://bbs.archlinux.org/viewtopic.php?id=148033
+	https://bugzilla.kernel.org/show_bug.cgi?id=47171
+
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/Makefile |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/edac/i82975x_edac.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/sound/soc/Makefile
-+++ b/sound/soc/Makefile
-@@ -1,8 +1,9 @@
- snd-soc-core-objs := soc-core.o soc-dapm.o soc-jack.o soc-cache.o soc-utils.o
- snd-soc-core-objs += soc-pcm.o soc-io.o
+--- a/drivers/edac/i82975x_edac.c
++++ b/drivers/edac/i82975x_edac.c
+@@ -370,10 +370,6 @@ static enum dev_type i82975x_dram_type(v
+ static void i82975x_init_csrows(struct mem_ctl_info *mci,
+ 		struct pci_dev *pdev, void __iomem *mch_window)
+ {
+-	static const char *labels[4] = {
+-							"DIMM A1", "DIMM A2",
+-							"DIMM B1", "DIMM B2"
+-						};
+ 	struct csrow_info *csrow;
+ 	unsigned long last_cumul_size;
+ 	u8 value;
+@@ -423,9 +419,10 @@ static void i82975x_init_csrows(struct m
+ 			dimm = mci->csrows[index]->channels[chan]->dimm;
  
--snd-soc-dmaengine-pcm-objs := soc-dmaengine-pcm.o
--obj-$(CONFIG_SND_SOC_DMAENGINE_PCM) += snd-soc-dmaengine-pcm.o
-+ifneq ($(CONFIG_SND_SOC_DMAENGINE_PCM),)
-+snd-soc-core-objs += soc-dmaengine-pcm.o
-+endif
- 
- obj-$(CONFIG_SND_SOC)	+= snd-soc-core.o
- obj-$(CONFIG_SND_SOC)	+= codecs/
+ 			dimm->nr_pages = nr_pages / csrow->nr_channels;
+-			strncpy(csrow->channels[chan]->dimm->label,
+-					labels[(index >> 1) + (chan * 2)],
+-					EDAC_MC_LABEL_LEN);
++
++			snprintf(csrow->channels[chan]->dimm->label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
++				 (chan == 0) ? 'A' : 'B',
++				 index);
+ 			dimm->grain = 1 << 7;	/* 128Byte cache-line resolution */
+ 			dimm->dtype = i82975x_dram_type(mch_window, index);
+ 			dimm->mtype = MEM_DDR2; /* I82975x supports only DDR2 */
 
 
