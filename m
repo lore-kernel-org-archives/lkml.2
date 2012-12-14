@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab2LNW06 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:26:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38111 "EHLO mail.kernel.org"
+	id S1757052Ab2LNW1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:27:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38127 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756960Ab2LNW04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:26:56 -0500
+	id S1757025Ab2LNW1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:27:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Stefan Nagy <public@stefan-nagy.at>, Zhang Rui <rui.zhang@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 16/22] ACPI / PNP: Do not crash due to stale pointer use during system resume
-Date: Fri, 14 Dec 2012 14:26:01 -0800
-Message-Id: <20121214222253.555232738@linuxfoundation.org>
+Subject: [ 17/22] ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
+Date: Fri, 14 Dec 2012 14:26:02 -0800
+Message-Id: <20121214222253.798669214@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -25,49 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit a6b5e88c0e42093b9057856f35770966c8c591e3 upstream.
+commit 129ff8f8d58297b04f47b5d6fad81aa2d08404e1 upstream.
 
-During resume from system suspend the 'data' field of
-struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
-due to removal of the associated ACPI device node object in the
-previous suspend-resume cycle.  This happens, for example, if a
-dockable machine is booted in the docking station and then suspended
-and resumed and suspended again.  If that happens,
-pnpacpi_build_resource_template() called from pnpacpi_set_resources()
-attempts to use that pointer and crashes.
+Or else the laptop will boot with a dimmed screen.
 
-However, pnpacpi_set_resources() actually checks the device's ACPI
-handle, attempts to find the ACPI device node object attached to it
-and returns an error code if that fails, so in fact it knows what the
-correct value of dev->data should be.  Use this observation to update
-dev->data with the correct value if necessary and dump a call trace
-if that's the case (once).
-
-We still need to fix the root cause of this issue, but preventing
-systems from crashing because of it is an improvement too.
-
-Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51141
+Tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/pnpacpi/core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/acpi/video.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -94,6 +94,9 @@ static int pnpacpi_set_resources(struct
- 		return -ENODEV;
- 	}
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -390,6 +390,12 @@ static int __init video_set_bqc_offset(c
+ 	return 0;
+ }
  
-+	if (WARN_ON_ONCE(acpi_dev != dev->data))
-+		dev->data = acpi_dev;
++static int video_ignore_initial_backlight(const struct dmi_system_id *d)
++{
++	use_bios_initial_backlight = 0;
++	return 0;
++}
 +
- 	ret = pnpacpi_build_resource_template(dev, &buffer);
- 	if (ret)
- 		return ret;
+ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	/*
+ 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
+@@ -434,6 +440,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Folio 13-2000",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
++		},
++	},
+ 	{}
+ };
+ 
 
 
