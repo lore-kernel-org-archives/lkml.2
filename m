@@ -1,121 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab2LNJdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:33:45 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61909 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab2LNJdm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:33:42 -0500
+	id S1755535Ab2LNJd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:33:57 -0500
+Received: from mx3.cyfra.ua ([62.80.160.182]:56534 "EHLO mx3.cyfra.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753579Ab2LNJdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 04:33:55 -0500
+From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Organization: Factor-SPE
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: Re: [PATCH 1/2 v3] Fix memory freeing issues
+Date: Fri, 14 Dec 2012 11:33:50 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Cong Ding <dinggnu@gmail.com>
+References: <201212101118.08463.vitas@nppfactor.kiev.ua> <201212101144.45967.vitas@nppfactor.kiev.ua> <20121213181354.GI4261@local>
+In-Reply-To: <20121213181354.GI4261@local>
 MIME-Version: 1.0
-In-Reply-To: <50CA84FF.5070907@intel.com>
-References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
-	<1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
-	<50C93AC1.1060202@intel.com>
-	<CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
-	<50C9E552.1010600@intel.com>
-	<CAKfTPtCUDEC50xexmLQ1d9qvBz1iJnf4aGSGjN==jqZwpxrwiQ@mail.gmail.com>
-	<CAKfTPtAhFtGKOtwumuav+pndoAZiKjHvYoE2NZxtgP+qHuHY3g@mail.gmail.com>
-	<50CA84FF.5070907@intel.com>
-Date: Fri, 14 Dec 2012 10:33:39 +0100
-Message-ID: <CAKfTPtCarhT3J3xOD6jOh_91Pm5FK4V_DAk5QLs_=8rVF+-fsQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
-        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
-        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, preeti@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
-        arjan@linux.intel.com, amit.kucheria@linaro.org,
-        viresh.kumar@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201212141133.50312.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 December 2012 02:46, Alex Shi <alex.shi@intel.com> wrote:
-> On 12/13/2012 11:48 PM, Vincent Guittot wrote:
->> On 13 December 2012 15:53, Vincent Guittot <vincent.guittot@linaro.org> wrote:
->>> On 13 December 2012 15:25, Alex Shi <alex.shi@intel.com> wrote:
->>>> On 12/13/2012 06:11 PM, Vincent Guittot wrote:
->>>>> On 13 December 2012 03:17, Alex Shi <alex.shi@intel.com> wrote:
->>>>>> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
->>>>>>> During the creation of sched_domain, we define a pack buddy CPU for each CPU
->>>>>>> when one is available. We want to pack at all levels where a group of CPU can
->>>>>>> be power gated independently from others.
->>>>>>> On a system that can't power gate a group of CPUs independently, the flag is
->>>>>>> set at all sched_domain level and the buddy is set to -1. This is the default
->>>>>>> behavior.
->>>>>>> On a dual clusters / dual cores system which can power gate each core and
->>>>>>> cluster independently, the buddy configuration will be :
->>>>>>>
->>>>>>>       | Cluster 0   | Cluster 1   |
->>>>>>>       | CPU0 | CPU1 | CPU2 | CPU3 |
->>>>>>> -----------------------------------
->>>>>>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
->>>>>>>
->>>>>>> Small tasks tend to slip out of the periodic load balance so the best place
->>>>>>> to choose to migrate them is during their wake up. The decision is in O(1) as
->>>>>>> we only check again one buddy CPU
->>>>>>
->>>>>> Just have a little worry about the scalability on a big machine, like on
->>>>>> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
->>>>>> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
->>>>>> is different on task distribution decision.
->>>>>
->>>>> The buddy CPU should probably not be the same for all 64 LCPU it
->>>>> depends on where it's worth packing small tasks
->>>>
->>>> Do you have further ideas for buddy cpu on such example?
->>>
->>> yes, I have several ideas which were not really relevant for small
->>> system but could be interesting for larger system
->>>
->>> We keep the same algorithm in a socket but we could either use another
->>> LCPU in the targeted socket (conf0) or chain the socket (conf1)
->>> instead of packing directly in one LCPU
->>>
->>> The scheme below tries to summaries the idea:
->>>
->>> Socket      | socket 0 | socket 1   | socket 2   | socket 3   |
->>> LCPU        | 0 | 1-15 | 16 | 17-31 | 32 | 33-47 | 48 | 49-63 |
->>> buddy conf0 | 0 | 0    | 1  | 16    | 2  | 32    | 3  | 48    |
->>> buddy conf1 | 0 | 0    | 0  | 16    | 16 | 32    | 32 | 48    |
->>> buddy conf2 | 0 | 0    | 16 | 16    | 32 | 32    | 48 | 48    |
->>>
->>> But, I don't know how this can interact with NUMA load balance and the
->>> better might be to use conf3.
->>
->> I mean conf2 not conf3
+On Thursday 13 December 2012 20:13:54 Hans J. Koch wrote:
+> On Mon, Dec 10, 2012 at 11:44:45AM +0200, Vitalii Demianets wrote:
+> > 1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which
+> > was obviously wrong and unrelated to the fact if uioinfo was allocated
+> > statically or dynamically. This patch introduces new flag which clearly
+> > shows if uioinfo was allocated dynamically and kfrees uioinfo based on
+> > that flag; 2. Fix: priv data was not freed in case platform_get_irq()
+> > failed. As it was caused mainly by improper exit labels naming, labels
+> > were renamed too; 3. The case of uioinfo AND pdev->dev.of_node both NULL
+> > (not initialized in platform data) was not treated properly.
+> >
+> > Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+> > ---
+> > v2: Constants naming style
+> > v3: Comments: better wording in comment accompanying flags initialization
+> > & removed obsoleted OF comment
 >
-> So, it has 4 levels 0/16/32/ for socket 3 and 0 level for socket 0, it
-> is unbalanced for different socket.
+> That comment is obsolete as well.
+>
 
-That the target because we have decided to pack the small tasks in
-socket 0 when we have parsed the topology at boot.
-We don't have to loop into sched_domain or sched_group anymore to find
-the best LCPU when a small tasks wake up.
+Hans, this patch deals only and exclusively with memory freeing issues. This 
+patch does not change in any way any other functionality. Particularly, it 
+does not change irq-related bit flag.
+That comment is about irq-related bit flag. As long as this patch does not 
+remove that flag, the comment is not obsolete.
+
+> > ---
+> >  drivers/uio/uio_pdrv_genirq.c |   47
+> > ++++++++++++++++++++++++---------------- 1 files changed, 28
+> > insertions(+), 19 deletions(-)
+> >
+> > diff --git a/drivers/uio/uio_pdrv_genirq.c
+> > b/drivers/uio/uio_pdrv_genirq.c index 42202cd..cc5233b 100644
+> > --- a/drivers/uio/uio_pdrv_genirq.c
+> > +++ b/drivers/uio/uio_pdrv_genirq.c
+> > @@ -30,6 +30,11 @@
+> >
+> >  #define DRIVER_NAME "uio_pdrv_genirq"
+> >
+> > +enum {
+> > +	UIO_IRQ_DISABLED = 0,
+> > +	UIO_INFO_ALLOCED = 1,
+> > +};
+>
+> We don't need these flags.
+
+1) This patch does need UIO_INFO_ALLOCED flag, because we need to know in the 
+uio_pdrv_genirq_remove() routine if uioinfo was allocated dynamically or 
+statically. If flag UIO_INFO_ALLOCED is set, then uioinfo was allocated 
+dynamically and should be freed.
+2) As for UIO_IRQ_DISABLED - I'm not introducing this flag. It is not new; it 
+was there in the priv->flags already, although unnamed. What this patch 
+does - it gives the name to the previously unnamed flag. It does not change 
+its semantics, it does nod add or remove it. The patch is keeping all not 
+memory-related things in status quo.
+
+I understand you want this flag removed. But it is completely another story, 
+nothing in common with memory freeing issues. And this patch is dealing with 
+memory freeing issues only. Not touching any other functionality.
 
 >
-> And the ground level has just one buddy for 16 LCPUs - 8 cores, that's
-> not a good design, consider my previous examples: if there are 4 or 8
-> tasks in one socket, you just has 2 choices: spread them into all cores,
-> or pack them into one LCPU. Actually, moving them just into 2 or 4 cores
-> maybe a better solution. but the design missed this.
+> > +
+> >  struct uio_pdrv_genirq_platdata {
+> >  	struct uio_info *uioinfo;
+> >  	spinlock_t lock;
+> > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq,
+> > struct uio_info *dev_info) * remember the state so we can allow user
+> > space to enable it later. */
+> >
+> > -	if (!test_and_set_bit(0, &priv->flags))
+> > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+>
+> Remove the "if" completely, we need to disable the irq unconditionally.
 
-You speak about tasks without any notion of load. This patch only care
-of small tasks and light LCPU load, but it falls back to default
-behavior for other situation. So if there are 4 or 8 small tasks, they
-will migrate to the socket 0 after 1 or up to 3 migration (it depends
-of the conf and the LCPU they come from).
+Hans, why do you want to put in this patch, which is dealing with 
+memory-freeing issues only, completely unrelated functional changes?
+I understand you want that flag removed. So, you can do it in another patch. 
+This patch does not change anything except memory freeing bugs.
 
-Then, if too much small tasks wake up simultaneously on the same LCPU,
-the default load balance will spread them in the core/cluster/socket
 
 >
-> Obviously, more and more cores is the trend on any kinds of CPU, the
-> buddy system seems hard to catch up this.
+> >  		disable_irq_nosync(irq);
+> >
+> >  	return IRQ_HANDLED;
+> > @@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info
+> > *dev_info, s32 irq_on)
+> >
+> >  	spin_lock_irqsave(&priv->lock, flags);
+> >  	if (irq_on) {
+> > -		if (test_and_clear_bit(0, &priv->flags))
+> > +		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+> >  			enable_irq(dev_info->irq);
+> >  	} else {
+> > -		if (!test_and_set_bit(0, &priv->flags))
+> > +		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+> >  			disable_irq(dev_info->irq);
 >
+> Same here: irqcontrol has to enable/disable the irq unconditionally.
+
+Same here. This patch is dealing with memory freeing issues only. Why do you 
+want to put in this patch completely unrelated functional changes?
+
 >
+> >  	}
+> >  	spin_unlock_irqrestore(&priv->lock, flags);
+> > @@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct
+> > platform_device *pdev) struct uio_mem *uiomem;
+> >  	int ret = -EINVAL;
+> >  	int i;
+> > +	bool uioinfo_alloced = false;
+> >
+> > -	if (!uioinfo) {
+> > +	if (!uioinfo && pdev->dev.of_node) {
+> >  		int irq;
+> >
+> >  		/* alloc uioinfo for one device */
+> > @@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct
+> > platform_device *pdev) if (!uioinfo) {
+> >  			ret = -ENOMEM;
+> >  			dev_err(&pdev->dev, "unable to kmalloc\n");
+> > -			goto bad2;
+> > +			goto out;
+> >  		}
+> >  		uioinfo->name = pdev->dev.of_node->name;
+> >  		uioinfo->version = "devicetree";
+> > +		uioinfo_alloced = true;
+> >
+> >  		/* Multiple IRQs are not supported */
+> >  		irq = platform_get_irq(pdev, 0);
+> > @@ -125,32 +132,35 @@ static int uio_pdrv_genirq_probe(struct
+> > platform_device *pdev)
+> >
+> >  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+> >  		dev_err(&pdev->dev, "missing platform_data\n");
+> > -		goto bad0;
+> > +		goto out_uioinfo;
+> >  	}
+> >
+> >  	if (uioinfo->handler || uioinfo->irqcontrol ||
+> >  	    uioinfo->irq_flags & IRQF_SHARED) {
+> >  		dev_err(&pdev->dev, "interrupt configuration error\n");
+> > -		goto bad0;
+> > +		goto out_uioinfo;
+> >  	}
+> >
+> >  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+> >  	if (!priv) {
+> >  		ret = -ENOMEM;
+> >  		dev_err(&pdev->dev, "unable to kmalloc\n");
+> > -		goto bad0;
+> > +		goto out_uioinfo;
+> >  	}
+> >
+> >  	priv->uioinfo = uioinfo;
+> >  	spin_lock_init(&priv->lock);
+> > -	priv->flags = 0; /* interrupt is enabled to begin with */
+> > +	/* Interrupt is enabled to begin with,
+> > +	 * that's why UIO_IRQ_DISABLED flag is not initially set.
+> > +	 */
+> > +	priv->flags = uioinfo_alloced ? BIT_MASK(UIO_INFO_ALLOCED) : 0;
+> >  	priv->pdev = pdev;
+> >
+> >  	if (!uioinfo->irq) {
+> >  		ret = platform_get_irq(pdev, 0);
+> >  		if (ret < 0) {
+> >  			dev_err(&pdev->dev, "failed to get IRQ\n");
+> > -			goto bad0;
+> > +			goto out_priv;
+> >  		}
+> >  		uioinfo->irq = ret;
+> >  	}
+> > @@ -205,19 +215,19 @@ static int uio_pdrv_genirq_probe(struct
+> > platform_device *pdev) ret = uio_register_device(&pdev->dev,
+> > priv->uioinfo);
+> >  	if (ret) {
+> >  		dev_err(&pdev->dev, "unable to register uio device\n");
+> > -		goto bad1;
+> > +		goto out_pm;
+> >  	}
+> >
+> >  	platform_set_drvdata(pdev, priv);
+> >  	return 0;
+> > - bad1:
+> > -	kfree(priv);
+> > +out_pm:
+> >  	pm_runtime_disable(&pdev->dev);
+> > - bad0:
+> > -	/* kfree uioinfo for OF */
+> > -	if (pdev->dev.of_node)
+> > +out_priv:
+> > +	kfree(priv);
+> > +out_uioinfo:
+> > +	if (uioinfo_alloced)
+> >  		kfree(uioinfo);
+>
+> why check that variable? kfree can handle NULL pointers very well.
+
+This variable shows if uioinfo was allocated dynamically or statically. We 
+want kfree(uioinfo) only for the dynamically allocated memory.
+
+>
+> > - bad2:
+> > +out:
+> >  	return ret;
+> >  }
+> >
+> > @@ -231,8 +241,7 @@ static int uio_pdrv_genirq_remove(struct
+> > platform_device *pdev) priv->uioinfo->handler = NULL;
+> >  	priv->uioinfo->irqcontrol = NULL;
+> >
+> > -	/* kfree uioinfo for OF */
+> > -	if (pdev->dev.of_node)
+> > +	if (test_bit(UIO_INFO_ALLOCED, &priv->flags))
+> >  		kfree(priv->uioinfo);
+> >
+> >  	kfree(priv);
+> > --
+> > 1.7.8.6
+
+Please, note, that this patch does not change irq-related functionality at 
+all. I understand that you want to change it, but it is not what this patch 
+is about. It deals with memory freeing issues only.
+
+Do you have technical objections to the memory issues fixes, which this patch 
+is about?
