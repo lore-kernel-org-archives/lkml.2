@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2LNByu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 20:54:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13782 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444Ab2LNBys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 20:54:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,277,1355126400"; 
-   d="scan'208";a="263798361"
-Message-ID: <50CA8746.5050604@intel.com>
-Date: Fri, 14 Dec 2012 09:56:22 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1755884Ab2LNB4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:56:11 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:53336 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab2LNB4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 20:56:09 -0500
+Date: Fri, 14 Dec 2012 03:56:05 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Sebastian Reichel <sre@debian.org>, Wim Van Sebroeck <wim@iguana.be>
+Cc: Tony Lindgren <tony@atomide.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RESEND PATCH v3 1/6] watchdog: omap_wdt: convert to new
+ watchdog core
+Message-ID: <20121214015605.GC6823@blackmetal.musicnaut.iki.fi>
+References: <1352746025-1669-1-git-send-email-aaro.koskinen@iki.fi>
+ <1352746025-1669-2-git-send-email-aaro.koskinen@iki.fi>
+ <20121112224703.GT6801@atomide.com>
+ <20121214012336.GA402@earth.universe>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@linux.intel.com>,
-        Alex Shi <lkml.alex@gmail.com>, rob@landley.net, mingo@redhat.com,
-        peterz@infradead.org, gregkh@linuxfoundation.org,
-        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, pjt@google.com,
-        vincent.guittot@linaro.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/18] sched: simplified fork, enable load average into
- LB and power awareness scheduling
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com> <CAGjg+kGAokK0oOAOJL=apkcyi_deqtHHsaJCViCz9tOMKG56bw@mail.gmail.com> <50C722AC.3080806@intel.com> <20121211154819.GC8873@liondog.tnic> <50C75935.1040004@linux.intel.com> <20121211161320.GA28827@liondog.tnic> <50C76208.107@linux.intel.com> <20121212144140.GD8760@liondog.tnic> <50C9467F.3020205@intel.com> <20121213113549.GB31485@liondog.tnic>
-In-Reply-To: <20121213113549.GB31485@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121214012336.GA402@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 07:35 PM, Borislav Petkov wrote:
-> On Thu, Dec 13, 2012 at 11:07:43AM +0800, Alex Shi wrote:
->>>> now, on the other hand, if you have two threads of a process that
->>>> share a bunch of data structures, and you'd spread these over 2
->>>> sockets, you end up bouncing data between the two sockets a lot,
->>>> running inefficient --> bad for power.
->>>
->>> Yeah, that should be addressed by the NUMA patches people are
->>> working on right now.
->>
->> Yes, as to balance/powersaving policy, we can tight pack tasks
->> firstly, then NUMA balancing will make memory follow us.
->>
->> BTW, NUMA balancing is more related with page in memory. not LLC.
-> 
-> Sure, let's look at the worst and best cases:
-> 
-> * worst case: you have memory shared by multiple threads on one node
-> *and* working set doesn't fit in LLC.
-> 
-> Here, if you pack threads tightly only on one node, you still suffer the
-> working set kicking out parts of itself out of LLC.
-> 
-> If you spread threads around, you still cannot avoid the LLC thrashing
-> because the LLC of the node containing the shared memory needs to cache
-> all those transactions. *In* *addition*, you get the cross-node traffic
-> because the shared pages are on the first node.
-> 
-> Major suckage.
-> 
-> Does it matter? I don't know. It can be decided on a case-by-case basis.
-> If people care about singlethread perf, they would likely want to spread
-> around and buy in the cross-node traffic.
-> 
-> If they care for power, then maybe they don't want to turn on the second
-> socket yet.
-> 
-> * the optimal case is where memory follows threads and gets spread
-> around such that LLC doesn't get thrashed and cross-node traffic gets
-> avoided.
-> 
-> Now, you can think of all those other scenarios in between :-/
+Hi,
 
-You are right. thanks for explanation! :)
-
-Actually, what I went to say is that numa balancing target is pages in
-different node memory, but of course, it may improve LLC performance.
+On Fri, Dec 14, 2012 at 02:23:36AM +0100, Sebastian Reichel wrote:
+> On Mon, Nov 12, 2012 at 02:47:03PM -0800, Tony Lindgren wrote:
+> > * Aaro Koskinen <aaro.koskinen@iki.fi> [121112 10:49]:
+> > > Convert omap_wdt to new watchdog core. On OMAP boards, there are usually
+> > > multiple watchdogs. Since the new watchdog core supports multiple
+> > > watchdogs, all watchdog drivers used on OMAP should be converted.
+> > > 
+> > > The legacy watchdog device node is still created, so this should not
+> > > break existing users.
+> > > 
+> > > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> > > Tested-by: Jarkko Nikula <jarkko.nikula@jollamobile.com>
+> > > Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+> > > Cc: Wim Van Sebroeck <wim@iguana.be>
+> > 
+> > Wim, looks like these will cause merge conflicts with what we
+> > have already queued in omap-for-v3.8/cleanup-prcm as patch
+> > "watchdog: OMAP: use standard GETBOOTSTATUS interface; use
+> > platform_data fn ptr" along with other ARM multiplatform
+> > related clean up. If these look ackable to you, I can queue
+> > these that's OK to you.
 > 
-> Thanks.
-> 
+> What's the status of this patchset? If I'm not mistaken it is
+> neither included in linux-omap, nor in linux-watchdog-next.
 
+Since it's not in -next, then I guess it won't appear in 3.8. Once
+the 3.8-rc1 is out, I will continue rebasing/retesting/resending the
+patch set...
+
+A.
