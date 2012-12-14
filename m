@@ -1,46 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2LNPqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 10:46:06 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55922 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab2LNPqE (ORCPT
+	id S1756502Ab2LNPqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 10:46:35 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:33864
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932089Ab2LNPqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 10:46:04 -0500
+	Fri, 14 Dec 2012 10:46:34 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -15
+X-BigFish: VPS-15(zz98dI103dK1432Ia65Rzz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
+X-WSS-ID: 0MF12HB-01-50Z-02
+X-M-MSG: 
+Date: Fri, 14 Dec 2012 09:46:22 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 0/6] perf, amd: Enable AMD family 15h northbridge
+ counters
+Message-ID: <20121214154622.GA26540@jshin-Toonie>
+References: <1354748658-30567-1-git-send-email-jacob.shin@amd.com>
+ <20121210185100.GA31713@jshin-Toonie>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1212121521590.1995@hadrien>
-References: <1355223525-19165-1-git-send-email-Julia.Lawall@lip6.fr>
-	<20121212115624.GI4398@game.jcrosoft.org>
-	<alpine.DEB.2.02.1212121521590.1995@hadrien>
-Date: Fri, 14 Dec 2012 16:46:02 +0100
-Message-ID: <CACRpkdbTKB+evcoqp02GBAnWOZ-06pEB_u=ssXQFdi5ZvV_8FQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/pinctrl/pinctrl-at91.c: convert kfree to devm_kfree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20121210185100.GA31713@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 3:22 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+On Mon, Dec 10, 2012 at 12:51:00PM -0600, Jacob Shin wrote:
+> On Wed, Dec 05, 2012 at 05:04:12PM -0600, Jacob Shin wrote:
+> > The following patchset enables 4 additional performance counters in
+> > AMD family 15h processors that count northbridge events -- such as
+> > number of DRAM accesses.
+> > 
+> > This patchset is based on previous work done by Robert Richter
+> > <rric@kernel.org> :
+> > 
+> > https://lkml.org/lkml/2012/6/19/324
+> > 
+> > The main differences are:
+> > 
+> > * The northbridge counters are indexed contiguously right above the
+> >   core performance counters.
+> > 
+> > * MSR address offset calculations are moved to architecture specific
+> >   files.
+> > 
+> > * Interrups are set up to be delivered only to a single core.
+> > 
+> > V4:
+> > * Moved interrupt core select set up back to event constraints
+> >   function, sicne during ->hw_config time we do not yet know on which
+> >   CPU the the event will run on.
+> > * Tested on and made minor revisions to make sure that the patchset is
+> >   compatible with upcoming AMD Family 16h processors, and will support
+> >   core and NB counters without any further patches.
+> > 
+> > V3:
+> > Addressed the following feedback/comments from Robert's review
+> > * https://lkml.org/lkml/2012/11/16/484
+> > * https://lkml.org/lkml/2012/11/26/162
+> > 
+> > V2:
+> > Separate out Robert's patches, and add properly ordered certificate of
+> > origins.
+> > 
+> > Jacob Shin (4):
+> >   perf, amd: Use proper naming scheme for AMD bit field definitions
+> >   perf, x86: Move MSR address offset calculation to architecture
+> >     specific files
+> >   perf, x86: Allow for architecture specific RDPMC indexes
+> >   perf, amd: Enable northbridge performance counters on AMD family 15h
+> > 
+> > Robert Richter (2):
+> >   perf, amd: Rework northbridge event constraints handler
+> >   perf, amd: Generalize northbridge constraints code for family 15h
+> > 
+> >  arch/x86/include/asm/cpufeature.h    |    2 +
+> >  arch/x86/include/asm/msr-index.h     |    2 +
+> >  arch/x86/include/asm/perf_event.h    |   13 +-
+> >  arch/x86/kernel/cpu/perf_event.c     |    2 +-
+> >  arch/x86/kernel/cpu/perf_event.h     |   25 ++-
+> >  arch/x86/kernel/cpu/perf_event_amd.c |  318 ++++++++++++++++++++++++++--------
+> >  6 files changed, 268 insertions(+), 94 deletions(-)
+> > 
+> > -- 
+> 
+> Ping .. ? any comments/feedback ? If things look okay, could you
+> please commit to tip perf/core ?
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> The function at91_dt_node_to_map is ultimately called by the function
-> pinctrl_get, which is an exported function.  Since it is possible that this
-> function is not called from within a probe function, for safety, the kfree
-> is converted to a devm_kfree, to both free the data and remove it from the
-> device in a failure situation.
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
-> v2: Drop cleanup of the call to devm_kzalloc at the same time.
+Ping #2 .. ?
 
-Thanks, applied with Jean-Christophe's ACK.
+Thanks!
 
-Yours,
-Linus Walleij
+-Jacob
+
