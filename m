@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2LNIhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:37:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59482 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab2LNIhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:37:42 -0500
-Date: Fri, 14 Dec 2012 09:37:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Satoru Moriya <satoru.moriya@hds.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
- going OOM
-Message-ID: <20121214083738.GA6898@dhcp22.suse.cz>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
- <20121213103420.GW1009@suse.de>
- <20121213152959.GE21644@dhcp22.suse.cz>
- <20121213160521.GG21644@dhcp22.suse.cz>
- <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
- <20121214045030.GE6317@cmpxchg.org>
+	id S1753410Ab2LNImb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:42:31 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6938 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab2LNIm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 03:42:29 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 14 Dec 2012 00:40:36 -0800
+From: Sivaram Nair <sivaramn@nvidia.com>
+To: <ccross@android.com>, <santosh.shilimkar@ti.com>, <khilman@ti.com>,
+        <rjw@sisk.pl>, <daniel.lezcano@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, Sivaram Nair <sivaramn@nvidia.com>
+Subject: [PATCH 1/1] cpuidle: coupled: fix ready counter decrement
+Date: Fri, 14 Dec 2012 10:42:08 +0200
+Message-ID: <1355474528-13094-1-git-send-email-sivaramn@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121214045030.GE6317@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-12-12 23:50:30, Johannes Weiner wrote:
-> On Thu, Dec 13, 2012 at 10:25:43PM +0000, Satoru Moriya wrote:
-> > 
-> > On 12/13/2012 11:05 AM, Michal Hocko wrote:> On Thu 13-12-12 16:29:59, Michal Hocko wrote:
-> > >> On Thu 13-12-12 10:34:20, Mel Gorman wrote:
-> > >>> On Wed, Dec 12, 2012 at 04:43:34PM -0500, Johannes Weiner wrote:
-> > >>>> When a reclaim scanner is doing its final scan before giving up and 
-> > >>>> there is swap space available, pay no attention to swappiness 
-> > >>>> preference anymore.  Just swap.
-> > >>>>
-> > >>>> Note that this change won't make too big of a difference for 
-> > >>>> general
-> > >>>> reclaim: anonymous pages are already force-scanned when there is 
-> > >>>> only very little file cache left, and there very likely isn't when 
-> > >>>> the reclaimer enters this final cycle.
-> > >>>>
-> > >>>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > >>>
-> > >>> Ok, I see the motivation for your patch but is the block inside 
-> > >>> still wrong for what you want? After your patch the block looks like 
-> > >>> this
-> > >>>
-> > >>>                 if (sc->priority || noswap) {
-> > >>>                         scan >>= sc->priority;
-> > >>>                         if (!scan && force_scan)
-> > >>>                                 scan = SWAP_CLUSTER_MAX;
-> > >>>                         scan = div64_u64(scan * fraction[file], denominator);
-> > >>>                 }
-> > >>>
-> > >>> if sc->priority == 0 and swappiness==0 then you enter this block but 
-> > >>> fraction[0] for anonymous pages will also be 0 and because of the 
-> > >>> ordering of statements there, scan will be
-> > >>>
-> > >>> scan = scan * 0 / denominator
-> > >>>
-> > >>> so you are still not reclaiming anonymous pages in the swappiness=0 
-> > >>> case. What did I miss?
-> > >>
-> > >> Yes, now that you have mentioned that I realized that it really 
-> > >> doesn't make any sense. fraction[0] is _always_ 0 for swappiness==0. 
-> > >> So we just made a bigger pressure on file LRUs. So this sounds like a 
-> > >> misuse of the swappiness. This all has been introduced with fe35004f 
-> > >> (mm: avoid swapping out with swappiness==0).
-> > >>
-> > >> I think that removing swappiness check make sense but I am not sure 
-> > >> it does what the changelog says. It should have said that checking 
-> > >> swappiness doesn't make any sense for small LRUs.
-> > >
-> > > Bahh, wait a moment. Now I remember why the check made sense 
-> > > especially for memcg.
-> > > It made "don't swap _at all_ for swappiness==0" for real - you are 
-> > > even willing to sacrifice OOM. Maybe this is OK for the global case 
-> > > because noswap would safe you here (assuming that there is no swap if 
-> > > somebody doesn't want to swap at all and swappiness doesn't play such 
-> > > a big role) but for memcg you really might want to prevent from 
-> > > swapping - not everybody has memcg swap extension enabled and swappiness is handy then.
-> > > So I am not sure this is actually what we want. Need to think about it.
-> > 
-> > I introduced swappiness check here with fe35004f because, in some
-> > cases, we prefer OOM to swap out pages to detect problems as soon
-> > as possible. Basically, we design the system not to swap out and
-> > so if it causes swapping, something goes wrong.
-> 
-> I might be missing something terribly obvious, but... why do you add
-> swap space to the system in the first place?  Or in case of cgroups,
-> why not set the memsw limit equal to the memory limit?
+The ready_waiting_counts atomic variable is compared against the wrong
+online cpu count. The latter is computed incorrectly using logical-OR
+instead of bit-OR. This patch fixes that.
 
-I can answer the later. Because memsw comes with its price and
-swappiness is much cheaper. On the other hand it makes sense that
-swappiness==0 doesn't swap at all. Or do you think we should get back to
-_almost_ doesn't swap at all?
+Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
+---
+ drivers/cpuidle/coupled.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+index 3265844..2a297f8 100644
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -209,7 +209,7 @@ inline int cpuidle_coupled_set_not_ready(struct cpuidle_coupled *coupled)
+ 	int all;
+ 	int ret;
+ 
+-	all = coupled->online_count || (coupled->online_count << WAITING_BITS);
++	all = coupled->online_count | (coupled->online_count << WAITING_BITS);
+ 	ret = atomic_add_unless(&coupled->ready_waiting_counts,
+ 		-MAX_WAITING_CPUS, all);
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
