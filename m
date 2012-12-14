@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2LNUBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:01:13 -0500
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:41301 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932239Ab2LNUBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:01:12 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Julien Delacou <julien.delacou@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] pinctrl: add sleep mode management
-Date: Fri, 14 Dec 2012 21:00:33 +0100
-Message-ID: <1355515233-23663-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S932308Ab2LNUCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:02:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932188Ab2LNUCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 15:02:48 -0500
+Date: Fri, 14 Dec 2012 21:02:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: bigeasy@linutronix.de, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
+        anton@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] uprobes/powerpc: Make use of generic routines
+	to enable single step
+Message-ID: <20121214200241.GA27195@redhat.com>
+References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150946.7727.82735.stgit@suzukikp>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121203150946.7727.82735.stgit@suzukikp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julien Delacou <julien.delacou@stericsson.com>
+On 12/03, Suzuki K. Poulose wrote:
+>
+> Replace the ptrace helpers with the powerpc generic routines to
+> enable/disable single step. We save/restore the MSR (and DCBR for BookE)
+> across for the operation. We don't have to disable the single step,
+> as restoring the MSR/DBCR would restore the previous state.
 
-This fix allows handling sleep mode for hogged
-pins in pinctrl. It provides functions to set pins
-to sleep/default configurations according to their
-current state.
+Obviously I can't review this series (although it looks fine to me).
 
-Signed-off-by: Julien Delacou <julien.delacou@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Move function prototypes to the local pinctrl/core.h header file
-- Added exports
----
- drivers/pinctrl/core.c | 37 ++++++++++++++++++++++++++++++++++---
- drivers/pinctrl/core.h |  7 +++++++
- 2 files changed, 41 insertions(+), 3 deletions(-)
+Just one note,
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 5b4885c..3611753 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1076,6 +1076,30 @@ void pinctrl_unregister_map(struct pinctrl_map const *map)
- 	}
- }
- 
-+/**
-+ * pinctrl_force_sleep() - turn a given controller device into sleep state
-+ * @pctldev: pin controller device
-+ */
-+int pinctrl_force_sleep(struct pinctrl_dev *pctldev)
-+{
-+	if (!IS_ERR(pctldev->p) && !IS_ERR(pctldev->hog_sleep))
-+		return pinctrl_select_state(pctldev->p, pctldev->hog_sleep);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pinctrl_force_sleep);
-+
-+/**
-+ * pinctrl_force_default() - turn a given controller device into default state
-+ * @pctldev: pin controller device
-+ */
-+int pinctrl_force_default(struct pinctrl_dev *pctldev)
-+{
-+	if (!IS_ERR(pctldev->p) && !IS_ERR(pctldev->hog_default))
-+		return pinctrl_select_state(pctldev->p, pctldev->hog_default);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pinctrl_force_default);
-+
- #ifdef CONFIG_DEBUG_FS
- 
- static int pinctrl_pins_show(struct seq_file *s, void *what)
-@@ -1521,16 +1545,23 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
- 
- 	pctldev->p = pinctrl_get_locked(pctldev->dev);
- 	if (!IS_ERR(pctldev->p)) {
--		struct pinctrl_state *s =
-+		pctldev->hog_default =
- 			pinctrl_lookup_state_locked(pctldev->p,
- 						    PINCTRL_STATE_DEFAULT);
--		if (IS_ERR(s)) {
-+		if (IS_ERR(pctldev->hog_default)) {
- 			dev_dbg(dev, "failed to lookup the default state\n");
- 		} else {
--			if (pinctrl_select_state_locked(pctldev->p, s))
-+			if (pinctrl_select_state_locked(pctldev->p,
-+						pctldev->hog_default))
- 				dev_err(dev,
- 					"failed to select default state\n");
- 		}
-+
-+		pctldev->hog_sleep =
-+			pinctrl_lookup_state_locked(pctldev->p,
-+						    PINCTRL_STATE_SLEEP);
-+		if (IS_ERR(pctldev->hog_sleep))
-+			dev_dbg(dev, "failed to lookup the sleep state\n");
- 	}
- 
- 	mutex_unlock(&pinctrl_mutex);
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 12f5694..232a9f6 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -30,6 +30,8 @@ struct pinctrl_gpio_range;
-  * @driver_data: driver data for drivers registering to the pin controller
-  *	subsystem
-  * @p: result of pinctrl_get() for this device
-+ * @hog_default: default state for pins hogged by this device
-+ * @hog_sleep: sleep state for pins hogged by this device
-  * @device_root: debugfs root for this device
-  */
- struct pinctrl_dev {
-@@ -41,6 +43,8 @@ struct pinctrl_dev {
- 	struct module *owner;
- 	void *driver_data;
- 	struct pinctrl *p;
-+	struct pinctrl_state *hog_default;
-+	struct pinctrl_state *hog_sleep;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry *device_root;
- #endif
-@@ -164,5 +168,8 @@ int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
- 			 bool dup, bool locked);
- void pinctrl_unregister_map(struct pinctrl_map const *map);
- 
-+extern int pinctrl_force_sleep(struct pinctrl_dev *pctldev);
-+extern int pinctrl_force_default(struct pinctrl_dev *pctldev);
-+
- extern struct mutex pinctrl_mutex;
- extern struct list_head pinctrldev_list;
--- 
-1.7.11.3
+> @@ -121,7 +132,7 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>
+>  	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
+>
+> -	uprobe_restore_context_sstep(&utask->autask);
+> +	uprobe_restore_context_sstep(&utask->autask, regs);
+
+I am not sure ppc needs this, but note that x86 does a bit more.
+
+Not only we need to restore the "single-step" state, we need to
+send SIGTRAP if it was not set by us. The same for _skip_sstep.
+
+But even if I am right I do not suggest to change this series,
+this can be done as a separate patch.
+
+Oleg.
 
