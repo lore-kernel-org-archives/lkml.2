@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab2LNWl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:41:57 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41233 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932598Ab2LNWlw (ORCPT
+	id S932678Ab2LNWmD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:42:03 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61737 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756880Ab2LNWl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:41:52 -0500
+	Fri, 14 Dec 2012 17:41:57 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/12] cfq-iosched: implement hierarchy-ready cfq_group charge scaling
-Date: Fri, 14 Dec 2012 14:41:20 -0800
-Message-Id: <1355524885-22719-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/12] cfq-iosched: enable full blkcg hierarchy support
+Date: Fri, 14 Dec 2012 14:41:22 -0800
+Message-Id: <1355524885-22719-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
 References: <1355524885-22719-1-git-send-email-tj@kernel.org>
@@ -22,260 +22,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cfqg charges are scaled directly according to cfqg->weight.
-Regardless of the number of active cfqgs or the amount of active
-weights, a given weight value always scales charge the same way.  This
-works fine as long as all cfqgs are treated equally regardless of
-their positions in the hierarchy, which is what cfq currently
-implements.  It can't work in hierarchical settings because the
-interpretation of a given weight value depends on where the weight is
-located in the hierarchy.
+With the previous two patches, all cfqg scheduling decisions are based
+on vfraction and ready for hierarchy support.  The only thing which
+keeps the behavior flat is cfqg_flat_parent() which makes vfraction
+calculation consider all non-root cfqgs children of the root cfqg.
 
-This patch reimplements cfqg charge scaling so that it can be used to
-support hierarchy properly.  The scheme is fairly simple and
-light-weight.
+Replace it with cfqg_parent() which returns the real parent.  This
+enables full blkcg hierarchy support for cfq-iosched.  For example,
+consider the following hierarchy.
 
-* When a cfqg is added to the service tree, v(disktime)weight is
-  calculated.  It walks up the tree to root calculating the fraction
-  it has in the hierarchy.  At each level, the fraction can be
-  calculated as
+        root
+      /      \
+   A:500      B:250
+  /     \
+ AA:500  AB:1000
 
-    cfqg->weight / parent->level_weight
+For simplicity, let's say all the leaf nodes have active tasks and are
+on service tree.  For each leaf node, vfraction would be
 
-  By compounding these, the global fraction of vdisktime the cfqg has
-  claim to - vfraction - can be determined.
+ AA: (500  / 1500) * (500 / 750) =~ 0.2222
+ AB: (1000 / 1500) * (500 / 750) =~ 0.4444
+  B:                 (250 / 750) =~ 0.3333
 
-* When the cfqg needs to be charged, the charge is scaled inversely
-  proportionally to the vfraction.
-
-The new scaling scheme uses the same CFQ_SERVICE_SHIFT for fixed point
-representation as before; however, the smallest scaling factor is now
-1 (ie. 1 << CFQ_SERVICE_SHIFT).  This is different from before where 1
-was for CFQ_WEIGHT_DEFAULT and higher weight would result in smaller
-scaling factor.
-
-While this shifts the global scale of vdisktime a bit, it doesn't
-change the relative relationships among cfqgs and the scheduling
-result isn't different.
-
-cfq_group_notify_queue_add uses fixed CFQ_IDLE_DELAY when appending
-new cfqg to the service tree.  The specific value of CFQ_IDLE_DELAY
-didn't have any relevance to vdisktime before and is unlikely to cause
-any visible behavior difference now especially as the scale shift
-isn't that large.
-
-As the new scheme now makes proper distinction between cfqg->weight
-and ->leaf_weight, reverse the weight aliasing for root cfqgs.  For
-root, both weights are now mapped to ->leaf_weight instead of the
-other way around.
-
-Because we're still using cfqg_flat_parent(), this patch shouldn't
-change the scheduling behavior in any noticeable way.
+and vdisktime will be distributed accordingly.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/cfq-iosched.c | 103 +++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 73 insertions(+), 30 deletions(-)
+ block/cfq-iosched.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index eb290a0..663a0f0 100644
+index fd2f4b4..ceade6e 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -237,6 +237,15 @@ struct cfq_group {
- 	unsigned int level_weight;
- 
- 	/*
-+	 * vfraction is the fraction of vdisktime that a cfqg is entitled
-+	 * to.  It is in fixed point w/ CFQ_SERVICE_SHIFT and the sum of
-+	 * all vfractions on a service tree is approximately 1.  The sum
-+	 * may deviate a bit due to rounding errors and fluctuations caused
-+	 * by cfqgs entering and leaving the service tree.
-+	 */
-+	unsigned int vfraction;
-+
-+	/*
- 	 * There are two weights - (internal) weight is the weight of this
- 	 * cfqg against the sibling cfqgs.  leaf_weight is the wight of
- 	 * this cfqg against the child cfqgs.  For the root cfqg, both
-@@ -891,13 +900,27 @@ cfq_prio_to_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 	return cfq_prio_slice(cfqd, cfq_cfqq_sync(cfqq), cfqq->ioprio);
+@@ -603,20 +603,11 @@ static inline struct cfq_group *blkg_to_cfqg(struct blkcg_gq *blkg)
+ 	return pd_to_cfqg(blkg_to_pd(blkg, &blkcg_policy_cfq));
  }
  
--static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_group *cfqg)
-+/**
-+ * cfqg_scale_charge - scale disk time charge according to cfqg weight
-+ * @charge: disk time being charged
-+ * @vfraction: vfraction of the cfqg, fixed point w/ CFQ_SERVICE_SHIFT
-+ *
-+ * Scale @charge according to @vfraction, which is in range (0, 1].  The
-+ * scaling is inversely proportional.
-+ *
-+ * scaled = charge / vfraction
-+ *
-+ * The result is also in fixed point w/ CFQ_SERVICE_SHIFT.
-+ */
-+static inline u64 cfqg_scale_charge(unsigned long charge,
-+				    unsigned int vfraction)
+-/*
+- * Determine the parent cfqg for weight calculation.  Currently, cfqg
+- * scheduling is flat and the root is the parent of everyone else.
+- */
+-static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg)
++static inline struct cfq_group *cfqg_parent(struct cfq_group *cfqg)
  {
--	u64 d = delta << CFQ_SERVICE_SHIFT;
-+	u64 c = charge << CFQ_SERVICE_SHIFT;	/* make it fixed point */
+-	struct blkcg_gq *blkg = cfqg_to_blkg(cfqg);
+-	struct cfq_group *root;
+-
+-	while (blkg->parent)
+-		blkg = blkg->parent;
+-	root = blkg_to_cfqg(blkg);
++	struct blkcg_gq *pblkg = cfqg_to_blkg(cfqg)->parent;
  
--	d = d * CFQ_WEIGHT_DEFAULT;
--	do_div(d, cfqg->weight);
--	return d;
-+	/* charge / vfraction */
-+	c <<= CFQ_SERVICE_SHIFT;
-+	do_div(c, vfraction);
-+	return c;
+-	return root != cfqg ? root : NULL;
++	return pblkg ? blkg_to_cfqg(pblkg) : NULL;
  }
  
- static inline u64 max_vdisktime(u64 min_vdisktime, u64 vdisktime)
-@@ -1237,7 +1260,9 @@ cfq_update_group_weight(struct cfq_group *cfqg)
- static void
- cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- {
-+	unsigned int vfr = 1 << CFQ_SERVICE_SHIFT;	/* start with 1 */
- 	struct cfq_group *pos = cfqg;
-+	struct cfq_group *parent;
- 	bool propagate;
+ static inline void cfqg_get(struct cfq_group *cfqg)
+@@ -719,7 +710,7 @@ static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
  
- 	/* add to the service tree */
-@@ -1248,22 +1273,33 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- 	st->total_weight += cfqg->weight;
+ #else	/* CONFIG_CFQ_GROUP_IOSCHED */
  
- 	/*
--	 * Activate @cfqg and propagate activation upwards until we meet an
--	 * already activated node or reach root.
-+	 * Activate @cfqg and calculate the portion of vfraction @cfqg is
-+	 * entitled to.  vfraction is calculated by walking the tree
-+	 * towards the root calculating the fraction it has at each level.
-+	 * The compounded ratio is how much vfraction @cfqg owns.
-+	 *
-+	 * Start with activating and calculating vfraction for @cfqg.
+-static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg) { return NULL; }
++static inline struct cfq_group *cfqg_parent(struct cfq_group *cfqg) { return NULL; }
+ static inline void cfqg_get(struct cfq_group *cfqg) { }
+ static inline void cfqg_put(struct cfq_group *cfqg) { }
+ 
+@@ -1286,7 +1277,7 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ 	 * activated node is met.  vfraction calculation should always
+ 	 * continue to the root.
  	 */
- 	propagate = !pos->nr_active++;
- 	pos->level_weight += pos->leaf_weight;
-+	vfr = vfr * pos->leaf_weight / pos->level_weight;
+-	while ((parent = cfqg_flat_parent(pos))) {
++	while ((parent = cfqg_parent(pos))) {
+ 		if (propagate) {
+ 			propagate = !parent->nr_active++;
+ 			parent->level_weight += pos->weight;
+@@ -1337,7 +1328,7 @@ cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ 	pos->level_weight -= pos->leaf_weight;
  
--	while (propagate) {
+ 	while (propagate) {
 -		struct cfq_group *parent = cfqg_flat_parent(pos);
--
--		if (!parent)
--			break;
--
--		propagate = !parent->nr_active++;
--		parent->level_weight += pos->weight;
-+	/*
-+	 * Walk up the tree.  Both activation and vfraction calculation are
-+	 * done in the same loop.  Propagation stops once an already
-+	 * activated node is met.  vfraction calculation should always
-+	 * continue to the root.
-+	 */
-+	while ((parent = cfqg_flat_parent(pos))) {
-+		if (propagate) {
-+			propagate = !parent->nr_active++;
-+			parent->level_weight += pos->weight;
-+		}
-+		vfr = vfr * pos->weight / parent->level_weight;
- 		pos = parent;
- 	}
-+
-+	cfqg->vfraction = max_t(unsigned, vfr, 1);
- }
- 
- static void
-@@ -1309,6 +1345,7 @@ cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
++		struct cfq_group *parent = cfqg_parent(pos);
  
  		/* @pos has 0 nr_active at this point */
  		WARN_ON_ONCE(pos->level_weight);
-+		pos->vfraction = 0;
- 
- 		if (!parent)
- 			break;
-@@ -1381,6 +1418,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 	unsigned int used_sl, charge, unaccounted_sl = 0;
- 	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
- 			- cfqg->service_tree_idle.count;
-+	unsigned int vfr;
- 
- 	BUG_ON(nr_sync < 0);
- 	used_sl = charge = cfq_cfqq_slice_usage(cfqq, &unaccounted_sl);
-@@ -1390,10 +1428,15 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
- 		charge = cfqq->allocated_slice;
- 
--	/* Can't update vdisktime while group is on service tree */
-+	/*
-+	 * Can't update vdisktime while on service tree and cfqg->vfraction
-+	 * is valid only while on it.  Cache vfr, leave the service tree,
-+	 * update vdisktime and go back on.  The re-addition to the tree
-+	 * will also update the weights as necessary.
-+	 */
-+	vfr = cfqg->vfraction;
- 	cfq_group_service_tree_del(st, cfqg);
--	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
--	/* If a new weight was requested, update now, off tree */
-+	cfqg->vdisktime += cfqg_scale_charge(charge, vfr);
- 	cfq_group_service_tree_add(st, cfqg);
- 
- 	/* This group is being expired. Save the context */
-@@ -1669,44 +1712,44 @@ static int cfqg_print_avg_queue_size(struct cgroup *cgrp, struct cftype *cft,
- #endif	/* CONFIG_DEBUG_BLK_CGROUP */
- 
- static struct cftype cfq_blkcg_files[] = {
-+	/* on root, weight is mapped to leaf_weight */
- 	{
- 		.name = "weight_device",
--		.read_seq_string = cfqg_print_weight_device,
--		.write_string = cfqg_set_weight_device,
-+		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.read_seq_string = cfqg_print_leaf_weight_device,
-+		.write_string = cfqg_set_leaf_weight_device,
- 		.max_write_len = 256,
- 	},
- 	{
- 		.name = "weight",
--		.read_seq_string = cfq_print_weight,
--		.write_u64 = cfq_set_weight,
-+		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.read_seq_string = cfq_print_leaf_weight,
-+		.write_u64 = cfq_set_leaf_weight,
- 	},
- 
--	/* on root, leaf_weight is mapped to weight */
-+	/* no such mapping necessary for !roots */
- 	{
--		.name = "leaf_weight_device",
--		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.name = "weight_device",
-+		.flags = CFTYPE_NOT_ON_ROOT,
- 		.read_seq_string = cfqg_print_weight_device,
- 		.write_string = cfqg_set_weight_device,
- 		.max_write_len = 256,
- 	},
- 	{
--		.name = "leaf_weight",
--		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.name = "weight",
-+		.flags = CFTYPE_NOT_ON_ROOT,
- 		.read_seq_string = cfq_print_weight,
- 		.write_u64 = cfq_set_weight,
- 	},
- 
--	/* no such mapping necessary for !roots */
- 	{
- 		.name = "leaf_weight_device",
--		.flags = CFTYPE_NOT_ON_ROOT,
- 		.read_seq_string = cfqg_print_leaf_weight_device,
- 		.write_string = cfqg_set_leaf_weight_device,
- 		.max_write_len = 256,
- 	},
- 	{
- 		.name = "leaf_weight",
--		.flags = CFTYPE_NOT_ON_ROOT,
- 		.read_seq_string = cfq_print_leaf_weight,
- 		.write_u64 = cfq_set_leaf_weight,
- 	},
 -- 
 1.7.11.7
 
