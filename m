@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2LNJ0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:26:25 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36653 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab2LNJ0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:26:23 -0500
-Date: Fri, 14 Dec 2012 09:31:41 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        Huqiao <huqiao36@huawei.com>
-Subject: Re: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage
- devices and support new switch command
-Message-ID: <20121214093141.7e4eba61@pyramind.ukuu.org.uk>
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F326FBFB54@szxeml546-mbs.china.huawei.com>
-References: <fe8c905bb12.b12fe8c905b@huawei.com>
-	<20121212105151.09635a76@pyramind.ukuu.org.uk>
-	<910F9D9E13B84F4C8FA771DC9BDE99F326FBFB54@szxeml546-mbs.china.huawei.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755081Ab2LNJ2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:28:47 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:6565 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab2LNJ2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 04:28:45 -0500
+X-IronPort-AV: E=Sophos;i="4.84,280,1355068800"; 
+   d="scan'208";a="6399193"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, isimatu.yasuaki@jp.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, tangchen@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, mingo@elte.hu,
+        penberg@kernel.org
+Cc: torvalds@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] memory-hotplug: Disable CONFIG_MOVABLE_NODE option by default.
+Date: Fri, 14 Dec 2012 17:27:50 +0800
+Message-Id: <1355477270-19922-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1355477270-19922-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1355477270-19922-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/14 17:27:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/14 17:27:50,
+	Serialize complete at 2012/12/14 17:27:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Dec 2012 03:01:24 +0000
-"Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com> wrote:
+This patch set CONFIG_MOVABLE_NODE to "default n" instead of
+"depends on BROKEN".
 
-> Dear Alan:
-> 
-> 	This prevents people getting access to the storage device if they want.
-> 	----In our device, after its switching, it will keep the cdrom port together with other ports (such as modem port). So you can access the storage device too, after our switch.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ mm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ok so the behaviour is
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 2ad51cb..1ed3295 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -149,7 +149,7 @@ config MOVABLE_NODE
+ 	depends on NO_BOOTMEM
+ 	depends on X86_64
+ 	depends on NUMA
+-	depends on BROKEN
++	default n
+ 	help
+ 	  Allow a node to have only movable memory. Pages used by kernel, such
+ 	  as direct mapping pages can not be migrated. So the corresponding
+-- 
+1.7.10.1
 
-	plug in device
-	"I am a CD-ROM"
-	command sent
-	"I am a CD-ROM, I am a modem, I am other things"
-
-with the newer devices ?
-
-Alan
