@@ -1,164 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2LNK4a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 05:56:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36659 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309Ab2LNK42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 05:56:28 -0500
-Date: Fri, 14 Dec 2012 11:56:26 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Ying Han <yinghan@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] memcg,vmscan: do not break out targeted reclaim without
- reclaimed pages
-Message-ID: <20121214105626.GE6898@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
- <1353955671-14385-4-git-send-email-mhocko@suse.cz>
- <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
- <20121211155432.GC1612@dhcp22.suse.cz>
- <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
- <20121212090652.GB32081@dhcp22.suse.cz>
- <CALWz4iwq+vRN+rreOk7Jg4rHWWBSmNwBW8Kko45E-D8Vi66eQA@mail.gmail.com>
- <20121212183446.GB10374@dhcp22.suse.cz>
- <20121212184207.GC10374@dhcp22.suse.cz>
- <CALWz4ix7byi=R9_N=LbtpgpvK_rV5UCZGHyWaTECiKqCB2rGwQ@mail.gmail.com>
+	id S1754226Ab2LNK7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 05:59:32 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:46248 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2LNK73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 05:59:29 -0500
+Subject: [PATCH] cpufreq_stats: fix race between stats allocation and first
+ usage
+To: linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq <cpufreq@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>
+Date: Fri, 14 Dec 2012 14:59:21 +0400
+Message-ID: <20121214105921.5139.502.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALWz4ix7byi=R9_N=LbtpgpvK_rV5UCZGHyWaTECiKqCB2rGwQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-12-12 17:06:38, Ying Han wrote:
-[...]
-> Off topic of the following discussion.
-> Take the following hierarchy as example:
-> 
->                 root
->               /  |   \
->             a   b     c
->                         |  \
->                         d   e
->                         |      \
->                         g      h
-> 
-> Let's say c hits its hardlimit and then triggers target reclaim. There
-> are two reclaimers at the moment and reclaimer_1 starts earlier. The
-> cgroup_next_descendant_pre() returns in order : c->d->g->e->h
-> 
-> Then we might get the reclaim result as the following where each
-> reclaimer keep hitting one node of the sub-tree for all the priorities
-> like the following:
-> 
->                 reclaimer_1  reclaimer_2
-> priority 12  c                 d
-> ...             c                 d
-> ...             c                 d
-> ...             c                 d
->            0   c                 d
-> 
-> However, this is not how global reclaim works:
-> 
-> the cgroup_next_descendant_pre returns in order: root->a->b->c->d->g->e->h
-> 
->                 reclaimer_1  reclaimer_1 reclaimer_1  reclaimer_2
-> priority 12  root                 a            b                 c
-> ...             root                 a            b                 c
-> ...
-> ...
-> 0
-> 
-> There is no reason for me to think of why target reclaim behave
-> differently from global reclaim, which the later one is just the
-> target reclaim of root cgroup.
+This patch forces complete struct cpufreq_stats allocation for all cpus before
+registering CPUFREQ_TRANSITION_NOTIFIER notifier, otherwise in some conditions
+cpufreq_stat_notifier_trans() can be called in the middle of stats allocation,
+in this case cpufreq_stats_table already exists, but stat->freq_table is NULL.
 
-Well, this is not a fair comparison because global reclaim is not just
-targeted reclaim of the root cgroup. The difference is that global
-reclaim balances zones while targeted reclaim only tries to get bellow
-a threshold (hard or soft limit). So we cannot really do the same thing
-for both.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: cpufreq <cpufreq@vger.kernel.org>
+Cc: linux-pm <linux-pm@vger.kernel.org>
 
-On the other hand you are right that targeted reclaim iteration can be
-weird, especially when nodes higher in the hierarchy do not have any
-pages to reclaim (if they do not have any tasks then only re-parented
-are on the list). Then we would drop the priority rather quickly and
-hammering the same group again and again until we exhaust all priorities
-and come back to the shrinker which finds out that nothing changed so it
-will try again and we will slowly get to something to reclaim (always
-starting with DEF_PRIORITY). So true we are doing a lot of work without
-any point.
-
-Maybe we shouldn't break out of the loop if we didn't reclaim enough for
-targeted reclaim. Something like:
 ---
->From a9183bd69ce8a9758383b2279b11c44ac10a049a Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 14 Dec 2012 11:12:43 +0100
-Subject: [PATCH] memcg,vmscan: do not break out targeted reclaim without
- reclaimed pages
 
-Targeted (hard resp. soft) reclaim has traditionally tried to scan one
-group with decreasing priority until nr_to_reclaim (SWAP_CLUSTER_MAX
-pages) is reclaimed or all priorities are exhausted. The reclaim is
-then retried until the limit is met.
-
-This approach, however, doesn't work well with deeper hierarchies where
-groups higher in the hierarchy do not have any or only very few pages
-(this usually happens if those groups do not have any tasks and they
-have only re-parented pages after some of their children is removed).
-Those groups are reclaimed with decreasing priority pointlessly as there
-is nothing to reclaim from them.
-
-An easiest fix is to break out of the memcg iteration loop in shrink_zone
-only if the whole hierarchy has been visited or sufficient pages have
-been reclaimed. This is also more natural because the reclaimer expects
-that the hierarchy under the given root is reclaimed. As a result we can
-simplify the soft limit reclaim which does its own iteration.
-
-Reported-by: Ying Han <yinghan@google.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+<1>[  363.116198] BUG: unable to handle kernel NULL pointer dereference at (null)
+<1>[  363.116668] IP: [<ffffffffa11a70e4>] cpufreq_stat_notifier_trans+0x64/0xf0 [cpufreq_stats]
+<4>[  363.116977] PGD 23177e067 PUD 2349c1067 PMD 0
+<4>[  363.117151] Oops: 0000 [#1] SMP
+<4>[  363.117151] last sysfs file: /sys/module/freq_table/initstate
+<4>[  363.117151] CPU 5
+<4>[  363.117151] Modules linked in: cpufreq_stats(+)(U) [a lot] [last unloaded: umc]
+<4>[  363.117151]
+<4>[  363.117151] Pid: 1690, comm: kondemand/5 veid: 0 Tainted: P        WC ---------------  T 2.6.32-279.5.1.el6-042stab061.7-vz #112 042stab061_7 System manufacturer System Product Name/Crosshair IV Formula
+<4>[  363.117151] RIP: 0010:[<ffffffffa11a70e4>]  [<ffffffffa11a70e4>] cpufreq_stat_notifier_trans+0x64/0xf0 [cpufreq_stats]
+<4>[  363.117151] RSP: 0018:ffff880234281920  EFLAGS: 00010246
+<4>[  363.117151] RAX: 00000000001e12e8 RBX: 0000000000000000 RCX: 00000000002ab980
+<4>[  363.117151] RDX: 0000000000000004 RSI: 0000000000000000 RDI: 0000000000000005
+<4>[  363.117151] RBP: ffff880234281940 R08: 0000000000000000 R09: 0000000000000000
+<4>[  363.117151] R10: 0000000000000000 R11: 2222222222222222 R12: ffff880218ce7400
+<4>[  363.117151] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+<4>[  363.117151] FS:  00007f499ffe0700(0000) GS:ffff880031000000(0000) knlGS:0000000000000000
+<4>[  363.117151] CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+<4>[  363.117151] CR2: 0000000000000000 CR3: 0000000230af7000 CR4: 00000000000006e0
+<4>[  363.117151] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>[  363.117151] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>[  363.117151] Process kondemand/5 (pid: 1690, veid: 0, threadinfo ffff880234280000, task ffff8802330c48c0)
+<4>[  363.117151] Stack:
+<4>[  363.117151]  ffffffff810cf4f3 0000000000000001 00000000ffffffff ffffffffa11a7ac0
+<4>[  363.117151] <d> ffff880234281990 ffffffff815454a8 ffff880234281c80 0000000000000000
+<4>[  363.117151] <d> ffff880234281a10 ffffffff833be978 ffffffff833be8e0 0000000000000001
+<4>[  363.117151] Call Trace:
+<4>[  363.117151]  [<ffffffff810cf4f3>] ? is_module_text_address+0x23/0x30
+<4>[  363.117151]  [<ffffffff815454a8>] notifier_call_chain+0x58/0xb0
+<4>[  363.117151]  [<ffffffff810a5a8d>] __srcu_notifier_call_chain+0x5d/0x90
+<4>[  363.117151]  [<ffffffff810a5ad6>] srcu_notifier_call_chain+0x16/0x20
+<4>[  363.117151]  [<ffffffff81442a0a>] cpufreq_notify_transition+0x12a/0x190
+<4>[  363.117151]  [<ffffffffa026df08>] powernowk8_target+0x628/0xb30 [powernow_k8]
+<4>[  363.117151]  [<ffffffff8144289b>] __cpufreq_driver_target+0x8b/0x90
+<4>[  363.117151]  [<ffffffffa0279388>] do_dbs_timer+0x3b8/0x3bc [cpufreq_ondemand]
+<4>[  363.117151]  [<ffffffffa0278fd0>] ? do_dbs_timer+0x0/0x3bc [cpufreq_ondemand]
+<4>[  363.117151]  [<ffffffff81097df4>] worker_thread+0x264/0x440
+<4>[  363.117151]  [<ffffffff81097da3>] ? worker_thread+0x213/0x440
+<4>[  363.117151]  [<ffffffff81097b90>] ? worker_thread+0x0/0x440
+<4>[  363.117151]  [<ffffffff8109f050>] ? autoremove_wake_function+0x0/0x40
+<4>[  363.117151]  [<ffffffff81097b90>] ? worker_thread+0x0/0x440
+<4>[  363.117151]  [<ffffffff8109e986>] kthread+0x96/0xa0
+<4>[  363.117151]  [<ffffffff8100c34a>] child_rip+0xa/0x20
+<4>[  363.117151]  [<ffffffff8100bc90>] ? restore_args+0x0/0x30
+<4>[  363.117151]  [<ffffffff8109e8f0>] ? kthread+0x0/0xa0
+<4>[  363.117151]  [<ffffffff8100c340>] ? child_rip+0x0/0x20
+<4>[  363.117151] Code: 89 f9 48 8b 0c cd 20 53 9c 81 4c 8b 24 08 4d 85 e4 74 d3 8b 4a 08 41 8b 54 24 10 45 8b 6c 24 18 85 d2 74 22 49 8b 74 24 28 31 db <3b> 0e 75 10 eb 1a 66 0f 1f 44 00 00 48 63 c3 3b 0c 86 74 0c 83
+<1>[  363.117151] RIP  [<ffffffffa11a70e4>] cpufreq_stat_notifier_trans+0x64/0xf0 [cpufreq_stats]
+<4>[  363.117151]  RSP <ffff880234281920>
+<4>[  363.117151] CR2: 0000000000000000
 ---
- mm/vmscan.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/cpufreq/cpufreq_stats.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 53dcde9..161e3ad 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1912,16 +1912,16 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- 		shrink_lruvec(lruvec, sc);
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index e40e508..9d7732b 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -364,18 +364,21 @@ static int __init cpufreq_stats_init(void)
+ 	if (ret)
+ 		return ret;
  
- 		/*
--		 * Limit reclaim has historically picked one memcg and
--		 * scanned it with decreasing priority levels until
--		 * nr_to_reclaim had been reclaimed.  This priority
--		 * cycle is thus over after a single memcg.
-+		 * Direct reclaim and kswapd have to scan all memory cgroups
-+		 * to fulfill the overall scan target for the zone.
- 		 *
--		 * Direct reclaim and kswapd, on the other hand, have
--		 * to scan all memory cgroups to fulfill the overall
--		 * scan target for the zone.
-+		 * Limit reclaim, on the other hand, only cares about
-+		 * nr_to_reclaim pages to be reclaimed and it will retry with
-+		 * decreasing priority if one round over the whole hierarchy
-+		 * is not sufficient.
- 		 */
--		if (!global_reclaim(sc)) {
-+		if (!global_reclaim(sc) &&
-+				sc->nr_to_reclaim >= sc->nr_reclaimed) {
- 			mem_cgroup_iter_break(root, memcg);
- 			break;
- 		}
--- 
-1.7.10.4
++	register_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
++	for_each_online_cpu(cpu)
++		cpufreq_update_policy(cpu);
++
+ 	ret = cpufreq_register_notifier(&notifier_trans_block,
+ 				CPUFREQ_TRANSITION_NOTIFIER);
+ 	if (ret) {
+ 		cpufreq_unregister_notifier(&notifier_policy_block,
+ 				CPUFREQ_POLICY_NOTIFIER);
++		unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
++		for_each_online_cpu(cpu)
++			cpufreq_stats_free_table(cpu);
+ 		return ret;
+ 	}
+ 
+-	register_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
+-	for_each_online_cpu(cpu) {
+-		cpufreq_update_policy(cpu);
+-	}
+ 	return 0;
+ }
+ static void __exit cpufreq_stats_exit(void)
 
--- 
-Michal Hocko
-SUSE Labs
