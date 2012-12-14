@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab2LNUYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:24:14 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:48904 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab2LNUYM (ORCPT
+	id S932372Ab2LNU0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:26:36 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65149 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab2LNU0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:24:12 -0500
-Date: Fri, 14 Dec 2012 20:29:21 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the
- parent user namespace to have caps.
-Message-ID: <20121214202921.GA11450@mail.hallyn.com>
-References: <87ip88uw4n.fsf@xmission.com>
- <50CA2B55.5070402@amacapital.net>
- <87mwxhtxve.fsf@xmission.com>
- <87zk1hshk7.fsf_-_@xmission.com>
- <20121214032820.GA5115@mail.hallyn.com>
- <87bodxi9zw.fsf@xmission.com>
- <20121214152607.GA9266@mail.hallyn.com>
- <87bodwd4aw.fsf@xmission.com>
- <20121214161514.GA9962@mail.hallyn.com>
- <87r4ms5wpm.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4ms5wpm.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Dec 2012 15:26:35 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of: Support a PCI device that is compatible with 'simple-bus'
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <20121210215119.GA32011@obsidianresearch.com>
+References: <20121210215119.GA32011@obsidianresearch.com>
+Date: Fri, 14 Dec 2012 20:26:29 +0000
+Message-Id: <20121214202629.BD40C3E0BDD@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
-
-Note: I acked your patch before and still don't object to it.
-
-> > In which case it would be
-> >
-> >        child_user_ns1  [100000-199999]
-> >        child_user_ns2  [100000-199999]
-> >          child_user_ns3  [120000-129999]
-> >
+On Mon, 10 Dec 2012 14:51:19 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+> The intended use for this feature is to let a PCI device declare
+> itself a 'simple-bus' and then describe additional devices
+> (such as GPIOs, I2C, etc) nested below itself.
 > 
-> Yes.  You have to nest uids.
+> The devices nested below the PCI device will use 'reg' addressing
+> with the 5 dw format used by PCI.
 > 
-> >> > with unfortunate mappings  - ns1 and ns2 should have had nonoverlapping
-> >> > ranges, but in any case now uid 1000 in ns1 can exert privilege over
-> >> > ns3.  Again, uids comparisons will succeed for file access anyway, so
-> >> > ns1 can 0wn ns2 and ns3 other ways.
-> >> 
-> >> Yes yours is the more realistic scenario.  Mine was simplified to be clear.
-> >> 
-> >> > Heck I'm starting to think the bug is a feature - surely given the
-> >> > mappings above I meant for ns1 and ns2 to bleed privilege to each
-> >> > other?
-> >> 
-> >> The serious problem is that privileges can bleed up. A user in 
-> >> ns3 can wind up owning ns2 or ns1.  Which totally defeats the permission
-> >> model.  You have CAP_DAC_OVERRIDE so you don't even need access to files
-> >> you own, etc, etc.
-> >
-> > Would that not require intervention from the init_user_ns?  In my
-> > example above (let's add that ns2 is owned by kuid.uid=1000 in
-> > init_user_ns), root in child_user_ns2 cannot map kuid.val=0 or
-> > kuid.val=1000 into ns3 because 0 and 1000 are not in the range
-> > 100000-199999.  So there is no uid in child_user_ns3 which is able
-> > to spoof uid=0 in child_user_ns1.
+> This is for embedded cases where the PCI device may be a complex
+> SOC with no PCI based partitioning of sub-functionality.
 > 
-> Right.  It does require having the uid of the owner of ns1 or ns2 in
-> ns3.  So you have to explicitly allow it.
+> Tested on an ARM kirkwood system
 > 
-> What I don't see is any point in allowing something like that.
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> ---
+>  drivers/of/address.c |   29 +++++++++++++++++++++++++++++
+>  1 files changed, 29 insertions(+), 0 deletions(-)
+> 
+> Grant:
+> 
+> > If the soc_devices are getting triggered on that and they shouldn't be,
+> > then we need a mechanism in the soc_bridge node to kick out of that
+> > behavoir for its children.
+> 
+> Is this what you were thinking?
 
-The point isn't specifically to allow that, but rather to not muddle the
-kuids with the user namespace *.
+Not really. I see what you're trying to do, but doing it this way forces
+all children of PCI nodes to use the PCI addressing space. Others have
+had simple children of PCI devices and didn't use the PCI address layout
+at all. Those users would break with this approach.
 
-If I clone two tasks in separate user namespace but give them the same
-uid mappings, how should the uids between those namespaces be related?
-The way you're doing it now they will equate for DAC checks but not
-for privilege checks.  It feels ad-hoc and flaky.
+However, if you want to pass a unity mapping from the PCI device to the
+a child of it, it should be sufficient to use an empty 'ranges;'
+property in the PCI device node instead of listing out the ranges that
+you want to translate.
 
-> A child user namespace having capabilities against processes in it's
-> parent seems totally bizarre and pretty dangerous from a capabilities
-> standpoint.
-
-How would it have them against its parent?
-
-> That said Serge I think I have lost track of the point of your question.
-
-Look at it this way.  You've introduced kuids which allow "uids" to be
-disassociated from the user namespace * in kernel.  You have the uid
-mapping rules which enforce some sanity (requiring nesting).
-
-If the parent ns has re-used an active uid of its own to give to a child
-namespace, then any DAC-governed objects (files in particular) will be
-owned by that uid in the child user ns.  I'm not sure - does this also
-apply to /proc/$$/fd/* access?
-
--serge
+g.
