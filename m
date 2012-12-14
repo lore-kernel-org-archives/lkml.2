@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2LNNJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 08:09:20 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:58436 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab2LNNJT (ORCPT
+	id S1755023Ab2LNNSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 08:18:05 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2995 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2LNNSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 08:09:19 -0500
-Message-ID: <50CB24D4.3030606@ahsoftware.de>
-Date: Fri, 14 Dec 2012 14:08:36 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 14 Dec 2012 08:18:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 14 Dec 2012 05:17:55 -0800
+From: Sivaram Nair <sivaramn@nvidia.com>
+To: <rafael.j.wysocki@intel.com>, <len.brown@intel.com>,
+        <daniel.lezcano@linaro.org>, <khilman@ti.com>, <ccross@android.com>,
+        <riel@redhat.com>, <youquan.song@intel.com>,
+        <akpm@linux-foundation.org>, <shuox.liu@intel.com>
+CC: <linux-pm@vger.kernel.org>, Sivaram Nair <sivaramn@nvidia.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] cpuidle: fix finding state with min power_usage
+Date: Fri, 14 Dec 2012 15:17:36 +0200
+Message-ID: <1355491060-970-1-git-send-email-sivaramn@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 v4] rtc: add rtc-driver for HID sensors of type time
-References: <50C8591A.3030301@ahsoftware.de> <1355310680-2466-1-git-send-email-holler@ahsoftware.de> <50CAF473.6040901@metafoo.de>
-In-Reply-To: <50CAF473.6040901@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.12.2012 10:42, schrieb Lars-Peter Clausen:
-> On 12/12/2012 12:11 PM, Alexander Holler wrote:
->> This driver makes the time from HID sensors (hubs) which are offering
->> such available like any other RTC does.
->>
->> Currently the time can only be read. Setting the time must be done
->> through sending a report, which currently isn't supported by
->> hid-sensor-hub. (I've planned to submit patches.)
->>
->> It is necessary that all values like year, month etc, are send as
->> 8bit values (1 byte each) and all of them in 1 report. Also the
->> spec HUTRR39b doesn't define the range of the year field, we
->> tread it as 0 - 99 because that's what most RTCs I know about are
->> offering.
->>
->> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->
-> Hi,
->
-> sorry for the delay. There is still the __devinit in front of
-> hid_time_remove left.
->
-> And another thing I've overlooked before:
-> wait_for_completion_interruptible_timeout can either return a positive
-> number when the completion was completed, 0 in case of an timeout, or a
-> negative error code in case it was interrupted. You need to handle all
-> three. E.g. something like this.
->
-> ret = wait_for_completion_interruptible_timeout(...)
-> if (ret == 0)
-> 	return -EIO;
-> if (ret < 0)
-> 	return ret
->
+Since cpuidle_state.power_usage is a signed value, use INT_MAX (instead
+of -1) to init the local copies so that functions that tries to find
+cpuidle states with minimum power usage works correctly even if they use
+non-negative values.
 
-Hmpf, the only working approach to use some in kernel functions really 
-is to the read source yourself and don't trust anything else. :/
+Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
+---
+ drivers/cpuidle/cpuidle.c        |    2 +-
+ drivers/cpuidle/governors/menu.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-And that ping-ping is stressing my patience, I think I will write a rfc 
-to introduce (at least allow) maintainer-patches.
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 8df53dd..fb4a7dd 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -70,7 +70,7 @@ int cpuidle_play_dead(void)
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+ 	int i, dead_state = -1;
+-	int power_usage = -1;
++	int power_usage = INT_MAX;
+ 
+ 	if (!drv)
+ 		return -ENODEV;
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index bd40b94..20ea33a 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -312,7 +312,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+-	int power_usage = -1;
++	int power_usage = INT_MAX;
+ 	int i;
+ 	int multiplier;
+ 	struct timespec t;
+-- 
+1.7.9.5
 
-Will make a v5.
-
-Regards,
-
-Alexander
