@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2LNW3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:29:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38607 "EHLO mail.kernel.org"
+	id S1757407Ab2LNW3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:29:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38664 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757375Ab2LNW3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:29:22 -0500
+	id S1756868Ab2LNW3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:29:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tetsuyuki Kobayashi <koba@kmckk.co.jp>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 03/28] mmc: sh-mmcif: avoid oops on spurious interrupts (second try)
-Date: Fri, 14 Dec 2012 14:26:20 -0800
-Message-Id: <20121214222251.239606327@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Xiaotian Feng <xtfeng@gmail.com>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 06/28] workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
+Date: Fri, 14 Dec 2012 14:26:23 -0800
+Message-Id: <20121214222251.950520213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -27,50 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 91ab252ac5a5c3461dd6910797611e9172626aed upstream.
+commit fc4b514f2727f74a4587c31db87e0e93465518c3 upstream.
 
-On some systems, e.g., kzm9g, MMCIF interfaces can produce spurious
-interrupts without any active request. To prevent the Oops, that results
-in such cases, don't dereference the mmc request pointer until we make
-sure, that we are indeed processing such a request.
+8852aac25e ("workqueue: mod_delayed_work_on() shouldn't queue timer on
+0 delay") unexpectedly uncovered a very nasty abuse of delayed_work in
+megaraid - it allocated work_struct, casted it to delayed_work and
+then pass that into queue_delayed_work().
 
-Reported-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Tested-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Previously, this was okay because 0 @delay short-circuited to
+queue_work() before doing anything with delayed_work.  8852aac25e
+moved 0 @delay test into __queue_delayed_work() after sanity check on
+delayed_work making megaraid trigger BUG_ON().
+
+Although megaraid is already fixed by c1d390d8e6 ("megaraid: fix
+BUG_ON() from incorrect use of delayed work"), this patch converts
+BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s so that such
+abusers, if there are more, trigger warning but don't crash the
+machine.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sh_mmcif.c |    4 ++--
+ kernel/workqueue.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/sh_mmcif.c
-+++ b/drivers/mmc/host/sh_mmcif.c
-@@ -1066,7 +1066,6 @@ static irqreturn_t sh_mmcif_irqt(int irq
- {
- 	struct sh_mmcif_host *host = dev_id;
- 	struct mmc_request *mrq = host->mrq;
--	struct mmc_data *data = mrq->data;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1141,8 +1141,8 @@ int queue_delayed_work_on(int cpu, struc
+ 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		unsigned int lcpu;
  
- 	cancel_delayed_work_sync(&host->timeout_work);
+-		BUG_ON(timer_pending(timer));
+-		BUG_ON(!list_empty(&work->entry));
++		WARN_ON_ONCE(timer_pending(timer));
++		WARN_ON_ONCE(!list_empty(&work->entry));
  
-@@ -1114,13 +1113,14 @@ static irqreturn_t sh_mmcif_irqt(int irq
- 	case MMCIF_WAIT_FOR_READ_END:
- 	case MMCIF_WAIT_FOR_WRITE_END:
- 		if (host->sd_error)
--			data->error = sh_mmcif_error_manage(host);
-+			mrq->data->error = sh_mmcif_error_manage(host);
- 		break;
- 	default:
- 		BUG();
- 	}
+ 		timer_stats_timer_set_start_info(&dwork->timer);
  
- 	if (host->wait_for != MMCIF_WAIT_FOR_STOP) {
-+		struct mmc_data *data = mrq->data;
- 		if (!mrq->cmd->error && data && !data->error)
- 			data->bytes_xfered =
- 				data->blocks * data->blksz;
 
 
