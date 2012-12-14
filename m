@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab2LNWCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:02:09 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:36681 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468Ab2LNWCG (ORCPT
+	id S1756188Ab2LNWDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:03:15 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:48204 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab2LNWDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:02:06 -0500
+	Fri, 14 Dec 2012 17:03:13 -0500
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Linux Containers <containers@lists.linux-foundation.org>
 Cc: <linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
         Andy Lutomirski <luto@amacapital.net>,
         David Howells <dhowells@redhat.com>
-Date: Fri, 14 Dec 2012 14:01:57 -0800
-Message-ID: <87txroxpgq.fsf@xmission.com>
+References: <87txroxpgq.fsf@xmission.com>
+Date: Fri, 14 Dec 2012 14:03:05 -0800
+In-Reply-To: <87txroxpgq.fsf@xmission.com> (Eric W. Biederman's message of
+	"Fri, 14 Dec 2012 14:01:57 -0800")
+Message-ID: <87obhwxpeu.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19l90tFC6xjQkFF8AapEpIKpJeRMuknbK0=
+X-XM-AID: U2FsdGVkX1+NvOZ9I06Cv1opnzvUGqGcNVCMG88VRh0=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
 	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
+	*      [score: 0.0093]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
 X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 0/4] user namespace fixes
+Subject: [PATCH 1/4] Fix cap_capable to only allow owners in the parent user namespace to have caps.
 X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,34 +44,90 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-These are fixes from Andys review of my user namespace tree.
+Andy Lutomirski pointed out that the current behavior of allowing the
+owner of a user namespace to have all caps when that owner is not in a
+parent user namespace is wrong.  Add a test to ensure the owner of a user
+namespace is in the parent of the user namespace to fix this bug.
 
-The first two patches are critical must fix fixes.
+Thankfully this bug did not apply to the initial user namespace, keeping
+the mischief that can be caused by this bug quite small.
 
-The third patch fixing commit_creds is a nice to have but fixing it
-would be good.
+This is bug was introduced in v3.5 by commit 783291e6900
+"Simplify the user_namespace by making userns->creator a kuid."
+But did not matter until the permisions required to create
+a user namespace were relaxed allowing a user namespace to be created
+inside of a user namespace.
 
-Andy, Serge  if you could give these patches a once over to make certain
-I am not doing something stupid.
+The bug made it possible for the owner of a user namespace to be
+present in a child user namespace.  Since the owner of a user nameapce
+is granted all capabilities it became possible for users in a
+grandchild user namespace to have all privilges over their parent user
+namspace.
 
-Thank you,
-Eric
+Reorder the checks in cap_capable.  This should make the common case
+faster and make it clear that nothing magic happens in the initial
+user namespace.  The reordering is safe because cred->user_ns
+can only be in targ_ns or targ_ns->parent but not both.
 
+Add a comment a the top of the loop to make the logic of
+the code clear.
+
+Add a distinct variable ns that changes as we walk up
+the user namespace hierarchy to make it clear which variable
+is changing.
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
+ security/commoncap.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
-Eric W. Biederman (4):
-      Fix cap_capable to only allow owners in the parent user namespace to have caps.
-      userns:  Require CAP_SYS_ADMIN for most uses of setns.
-      userns: Add a more complete capability subset test to commit_creds
-      userns: Fix typo in description of the limitation of userns_install
-
- fs/namespace.c           |    3 ++-
- ipc/namespace.c          |    3 ++-
- kernel/cred.c            |   26 +++++++++++++++++++++++++-
- kernel/pid_namespace.c   |    3 ++-
- kernel/user_namespace.c  |    2 +-
- kernel/utsname.c         |    3 ++-
- net/core/net_namespace.c |    3 ++-
- security/commoncap.c     |   25 +++++++++++++++++--------
- 8 files changed, 53 insertions(+), 15 deletions(-)
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 6dbae46..7ee08c7 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -76,24 +76,33 @@ int cap_netlink_send(struct sock *sk, struct sk_buff *skb)
+ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
+ 		int cap, int audit)
+ {
+-	for (;;) {
+-		/* The owner of the user namespace has all caps. */
+-		if (targ_ns != &init_user_ns && uid_eq(targ_ns->owner, cred->euid))
+-			return 0;
++	struct user_namespace *ns = targ_ns;
+ 
++	/* See if cred has the capability in the target user namespace
++	 * by examining the target user namespace and all of the target
++	 * user namespace's parents.
++	 */
++	for (;;) {
+ 		/* Do we have the necessary capabilities? */
+-		if (targ_ns == cred->user_ns)
++		if (ns == cred->user_ns)
+ 			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
+ 
+ 		/* Have we tried all of the parent namespaces? */
+-		if (targ_ns == &init_user_ns)
++		if (ns == &init_user_ns)
+ 			return -EPERM;
+ 
++		/* 
++		 * The owner of the user namespace in the parent of the
++		 * user namespace has all caps.
++		 */
++		if ((ns->parent == cred->user_ns) && uid_eq(ns->owner, cred->euid))
++			return 0;
++
+ 		/*
+-		 *If you have a capability in a parent user ns, then you have
++		 * If you have a capability in a parent user ns, then you have
+ 		 * it over all children user namespaces as well.
+ 		 */
+-		targ_ns = targ_ns->parent;
++		ns = ns->parent;
+ 	}
+ 
+ 	/* We never get here */
+-- 
+1.7.5.4
 
