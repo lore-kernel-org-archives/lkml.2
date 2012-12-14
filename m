@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab2LNXEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:04:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40945 "EHLO mail.kernel.org"
+	id S1757186Ab2LNXEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:04:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40967 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757154Ab2LNXE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:04:27 -0500
+	id S1757095Ab2LNXEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:04:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 28/37] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
-Date: Fri, 14 Dec 2012 15:01:05 -0800
-Message-Id: <20121214222257.748040190@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        A Sh <smr.ash1991@gmail.com>
+Subject: [ 29/37] xhci: Extend Fresco Logic MSI quirk.
+Date: Fri, 14 Dec 2012 15:01:06 -0800
+Message-Id: <20121214222257.843163353@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -26,62 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
+commit bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 upstream.
 
-This patch (as1636) is a partial workaround for a hardware bug
-affecting OHCI controllers by NVIDIA at least, maybe others too.  When
-the controller retires a Transfer Descriptor, it is supposed to add
-the TD onto the Done Queue.  But sometimes this doesn't happen, with
-the result that ohci-hcd never realizes the corresponding transfer has
-finished.  Symptoms can vary; a typical result is that USB audio stops
-working after a while.
+Ali reports that plugging a device into the Fresco Logic xHCI host with
+PCI device ID 1400 produces an IRQ error:
 
-The patch works around the problem by recognizing that TDs are always
-processed in order.  Therefore, if a later TD is found on the Done
-Queue than all the earlier TDs for the same endpoint must be finished
-as well.
+ do_IRQ: 3.176 No irq handler for vector (irq -1)
 
-Unfortunately this won't solve the problem in cases where the missing
-TD is the last one in the endpoint's queue.  A complete fix would
-require a signficant amount of change to the driver.
+Other early Fresco Logic host revisions don't support MSI, even though
+their PCI config space claims they do.  Extend the quirk to disabling
+MSI to this chipset revision.  Also enable the short transfer quirk,
+since it's likely this revision also has that quirk, and it should be
+harmless to enable.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Oliver Neukum <oneukum@suse.de>
+04:00.0 0c03: 1b73:1400 (rev 01) (prog-if 30 [XHCI])
+        Subsystem: 1d5c:1000
+        Physical Slot: 3
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 51
+        Region 0: Memory at d4600000 (32-bit, non-prefetchable) [size=64K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [68] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000feeff00c  Data: 41b1
+        Capabilities: [80] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Kernel driver in use: xhci_hcd
+
+This patch should be backported to stable kernels as old as 2.6.36, that
+contain the commit f5182b4155b9d686c5540a6822486400e34ddd98 "xhci:
+Disable MSI for some Fresco Logic hosts."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: A Sh <smr.ash1991@gmail.com>
+Tested-by: A Sh <smr.ash1991@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/usb/host/xhci-pci.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ohci-q.c
-+++ b/drivers/usb/host/ohci-q.c
-@@ -1128,6 +1128,25 @@ dl_done_list (struct ohci_hcd *ohci)
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -29,6 +29,7 @@
+ /* Device for a quirk */
+ #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
+ #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
++#define PCI_DEVICE_ID_FRESCO_LOGIC_FL1400	0x1400
  
- 	while (td) {
- 		struct td	*td_next = td->next_dl_td;
-+		struct ed	*ed = td->ed;
-+
-+		/*
-+		 * Some OHCI controllers (NVIDIA for sure, maybe others)
-+		 * occasionally forget to add TDs to the done queue.  Since
-+		 * TDs for a given endpoint are always processed in order,
-+		 * if we find a TD on the donelist then all of its
-+		 * predecessors must be finished as well.
-+		 */
-+		for (;;) {
-+			struct td	*td2;
-+
-+			td2 = list_first_entry(&ed->td_list, struct td,
-+					td_list);
-+			if (td2 == td)
-+				break;
-+			takeback_td(ohci, td2);
-+		}
-+
- 		takeback_td(ohci, td);
- 		td = td_next;
- 	}
+ #define PCI_VENDOR_ID_ETRON		0x1b6f
+ #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+@@ -58,8 +59,10 @@ static void xhci_pci_quirks(struct devic
+ 
+ 	/* Look for vendor-specific quirks */
+ 	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
+-			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK) {
+-		if (pdev->revision == 0x0) {
++			(pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK ||
++			 pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_FL1400)) {
++		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
++				pdev->revision == 0x0) {
+ 			xhci->quirks |= XHCI_RESET_EP_QUIRK;
+ 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
+ 					" endpoint cmd after reset endpoint\n");
 
 
