@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab2LNDdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 22:33:05 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:59838 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2LNDdD (ORCPT
+	id S1756061Ab2LNDdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 22:33:41 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:35982 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754851Ab2LNDdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 22:33:03 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-security-module@vger.kernel.org
-References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
-	<87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
-	<20121214032820.GA5115@mail.hallyn.com>
-Date: Thu, 13 Dec 2012 19:32:51 -0800
-In-Reply-To: <20121214032820.GA5115@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 14 Dec 2012 03:28:20 +0000")
-Message-ID: <87bodxi9zw.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 13 Dec 2012 22:33:39 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiYLAJicylB5LB3g/2dsb2JhbABFhU+zFoYOF3OCHgEBBTocIxAIAxguFCUDIROIEr05FIxDg2JhA5YIkEmDBw
+Date: Fri, 14 Dec 2012 14:33:34 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, axboe@kernel.dk, lucho@ionkov.net,
+        jack@suse.cz, ericvh@gmail.com, viro@zeniv.linux.org.uk,
+        rminnich@sandia.gov, tytso@mit.edu, martin.petersen@oracle.com,
+        neilb@suse.de, Zheng Liu <gnehzuil.liu@gmail.com>,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
+        bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
+ stable pages during write
+Message-ID: <20121214033334.GA9806@dastard>
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+ <20121213080811.23360.98131.stgit@blackbox.djwong.org>
+ <50CA8556.7030905@mit.edu>
+ <20121214021048.GF9453@blackbox.djwong.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+sJaNiPOPcuu2I+bw69uRwnGBlBEEnJD8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0023]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent user namespace to have caps.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121214021048.GF9453@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+On Thu, Dec 13, 2012 at 06:10:49PM -0800, Darrick J. Wong wrote:
+> On Thu, Dec 13, 2012 at 05:48:06PM -0800, Andy Lutomirski wrote:
+> > On 12/13/2012 12:08 AM, Darrick J. Wong wrote:
+> > > Several complaints have been received regarding long file write latencies when
+> > > memory pages must be held stable during writeback.  Since it might not be
+> > > acceptable to stall programs for the entire duration of a page write (which may
+> > > take many milliseconds even on good hardware), enable a second strategy wherein
+> > > pages are snapshotted as part of submit_bio; the snapshot can be held stable
+> > > while writes continue.
+> > > 
+> > > This provides a band-aid to provide stable page writes on jbd without needing
+> > > to backport the fixed locking scheme in jbd2.  A mount option is added to ext4
+> > > to allow administrators to enable it there.
+> > 
+> > I'm a bit confused as to what it has to do with ext3.  Wouldn't this be
+> > useful as a mount option everywhere, though?
+> 
+> ext3 requires snapshots; the rest are ok with either strategy.
+> 
+> *If* snapshotting is generally liked, then yes I'll go redo it as a vfs mount
+> option.
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> 
->> Andy Lutomirski pointed out that the current behavior of allowing the
->> owner of a user namespace to have all caps when that owner is not in a
->> parent user namespace is wrong.
->
-> To make sure I understand right, the issue is when a uid is mapped
-> into multiple namespaces.
+It's copying every single IO, right? If so, then please don't
+propagate any further than is necessary to fix the broken
+filesystems...
 
-Yes.
+Cheers,
 
-i.e. uid 1000 in ns1 may own ns2, but uid 1000 in ns3 does not?
-
-I am not certain of your example.
-
-The simple case is:
-
-init_user_ns:
-     child_user_ns1 (owned by uid == 0 [in all user namespaces])
-           child_user_ns2 (owned by uid == 0 [ in all user namespaces])
-
-
-root (uid == 0) in child_user_ns2 has all rights over anything in
-child_user_ns1.
-
-
-Thank you for looking.
-
-Eric
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
