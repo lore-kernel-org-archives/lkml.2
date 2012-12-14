@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab2LNW3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:29:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38676 "EHLO mail.kernel.org"
+	id S1757433Ab2LNW3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:29:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38687 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756868Ab2LNW3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:29:44 -0500
+	id S1756868Ab2LNW3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:29:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Jani Nikula <jani.nikula@intel.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 07/28] drm/i915: do not ignore eDP bpc settings from vbt
-Date: Fri, 14 Dec 2012 14:26:24 -0800
-Message-Id: <20121214222252.122410921@linuxfoundation.org>
+Subject: [ 08/28] drm/i915: do not default to 18 bpp for eDP if missing from VBT
+Date: Fri, 14 Dec 2012 14:26:25 -0800
+Message-Id: <20121214222252.339780781@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -28,10 +29,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jani Nikula <jani.nikula@intel.com>
 
-commit 2f4f649a69a9eb51f6e98130e19dd90a260a4145 upstream.
+commit 9a30a61f3516871c5c638fd7c025fbaa11ddf7fe upstream.
 
-There are laptops out there that need the eDP bpc from VBT. This is
-effectively a revert of
+commit 500a8cc466a24e2fbc4c86ef9c6467ae2ffdeb0c
+Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+Date:   Wed Jan 13 11:19:52 2010 +0800
+
+    drm/i915: parse eDP panel color depth from VBT block
+
+originally introduced parsing bpp for eDP from VBT, with a default of 18
+bpp if the eDP BIOS data block is not present. Turns out that default seems
+to break the Macbook Pro with retina display, as noted in
 
 commit 4344b813f105a19f793f1fd93ad775b784648b95
 Author: Daniel Vetter <daniel.vetter@ffwll.ch>
@@ -39,39 +47,58 @@ Date:   Fri Aug 10 11:10:20 2012 +0200
 
     drm/i915: ignore eDP bpc settings from vbt
 
-but putting the VBT check after the EDID check to see them both in dmesg if
-this clamps more than the EDID. We have enough history with bpc clamping to
-warrant the extra debug info.
+Since we can't ignore bpc settings from VBT completely after all, get rid
+of the default. Do not clamp eDP to 18 bpp by default if the eDP BDB is
+missing from VBT.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47641
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56401
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Henrik Rydberg <rydberg@euromail.se>
+[danvet: paste in the updated commit message from irc.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/gpu/drm/i915/intel_bios.c    |   11 ++---------
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -459,12 +459,8 @@ parse_edp(struct drm_i915_private *dev_p
+ 
+ 	edp = find_section(bdb, BDB_EDP);
+ 	if (!edp) {
+-		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
+-			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
+-				      "supported, assume %dbpp panel color "
+-				      "depth.\n",
+-				      dev_priv->edp.bpp);
+-		}
++		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
++			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
+ 		return;
+ 	}
+ 
+@@ -617,9 +613,6 @@ init_vbt_defaults(struct drm_i915_privat
+ 	dev_priv->lvds_use_ssc = 1;
+ 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+-
+-	/* eDP data */
+-	dev_priv->edp.bpp = 18;
+ }
+ 
+ static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4996,6 +4996,17 @@ static bool intel_choose_pipe_bpp_dither
- 			}
- 		}
+@@ -5000,7 +5000,7 @@ static bool intel_choose_pipe_bpp_dither
+ 			/* Use VBT settings if we have an eDP panel */
+ 			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
  
-+		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
-+			/* Use VBT settings if we have an eDP panel */
-+			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
-+
-+			if (edp_bpc < display_bpc) {
-+				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
-+				display_bpc = edp_bpc;
-+			}
-+			continue;
-+		}
-+
- 		/*
- 		 * HDMI is either 12 or 8, so if the display lets 10bpc sneak
- 		 * through, clamp it down.  (Note: >12bpc will be caught below.)
+-			if (edp_bpc < display_bpc) {
++			if (edp_bpc && edp_bpc < display_bpc) {
+ 				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+ 				display_bpc = edp_bpc;
+ 			}
 
 
