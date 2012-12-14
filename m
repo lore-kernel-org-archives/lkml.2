@@ -1,158 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab2LNJ5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:57:21 -0500
-Received: from na3sys010aog103.obsmtp.com ([74.125.245.74]:52094 "HELO
-	na3sys010aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755845Ab2LNJ5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:57:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355205581-10573-1-git-send-email-roland@kernel.org>
-References: <1355205581-10573-1-git-send-email-roland@kernel.org>
-From: Roland Dreier <roland@kernel.org>
-Date: Fri, 14 Dec 2012 01:56:54 -0800
-X-Google-Sender-Auth: 8ziA6KPbhAnQcYM8bLZnBDSl05Q
-Message-ID: <CAL1RGDWBcrYUZan+4Vsy9hwz=hBND_AGKs+bDTOjes0xDryadQ@mail.gmail.com>
-Subject: Re: [GIT PULL] please pull infiniband.git
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755719Ab2LNKBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 05:01:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60653 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab2LNKBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 05:01:50 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pmoore@redhat.com
+Cc: mprivozn@redhat.com, wkevils@gmail.com, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH] tuntap: fix ambigious multiqueue API
+Date: Fri, 14 Dec 2012 17:53:30 +0800
+Message-Id: <1355478810-10144-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 9:59 PM, Roland Dreier <roland@kernel.org> wrote:
-> Hi Linus,
->
-> Please pull from
->
->     git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+The current multiqueue API is ambigious which may confuse both user and LSM to
+do things correctly:
 
-Hi Linus,
+- Both TUNSETIFF and TUNSETQUEUE could be used to create the queues of a tuntap
+  device.
+- TUNSETQUEUE were used to disable and enable a specific queue of the
+  device. But since the state of tuntap were completely removed from the queue,
+  it could be used to attach to another device (there's no such kind of
+  requirement currently, and it needs new kind of LSM policy.
+- TUNSETQUEUE could be used to attach to a persistent device without any
+  queues. This kind of attching bypass the necessary checking during TUNSETIFF
+  and may lead unexpected result.
 
-Any problem with this tree, or did it just slip through the cracks?
+So this patch tries to make a cleaner and simpler API by:
 
-Thanks,
-  Roland
+- Only allow TUNSETIFF to create queues.
+- TUNSETQUEUE could be only used to disable and enabled the queues of a device,
+  and the state of the tuntap device were not detachd from the queues when it
+  was disabled, so TUNSETQUEUE could be only used after TUNSETIFF and with the
+   same device.
 
-> ----------------------------------------------------------------
->
-> First batch of InfiniBand/RDMA changes for the 3.8 merge window:
->  - A good chunk of Bart Van Assche's SRP fixes
->  - UAPI disintegration from David Howells
->  - mlx4 support for "64-byte CQE" hardware feature from Or Gerlitz
->  - Other miscellaneous fixes
->
-> ----------------------------------------------------------------
-> Alan Cox (2):
->       IB/ipath: Remove unreachable code
->       RDMA/amsol1100: Fix missing break
->
-> Bart Van Assche (14):
->       IB/srp: Increase block layer timeout
->       IB/srp: Eliminate state SRP_TARGET_CONNECTING
->       IB/srp: Keep processing commands during host removal
->       IB/srp: Simplify SCSI error handling
->       IB/srp: Introduce srp_handle_qp_err()
->       IB/srp: Process all error completions
->       IB/srp: Suppress superfluous error messages
->       IB/srp: Introduce the helper function srp_remove_target()
->       IB/srp: Eliminate state SRP_TARGET_DEAD
->       IB/srp: Document sysfs attributes
->       srp_transport: Fix attribute registration
->       srp_transport: Simplify attribute initialization code
->       srp_transport: Document sysfs attributes
->       IB/srp: Allow SRP disconnect through sysfs
->
-> David Howells (1):
->       UAPI: (Scripted) Disintegrate include/rdma
->
-> Ishai Rabinovitz (1):
->       IB/srp: destroy and recreate QP and CQs when reconnecting
->
-> Jack Morgenstein (2):
->       IB/mlx4: Fix spinlock order to avoid lockdep warnings
->       mlx4_core: Fix potential deadlock in mlx4_eq_int()
->
-> Julia Lawall (3):
->       RDMA/nes: Use WARN()
->       RDMA/cxgb4: use WARN
->       RDMA/cxgb3: use WARN
->
-> Or Gerlitz (1):
->       mlx4: 64-byte CQE/EQE support
->
-> Roland Dreier (4):
->       Merge branches 'cxgb4', 'misc', 'mlx4', 'nes' and 'uapi' into for-next
->       Merge branches 'cma' and 'mlx4' into for-next
->       Merge branch 'srp' into for-next
->       Merge branch 'nes' into for-next
->
-> Tatyana Nikolova (7):
->       RDMA/nes: Fix incorrect address of IP header
->       RDMA/nes: Fix for unlinking skbs from empty list
->       RDMA/nes: Fix for sending fpdus in order to hardware
->       RDMA/nes: Fix for incorrect multicast address in the perfect filter table
->       RDMA/nes: Fix for BUG_ON due to adding already-pending timer
->       RDMA/nes: Fix for terminate timer crash
->       RDMA/nes: Fix for crash when registering zero length MR for CQ
->
-> Vu Pham (1):
->       IB/srp: send disconnect request without waiting for CM timewait exit
->
-> shefty (1):
->       RDMA/cm: Change return value from find_gid_port()
->
->  Documentation/ABI/stable/sysfs-driver-ib_srp   |  156 ++++++++++++
->  Documentation/ABI/stable/sysfs-transport-srp   |   19 ++
->  drivers/infiniband/core/cma.c                  |    9 +-
->  drivers/infiniband/hw/amso1100/c2_ae.c         |    1 +
->  drivers/infiniband/hw/cxgb3/iwch_cm.c          |    6 +-
->  drivers/infiniband/hw/cxgb4/cm.c               |    6 +-
->  drivers/infiniband/hw/ipath/ipath_init_chip.c  |   10 -
->  drivers/infiniband/hw/mlx4/cm.c                |    4 +-
->  drivers/infiniband/hw/mlx4/cq.c                |   34 ++-
->  drivers/infiniband/hw/mlx4/main.c              |   27 +-
->  drivers/infiniband/hw/mlx4/mlx4_ib.h           |    1 +
->  drivers/infiniband/hw/mlx4/user.h              |   12 +-
->  drivers/infiniband/hw/nes/nes.h                |    1 +
->  drivers/infiniband/hw/nes/nes_cm.c             |   32 +--
->  drivers/infiniband/hw/nes/nes_hw.c             |    9 +-
->  drivers/infiniband/hw/nes/nes_mgt.c            |   42 ++--
->  drivers/infiniband/hw/nes/nes_nic.c            |   13 +-
->  drivers/infiniband/hw/nes/nes_verbs.c          |    9 +-
->  drivers/infiniband/ulp/srp/ib_srp.c            |  314 ++++++++++++++----------
->  drivers/infiniband/ulp/srp/ib_srp.h            |   11 +-
->  drivers/net/ethernet/mellanox/mlx4/cmd.c       |   11 +-
->  drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    2 +-
->  drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    1 +
->  drivers/net/ethernet/mellanox/mlx4/en_rx.c     |    5 +-
->  drivers/net/ethernet/mellanox/mlx4/en_tx.c     |    5 +-
->  drivers/net/ethernet/mellanox/mlx4/eq.c        |   36 ++-
->  drivers/net/ethernet/mellanox/mlx4/fw.c        |   30 ++-
->  drivers/net/ethernet/mellanox/mlx4/fw.h        |    1 +
->  drivers/net/ethernet/mellanox/mlx4/main.c      |   38 ++-
->  drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1 +
->  drivers/scsi/scsi_transport_srp.c              |   51 ++--
->  include/linux/mlx4/device.h                    |   21 ++
->  include/rdma/Kbuild                            |    6 -
->  include/rdma/rdma_netlink.h                    |   36 +--
->  include/scsi/scsi_transport_srp.h              |    8 +
->  include/uapi/rdma/Kbuild                       |    6 +
->  include/{ => uapi}/rdma/ib_user_cm.h           |    0
->  include/{ => uapi}/rdma/ib_user_mad.h          |    0
->  include/{ => uapi}/rdma/ib_user_sa.h           |    0
->  include/{ => uapi}/rdma/ib_user_verbs.h        |    0
->  include/uapi/rdma/rdma_netlink.h               |   37 +++
->  include/{ => uapi}/rdma/rdma_user_cm.h         |    0
->  42 files changed, 689 insertions(+), 322 deletions(-)
->  create mode 100644 Documentation/ABI/stable/sysfs-driver-ib_srp
->  create mode 100644 Documentation/ABI/stable/sysfs-transport-srp
->  rename include/{ => uapi}/rdma/ib_user_cm.h (100%)
->  rename include/{ => uapi}/rdma/ib_user_mad.h (100%)
->  rename include/{ => uapi}/rdma/ib_user_sa.h (100%)
->  rename include/{ => uapi}/rdma/ib_user_verbs.h (100%)
->  create mode 100644 include/uapi/rdma/rdma_netlink.h
->  rename include/{ => uapi}/rdma/rdma_user_cm.h (100%)
+This is done by introducing a list which keeps track of all queues which were
+disabled. The queue would be moved between this list and tfiles[] array when it
+was enabled/disabled. A pointer of the tun_struct were also introdued to track
+the device it belongs to when it was disabled.
+
+After the change, the isolation between management and application could be done
+through: TUNSETIFF were only called by management software and TUNSETQUEUE were
+only called by application.For LSM/SELinux, the things left is to do proper
+check during tun_set_queue() if needed.
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c |   86 ++++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 63 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 2ac2164..6f2053d 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -138,6 +138,8 @@ struct tun_file {
+ 	/* only used for fasnyc */
+ 	unsigned int flags;
+ 	u16 queue_index;
++	struct list_head next;
++	struct tun_struct *detached;
+ };
+ 
+ struct tun_flow_entry {
+@@ -182,6 +184,8 @@ struct tun_struct {
+ 	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
+ 	struct timer_list flow_gc_timer;
+ 	unsigned long ageing_time;
++	unsigned int numdisabled;
++	struct list_head disabled;
+ };
+ 
+ static inline u32 tun_hashfn(u32 rxhash)
+@@ -386,6 +390,23 @@ static void tun_set_real_num_queues(struct tun_struct *tun)
+ 	netif_set_real_num_rx_queues(tun->dev, tun->numqueues);
+ }
+ 
++static void tun_disable_queue(struct tun_struct *tun, struct tun_file *tfile)
++{
++	tfile->detached = tun;
++	list_add_tail(&tfile->next, &tun->disabled);
++	++tun->numdisabled;
++}
++
++struct tun_struct *tun_enable_queue(struct tun_file *tfile)
++{
++	struct tun_struct *tun = tfile->detached;
++
++	tfile->detached = NULL;
++	list_del_init(&tfile->next);
++	--tun->numdisabled;
++	return tun;
++}
++
+ static void __tun_detach(struct tun_file *tfile, bool clean)
+ {
+ 	struct tun_file *ntfile;
+@@ -407,20 +428,25 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+ 		ntfile->queue_index = index;
+ 
+ 		--tun->numqueues;
+-		sock_put(&tfile->sk);
++		if (clean)
++			sock_put(&tfile->sk);
++		else
++			tun_disable_queue(tun, tfile);
+ 
+ 		synchronize_net();
+ 		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
+ 		/* Drop read queue */
+ 		skb_queue_purge(&tfile->sk.sk_receive_queue);
+ 		tun_set_real_num_queues(tun);
+-
+-		if (tun->numqueues == 0 && !(tun->flags & TUN_PERSIST))
+-			if (dev->reg_state == NETREG_REGISTERED)
+-				unregister_netdevice(dev);
+-	}
++	} else if (tfile->detached && clean)
++		tun = tun_enable_queue(tfile);
+ 
+ 	if (clean) {
++		if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&
++		    !(tun->flags & TUN_PERSIST))
++			if (tun->dev->reg_state == NETREG_REGISTERED)
++				unregister_netdevice(tun->dev);
++
+ 		BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED,
+ 				 &tfile->socket.flags));
+ 		sk_release_kernel(&tfile->sk);
+@@ -437,7 +463,7 @@ static void tun_detach(struct tun_file *tfile, bool clean)
+ static void tun_detach_all(struct net_device *dev)
+ {
+ 	struct tun_struct *tun = netdev_priv(dev);
+-	struct tun_file *tfile;
++	struct tun_file *tfile, *tmp;
+ 	int i, n = tun->numqueues;
+ 
+ 	for (i = 0; i < n; i++) {
+@@ -458,6 +484,12 @@ static void tun_detach_all(struct net_device *dev)
+ 		skb_queue_purge(&tfile->sk.sk_receive_queue);
+ 		sock_put(&tfile->sk);
+ 	}
++	list_for_each_entry_safe(tfile, tmp, &tun->disabled, next) {
++		tun_enable_queue(tfile);
++		skb_queue_purge(&tfile->sk.sk_receive_queue);
++		sock_put(&tfile->sk);
++	}
++	BUG_ON(tun->numdisabled != 0);
+ }
+ 
+ static int tun_attach(struct tun_struct *tun, struct file *file)
+@@ -474,7 +506,8 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+ 		goto out;
+ 
+ 	err = -E2BIG;
+-	if (tun->numqueues == MAX_TAP_QUEUES)
++	if (!tfile->detached &&
++	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
+ 		goto out;
+ 
+ 	err = 0;
+@@ -488,9 +521,13 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+ 	tfile->queue_index = tun->numqueues;
+ 	rcu_assign_pointer(tfile->tun, tun);
+ 	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
+-	sock_hold(&tfile->sk);
+ 	tun->numqueues++;
+ 
++	if (tfile->detached)
++		tun_enable_queue(tfile);
++	else
++		sock_hold(&tfile->sk);
++
+ 	tun_set_real_num_queues(tun);
+ 
+ 	/* device is allowed to go away first, so no need to hold extra
+@@ -1348,6 +1385,7 @@ static void tun_free_netdev(struct net_device *dev)
+ {
+ 	struct tun_struct *tun = netdev_priv(dev);
+ 
++	BUG_ON(!(list_empty(&tun->disabled)));
+ 	tun_flow_uninit(tun);
+ 	free_netdev(dev);
+ }
+@@ -1542,6 +1580,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		err = tun_attach(tun, file);
+ 		if (err < 0)
+ 			return err;
++
++		if (tun->flags & TUN_TAP_MQ &&
++		    (tun->numqueues + tun->numdisabled > 1))
++			return err;
+ 	}
+ 	else {
+ 		char *name;
+@@ -1600,6 +1642,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 			TUN_USER_FEATURES;
+ 		dev->features = dev->hw_features;
+ 
++		INIT_LIST_HEAD(&tun->disabled);
+ 		err = tun_attach(tun, file);
+ 		if (err < 0)
+ 			goto err_free_dev;
+@@ -1754,32 +1797,28 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+ {
+ 	struct tun_file *tfile = file->private_data;
+ 	struct tun_struct *tun;
+-	struct net_device *dev;
+ 	int ret = 0;
+ 
+ 	rtnl_lock();
+ 
+ 	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
+-		dev = __dev_get_by_name(tfile->net, ifr->ifr_name);
+-		if (!dev) {
+-			ret = -EINVAL;
+-			goto unlock;
+-		}
+-
+-		tun = netdev_priv(dev);
+-		if (dev->netdev_ops != &tap_netdev_ops &&
+-			dev->netdev_ops != &tun_netdev_ops)
++		tun = tfile->detached;
++		if (!tun)
+ 			ret = -EINVAL;
+ 		else if (tun_not_capable(tun))
+ 			ret = -EPERM;
+ 		else
+ 			ret = tun_attach(tun, file);
+-	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE)
+-		__tun_detach(tfile, false);
+-	else
++	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
++		tun = rcu_dereference_protected(tfile->tun,
++						lockdep_rtnl_is_held());
++		if (!tun || !(tun->flags & TUN_TAP_MQ))
++			ret = -EINVAL;
++		else
++			__tun_detach(tfile, false);
++	} else
+ 		ret = -EINVAL;
+ 
+-unlock:
+ 	rtnl_unlock();
+ 	return ret;
+ }
+@@ -2091,6 +2130,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
+ 
+ 	file->private_data = tfile;
+ 	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
++	INIT_LIST_HEAD(&tfile->next);
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
+
