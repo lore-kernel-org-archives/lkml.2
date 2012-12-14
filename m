@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab2LNHef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:34:35 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63972 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab2LNHed (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:34:33 -0500
-Date: Fri, 14 Dec 2012 08:34:25 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com
-Subject: Re: [PATCH v2] pwm: samsung: add missing s3c->pwm_id
-Message-ID: <20121214073425.GC24094@avionic-0098.adnet.avionic-design.de>
-References: <1355468338-12611-1-git-send-email-jy0922.shim@samsung.com>
+	id S1754446Ab2LNHgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:36:24 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:35406 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab2LNHgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 02:36:22 -0500
+X-ASG-Debug-ID: 1355470581-03d6a50cb5dd08a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <50CAD6D9.5070703@fusionio.com>
+Date: Fri, 14 Dec 2012 08:35:53 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9Ek0hoCL9XbhcSqy"
-Content-Disposition: inline
-In-Reply-To: <1355468338-12611-1-git-send-email-jy0922.shim@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:gX92ShSj/98AFlsPk+tbOc+00WZRWo4Yvnj27yd8g8F
- h35k9CzUS44FYhnYpFiWfvSiw5uiny6vkIIT/2XAIJ+5t70u6C
- lTjPyAEArTBQPBZdV67+in5blvGfdeUzzPFXZ4BZEYU8/+7ko6
- F8D8E6En9a2zZ3skNfiQBFRBcCSKfCiCDZHeJFlSPTs8uJV+Qz
- MGwRW/w11z29Vkhd61jZkI+k27G62zD0Hu2qloTKUEJaCar1cK
- 2oFXo1H1J8kQJ9zfz0FRxAarPPD5e38pg0cH5nQdp0bhqFsyhx
- VFdlYTsfZYPvWlraKoC+IK+4Nl1XOthbWntmub/TgVgHboXUw8
- Xou+GtxWbfIYOHMrxyqbHymyWMiXhJ+TCk+RslUKL4h+PH3tkm
- T/tdHAoDuiHOdfKxIgk1XtuaTT5+t6eNIXMkOCKkxomt630Sdh
- G4YU+
+To: Jack Wang <jack.wang.usish@gmail.com>
+CC: Kent Overstreet <koverstreet@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "zab@redhat.com" <zab@redhat.com>, "bcrl@kvack.org" <bcrl@kvack.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
+References: <1354568322-29029-1-git-send-email-koverstreet@google.com> <20121213211808.GJ25017@kernel.dk> <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
+In-Reply-To: <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1355470581
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -1.90
+X-Barracuda-Spam-Status: No, SCORE=-1.90 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116970
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.12 CN_BODY_332            BODY: CN_BODY_332
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012-12-14 03:26, Jack Wang wrote:
+> 2012/12/14 Jens Axboe <jaxboe@fusionio.com>:
+>> On Mon, Dec 03 2012, Kent Overstreet wrote:
+>>> Last posting: http://thread.gmane.org/gmane.linux.kernel.aio.general/3169
+>>>
+>>> Changes since the last posting should all be noted in the individual
+>>> patch descriptions.
+>>>
+>>>  * Zach pointed out the aio_read_evt() patch was calling functions that
+>>>    could sleep in TASK_INTERRUPTIBLE state, that patch is rewritten.
+>>>  * Ben pointed out some synchronize_rcu() usage was problematic,
+>>>    converted it to call_rcu()
+>>>  * The flush_dcache_page() patch is new
+>>>  * Changed the "use cancellation list lazily" patch so as to remove
+>>>    ki_flags from struct kiocb.
+>>
+>> Kent, I ran a few tests, and the below patches still don't seem as fast
+>> as the approach I took. To keep it fair, I used your aio branch and
+>> applied by dio speedups too. As a sanity check, I ran with your branch
+>> alone as well. The quick results below - kaio is kent-aio, just your
+>> branch. kaio-dio is with the direct IO speedups too. jaio is my branch,
+>> which already has the dio changes too.
+>>
+>> Devices         Branch          IOPS
+>> 1               kaio            ~915K
+>> 1               kaio-dio        ~930K
+>> 1               jaio           ~1220K
+>> 6               kaio           ~3050K
+>> 6               kaio-dio       ~3080K
+>> 6               jaio            3500K
+>>
+>> The box runs out of CPU driving power, which is why it doesn't scale
+>> linearly, otherwise I know that jaio at least does. It's basically
+>> completion limited for the 6 device test at the moment.
+>>
+>> I'll run some profiling tomorrow morning and get you some better
+>> results. Just thought I'd share these at least.
+>>
+>> --
+>> Jens Axboe
+>>
+> 
+> A really good performance, woo.
+> 
+> I think the device tested is really fast PCIe SSD builded by fusionio
+> with fusionio in house block driver?
 
---9Ek0hoCL9XbhcSqy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is pci-e flash storage, but it is not fusion-io.
 
-On Fri, Dec 14, 2012 at 03:58:58PM +0900, Joonyoung Shim wrote:
-> The s3c->pwm_id is used to calculate offset of related register.
->=20
-> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+> any compare number with current mainline?
 
-I've modified the subject a bit to make it clear the assignment of
-s3c->pwm_id was missing, not the s3c->pwm_id field altogether.
+Sure, I should have included that. Here's the table again, this time
+with mainline as well.
 
-Applied, thanks.
+Devices         Branch          IOPS
+1               mainline        ~870K
+1               kaio            ~915K
+1               kaio-dio        ~930K
+1               jaio           ~1220K
+6               kaio           ~3050K
+6               kaio-dio       ~3080K
+6               jaio           ~3500K
+6               mainline       ~2850K
 
-Thierry
 
---9Ek0hoCL9XbhcSqy
-Content-Type: application/pgp-signature
+-- 
+Jens Axboe
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQytaBAAoJEN0jrNd/PrOhAlcP/14qb5YTkwpRW74RubZ3jIRS
-U7VK+3h1DCvzQUlvCiQCMexgkC2/pIn/2trtE1Jj8I76FgWog01pebBxmGrjh6xY
-dH2Iue6ak6U7tzUHeG2uJUARQPc/JVElfG36mM9/RSJ1XxZ3RDeBVhZzkckFLANW
-dXnM1aXV3HomGacy8k5IeJNlvm8NvzX7BwjAl1PTlZxlxUJZmCHDQRal/UxfNBt+
-JsOgSXAFDD/hTN2XjBHH6xJf54HFNuNx5KsCKCcqoyRy6TKJO+RjwvGW41sXlEhP
-stH2bwDgzhwa7W98UA/1WECb/xZtEgFtr31/rw+UxtHZ6gzceBvii8PoAHR8LPp1
-jNJQpmAaj7bL//BThLBx5+H7knH3Lrok70C39dh3f16BLul16gUaODnUcC/H4+vM
-VN7o/RSSTqHpWjUdVzdKR42jr6LDNkBtL4NvHstm5X9cGvtna9N9PERW0sAxjUN6
-t/jBOCJswl80K9Yt8uLRgBGF8JTPEQ3yTUm+sNVarZ01XuVZNQbJWZT9KsWfkeiL
-nU7NxJB5np3T0DQFLTEmCeVZgAobmrqESzGHz+LNucOcZRspLj3FKyK9nlGxzBZo
-1yfY3ttqtKKRF+E2O687BVO12UJjWHGNf8Gh7+o+B8Lu8WrW9jjQQZCxuJiXUC5F
-nlYTb07jTtP9MPGdXE7M
-=2BBC
------END PGP SIGNATURE-----
-
---9Ek0hoCL9XbhcSqy--
