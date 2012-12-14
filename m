@@ -1,164 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422795Ab2LNXGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:06:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41257 "EHLO mail.kernel.org"
+	id S1422813Ab2LNXGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:06:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41270 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422733Ab2LNXGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:06:41 -0500
+	id S1422797Ab2LNXGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:06:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/27] 3.7.1-stable review
-Date: Fri, 14 Dec 2012 15:01:13 -0800
-Message-Id: <20121214222251.229078963@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Christof Meerwald <cmeerw@cmeerw.org>
+Subject: [ 25/27] USB: EHCI: bugfix: urb->hcpriv should not be NULL
+Date: Fri, 14 Dec 2012 15:01:38 -0800
+Message-Id: <20121214222256.577051662@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
+References: <20121214222251.229078963@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.7.1 release.
-There are 27 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Dec 16 22:16:56 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.1-rc1.gz
-and the diffstat can be found below.
+From: Alan Stern <stern@rowland.harvard.edu>
 
-thanks,
+commit 2656a9abcf1ec8dd5fee6a75d6997a0f2fa0094e upstream.
 
-greg k-h
+This patch (as1632b) fixes a bug in ehci-hcd.  The USB core uses
+urb->hcpriv to determine whether or not an URB is active; host
+controller drivers are supposed to set this pointer to a non-NULL
+value when an URB is queued.  However ehci-hcd sets it to NULL for
+isochronous URBs, which defeats the check in usbcore.
 
--------------
-Pseudo-Shortlog of commits:
+In itself this isn't a big deal.  But people have recently found that
+certain sequences of actions will cause the snd-usb-audio driver to
+reuse URBs without waiting for them to complete.  In the absence of
+proper checking by usbcore, the URBs get added to their endpoint list
+twice.  This leads to list corruption and a system freeze.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.7.1-rc1
+The patch makes ehci-hcd assign a meaningful value to urb->hcpriv for
+isochronous URBs.  Improving robustness always helps.
 
-Kevin McKinney <klmckinney1@gmail.com>
-    Staging: bcm: Add two products and remove an existing product.
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Artem S. Tashkinov <t.artem@lycos.com>
+Reported-by: Christof Meerwald <cmeerw@cmeerw.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Eric Dumazet <edumazet@google.com>
-    rcu: Fix batch-limit size problem
+---
+ drivers/usb/host/ehci-q.c     |   12 +++---------
+ drivers/usb/host/ehci-sched.c |    4 ++--
+ 2 files changed, 5 insertions(+), 11 deletions(-)
 
-Alan Stern <stern@rowland.harvard.edu>
-    USB: EHCI: bugfix: urb->hcpriv should not be NULL
-
-Zheng Liu <gnehzuil.liu@gmail.com>
-    perf test: fix a build error on builtin-test
-
-Dan Williams <dcbw@redhat.com>
-    cdc-acm: implement TIOCSSERIAL to avoid blocking close(2)
-
-Steven Rostedt <srostedt@redhat.com>
-    ring-buffer: Fix race between integrity check and readers
-
-Steven Rostedt <srostedt@redhat.com>
-    ring-buffer: Fix NULL pointer if rb_set_head_page() fails
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    ftrace: Clear bits properly in reset_iter_read()
-
-Sarah Sharp <sarah.a.sharp@linux.intel.com>
-    xhci: Extend Fresco Logic MSI quirk.
-
-Alan Stern <stern@rowland.harvard.edu>
-    USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
-
-Lan Tianyu <tianyu.lan@intel.com>
-    ACPI / video: Add "Asus UL30VT" to ACPI video detect blacklist
-
-Zhang Rui <rui.zhang@intel.com>
-    ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
-
-Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    ACPI / PNP: Do not crash due to stale pointer use during system resume
-
-Lan Tianyu <tianyu.lan@intel.com>
-    ACPI / PM: Add Sony Vaio VPCEB1S1E to nonvs blacklist.
-
-Kamil Iskra <kamil@iskra.name>
-    ACPI / battery: Correct battery capacity values on Thinkpads
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    USB: mark uas driver as BROKEN
-
-Markus Becker <mab@comnets.uni-bremen.de>
-    USB: cp210x: add Virtenio Preon32 device id
-
-Peter Korsgaard <jacmet@sunsite.dk>
-    usb: ftdi_sio: fixup BeagleBone A5+ quirk
-
-Martin Teichmann <lkb.teichmann@gmail.com>
-    USB: ftdi_sio: Add support for Newport AGILIS motor drivers
-
-Bjørn Mork <bjorn@mork.no>
-    USB: option: blacklist network interface on Huawei E173
-
-li.rui27@zte.com.cn <li.rui27@zte.com.cn>
-    USB: add new zte 3g-dongle's pid to option.c
-
-Jan Beulich <JBeulich@suse.com>
-    x86: hpet: Fix masking of MSI interrupts
-
-Rene Buergel <rene.buergel@sohard.de>
-    ezusb: add dependency to USB
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    telephony: ijx: buffer overflow in ixj_write_cid()
-
-Boris Ostrovsky <boris.ostrovsky@amd.com>
-    x86,AMD: Power driver support for AMD's family 16h processors
-
-Linus Walleij <linus.walleij@linaro.org>
-    clk: ux500: fix bit error
-
-Marek Szyprowski <m.szyprowski@samsung.com>
-    mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
-
-
--------------
-
-Diffstat:
-
- Makefile                            |  4 +-
- arch/x86/kernel/hpet.c              |  4 +-
- drivers/acpi/battery.c              | 77 +++++++++++++++++++++++++++++++++++++++
- drivers/acpi/sleep.c                |  8 ++++
- drivers/acpi/video.c                | 14 +++++++
- drivers/acpi/video_detect.c         |  8 ++++
- drivers/clk/ux500/u8500_clk.c       |  2 +-
- drivers/hwmon/fam15h_power.c        |  4 ++
- drivers/pnp/pnpacpi/core.c          |  3 ++
- drivers/staging/bcm/InterfaceInit.c |  3 +-
- drivers/staging/bcm/InterfaceInit.h |  2 +-
- drivers/staging/telephony/ixj.c     | 24 ++++++------
- drivers/usb/class/cdc-acm.c         | 38 +++++++++++++++++++
- drivers/usb/host/ehci-q.c           | 12 ++----
- drivers/usb/host/ehci-sched.c       |  4 +-
- drivers/usb/host/ohci-q.c           | 19 ++++++++++
- drivers/usb/host/xhci-pci.c         |  7 +++-
- drivers/usb/misc/Kconfig            |  1 +
- drivers/usb/serial/cp210x.c         |  1 +
- drivers/usb/serial/ftdi_sio.c       |  3 +-
- drivers/usb/serial/ftdi_sio_ids.h   |  6 +++
- drivers/usb/serial/option.c         | 25 +++++++++++++
- drivers/usb/storage/Kconfig         |  2 +-
- kernel/rcutree.c                    | 15 ++++----
- kernel/trace/ftrace.c               |  2 +-
- kernel/trace/ring_buffer.c          | 16 ++++++--
- mm/dmapool.c                        | 31 ++++------------
- tools/perf/builtin-test.c           | 38 ++++++-------------
- 28 files changed, 278 insertions(+), 95 deletions(-)
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -264,15 +264,9 @@ ehci_urb_done(struct ehci_hcd *ehci, str
+ __releases(ehci->lock)
+ __acquires(ehci->lock)
+ {
+-	if (likely (urb->hcpriv != NULL)) {
+-		struct ehci_qh	*qh = (struct ehci_qh *) urb->hcpriv;
+-
+-		/* S-mask in a QH means it's an interrupt urb */
+-		if ((qh->hw->hw_info2 & cpu_to_hc32(ehci, QH_SMASK)) != 0) {
+-
+-			/* ... update hc-wide periodic stats (for usbfs) */
+-			ehci_to_hcd(ehci)->self.bandwidth_int_reqs--;
+-		}
++	if (usb_pipetype(urb->pipe) == PIPE_INTERRUPT) {
++		/* ... update hc-wide periodic stats */
++		ehci_to_hcd(ehci)->self.bandwidth_int_reqs--;
+ 	}
+ 
+ 	if (unlikely(urb->unlinked)) {
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1646,7 +1646,7 @@ static void itd_link_urb(
+ 
+ 	/* don't need that schedule data any more */
+ 	iso_sched_free (stream, iso_sched);
+-	urb->hcpriv = NULL;
++	urb->hcpriv = stream;
+ 
+ 	++ehci->isoc_count;
+ 	enable_periodic(ehci);
+@@ -2045,7 +2045,7 @@ static void sitd_link_urb(
+ 
+ 	/* don't need that schedule data any more */
+ 	iso_sched_free (stream, sched);
+-	urb->hcpriv = NULL;
++	urb->hcpriv = stream;
+ 
+ 	++ehci->isoc_count;
+ 	enable_periodic(ehci);
 
 
