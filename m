@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2LNJrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:47:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59105 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2LNJrh (ORCPT
+	id S1755631Ab2LNJ5A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:57:00 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:42265 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab2LNJ45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:47:37 -0500
-Date: Fri, 14 Dec 2012 11:40:20 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <zihan@huawei.com>, <Lin.Lei@huawei.com>, <greg@kroah.com>,
-        <neil.yi@huawei.com>, <wangyuhua@huawei.com>, <huqiao36@huawei.com>
-Subject: Re: [PATCH 1/1]linux-usb: optimize to match rules in USB storage for
- Huawei dongles.
-Message-ID: <20121214094020.GA15370@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <fe6cdb1d63dd.63ddfe6cdb1d@huawei.com>
+	Fri, 14 Dec 2012 04:56:57 -0500
+Message-ID: <50CAF7DE.8000203@huawei.com>
+Date: Fri, 14 Dec 2012 17:56:46 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <fe6cdb1d63dd.63ddfe6cdb1d@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH rev.2 0/6] ACPI: Change the ACPI namespace scanning code
+ ordering
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <1499423.ez5cZl2uAf@vostro.rjw.lan>
+In-Reply-To: <1499423.ez5cZl2uAf@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2012/12/14 6:15, Rafael J. Wysocki wrote:
+> Hi All,
+> 
+> On Sunday, December 09, 2012 11:58:42 PM Rafael J. Wysocki wrote:
+>> Hi,
+>>
+>> The following patches change the ordering of the ACPI namespace scanning code
+>> so that all struct acpi_device objects in the given scope are registered before
+>> ACPI drivers are probed against them.  They also do some simplifications and
+>> clarifications of the code made possible by this main change.
+>>
+>> This is done for three basic reasons.  First, we need the boot ACPI namespace
+>> scanning code to be as similar as reasonably possible to the hot-plug ACPI
+>> namespace scanning code.  Second, the ordering of PCI devices enumeration
+>> versus ACPI-backed platform devices registration needs to be such that the PCI
+>> devices in the given scope are all registered first.  Finally, when we start to
+>> actually manage ACPI device resources as appropriate (e.g. resolve resource
+>> conflicts properly) we'll need all struct acpi_device nodes to be registered
+>> before any "companion" physical nodes or ACPI drivers are bound to them.
+>>
+>> The patches have been tested on Toshiba Portege R500 without breaking stuff
+>> (I used some additional debug code to verify that the ordering of device
+>> discovery had not been modified by them), but if you see any problems with
+>> them regarding hot-plug, please let me know.
+>>
+>> [1/6] - Separate adding ACPI device objects from probing ACPI drivers.
+>> [2/6] - Change the ordering of PCI root bridge driver registration.
+>> [3/6] - Make acpi_bus_add() and acpi_bus_start() visibly different.
+>> [4/6] - Reduce the usage of struct acpi_bus_ops
+>> [5/6] - Replace struct acpi_bus_ops with an enum type
+>> [6/6] - Change the ordering of acpi_bus_check_add() to avoid unnecessary checks.
+> 
+> The second revision is necessary to address problems found by Yijing Wang
+> during testing and explained by Jiang Liu (thanks guys!).
+> 
+> The problem is that acpi_walk_namespace() doesn't execute the pre_order_visit
+> callback for the starting handle, so the callback routine has the be executed
+> for it directly, if necessary.
+> 
+> I also modified a couple of changelogs to better explain the motivation of the
+> patches.
+> 
+> Boot sequence tested on Toshiba Portege R500, but testing on systems with
+> hotplug will be appreciated.
 
-On Fri, Dec 14, 2012 at 10:25:25AM +0800, fangxiaozhi 00110321 wrote:
-> From: fangxiaozhi <huananhu@huawei.com>
->=20
-> 1. Add a new macro define for USB storage match rule.
-> 2. Optimize the match rules with new macro for Huawei USB storage devices=
-,=20
->    to avoid to load USB storage driver for the modem interface=20
->    with Huawei devices.
-> 3. Add to support new switch command for new Huawei USB dongles.
+Hi rafael,
+   I tested this version patchset in my ia64 hotplug machine, and the result looks ok.
 
-still doing too much in a single patch. Should be broken down. Most of
-my comments weren't taken into account. Why bother sending a new
-version ?
+Thanks!
+Yijing
 
---=20
-balbi
+> 
+> Thanks,
+> Rafael
+> 
+> 
 
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+Thanks!
+Yijing
 
-iQIcBAEBAgAGBQJQyvQEAAoJEIaOsuA1yqREdTMP/RAn27E+hyhp4jKj3c4nE0IJ
-PbSGnSVKpdksnLvviH99z474qAwutBko97/Q6tHKE+pWiXSh3Mu2WoCJoH+6ruQy
-BpaEM2/zcjoC7biHfUSQaYHgiqQKOoA83KCC4AxiQHHHaabz8u7GzsNjJ6e5tWCo
-BSSzN9eQMXVMnUCnD2eXqs4kLW5r8Ra88epiG15YY4cfzoN6XpToTmlJ+tGoC00H
-Fov+8vDiEzgwzl70CLfu7QX4D/vH78pp/ZeLt2HTHnOyUENZZX5TfJ6UlYMHnmCs
-TRU2gzY35uPefviUAMgt3hV1Txr8iRil7eEbm5tuF1Sa/ko+6vwD7sXkKTgdSsO3
-AjqBB5VZ75LdNNtnOehQglAgQ/e3YXctRePZv9pGPGhFIhUVKv4jKDexqmlNH8z/
-nNLB627OFV/rS41SVGfywrKFeWmpnYe8TjkSU/mEI71XhcfS7HzWFYFgBCAIwEXu
-ILnsUOJNNjlU1I9zyFCxHq/nFi7jI4aNh9wIfmwrin5HAELyrN80bJLYAn20DDGU
-OmzIkcSkC/fZXm+RpDIrCPeLTt3U6tXkanwQ6PNFSrBj2DOgkcTlgbUj8SERK/AT
-t8OjOtKKXTYMluh+xR4hgs+rqq1Nhhd3fZfghPA9lR9luxwvDzs5tBan+unUQcoi
-wsWwqmDCPX2IUT+PSF1C
-=fHq+
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
