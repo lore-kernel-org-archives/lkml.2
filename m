@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab2LNVcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 16:32:31 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37787 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab2LNVc3 (ORCPT
+	id S932459Ab2LNVgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 16:36:37 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:32829 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282Ab2LNVgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 16:32:29 -0500
-Message-ID: <50CB9ADF.6050400@pengutronix.de>
-Date: Fri, 14 Dec 2012 22:32:15 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
+	Fri, 14 Dec 2012 16:36:36 -0500
+Message-ID: <50CB9BE1.5070906@linaro.org>
+Date: Fri, 14 Dec 2012 13:36:33 -0800
+From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-can@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>
-Subject: Re: linux-next: Tree for Dec 14 (net/can)
-References: <20121214184216.e05d715c71468f475d8bcfeb@canb.auug.org.au> <50CB7BAD.9040805@infradead.org>
-In-Reply-To: <50CB7BAD.9040805@infradead.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig8648F8A4665292D82D70378F"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        alek.du@intel.com
+Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
+References: <1355364328-19550-1-git-send-email-feng.tang@intel.com> <50CA7EE4.3000306@linaro.org> <20121214013725.GA11276@feng-snb> <50CA8837.5010800@linaro.org> <20121214023826.GA31613@obsidianresearch.com>
+In-Reply-To: <20121214023826.GA31613@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig8648F8A4665292D82D70378F
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 12/13/2012 06:38 PM, Jason Gunthorpe wrote:
+> On Thu, Dec 13, 2012 at 06:00:23PM -0800, John Stultz wrote:
+>
+>> So per Jason's related patch, he's made the point that the
+>> persistent_clock and RTC class functionality are basically exclusive
+>> (well, in his case, he said this with respect to updating the RTC,
+>> not reading it - I don't mean to put words in his mouth - Please do
+>> correct me here Jason. :).  In other words, we probably should avoid
+>> configurations where both the rtc hctosys and persistent_clock
+>> interfaces are both active.
+> I only studied update_persistent_clock, read_persistent_clock is
+> very much different.
+>
+> Looking at it, I don't think that update_persistent_clock is in any
+> way related to read_persistent_clock..  update_persistent_clock is
+> *only* called by NTP, and its *only* purpose is to update the RTC with
+> NTP synchronized time. In many configurations it will never even be
+> called.
+>
+> I think update_persistent_clock is badly named, it should be called
+> platform_save_ntp_time_to_rtc(), keep it divorced from
+> read_presistent_clock :)
+Fair enough.  I think you've done a decent job convincing me that for 
+the update path converting everything to using the RTC class exclusively 
+is the better approach. That way we avoid the duplication on the write 
+at least.
 
-On 12/14/2012 08:19 PM, Randy Dunlap wrote:
-> On 12/13/12 23:42, Stephen Rothwell wrote:
->> Hi all,
->>
->> Changes since 20121213:
->>
->> Lots of conflicts are migrating between trees.
->>
->=20
-> on X86_32:
->=20
-> drivers/net/can/sja1000/sja1000_of_platform.c: In function 'sja1000_ofp=
-_probe':
-> drivers/net/can/sja1000/sja1000_of_platform.c:124:13: error: 'NO_IRQ' u=
-ndeclared (first use in this function)
-> drivers/net/can/sja1000/sja1000_of_platform.c:124:13: note: each undecl=
-ared identifier is reported only once for each function it appears in
-> make[5]: *** [drivers/net/can/sja1000/sja1000_of_platform.o] Error 1
+The read side, I suspect we can't eliminate the duplication, but we can 
+likely configure it out for most cases.
 
-Thanks. Fixed, I'm going to send a pull-request to David Miller.
+>> make the HCTOSYS option be dependent on !HAS_PERSISTENT_CLOCK. This
+>> way we avoid having configs where there are conflicting paths that
+>> we chose from.
+> On ARM the read_presistent_clock is used to access a true monotonic
+> counter that is divorced from the system RTC - look at
+> arch/arm/plat-omap/counter_32k.c for instance.
+Yea, the 32k counter in that case is an interesting one (and a good 
+example of wanting both a read_persistent_clock and a rtc). It doesn't 
+exactly implement what read_persistent_clock() intends, but gets away 
+with it, since on the suspend/resume we only take a delta from the 
+read_persistent_clock(), we don't actually care if its accurate time 
+wise.  It works well enough for suspend/resume and is nicely more 
+accurate then the RTC.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Although this does cause duplication on the initialization side, where 
+we probably set the time initially to the wrong time using the 32k 
+counter, and then follow up with the HCTOSYS_DEVICE to get the correct 
+time (and there's the extra overhead of the RTC suspend/resume path 
+calculating and calling timekeeping_inject_sleeptime, but since 
+read_persistent_clock is there, we throw that less accurate data out).
 
 
---------------enig8648F8A4665292D82D70378F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> This seems like a great use of that hardware resource, and no doubt
+> those mach's also have a class RTC driver available talking to
+> different hardware.
+>
+> For mach's without that functionality ARM returns a fixed 0 value
+> from read_persistent_clock, persumably the kernel detects this and
+> falls back to using class rtc functions?
+>
+> Maybe Feng would be better off adjusting read_persistent_clock to
+> return ENODEV in such cases??
+Although he wants to avoid even doing any read/calculation in the RTC 
+suspend/resume path if read_persistent_clock is there. So probably some 
+sort of a flag interface will be needed in that case.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
+> So, I think you have to keep your test as a run time test. To support
+> the single image ARM boot you can't make the distinction with kconfig.
+So yea, I agree there are some cases where both are necessary, but I 
+also think that in *most* cases we can optimize out the choice at 
+compile time, which is even better then having even the improved runtime 
+conditional checking.
 
-iEYEARECAAYFAlDLmuIACgkQjTAFq1RaXHMY+wCeI6hjAK6Y03IlsbQSmlLtQKwR
-DUAAn0nGWOBhGT41I88aBih9i431LYtB
-=/tNH
------END PGP SIGNATURE-----
+thanks
+-john
 
---------------enig8648F8A4665292D82D70378F--
