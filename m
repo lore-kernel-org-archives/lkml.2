@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab2LNBsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 20:48:12 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64952 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab2LNBsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 20:48:09 -0500
-Message-ID: <50CA8556.7030905@mit.edu>
-Date: Thu, 13 Dec 2012 17:48:06 -0800
-From: Andy Lutomirski <luto@amacapital.net>
+	id S1755849Ab2LNBu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:50:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41727 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444Ab2LNBu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 20:50:27 -0500
+Message-ID: <50CA85BD.7070502@zytor.com>
+Date: Thu, 13 Dec 2012 17:49:49 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-CC: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
-        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
- stable pages during write
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org> <20121213080811.23360.98131.stgit@blackbox.djwong.org>
-In-Reply-To: <20121213080811.23360.98131.stgit@blackbox.djwong.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
+In-Reply-To: <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2012 12:08 AM, Darrick J. Wong wrote:
-> Several complaints have been received regarding long file write latencies when
-> memory pages must be held stable during writeback.  Since it might not be
-> acceptable to stall programs for the entire duration of a page write (which may
-> take many milliseconds even on good hardware), enable a second strategy wherein
-> pages are snapshotted as part of submit_bio; the snapshot can be held stable
-> while writes continue.
+On 12/13/2012 05:42 PM, Andy Lutomirski wrote:
 > 
-> This provides a band-aid to provide stable page writes on jbd without needing
-> to backport the fixed locking scheme in jbd2.  A mount option is added to ext4
-> to allow administrators to enable it there.
+> The 64-bit/x32 case is currently very simple and fast because it uses
+> absolute addressing.  Admittedly, pcrel references are free, so
+> changing this wouldn't cost much.  For native, it'll be slower, but
+> maybe no one cares.  I seem to care about this more than anyone else,
+> and I don't use 32 bit code. :)
+> 
 
-I'm a bit confused as to what it has to do with ext3.  Wouldn't this be
-useful as a mount option everywhere, though?
+pcrel is actually cheaper than absolute addressing in 64-bit mode.
 
-If this becomes widely used, would it be better to snapshot on
-wait_for_stable_page instead of on io submission?
+> The benefit of switching is that the vdso code could be the same in
+> all three cases.  (Actually, it's even better than that.  All of the
+> VVAR magic could be the same in the vdso and the kernel -- the kernel
+> linker script would just have to have an appropriate symbol to see the
+> appropriate mapping.)
+> 
+> 
+> This:
+> 
+> __attribute__((visibility("hidden"))) int foo;
+> 
+> int get_foo(void)
+> {
+>   return foo;
+> }
+> 
+> generates a rip-relative access on 64 bits and GOTOFF on 32 bits.
+> 
+> The only reason I didn't use a real symbol in the first place is
+> because I couldn't figure out how to get gcc to emit an absolute
+> relocation in pic code.
 
-FWIW, I'm about to pound pretty hard on this whole patchset on a box
-that doesn't need stable pages.  I'll let you know how it goes.
+Well, then, we wouldn't need to do that... this is starting to sound
+like a significant win.
 
---Andy
+	-hpa
+
