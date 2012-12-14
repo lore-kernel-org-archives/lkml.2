@@ -1,224 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab2LNHG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:06:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57175 "EHLO mx2.suse.de"
+	id S1753706Ab2LNHI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:08:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7573 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab2LNHGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:06:25 -0500
-Date: Fri, 14 Dec 2012 18:05:53 +1100
-From: NeilBrown <neilb@suse.de>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Benoit <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
-        linux-omap@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Jon Hunter <jon-hunter@ti.com>
-Subject: Re: [PATCH] OMAP GPIO - don't wake from suspend unless requested.
-Message-ID: <20121214180553.5eb62c0c@notabene.brown>
-In-Reply-To: <87ipblahho.fsf@deeprootsystems.com>
-References: <20120825214459.7333a376@notabene.brown>
-	<CAMQu2gz0-U4GxEpZFfmJec+0FRs7ugy8EYS3HyYhb1jwbMBjug@mail.gmail.com>
-	<20120827085312.75957354@notabene.brown>
-	<CAMQu2gwH0O+NHV7H2aF375qmv0=TKb6RweOLohTHtB4UhQ-1gQ@mail.gmail.com>
-	<CAMQu2gw2b8HHDPuSRuHXVYn3sJ5BYi_PuOT=snpa3zD5ert=QQ@mail.gmail.com>
-	<20120906130510.32b0b877@notabene.brown>
-	<CAMQu2gxGNJ+NW_rcRiXNE=OMTq8Hb81_1hDZnNen6mjc2cf6BQ@mail.gmail.com>
-	<20120906170245.10e97bdd@notabene.brown>
-	<87627pldkj.fsf@deeprootsystems.com>
-	<CAMQu2gwSCvw_4gVE-giD6MSzmRCNoNu4NoFBSao_dh9YnojfuA@mail.gmail.com>
-	<87ipblahho.fsf@deeprootsystems.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+	id S1751218Ab2LNHI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 02:08:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,279,1355126400"; 
+   d="scan'208";a="262031218"
+Message-ID: <1355468932.24876.153.camel@yhuang-dev>
+Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent
+ in D3cold
+From: Huang Ying <ying.huang@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Fri, 14 Dec 2012 15:08:52 +0800
+In-Reply-To: <20121211180812.GC25714@kroah.com>
+References: <20121122003904.262382971@linuxfoundation.org>
+	 <20121122003904.516735571@linuxfoundation.org>
+	 <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
+	 <1353640177.28789.21.camel@yhuang-dev>
+	 <1353656862.28789.57.camel@yhuang-dev> <20121130020104.GJ13478@kroah.com>
+	 <1354244049.29553.97.camel@yhuang-dev>
+	 <1355213572.7216.140.camel@yhuang-dev> <20121211180812.GC25714@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/V=LemLG=vm.KbeFn6aKrMlQ"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/V=LemLG=vm.KbeFn6aKrMlQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-12-11 at 10:08 -0800, Greg Kroah-Hartman wrote:
+> On Tue, Dec 11, 2012 at 04:12:52PM +0800, Huang Ying wrote:
+[snip]
+> > Which tree should I base the patch on?
+> 
+> 3.6.10 would be great.
 
-On Mon, 10 Sep 2012 10:57:07 -0700 Kevin Hilman <khilman@deeprootsystems.co=
-m>
-wrote:
+Here is the patch for 3.6.10.
+
+------------------------------------------------------------------------->
+Subject: [PATCH] PCI/PM: Fix deadlock when unbind device if its parent in D3cold
+
+If a PCI device and its parents are put into D3cold, unbinding the
+device will trigger deadlock as follow:
+
+- driver_unbind
+  - device_release_driver
+    - device_lock(dev)				<--- previous lock here
+    - __device_release_driver
+      - pm_runtime_get_sync
+        ...
+          - rpm_resume(dev)
+            - rpm_resume(dev->parent)
+              ...
+                - pci_pm_runtime_resume
+                  ...
+                  - pci_set_power_state
+                    - __pci_start_power_transition
+                      - pci_wakeup_bus(dev->parent->subordinate)
+                        - pci_walk_bus
+                          - device_lock(dev)	<--- dead lock here
 
 
-> OK thanks, I'll queue this up for v3.6-rc as this should qualify as a
-> regression.
+If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
+Device_lock in pci_walk_bus is introduced in commit:
+d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+said device_lock is added to pci_walk_bus because:
 
-I don't think this did actually get queued.  At least I'm still seeing the
-bug in 3.7 and I cannot see a patch in the git history that looks right.
-But then I don't remember what we ended up with - it was 3 months ago!!!
+  Some error handling functions call pci_walk_bus. For example, PCIe
+  aer. Here we lock the device, so the driver wouldn't detach from the
+  device, as the cb might call driver's callback function.
 
-This is the last thing I can find in my email history - it still seems to
-apply and still seems to work.
+So I fixed the dead lock as follow:
 
-NeilBrown
+- remove device_lock from pci_walk_bus
+- add device_lock into callback if callback will call driver's callback
 
+I checked pci_walk_bus users one by one, and found only PCIe aer needs
+device lock.
 
-From: NeilBrown <neilb@suse.de>
-Date: Mon, 10 Sep 2012 14:09:06 +1000
-Subject: [PATCH] OMAP GPIO - don't wake from suspend unless requested.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Zhang Yanmin <yanmin.zhang@intel.com>
+---
+ arch/powerpc/platforms/pseries/eeh_driver.c |   35 ++++++++++++++++++++--------
+ drivers/pci/bus.c                           |    3 --
+ drivers/pci/pcie/aer/aerdrv_core.c          |   20 ++++++++++++----
+ 3 files changed, 41 insertions(+), 17 deletions(-)
 
-Current kernel will wake from suspend on an event an any active
-GPIO event if enable_irq_wake() wasn't called.
-
-There are two reasons that the hardware wake-enable bit should be set:
-
-1/ while non-suspended the CPU might go into a deep sleep (off_mode)
-  in which the wake-enable bit is needed for an interrupt to be
-  recognised.
-2/ while suspended the GPIO interrupt should wake from suspend if and
-   only if irq_wake as been enabled.
-
-The code currently doesn't keep these two reasons separate so they get
-confused and sometimes the wakeup flags is set incorrectly.
-
-This patch reverts:
- commit 9c4ed9e6c01e7a8bd9079da8267e1f03cb4761fc
-    gpio/omap: remove suspend/resume callbacks
-and
- commit 0aa2727399c0b78225021413022c164cb99fbc5e
-    gpio/omap: remove suspend_wakeup field from struct gpio_bank
-
-and makes some minor changes so that we have separate flags for "GPIO
-should wake from deep idle" and "GPIO should wake from suspend".
-
-With this patch, the GPIO from my touch screen doesn't wake my device
-any more, which is what I want.
-
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Benoit Cousson <b-cousson@ti.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Govindraj.R <govindraj.raja@ti.com>
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 4fbc208..79e1340 100644
---- a/drivers/gpio/gpio-omap.c
-+++ b/drivers/gpio/gpio-omap.c
-@@ -57,6 +57,7 @@ struct gpio_bank {
- 	u16 irq;
- 	int irq_base;
- 	struct irq_domain *domain;
-+	u32 suspend_wakeup;
- 	u32 non_wakeup_gpios;
- 	u32 enabled_non_wakeup_gpios;
- 	struct gpio_regs context;
-@@ -522,11 +523,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, in=
-t gpio, int enable)
-=20
- 	spin_lock_irqsave(&bank->lock, flags);
- 	if (enable)
--		bank->context.wake_en |=3D gpio_bit;
-+		bank->suspend_wakeup |=3D gpio_bit;
- 	else
--		bank->context.wake_en &=3D ~gpio_bit;
--
--	__raw_writel(bank->context.wake_en, bank->base + bank->regs->wkup_en);
-+		bank->suspend_wakeup &=3D ~gpio_bit;
- 	spin_unlock_irqrestore(&bank->lock, flags);
-=20
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -316,10 +316,7 @@ void pci_walk_bus(struct pci_bus *top, i
+ 		} else
+ 			next = dev->bus_list.next;
+ 
+-		/* Run device routines with the device locked */
+-		device_lock(&dev->dev);
+ 		retval = cb(dev, userdata);
+-		device_unlock(&dev->dev);
+ 		if (retval)
+ 			break;
+ 	}
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -244,6 +244,7 @@ static int report_error_detected(struct
+ 	struct aer_broadcast_data *result_data;
+ 	result_data = (struct aer_broadcast_data *) data;
+ 
++	device_lock(&dev->dev);
+ 	dev->error_state = result_data->state;
+ 
+ 	if (!dev->driver ||
+@@ -262,12 +263,14 @@ static int report_error_detected(struct
+ 				   dev->driver ?
+ 				   "no AER-aware driver" : "no driver");
+ 		}
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	vote = err_handler->error_detected(dev, result_data->state);
+ 	result_data->result = merge_result(result_data->result, vote);
++out:
++	device_unlock(&dev->dev);
  	return 0;
-@@ -1157,6 +1156,49 @@ static int __devinit omap_gpio_probe(struct platform=
-_device *pdev)
- #ifdef CONFIG_ARCH_OMAP2PLUS
-=20
- #if defined(CONFIG_PM_RUNTIME)
-+
-+#if defined(CONFIG_PM_SLEEP)
-+static int omap_gpio_suspend(struct device *dev)
-+{
-+	struct platform_device *pdev =3D to_platform_device(dev);
-+	struct gpio_bank *bank =3D platform_get_drvdata(pdev);
-+	void __iomem *base =3D bank->base;
-+	unsigned long flags;
-+
-+	if (!bank->mod_usage ||
-+	    !bank->regs->wkup_en ||
-+	    !bank->context.wake_en)
-+		return 0;
-+
-+	spin_lock_irqsave(&bank->lock, flags);
-+	_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
-+	_gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
-+	spin_unlock_irqrestore(&bank->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int omap_gpio_resume(struct device *dev)
-+{
-+	struct platform_device *pdev =3D to_platform_device(dev);
-+	struct gpio_bank *bank =3D platform_get_drvdata(pdev);
-+	void __iomem *base =3D bank->base;
-+	unsigned long flags;
-+
-+	if (!bank->mod_usage ||
-+	    !bank->regs->wkup_en ||
-+	    !bank->context.wake_en)
-+		return 0;
-+
-+	spin_lock_irqsave(&bank->lock, flags);
-+	_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
-+	_gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
-+	spin_unlock_irqrestore(&bank->lock, flags);
-+
-+	return 0;
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
- static void omap_gpio_restore_context(struct gpio_bank *bank);
-=20
- static int omap_gpio_runtime_suspend(struct device *dev)
-@@ -1386,11 +1428,14 @@ static void omap_gpio_restore_context(struct gpio_b=
-ank *bank)
  }
- #endif /* CONFIG_PM_RUNTIME */
- #else
-+#define omap_gpio_suspend NULL
-+#define omap_gpio_resume NULL
- #define omap_gpio_runtime_suspend NULL
- #define omap_gpio_runtime_resume NULL
- #endif
-=20
- static const struct dev_pm_ops gpio_pm_ops =3D {
-+	SET_SYSTEM_SLEEP_PM_OPS(omap_gpio_suspend, omap_gpio_resume)
- 	SET_RUNTIME_PM_OPS(omap_gpio_runtime_suspend, omap_gpio_runtime_resume,
- 									NULL)
- };
+ 
+@@ -278,14 +281,17 @@ static int report_mmio_enabled(struct pc
+ 	struct aer_broadcast_data *result_data;
+ 	result_data = (struct aer_broadcast_data *) data;
+ 
++	device_lock(&dev->dev);
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+ 		!dev->driver->err_handler->mmio_enabled)
+-		return 0;
++		goto out;
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	vote = err_handler->mmio_enabled(dev);
+ 	result_data->result = merge_result(result_data->result, vote);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -296,14 +302,17 @@ static int report_slot_reset(struct pci_
+ 	struct aer_broadcast_data *result_data;
+ 	result_data = (struct aer_broadcast_data *) data;
+ 
++	device_lock(&dev->dev);
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+ 		!dev->driver->err_handler->slot_reset)
+-		return 0;
++		goto out;
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	vote = err_handler->slot_reset(dev);
+ 	result_data->result = merge_result(result_data->result, vote);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -311,15 +320,18 @@ static int report_resume(struct pci_dev
+ {
+ 	struct pci_error_handlers *err_handler;
+ 
++	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_normal;
+ 
+ 	if (!dev->driver ||
+ 		!dev->driver->err_handler ||
+ 		!dev->driver->err_handler->resume)
+-		return 0;
++		goto out;
+ 
+ 	err_handler = dev->driver->err_handler;
+ 	err_handler->resume(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+--- a/arch/powerpc/platforms/pseries/eeh_driver.c
++++ b/arch/powerpc/platforms/pseries/eeh_driver.c
+@@ -164,17 +164,18 @@ static int eeh_report_error(struct pci_d
+ 	enum pci_ers_result rc, *res = userdata;
+ 	struct pci_driver *driver;
+ 
++	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_frozen;
+ 
+ 	driver = eeh_pcid_get(dev);
+-	if (!driver) return 0;
++	if (!driver) goto out;
+ 
+ 	eeh_disable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+ 	    !driver->err_handler->error_detected) {
+ 		eeh_pcid_put(dev);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	rc = driver->err_handler->error_detected(dev, pci_channel_io_frozen);
+@@ -184,6 +185,8 @@ static int eeh_report_error(struct pci_d
+ 	if (*res == PCI_ERS_RESULT_NONE) *res = rc;
+ 
+ 	eeh_pcid_put(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -201,13 +204,14 @@ static int eeh_report_mmio_enabled(struc
+ 	enum pci_ers_result rc, *res = userdata;
+ 	struct pci_driver *driver;
+ 
++	device_lock(&dev->dev);
+ 	driver = eeh_pcid_get(dev);
+-	if (!driver) return 0;
++	if (!driver) goto out;
+ 
+ 	if (!driver->err_handler ||
+ 	    !driver->err_handler->mmio_enabled) {
+ 		eeh_pcid_put(dev);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	rc = driver->err_handler->mmio_enabled(dev);
+@@ -217,6 +221,8 @@ static int eeh_report_mmio_enabled(struc
+ 	if (*res == PCI_ERS_RESULT_NONE) *res = rc;
+ 
+ 	eeh_pcid_put(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -235,17 +241,18 @@ static int eeh_report_reset(struct pci_d
+ 	enum pci_ers_result rc, *res = userdata;
+ 	struct pci_driver *driver;
+ 
++	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_normal;
+ 
+ 	driver = eeh_pcid_get(dev);
+-	if (!driver) return 0;
++	if (!driver) goto out;
+ 
+ 	eeh_enable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+ 	    !driver->err_handler->slot_reset) {
+ 		eeh_pcid_put(dev);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	rc = driver->err_handler->slot_reset(dev);
+@@ -255,6 +262,8 @@ static int eeh_report_reset(struct pci_d
+ 	     rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 
+ 	eeh_pcid_put(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -271,22 +280,25 @@ static int eeh_report_resume(struct pci_
+ {
+ 	struct pci_driver *driver;
+ 
++	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_normal;
+ 
+ 	driver = eeh_pcid_get(dev);
+-	if (!driver) return 0;
++	if (!driver) goto out;
+ 
+ 	eeh_enable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+ 	    !driver->err_handler->resume) {
+ 		eeh_pcid_put(dev);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	driver->err_handler->resume(dev);
+ 
+ 	eeh_pcid_put(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
+@@ -302,22 +314,25 @@ static int eeh_report_failure(struct pci
+ {
+ 	struct pci_driver *driver;
+ 
++	device_lock(&dev->dev);
+ 	dev->error_state = pci_channel_io_perm_failure;
+ 
+ 	driver = eeh_pcid_get(dev);
+-	if (!driver) return 0;
++	if (!driver) goto out;
+ 
+ 	eeh_disable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+ 	    !driver->err_handler->error_detected) {
+ 		eeh_pcid_put(dev);
+-		return 0;
++		goto out;
+ 	}
+ 
+ 	driver->err_handler->error_detected(dev, pci_channel_io_perm_failure);
+ 
+ 	eeh_pcid_put(dev);
++out:
++	device_unlock(&dev->dev);
+ 	return 0;
+ }
+ 
 
-[signature.asc  application/pgp-signature (828 bytes)]=20
 
---Sig_/V=LemLG=vm.KbeFn6aKrMlQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUMrP2Tnsnt1WYoG5AQK+Vw//X5j3Y/5tShAEe1PbpIdjDuwU4iQyqF29
-c9aIxGjoAQn24uFhMz3xhllfLZbeojnyFNLhX3txLg2bbyHrevBFDaY1doE/MT77
-ye4e1coS90LQguhWTBfwI/jDu4Df669U/95xvRR8/ysflMTENG0NIVQma8hgy2tY
-isdni61MleCjHeRMqet04L2vVvfIHQdIzJDlprvdQGkAlk9Pp8RDPekT0xW8aSpG
-JtN3OZdIziO7ped+5TEPx+bFjG/5GI5XjbBWhF39kQSXfYPW90Ym1ZXkaspuRs2A
-FKqd4Td1RqtRATLM37pil83VGmwe9n2dQSBmIER5Ml8vM0GyDx2+4rcP9GM3RoA/
-oeXfbdei4mlXq2fRXDn9uqiSWy5JRl73wEzxlXsjuztnYVxr8BlGgkyuiyfQmF35
-92PDI8e5RF2nQLxjjdgMIXf+pawdiRftSztqTYDEKhJPi1xeUI6Ly3tP4cW+jjHr
-ymRiMPTaTV5XU8RUSDs44cVj+1yBJmO6yKfD5h6FrIX/S2w3+NX8Wx06+j4m1OU+
-EYb9gZy6pfoNY7/iMXgJOTtEzl+I3fx7z/S/VuztJ7+X1AP066aPQZ/Ogwp/RsHR
-hGoy85D5SMsmgNacdokQsi+aFvv9nb4VK18Cyk7tfeczBWQFGWg4Ds2AMQNZiKCF
-iv5e03LDQnA=
-=Vqut
------END PGP SIGNATURE-----
-
---Sig_/V=LemLG=vm.KbeFn6aKrMlQ--
