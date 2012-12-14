@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079Ab2LNXEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:04:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40899 "EHLO mail.kernel.org"
+	id S1757174Ab2LNXEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:04:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40945 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757135Ab2LNXER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:04:17 -0500
+	id S1757154Ab2LNXE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:04:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 27/37] ACPI / video: Add "Asus UL30VT" to ACPI video detect blacklist
-Date: Fri, 14 Dec 2012 15:01:04 -0800
-Message-Id: <20121214222257.653462511@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 28/37] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
+Date: Fri, 14 Dec 2012 15:01:05 -0800
+Message-Id: <20121214222257.748040190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -27,42 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit d0c2ce16bec0afa6013b4c5220ca4c9c67210215 upstream.
+commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
 
-The ACPI video driver can't control backlight correctly on
-Asus UL30VT.  Vendor driver (asus-laptop) can work.  This patch is to
-add "Asus UL30VT" to ACPI video detect blacklist in order to use
-asus-laptop for video control on the "Asus UL30VT" rather than ACPI
-video driver.
+This patch (as1636) is a partial workaround for a hardware bug
+affecting OHCI controllers by NVIDIA at least, maybe others too.  When
+the controller retires a Transfer Descriptor, it is supposed to add
+the TD onto the Done Queue.  But sometimes this doesn't happen, with
+the result that ohci-hcd never realizes the corresponding transfer has
+finished.  Symptoms can vary; a typical result is that USB audio stops
+working after a while.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=32592
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The patch works around the problem by recognizing that TDs are always
+processed in order.  Therefore, if a later TD is found on the Done
+Queue than all the earlier TDs for the same endpoint must be finished
+as well.
+
+Unfortunately this won't solve the problem in cases where the missing
+TD is the last one in the endpoint's queue.  A complete fix would
+require a signficant amount of change to the driver.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video_detect.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -156,6 +156,14 @@ static struct dmi_system_id video_detect
- 		DMI_MATCH(DMI_BOARD_NAME, "X360"),
- 		},
- 	},
-+	{
-+	.callback = video_detect_force_vendor,
-+	.ident = "Asus UL30VT",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "UL30VT"),
-+		},
-+	},
- 	{ },
- };
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -1128,6 +1128,25 @@ dl_done_list (struct ohci_hcd *ohci)
  
+ 	while (td) {
+ 		struct td	*td_next = td->next_dl_td;
++		struct ed	*ed = td->ed;
++
++		/*
++		 * Some OHCI controllers (NVIDIA for sure, maybe others)
++		 * occasionally forget to add TDs to the done queue.  Since
++		 * TDs for a given endpoint are always processed in order,
++		 * if we find a TD on the donelist then all of its
++		 * predecessors must be finished as well.
++		 */
++		for (;;) {
++			struct td	*td2;
++
++			td2 = list_first_entry(&ed->td_list, struct td,
++					td_list);
++			if (td2 == td)
++				break;
++			takeback_td(ohci, td2);
++		}
++
+ 		takeback_td(ohci, td);
+ 		td = td_next;
+ 	}
 
 
