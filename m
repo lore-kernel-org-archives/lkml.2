@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab2LNXEl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:04:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40981 "EHLO mail.kernel.org"
+	id S1757215Ab2LNXEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:04:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40994 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756993Ab2LNXEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:04:37 -0500
+	id S1756892Ab2LNXEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:04:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 30/37] ftrace: Clear bits properly in reset_iter_read()
-Date: Fri, 14 Dec 2012 15:01:07 -0800
-Message-Id: <20121214222257.940400723@linuxfoundation.org>
+Subject: [ 31/37] ring-buffer: Fix NULL pointer if rb_set_head_page() fails
+Date: Fri, 14 Dec 2012 15:01:08 -0800
+Message-Id: <20121214222258.038473609@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -26,35 +25,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 70f77b3f7ec010ff9624c1f2e39a81babc9e2429 upstream.
+commit 54f7be5b831254199522523ccab4c3d954bbf576 upstream.
 
-There is a typo here where '&' is used instead of '|' and it turns the
-statement into a noop.  The original code is equivalent to:
+The function rb_set_head_page() searches the list of ring buffer
+pages for a the page that has the HEAD page flag set. If it does
+not find it, it will do a WARN_ON(), disable the ring buffer and
+return NULL, as this should never happen.
 
-	iter->flags &= ~((1 << 2) & (1 << 4));
+But if this bug happens to happen, not all callers of this function
+can handle a NULL pointer being returned from it. That needs to be
+fixed.
 
-Link: http://lkml.kernel.org/r/20120609161027.GD6488@elgon.mountain
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/ring_buffer.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2358,7 +2358,7 @@ static void reset_iter_read(struct ftrac
- {
- 	iter->pos = 0;
- 	iter->func_pos = 0;
--	iter->flags &= ~(FTRACE_ITER_PRINTALL & FTRACE_ITER_HASH);
-+	iter->flags &= ~(FTRACE_ITER_PRINTALL | FTRACE_ITER_HASH);
- }
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1396,6 +1396,8 @@ rb_insert_pages(struct ring_buffer_per_c
+ 		struct list_head *head_page_with_bit;
  
- static void *t_start(struct seq_file *m, loff_t *pos)
+ 		head_page = &rb_set_head_page(cpu_buffer)->list;
++		if (!head_page)
++			break;
+ 		prev_page = head_page->prev;
+ 
+ 		first_page = pages->next;
+@@ -2934,7 +2936,7 @@ unsigned long ring_buffer_oldest_event_t
+ 	unsigned long flags;
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct buffer_page *bpage;
+-	unsigned long ret;
++	unsigned long ret = 0;
+ 
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 		return 0;
+@@ -2949,7 +2951,8 @@ unsigned long ring_buffer_oldest_event_t
+ 		bpage = cpu_buffer->reader_page;
+ 	else
+ 		bpage = rb_set_head_page(cpu_buffer);
+-	ret = bpage->page->time_stamp;
++	if (bpage)
++		ret = bpage->page->time_stamp;
+ 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+ 	return ret;
+@@ -3260,6 +3263,8 @@ rb_get_reader_page(struct ring_buffer_pe
+ 	 * Splice the empty reader page into the list around the head.
+ 	 */
+ 	reader = rb_set_head_page(cpu_buffer);
++	if (!reader)
++		goto out;
+ 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
+ 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+ 
 
 
