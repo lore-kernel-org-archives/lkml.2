@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab2LNW0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:26:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38039 "EHLO mail.kernel.org"
+	id S1756919Ab2LNW0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:26:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38050 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756639Ab2LNW0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:26:37 -0500
+	id S1756888Ab2LNW0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:26:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Neuling <mikey@neuling.org>
-Subject: [ 02/22] powerpc/ptrace: Fix build with gcc 4.6
-Date: Fri, 14 Dec 2012 14:25:47 -0800
-Message-Id: <20121214222250.332470446@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Xiaotian Feng <xtfeng@gmail.com>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 03/22] workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
+Date: Fri, 14 Dec 2012 14:25:48 -0800
+Message-Id: <20121214222250.541693497@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -26,67 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit e69b742a6793dc5bf16f6eedca534d4bc10d68b2 upstream.
+commit fc4b514f2727f74a4587c31db87e0e93465518c3 upstream.
 
-gcc (rightfully) complains that we are accessing beyond the
-end of the fpr array (we do, to access the fpscr).
+8852aac25e ("workqueue: mod_delayed_work_on() shouldn't queue timer on
+0 delay") unexpectedly uncovered a very nasty abuse of delayed_work in
+megaraid - it allocated work_struct, casted it to delayed_work and
+then pass that into queue_delayed_work().
 
-The only sane thing to do (whether anything in that code can be
-called remotely sane is debatable) is to special case fpscr and
-handle it as a separate statement.
+Previously, this was okay because 0 @delay short-circuited to
+queue_work() before doing anything with delayed_work.  8852aac25e
+moved 0 @delay test into __queue_delayed_work() after sanity check on
+delayed_work making megaraid trigger BUG_ON().
 
-I initially tried to do it it by making the array access conditional
-to index < PT_FPSCR and using a 3rd else leg but for some reason gcc
-was unable to understand it and still spewed the warning.
+Although megaraid is already fixed by c1d390d8e6 ("megaraid: fix
+BUG_ON() from incorrect use of delayed work"), this patch converts
+BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s so that such
+abusers, if there are more, trigger warning but don't crash the
+machine.
 
-So I ended up with something a tad more intricated but it seems to
-build on 32-bit and on 64-bit with and without VSX.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/ptrace.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ kernel/workqueue.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -1497,9 +1497,14 @@ long arch_ptrace(struct task_struct *chi
- 		if (index < PT_FPR0) {
- 			tmp = ptrace_get_reg(child, (int) index);
- 		} else {
-+			unsigned int fpidx = index - PT_FPR0;
-+
- 			flush_fp_to_thread(child);
--			tmp = ((unsigned long *)child->thread.fpr)
--				[TS_FPRWIDTH * (index - PT_FPR0)];
-+			if (fpidx < (PT_FPSCR - PT_FPR0))
-+				tmp = ((unsigned long *)child->thread.fpr)
-+					[fpidx * TS_FPRWIDTH];
-+			else
-+				tmp = child->thread.fpscr.val;
- 		}
- 		ret = put_user(tmp, datalp);
- 		break;
-@@ -1525,9 +1530,14 @@ long arch_ptrace(struct task_struct *chi
- 		if (index < PT_FPR0) {
- 			ret = ptrace_put_reg(child, index, data);
- 		} else {
-+			unsigned int fpidx = index - PT_FPR0;
-+
- 			flush_fp_to_thread(child);
--			((unsigned long *)child->thread.fpr)
--				[TS_FPRWIDTH * (index - PT_FPR0)] = data;
-+			if (fpidx < (PT_FPSCR - PT_FPR0))
-+				((unsigned long *)child->thread.fpr)
-+					[fpidx * TS_FPRWIDTH] = data;
-+			else
-+				child->thread.fpscr.val = data;
- 			ret = 0;
- 		}
- 		break;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1145,8 +1145,8 @@ int queue_delayed_work_on(int cpu, struc
+ 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		unsigned int lcpu;
+ 
+-		BUG_ON(timer_pending(timer));
+-		BUG_ON(!list_empty(&work->entry));
++		WARN_ON_ONCE(timer_pending(timer));
++		WARN_ON_ONCE(!list_empty(&work->entry));
+ 
+ 		timer_stats_timer_set_start_info(&dwork->timer);
+ 
 
 
