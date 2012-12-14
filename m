@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab2LNQXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:23:06 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:36660 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932237Ab2LNQUH (ORCPT
+	id S932232Ab2LNQUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:20:04 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54365 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198Ab2LNQUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:20:07 -0500
+	Fri, 14 Dec 2012 11:20:00 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linus.walleij@linaro.org,
-        Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 12/21] gpio: ab8500: Allow gpios to wake the system from suspend
-Date: Fri, 14 Dec 2012 16:19:30 +0000
-Message-Id: <1355501979-1157-13-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 08/21] gpio: ab8500: Fix gpio offset bounds for irq mapping
+Date: Fri, 14 Dec 2012 16:19:26 +0000
+Message-Id: <1355501979-1157-9-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
 References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
@@ -22,34 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>
+From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+
+AB8500 gpio numbers start from 1 and not 0 so the offset
+0 represents gpio 1. Fixing cluster bounds accordingly for
+irq mappings.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>
+Signed-off-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
 Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+Tested-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/gpio/gpio-ab8500.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-ab8500.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
-index 8616368..ef75984 100644
+index d3bbcce..a0253ad 100644
 --- a/drivers/gpio/gpio-ab8500.c
 +++ b/drivers/gpio/gpio-ab8500.c
-@@ -329,12 +329,12 @@ static void ab8500_gpio_irq_sync_unlock(struct irq_data *data)
- 		if (rising)
- 			ret = request_threaded_irq(irq_to_rising(irq),
- 					NULL, handle_rising,
--					IRQF_TRIGGER_RISING,
-+					IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,
- 					"ab8500-gpio-r", ab8500_gpio);
- 		if (falling)
- 			ret = request_threaded_irq(irq_to_falling(irq),
- 				       NULL, handle_falling,
--				       IRQF_TRIGGER_FALLING,
-+				       IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND,
- 				       "ab8500-gpio-f", ab8500_gpio);
- 		break;
- 	case SHUTDOWN:
+@@ -174,9 +174,9 @@ static int ab8500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ 		int start;
+ 		int end;
+ 	} clusters[] = {
+-		{.start = 6,  .end = 13},
+-		{.start = 24, .end = 25},
+-		{.start = 36, .end = 41},
++		{.start = 5,  .end = 12}, /* GPIO numbers start from 1 */
++		{.start = 23, .end = 24},
++		{.start = 35, .end = 40},
+ 	};
+ 	struct ab8500_gpio *ab8500_gpio = to_ab8500_gpio(chip);
+ 	int base = ab8500_gpio->irq_base;
 -- 
 1.7.9.5
 
