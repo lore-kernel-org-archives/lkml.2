@@ -1,23 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab2LNXE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:04:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41019 "EHLO mail.kernel.org"
+	id S1757227Ab2LNXFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:05:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41031 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756892Ab2LNXEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:04:54 -0500
+	id S1756892Ab2LNXE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:04:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>, Oliver Neukum <oneukum@suse.de>,
-        Aleksander Morgado <aleksander@gnu.org>
-Subject: [ 33/37] cdc-acm: implement TIOCSSERIAL to avoid blocking close(2)
-Date: Fri, 14 Dec 2012 15:01:10 -0800
-Message-Id: <20121214222258.232400129@linuxfoundation.org>
+        Vinson Lee <vlee@twitter.com>, Zheng Liu <wenqing.lz@taobao.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 34/37] perf test: fix a build error on builtin-test
+Date: Fri, 14 Dec 2012 15:01:11 -0800
+Message-Id: <20121214222258.326458499@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,88 +34,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Zheng Liu <gnehzuil.liu@gmail.com>
 
-commit ba2d8ce9db0a61505362bb17b8899df3d3326146 upstream.
+commit 12f8f74b2a4d26c4facfa7ef99487cf0930f6ef7 upstream.
 
-Some devices (ex Nokia C7) simply don't respond at all when data is sent
-to some of their USB interfaces.  The data gets stuck in the TTYs queue
-and sits there until close(2), which them blocks because closing_wait
-defaults to 30 seconds (even though the fd is O_NONBLOCK).  This is
-rarely desired.  Implement the standard mechanism to adjust closing_wait
-and let applications handle it how they want to.
+Recently I build perf and get a build error on builtin-test.c. The error is as
+following:
 
-See also 02303f73373aa1da19dbec510ec5a4e2576f9610 for usb_wwan.c.
+$ make
+    CC perf.o
+    CC builtin-test.o
+cc1: warnings being treated as errors
+builtin-test.c: In function ‘sched__get_first_possible_cpu’:
+builtin-test.c:977: warning: implicit declaration of function ‘CPU_ALLOC’
+builtin-test.c:977: warning: nested extern declaration of ‘CPU_ALLOC’
+builtin-test.c:977: warning: assignment makes pointer from integer without a cast
+builtin-test.c:978: warning: implicit declaration of function ‘CPU_ALLOC_SIZE’
+builtin-test.c:978: warning: nested extern declaration of ‘CPU_ALLOC_SIZE’
+builtin-test.c:979: warning: implicit declaration of function ‘CPU_ZERO_S’
+builtin-test.c:979: warning: nested extern declaration of ‘CPU_ZERO_S’
+builtin-test.c:982: warning: implicit declaration of function ‘CPU_FREE’
+builtin-test.c:982: warning: nested extern declaration of ‘CPU_FREE’
+builtin-test.c:992: warning: implicit declaration of function ‘CPU_ISSET_S’
+builtin-test.c:992: warning: nested extern declaration of ‘CPU_ISSET_S’
+builtin-test.c:998: warning: implicit declaration of function ‘CPU_CLR_S’
+builtin-test.c:998: warning: nested extern declaration of ‘CPU_CLR_S’
+make: *** [builtin-test.o] Error 1
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Aleksander Morgado <aleksander@gnu.org>
+This problem is introduced in 3e7c439a. CPU_ALLOC and related macros are
+missing in sched__get_first_possible_cpu function. In 54489c18, commiter
+mentioned that CPU_ALLOC has been removed. So CPU_ALLOC calls in this
+function are removed to let perf to be built.
+
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vinson Lee <vlee@twitter.com>
+Cc: Zheng Liu <wenqing.lz@taobao.com>
+Link: http://lkml.kernel.org/r/1352422726-31114-1-git-send-email-vlee@twitter.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+ tools/perf/builtin-test.c |   38 ++++++++++++--------------------------
+ 1 file changed, 12 insertions(+), 26 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -788,6 +788,10 @@ static int get_serial_info(struct acm *a
- 	tmp.flags = ASYNC_LOW_LATENCY;
- 	tmp.xmit_fifo_size = acm->writesize;
- 	tmp.baud_base = le32_to_cpu(acm->line.dwDTERate);
-+	tmp.close_delay	= acm->port.close_delay / 10;
-+	tmp.closing_wait = acm->port.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+				ASYNC_CLOSING_WAIT_NONE :
-+				acm->port.closing_wait / 10;
- 
- 	if (copy_to_user(info, &tmp, sizeof(tmp)))
- 		return -EFAULT;
-@@ -795,6 +799,37 @@ static int get_serial_info(struct acm *a
- 		return 0;
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -602,19 +602,13 @@ out_free_threads:
+ #undef nsyscalls
  }
  
-+static int set_serial_info(struct acm *acm,
-+				struct serial_struct __user *newinfo)
-+{
-+	struct serial_struct new_serial;
-+	unsigned int closing_wait, close_delay;
-+	int retval = 0;
-+
-+	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
-+		return -EFAULT;
-+
-+	close_delay = new_serial.close_delay * 10;
-+	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+			ASYNC_CLOSING_WAIT_NONE : new_serial.closing_wait * 10;
-+
-+	mutex_lock(&acm->port.mutex);
-+
-+	if (!capable(CAP_SYS_ADMIN)) {
-+		if ((close_delay != acm->port.close_delay) ||
-+		    (closing_wait != acm->port.closing_wait))
-+			retval = -EPERM;
-+		else
-+			retval = -EOPNOTSUPP;
-+	} else {
-+		acm->port.close_delay  = close_delay;
-+		acm->port.closing_wait = closing_wait;
-+	}
-+
-+	mutex_unlock(&acm->port.mutex);
-+	return retval;
-+}
-+
- static int acm_tty_ioctl(struct tty_struct *tty,
- 					unsigned int cmd, unsigned long arg)
+-static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t **maskp,
+-					 size_t *sizep)
++static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
  {
-@@ -805,6 +840,9 @@ static int acm_tty_ioctl(struct tty_stru
- 	case TIOCGSERIAL: /* gets serial port data */
- 		rv = get_serial_info(acm, (struct serial_struct __user *) arg);
- 		break;
-+	case TIOCSSERIAL:
-+		rv = set_serial_info(acm, (struct serial_struct __user *) arg);
-+		break;
+-	cpu_set_t *mask;
+-	size_t size;
+ 	int i, cpu = -1, nrcpus = 1024;
+ realloc:
+-	mask = CPU_ALLOC(nrcpus);
+-	size = CPU_ALLOC_SIZE(nrcpus);
+-	CPU_ZERO_S(size, mask);
++	CPU_ZERO(maskp);
+ 
+-	if (sched_getaffinity(pid, size, mask) == -1) {
+-		CPU_FREE(mask);
++	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
+ 		if (errno == EINVAL && nrcpus < (1024 << 8)) {
+ 			nrcpus = nrcpus << 2;
+ 			goto realloc;
+@@ -624,19 +618,14 @@ realloc:
  	}
  
- 	return rv;
+ 	for (i = 0; i < nrcpus; i++) {
+-		if (CPU_ISSET_S(i, size, mask)) {
+-			if (cpu == -1) {
++		if (CPU_ISSET(i, maskp)) {
++			if (cpu == -1)
+ 				cpu = i;
+-				*maskp = mask;
+-				*sizep = size;
+-			} else
+-				CPU_CLR_S(i, size, mask);
++			else
++				CPU_CLR(i, maskp);
+ 		}
+ 	}
+ 
+-	if (cpu == -1)
+-		CPU_FREE(mask);
+-
+ 	return cpu;
+ }
+ 
+@@ -651,8 +640,8 @@ static int test__PERF_RECORD(void)
+ 		.freq	    = 10,
+ 		.mmap_pages = 256,
+ 	};
+-	cpu_set_t *cpu_mask = NULL;
+-	size_t cpu_mask_size = 0;
++	cpu_set_t cpu_mask;
++	size_t cpu_mask_size = sizeof(cpu_mask);
+ 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+ 	struct perf_evsel *evsel;
+ 	struct perf_sample sample;
+@@ -716,8 +705,7 @@ static int test__PERF_RECORD(void)
+ 	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
+ 	perf_evlist__config_attrs(evlist, &opts);
+ 
+-	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask,
+-					    &cpu_mask_size);
++	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
+ 	if (err < 0) {
+ 		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
+ 		goto out_delete_evlist;
+@@ -728,9 +716,9 @@ static int test__PERF_RECORD(void)
+ 	/*
+ 	 * So that we can check perf_sample.cpu on all the samples.
+ 	 */
+-	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, cpu_mask) < 0) {
++	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
+ 		pr_debug("sched_setaffinity: %s\n", strerror(errno));
+-		goto out_free_cpu_mask;
++		goto out_delete_evlist;
+ 	}
+ 
+ 	/*
+@@ -914,8 +902,6 @@ found_exit:
+ 	}
+ out_err:
+ 	perf_evlist__munmap(evlist);
+-out_free_cpu_mask:
+-	CPU_FREE(cpu_mask);
+ out_delete_evlist:
+ 	perf_evlist__delete(evlist);
+ out:
 
 
