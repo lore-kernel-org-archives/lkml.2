@@ -1,99 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab2LNIqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:46:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60085 "EHLO mx2.suse.de"
+	id S1753296Ab2LNIuP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:50:15 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60814 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab2LNIql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:46:41 -0500
-Date: Fri, 14 Dec 2012 09:46:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/8] mm: vmscan: save work scanning (almost) empty LRU
- lists
-Message-ID: <20121214084637.GB6898@dhcp22.suse.cz>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-4-git-send-email-hannes@cmpxchg.org>
- <20121213154346.GF21644@dhcp22.suse.cz>
- <20121213193820.GC6317@cmpxchg.org>
+	id S1751088Ab2LNIuN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 03:50:13 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mfd: lp8788: fix config dependency problem on IRQ
+Thread-Topic: [PATCH] mfd: lp8788: fix config dependency problem on IRQ
+Thread-Index: Ac3Z2ANDgO/xLCnDSJq+zhjhShPFRg==
+Date: Fri, 14 Dec 2012 08:50:06 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E0D03A@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213193820.GC6317@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-12-12 14:38:20, Johannes Weiner wrote:
-> On Thu, Dec 13, 2012 at 04:43:46PM +0100, Michal Hocko wrote:
-> > On Wed 12-12-12 16:43:35, Johannes Weiner wrote:
-> > > In certain cases (kswapd reclaim, memcg target reclaim), a fixed
-> > > minimum amount of pages is scanned from the LRU lists on each
-> > > iteration, to make progress.
-> > > 
-> > > Do not make this minimum bigger than the respective LRU list size,
-> > > however, and save some busy work trying to isolate and reclaim pages
-> > > that are not there.
-> > > 
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > 
-> > Hmm, shrink_lruvec would do:
-> > 	nr_to_scan = min_t(unsigned long,
-> > 			   nr[lru], SWAP_CLUSTER_MAX);
-> > 	nr[lru] -= nr_to_scan;
-> > and isolate_lru_pages does
-> > 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++)
-> > so it shouldn't matter and we shouldn't do any additional loops, right?
-> > 
-> > Anyway it would be beter if get_scan_count wouldn't ask for more than is
-> > available.
-> 
-> Consider the inactive_list_is_low() check (especially expensive for
-> memcg anon), lru_add_drain(), lru lock acquisition...
+ LP8788 uses IRQ APIs which depend on GENERIC_HARDIRQS.
+ So this dependency should be added in Kconfig.
 
-Ohh, I totally missed that. Thanks for pointing out (maybe s/some busy
-wok/$WITH_ALL_THIS/)?
+ This error occurs in case of doing 'make ARCH=s390 allyesconfig'.
+ This patch enables building lp8788 mfd driver only when GENERIC_HARDIRQS
+ are configured.
 
-Thanks for clarification!
+All error/warnings:
 
-> And as I wrote to Mel in the other email, this can happen a lot when
-> you have memory cgroups in a multi-node environment.
-> 
-> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Thanks!
-> 
-> > > @@ -1748,15 +1748,17 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> > >  out:
-> > >  	for_each_evictable_lru(lru) {
-> > >  		int file = is_file_lru(lru);
-> > > +		unsigned long size;
-> > >  		unsigned long scan;
-> > >  
-> > > -		scan = get_lru_size(lruvec, lru);
-> > > +		size = get_lru_size(lruvec, lru);
-> > +		size = scan = get_lru_size(lruvec, lru);
-> > 
-> > >  		if (sc->priority || noswap) {
-> > > -			scan >>= sc->priority;
-> > > +			scan = size >> sc->priority;
-> > >  			if (!scan && force_scan)
-> > > -				scan = SWAP_CLUSTER_MAX;
-> > > +				scan = min(size, SWAP_CLUSTER_MAX);
-> > >  			scan = div64_u64(scan * fraction[file], denominator);
-> > > -		}
-> > > +		} else
-> > > +			scan = size;
-> > 
-> > And this is not necessary then but this is totally nit.
-> 
-> Do you actually find this more readable?  Setting size = scan and then
-> later scan = size >> sc->priority? :-)
+drivers/mfd/lp8788-irq.c:66:38: warning: 'struct irq_data' declared inside param
+eter list [enabled by default]
+drivers/mfd/lp8788-irq.c:66:38: warning: its scope is only this definition or de
+claration, which is probably not what you want [enabled by default]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_enable':
+drivers/mfd/lp8788-irq.c:68:9: error: implicit declaration of function 'irq_data
+_get_irq_chip_data' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c:68:33: warning: initialization makes pointer from integ
+er without a cast [enabled by default]
+drivers/mfd/lp8788-irq.c:69:20: error: dereferencing pointer to incomplete type
+drivers/mfd/lp8788-irq.c: At top level:
+drivers/mfd/lp8788-irq.c:72:39: warning: 'struct irq_data' declared inside param
+eter list [enabled by default]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_disable':
+drivers/mfd/lp8788-irq.c:74:33: warning: initialization makes pointer from integ
+er without a cast [enabled by default]
+drivers/mfd/lp8788-irq.c:75:20: error: dereferencing pointer to incomplete type
+drivers/mfd/lp8788-irq.c: At top level:
+drivers/mfd/lp8788-irq.c:78:40: warning: 'struct irq_data' declared inside param
+eter list [enabled by default]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_bus_lock':
+drivers/mfd/lp8788-irq.c:80:33: warning: initialization makes pointer from integ
+er without a cast [enabled by default]
+drivers/mfd/lp8788-irq.c: At top level:
+drivers/mfd/lp8788-irq.c:85:47: warning: 'struct irq_data' declared inside param
+eter list [enabled by default]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_bus_sync_unlock':
+drivers/mfd/lp8788-irq.c:87:33: warning: initialization makes pointer from integ
+er without a cast [enabled by default]
+drivers/mfd/lp8788-irq.c:88:31: error: dereferencing pointer to incomplete type
+drivers/mfd/lp8788-irq.c: At top level:
+drivers/mfd/lp8788-irq.c:100:15: error: variable 'lp8788_irq_chip' has initializ
+er but incomplete type
+drivers/mfd/lp8788-irq.c:101:2: error: unknown field 'name' specified in initial
+izer
+drivers/mfd/lp8788-irq.c:101:2: warning: excess elements in struct initializer [
+enabled by default]
+drivers/mfd/lp8788-irq.c:101:2: warning: (near initialization for 'lp8788_irq_ch
+ip') [enabled by default]
+drivers/mfd/lp8788-irq.c:102:2: error: unknown field 'irq_enable' specified in i
+nitializer
+drivers/mfd/lp8788-irq.c:102:2: warning: excess elements in struct initializer [
+enabled by default]
+drivers/mfd/lp8788-irq.c:102:2: warning: (near initialization for 'lp8788_irq_ch
+ip') [enabled by default]
+drivers/mfd/lp8788-irq.c:103:2: error: unknown field 'irq_disable' specified in 
+initializer
+drivers/mfd/lp8788-irq.c:103:2: warning: excess elements in struct initializer [
+enabled by default]
+drivers/mfd/lp8788-irq.c:103:2: warning: (near initialization for 'lp8788_irq_ch
+ip') [enabled by default]
+drivers/mfd/lp8788-irq.c:104:2: error: unknown field 'irq_bus_lock' specified in
+ initializer
+drivers/mfd/lp8788-irq.c:104:2: warning: excess elements in struct initializer [
+enabled by default]
+drivers/mfd/lp8788-irq.c:104:2: warning: (near initialization for 'lp8788_irq_ch
+ip') [enabled by default]
+drivers/mfd/lp8788-irq.c:105:2: error: unknown field 'irq_bus_sync_unlock' speci
+fied in initializer
+drivers/mfd/lp8788-irq.c:105:2: warning: excess elements in struct initializer [
+enabled by default]
+drivers/mfd/lp8788-irq.c:105:2: warning: (near initialization for 'lp8788_irq_ch
+ip') [enabled by default]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_handler':
+drivers/mfd/lp8788-irq.c:125:4: error: implicit declaration of function 'handle_
+nested_irq' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c:125:4: error: implicit declaration of function 'irq_fin
+d_mapping' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_map':
+drivers/mfd/lp8788-irq.c:139:2: error: implicit declaration of function 'irq_set
+_chip_data' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c:140:2: error: implicit declaration of function 'irq_set
+_chip_and_handler' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c:140:39: error: 'handle_edge_irq' undeclared (first use 
+in this function)
+drivers/mfd/lp8788-irq.c:140:39: note: each undeclared identifier is reported on
+ly once for each function it appears in
+drivers/mfd/lp8788-irq.c:141:2: error: implicit declaration of function 'irq_set
+_nested_thread' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c:146:2: error: implicit declaration of function 'irq_set
+_noprobe' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c: In function 'lp8788_irq_init':
+drivers/mfd/lp8788-irq.c:171:2: error: implicit declaration of function 'irq_dom
+ain_add_linear' [-Werror=implicit-function-declaration]
+drivers/mfd/lp8788-irq.c:171:15: warning: assignment makes pointer from integer 
+without a cast [enabled by default]
+cc1: some warnings being treated as errors
 
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/mfd/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 1c0abd4..608e3e4 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -506,7 +506,7 @@ config PMIC_ADP5520
+ 
+ config MFD_LP8788
+ 	bool "Texas Instruments LP8788 Power Management Unit Driver"
+-	depends on I2C=y
++	depends on I2C=y && GENERIC_HARDIRQS
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select IRQ_DOMAIN
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
+
+Best Regards,
+Milo
+
+
