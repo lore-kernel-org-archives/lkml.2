@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab2LNXEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:04:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40994 "EHLO mail.kernel.org"
+	id S1757241Ab2LNXEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:04:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41009 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756892Ab2LNXEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:04:43 -0500
+	id S1756892Ab2LNXEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:04:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 31/37] ring-buffer: Fix NULL pointer if rb_set_head_page() fails
-Date: Fri, 14 Dec 2012 15:01:08 -0800
-Message-Id: <20121214222258.038473609@linuxfoundation.org>
+Subject: [ 32/37] ring-buffer: Fix race between integrity check and readers
+Date: Fri, 14 Dec 2012 15:01:09 -0800
+Message-Id: <20121214222258.135834660@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -27,62 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-commit 54f7be5b831254199522523ccab4c3d954bbf576 upstream.
+commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
 
-The function rb_set_head_page() searches the list of ring buffer
-pages for a the page that has the HEAD page flag set. If it does
-not find it, it will do a WARN_ON(), disable the ring buffer and
-return NULL, as this should never happen.
+The function rb_check_pages() was added to make sure the ring buffer's
+pages were sane. This check is done when the ring buffer size is modified
+as well as when the iterator is released (closing the "trace" file),
+as that was considered a non fast path and a good place to do a sanity
+check.
 
-But if this bug happens to happen, not all callers of this function
-can handle a NULL pointer being returned from it. That needs to be
-fixed.
+The problem is that the check does not have any locks around it.
+If one process were to read the trace file, and another were to read
+the raw binary file, the check could happen while the reader is reading
+the file.
+
+The issues with this is that the check requires to clear the HEAD page
+before doing the full check and it restores it afterward. But readers
+require the HEAD page to exist before it can read the buffer, otherwise
+it gives a nasty warning and disables the buffer.
+
+By adding the reader lock around the check, this keeps the race from
+happening.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
 --- a/kernel/trace/ring_buffer.c
 +++ b/kernel/trace/ring_buffer.c
-@@ -1396,6 +1396,8 @@ rb_insert_pages(struct ring_buffer_per_c
- 		struct list_head *head_page_with_bit;
+@@ -3783,12 +3783,17 @@ void
+ ring_buffer_read_finish(struct ring_buffer_iter *iter)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
++	unsigned long flags;
  
- 		head_page = &rb_set_head_page(cpu_buffer)->list;
-+		if (!head_page)
-+			break;
- 		prev_page = head_page->prev;
- 
- 		first_page = pages->next;
-@@ -2934,7 +2936,7 @@ unsigned long ring_buffer_oldest_event_t
- 	unsigned long flags;
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct buffer_page *bpage;
--	unsigned long ret;
-+	unsigned long ret = 0;
- 
- 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
- 		return 0;
-@@ -2949,7 +2951,8 @@ unsigned long ring_buffer_oldest_event_t
- 		bpage = cpu_buffer->reader_page;
- 	else
- 		bpage = rb_set_head_page(cpu_buffer);
--	ret = bpage->page->time_stamp;
-+	if (bpage)
-+		ret = bpage->page->time_stamp;
- 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
- 	return ret;
-@@ -3260,6 +3263,8 @@ rb_get_reader_page(struct ring_buffer_pe
- 	 * Splice the empty reader page into the list around the head.
+ 	/*
+ 	 * Ring buffer is disabled from recording, here's a good place
+-	 * to check the integrity of the ring buffer. 
++	 * to check the integrity of the ring buffer.
++	 * Must prevent readers from trying to read, as the check
++	 * clears the HEAD page and readers require it.
  	 */
- 	reader = rb_set_head_page(cpu_buffer);
-+	if (!reader)
-+		goto out;
- 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
- 	cpu_buffer->reader_page->list.prev = reader->list.prev;
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+ 	rb_check_pages(cpu_buffer);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
  
+ 	atomic_dec(&cpu_buffer->record_disabled);
+ 	atomic_dec(&cpu_buffer->buffer->resize_disabled);
 
 
