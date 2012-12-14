@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946006Ab2LNXKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:10:41 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:41086 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945905Ab2LNXKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:10:37 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1355255996-25953-1-git-send-email-nhorman@tuxdriver.com>
-	<1355519048-28473-1-git-send-email-nhorman@tuxdriver.com>
-Date: Fri, 14 Dec 2012 15:10:30 -0800
-In-Reply-To: <1355519048-28473-1-git-send-email-nhorman@tuxdriver.com> (Neil
-	Horman's message of "Fri, 14 Dec 2012 16:04:08 -0500")
-Message-ID: <87d2ycut5l.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932921Ab2LNXLl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:11:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41230 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422705Ab2LNXG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:06:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 08/27] USB: option: blacklist network interface on Huawei E173
+Date: Fri, 14 Dec 2012 15:01:21 -0800
+Message-Id: <20121214222253.068964042@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
+References: <20121214222251.229078963@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/wJWvniJiomJnE04MZkWwftp3FjBNVdbc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0375]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Neil Horman <nhorman@tuxdriver.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2] core_pattern: set core helpers root and namespace to crashing process
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neil Horman <nhorman@tuxdriver.com> writes:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> As its currently implemented, redirection of core dumps to a pipe reader should
-> be executed such that the reader runs in the namespace of the crashing process,
-> and it currently does not. This is the only sane way to deal with namespaces
-> properly it seems to me, and this patch implements that functionality.
+------------------
 
-I actually rather strongly disagree.
+From: Bjørn Mork <bjorn@mork.no>
 
-While we have a global core dump pattern core dumps to a a pipe reader
-should be executed such that the reader runs in the namespace of the
-process that set the pattern.  We can easily restrict that to the
-initial namespaces to make the implementation simpler.
+commit f36446cf9bbebaa03a80d95cfeeafbaf68218249 upstream.
 
-If you want to play namespace games you can implement all of those in
-user space once my tree merges for v3.8.
+The Huawei E173 will normally appear as 12d1:1436 in Linux.  But
+the modem has another mode with different device ID and a slightly
+different set of descriptors. This is the mode used by Windows like
+this:
 
-I am really not a fan of the trigger process being able to control the
-environment of a privileged process.  It makes writing the privileged
-process much trickier.
+  3Modem:      USB\VID_12D1&PID_140C&MI_00\6&3A1D2012&0&0000
+  Networkcard: USB\VID_12D1&PID_140C&MI_01\6&3A1D2012&0&0001
+  Appli.Inter: USB\VID_12D1&PID_140C&MI_02\6&3A1D2012&0&0002
+  PC UI Inter: USB\VID_12D1&PID_140C&MI_03\6&3A1D2012&0&0003
 
-Eric
+All interfaces have the same ff/ff/ff class codes in this mode.
+Blacklisting the network interface to allow it to be picked up by
+the network driver.
+
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -81,6 +81,7 @@ static void option_instat_callback(struc
+ #define OPTION_PRODUCT_GTM380_MODEM		0x7201
+ 
+ #define HUAWEI_VENDOR_ID			0x12D1
++#define HUAWEI_PRODUCT_E173			0x140C
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
+@@ -553,6 +554,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
+
+
