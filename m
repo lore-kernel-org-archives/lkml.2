@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab2LNQNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:13:13 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33998 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756445Ab2LNQNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:13:11 -0500
-Message-ID: <50CB5014.6030004@wwwdotorg.org>
-Date: Fri, 14 Dec 2012 09:13:08 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756685Ab2LNQNt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:13:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48240 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756508Ab2LNQNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 11:13:48 -0500
+Date: Fri, 14 Dec 2012 17:13:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Satoru Moriya <satoru.moriya@hds.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+Message-ID: <20121214161345.GA18780@dhcp22.suse.cz>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
+ <20121213103420.GW1009@suse.de>
+ <20121213152959.GE21644@dhcp22.suse.cz>
+ <20121213160521.GG21644@dhcp22.suse.cz>
+ <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
+ <20121214045030.GE6317@cmpxchg.org>
+ <20121214083738.GA6898@dhcp22.suse.cz>
+ <50CB493B.8000900@redhat.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Andrew Lunn <andrew@lunn.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jamie Lentin <jm@lentin.co.uk>, Simon Baatz <gmbnomis@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: power: Add simple poweroff-gpio driver
-References: <20121213202157.8106C66071E@gitolite.kernel.org> <20121213205159.GA21825@redhat.com> <20121214082150.GA7717@lunn.ch> <20121214150841.GA15843@redhat.com>
-In-Reply-To: <20121214150841.GA15843@redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CB493B.8000900@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 08:08 AM, Dave Jones wrote:
-> On Fri, Dec 14, 2012 at 09:21:50AM +0100, Andrew Lunn wrote:
->  
->  > > Given this seems to be dependant on device-tree, shouldn't there be
->  > > some 'depends on' in the kconfig to prevent this showing up on architectures
->  > > that don't implement it ? 
->  > > 
->  > >  > +menuconfig POWER_RESET
->  > >  > +	bool "Board level reset or power off"
->  > >  > +	help
->  > >  > +	  Provides a number of drivers which either reset a complete board
->  > >  > +	  or shut it down, by manipulating the main power supply on the board.
->  > >  > +
->  > >  > +	  Say Y here to enable board reset and power off
->  > >  > +
->  > >  > +config POWER_RESET_GPIO
->  > >  > +	bool "GPIO power-off driver"
->  > >  > +	depends on OF_GPIO && POWER_RESET
->  >
->  > Don't these depends on here do what you want?
->  
-> I think it needs to be on the menuconfig, rather than the child options.
-> I don't have OF_GPIO, but I still got asked for the former.
+On Fri 14-12-12 10:43:55, Rik van Riel wrote:
+> On 12/14/2012 03:37 AM, Michal Hocko wrote:
+> 
+> >I can answer the later. Because memsw comes with its price and
+> >swappiness is much cheaper. On the other hand it makes sense that
+> >swappiness==0 doesn't swap at all. Or do you think we should get back to
+> >_almost_ doesn't swap at all?
+> 
+> swappiness==0 will swap in emergencies, specifically when we have
+> almost no page cache left, we will still swap things out:
+> 
+>         if (global_reclaim(sc)) {
+>                 free  = zone_page_state(zone, NR_FREE_PAGES);
+>                 if (unlikely(file + free <= high_wmark_pages(zone))) {
+>                         /*
+>                          * If we have very few page cache pages, force-scan
+>                          * anon pages.
+>                          */
+>                         fraction[0] = 1;
+>                         fraction[1] = 0;
+>                         denominator = 1;
+>                         goto out;
+> 
+> This makes sense, because people who set swappiness==0 but
+> do have swap space available would probably prefer some
+> emergency swapping over an OOM kill.
 
-The menuconfig enables a class of drivers (at least theoretically in the
-future, when more such drivers turn up), and there's no reason to
-believe that all of those drivers will depend on OF. So in my opinion,
-making POWER_RESET_GPIO depend on OF makes sense, but making POWER_RESET
-depend on it doesn't.
-
-Another solution might be to remove the menuconfig, and just include the
-option for the individual driver.
+Yes, but this is the global reclaim path. I was arguing about
+swappiness==0 & memcg. As this patch doesn't make a big difference for
+the global case (as both the changelog and you mentioned) then we should
+focus on whether this is desirable change for the memcg path. I think it
+makes sense to keep "no swapping at all for memcg semantic" as we have
+it currently.
+-- 
+Michal Hocko
+SUSE Labs
