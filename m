@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2LNXsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:48:37 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65235 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757010Ab2LNXsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:48:32 -0500
-Message-ID: <50CBBACA.2070108@linaro.org>
-Date: Fri, 14 Dec 2012 15:48:26 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757155Ab2LNXva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:51:30 -0500
+Received: from antcom.de ([188.40.178.216]:41473 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756961Ab2LNXv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:51:29 -0500
+Message-ID: <50CBBB25.20002@antcom.de>
+Date: Sat, 15 Dec 2012 00:49:57 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon> <50CB9553.7050808@zytor.com> <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com> <50CBA171.4080403@zytor.com> <20121214222517.GG6582@moon> <50CBA7BC.4020001@zytor.com> <20121214224307.GH6582@moon> <50CBACD2.60307@zytor.com>
-In-Reply-To: <50CBACD2.60307@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Wolfgang Grandegger <wg@grandegger.com>
+CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de
+Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
+References: <1355495185-24220-1-git-send-email-stigge@antcom.de> <50CB68AB.5070806@grandegger.com>
+In-Reply-To: <50CB68AB.5070806@grandegger.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 02:48 PM, H. Peter Anvin wrote:
-> On 12/14/2012 02:43 PM, Cyrill Gorcunov wrote:
->> On Fri, Dec 14, 2012 at 02:27:08PM -0800, H. Peter Anvin wrote:
->>
->>
->> This won't help in case of scenario you've been pointing in
->> previous email (where c/r happens in a middle of vdso),
->> would it? Because we still need somehow to be sure we're not
->> checkpointing in a middle of signal handler which will return
->> to some vdso place.
-> It is okay if and only if those vdso places never change... which I
-> think is doable if they only contain trival system call wrappers, i.e.
-> something like:
->
-> 	movl $__SYS_gettimeofday, %eax
-> 	syscall
-> 	ret
+Hi Wolfgang,
 
-Though doesn't this make it easier for exploits (somewhat undoing ASLR)? 
-I know Andi always wanted to avoid having syscall instructions at a 
-fixed location for the old vsyscall code (though I know we had it 
-none-the-less for awhile).   But maybe I'm confusing issues here?
+thank you for the patch!
 
-thanks
--john
+On 14/12/12 18:58, Wolfgang Grandegger wrote:
+> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
+> +{
+> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+> +	void __iomem *pio = at91_gpio->regbase;
+> +
+> +	__raw_writel(mask, pio + (val ? PIO_SODR : PIO_CODR));
+> +}
+> +
+
+Without having an AT91 available right now, I guess the hardware
+interface of this GPIO chip is different from the GPIO block API. While
+the hardware has clear and set registers, the val parameter of
+at91_gpiolib_set_block() should be interpreted as the actual output
+values. See lpc32xx_gpo_set_block() for an example for handling set and
+clear registers like this: First, set_bits and clear_bits words are
+calculated from mask and val parameters, and finally written to the
+respective hardware registers.
+
+Note that one .set_block() can result in writing both the set and clear
+registers of the hardware when val contains both 0s and 1s in
+respectively masked positions.
+
+Roland
