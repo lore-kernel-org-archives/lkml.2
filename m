@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab2LNK7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 05:59:32 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:46248 "EHLO
+	id S1754970Ab2LNLBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 06:01:09 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49660 "EHLO
 	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2LNK73 (ORCPT
+	with ESMTP id S1751309Ab2LNLBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 05:59:29 -0500
-Subject: [PATCH] cpufreq_stats: fix race between stats allocation and first
- usage
+	Fri, 14 Dec 2012 06:01:07 -0500
+Subject: [PATCH] drm/fb: avoid sleeping in unblank_screen() if oops in progress
 To: linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq <cpufreq@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>
-Date: Fri, 14 Dec 2012 14:59:21 +0400
-Message-ID: <20121214105921.5139.502.stgit@zurg>
+Cc: David Airlie <airlied@linux.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org
+Date: Fri, 14 Dec 2012 15:01:00 +0400
+Message-ID: <20121214110100.7836.65250.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,100 +22,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch forces complete struct cpufreq_stats allocation for all cpus before
-registering CPUFREQ_TRANSITION_NOTIFIER notifier, otherwise in some conditions
-cpufreq_stat_notifier_trans() can be called in the middle of stats allocation,
-in this case cpufreq_stats_table already exists, but stat->freq_table is NULL.
+unblank_screen() can be called from interrupt context during oops.
+thus all ->fb_blank handlers should avoid sleeping in this situation.
+
+callstack:
+panic()
+bust_spinlocks(1)
+unblank_screen()
+vc->vc_sw->con_blank()
+fbcon_blank()
+fb_blank()
+info->fbops->fb_blank()
+drm_fb_helper_blank()
+drm_fb_helper_dpms()
+mutex_lock(&dev->mode_config.mutex)
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: cpufreq <cpufreq@vger.kernel.org>
-Cc: linux-pm <linux-pm@vger.kernel.org>
-
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
 ---
+ drivers/gpu/drm/drm_fb_helper.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-<1>[  363.116198] BUG: unable to handle kernel NULL pointer dereference at (null)
-<1>[  363.116668] IP: [<ffffffffa11a70e4>] cpufreq_stat_notifier_trans+0x64/0xf0 [cpufreq_stats]
-<4>[  363.116977] PGD 23177e067 PUD 2349c1067 PMD 0
-<4>[  363.117151] Oops: 0000 [#1] SMP
-<4>[  363.117151] last sysfs file: /sys/module/freq_table/initstate
-<4>[  363.117151] CPU 5
-<4>[  363.117151] Modules linked in: cpufreq_stats(+)(U) [a lot] [last unloaded: umc]
-<4>[  363.117151]
-<4>[  363.117151] Pid: 1690, comm: kondemand/5 veid: 0 Tainted: P        WC ---------------  T 2.6.32-279.5.1.el6-042stab061.7-vz #112 042stab061_7 System manufacturer System Product Name/Crosshair IV Formula
-<4>[  363.117151] RIP: 0010:[<ffffffffa11a70e4>]  [<ffffffffa11a70e4>] cpufreq_stat_notifier_trans+0x64/0xf0 [cpufreq_stats]
-<4>[  363.117151] RSP: 0018:ffff880234281920  EFLAGS: 00010246
-<4>[  363.117151] RAX: 00000000001e12e8 RBX: 0000000000000000 RCX: 00000000002ab980
-<4>[  363.117151] RDX: 0000000000000004 RSI: 0000000000000000 RDI: 0000000000000005
-<4>[  363.117151] RBP: ffff880234281940 R08: 0000000000000000 R09: 0000000000000000
-<4>[  363.117151] R10: 0000000000000000 R11: 2222222222222222 R12: ffff880218ce7400
-<4>[  363.117151] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-<4>[  363.117151] FS:  00007f499ffe0700(0000) GS:ffff880031000000(0000) knlGS:0000000000000000
-<4>[  363.117151] CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-<4>[  363.117151] CR2: 0000000000000000 CR3: 0000000230af7000 CR4: 00000000000006e0
-<4>[  363.117151] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-<4>[  363.117151] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-<4>[  363.117151] Process kondemand/5 (pid: 1690, veid: 0, threadinfo ffff880234280000, task ffff8802330c48c0)
-<4>[  363.117151] Stack:
-<4>[  363.117151]  ffffffff810cf4f3 0000000000000001 00000000ffffffff ffffffffa11a7ac0
-<4>[  363.117151] <d> ffff880234281990 ffffffff815454a8 ffff880234281c80 0000000000000000
-<4>[  363.117151] <d> ffff880234281a10 ffffffff833be978 ffffffff833be8e0 0000000000000001
-<4>[  363.117151] Call Trace:
-<4>[  363.117151]  [<ffffffff810cf4f3>] ? is_module_text_address+0x23/0x30
-<4>[  363.117151]  [<ffffffff815454a8>] notifier_call_chain+0x58/0xb0
-<4>[  363.117151]  [<ffffffff810a5a8d>] __srcu_notifier_call_chain+0x5d/0x90
-<4>[  363.117151]  [<ffffffff810a5ad6>] srcu_notifier_call_chain+0x16/0x20
-<4>[  363.117151]  [<ffffffff81442a0a>] cpufreq_notify_transition+0x12a/0x190
-<4>[  363.117151]  [<ffffffffa026df08>] powernowk8_target+0x628/0xb30 [powernow_k8]
-<4>[  363.117151]  [<ffffffff8144289b>] __cpufreq_driver_target+0x8b/0x90
-<4>[  363.117151]  [<ffffffffa0279388>] do_dbs_timer+0x3b8/0x3bc [cpufreq_ondemand]
-<4>[  363.117151]  [<ffffffffa0278fd0>] ? do_dbs_timer+0x0/0x3bc [cpufreq_ondemand]
-<4>[  363.117151]  [<ffffffff81097df4>] worker_thread+0x264/0x440
-<4>[  363.117151]  [<ffffffff81097da3>] ? worker_thread+0x213/0x440
-<4>[  363.117151]  [<ffffffff81097b90>] ? worker_thread+0x0/0x440
-<4>[  363.117151]  [<ffffffff8109f050>] ? autoremove_wake_function+0x0/0x40
-<4>[  363.117151]  [<ffffffff81097b90>] ? worker_thread+0x0/0x440
-<4>[  363.117151]  [<ffffffff8109e986>] kthread+0x96/0xa0
-<4>[  363.117151]  [<ffffffff8100c34a>] child_rip+0xa/0x20
-<4>[  363.117151]  [<ffffffff8100bc90>] ? restore_args+0x0/0x30
-<4>[  363.117151]  [<ffffffff8109e8f0>] ? kthread+0x0/0xa0
-<4>[  363.117151]  [<ffffffff8100c340>] ? child_rip+0x0/0x20
-<4>[  363.117151] Code: 89 f9 48 8b 0c cd 20 53 9c 81 4c 8b 24 08 4d 85 e4 74 d3 8b 4a 08 41 8b 54 24 10 45 8b 6c 24 18 85 d2 74 22 49 8b 74 24 28 31 db <3b> 0e 75 10 eb 1a 66 0f 1f 44 00 00 48 63 c3 3b 0c 86 74 0c 83
-<1>[  363.117151] RIP  [<ffffffffa11a70e4>] cpufreq_stat_notifier_trans+0x64/0xf0 [cpufreq_stats]
-<4>[  363.117151]  RSP <ffff880234281920>
-<4>[  363.117151] CR2: 0000000000000000
----
- drivers/cpufreq/cpufreq_stats.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index e40e508..9d7732b 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -364,18 +364,21 @@ static int __init cpufreq_stats_init(void)
- 	if (ret)
- 		return ret;
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index 954d175..2c9f49f 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -326,7 +326,7 @@ static struct sysrq_key_op sysrq_drm_fb_helper_restore_op = {
+ static struct sysrq_key_op sysrq_drm_fb_helper_restore_op = { };
+ #endif
  
-+	register_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
-+	for_each_online_cpu(cpu)
-+		cpufreq_update_policy(cpu);
+-static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
++static int drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+ {
+ 	struct drm_fb_helper *fb_helper = info->par;
+ 	struct drm_device *dev = fb_helper->dev;
+@@ -334,10 +334,15 @@ static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+ 	struct drm_connector *connector;
+ 	int i, j;
+ 
++	if (oops_in_progress) {
++		if (!mutex_trylock(&dev->mode_config.mutex))
++			return -EBUSY;
++	} else
++		mutex_lock(&dev->mode_config.mutex);
 +
- 	ret = cpufreq_register_notifier(&notifier_trans_block,
- 				CPUFREQ_TRANSITION_NOTIFIER);
- 	if (ret) {
- 		cpufreq_unregister_notifier(&notifier_policy_block,
- 				CPUFREQ_POLICY_NOTIFIER);
-+		unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
-+		for_each_online_cpu(cpu)
-+			cpufreq_stats_free_table(cpu);
- 		return ret;
- 	}
+ 	/*
+ 	 * For each CRTC in this fb, turn the connectors on/off.
+ 	 */
+-	mutex_lock(&dev->mode_config.mutex);
+ 	for (i = 0; i < fb_helper->crtc_count; i++) {
+ 		crtc = fb_helper->crtc_info[i].mode_set.crtc;
  
--	register_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
--	for_each_online_cpu(cpu) {
--		cpufreq_update_policy(cpu);
--	}
+@@ -353,6 +358,7 @@ static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+ 		}
+ 	}
+ 	mutex_unlock(&dev->mode_config.mutex);
++	return 0;
+ }
+ 
+ int drm_fb_helper_blank(int blank, struct fb_info *info)
+@@ -360,24 +366,19 @@ int drm_fb_helper_blank(int blank, struct fb_info *info)
+ 	switch (blank) {
+ 	/* Display: On; HSync: On, VSync: On */
+ 	case FB_BLANK_UNBLANK:
+-		drm_fb_helper_dpms(info, DRM_MODE_DPMS_ON);
+-		break;
++		return drm_fb_helper_dpms(info, DRM_MODE_DPMS_ON);
+ 	/* Display: Off; HSync: On, VSync: On */
+ 	case FB_BLANK_NORMAL:
+-		drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+-		break;
++		return drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+ 	/* Display: Off; HSync: Off, VSync: On */
+ 	case FB_BLANK_HSYNC_SUSPEND:
+-		drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+-		break;
++		return drm_fb_helper_dpms(info, DRM_MODE_DPMS_STANDBY);
+ 	/* Display: Off; HSync: On, VSync: Off */
+ 	case FB_BLANK_VSYNC_SUSPEND:
+-		drm_fb_helper_dpms(info, DRM_MODE_DPMS_SUSPEND);
+-		break;
++		return drm_fb_helper_dpms(info, DRM_MODE_DPMS_SUSPEND);
+ 	/* Display: Off; HSync: Off, VSync: Off */
+ 	case FB_BLANK_POWERDOWN:
+-		drm_fb_helper_dpms(info, DRM_MODE_DPMS_OFF);
+-		break;
++		return drm_fb_helper_dpms(info, DRM_MODE_DPMS_OFF);
+ 	}
  	return 0;
  }
- static void __exit cpufreq_stats_exit(void)
 
