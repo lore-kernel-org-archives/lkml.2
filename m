@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422644Ab2LNWbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:31:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38885 "EHLO mail.kernel.org"
+	id S932675Ab2LNWc1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:32:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38838 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932626Ab2LNWbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:31:19 -0500
+	id S932562Ab2LNWa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:30:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [ 16/28] usb: ftdi_sio: fixup BeagleBone A5+ quirk
-Date: Fri, 14 Dec 2012 14:26:33 -0800
-Message-Id: <20121214222254.245953373@linuxfoundation.org>
+        Stefan Nagy <public@stefan-nagy.at>, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 22/28] ACPI / video: ignore BIOS initial backlight value for HP Folio 13-2000
+Date: Fri, 14 Dec 2012 14:26:39 -0800
+Message-Id: <20121214222255.522198619@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -25,35 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <jacmet@sunsite.dk>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 1a88d5eee2ef2ad1d3c4e32043e9c4c5347d4fc1 upstream.
+commit 129ff8f8d58297b04f47b5d6fad81aa2d08404e1 upstream.
 
-BeagleBone A5+ devices ended up getting shipped with the
-'BeagleBone/XDS100V2' product string, and not XDS100 like it
-was agreed, so adjust the quirk to match.
+Or else the laptop will boot with a dimmed screen.
 
-For details, see the thread on the beagle list:
-
-https://groups.google.com/forum/#!msg/beagleboard/zrFPew9_Wvo/ibWr1-eE8JwJ
-
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51141
+Tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/video.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1811,7 +1811,7 @@ static int ftdi_8u2232c_probe(struct usb
- 	dbg("%s", __func__);
- 
- 	if ((udev->manufacturer && !strcmp(udev->manufacturer, "CALAO Systems")) ||
--	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100")))
-+	    (udev->product && !strcmp(udev->product, "BeagleBone/XDS100V2")))
- 		return ftdi_jtag_probe(serial);
- 
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -389,6 +389,12 @@ static int __init video_set_bqc_offset(c
  	return 0;
+ }
+ 
++static int video_ignore_initial_backlight(const struct dmi_system_id *d)
++{
++	use_bios_initial_backlight = 0;
++	return 0;
++}
++
+ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	/*
+ 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
+@@ -433,6 +439,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Folio 13-2000",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
++		},
++	},
+ 	{}
+ };
+ 
 
 
