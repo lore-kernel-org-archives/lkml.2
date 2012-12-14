@@ -1,178 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab2LNW13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:27:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38217 "EHLO mail.kernel.org"
+	id S1757207Ab2LNW1t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:27:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51174 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757131Ab2LNW1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:27:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/22] tmpfs: fix shared mempolicy leak
-Date: Fri, 14 Dec 2012 14:25:52 -0800
-Message-Id: <20121214222251.420538160@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
-References: <20121214222249.889051473@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1757166Ab2LNW1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:27:46 -0500
+Message-ID: <50CBA7BC.4020001@zytor.com>
+Date: Fri, 14 Dec 2012 14:27:08 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon> <50CB9553.7050808@zytor.com> <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com> <50CBA171.4080403@zytor.com> <20121214222517.GG6582@moon>
+In-Reply-To: <20121214222517.GG6582@moon>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 12/14/2012 02:25 PM, Cyrill Gorcunov wrote:
+> 
+> this would allow us to defer checkpoint until task finish vdso code. Peter,
+> if I understand you correctly you propose we provide some own proxy-vdso
+> which would redirect calls to real ones, right? But the main problem
+> is that is exactly the idea to be able to c/r existing programs without
+> recompiling and such (or I miss something here?).
+> 
 
-------------------
+No, I'm proposing that you use a proxy-vdso which does nothing but
+system calls, and therefore can be stable indefinitely.
 
-From: Mel Gorman <mgorman@suse.de>
-
-commit 18a2f371f5edf41810f6469cb9be39931ef9deb9 upstream.
-
-This fixes a regression in 3.7-rc, which has since gone into stable.
-
-Commit 00442ad04a5e ("mempolicy: fix a memory corruption by refcount
-imbalance in alloc_pages_vma()") changed get_vma_policy() to raise the
-refcount on a shmem shared mempolicy; whereas shmem_alloc_page() went
-on expecting alloc_page_vma() to drop the refcount it had acquired.
-This deserves a rework: but for now fix the leak in shmem_alloc_page().
-
-Hugh: shmem_swapin() did not need a fix, but surely it's clearer to use
-the same refcounting there as in shmem_alloc_page(), delete its onstack
-mempolicy, and the strange mpol_cond_copy() and __mpol_cond_copy() -
-those were invented to let swapin_readahead() make an unknown number of
-calls to alloc_pages_vma() with one mempolicy; but since 00442ad04a5e,
-alloc_pages_vma() has kept refcount in balance, so now no problem.
-
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
----
- include/linux/mempolicy.h |   16 ----------------
- mm/mempolicy.c            |   22 ----------------------
- mm/shmem.c                |   22 +++++++++++++---------
- 3 files changed, 13 insertions(+), 47 deletions(-)
-
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -137,16 +137,6 @@ static inline void mpol_cond_put(struct
- 		__mpol_put(pol);
- }
- 
--extern struct mempolicy *__mpol_cond_copy(struct mempolicy *tompol,
--					  struct mempolicy *frompol);
--static inline struct mempolicy *mpol_cond_copy(struct mempolicy *tompol,
--						struct mempolicy *frompol)
--{
--	if (!frompol)
--		return frompol;
--	return __mpol_cond_copy(tompol, frompol);
--}
--
- extern struct mempolicy *__mpol_dup(struct mempolicy *pol);
- static inline struct mempolicy *mpol_dup(struct mempolicy *pol)
- {
-@@ -270,12 +260,6 @@ static inline void mpol_cond_put(struct
- {
- }
- 
--static inline struct mempolicy *mpol_cond_copy(struct mempolicy *to,
--						struct mempolicy *from)
--{
--	return from;
--}
--
- static inline void mpol_get(struct mempolicy *pol)
- {
- }
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1973,28 +1973,6 @@ struct mempolicy *__mpol_dup(struct memp
- 	return new;
- }
- 
--/*
-- * If *frompol needs [has] an extra ref, copy *frompol to *tompol ,
-- * eliminate the * MPOL_F_* flags that require conditional ref and
-- * [NOTE!!!] drop the extra ref.  Not safe to reference *frompol directly
-- * after return.  Use the returned value.
-- *
-- * Allows use of a mempolicy for, e.g., multiple allocations with a single
-- * policy lookup, even if the policy needs/has extra ref on lookup.
-- * shmem_readahead needs this.
-- */
--struct mempolicy *__mpol_cond_copy(struct mempolicy *tompol,
--						struct mempolicy *frompol)
--{
--	if (!mpol_needs_cond_ref(frompol))
--		return frompol;
--
--	*tompol = *frompol;
--	tompol->flags &= ~MPOL_F_SHARED;	/* copy doesn't need unref */
--	__mpol_put(frompol);
--	return tompol;
--}
--
- /* Slow path of a mempolicy comparison */
- int __mpol_equal(struct mempolicy *a, struct mempolicy *b)
- {
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1168,19 +1168,20 @@ static struct mempolicy *shmem_get_sbmpo
- static struct page *shmem_swapin(swp_entry_t entry, gfp_t gfp,
- 			struct shmem_inode_info *info, unsigned long idx)
- {
--	struct mempolicy mpol, *spol;
- 	struct vm_area_struct pvma;
- 	struct page *page;
- 
--	spol = mpol_cond_copy(&mpol,
--				mpol_shared_policy_lookup(&info->policy, idx));
--
- 	/* Create a pseudo vma that just contains the policy */
- 	pvma.vm_start = 0;
- 	pvma.vm_pgoff = idx;
- 	pvma.vm_ops = NULL;
--	pvma.vm_policy = spol;
-+	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, idx);
-+
- 	page = swapin_readahead(entry, gfp, &pvma, 0);
-+
-+	/* Drop reference taken by mpol_shared_policy_lookup() */
-+	mpol_cond_put(pvma.vm_policy);
-+
- 	return page;
- }
- 
-@@ -1188,6 +1189,7 @@ static struct page *shmem_alloc_page(gfp
- 			struct shmem_inode_info *info, unsigned long idx)
- {
- 	struct vm_area_struct pvma;
-+	struct page *page;
- 
- 	/* Create a pseudo vma that just contains the policy */
- 	pvma.vm_start = 0;
-@@ -1195,10 +1197,12 @@ static struct page *shmem_alloc_page(gfp
- 	pvma.vm_ops = NULL;
- 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, idx);
- 
--	/*
--	 * alloc_page_vma() will drop the shared policy reference
--	 */
--	return alloc_page_vma(gfp, &pvma, 0);
-+	page = alloc_page_vma(gfp, &pvma, 0);
-+
-+	/* Drop reference taken by mpol_shared_policy_lookup() */
-+	mpol_cond_put(pvma.vm_policy);
-+
-+	return page;
- }
- #else /* !CONFIG_NUMA */
- #ifdef CONFIG_TMPFS
+	-hpa
 
 
