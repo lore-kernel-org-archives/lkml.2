@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945961Ab2LNXHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:07:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41290 "EHLO mail.kernel.org"
+	id S1422828Ab2LNXGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:06:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41279 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422763Ab2LNXG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:06:57 -0500
+	id S1422797Ab2LNXGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:06:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Muhammad Minhazul Haque <mdminhazulhaque@gmail.com>,
-        Kevin McKinney <klmckinney1@gmail.com>
-Subject: [ 27/27] Staging: bcm: Add two products and remove an existing product.
-Date: Fri, 14 Dec 2012 15:01:40 -0800
-Message-Id: <20121214222256.895948215@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [ 26/27] rcu: Fix batch-limit size problem
+Date: Fri, 14 Dec 2012 15:01:39 -0800
+Message-Id: <20121214222256.742122943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -26,55 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin McKinney <klmckinney1@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 4f29ef050848245f7c180b95ccf67dfcd76b1fd8 upstream.
+commit 878d7439d0f45a95869e417576774673d1fa243f upstream.
 
-This patch adds two new products and modifies
-the device id table to include them. In addition,
-product of 0xbccd - BCM_USB_PRODUCT_ID_SM250 is
-removed because Beceem, ZTE, Sprint use this id
-for block devices.
+Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
+invocation) added a regression in rcu_do_batch()
 
-Reported-by: Muhammad Minhazul Haque <mdminhazulhaque@gmail.com>
-Signed-off-by: Kevin McKinney <klmckinney1@gmail.com>
+Under stress, RCU is supposed to allow to process all items in queue,
+instead of a batch of 10 items (blimit), but an integer overflow makes
+the effective limit being 1.  So, unless there is frequent idle periods
+(during which RCU ignores batch limits), RCU can be forced into a
+state where it cannot keep up with the callback-generation rate,
+eventually resulting in OOM.
+
+This commit therefore converts a few variables in rcu_do_batch() from
+int to long to fix this problem, along with the module parameters
+controlling the batch limits.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/bcm/InterfaceInit.c |    3 ++-
- drivers/staging/bcm/InterfaceInit.h |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ kernel/rcutree.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/bcm/InterfaceInit.c
-+++ b/drivers/staging/bcm/InterfaceInit.c
-@@ -4,11 +4,12 @@ static struct usb_device_id InterfaceUsb
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3B) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3L) },
--	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_SM250) },
-+	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_SYM) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_226) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_FOXCONN, BCM_USB_PRODUCT_ID_1901) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_TU25) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_226) },
-+	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_326) },
- 	{ }
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -212,13 +212,13 @@ DEFINE_PER_CPU(struct rcu_dynticks, rcu_
+ #endif
  };
- MODULE_DEVICE_TABLE(usb, InterfaceUsbtable);
---- a/drivers/staging/bcm/InterfaceInit.h
-+++ b/drivers/staging/bcm/InterfaceInit.h
-@@ -8,11 +8,11 @@
- #define BCM_USB_PRODUCT_ID_T3	0x0300
- #define BCM_USB_PRODUCT_ID_T3B	0x0210
- #define BCM_USB_PRODUCT_ID_T3L	0x0220
--#define BCM_USB_PRODUCT_ID_SM250	0xbccd
- #define BCM_USB_PRODUCT_ID_SYM	0x15E
- #define BCM_USB_PRODUCT_ID_1901	0xe017
- #define BCM_USB_PRODUCT_ID_226	0x0132 /* not sure if this is valid */
- #define BCM_USB_PRODUCT_ID_ZTE_226 0x172
-+#define BCM_USB_PRODUCT_ID_ZTE_326 0x173 /* ZTE AX326 */
- #define BCM_USB_PRODUCT_ID_ZTE_TU25	0x0007
  
- #define BCM_USB_MINOR_BASE	192
+-static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+-static int qhimark = 10000;	/* If this many pending, ignore blimit. */
+-static int qlowmark = 100;	/* Once only this many pending, use blimit. */
+-
+-module_param(blimit, int, 0444);
+-module_param(qhimark, int, 0444);
+-module_param(qlowmark, int, 0444);
++static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
++static long qhimark = 10000;	/* If this many pending, ignore blimit. */
++static long qlowmark = 100;	/* Once only this many pending, use blimit. */
++
++module_param(blimit, long, 0444);
++module_param(qhimark, long, 0444);
++module_param(qlowmark, long, 0444);
+ 
+ int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
+ int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
+@@ -1769,7 +1769,8 @@ static void rcu_do_batch(struct rcu_stat
+ {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy, i;
++	long bl, count, count_lazy;
++	int i;
+ 
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
 
 
