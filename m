@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2LNXEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:04:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41009 "EHLO mail.kernel.org"
+	id S1757264Ab2LNXE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:04:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41019 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756892Ab2LNXEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:04:49 -0500
+	id S1756892Ab2LNXEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:04:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 32/37] ring-buffer: Fix race between integrity check and readers
-Date: Fri, 14 Dec 2012 15:01:09 -0800
-Message-Id: <20121214222258.135834660@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>, Oliver Neukum <oneukum@suse.de>,
+        Aleksander Morgado <aleksander@gnu.org>
+Subject: [ 33/37] cdc-acm: implement TIOCSSERIAL to avoid blocking close(2)
+Date: Fri, 14 Dec 2012 15:01:10 -0800
+Message-Id: <20121214222258.232400129@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -25,56 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
+commit ba2d8ce9db0a61505362bb17b8899df3d3326146 upstream.
 
-The function rb_check_pages() was added to make sure the ring buffer's
-pages were sane. This check is done when the ring buffer size is modified
-as well as when the iterator is released (closing the "trace" file),
-as that was considered a non fast path and a good place to do a sanity
-check.
+Some devices (ex Nokia C7) simply don't respond at all when data is sent
+to some of their USB interfaces.  The data gets stuck in the TTYs queue
+and sits there until close(2), which them blocks because closing_wait
+defaults to 30 seconds (even though the fd is O_NONBLOCK).  This is
+rarely desired.  Implement the standard mechanism to adjust closing_wait
+and let applications handle it how they want to.
 
-The problem is that the check does not have any locks around it.
-If one process were to read the trace file, and another were to read
-the raw binary file, the check could happen while the reader is reading
-the file.
+See also 02303f73373aa1da19dbec510ec5a4e2576f9610 for usb_wwan.c.
 
-The issues with this is that the check requires to clear the HEAD page
-before doing the full check and it restores it afterward. But readers
-require the HEAD page to exist before it can read the buffer, otherwise
-it gives a nasty warning and disables the buffer.
-
-By adding the reader lock around the check, this keeps the race from
-happening.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Aleksander Morgado <aleksander@gnu.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3783,12 +3783,17 @@ void
- ring_buffer_read_finish(struct ring_buffer_iter *iter)
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -788,6 +788,10 @@ static int get_serial_info(struct acm *a
+ 	tmp.flags = ASYNC_LOW_LATENCY;
+ 	tmp.xmit_fifo_size = acm->writesize;
+ 	tmp.baud_base = le32_to_cpu(acm->line.dwDTERate);
++	tmp.close_delay	= acm->port.close_delay / 10;
++	tmp.closing_wait = acm->port.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
++				ASYNC_CLOSING_WAIT_NONE :
++				acm->port.closing_wait / 10;
+ 
+ 	if (copy_to_user(info, &tmp, sizeof(tmp)))
+ 		return -EFAULT;
+@@ -795,6 +799,37 @@ static int get_serial_info(struct acm *a
+ 		return 0;
+ }
+ 
++static int set_serial_info(struct acm *acm,
++				struct serial_struct __user *newinfo)
++{
++	struct serial_struct new_serial;
++	unsigned int closing_wait, close_delay;
++	int retval = 0;
++
++	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
++		return -EFAULT;
++
++	close_delay = new_serial.close_delay * 10;
++	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
++			ASYNC_CLOSING_WAIT_NONE : new_serial.closing_wait * 10;
++
++	mutex_lock(&acm->port.mutex);
++
++	if (!capable(CAP_SYS_ADMIN)) {
++		if ((close_delay != acm->port.close_delay) ||
++		    (closing_wait != acm->port.closing_wait))
++			retval = -EPERM;
++		else
++			retval = -EOPNOTSUPP;
++	} else {
++		acm->port.close_delay  = close_delay;
++		acm->port.closing_wait = closing_wait;
++	}
++
++	mutex_unlock(&acm->port.mutex);
++	return retval;
++}
++
+ static int acm_tty_ioctl(struct tty_struct *tty,
+ 					unsigned int cmd, unsigned long arg)
  {
- 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
-+	unsigned long flags;
+@@ -805,6 +840,9 @@ static int acm_tty_ioctl(struct tty_stru
+ 	case TIOCGSERIAL: /* gets serial port data */
+ 		rv = get_serial_info(acm, (struct serial_struct __user *) arg);
+ 		break;
++	case TIOCSSERIAL:
++		rv = set_serial_info(acm, (struct serial_struct __user *) arg);
++		break;
+ 	}
  
- 	/*
- 	 * Ring buffer is disabled from recording, here's a good place
--	 * to check the integrity of the ring buffer. 
-+	 * to check the integrity of the ring buffer.
-+	 * Must prevent readers from trying to read, as the check
-+	 * clears the HEAD page and readers require it.
- 	 */
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
- 	rb_check_pages(cpu_buffer);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
- 	atomic_dec(&cpu_buffer->record_disabled);
- 	atomic_dec(&cpu_buffer->buffer->resize_disabled);
+ 	return rv;
 
 
