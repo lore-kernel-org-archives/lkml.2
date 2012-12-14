@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab2LNCPh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:15:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:3160 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756046Ab2LNCPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:15:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,277,1355126400"; 
-   d="scan'208";a="257234515"
-Date: Fri, 14 Dec 2012 10:15:25 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        alek.du@intel.com, jgunthorpe@obsidianresearch.com
-Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
-Message-ID: <20121214021525.GB11276@feng-snb>
-References: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
- <50CA7EE4.3000306@linaro.org>
- <20121214013725.GA11276@feng-snb>
- <50CA8837.5010800@linaro.org>
+	id S1756198Ab2LNCP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:15:57 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50570 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab2LNCPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 21:15:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50CA8837.5010800@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50CA6478.20008@zytor.com>
+References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
+	<1355436141-8668-20-git-send-email-yinghai@kernel.org>
+	<50CA6478.20008@zytor.com>
+Date: Thu, 13 Dec 2012 18:15:54 -0800
+X-Google-Sender-Auth: 1NbjDGmK5nQ7VsRJ_w6NhIDc0GI
+Message-ID: <CAE9FiQVwse9Un5wE1Qxc867dxLuX0RNptuHzd1xJjK_OiN7QxQ@mail.gmail.com>
+Subject: Re: [PATCH v6 19/27] x86, boot: update comments about entries for
+ 64bit image
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 06:00:23PM -0800, John Stultz wrote:
-> On 12/13/2012 05:37 PM, Feng Tang wrote:
-> >On Thu, Dec 13, 2012 at 05:20:36PM -0800, John Stultz wrote:
-> >>On 12/12/2012 06:05 PM, Feng Tang wrote:
-> >>>In current kernel, there are several places which need to check
-> >>>whether there is a persistent clock for the platform. Current check
-> >>>is done by calling the read_persistent_clock() and validating the
-> >>>return value.
-> >>>
-> >>>Add such a flag to make code more readable and call read_persistent_clock()
-> >>>only once for all the checks.
-> >>Sorry.. What  the actual benefit of this patch set?   (Usually with
-> >>changelogs its better to explain why you're doing something, rather
-> >>then just what you're doing.)
-> >The main benefits is not bother to do the rtc_resume and rtc_suspend work
-> >if persistent clock exists. Current RTC suspend/resume code will do many
-> >time calculation and compensation work at first, and then call
-> >timekeeping_inject_sleeptime() which will just return for platform with
-> >persistent clock, what I did in this patchset is to put the check at
-> >the start, also I save the persistent_clock_exist flag for all possible
-> >check after timekeeping_init().
-> 
-> CC'ing Jason as his recent patch is conceptually connected here.
-> 
-> Ok, Feng, so your patch set is a suspend/resume optimization for the
-> case where the architecture has a read_persistent_clock()
-> implementation, but the kernel config has also the rtc
-> HCTOSYS_DEVICE set, right?
+On Thu, Dec 13, 2012 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> if we depend on other
+> things we should make that explicit, not just here but in boot.txt.
 
-Exactly! Sorry for I didn't make it clear
+please check lines for boot.txt
 
-> 
-> So we basically short-cut the rtc's HCTOSYS_DEVICE suspend/resume
-> logic, likely to speed up suspend/resume.
-> 
-> So per Jason's related patch, he's made the point that the
-> persistent_clock and RTC class functionality are basically exclusive
-> (well, in his case, he said this with respect to updating the RTC,
-> not reading it - I don't mean to put words in his mouth - Please do
-> correct me here Jason. :).  In other words, we probably should avoid
-> configurations where both the rtc hctosys and persistent_clock
-> interfaces are both active.
+---
 
-Yes, I agree these 2 should be exclusive.
+**** 64-bit BOOT PROTOCOL
 
-> 
-> So my thought here is that this same behavioral change could be made
-> via Kconfig constraints rather then extra run-time conditionals.
-> Basically we add a HAS_PERSISTENT_CLOCK, that architectures select
-> if they want to use the read/update_persistent_clock calls. Then we
-> make the HCTOSYS option be dependent on !HAS_PERSISTENT_CLOCK. This
-> way we avoid having configs where there are conflicting paths that
-> we chose from.
+For machine with 64bit cpus and 64bit kernel, we could use 64bit bootloader
+We need a 64-bit boot protocol.
 
-Sounds good to me, and we may need to add the HAS_PERSISTENT_CLOCK
-to the default config of platforms who implemente the read_persistent_clock().
+In 64-bit boot protocol, the first step in loading a Linux kernel
+should be to setup the boot parameters (struct boot_params,
+traditionally known as "zero page"). The memory for struct boot_params
+should be allocated under or above 4G and initialized to all zero.
+Then the setup header from offset 0x01f1 of kernel image on should be
+loaded into struct boot_params and examined. The end of setup header
+can be calculated as follow:
 
-One concern is if a platform has read_persistent_clock capability, will
-it also has the write_persistent_clock? The answer may be no  
+        0x0202 + byte value at offset 0x0201
 
-Thanks,
-Feng
+In addition to read/modify/write the setup header of the struct
+boot_params as that of 16-bit boot protocol, the boot loader should
+also fill the additional fields of the struct boot_params as that
+described in zero-page.txt.
 
+After setting up the struct boot_params, the boot loader can load the
+64-bit kernel in the same way as that of 16-bit boot protocol, but
+kernel could be above 4G.
 
+In 64-bit boot protocol, the kernel is started by jumping to the
+64-bit kernel entry point, which is the start address of loaded
+64-bit kernel plus 0x200.
+
+At entry, the CPU must be in 64-bit mode with paging enabled.
+The range with setup_header.init_size from start address of loaded
+kernel and zero page and command line buffer get ident mapping;
+a GDT must be loaded with the descriptors for selectors
+__BOOT_CS(0x10) and __BOOT_DS(0x18); both descriptors must be 4G flat
+segment; __BOOT_CS must have execute/read permission, and __BOOT_DS
+must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
+must be __BOOT_DS; interrupt must be disabled; %rsi must hold the base
+address of the struct boot_params.
+---
