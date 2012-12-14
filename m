@@ -1,56 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab2LNT7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 14:59:22 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16577 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab2LNT7V convert rfc822-to-8bit (ORCPT
+	id S932300Ab2LNUBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:01:13 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:41301 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932239Ab2LNUBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 14:59:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 14 Dec 2012 11:58:01 -0800
-Message-ID: <50CB850F.9090704@nvidia.com>
-Date: Fri, 14 Dec 2012 21:59:11 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 14 Dec 2012 15:01:12 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Julien Delacou <julien.delacou@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2] pinctrl: add sleep mode management
+Date: Fri, 14 Dec 2012 21:00:33 +0100
+Message-ID: <1355515233-23663-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de> <50C99677.6090306@nvidia.com> <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de> <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org>
-In-Reply-To: <50CB5205.1030303@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.12.2012 18:21, Stephen Warren wrote:
-> On 12/13/2012 11:09 PM, Terje Bergström wrote:
->> They want to get the global data by getting drvdata of their parent.
-> 
-> There's no reason that /has/ to be so; they can get any information from
-> wherever it is, rather than trying to require it to be somewhere it isn't.
+From: Julien Delacou <julien.delacou@stericsson.com>
 
-Exactly, this was also my solution.
+This fix allows handling sleep mode for hogged
+pins in pinctrl. It provides functions to set pins
+to sleep/default configurations according to their
+current state.
 
->> The dummy device is not their parent - host1x is. There's no
->> connection between the dummy and the real client devices.
-> 
-> It's quite possible for the client devices to ask their actual parent
-> (host1x) for the tegradrm struct device *, by calling a host1x API, and
-> have host1x implement that API by returning the dummy/virtual device
-> that it created. That should be just 1-2 lines of code to implement in
-> host1x, plus maybe a couple more to correctly return -EPROBE_DEFERRED
-> when appropriate.
+Signed-off-by: Julien Delacou <julien.delacou@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Move function prototypes to the local pinctrl/core.h header file
+- Added exports
+---
+ drivers/pinctrl/core.c | 37 ++++++++++++++++++++++++++++++++++---
+ drivers/pinctrl/core.h |  7 +++++++
+ 2 files changed, 41 insertions(+), 3 deletions(-)
 
-My solution was to just have one global, and an getter for the global.
-Instead of drvdata, the pointer is retrieved with the getter. No need
-for dummy device, or passing points between host1x and tegradrm.
-
-Terje
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5b4885c..3611753 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1076,6 +1076,30 @@ void pinctrl_unregister_map(struct pinctrl_map const *map)
+ 	}
+ }
+ 
++/**
++ * pinctrl_force_sleep() - turn a given controller device into sleep state
++ * @pctldev: pin controller device
++ */
++int pinctrl_force_sleep(struct pinctrl_dev *pctldev)
++{
++	if (!IS_ERR(pctldev->p) && !IS_ERR(pctldev->hog_sleep))
++		return pinctrl_select_state(pctldev->p, pctldev->hog_sleep);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pinctrl_force_sleep);
++
++/**
++ * pinctrl_force_default() - turn a given controller device into default state
++ * @pctldev: pin controller device
++ */
++int pinctrl_force_default(struct pinctrl_dev *pctldev)
++{
++	if (!IS_ERR(pctldev->p) && !IS_ERR(pctldev->hog_default))
++		return pinctrl_select_state(pctldev->p, pctldev->hog_default);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pinctrl_force_default);
++
+ #ifdef CONFIG_DEBUG_FS
+ 
+ static int pinctrl_pins_show(struct seq_file *s, void *what)
+@@ -1521,16 +1545,23 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+ 
+ 	pctldev->p = pinctrl_get_locked(pctldev->dev);
+ 	if (!IS_ERR(pctldev->p)) {
+-		struct pinctrl_state *s =
++		pctldev->hog_default =
+ 			pinctrl_lookup_state_locked(pctldev->p,
+ 						    PINCTRL_STATE_DEFAULT);
+-		if (IS_ERR(s)) {
++		if (IS_ERR(pctldev->hog_default)) {
+ 			dev_dbg(dev, "failed to lookup the default state\n");
+ 		} else {
+-			if (pinctrl_select_state_locked(pctldev->p, s))
++			if (pinctrl_select_state_locked(pctldev->p,
++						pctldev->hog_default))
+ 				dev_err(dev,
+ 					"failed to select default state\n");
+ 		}
++
++		pctldev->hog_sleep =
++			pinctrl_lookup_state_locked(pctldev->p,
++						    PINCTRL_STATE_SLEEP);
++		if (IS_ERR(pctldev->hog_sleep))
++			dev_dbg(dev, "failed to lookup the sleep state\n");
+ 	}
+ 
+ 	mutex_unlock(&pinctrl_mutex);
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 12f5694..232a9f6 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -30,6 +30,8 @@ struct pinctrl_gpio_range;
+  * @driver_data: driver data for drivers registering to the pin controller
+  *	subsystem
+  * @p: result of pinctrl_get() for this device
++ * @hog_default: default state for pins hogged by this device
++ * @hog_sleep: sleep state for pins hogged by this device
+  * @device_root: debugfs root for this device
+  */
+ struct pinctrl_dev {
+@@ -41,6 +43,8 @@ struct pinctrl_dev {
+ 	struct module *owner;
+ 	void *driver_data;
+ 	struct pinctrl *p;
++	struct pinctrl_state *hog_default;
++	struct pinctrl_state *hog_sleep;
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry *device_root;
+ #endif
+@@ -164,5 +168,8 @@ int pinctrl_register_map(struct pinctrl_map const *maps, unsigned num_maps,
+ 			 bool dup, bool locked);
+ void pinctrl_unregister_map(struct pinctrl_map const *map);
+ 
++extern int pinctrl_force_sleep(struct pinctrl_dev *pctldev);
++extern int pinctrl_force_default(struct pinctrl_dev *pctldev);
++
+ extern struct mutex pinctrl_mutex;
+ extern struct list_head pinctrldev_list;
+-- 
+1.7.11.3
 
