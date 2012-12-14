@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab2LNW3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:29:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38687 "EHLO mail.kernel.org"
+	id S1757445Ab2LNWaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:30:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38702 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756868Ab2LNW3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:29:49 -0500
+	id S1756868Ab2LNW3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:29:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jani Nikula <jani.nikula@intel.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 08/28] drm/i915: do not default to 18 bpp for eDP if missing from VBT
-Date: Fri, 14 Dec 2012 14:26:25 -0800
-Message-Id: <20121214222252.339780781@linuxfoundation.org>
+        Soeren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [ 09/28] mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
+Date: Fri, 14 Dec 2012 14:26:26 -0800
+Message-Id: <20121214222252.565388274@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -27,78 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit 9a30a61f3516871c5c638fd7c025fbaa11ddf7fe upstream.
+commit 387870f2d6d679746020fa8e25ef786ff338dc98 upstream.
 
-commit 500a8cc466a24e2fbc4c86ef9c6467ae2ffdeb0c
-Author: Zhenyu Wang <zhenyuw@linux.intel.com>
-Date:   Wed Jan 13 11:19:52 2010 +0800
+dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+regardless the flags provided by the caller. This causes excessive
+pruning of emergency memory pools without any good reason. Additionaly,
+on ARM architecture any driver which is using dmapools will sooner or
+later  trigger the following error:
+"ERROR: 256 KiB atomic DMA coherent pool is too small!
+Please increase it with coherent_pool= kernel parameter!".
+Increasing the coherent pool size usually doesn't help much and only
+delays such error, because all GFP_ATOMIC DMA allocations are always
+served from the special, very limited memory pool.
 
-    drm/i915: parse eDP panel color depth from VBT block
+This patch changes the dmapool code to correctly use gfp flags provided
+by the dmapool caller.
 
-originally introduced parsing bpp for eDP from VBT, with a default of 18
-bpp if the eDP BIOS data block is not present. Turns out that default seems
-to break the Macbook Pro with retina display, as noted in
-
-commit 4344b813f105a19f793f1fd93ad775b784648b95
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Aug 10 11:10:20 2012 +0200
-
-    drm/i915: ignore eDP bpc settings from vbt
-
-Since we can't ignore bpc settings from VBT completely after all, get rid
-of the default. Do not clamp eDP to 18 bpp by default if the eDP BDB is
-missing from VBT.
-
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Henrik Rydberg <rydberg@euromail.se>
-[danvet: paste in the updated commit message from irc.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Soeren Moch <smoch@web.de>
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Tested-by: Soeren Moch <smoch@web.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_bios.c    |   11 ++---------
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ mm/dmapool.c |   31 +++++++------------------------
+ 1 file changed, 7 insertions(+), 24 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -459,12 +459,8 @@ parse_edp(struct drm_i915_private *dev_p
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -50,7 +50,6 @@ struct dma_pool {		/* the pool */
+ 	size_t allocation;
+ 	size_t boundary;
+ 	char name[32];
+-	wait_queue_head_t waitq;
+ 	struct list_head pools;
+ };
  
- 	edp = find_section(bdb, BDB_EDP);
- 	if (!edp) {
--		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
--			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
--				      "supported, assume %dbpp panel color "
--				      "depth.\n",
--				      dev_priv->edp.bpp);
--		}
-+		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
-+			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
- 		return;
- 	}
+@@ -62,8 +61,6 @@ struct dma_page {		/* cacheable header f
+ 	unsigned int offset;
+ };
  
-@@ -617,9 +613,6 @@ init_vbt_defaults(struct drm_i915_privat
- 	dev_priv->lvds_use_ssc = 1;
- 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
- 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+-#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
 -
--	/* eDP data */
--	dev_priv->edp.bpp = 18;
+ static DEFINE_MUTEX(pools_lock);
+ 
+ static ssize_t
+@@ -172,7 +169,6 @@ struct dma_pool *dma_pool_create(const c
+ 	retval->size = size;
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+-	init_waitqueue_head(&retval->waitq);
+ 
+ 	if (dev) {
+ 		int ret;
+@@ -227,7 +223,6 @@ static struct dma_page *pool_alloc_page(
+ 		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+ #endif
+ 		pool_initialise_page(pool, page);
+-		list_add(&page->page_list, &pool->page_list);
+ 		page->in_use = 0;
+ 		page->offset = 0;
+ 	} else {
+@@ -315,30 +310,21 @@ void *dma_pool_alloc(struct dma_pool *po
+ 	might_sleep_if(mem_flags & __GFP_WAIT);
+ 
+ 	spin_lock_irqsave(&pool->lock, flags);
+- restart:
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
+ 		if (page->offset < pool->allocation)
+ 			goto ready;
+ 	}
+-	page = pool_alloc_page(pool, GFP_ATOMIC);
+-	if (!page) {
+-		if (mem_flags & __GFP_WAIT) {
+-			DECLARE_WAITQUEUE(wait, current);
+ 
+-			__set_current_state(TASK_UNINTERRUPTIBLE);
+-			__add_wait_queue(&pool->waitq, &wait);
+-			spin_unlock_irqrestore(&pool->lock, flags);
++	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
++	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-			schedule_timeout(POOL_TIMEOUT_JIFFIES);
++	page = pool_alloc_page(pool, mem_flags);
++	if (!page)
++		return NULL;
+ 
+-			spin_lock_irqsave(&pool->lock, flags);
+-			__remove_wait_queue(&pool->waitq, &wait);
+-			goto restart;
+-		}
+-		retval = NULL;
+-		goto done;
+-	}
++	spin_lock_irqsave(&pool->lock, flags);
+ 
++	list_add(&page->page_list, &pool->page_list);
+  ready:
+ 	page->in_use++;
+ 	offset = page->offset;
+@@ -348,7 +334,6 @@ void *dma_pool_alloc(struct dma_pool *po
+ #ifdef	DMAPOOL_DEBUG
+ 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+ #endif
+- done:
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 	return retval;
  }
- 
- static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5000,7 +5000,7 @@ static bool intel_choose_pipe_bpp_dither
- 			/* Use VBT settings if we have an eDP panel */
- 			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
- 
--			if (edp_bpc < display_bpc) {
-+			if (edp_bpc && edp_bpc < display_bpc) {
- 				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
- 				display_bpc = edp_bpc;
- 			}
+@@ -435,8 +420,6 @@ void dma_pool_free(struct dma_pool *pool
+ 	page->in_use--;
+ 	*(int *)vaddr = page->offset;
+ 	page->offset = offset;
+-	if (waitqueue_active(&pool->waitq))
+-		wake_up_locked(&pool->waitq);
+ 	/*
+ 	 * Resist a temptation to do
+ 	 *    if (!is_page_busy(page)) pool_free_page(pool, page);
 
 
