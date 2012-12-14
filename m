@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab2LNWmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:42:52 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:55651 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655Ab2LNWmA (ORCPT
+	id S932702Ab2LNWnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:43:17 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33645 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab2LNWnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:42:00 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/12] blkcg: add blkg_policy_data->plid
-Date: Fri, 14 Dec 2012 14:41:23 -0800
-Message-Id: <1355524885-22719-11-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+	Fri, 14 Dec 2012 17:43:13 -0500
+Date: Sat, 15 Dec 2012 02:43:07 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+Message-ID: <20121214224307.GH6582@moon>
+References: <50CAE485.5020608@parallels.com>
+ <50CB716D.6020501@zytor.com>
+ <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
+ <50CB7459.7010107@zytor.com>
+ <20121214201217.GE6582@moon>
+ <50CB9553.7050808@zytor.com>
+ <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com>
+ <50CBA171.4080403@zytor.com>
+ <20121214222517.GG6582@moon>
+ <50CBA7BC.4020001@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CBA7BC.4020001@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pd->plid so that the policy a pd belongs to can be identified
-easily.  This will be used to implement hierarchical blkg_[rw]stats.
+On Fri, Dec 14, 2012 at 02:27:08PM -0800, H. Peter Anvin wrote:
+> On 12/14/2012 02:25 PM, Cyrill Gorcunov wrote:
+> > 
+> > this would allow us to defer checkpoint until task finish vdso code. Peter,
+> > if I understand you correctly you propose we provide some own proxy-vdso
+> > which would redirect calls to real ones, right? But the main problem
+> > is that is exactly the idea to be able to c/r existing programs without
+> > recompiling and such (or I miss something here?).
+> 
+> No, I'm proposing that you use a proxy-vdso which does nothing but
+> system calls, and therefore can be stable indefinitely.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-cgroup.c | 2 ++
- block/blk-cgroup.h | 3 ++-
- 2 files changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 16ea5a1..fbf96ce 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -113,6 +113,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
- 
- 		blkg->pd[i] = pd;
- 		pd->blkg = blkg;
-+		pd->plid = i;
- 
- 		/* invoke per-policy init */
- 		if (pol->pd_init_fn)
-@@ -908,6 +909,7 @@ int blkcg_activate_policy(struct request_queue *q,
- 
- 		blkg->pd[pol->plid] = pd;
- 		pd->blkg = blkg;
-+		pd->plid = pol->plid;
- 		pol->pd_init_fn(blkg);
- 
- 		spin_unlock(&blkg->blkcg->lock);
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 2446225..40f5b97 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -81,8 +81,9 @@ struct blkg_rwstat {
-  * beginning and pd_size can't be smaller than pd.
-  */
- struct blkg_policy_data {
--	/* the blkg this per-policy data belongs to */
-+	/* the blkg and policy id this per-policy data belongs to */
- 	struct blkcg_gq			*blkg;
-+	int				plid;
- 
- 	/* used during policy activation */
- 	struct list_head		alloc_node;
--- 
-1.7.11.7
-
+This won't help in case of scenario you've been pointing in
+previous email (where c/r happens in a middle of vdso),
+would it? Because we still need somehow to be sure we're not
+checkpointing in a middle of signal handler which will return
+to some vdso place.
