@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab2LNPYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 10:24:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37018 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab2LNPYw (ORCPT
+	id S1756329Ab2LNPZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 10:25:12 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:46427 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248Ab2LNPZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 10:24:52 -0500
-Date: Fri, 14 Dec 2012 15:30:00 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: David Laight <david@l8s.co.uk>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wine-devel@winehq.org
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-Message-ID: <20121214153000.62af6cbc@pyramind.ukuu.org.uk>
-In-Reply-To: <CAKywueSN++ZCNJ1zbET_axuwXd2ZujvSof9H82E3AdeZWY_BgQ@mail.gmail.com>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
-	<20121207161602.GA17710@infradead.org>
-	<495d17310e0a687d446afc86def0f058@office.etersoft.ru>
-	<20121212083401.GW5010@snowdrop.l8s.co.uk>
-	<CAKywueSN++ZCNJ1zbET_axuwXd2ZujvSof9H82E3AdeZWY_BgQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 14 Dec 2012 10:25:09 -0500
+Message-ID: <50CB44B3.8040601@ahsoftware.de>
+Date: Fri, 14 Dec 2012 16:24:35 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121002 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4 v4] rtc: add rtc-driver for HID sensors of type time
+References: <50C8591A.3030301@ahsoftware.de> <1355310680-2466-1-git-send-email-holler@ahsoftware.de> <50CAF473.6040901@metafoo.de> <50CB24D4.3030606@ahsoftware.de> <50CB347B.80305@ahsoftware.de> <50CB37C5.4050008@ahsoftware.de> <50CB38F2.4050806@metafoo.de>
+In-Reply-To: <50CB38F2.4050806@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We can make this feature (passing O_DENY* flags received from clients
-> to filesystem) can be turned on/off on Samba/NFS server to let this
-> particular use case work. In general, I think we really need to be
-> sure that nobody has a read access for files that a Windows process
-> opened with O_DENYREAD (because there can be important reasons for the
-> Windows process to do so).
+Am 14.12.2012 15:34, schrieb Lars-Peter Clausen:
+> On 12/14/2012 03:29 PM, Alexander Holler wrote:
+>> Am 14.12.2012 15:15, schrieb Alexander Holler:
+>>> Am 14.12.2012 14:08, schrieb Alexander Holler:
+>>>> Am 14.12.2012 10:42, schrieb Lars-Peter Clausen:
+>>>
+>>>>> And another thing I've overlooked before:
+>>>>> wait_for_completion_interruptible_timeout can either return a positive
+>>>>> number when the completion was completed, 0 in case of an timeout, or a
+>>>>> negative error code in case it was interrupted. You need to handle all
+>>>>> three. E.g. something like this.
+>>>>>
+>>>>> ret = wait_for_completion_interruptible_timeout(...)
+>>>>> if (ret == 0)
+>>>>>     return -EIO;
+>>>>> if (ret < 0)
+>>>>>     return ret
+>>>>>
+>>>>
+>>>> Hmpf, the only working approach to use some in kernel functions really
+>>>> is to the read source yourself and don't trust anything else. :/
+>>>
+>>> Anyway, my approach doesn't work as it introduces a race condition:
+>>>
+>>>
+>>> /* get a report with all values through requesting one value */
+>>> sensor_hub_input_attr_get_raw_value(...)
+>>>
+>>> /* race if this task goes to slepp and the values were
+>>> received before it could call the below wait...
+>>>
+>>> /* wait for all values (event) */
+>>> if (!wait_for_completion_interruptible_timeout(...))
+>>>
+>>>
+>>> I'll have to look for a mechanism how to avoid that. So v5 might need
+>>> some time.
+>>
+>> Sorry for the noise. That INIT_COMPLETION() before the sensor...() does
+>> exactly that. So it's enough if I handle the different return situations of
+>> wait_for...().
+>>
+>> I will just use if(wait...()<=0) return -EIO.
+>>
+> 
+> No, that's wrong. You should really return the error code returned by
+> wait_for_completion_interruptible_timeout(). This will make sure that
+> userspace restarts the syscall if necessary.
 
-It should only affect windows emulated tasks, nothing else. If you want
-to do locking friendly behaviour you could also take lockf locks so that
-Linux domain code that *wishes* to be nice in this area behaves the way
-you want.
+Sorry for my ignorance, but which reasons for interruption do exist
+which doesn't kill the userspace too? The error number -ESYSRESTART
+doesn't offer a hint.
 
-Without that you break so much stuff its a horrible idea (eg backups,
-ubuntu one sync etc).
-
-Alan
-
+Alexander
