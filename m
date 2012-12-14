@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab2LNHzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 02:55:40 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50303 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab2LNHzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 02:55:38 -0500
-Message-ID: <1355471733.11297.11.camel@phoenix>
-Subject: [PATCH 6/6] iio: dac: ad5791: Don't set error code to
- [pos|neg]_voltage_uv
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Dec 2012 15:55:33 +0800
-In-Reply-To: <1355471245.11297.1.camel@phoenix>
-References: <1355471245.11297.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755372Ab2LNHzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 02:55:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42771 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755165Ab2LNHzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 02:55:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,279,1355126400"; 
+   d="scan'208";a="263885274"
+Message-ID: <50CADBDF.60305@intel.com>
+Date: Fri, 14 Dec 2012 15:57:19 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <bitbucket@online.de>
+CC: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, linux@arm.linux.org.uk,
+        pjt@google.com, santosh.shilimkar@ti.com, Morten.Rasmussen@arm.com,
+        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, viresh.kumar@linaro.org
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>  <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>  <50C93AC1.1060202@intel.com>  <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>  <50C9E552.1010600@intel.com> <1355460356.5777.12.camel@marge.simpson.net>  <50CAC905.9070100@intel.com> <1355471146.7641.13.camel@marge.simpson.net>
+In-Reply-To: <1355471146.7641.13.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator_get_voltage() may return negative error code.
-Don't set error code to to pos_voltage_uv and neg_voltage_uv.
+On 12/14/2012 03:45 PM, Mike Galbraith wrote:
+> On Fri, 2012-12-14 at 14:36 +0800, Alex Shi wrote: 
+>> On 12/14/2012 12:45 PM, Mike Galbraith wrote:
+>>>>> Do you have further ideas for buddy cpu on such example?
+>>>>>>>
+>>>>>>> Which kind of sched_domain configuration have you for such system ?
+>>>>>>> and how many sched_domain level have you ?
+>>>>>
+>>>>> it is general X86 domain configuration. with 4 levels,
+>>>>> sibling/core/cpu/numa.
+>>> CPU is a bug that slipped into domain degeneration.  You should have
+>>> SIBLING/MC/NUMA (chasing that down is on todo).
+>>
+>> Maybe.
+>> the CPU/NUMA is different on domain flags, CPU has SD_PREFER_SIBLING.
+> 
+> What I noticed during (an unrelated) bisection on a 40 core box was
+> domains going from so..
+> 
+> 3.4.0-bisect (virgin)
+> [    5.056214] CPU0 attaching sched-domain:
+> [    5.065009]  domain 0: span 0,32 level SIBLING
+> [    5.075011]   groups: 0 (cpu_power = 589) 32 (cpu_power = 589)
+> [    5.088381]   domain 1: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level MC
+> [    5.107669]    groups: 0,32 (cpu_power = 1178)  4,36 (cpu_power = 1178)  8,40 (cpu_power = 1178) 12,44 (cpu_power = 1178)
+>                          16,48 (cpu_power = 1177) 20,52 (cpu_power = 1178) 24,56 (cpu_power = 1177) 28,60 (cpu_power = 1177)
+>                          64,72 (cpu_power = 1176) 68,76 (cpu_power = 1176)
+> [    5.162115]    domain 2: span 0-79 level NODE
+> [    5.171927]     groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11773)
+>                            1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77 (cpu_power = 11772)
+>                            2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62,66,70,74,78 (cpu_power = 11773)
+>                            3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63,67,71,75,79 (cpu_power = 11770)
+> 
+> ..to so, which looks a little bent.  CPU and MC have identical spans, so
+> CPU should have gone away, as it used to do.
+> 
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/iio/dac/ad5791.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/iio/dac/ad5791.c b/drivers/iio/dac/ad5791.c
-index 2bd2e37..6efe83e 100644
---- a/drivers/iio/dac/ad5791.c
-+++ b/drivers/iio/dac/ad5791.c
-@@ -365,7 +365,11 @@ static int __devinit ad5791_probe(struct spi_device *spi)
- 		if (ret)
- 			goto error_put_reg_pos;
- 
--		pos_voltage_uv = regulator_get_voltage(st->reg_vdd);
-+		ret = regulator_get_voltage(st->reg_vdd);
-+		if (ret < 0)
-+			goto error_disable_reg_pos;
-+
-+		pos_voltage_uv = ret;
- 	}
- 
- 	st->reg_vss = regulator_get(&spi->dev, "vss");
-@@ -374,7 +378,11 @@ static int __devinit ad5791_probe(struct spi_device *spi)
- 		if (ret)
- 			goto error_put_reg_neg;
- 
--		neg_voltage_uv = regulator_get_voltage(st->reg_vss);
-+		ret = regulator_get_voltage(st->reg_vss);
-+		if (ret < 0)
-+			goto error_disable_reg_neg;
-+
-+		neg_voltage_uv = ret;
- 	}
- 
- 	st->pwr_down = true;
-@@ -428,6 +436,7 @@ error_put_reg_neg:
- 	if (!IS_ERR(st->reg_vss))
- 		regulator_put(st->reg_vss);
- 
-+error_disable_reg_pos:
- 	if (!IS_ERR(st->reg_vdd))
- 		regulator_disable(st->reg_vdd);
- error_put_reg_pos:
--- 
-1.7.9.5
-
-
+better to remove one, and believe you can make it. :)
 
