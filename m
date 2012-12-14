@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2LNLBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 06:01:47 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:40198 "EHLO
+	id S1756105Ab2LNLCC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 06:02:02 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38081 "EHLO
 	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2LNLBo (ORCPT
+	with ESMTP id S1751940Ab2LNLB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 06:01:44 -0500
-Subject: [PATCH] ata: uncomment ata_timing for XFER_PIO_SLOW
+	Fri, 14 Dec 2012 06:01:56 -0500
+Subject: [PATCH] x86/test_nx: update testing module after recent kernel changes
 To: linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Borislav Petkov <bp@alien8.de>, Jeff Garzik <jgarzik@redhat.com>
-Date: Fri, 14 Dec 2012 15:01:37 +0400
-Message-ID: <20121214110137.9155.68183.stgit@zurg>
+Cc: x86@kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 14 Dec 2012 15:01:49 +0400
+Message-ID: <20121214110149.9548.37883.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,152 +22,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uncomments ata timings for XFER_PIO_SLOW,
-otherwise ata_timing_find_mode() returns NULL and kernel crashes in
-pacpi_set_dmamode() after null-pointer dereference.
+"test_nx" isn't uptodate, kernel has been changed since its last revision.
+For now it only able to crash kernel on loading.
 
-The same problem was mentioned recently in debug patch v3.7-rc5-72-gcd705d5
-("libata debugging: Warn when unable to find timing descriptor based on xfer_mode")
+exception tables are relative since commit v3.4-rc3-33-g7062765
+("x86, extable: Switch to relative exception table entries")
 
-I'm not sure about this patch, because I have no idea what this XFER_PIO_SLOW
-means and why this bug so rare (3 times during 4 days boot-reboot test) I caught
-this on completely ordinary PC with nvidia MCP61 chipset, sata hdd and ide dvd-rom.
+Exception entries now unusable for this test, because exception table cannot
+lays farther than 2gb from covering address. This patch adds DIE_PAGE_FAULT
+notifier into no_context() function in arch/x86/mm/fault.c and handles these
+exceptions manually.
+
+modules' data sections now can be ro/nx protected since v2.6.37-rc2-3-g84e1c6b
+("x86: Add RO/NX protection for loadable kernel modules")
+thus fourth testcase can be enabled.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: x86@kernel.org
 
 ---
 
-Sep 27 13:48:23 buzz kernel: [   63.815060] ACPI: PCI Interrupt Link [APSI] enabled at IRQ 20
-Sep 27 13:48:23 buzz kernel: [   63.987035] scsi0 : pata_acpi
-Sep 27 13:48:23 buzz kernel: [   64.072790] scsi1 : pata_acpi
-Sep 27 13:48:23 buzz kernel: [   64.127731] ata1: PATA max UDMA/133 cmd 0x9f0 ctl 0xbf0 bmdma 0xcc00 irq 20
-Sep 27 13:48:23 buzz kernel: [   64.127919] ata2: PATA max UDMA/133 cmd 0x970 ctl 0xb70 bmdma 0xcc08 irq 20
-Sep 27 13:48:23 buzz kernel: [   64.247630] ACPI: PCI Interrupt Link [APSJ] enabled at IRQ 23
-Sep 27 13:48:23 buzz kernel: [   64.511669] scsi2 : pata_acpi
-Sep 27 13:48:23 buzz kernel: [   64.575269] ------------[ cut here ]------------
-Sep 27 13:48:23 buzz kernel: [   64.575269] WARNING: at drivers/ata/libata-core.c:2946 ata_timing_find_mode+0x5e/0x8a [libata]()
-Sep 27 13:48:23 buzz kernel: [   64.575269] Hardware name: M52S-S3P
-Sep 27 13:48:23 buzz kernel: [   64.575269] Modules linked in: ohci_hcd(+) pata_amd(+) pata_acpi(+) sata_nv(+) libata scsi_mod forcedeth ehci_hcd amd74
-xx usbcore ide_pci_generic ide_core usb_common unix
-Sep 27 13:48:23 buzz kernel: [   64.575269] Pid: 1785, comm: scsi_eh_0 Not tainted 3.6.0-rc7-next-20120926-00012-g872b7d8 #568
-Sep 27 13:48:23 buzz kernel: [   64.575269] Call Trace:
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810760fa>] warn_slowpath_common+0xc4/0xf2
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff81076150>] warn_slowpath_null+0x28/0x31
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa028d1bf>] ata_timing_find_mode+0x5e/0x8a [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa001e2e2>] pacpi_set_dmamode+0x45/0xc7 [pata_acpi]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa001e469>] pacpi_qc_issue+0x7e/0xa1 [pata_acpi]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa0290a71>] ata_qc_issue+0x45b/0x4c7 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff816832e1>] ? _raw_spin_lock_irqsave+0xdc/0xf8
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa0290b7f>] ? ata_exec_internal_sg+0xa2/0x5af [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa0290d6c>] ata_exec_internal_sg+0x28f/0x5af [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa0291132>] ata_exec_internal+0xa6/0xba [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff8117bb60>] ? time_hardirqs_off+0x3b/0x47
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810c8e5a>] ? local_clock+0x59/0x8c
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02911f1>] ata_do_dev_read_id+0x31/0x3a [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810f99d6>] ? mark_held_locks+0xa4/0xde
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa0291329>] ata_dev_read_id+0x12f/0x583 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa028c344>] ? ata_link_max_devices+0x14/0x45 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a08cc>] ata_eh_recover+0xa80/0x1871 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810c8e5a>] ? local_clock+0x59/0x8c
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a42d1>] ? spin_unlock_irqrestore+0x10/0x19 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a4d7c>] ? ata_sff_drain_fifo+0xb1/0xb1 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a5929>] ? ata_sff_wait_after_reset+0x18c/0x18c [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa001e21c>] ? pacpi_port_start+0xc0/0xc0 [pata_acpi]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff81684351>] ? _raw_spin_unlock_irqrestore+0x7d/0xbc
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a5929>] ? ata_sff_wait_after_reset+0x18c/0x18c [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a5929>] ? ata_sff_wait_after_reset+0x18c/0x18c [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a2184>] ata_do_eh+0x60/0xe3 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a4d7c>] ? ata_sff_drain_fifo+0xb1/0xb1 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a5929>] ? ata_sff_wait_after_reset+0x18c/0x18c [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa001e21c>] ? pacpi_port_start+0xc0/0xc0 [pata_acpi]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a4b32>] ata_sff_error_handler+0x13b/0x14f [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a4cbb>] ata_bmdma_error_handler+0x175/0x185 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a1b23>] ata_scsi_port_error_handler+0x34d/0x832 [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa01e1c1f>] ? scsi_eh_get_sense+0x21a/0x21a [scsi_mod]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa02a20d4>] ata_scsi_error+0xcc/0x11c [libata]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa01e1c1f>] ? scsi_eh_get_sense+0x21a/0x21a [scsi_mod]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa01e1dbc>] scsi_error_handler+0x19d/0x869 [scsi_mod]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffffa01e1c1f>] ? scsi_eh_get_sense+0x21a/0x21a [scsi_mod]
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810ac806>] kthread+0xe2/0xf1
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810ac724>] ? __kthread_parkme+0xa4/0xa4
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff8168f42c>] ret_from_fork+0x7c/0x90
-Sep 27 13:48:23 buzz kernel: [   64.575269]  [<ffffffff810ac724>] ? __kthread_parkme+0xa4/0xa4
-Sep 27 13:48:23 buzz kernel: [   64.575269] ---[ end trace b97218fb3afe71eb ]---
-Sep 27 13:48:23 buzz kernel: [   64.575269] ata_timing_find_mode xfer_mode 0
-Sep 27 13:48:23 buzz kernel: [   64.640696] scsi3 : pata_acpi
-Sep 27 13:48:23 buzz kernel: [   64.689329] ata3: PATA max UDMA/133 cmd 0x9e0 ctl 0xbe0 bmdma 0xe000 irq 23
-Sep 27 13:48:23 buzz kernel: [   64.689519] ata4: PATA max UDMA/133 cmd 0x960 ctl 0xb60 bmdma 0xe008 irq 23
-Sep 27 13:48:23 buzz kernel: [   64.721830] ohci_hcd 0000:00:02.0: OHCI Host Controller
-Sep 27 13:48:23 buzz kernel: [   64.722421] ohci_hcd 0000:00:02.0: new USB bus registered, assigned bus number 2
-Sep 27 13:48:23 buzz kernel: [   64.725143] ohci_hcd 0000:00:02.0: irq 23, io mem 0xfc008000
-Sep 27 13:48:23 buzz kernel: [   64.772703] ata1.00: HPA detected: current 488395055, native 488397168
-Sep 27 13:48:23 buzz kernel: [   64.772900] ata1.00: ATA-7: ST3250410AS, 3.AAA, max UDMA/133
-Sep 27 13:48:23 buzz kernel: [   64.773090] ata1.00: 488395055 sectors, multi 16: LBA48 NCQ (depth 0/32)
+sample oops on module loading before this patch:
 
-Warning was added by following debebug patch. I cannot collect oops inself because
-it always happens too early, before crashkernel initialization.
-
- --- a/drivers/ata/libata-core.c
- +++ b/drivers/ata/libata-core.c
-@@ -2942,6 +2942,9 @@ const struct ata_timing *ata_timing_find_mode(u8 xfer_mode)
-
-        if (xfer_mode == t->mode)
-                return t;
-+
-+       WARN_ON(1);
-+       printk("%s xfer_mode %d\n", __func__, xfer_mode);
-        return NULL;
- }
- --- a/drivers/ata/pata_acpi.c
- +++ b/drivers/ata/pata_acpi.c
-@@ -121,6 +121,8 @@ static void pacpi_set_piomode(struct ata_port *ap, struct ata_device *adev)
-
-        /* Now stuff the nS values into the structure */
-        t = ata_timing_find_mode(adev->pio_mode);
-+       if (!t)
-+               return;
-        acpi->gtm.drive[unit].pio = t->cycle;
-        ata_acpi_stm(ap, &acpi->gtm);
-        /* See what mode we actually got */
-
-I saw this oops on this machine with linux-next/allmodconfig
-
-root@buzz:/var/crash# lspci
-00:00.0 RAM memory: NVIDIA Corporation MCP61 Memory Controller (rev a1)
-00:01.0 ISA bridge: NVIDIA Corporation MCP61 LPC Bridge (rev a2)
-00:01.1 SMBus: NVIDIA Corporation MCP61 SMBus (rev a2)
-00:01.2 RAM memory: NVIDIA Corporation MCP61 Memory Controller (rev a2)
-00:02.0 USB controller: NVIDIA Corporation MCP61 USB 1.1 Controller (rev a3)
-00:02.1 USB controller: NVIDIA Corporation MCP61 USB 2.0 Controller (rev a3)
-00:04.0 PCI bridge: NVIDIA Corporation MCP61 PCI bridge (rev a1)
-00:05.0 Audio device: NVIDIA Corporation MCP61 High Definition Audio (rev a2)
-00:06.0 IDE interface: NVIDIA Corporation MCP61 IDE (rev a2)
-00:07.0 Bridge: NVIDIA Corporation MCP61 Ethernet (rev a2)
-00:08.0 IDE interface: NVIDIA Corporation MCP61 SATA Controller (rev a2)
-00:08.1 IDE interface: NVIDIA Corporation MCP61 SATA Controller (rev a2)
-00:09.0 PCI bridge: NVIDIA Corporation MCP61 PCI Express bridge (rev a2)
-00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
-00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Address Map
-00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] DRAM Controller
-00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
-02:00.0 VGA compatible controller: NVIDIA Corporation G86 [GeForce 8500 GT] (rev a1)
+[    2.343411] Testing NX protection
+[    2.343457] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+[    2.343494] BUG: unable to handle kernel paging request at ffff88007c951da5
+[    2.343590] IP: [<ffff88007c951da5>] 0xffff88007c951da4
+[    2.343657] PGD 1e0c063 PUD 1fffc067 PMD 800000007c8001e3
+[    2.343780] Oops: 0011 [#1] SMP
+[    2.343872] Modules linked in: test_nx(+) ide_generic eni suni atm mce_inject edac_core ar7part mtd cmd640 sctp cs5520 dccp_ipv6 dccp_ipv4 dccp cs55
+35_mfgpt bnep rfcomm bluetooth fuse nfsd exportfs powernow_k8 kvm_amd k8temp i2c_nforce2 evbug pcspkr kvm btrfs zlib_deflate libcrc32c ide_pci_generic
+ide_core ata_generic pata_acpi sata_nv [last unloaded: cdc_wdm]
+[    2.344363] CPU 1
+[    2.344363] Pid: 15140, comm: modprobe Tainted: P             3.7.0-rc8-next-20121211+ #597 Gigabyte Technology Co., Ltd. M52S-S3P/M52S-S3P
+[    2.344363] RIP: 0010:[<ffff88007c951da5>]  [<ffff88007c951da5>] 0xffff88007c951da4
+[    2.344363] RSP: 0018:ffff88007c951d70  EFLAGS: 00010246
+[    2.344363] RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007fc8f328
+[    2.344363] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88007c951da5
+[    2.344363] RBP: ffff88007c951d88 R08: 0000000000000000 R09: 0000000000000000
+[    2.344363] R10: ffff88007c951fd8 R11: 0000000000000992 R12: ffff88007c951da5
+[    2.344363] R13: 0000000000000000 R14: ffff88007b0553e0 R15: ffff88007c951ee8
+[    2.344363] FS:  00007f12352de700(0000) GS:ffff88007fc80000(0000) knlGS:0000000000000000
+[    2.344363] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    2.344363] CR2: ffff88007c951da5 CR3: 000000007a23b000 CR4: 00000000000007e0
+[    2.344363] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    2.344363] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    2.344363] Process modprobe (pid: 15140, threadinfo ffff88007c950000, task ffff880079038000)
+[    2.344363] Stack:
+[    2.344363]  ffffffffa0bf002f ffffffffa0bf0320 ffffffffa0bf00a0 ffff88007c951db8
+[    2.344363]  ffffffffa0bf00d5 ffff88007b0553e0 0090c30000000000 ffffffffa0bf0320
+[    2.344363]  ffffffffa0bf00a0 ffff88007c951de8 ffffffff810002da ffffffffa0bf0320
+[    2.344363] Call Trace:
+[    2.344363]  [<ffffffffa0bf002f>] ? foo_label+0x3/0x74 [test_nx]
+[    2.344363]  [<ffffffffa0bf00a0>] ? foo_label+0x74/0x74 [test_nx]
+[    2.344363]  [<ffffffffa0bf00d5>] test_NX+0x35/0x120 [test_nx]
+[    2.344363]  [<ffffffffa0bf00a0>] ? foo_label+0x74/0x74 [test_nx]
+[    2.344363]  [<ffffffff810002da>] do_one_initcall+0x11a/0x170
+[    2.344363]  [<ffffffff810a28ad>] load_module+0x196d/0x1e40
+[    2.344363]  [<ffffffff8109e8f0>] ? __unlink_module+0x30/0x30
+[    2.344363]  [<ffffffff810a2e46>] sys_init_module+0xc6/0xf0
+[    2.344363]  [<ffffffff81801a12>] system_call_fastpath+0x16/0x1b
+[    2.344363] Code: bf a0 ff ff ff ff a0 00 bf a0 ff ff ff ff b8 1d 95 7c 00 88 ff ff d5 00 bf a0 ff ff ff ff e0 53 05 7b 00 88 ff ff 00 00 00 00 00 <c3> 90 00 20 03 bf a0 ff ff ff ff a0 00 bf a0 ff ff ff ff e8 1d
+[    2.344363] RIP  [<ffff88007c951da5>] 0xffff88007c951da4
+[    2.344363]  RSP <ffff88007c951d70>
+[    2.344363] CR2: ffff88007c951da5
 ---
- drivers/ata/libata-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/test_nx.c |   82 +++++++++++++++++++--------------------------
+ arch/x86/mm/fault.c       |    4 ++
+ 2 files changed, 39 insertions(+), 47 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 47d5961..c7d572f 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2873,7 +2873,7 @@ int sata_set_spd(struct ata_link *link)
+diff --git a/arch/x86/kernel/test_nx.c b/arch/x86/kernel/test_nx.c
+index 3f92ce0..98020bc 100644
+--- a/arch/x86/kernel/test_nx.c
++++ b/arch/x86/kernel/test_nx.c
+@@ -12,6 +12,7 @@
+ #include <linux/module.h>
+ #include <linux/sort.h>
+ #include <linux/slab.h>
++#include <linux/kdebug.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/asm.h>
+@@ -27,48 +28,30 @@ extern int rodata_test_data;
+  *
+  * To do this, the test code tries to execute memory in stack/kmalloc/etc,
+  * and then checks if the expected trap happens.
+- *
+- * Sadly, this implies having a dynamic exception handling table entry.
+- * ... which can be done (and will make Rusty cry)... but it can only
+- * be done in a stand-alone module with only 1 entry total.
+- * (otherwise we'd have to sort and that's just too messy)
   */
  
- static const struct ata_timing ata_timing[] = {
--/*	{ XFER_PIO_SLOW, 120, 290, 240, 960, 290, 240, 0,  960,   0 }, */
-+	{ XFER_PIO_SLOW, 120, 290, 240, 960, 290, 240, 0,  960,   0 },
- 	{ XFER_PIO_0,     70, 290, 240, 600, 165, 150, 0,  600,   0 },
- 	{ XFER_PIO_1,     50, 290,  93, 383, 125, 100, 0,  383,   0 },
- 	{ XFER_PIO_2,     30, 290,  40, 330, 100,  90, 0,  240,   0 },
++static void *exception_label;
+ 
++void fixup_label(void);
+ 
+-/*
+- * We want to set up an exception handling point on our stack,
+- * which means a variable value. This function is rather dirty
+- * and walks the exception table of the module, looking for a magic
+- * marker and replaces it with a specific function.
+- */
+-static void fudze_exception_table(void *marker, void *new)
++static int die_notify(struct notifier_block *nb, unsigned long val, void *data)
+ {
+-	struct module *mod = THIS_MODULE;
+-	struct exception_table_entry *extable;
++	struct die_args *args = data;
++	struct pt_regs *regs = args->regs;
+ 
+-	/*
+-	 * Note: This module has only 1 exception table entry,
+-	 * so searching and sorting is not needed. If that changes,
+-	 * this would be the place to search and re-sort the exception
+-	 * table.
+-	 */
+-	if (mod->num_exentries > 1) {
+-		printk(KERN_ERR "test_nx: too many exception table entries!\n");
+-		printk(KERN_ERR "test_nx: test results are not reliable.\n");
+-		return;
++	if (val == DIE_PAGE_FAULT &&
++	    regs->ip == (unsigned long)exception_label) {
++		regs->ip = (unsigned long)fixup_label;
++		return NOTIFY_STOP;
+ 	}
+-	extable = (struct exception_table_entry *)mod->extable;
+-	extable[0].insn = (unsigned long)new;
+-}
+ 
++	return NOTIFY_DONE;
++}
+ 
+-/*
+- * exception tables get their symbols translated so we need
+- * to use a fake function to put in there, which we can then
+- * replace at runtime.
+- */
+-void foo_label(void);
++struct notifier_block die_notify_block = {
++	.notifier_call = die_notify,
++	.priority = INT_MAX, /* Highest priority */
++};
+ 
+ /*
+  * returns 0 for not-executable, negative for executable
+@@ -81,23 +64,20 @@ static noinline int test_address(void *address)
+ {
+ 	unsigned long result;
+ 
+-	/* Set up an exception table entry for our address */
+-	fudze_exception_table(&foo_label, address);
++	/* Set up an exception label for our address */
++	exception_label = address;
++
+ 	result = 1;
+ 	asm volatile(
+-		"foo_label:\n"
+-		"0:	call *%[fake_code]\n"
+-		"1:\n"
++		"	call *%[fake_code]\n"
+ 		".section .fixup,\"ax\"\n"
+-		"2:	mov %[zero], %[rslt]\n"
++		"fixup_label:\n"
++		"	mov %[zero], %[rslt]\n"
+ 		"	ret\n"
+ 		".previous\n"
+-		_ASM_EXTABLE(0b,2b)
+ 		: [rslt] "=r" (result)
+ 		: [fake_code] "r" (address), [zero] "r" (0UL), "0" (result)
+ 	);
+-	/* change the exception table back for the next round */
+-	fudze_exception_table(address, &foo_label);
+ 
+ 	if (result)
+ 		return -ENODEV;
+@@ -108,10 +88,14 @@ static unsigned char test_data = 0xC3; /* 0xC3 is the opcode for "ret" */
+ 
+ static int test_NX(void)
+ {
+-	int ret = 0;
+ 	/* 0xC3 is the opcode for "ret" */
+ 	char stackcode[] = {0xC3, 0x90, 0 };
+ 	char *heap;
++	int ret;
++
++	ret = register_die_notifier(&die_notify_block);
++	if (ret)
++		return ret;
+ 
+ 	test_data = 0xC3;
+ 
+@@ -126,8 +110,10 @@ static int test_NX(void)
+ 
+ 	/* Test 2: Check if the heap is executable */
+ 	heap = kmalloc(64, GFP_KERNEL);
+-	if (!heap)
+-		return -ENOMEM;
++	if (!heap) {
++		ret = -ENOMEM;
++		goto out;
++	}
+ 	heap[0] = 0xC3; /* opcode for "ret" */
+ 
+ 	if (test_address(heap)) {
+@@ -153,14 +139,16 @@ static int test_NX(void)
+ 	}
+ #endif
+ 
+-#if 0
++#ifdef CONFIG_DEBUG_SET_MODULE_RONX
+ 	/* Test 4: Check if the .data section of a module is executable */
+ 	if (test_address(&test_data)) {
+ 		printk(KERN_ERR "test_nx: .data section is executable\n");
+ 		ret = -ENODEV;
+ 	}
+-
+ #endif
++
++out:
++	unregister_die_notifier(&die_notify_block);
+ 	return ret;
+ }
+ 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 027088f..0d2665e 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -664,6 +664,10 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 	if (is_errata93(regs, address))
+ 		return;
+ 
++	if (notify_die(DIE_PAGE_FAULT, "page fault", regs, error_code,
++				X86_TRAP_PF, signal) == NOTIFY_STOP)
++		return;
++
+ 	/*
+ 	 * Oops. The kernel tried to access some bad page. We'll have to
+ 	 * terminate things with extreme prejudice:
 
