@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2LNKmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 05:42:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab2LNKmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 05:42:07 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	id S1754585Ab2LNKnV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 05:43:21 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14599 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab2LNKnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 05:43:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 14 Dec 2012 02:43:12 -0800
+Date: Fri, 14 Dec 2012 12:43:10 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        Huqiao <huqiao36@huawei.com>
-Subject: Re: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage devices and support new switch command
-Date: Fri, 14 Dec 2012 11:42:34 +0100
-Message-ID: <6646955.7QFMbxFQIx@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8-12-desktop+; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F326FC0242@szxeml546-mbs.china.huawei.com>
-References: <fe8c905bb12.b12fe8c905b@huawei.com> <1758237.OLMhWhauCd@linux-lqwf.site> <910F9D9E13B84F4C8FA771DC9BDE99F326FC0242@szxeml546-mbs.china.huawei.com>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: debug clock tree
+Message-ID: <20121214104310.GW19258@tbergstrom-lnx.Nvidia.com>
+References: <1355370586-6600-1-git-send-email-pgaikwad@nvidia.com>
+ <CAPtuhThBigSQMkNDf16Fo1tddTKo=rPEydHmzep0DqtgLrB+HA@mail.gmail.com>
+ <50CA17FB.9060606@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <50CA17FB.9060606@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 December 2012 10:28:31 Fangxiaozhi wrote:
+On Thu, Dec 13, 2012 at 07:01:31PM +0100, Stephen Warren wrote:
+> On 12/13/2012 09:27 AM, Mike Turquette wrote:
+> > On Wed, Dec 12, 2012 at 7:49 PM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
+> >> Adds debug file "clock_tree" in /sys/kernel/debug/clk dir.
+> >> It helps to view all the clock registered in tree format.
+> >>
+> > 
+> > Prashant,
+> > 
+> > Thanks for submitting this.  We've been talking about having a single
+> > file for representing the tree for some time.
+> > 
+> > Regarding the output format had you considered using a well known
+> > format which can be parsed using well known parsing libs?  This avoids
+> > needing a custom parser just for this one file.  JSON springs to mind
+> > as something lightweight and well-understood.
+> 
+> One advantage of the format below is that it's very easily
+> human-readable, and it's not too hard to parse (although I guess you'd
+> have to parse the indent level to get parent/child relation, which would
+> suck a bit). Is there room to provide both? Otherwise, I guess the
+> kernel could include a script to convert from JSON/whatever into the
+> format below.
 
-Hi,
+We already have the clk directory for an easy to parse version. So I think
+this one should be focused on being human readable.
 
-> > For such devices we should put the switching code into generic code, not a
-> > device driver so that we have a chance to do reset_resume() on those
-> > devices.
-> --------------Because in many embedded linux system, they don't include such switch tools themselves. 
-> 			So I think it is better to put the switching code in device driver.
+Cheers,
 
-Well, that argues for doing it in the kernel. Where you do it in the kernel shouldn't
-matter.
-
-> --------------By the way, because our device will response the switching command for once, 
-> 			so I think you can do reset_resume() as you want.
-
-What happens if S3 cuts power to the device?
-
-	Regards
-		Oliver
-
+Peter.
