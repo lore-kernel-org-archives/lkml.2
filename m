@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2LNPrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 10:47:47 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49668 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab2LNPrp (ORCPT
+	id S1756509Ab2LNPuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 10:50:04 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:6651
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756267Ab2LNPuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 10:47:45 -0500
-Date: Fri, 14 Dec 2012 17:40:30 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Paolo Pisati <paolo.pisati@canonical.com>
-CC: Felipe Balbi <balbi@ti.com>, linux-omap <linux-omap@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>,
-        Robert Nelson <robertcnelson@gmail.com>, <stable@vger.kernel.org>
-Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
- original voltage values
-Message-ID: <20121214154030.GD18233@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1355389980-5532-1-git-send-email-paolo.pisati@canonical.com>
- <1355389980-5532-2-git-send-email-paolo.pisati@canonical.com>
- <20121213094715.GA1916@arwen.pp.htv.fi>
- <20121214153943.GA3306@luxor.wired.org>
+	Fri, 14 Dec 2012 10:50:02 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -12
+X-BigFish: VPS-12(zz98dI1432Ia65Rzz1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
+X-WSS-ID: 0MF12MY-02-NEK-02
+X-M-MSG: 
+Date: Fri, 14 Dec 2012 09:49:45 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] perf: Add support for hardware breakpoint address
+ masks
+Message-ID: <20121214154945.GA26672@jshin-Toonie>
+References: <1355329843-25842-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7DO5AaGCk89r4vaK"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20121214153943.GA3306@luxor.wired.org>
+In-Reply-To: <1355329843-25842-1-git-send-email-jacob.shin@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7DO5AaGCk89r4vaK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 12, 2012 at 10:30:38AM -0600, Jacob Shin wrote:
+> The following patchset adds address masks to existing perf hardware
+> breakpoint mechanism to allow trapping on an address range (currently
+> only single address) on supported architectures.
+> 
+> perf uapi is updated, x86 AMD implementation (for AMD Family 16h and
+> beyond) is provided, and perf tool has been extended to do:
+> 
+>   $ perf stat -e mem:0x1000:w:0xf a.out
+>                               ^^^
+>                               "don't care" bit mask
+> 
+>   which will count writes to [0x1000 ~ 0x1010)
+> 
+> Jacob Shin (2):
+>   perf: Add hardware breakpoint address mask
+>   perf, x86: AMD implementation for hardware breakpoint address mask
+> 
+> Suravee Suthikulpanit (3):
+>   perf tools: Add breakpoint address mask to the mem event parser
+>   perf tools: Add breakpoint address mask syntax to perf list and
+>     documentation
+>   perf tools: Add breakpoint address mask test case to
+>     tests/parse-events
+> 
+>  arch/Kconfig                             |    4 ++++
+>  arch/x86/Kconfig                         |    1 +
+>  arch/x86/include/asm/cpufeature.h        |    2 ++
+>  arch/x86/include/asm/hw_breakpoint.h     |    6 ++++++
+>  arch/x86/include/asm/msr-index.h         |    6 ++++++
+>  arch/x86/include/asm/processor.h         |    7 ++++++
+>  arch/x86/kernel/cpu/amd.c                |   21 ++++++++++++++++++
+>  arch/x86/kernel/hw_breakpoint.c          |    5 +++++
+>  include/linux/hw_breakpoint.h            |    6 ++++++
+>  include/uapi/linux/perf_event.h          |    5 ++++-
+>  kernel/events/hw_breakpoint.c            |    3 +++
+>  tools/perf/Documentation/perf-record.txt |   14 ++++++++----
+>  tools/perf/tests/parse-events.c          |   34 ++++++++++++++++++++++++++++++
+>  tools/perf/util/parse-events.c           |    5 +++--
+>  tools/perf/util/parse-events.h           |    2 +-
+>  tools/perf/util/parse-events.y           |   14 ++++++++++--
+>  16 files changed, 125 insertions(+), 10 deletions(-)
+> 
+> -- 
 
-Hi,
+Ping .. any comments / feedback ? If not, could you commit it into tip ?
 
-On Fri, Dec 14, 2012 at 04:39:43PM +0100, Paolo Pisati wrote:
-> On Thu, Dec 13, 2012 at 11:47:15AM +0200, Felipe Balbi wrote:
-> > On Thu, Dec 13, 2012 at 10:13:00AM +0100, Paolo Pisati wrote:
-> > > Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
-> > > Tested-by: Robert Nelson <robertcnelson@gmail.com>
-> >=20
-> > please read Documentation/stable_kernel_rules.txt, you'll see this is
-> > wrong.
->=20
-> you mean that i should have waited for the commit to hit Linus's tree bef=
-ore
-> cc-ing stable?
+Thank you,
 
-No no, I mean that before you SoB you should have a:
+-Jacob
 
-Cc: <stable@vger.kernel.org> # v3.x v3.y ...
-
-Something like the commit below:
-
-commit 041d81f493d90c940ec41f0ec98bc7c4f2fba431
-Author: Felipe Balbi <balbi@ti.com>
-Date:   Thu Oct 4 11:58:00 2012 +0300
-
-    usb: dwc3: gadget: fix 'endpoint always busy' bug
-   =20
-    If a USB transfer has already been started, meaning
-    we have already issued StartTransfer command to that
-    particular endpoint, DWC3_EP_BUSY flag has also
-    already been set.
-   =20
-    When we try to cancel this transfer which is already
-    in controller's cache, we will not receive XferComplete
-    event and we must clear DWC3_EP_BUSY in order to allow
-    subsequent requests to be properly started.
-   =20
-    The best place to clear that flag is right after issuing
-    DWC3_DEPCMD_ENDTRANSFER.
-   =20
-    Cc: stable@vger.kernel.org # v3.4 v3.5 v3.6
-    Reported-by: Moiz Sonasath <m-sonasath@ti.com>
-    Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-
---=20
-balbi
-
---7DO5AaGCk89r4vaK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQy0huAAoJEIaOsuA1yqREMUQQAJOjquBR3LJ8aDeik52K4ej+
-BEBY00obnBmfUnH91O1GYkhu2EVxSxknJiJtlgbyYNm2NMpPsFJpn4qUtErvdJs8
-cEdzZmFF3DDklpalqOAgLytbOUHi2dZAn9fvDqgHyS+1yHa2u5icUOlmSkS46aXU
-AH4YiOtJYnJf3lzZiZMmOvoDSs9N3C6dyQ9abMr1Z/SSdGfql4XCDZq8ccdiu3vt
-DiuldMLD95rpSaeeFocfWkXyFV3ssvPjh284Kf9JfWfqazkX52XXRHjZ6WG9C2Ar
-39JQKKRdU/P2EMA4+eEhpNqDK/dy9ma3myjahITzbF5rRoKzuhqDDXrAZaG9sqPn
-PzcRxPQPHFwHPtsjsKgqbm0Zpwv7FZ9/NNiPRJX3yxd9p/CNmCVwA1xEivfldDIk
-XOKusE5G8CaHhiDNenag2F2DQDa5EaDDiXbV9iqpZgBW5q+ijAPnv8N8FQ2lcjfc
-WtZQ0fS9c6vbAzP5I89tsbvTlBF8bDHf/POo1p/OSpSnV80L5BtZzR0AE9hX1XTQ
-9Kr+dfdcfITafMPJjrMNqrewseKOHPJS6nM3hLhQOFL+Sz2gFIt1sFHel2VsuuIR
-bJEo5YX0TdBCqECosNdtchG4SxSlfq6+cadWfGwsw3kdW4E1JW4Z5q9QVLw7zpOs
-Cw+XOu47g/sQSWGX8tQB
-=pUyD
------END PGP SIGNATURE-----
-
---7DO5AaGCk89r4vaK--
