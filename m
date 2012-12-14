@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab2LNQWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:22:21 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:43723 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2LNQUJ (ORCPT
+	id S1756770Ab2LNQWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:22:41 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:50926 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253Ab2LNQUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:20:09 -0500
+	Fri, 14 Dec 2012 11:20:08 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 14/21] gpio: ab8500: Remove ENUMs from linux/mfd/abx500/ab8500-gpio.h
-Date: Fri, 14 Dec 2012 16:19:32 +0000
-Message-Id: <1355501979-1157-15-git-send-email-lee.jones@linaro.org>
+Cc: linus.walleij@linaro.org, Michel JAOUEN <michel.jaouen@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 13/21] gpio: ab8500: Use most recent run-time platform checker
+Date: Fri, 14 Dec 2012 16:19:31 +0000
+Message-Id: <1355501979-1157-14-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
 References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
@@ -20,53 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are no longer used and will be replaced by a simple macro.
+From: Michel JAOUEN <michel.jaouen@stericsson.com>
+
+Use is_ab9540() instead of cpu_is_u9540() when checking platform.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Michel JAOUEN <michel.jaouen@stericsson.com>
+Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/gpio/gpio-ab8500.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpio/gpio-ab8500.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
-index 200c605..ab6ceac 100644
+index ef75984..200c605 100644
 --- a/drivers/gpio/gpio-ab8500.c
 +++ b/drivers/gpio/gpio-ab8500.c
-@@ -585,9 +585,9 @@ static int __devexit ab8500_gpio_remove(struct platform_device *pdev)
- }
+@@ -483,7 +483,7 @@ static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
+ 	ab8500_gpio->irq_base = pdata->irq_base;
  
- int ab8500_config_pulldown(struct device *dev,
--				enum ab8500_pin gpio, bool enable)
-+				int gpio, bool enable)
- {
--	u8 offset =  gpio - AB8500_PIN_GPIO1;
-+	u8 offset =  gpio - AB8500_PIN_GPIO(1);
- 	u8 pos = offset % 8;
- 	u8 val = enable ? 0 : 1;
- 	u8 reg = AB8500_GPIO_PUD1_REG + (offset / 8);
-@@ -610,9 +610,9 @@ EXPORT_SYMBOL(ab8500_config_pulldown);
-  * @gpio_select: true if the pin should be used as GPIO
-  */
- int ab8500_gpio_config_select(struct device *dev,
--				enum ab8500_pin gpio, bool gpio_select)
-+				int gpio, bool gpio_select)
- {
--	u8 offset = gpio - AB8500_PIN_GPIO1;
-+	u8 offset = gpio - AB8500_PIN_GPIO(1);
- 	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
- 	u8 pos = offset % 8;
- 	u8 val = gpio_select ? 1 : 0;
-@@ -638,9 +638,9 @@ int ab8500_gpio_config_select(struct device *dev,
-  * @gpio_select: pointer to pin selection status
-  */
- int ab8500_gpio_config_get_select(struct device *dev,
--					enum ab8500_pin gpio, bool *gpio_select)
-+					int gpio, bool *gpio_select)
- {
--	u8 offset =  gpio - AB8500_PIN_GPIO1;
-+	u8 offset =  gpio - AB8500_PIN_GPIO(1);
- 	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
- 	u8 pos = offset % 8;
- 	u8 val;
+ 	/* Configure GPIO Settings for specific AB devices */
+-	if (cpu_is_u9540()) {
++	if (is_ab9540(parent)) {
+ 		ab8500_gpio->chip.ngpio = AB9540_NUM_GPIO;
+ 		ab8500_gpio->irq_cluster = ab9540_irq_clusters;
+ 		ab8500_gpio->irq_cluster_size =
 -- 
 1.7.9.5
 
