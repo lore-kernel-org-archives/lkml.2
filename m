@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab2LNJUn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:20:43 -0500
-Received: from mga14.intel.com ([143.182.124.37]:9608 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab2LNJUN convert rfc822-to-8bit (ORCPT
+	id S1753931Ab2LNJ0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:26:25 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36653 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab2LNJ0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:20:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,279,1355126400"; 
-   d="scan'208";a="180828664"
-Message-ID: <1355476799.31620.89.camel@smile>
-Subject: Re: [PATCH 2/2] dmatest: check for dma mapping error
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>
-Date: Fri, 14 Dec 2012 11:19:59 +0200
-In-Reply-To: <20121214003328.46cba41c.akpm@linux-foundation.org>
-References: <1355139464-6855-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1355139464-6855-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20121213153437.b8b0198d.akpm@linux-foundation.org>
-	 <CAHp75VfxyyqaAOTsXQfEaiQm8tPetG2JZUm-XrezzdL01qoYiA@mail.gmail.com>
-	 <20121214003328.46cba41c.akpm@linux-foundation.org>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 14 Dec 2012 04:26:23 -0500
+Date: Fri, 14 Dec 2012 09:31:41 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        Huqiao <huqiao36@huawei.com>
+Subject: Re: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage
+ devices and support new switch command
+Message-ID: <20121214093141.7e4eba61@pyramind.ukuu.org.uk>
+In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F326FBFB54@szxeml546-mbs.china.huawei.com>
+References: <fe8c905bb12.b12fe8c905b@huawei.com>
+	<20121212105151.09635a76@pyramind.ukuu.org.uk>
+	<910F9D9E13B84F4C8FA771DC9BDE99F326FBFB54@szxeml546-mbs.china.huawei.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-14 at 00:33 -0800, Andrew Morton wrote: 
-> On Fri, 14 Dec 2012 09:06:03 +0200 Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+On Fri, 14 Dec 2012 03:01:24 +0000
+"Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com> wrote:
+
+> Dear Alan:
 > 
-> > On Fri, Dec 14, 2012 at 1:34 AM, Andrew Morton
-> > <akpm@linux-foundation.org> wrote:
-> > > On Mon, 10 Dec 2012 13:37:44 +0200
-> > > Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
-> > >
-> > >> We get a warning if CONFIG_DMA_API_DEBUG=y
-> > >>
-> > >> [   28.150631] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
-> > >> [   28.157058] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x0000000035698305] [size=14365 bytes] [mapped as single]
-> > 
-> > >> --- a/drivers/dma/dmatest.c
-> > >> +++ b/drivers/dma/dmatest.c
-> > >> @@ -378,15 +378,35 @@ static int dmatest_func(void *data)
-> > >>
-> > >>                       dma_srcs[i] = dma_map_single(dev->dev, buf, len,
-> > >>                                                    DMA_TO_DEVICE);
-> > >> +                     ret = dma_mapping_error(dev->dev, dma_srcs[i]);
-> > >> +                     if (ret) {
-> > >> +                             unmap_src(dev->dev, dma_srcs, len, i);
-> > >> +                             pr_warn("%s: #%u: mapping error %d with "
-> > >> +                                     "src_off=0x%x len=0x%x\n",
-> > >> +                                     thread_name, total_tests - 1, ret,
-> > >> +                                     src_off, len);
-> > >> +                             failed_tests++;
-> > >> +                             continue;
-> > >> +                     }
-> > >
-> > > The changelog and the code don't match.  Which one is out of date?
-> > 
-> > I'm afraid I didn't get what is wrong.
-> > 
-> 
-> The above code will not emit the string "dw_dmac dw_dmac.0: DMA-API:
-> device driver failed to check map error[device
-> address=0x0000000035698305] [size=14365 bytes] [mapped as single]".
-> 
-> Oh I see what you did.  That string is emitted by the kernel at
-> present, and the patch prevents this.  And it also emits a new warning
-> if the mapping attempt failed, and that new warning wasn't described.
+> 	This prevents people getting access to the storage device if they want.
+> 	----In our device, after its switching, it will keep the cdrom port together with other ports (such as modem port). So you can access the storage device too, after our switch.
 
-Ah, okay, thank you.
+Ok so the behaviour is
 
-> I updated the changelog:
+	plug in device
+	"I am a CD-ROM"
+	command sent
+	"I am a CD-ROM, I am a modem, I am other things"
 
-Yes, you right, the changelog in my case describes  only part of the
-problem.
+with the newer devices ?
 
-> : The kernel emits a warning if CONFIG_DMA_API_DEBUG=y:
-> : 
-> : [   28.150631] WARNING: at lib/dma-debug.c:933 check_unmap+0x5d6/0x6ac()
-> : [   28.157058] dw_dmac dw_dmac.0: DMA-API: device driver failed to check map error[device address=0x0000000035698305] [size=14365 bytes] [mapped as single]
-> : 
-> : Fix this by adding the required checking of the dma_map_single() return
-> : value.
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Alan
