@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757108Ab2LNW1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:27:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38170 "EHLO mail.kernel.org"
+	id S1757084Ab2LNW1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:27:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38147 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757054Ab2LNW1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:27:12 -0500
+	id S1757054Ab2LNW1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:27:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 05/22] x86,AMD: Power driver support for AMDs family 16h processors
-Date: Fri, 14 Dec 2012 14:25:50 -0800
-Message-Id: <20121214222250.963691146@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 18/22] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
+Date: Fri, 14 Dec 2012 14:26:03 -0800
+Message-Id: <20121214222254.012667086@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -26,40 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 22e32f4f57778ebc6e17812fa3008361c05d64f9 upstream.
+commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
 
-Add family 16h PCI ID to AMD's power driver to allow it report
-power consumption on these processors.
+This patch (as1636) is a partial workaround for a hardware bug
+affecting OHCI controllers by NVIDIA at least, maybe others too.  When
+the controller retires a Transfer Descriptor, it is supposed to add
+the TD onto the Done Queue.  But sometimes this doesn't happen, with
+the result that ohci-hcd never realizes the corresponding transfer has
+finished.  Symptoms can vary; a typical result is that USB audio stops
+working after a while.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The patch works around the problem by recognizing that TDs are always
+processed in order.  Therefore, if a later TD is found on the Done
+Queue than all the earlier TDs for the same endpoint must be finished
+as well.
+
+Unfortunately this won't solve the problem in cases where the missing
+TD is the last one in the endpoint's queue.  A complete fix would
+require a signficant amount of change to the driver.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -31,6 +31,9 @@ MODULE_DESCRIPTION("AMD Family 15h CPU p
- MODULE_AUTHOR("Andreas Herrmann <andreas.herrmann3@amd.com>");
- MODULE_LICENSE("GPL");
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -1130,6 +1130,25 @@ dl_done_list (struct ohci_hcd *ohci)
  
-+/* Family 16h Northbridge's function 4 PCI ID */
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
+ 	while (td) {
+ 		struct td	*td_next = td->next_dl_td;
++		struct ed	*ed = td->ed;
 +
- /* D18F3 */
- #define REG_NORTHBRIDGE_CAP		0xe8
- 
-@@ -256,6 +259,7 @@ static void __devexit fam15h_power_remov
- 
- static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
++		/*
++		 * Some OHCI controllers (NVIDIA for sure, maybe others)
++		 * occasionally forget to add TDs to the done queue.  Since
++		 * TDs for a given endpoint are always processed in order,
++		 * if we find a TD on the donelist then all of its
++		 * predecessors must be finished as well.
++		 */
++		for (;;) {
++			struct td	*td2;
++
++			td2 = list_first_entry(&ed->td_list, struct td,
++					td_list);
++			if (td2 == td)
++				break;
++			takeback_td(ohci, td2);
++		}
++
+ 		takeback_td(ohci, td);
+ 		td = td_next;
+ 	}
 
 
