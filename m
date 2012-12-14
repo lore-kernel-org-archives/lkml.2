@@ -1,70 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab2LNCPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:15:08 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30054 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab2LNCPF (ORCPT
+	id S1756145Ab2LNCPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:15:32 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15356 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755649Ab2LNCPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:15:05 -0500
-Date: Thu, 13 Dec 2012 18:10:49 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
-        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
- stable pages during write
-Message-ID: <20121214021048.GF9453@blackbox.djwong.org>
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
- <20121213080811.23360.98131.stgit@blackbox.djwong.org>
- <50CA8556.7030905@mit.edu>
+	Thu, 13 Dec 2012 21:15:24 -0500
+Message-ID: <50CA8B9F.7050800@huawei.com>
+Date: Fri, 14 Dec 2012 10:14:55 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50CA8556.7030905@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
+        Liujiang <jiang.liu@huawei.com>, Simon Jeons <simon.jeons@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <n-horiguchi@ah.jp.nec.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V4 2/3 RESEND] MCE: do code refactor of soft_offline_page
+References: <50C7FB82.7050802@huawei.com>
+In-Reply-To: <50C7FB82.7050802@huawei.com>
+X-Forwarded-Message-Id: <50C7FB82.7050802@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 05:48:06PM -0800, Andy Lutomirski wrote:
-> On 12/13/2012 12:08 AM, Darrick J. Wong wrote:
-> > Several complaints have been received regarding long file write latencies when
-> > memory pages must be held stable during writeback.  Since it might not be
-> > acceptable to stall programs for the entire duration of a page write (which may
-> > take many milliseconds even on good hardware), enable a second strategy wherein
-> > pages are snapshotted as part of submit_bio; the snapshot can be held stable
-> > while writes continue.
-> > 
-> > This provides a band-aid to provide stable page writes on jbd without needing
-> > to backport the fixed locking scheme in jbd2.  A mount option is added to ext4
-> > to allow administrators to enable it there.
-> 
-> I'm a bit confused as to what it has to do with ext3.  Wouldn't this be
-> useful as a mount option everywhere, though?
+There are too many return points randomly intermingled with some
+"goto done" return points. So adjust the function structure, one
+for the success path, the other for the failure path.
+Use atomic_long_inc instead of atomic_long_add.
 
-ext3 requires snapshots; the rest are ok with either strategy.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/memory-failure.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
 
-*If* snapshotting is generally liked, then yes I'll go redo it as a vfs mount
-option.
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 3a8b4b2..e513a7b 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1421,12 +1421,13 @@ static int soft_offline_huge_page(struct page *page, int flags)
 
-> If this becomes widely used, would it be better to snapshot on
-> wait_for_stable_page instead of on io submission?
+ 	if (PageHWPoison(hpage)) {
+ 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto out;
+ 	}
 
-That really depends on how long you can afford to wait and how much free
-memory you have. :)  It's all a big tradeoff between write latency and
-consumption of memory pages and bandwidth, and one that I doubt I'm qualified
-to make for everyone.
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	if (ret == 0)
+ 		goto done;
 
-> FWIW, I'm about to pound pretty hard on this whole patchset on a box
-> that doesn't need stable pages.  I'll let you know how it goes.
+@@ -1437,14 +1438,14 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+-		return ret;
++		goto out;
+ 	}
+ done:
+ 	/* keep elevated page count for bad page */
+ 	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
+ 	set_page_hwpoison_huge_page(hpage);
+ 	dequeue_hwpoisoned_huge_page(hpage);
+-
++out:
+ 	return ret;
+ }
 
-Yay!
+@@ -1476,24 +1477,28 @@ int soft_offline_page(struct page *page, int flags)
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_trans_head(page);
 
---D
+-	if (PageHuge(page))
+-		return soft_offline_huge_page(page, flags);
++	if (PageHuge(page)) {
++		ret = soft_offline_huge_page(page, flags);
++		goto out;
++	}
+ 	if (PageTransHuge(hpage)) {
+ 		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
+ 			pr_info("soft offline: %#lx: failed to split THP\n",
+ 				pfn);
+-			return -EBUSY;
++			ret = -EBUSY;
++			goto out;
+ 		}
+ 	}
+
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+-		return -EBUSY;
++		ret = -EBUSY;
++		goto out;
+ 	}
+
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		return ret;
++		goto out;
+ 	if (ret == 0)
+ 		goto done;
+
+@@ -1512,14 +1517,15 @@ int soft_offline_page(struct page *page, int flags)
+ 		 */
+ 		ret = get_any_page(page, pfn, 0);
+ 		if (ret < 0)
+-			return ret;
++			goto out;
+ 		if (ret == 0)
+ 			goto done;
+ 	}
+ 	if (!PageLRU(page)) {
+ 		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
+ 			pfn, page->flags);
+-		return -EIO;
++		ret = -EIO;
++		goto out;
+ 	}
+
+ 	/*
+@@ -1574,12 +1580,12 @@ int soft_offline_page(struct page *page, int flags)
+ 			pfn, ret, page_count(page), page->flags);
+ 	}
+ 	if (ret)
+-		return ret;
++		goto out;
+
+ done:
+ 	/* keep elevated page count for bad page */
+-	atomic_long_add(1, &mce_bad_pages);
++	atomic_long_inc(&mce_bad_pages);
+ 	SetPageHWPoison(page);
+-
++out:
+ 	return ret;
+ }
+-- 
+1.7.1
+
+
+
+.
+
+
