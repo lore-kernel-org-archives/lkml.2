@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab2LNWmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:42:03 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:61737 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756880Ab2LNWl5 (ORCPT
+	id S1422664Ab2LNWmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:42:12 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63065 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932666Ab2LNWmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:41:57 -0500
+	Fri, 14 Dec 2012 17:42:03 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/12] cfq-iosched: enable full blkcg hierarchy support
-Date: Fri, 14 Dec 2012 14:41:22 -0800
-Message-Id: <1355524885-22719-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 11/12] blkcg: implement blkg_prfill_[rw]stat_recursive()
+Date: Fri, 14 Dec 2012 14:41:24 -0800
+Message-Id: <1355524885-22719-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
 References: <1355524885-22719-1-git-send-email-tj@kernel.org>
@@ -22,90 +22,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the previous two patches, all cfqg scheduling decisions are based
-on vfraction and ready for hierarchy support.  The only thing which
-keeps the behavior flat is cfqg_flat_parent() which makes vfraction
-calculation consider all non-root cfqgs children of the root cfqg.
+blkg_prfill_[rw]stat_recursive() collect the specified [rw]stats from
+the target policy_data and its descendants and print it.  They can be
+used to make stat printing hierarchical.
 
-Replace it with cfqg_parent() which returns the real parent.  This
-enables full blkcg hierarchy support for cfq-iosched.  For example,
-consider the following hierarchy.
-
-        root
-      /      \
-   A:500      B:250
-  /     \
- AA:500  AB:1000
-
-For simplicity, let's say all the leaf nodes have active tasks and are
-on service tree.  For each leaf node, vfraction would be
-
- AA: (500  / 1500) * (500 / 750) =~ 0.2222
- AB: (1000 / 1500) * (500 / 750) =~ 0.4444
-  B:                 (250 / 750) =~ 0.3333
-
-and vdisktime will be distributed accordingly.
+blkg_for_each_descendant_pre() and blkg_[rw]stat_collect() are added
+to implement the new prfill functions.  While at it, function comment
+is added to __blkg_lookup() which is now also used by the for_each
+macro.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/cfq-iosched.c | 21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
+ block/blk-cgroup.c | 129 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ block/blk-cgroup.h |   4 ++
+ 2 files changed, 133 insertions(+)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index fd2f4b4..ceade6e 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -603,20 +603,11 @@ static inline struct cfq_group *blkg_to_cfqg(struct blkcg_gq *blkg)
- 	return pd_to_cfqg(blkg_to_pd(blkg, &blkcg_policy_cfq));
- }
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index fbf96ce..8e9caf0 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -32,6 +32,26 @@ EXPORT_SYMBOL_GPL(blkcg_root);
  
--/*
-- * Determine the parent cfqg for weight calculation.  Currently, cfqg
-- * scheduling is flat and the root is the parent of everyone else.
-- */
--static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg)
-+static inline struct cfq_group *cfqg_parent(struct cfq_group *cfqg)
+ static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
+ 
++static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
++				      struct request_queue *q, bool update_hint);
++
++/**
++ * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
++ * @d_blkg: loop cursor pointing to the current descendant
++ * @pos_cgrp: used for iteration
++ * @p_blkg: target blkg to walk descendants of
++ *
++ * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
++ * read locked.  If called under either blkcg or queue lock, the iteration
++ * is guaranteed to include all and only online blkgs.  The caller may
++ * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
++ * subtree.
++ */
++#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
++	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
++		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
++					      (p_blkg)->q, false)))
++
+ static bool blkcg_policy_enabled(struct request_queue *q,
+ 				 const struct blkcg_policy *pol)
  {
--	struct blkcg_gq *blkg = cfqg_to_blkg(cfqg);
--	struct cfq_group *root;
--
--	while (blkg->parent)
--		blkg = blkg->parent;
--	root = blkg_to_cfqg(blkg);
-+	struct blkcg_gq *pblkg = cfqg_to_blkg(cfqg)->parent;
- 
--	return root != cfqg ? root : NULL;
-+	return pblkg ? blkg_to_cfqg(pblkg) : NULL;
+@@ -127,6 +147,17 @@ err_free:
+ 	return NULL;
  }
  
- static inline void cfqg_get(struct cfq_group *cfqg)
-@@ -719,7 +710,7 @@ static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
++/**
++ * __blkg_lookup - internal version of blkg_lookup()
++ * @blkcg: blkcg of interest
++ * @q: request_queue of interest
++ * @update_hint: whether to update lookup hint with the result or not
++ *
++ * This is internal version and shouldn't be used by policy
++ * implementations.  Looks up blkgs for the @blkcg - @q pair regardless of
++ * @q's bypass state.  If @update_hint is %true, the caller should be
++ * holding @q->queue_lock and lookup hint is updated on success.
++ */
+ static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
+ 				      struct request_queue *q, bool update_hint)
+ {
+@@ -568,6 +599,104 @@ u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
+ EXPORT_SYMBOL_GPL(blkg_prfill_rwstat);
  
- #else	/* CONFIG_CFQ_GROUP_IOSCHED */
+ /**
++ * blkg_stat_collect - collect hierarchical blkg_stat
++ * @pd: policy private data of interest
++ * @off: offset to the blkg_stat in @pd
++ *
++ * Collect the blkg_stat specified by @off from @pd and all its descendants
++ * and return the sum.
++ */
++static u64 blkg_stat_collect(struct blkg_policy_data *pd, int off)
++{
++	struct blkcg_policy *pol = blkcg_policy[pd->plid];
++	struct blkcg_gq *pos_blkg;
++	struct cgroup *pos_cgrp;
++	u64 sum;
++
++	sum = blkg_stat_read((void *)pd + off);
++
++	rcu_read_lock();
++	blkg_for_each_descendant_pre(pos_blkg, pos_cgrp, pd_to_blkg(pd)) {
++		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
++		struct blkg_stat *stat = (void *)pos_pd + off;
++
++		sum += blkg_stat_read(stat);
++	}
++	rcu_read_unlock();
++
++	return sum;
++}
++
++/**
++ * blkg_rwstat_collect - collect hierarchical blkg_rwstat
++ * @pd: policy private data of interest
++ * @off: offset to the blkg_stat in @pd
++ *
++ * Collect the blkg_rwstat specified by @off from @pd and all its
++ * descendants and return the sum.
++ */
++static struct blkg_rwstat blkg_rwstat_collect(struct blkg_policy_data *pd,
++					      int off)
++{
++	struct blkcg_policy *pol = blkcg_policy[pd->plid];
++	struct blkcg_gq *pos_blkg;
++	struct cgroup *pos_cgrp;
++	struct blkg_rwstat sum;
++	int i;
++
++	sum = blkg_rwstat_read((void *)pd + off);
++
++	rcu_read_lock();
++	blkg_for_each_descendant_pre(pos_blkg, pos_cgrp, pd_to_blkg(pd)) {
++		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
++		struct blkg_rwstat *rwstat = (void *)pos_pd + off;
++		struct blkg_rwstat tmp;
++
++		tmp = blkg_rwstat_read(rwstat);
++
++		for (i = 0; i < BLKG_RWSTAT_NR; i++)
++			sum.cnt[i] += tmp.cnt[i];
++	}
++	rcu_read_unlock();
++
++	return sum;
++}
++
++/**
++ * blkg_prfill_stat_recursive - recursive prfill callback for blkg_stat
++ * @sf: seq_file to print to
++ * @pd: policy private data of interest
++ * @off: offset to the blkg_stat in @pd
++ *
++ * Recursive prfill callback for printing a blkg_stat.  Sums the blkg_stat
++ * specified by @off of @pd and its descendants and prints it.
++ */
++u64 blkg_prfill_stat_recursive(struct seq_file *sf,
++			       struct blkg_policy_data *pd, int off)
++{
++	return __blkg_prfill_u64(sf, pd, blkg_stat_collect(pd, off));
++}
++EXPORT_SYMBOL_GPL(blkg_prfill_stat_recursive);
++
++/**
++ * blkg_prfill_rwstat_recursive - recursive prfill callback for blkg_rwstat
++ * @sf: seq_file to print to
++ * @pd: policy private data of interest
++ * @off: offset to the blkg_rwstat in @pd
++ *
++ * Recursive prfill callback for printing a blkg_rwstat.  Sums the
++ * blkg_rwstat specified by @off of @pd and its descendants and prints it.
++ */
++u64 blkg_prfill_rwstat_recursive(struct seq_file *sf,
++				 struct blkg_policy_data *pd, int off)
++{
++	struct blkg_rwstat sum = blkg_rwstat_collect(pd, off);
++
++	return __blkg_prfill_rwstat(sf, pd, &sum);
++}
++EXPORT_SYMBOL_GPL(blkg_prfill_rwstat_recursive);
++
++/**
+  * blkg_conf_prep - parse and prepare for per-blkg config update
+  * @blkcg: target block cgroup
+  * @pol: target policy
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 40f5b97..747bcc5 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -156,6 +156,10 @@ u64 __blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
+ u64 blkg_prfill_stat(struct seq_file *sf, struct blkg_policy_data *pd, int off);
+ u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
+ 		       int off);
++u64 blkg_prfill_stat_recursive(struct seq_file *sf,
++			       struct blkg_policy_data *pd, int off);
++u64 blkg_prfill_rwstat_recursive(struct seq_file *sf,
++				 struct blkg_policy_data *pd, int off);
  
--static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg) { return NULL; }
-+static inline struct cfq_group *cfqg_parent(struct cfq_group *cfqg) { return NULL; }
- static inline void cfqg_get(struct cfq_group *cfqg) { }
- static inline void cfqg_put(struct cfq_group *cfqg) { }
- 
-@@ -1286,7 +1277,7 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- 	 * activated node is met.  vfraction calculation should always
- 	 * continue to the root.
- 	 */
--	while ((parent = cfqg_flat_parent(pos))) {
-+	while ((parent = cfqg_parent(pos))) {
- 		if (propagate) {
- 			propagate = !parent->nr_active++;
- 			parent->level_weight += pos->weight;
-@@ -1337,7 +1328,7 @@ cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
- 	pos->level_weight -= pos->leaf_weight;
- 
- 	while (propagate) {
--		struct cfq_group *parent = cfqg_flat_parent(pos);
-+		struct cfq_group *parent = cfqg_parent(pos);
- 
- 		/* @pos has 0 nr_active at this point */
- 		WARN_ON_ONCE(pos->level_weight);
+ struct blkg_conf_ctx {
+ 	struct gendisk			*disk;
 -- 
 1.7.11.7
 
