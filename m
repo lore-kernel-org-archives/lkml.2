@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab2LNCxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:53:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32933 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753444Ab2LNCxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:53:16 -0500
-Date: Fri, 14 Dec 2012 11:53:09 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, ulf.hansson@linaro.org
-Subject: Re: [PATCH 01/12] regulator: gpio-regulator: Demote GPIO Regulator
- driver to start later
-Message-ID: <20121214025307.GB4478@opensource.wolfsonmicro.com>
-References: <1355129761-8088-1-git-send-email-lee.jones@linaro.org>
- <1355129761-8088-2-git-send-email-lee.jones@linaro.org>
- <20121210140751.GB6103@opensource.wolfsonmicro.com>
- <20121210142836.GG9362@gmail.com>
- <20121210143141.GG6103@opensource.wolfsonmicro.com>
- <20121213115524.GI27617@gmail.com>
+	id S1755866Ab2LNDDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 22:03:51 -0500
+Received: from tundra.namei.org ([65.99.196.166]:50261 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754383Ab2LNDDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 22:03:50 -0500
+Date: Fri, 14 Dec 2012 14:11:10 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Casey Schaufler <casey@schaufler-ca.com>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: unusual update of the security tree
+In-Reply-To: <20121213132438.7a70a114233057ce22982b7b@canb.auug.org.au>
+Message-ID: <alpine.LRH.2.02.1212141411040.16084@tundra.namei.org>
+References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au> <50B5508D.7050409@schaufler-ca.com> <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au> <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org> <CA+55aFwJDtofV36R_ot8qj31BCGwBgDsGOKRkMRhRLamf5M+mw@mail.gmail.com>
+ <alpine.LRH.2.02.1212071020050.7590@tundra.namei.org> <20121213132438.7a70a114233057ce22982b7b@canb.auug.org.au>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213115524.GI27617@gmail.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 11:55:24AM +0000, Lee Jones wrote:
+On Thu, 13 Dec 2012, Stephen Rothwell wrote:
 
-> I understand your logic, hence why I wrote such a lengthy commit
-> message. However, I'm not sure I see a logical way around it. Asking
-> all users of MMCI to provide a not-regulator to declare that a
-> secondary regulator isn't available seems a little unreasonable to me.
+> Hi James,
+> 
+> On Fri, 7 Dec 2012 10:21:31 +1100 (EST) James Morris <jmorris@namei.org> wrote:
+> >
+> > On Thu, 6 Dec 2012, Linus Torvalds wrote:
+> > 
+> > > Have people pulled that thing into anything else? Because quite
+> > > frankly, I think it's unsalvageable except with a rebase.
+> > 
+> > AFAIK, only developers such as Casey will have pulled it for development 
+> > purposes.
+> > 
+> > And sorry, I should be checking the trees I pull from more carefully.
+> 
+> Are you going to fix this before asking Linus to pull?
 
-> Is there anything else we can do?
+Yes.
 
-Have all the people setting up this secondary regulator explicitly
-declare it?
+-- 
+James Morris
+<jmorris@namei.org>
