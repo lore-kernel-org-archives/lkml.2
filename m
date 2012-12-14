@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab2LNWfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:35:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38645 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757387Ab2LNW3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:29:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: [ 05/28] ASoC: dmaengine: Correct Makefile when sound is built as module
-Date: Fri, 14 Dec 2012 14:26:22 -0800
-Message-Id: <20121214222251.710859876@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
-References: <20121214222250.501309822@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1757413Ab2LNWff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:35:35 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:57598 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757223Ab2LNWfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:35:30 -0500
+X-RZG-AUTH: :JmkKe0mufu3CxrePViMusPB/RF9xXhaaYyrlzjsV61yypLP1nVvbwmdl8puK
+X-RZG-CLASS-ID: mo05
+Message-ID: <50CBB6D6.6030505@informatik.stud.uni-erlangen.de>
+Date: Sat, 15 Dec 2012 00:31:34 +0100
+From: Jennifer Naumann 
+	<Jennifer.Naumann@informatik.stud.uni-erlangen.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, amwang@redhat.com,
+        jkosina@suse.cz, linux-kernel@vger.kernel.org, Julia.Lawall@lip6.fr,
+        yongjun_wei@trendmicro.com.cn, justinmattock@gmail.com,
+        Sebastian Hahn <snsehahn@cip.cs.fau.de>, joe@perches.com,
+        adam.buchbinder@gmail.com, linux-kernel@i4.informatik.uni-erlangen.de,
+        Jennifer.Naumann@informatik.stud.uni-erlangen.de
+Subject: Re: [PATCH 0/6] staging:rtl8192u: begin cleanup of some checkpatch
+ errors
+References: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de> <50CB5B12.4040105@informatik.stud.uni-erlangen.de> <20121214165830.GC5032@mwanda>
+In-Reply-To: <20121214165830.GC5032@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 12/14/2012 05:58 PM, Dan Carpenter wrote:
+> The merge window is open.  Nothing is going to happen until after
+> New Years.
+>
+> regards,
+> dan carpenter
+>
 
-------------------
+Okay, awesome. Thanks for the explanation :-)
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-commit 961a7aeafab477f63d9eef26afde9cbb8badcd0f upstream.
-
-soc-dmaengine-pcm library need to be part of the snd-soc-core in order to
-be able to compile ASoC as modules when dmaengine is enabled on the platform.
-
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/Makefile |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- a/sound/soc/Makefile
-+++ b/sound/soc/Makefile
-@@ -1,8 +1,9 @@
- snd-soc-core-objs := soc-core.o soc-dapm.o soc-jack.o soc-cache.o soc-utils.o
- snd-soc-core-objs += soc-pcm.o soc-io.o
- 
--snd-soc-dmaengine-pcm-objs := soc-dmaengine-pcm.o
--obj-$(CONFIG_SND_SOC_DMAENGINE_PCM) += snd-soc-dmaengine-pcm.o
-+ifneq ($(CONFIG_SND_SOC_DMAENGINE_PCM),)
-+snd-soc-core-objs += soc-dmaengine-pcm.o
-+endif
- 
- obj-$(CONFIG_SND_SOC)	+= snd-soc-core.o
- obj-$(CONFIG_SND_SOC)	+= codecs/
-
-
+Regards,
+Jennifer Naumann
