@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab2LNQUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:20:22 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64409 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932285Ab2LNQUP (ORCPT
+	id S1756726Ab2LNQUj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:20:39 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:37652 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756676Ab2LNQUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:20:15 -0500
+	Fri, 14 Dec 2012 11:20:20 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Yang QU <yang.qu@stericsson.com>,
+Cc: linus.walleij@linaro.org, Linus Walleij <linus.walleij@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 18/21] gpio: ab8500: Fix parameter uninitialized warning for ab8540
-Date: Fri, 14 Dec 2012 16:19:36 +0000
-Message-Id: <1355501979-1157-19-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 21/21] gpio: ab8500: Add explicit dependencies
+Date: Fri, 14 Dec 2012 16:19:39 +0000
+Message-Id: <1355501979-1157-22-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
 References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
@@ -21,31 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang QU <yang.qu@stericsson.com>
+From: Linus Walleij <linus.walleij@stericsson.com>
 
-Missing initial value in ab8540 gpio configuration function. So
-initialize it and fix this warning.
+This driver is using symbols from <linux/mfd/abx500/ab8500.h> so
+include this file explicitly.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Yang QU <yang.qu@stericsson.com>
-Reviewed-by: Rabin VINCENT <rabin.vincent@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 ---
- drivers/gpio/gpio-ab8500.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpio/gpio-ab8500.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
-index b4f631a..833d4c2 100644
+index ed5832e..d201de9 100644
 --- a/drivers/gpio/gpio-ab8500.c
 +++ b/drivers/gpio/gpio-ab8500.c
-@@ -673,6 +673,8 @@ int ab8540_gpio_config_vinsel(struct device *dev,
- 		goto out;
- 	}
+@@ -19,6 +19,7 @@
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
+ #include <linux/mfd/abx500.h>
++#include <linux/mfd/abx500/ab8500.h>
+ #include <linux/mfd/abx500/ab8500-gpio.h>
  
-+	pos = (gpio - AB8500_PIN_GPIO(51)) << 1;
-+
- 	ret = abx500_mask_and_set_register_interruptible(dev,
- 			AB8500_MISC, AB8540_GPIO_VINSEL_REG,
- 			AB8540_GPIO_VINSEL_MASK << pos, val << pos);
+ 
 -- 
 1.7.9.5
 
