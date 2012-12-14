@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab2LNB3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 20:29:44 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:59178 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609Ab2LNB3l (ORCPT
+	id S1755518Ab2LNB3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:29:25 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:46841 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab2LNB3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 20:29:41 -0500
-Message-ID: <50CA8100.2060209@linaro.org>
-Date: Thu, 13 Dec 2012 17:29:36 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 13 Dec 2012 20:29:24 -0500
+X-Spam-Score: -100.8
+Message-ID: <50CA8129.2020206@asianux.com>
+Date: Fri, 14 Dec 2012 09:30:17 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] NTP: Add a CONFIG_RTC_SYSTOHC configuration
-References: <20121212055643.GA18078@obsidianresearch.com> <50C8DDAA.5010101@linaro.org> <20121212210443.GB11530@obsidianresearch.com> <50C91ED7.5050905@linaro.org> <20121213052132.GA19577@obsidianresearch.com>
-In-Reply-To: <20121213052132.GA19577@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Omar Ramirez Luna <omar.ramirez@copitl.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] drivers/staging/tidspbridge: pr_err and pr_debug
+ for uninitialized buffer (name buf not initialized).
+References: <50C85644.7020203@asianux.com> <50C858AA.8080305@asianux.com> <CAJ6Av5OC+2wdfhb2FExv8NM7Hsyu4_1qnCWV22di8_psw4gF4Q@mail.gmail.com>
+In-Reply-To: <CAJ6Av5OC+2wdfhb2FExv8NM7Hsyu4_1qnCWV22di8_psw4gF4Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 09:21 PM, Jason Gunthorpe wrote:
-> On Wed, Dec 12, 2012 at 04:18:31PM -0800, John Stultz wrote:
->
->> I do, although again, in the case where the arch specific
->> implementation is "better", we end up losing granularity (s390 is
->> the specific example I'm thinking of), since this prefers the RTC
->> implementation over the arch specific one.  So maybe I'd suggest
->> switching it so we prefer the arch specific one, and then remove the
->> arch specific implementations where they are inferior to the RTC
->> one.
-> Unfortunately I put rtc_update_persistent_clock first because it can
-> have sensible error reporting. update_persistent_clock will return 0
-> if there is no RTC device available, or if the RTC was successfully
-> updated.
+于 2012年12月14日 02:25, Omar Ramirez Luna 写道:
+> Hi Chen,
+> 
+> Thanks for your report.
+> 
+> On Wed, Dec 12, 2012 at 4:12 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>   excuse me,  I have to forward this mail to you.
+>>   I have sent it to Omar Ramirez Luna <omar.ramirez@ti.com>, but failed.
+>>    (get mail delivery failed )
+> 
+> Please contact me with my new address (this one).
 
-Hrm.. Maybe update_persistent_clock() should be changed to return an error?
+  is it suitable to modify the MAINTAINER file for your mail address ?
+    if suitable, please help modify it, I am not quite familiar with it.
 
-> I can make rtc_update_persistent_clock return -ENODEV.
->
->> As long as we have a clear iterative path forward, with a solution
->> for the cases where the arch method is actually preferred, I think
->> it sounds like a reasonable approach.
-> I think it is fine to leave it as a configure option, archs can
-> default it to yes when it is appropriate for them.
->
-> A quick scan through the 3.7 tree for update_persistent_clock::
->   alpha - single non class RTC clock scheme
->   cris - printk's and does nothing
->   mips - weak function rtc_mips_set_time, all implementations are
->          non class rtc
->   mn10300 - single non class RTC clock scheme
->   powerpc - indirects through ppc_md.set_rtc_time, all implementations
->             do not use class RTC
->   sh - indirects through rtc_sh_set_time, two implementations, neither
->        use class RTC
->   sparc - Seems to be class rtc converted. Already implements this
->           patch's functionality in an arch specific file
->   x86 - All the functions under the set_wallclock indirection seem
->         to be non class RTC cases
->
-> No other arches seem to have update_persistent_clock in them.
->
-> I think the s390 functionality you are refering to is in its
-> read_persistant_clock, which looks like it has ns resolution.
->
-> That is also fine because s390 does not use class rtc so there is no
-> duplicate path to the 'tod' code either through
-> rtc_update_persistent_clock or through rtc_hctosys.
->
-> Basically, as far as I can tell, if rtc_update_persistent_clock
-> succeeds then update_persistent_clock is a nop. I can't find any case
-> where *both* could succeed. Thus trying rtc_update_persistent_clock
-> first is OK.
-Ok then. I think part of my confusion is that on the 
-read_persistent_clock/rtc_hctosys side of things, we are careful to 
-prioritize the read_persistent_clock implementation (since it has the 
-additional requirement to be safe to call in irq context, it allows us 
-to update the system time at resume earlier, avoiding time error).  So I 
-guess I just naturally expect the same prioritization on the write side.
+  also another suggestions:
+    I built ti otmap with ti dsp bridge by arm cross-compiler under i386 platform.
+    the version tag is next-20121213
+    I met 2 compiling issues.
 
-So yea, I guess your approach will work. Although I get the suspicion it 
-will require further cleanups down the road (just to help make the 
-various arches more consistent).
+      a: module dependency:
+        Multifunction device drivers --> Texas Instruments TWL/4030/TWL5030.... is required for TI OTMAP.
+        it need depend on CONFIG_REGMAP (maybe also inculde CONFIG_REGMAP*)
+        if CONFIG_REGMAP* not defined, building will be failed.
 
-Want to resend with the changes you suggested, and I'll take another 
-look at it?
+      b: version merging issue:
+        in drivers/staging/tidspbridge/core/_tiomap.h
+        need use "#include <mach-omap2/cm3xxx.h>" instead of "#include <mach-omap2/cm2xxx_3xxx.h>"
+        the macro OMAP3430_CM_AUTOIDLE_PLL has already move from cm2xxx_3xxx.h to cm3xxx.h.
+          (it seems arch/arm/mach-omap2/ is not a suitable place for including, but we have to)
+        if not change, compiling will be failed.
 
-thanks
--john
+  please also help to check the 2 compiling issues, thanks.
 
+  if these suggestions are valid,
+    please help to send patches for them,
+    better to mark me as Reported-by.
+    not need cc to me (for I am not reviewer)
+
+
+  Regards
+
+gchen.
+
+
+> 
+> I'll take a look at these.
+> 
+> Cheers,
+> 
+> Omar
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
