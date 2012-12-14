@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab2LNXCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:02:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40527 "EHLO mail.kernel.org"
+	id S932790Ab2LNXCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:02:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40556 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932659Ab2LNXCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:02:37 -0500
+	id S932659Ab2LNXCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:02:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Markus Becker <mab@comnets.uni-bremen.de>
-Subject: [ 21/37] USB: cp210x: add Virtenio Preon32 device id
-Date: Fri, 14 Dec 2012 15:00:58 -0800
-Message-Id: <20121214222257.043354310@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 22/37] USB: mark uas driver as BROKEN
+Date: Fri, 14 Dec 2012 15:00:59 -0800
+Message-Id: <20121214222257.166392858@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
@@ -25,26 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Becker <mab@comnets.uni-bremen.de>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 356fe44f4b8ece867bdb9876b1854d7adbef9de2 upstream.
+commit fb37ef98015f864d22be223a0e0d93547cd1d4ef upstream.
 
-Signed-off-by: Markus Becker <mab@comnets.uni-bremen.de>
+As reported https://bugzilla.kernel.org/show_bug.cgi?id=51031, the UAS
+driver causes problems and has been asked to be not built into any of
+the major distributions.  To prevent users from running into problems
+with it, and for distros that were not notified, just mark the whole
+thing as broken.
+
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/storage/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -120,6 +120,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
- 	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
- 	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
-+	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+--- a/drivers/usb/storage/Kconfig
++++ b/drivers/usb/storage/Kconfig
+@@ -203,7 +203,7 @@ config USB_STORAGE_ENE_UB6250
+ 
+ config USB_UAS
+ 	tristate "USB Attached SCSI"
+-	depends on USB && SCSI
++	depends on USB && SCSI && BROKEN
+ 	help
+ 	  The USB Attached SCSI protocol is supported by some USB
+ 	  storage devices.  It permits higher performance by supporting
 
 
