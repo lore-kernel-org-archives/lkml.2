@@ -1,156 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2LNCP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:15:28 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:63801 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755845Ab2LNCPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:15:24 -0500
-Message-ID: <50CA8BA3.4050100@huawei.com>
-Date: Fri, 14 Dec 2012 10:14:59 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755923Ab2LNCSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:18:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41899 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444Ab2LNCSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 21:18:45 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com>
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com>
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
-        Liujiang <jiang.liu@huawei.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <n-horiguchi@ah.jp.nec.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V4 3/3 RESEND] MCE: use num_poisoned_pages instead of mce_bad_pages
-References: <50C7FB85.8040008@huawei.com>
-In-Reply-To: <50C7FB85.8040008@huawei.com>
-X-Forwarded-Message-Id: <50C7FB85.8040008@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 13 Dec 2012 18:18:05 -0800
+To: Andy Lutomirski <luto@amacapital.net>, criu@openvz.org
+CC: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org
+Message-ID: <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since MCE is an x86 concept, and this code is in mm/, it would be
-better to use the name num_poisoned_pages instead of mce_bad_pages.
+Wouldn't the vdso get mapped already and could be mremap()'d.  If we really need more control I'd almost push for a device/filesystem node that could be mmapped the usual way.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Suggested-by: Borislav Petkov <bp@alien8.de>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- fs/proc/meminfo.c   |    2 +-
- include/linux/mm.h  |    2 +-
- mm/memory-failure.c |   16 ++++++++--------
- 3 files changed, 10 insertions(+), 10 deletions(-)
+Andy Lutomirski <luto@amacapital.net> wrote:
 
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 80e4645..c3dac61 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -158,7 +158,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 		vmi.used >> 10,
- 		vmi.largest_chunk >> 10
- #ifdef CONFIG_MEMORY_FAILURE
--		,atomic_long_read(&mce_bad_pages) << (PAGE_SHIFT - 10)
-+		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
- #endif
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 5432a3e..8ccc477 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1653,7 +1653,7 @@ extern int unpoison_memory(unsigned long pfn);
- extern int sysctl_memory_failure_early_kill;
- extern int sysctl_memory_failure_recovery;
- extern void shake_page(struct page *p, int access);
--extern atomic_long_t mce_bad_pages;
-+extern atomic_long_t num_poisoned_pages;
- extern int soft_offline_page(struct page *page, int flags);
+>On Thu, Dec 13, 2012 at 5:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 12/13/2012 05:42 PM, Andy Lutomirski wrote:
+>>>
+>>> The 64-bit/x32 case is currently very simple and fast because it
+>uses
+>>> absolute addressing.  Admittedly, pcrel references are free, so
+>>> changing this wouldn't cost much.  For native, it'll be slower, but
+>>> maybe no one cares.  I seem to care about this more than anyone
+>else,
+>>> and I don't use 32 bit code. :)
+>>>
+>>
+>> pcrel is actually cheaper than absolute addressing in 64-bit mode.
+>>
+>>> The benefit of switching is that the vdso code could be the same in
+>>> all three cases.  (Actually, it's even better than that.  All of the
+>>> VVAR magic could be the same in the vdso and the kernel -- the
+>kernel
+>>> linker script would just have to have an appropriate symbol to see
+>the
+>>> appropriate mapping.)
+>>>
+>>>
+>>> This:
+>>>
+>>> __attribute__((visibility("hidden"))) int foo;
+>>>
+>>> int get_foo(void)
+>>> {
+>>>   return foo;
+>>> }
+>>>
+>>> generates a rip-relative access on 64 bits and GOTOFF on 32 bits.
+>>>
+>>> The only reason I didn't use a real symbol in the first place is
+>>> because I couldn't figure out how to get gcc to emit an absolute
+>>> relocation in pic code.
+>>
+>> Well, then, we wouldn't need to do that... this is starting to sound
+>> like a significant win.
+>
+>How will this avoid breaking checkpoint/restore in userspace?  If the
+>vdso is not just plain old code, criu presumably needs to know about
+>it.  Should there be an arch_prctl(ARCH_MAP_VDSO, addr) to create a
+>vdso mapping somewhere?
+>
+>--Andy
 
- extern void dump_page(struct page *page);
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index e513a7b..ff5e611 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -61,7 +61,7 @@ int sysctl_memory_failure_early_kill __read_mostly = 0;
-
- int sysctl_memory_failure_recovery __read_mostly = 1;
-
--atomic_long_t mce_bad_pages __read_mostly = ATOMIC_LONG_INIT(0);
-+atomic_long_t num_poisoned_pages __read_mostly = ATOMIC_LONG_INIT(0);
-
- #if defined(CONFIG_HWPOISON_INJECT) || defined(CONFIG_HWPOISON_INJECT_MODULE)
-
-@@ -1040,7 +1040,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	}
-
- 	nr_pages = 1 << compound_trans_order(hpage);
--	atomic_long_add(nr_pages, &mce_bad_pages);
-+	atomic_long_add(nr_pages, &num_poisoned_pages);
-
- 	/*
- 	 * We need/can do nothing about count=0 pages.
-@@ -1070,7 +1070,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 			if (!PageHWPoison(hpage)
- 			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
- 			    || (p != hpage && TestSetPageHWPoison(hpage))) {
--				atomic_long_sub(nr_pages, &mce_bad_pages);
-+				atomic_long_sub(nr_pages, &num_poisoned_pages);
- 				return 0;
- 			}
- 			set_page_hwpoison_huge_page(hpage);
-@@ -1128,7 +1128,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	}
- 	if (hwpoison_filter(p)) {
- 		if (TestClearPageHWPoison(p))
--			atomic_long_sub(nr_pages, &mce_bad_pages);
-+			atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		unlock_page(hpage);
- 		put_page(hpage);
- 		return 0;
-@@ -1323,7 +1323,7 @@ int unpoison_memory(unsigned long pfn)
- 			return 0;
- 		}
- 		if (TestClearPageHWPoison(p))
--			atomic_long_sub(nr_pages, &mce_bad_pages);
-+			atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		pr_info("MCE: Software-unpoisoned free page %#lx\n", pfn);
- 		return 0;
- 	}
-@@ -1337,7 +1337,7 @@ int unpoison_memory(unsigned long pfn)
- 	 */
- 	if (TestClearPageHWPoison(page)) {
- 		pr_info("MCE: Software-unpoisoned page %#lx\n", pfn);
--		atomic_long_sub(nr_pages, &mce_bad_pages);
-+		atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		freeit = 1;
- 		if (PageHuge(page))
- 			clear_page_hwpoison_huge_page(page);
-@@ -1442,7 +1442,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	}
- done:
- 	/* keep elevated page count for bad page */
--	atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
-+	atomic_long_add(1 << compound_trans_order(hpage), &num_poisoned_pages);
- 	set_page_hwpoison_huge_page(hpage);
- 	dequeue_hwpoisoned_huge_page(hpage);
- out:
-@@ -1584,7 +1584,7 @@ int soft_offline_page(struct page *page, int flags)
-
- done:
- 	/* keep elevated page count for bad page */
--	atomic_long_inc(&mce_bad_pages);
-+	atomic_long_inc(&num_poisoned_pages);
- 	SetPageHWPoison(page);
- out:
- 	return ret;
 -- 
-1.7.1
-
-
-
-.
-
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
