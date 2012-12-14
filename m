@@ -1,406 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab2LNJmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:42:12 -0500
-Received: from smtp-out-011.synserver.de ([212.40.185.11]:1053 "EHLO
-	smtp-out-011.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab2LNJmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:42:07 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16185
-Message-ID: <50CAF473.6040901@metafoo.de>
-Date: Fri, 14 Dec 2012 10:42:11 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
-MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 v4] rtc: add rtc-driver for HID sensors of type time
-References: <50C8591A.3030301@ahsoftware.de> <1355310680-2466-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1355310680-2466-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755747Ab2LNJoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:44:10 -0500
+Received: from mga14.intel.com ([143.182.124.37]:57582 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501Ab2LNJoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 04:44:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,279,1355126400"; 
+   d="scan'208";a="180834815"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] dw_dmac: update tx_node_active in dwc_do_single_block
+Date: Fri, 14 Dec 2012 11:43:42 +0200
+Message-Id: <1355478222-10610-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2012 12:11 PM, Alexander Holler wrote:
-> This driver makes the time from HID sensors (hubs) which are offering
-> such available like any other RTC does.
-> 
-> Currently the time can only be read. Setting the time must be done
-> through sending a report, which currently isn't supported by
-> hid-sensor-hub. (I've planned to submit patches.)
-> 
-> It is necessary that all values like year, month etc, are send as
-> 8bit values (1 byte each) and all of them in 1 report. Also the
-> spec HUTRR39b doesn't define the range of the year field, we
-> tread it as 0 - 99 because that's what most RTCs I know about are
-> offering.
-> 
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+The "else" keyword in the dw_dma_tasklet is removed as well. All together
+simplifies the logic of the code and understanding of what is happening there.
 
-Hi,
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-sorry for the delay. There is still the __devinit in front of
-hid_time_remove left.
-
-And another thing I've overlooked before:
-wait_for_completion_interruptible_timeout can either return a positive
-number when the completion was completed, 0 in case of an timeout, or a
-negative error code in case it was interrupted. You need to handle all
-three. E.g. something like this.
-
-ret = wait_for_completion_interruptible_timeout(...)
-if (ret == 0)
-	return -EIO;
-if (ret < 0)
-	return ret
-
-
-Otherwise it looks fine now. Maybe add a prefix to attrib_name() to avoid
-potential clashes with the global namespace. E.g. hid_time_attrib_name()
-Same goes for rtc_ops, hid_time_rtc_ops would be a better name.
-
-- Lars
-
-> ---
->  drivers/rtc/Kconfig               |   16 ++
->  drivers/rtc/Makefile              |    1 +
->  drivers/rtc/rtc-hid-sensor-time.c |  283 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 300 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/rtc/rtc-hid-sensor-time.c
-> 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index 19c03ab..e0d29b5 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -1144,4 +1144,20 @@ config RTC_DRV_SNVS
->  	   This driver can also be built as a module, if so, the module
->  	   will be called "rtc-snvs".
->  
-> +comment "HID Sensor RTC drivers"
-> +
-> +config RTC_DRV_HID_SENSOR_TIME
-> +	tristate "HID Sensor Time"
-> +	depends on USB_HID
-> +	select IIO
-> +	select HID_SENSOR_HUB
-> +	select HID_SENSOR_IIO_COMMON
-> +	help
-> +	  Say yes here to build support for the HID Sensors of type Time.
-> +	  This drivers makes such sensors available as RTCs.
-> +
-> +	  If this driver is compiled as a module, it will be named
-> +	  rtc-hid-sensor-time.
-> +
-> +
->  endif # RTC_CLASS
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index 56297f0..9d1658a 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -51,6 +51,7 @@ obj-$(CONFIG_RTC_DRV_EM3027)	+= rtc-em3027.o
->  obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
->  obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
->  obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
-> +obj-$(CONFIG_RTC_DRV_HID_SENSOR_TIME) += rtc-hid-sensor-time.o
->  obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
->  obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
->  obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
-> diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-> new file mode 100644
-> index 0000000..41bc011
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-hid-sensor-time.c
-> @@ -0,0 +1,283 @@
-> +/*
-> + * HID Sensor Time Driver
-> + * Copyright (c) 2012, Alexander Holler.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program; if not, write to the Free Software Foundation, Inc.,
-> + * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-> + *
-> + */
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
-> +#include <linux/hid-sensor-hub.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/rtc.h>
-> +
-> +/* Format: HID-SENSOR-usage_id_in_hex */
-> +/* Usage ID from spec for Time: 0x2000A0 */
-> +#define DRIVER_NAME "HID-SENSOR-2000a0" /* must be lowercase */
-> +
-> +enum hid_time_channel {
-> +	CHANNEL_SCAN_INDEX_YEAR,
-> +	CHANNEL_SCAN_INDEX_MONTH,
-> +	CHANNEL_SCAN_INDEX_DAY,
-> +	CHANNEL_SCAN_INDEX_HOUR,
-> +	CHANNEL_SCAN_INDEX_MINUTE,
-> +	CHANNEL_SCAN_INDEX_SECOND,
-> +	TIME_RTC_CHANNEL_MAX,
-> +};
-> +
-> +struct hid_time_state {
-> +	struct hid_sensor_hub_callbacks callbacks;
-> +	struct hid_sensor_iio_common common_attributes;
-> +	struct hid_sensor_hub_attribute_info info[TIME_RTC_CHANNEL_MAX];
-> +	struct rtc_time last_time;
-> +	spinlock_t lock_last_time;
-> +	struct completion comp_last_time;
-> +	struct rtc_time time_buf;
-> +	struct rtc_device *rtc;
-> +};
-> +
-> +static const u32 hid_time_addresses[TIME_RTC_CHANNEL_MAX] = {
-> +	HID_USAGE_SENSOR_TIME_YEAR,
-> +	HID_USAGE_SENSOR_TIME_MONTH,
-> +	HID_USAGE_SENSOR_TIME_DAY,
-> +	HID_USAGE_SENSOR_TIME_HOUR,
-> +	HID_USAGE_SENSOR_TIME_MINUTE,
-> +	HID_USAGE_SENSOR_TIME_SECOND,
-> +};
-> +
-> +/* Channel names for verbose error messages */
-> +static const char * const hid_time_channel_names[TIME_RTC_CHANNEL_MAX] = {
-> +	"year", "month", "day", "hour", "minute", "second",
-> +};
-> +
-> +/* Callback handler to send event after all samples are received and captured */
-> +static int hid_time_proc_event(struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id, void *priv)
-> +{
-> +	unsigned long flags;
-> +	struct hid_time_state *time_state = platform_get_drvdata(priv);
-> +
-> +	spin_lock_irqsave(&time_state->lock_last_time, flags);
-> +	time_state->last_time = time_state->time_buf;
-> +	spin_unlock_irqrestore(&time_state->lock_last_time, flags);
-> +	complete(&time_state->comp_last_time);
-> +	return 0;
-> +}
-> +
-> +static int hid_time_capture_sample(struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id, size_t raw_len,
-> +				char *raw_data, void *priv)
-> +{
-> +	struct hid_time_state *time_state = platform_get_drvdata(priv);
-> +	struct rtc_time *time_buf = &time_state->time_buf;
-> +
-> +	switch (usage_id) {
-> +	case HID_USAGE_SENSOR_TIME_YEAR:
-> +		time_buf->tm_year = *(u8 *)raw_data;
-> +		if (time_buf->tm_year < 70)
-> +			/* assume we are in 1970...2069 */
-> +			time_buf->tm_year += 100;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_MONTH:
-> +		/* sensor sending the month as 1-12, we need 0-11 */
-> +		time_buf->tm_mon = *(u8 *)raw_data-1;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_DAY:
-> +		time_buf->tm_mday = *(u8 *)raw_data;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_HOUR:
-> +		time_buf->tm_hour = *(u8 *)raw_data;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_MINUTE:
-> +		time_buf->tm_min = *(u8 *)raw_data;
-> +		break;
-> +	case HID_USAGE_SENSOR_TIME_SECOND:
-> +		time_buf->tm_sec = *(u8 *)raw_data;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +
-> +/* small helper, haven't found any other way */
-> +static const char *attrib_name(u32 attrib_id)
-> +{
-> +	static const char unknown[] = "unknown";
-> +	unsigned i;
-> +
-> +	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i) {
-> +		if (hid_time_addresses[i] == attrib_id)
-> +			return hid_time_channel_names[i];
-> +	}
-> +	return unknown; /* should never happen */
-> +}
-> +
-> +static int hid_time_parse_report(struct platform_device *pdev,
-> +				struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id,
-> +				struct hid_time_state *time_state)
-> +{
-> +	int report_id, i;
-> +
-> +	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i)
-> +		if (sensor_hub_input_get_attribute_info(hsdev,
-> +				HID_INPUT_REPORT, usage_id,
-> +				hid_time_addresses[i],
-> +				&time_state->info[i]) < 0)
-> +			return -EINVAL;
-> +	/* Check the (needed) attributes for sanity */
-> +	report_id = time_state->info[0].report_id;
-> +	if (report_id < 0) {
-> +		dev_err(&pdev->dev, "bad report ID!\n");
-> +		return -EINVAL;
-> +	}
-> +	for (i = 0; i < TIME_RTC_CHANNEL_MAX; ++i) {
-> +		if (time_state->info[i].report_id != report_id) {
-> +			dev_err(&pdev->dev,
-> +				"not all needed attributes inside the same report!\n");
-> +			return -EINVAL;
-> +		}
-> +		if (time_state->info[i].size != 1) {
-> +			dev_err(&pdev->dev,
-> +				"attribute '%s' not 8 bits wide!\n",
-> +				attrib_name(time_state->info[i].attrib_id));
-> +			return -EINVAL;
-> +		}
-> +		if (time_state->info[i].units !=
-> +				HID_USAGE_SENSOR_UNITS_NOT_SPECIFIED &&
-> +				/* allow attribute seconds with unit seconds */
-> +				!(time_state->info[i].attrib_id ==
-> +				HID_USAGE_SENSOR_TIME_SECOND &&
-> +				time_state->info[i].units ==
-> +				HID_USAGE_SENSOR_UNITS_SECOND)) {
-> +			dev_err(&pdev->dev,
-> +				"attribute '%s' hasn't a unit of type 'none'!\n",
-> +				attrib_name(time_state->info[i].attrib_id));
-> +			return -EINVAL;
-> +		}
-> +		if (time_state->info[i].unit_expo) {
-> +			dev_err(&pdev->dev,
-> +				"attribute '%s' hasn't a unit exponent of 1!\n",
-> +				attrib_name(time_state->info[i].attrib_id));
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int hid_rtc_read_time(struct device *dev, struct rtc_time *tm)
-> +{
-> +	unsigned long flags;
-> +	struct hid_time_state *time_state =
-> +		platform_get_drvdata(to_platform_device(dev));
-> +
-> +	INIT_COMPLETION(time_state->comp_last_time);
-> +	/* get a report with all values through requesting one value */
-> +	sensor_hub_input_attr_get_raw_value(time_state->common_attributes.hsdev,
-> +			HID_USAGE_SENSOR_TIME, hid_time_addresses[0],
-> +			time_state->info[0].report_id);
-> +	/* wait for all values (event) */
-> +	if (!wait_for_completion_interruptible_timeout(
-> +			&time_state->comp_last_time, HZ*6))
-> +		return -EIO;
-> +	spin_lock_irqsave(&time_state->lock_last_time, flags);
-> +	*tm = time_state->last_time;
-> +	spin_unlock_irqrestore(&time_state->lock_last_time, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct rtc_class_ops rtc_ops = {
-> +	.read_time = hid_rtc_read_time,
-> +};
-> +
-> +static int hid_time_probe(struct platform_device *pdev)
-> +{
-> +	int ret = 0;
-> +	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-> +	struct hid_time_state *time_state = devm_kzalloc(&pdev->dev,
-> +		sizeof(struct hid_time_state), GFP_KERNEL);
-> +
-> +	if (time_state == NULL)
-> +		return -ENOMEM;
-> +
-> +	platform_set_drvdata(pdev, time_state);
-> +
-> +	init_completion(&time_state->comp_last_time);
-> +	time_state->common_attributes.hsdev = hsdev;
-> +	time_state->common_attributes.pdev = pdev;
-> +
-> +	ret = hid_sensor_parse_common_attributes(hsdev,
-> +				HID_USAGE_SENSOR_TIME,
-> +				&time_state->common_attributes);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup common attributes!\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = hid_time_parse_report(pdev, hsdev, HID_USAGE_SENSOR_TIME,
-> +					time_state);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup attributes!\n");
-> +		return ret;
-> +	}
-> +
-> +	time_state->callbacks.send_event = hid_time_proc_event;
-> +	time_state->callbacks.capture_sample = hid_time_capture_sample;
-> +	time_state->callbacks.pdev = pdev;
-> +	ret = sensor_hub_register_callback(hsdev, HID_USAGE_SENSOR_TIME,
-> +					&time_state->callbacks);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "register callback failed!\n");
-> +		return ret;
-> +	}
-> +
-> +	time_state->rtc = rtc_device_register("hid-sensor-time",
-> +				&pdev->dev, &rtc_ops, THIS_MODULE);
-> +
-> +	if (IS_ERR(time_state->rtc)) {
-> +		dev_err(&pdev->dev, "rtc device register failed!\n");
-> +		return PTR_ERR(time_state->rtc);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int __devinit hid_time_remove(struct platform_device *pdev)
-> +{
-> +	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-> +	struct hid_time_state *time_state = platform_get_drvdata(pdev);
-> +
-> +	rtc_device_unregister(time_state->rtc);
-> +	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver hid_time_platform_driver = {
-> +	.driver = {
-> +		.name	= DRIVER_NAME,
-> +		.owner	= THIS_MODULE,
-> +	},
-> +	.probe		= hid_time_probe,
-> +	.remove		= hid_time_remove,
-> +};
-> +module_platform_driver(hid_time_platform_driver);
-> +
-> +MODULE_DESCRIPTION("HID Sensor Time");
-> +MODULE_AUTHOR("Alexander Holler <holler@ahsoftware.de>");
-> +MODULE_LICENSE("GPL");
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 3c8acfa..8037b66 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -264,6 +264,9 @@ static inline void dwc_do_single_block(struct dw_dma_chan *dwc,
+ 	channel_writel(dwc, CTL_LO, ctllo);
+ 	channel_writel(dwc, CTL_HI, desc->lli.ctlhi);
+ 	channel_set_bit(dw, CH_EN, dwc->mask);
++
++	/* Move pointer to next descriptor */
++	dwc->tx_node_active = dwc->tx_node_active->next;
+ }
+ 
+ /* Called with dwc->lock held and bh disabled */
+@@ -295,7 +298,7 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
+ 		dwc_initialize(dwc);
+ 
+ 		dwc->tx_list = &first->tx_list;
+-		dwc->tx_node_active = first->tx_list.next;
++		dwc->tx_node_active = &first->tx_list;
+ 
+ 		dwc_do_single_block(dwc, first);
+ 
+@@ -621,18 +624,13 @@ static void dw_dma_tasklet(unsigned long data)
+ 
+ 					dma_writel(dw, CLEAR.XFER, dwc->mask);
+ 
+-					/* move pointer to next descriptor */
+-					dwc->tx_node_active =
+-						dwc->tx_node_active->next;
+-
+ 					dwc_do_single_block(dwc, desc);
+ 
+ 					spin_unlock_irqrestore(&dwc->lock, flags);
+ 					continue;
+-				} else {
+-					/* we are done here */
+-					clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
+ 				}
++				/* we are done here */
++				clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
+ 			}
+ 			spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+-- 
+1.7.10.4
 
