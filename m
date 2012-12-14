@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab2LNQIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:08:24 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52687 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756761Ab2LNQHw (ORCPT
+	id S1756796Ab2LNQIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:08:21 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:27845 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756572Ab2LNQIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:07:52 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur@brendeland.net>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv2 10/11] remoteproc: Find resource table in device memory
-Date: Fri, 14 Dec 2012 17:06:59 +0100
-Message-Id: <1355501220-4572-11-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
+	Fri, 14 Dec 2012 11:08:16 -0500
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Dec 2012 11:08:16 EST
+X-RZG-AUTH: :JmkKe0mufu3CxrePViMusPB/RF9xXhaaYyrlzjsV61yypLP1nVvbwmdl8puK
+X-RZG-CLASS-ID: mo05
+Message-ID: <50CB5B12.4040105@informatik.stud.uni-erlangen.de>
+Date: Fri, 14 Dec 2012 18:00:02 +0100
+From: Jennifer Naumann 
+	<Jennifer.Naumann@informatik.stud.uni-erlangen.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: gregkh@linuxfoundation.org
+CC: Sebastian Hahn <snsehahn@cip.cs.fau.de>, dan.carpenter@oracle.com,
+        standby24x7@gmail.com, Julia.Lawall@lip6.fr, jkosina@suse.cz,
+        joe@perches.com, yongjun_wei@trendmicro.com.cn,
+        adam.buchbinder@gmail.com, amwang@redhat.com, justinmattock@gmail.com,
+        wfp5p@virginia.edu, jim.cromie@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de,
+        Jennifer.Naumann@informatik.stud.uni-erlangen.de
+Subject: Re: [PATCH 0/6] staging:rtl8192u: begin cleanup of some checkpatch
+ errors
+References: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de>
+In-Reply-To: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call rproc_get_rsctab_addr() to get the address
-of the resource table in shared memory.
+On 12/05/2012 09:40 PM, Sebastian Hahn wrote:
+> Jennifer and I have started making the rtl8192u driver conform with the
+> CodingStyle rules a little better. We started out with a cleanfile run,
+> then did corrections for individual issues, grouped into patches by
+> specific issue fixed.
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- drivers/remoteproc/remoteproc_core.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Thanks for the feedback we've received so far, is there anything else we
+need to do from here? We've verified the series still applies to the
+current staging-next tree and would be happy to further improve the
+patches as necessary.
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 8a7de5c..f95c08c 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -854,6 +854,13 @@ static void rproc_fw_load(const struct firmware *fw, void *context)
- 		goto clean_up;
- 	}
- 
-+	/* Find the new location of the resource table in device memory */
-+	table  = rproc_get_rsctab_addr(rproc, fw);
-+	if (!table) {
-+		ret = -EINVAL;
-+		goto clean_up;
-+	}
-+
- 	ret = rproc_handle_resource(rproc, table, tablesz, rproc_handle_reg);
- 	if (ret) {
- 		dev_err(dev, "Failed to process resources: %d\n", ret);
--- 
-1.7.5.4
-
+Regards,
+Jennifer Naumann
