@@ -1,55 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab2LNSsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:48:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48920 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756687Ab2LNSsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:48:21 -0500
-Message-ID: <50CB7459.7010107@zytor.com>
-Date: Fri, 14 Dec 2012 10:47:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Pavel Emelyanov <xemul@parallels.com>, aarcange@redhat.com,
-        ak@linux.intel.com, Stefani Seibold <stefani@seibold.net>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
-        mingo@redhat.com, john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
-In-Reply-To: <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757092Ab2LNStR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:49:17 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:37184 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756687Ab2LNStO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 13:49:14 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ilya Zykov <ilya@ilyx.ru>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2 11/11] tty: Halt both ldiscs concurrently
+Date: Fri, 14 Dec 2012 13:22:50 -0500
+Message-Id: <1355509370-5883-12-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 10:44 AM, Andy Lutomirski wrote:
->>
->> mremap() should work.  At the same time, the code itself is not going to
->> have any stability guarantees between kernel versions -- it obviously
->> cannot.
-> 
-> We could guarantee that the symbols in the vdso resolve to particular
-> offsets within the vdso.  (Yes, this is ugly.)
-> 
-> Does criu support checkpointing with one version of a shared library
-> and restoring with another?  If there are no textrels (or whatever the
-> relocation type that actually modifies text as opposed to just the plt
-> or got) then, in principle, it should be doable.  Otherwise some
-> kernel help will be needed to checkpoint reliably on one kernel and
-> restore somewhere else.
-> 
-> (This isn't a regression -- it's already broken.)
-> 
+The pty driver does not obtain an ldisc reference to the linked
+tty when writing. When the ldiscs are sequentially halted, it
+is possible for one ldisc to be halted, and before the second
+ldisc can be halted, a concurrent write schedules buffer work on
+the first ldisc. This can lead to an access-after-free error when
+the scheduled buffer work starts on the closed ldisc.
 
-The real issue is that happens if the process is checkpointed while
-inside the vdso and now eip/rip or a stack frame points into the vdso.
-This is not impossible or even unlikely, especially on 32 bits it is
-downright likely.
+Prevent subsequent use after halt by performing each stage
+of the halt alternately the tty pair.
 
-	-hpa
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_ldisc.c | 40 ++++++++++++++++++++++++++--------------
+ 1 file changed, 26 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 19e088a..a6d3078 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -527,37 +527,53 @@ static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
+ /**
+  *	tty_ldisc_halt		-	shut down the line discipline
+  *	@tty: tty device
++ *	@o_tty: paired pty device (can be NULL)
+  *	@pending: returns true if work was scheduled when cancelled
+  *		  (can be set to NULL)
++ *	@o_pending: returns true if work was scheduled when cancelled
++ *		    (can be set to NULL)
+  *	@timeout: # of jiffies to wait for ldisc refs to be released
+  *
+- *	Shut down the line discipline and work queue for this tty device.
+- *	The TTY_LDISC flag being cleared ensures no further references can
+- *	be obtained while the delayed work queue halt ensures that no more
+- *	data is fed to the ldisc.
++ *	Shut down the line discipline and work queue for this tty device and
++ *	its paired pty (if exists). Clearing the TTY_LDISC flag ensures
++ *	no further references can be obtained while the work queue halt
++ *	ensures that no more data is fed to the ldisc.
+  *
+  *	Furthermore, guarantee that existing ldisc references have been
+  *	released, which in turn, guarantees that no future buffer work
+  *	can be rescheduled.
+  *
+- *	You need to do a 'flush_scheduled_work()' (outside the ldisc_mutex)
++ *	You need to do a 'tty_ldisc_flush_works()' (outside the ldisc_mutex)
+  *	in order to make sure any currently executing ldisc work is also
+  *	flushed.
+  */
+ 
+-static int tty_ldisc_halt(struct tty_struct *tty, int *pending, long timeout)
++static int tty_ldisc_halt(struct tty_struct *tty, struct tty_struct *o_tty,
++			  int *pending, int *o_pending, long timeout)
+ {
+-	int scheduled, retval;
++	int scheduled, o_scheduled, retval;
+ 
+ 	clear_bit(TTY_LDISC, &tty->flags);
++	if (o_tty)
++		clear_bit(TTY_LDISC, &o_tty->flags);
++
+ 	retval = tty_ldisc_wait_idle(tty, timeout);
++	if (!retval && o_tty)
++		retval = tty_ldisc_wait_idle(o_tty, timeout);
+ 	if (retval)
+ 		return retval;
+ 
+ 	scheduled = cancel_work_sync(&tty->port->buf.work);
+ 	set_bit(TTY_LDISC_HALTED, &tty->flags);
++	if (o_tty) {
++		o_scheduled = cancel_work_sync(&o_tty->port->buf.work);
++		set_bit(TTY_LDISC_HALTED, &o_tty->flags);
++	}
++
+ 	if (pending)
+ 		*pending = scheduled;
++	if (o_tty && o_pending)
++		*o_pending = o_scheduled;
+ 	return 0;
+ }
+ 
+@@ -700,9 +716,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	 *	parallel to the change and re-referencing the tty.
+ 	 */
+ 
+-	retval = tty_ldisc_halt(tty, &work, 5 * HZ);
+-	if (o_tty)
+-		tty_ldisc_halt(o_tty, &o_work, 0);
++	retval = tty_ldisc_halt(tty, o_tty, &work, &o_work, 5 * HZ);
+ 
+ 	/*
+ 	 * Wait for ->hangup_work and ->buf.work handlers to terminate.
+@@ -964,12 +978,10 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 	 */
+ 
+ 	tty_lock_pair(tty, o_tty);
+-	tty_ldisc_halt(tty, NULL, MAX_SCHEDULE_TIMEOUT);
++	tty_ldisc_halt(tty, o_tty, NULL, NULL, MAX_SCHEDULE_TIMEOUT);
+ 	tty_ldisc_flush_works(tty);
+-	if (o_tty) {
+-		tty_ldisc_halt(o_tty, NULL, MAX_SCHEDULE_TIMEOUT);
++	if (o_tty)
+ 		tty_ldisc_flush_works(o_tty);
+-	}
+ 
+ 	/* This will need doing differently if we need to lock */
+ 	tty_ldisc_kill(tty);
+-- 
+1.8.0.1
 
