@@ -1,216 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab2LNXyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:54:07 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:41389 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756994Ab2LNXyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:54:03 -0500
-Subject: [GIT PULL] target updates for v3.8-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Dec 2012 15:53:42 -0800
-Message-ID: <1355529222.31680.143.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757170Ab2LNXzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:55:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52082 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757041Ab2LNXzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:55:31 -0500
+Message-ID: <50CBBC58.4080307@zytor.com>
+Date: Fri, 14 Dec 2012 15:55:04 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
+        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon> <50CB9553.7050808@zytor.com> <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com> <50CBA171.4080403@zytor.com> <20121214222517.GG6582@moon> <50CBA7BC.4020001@zytor.com> <20121214224307.GH6582@moon> <50CBACD2.60307@zytor.com> <50CBBACA.2070108@linaro.org>
+In-Reply-To: <50CBBACA.2070108@linaro.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus!
+On 12/14/2012 03:48 PM, John Stultz wrote:
+> On 12/14/2012 02:48 PM, H. Peter Anvin wrote:
+>> On 12/14/2012 02:43 PM, Cyrill Gorcunov wrote:
+>>> On Fri, Dec 14, 2012 at 02:27:08PM -0800, H. Peter Anvin wrote:
+>>>
+>>>
+>>> This won't help in case of scenario you've been pointing in
+>>> previous email (where c/r happens in a middle of vdso),
+>>> would it? Because we still need somehow to be sure we're not
+>>> checkpointing in a middle of signal handler which will return
+>>> to some vdso place.
+>> It is okay if and only if those vdso places never change... which I
+>> think is doable if they only contain trival system call wrappers, i.e.
+>> something like:
+>>
+>>     movl $__SYS_gettimeofday, %eax
+>>     syscall
+>>     ret
+> 
+> Though doesn't this make it easier for exploits (somewhat undoing ASLR)?
+> I know Andi always wanted to avoid having syscall instructions at a
+> fixed location for the old vsyscall code (though I know we had it
+> none-the-less for awhile).   But maybe I'm confusing issues here?
+> 
 
-Here are the target updates for v3.8-rc1 merge window code.  Please go
-ahead and pull from:
+They aren't in fixed addresses across processes... the vdso location can
+still be randomized.  It just has to be the same across the
+checkpoint/restart operation, just like all the other instructions.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+	-hpa
 
-Just a heads up that there is a minor merge conflict that you'll
-encounter in target_handle_task_attr() code, that sfr has been carrying
-a fix for recently within -next.  After dropping the HEAD section, the
-resolution should look like:
-
-http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commitdiff;h=50f966ab0a8630cacb46bb382cd2822a5c1448ac
-
-It has been a very busy development cycle this time around in target
-land, with the highlights including:
-
- - Kill struct se_subsystem_dev, in favor of direct se_device usage (hch)
- - Simplify reservations code by combining SPC-3 + SCSI-2 support 
-   for virtual backends only (hch)
- - Simplify ALUA code for virtual only backends, and remove left
-   over abstractions (hch)
- - Pass sense_reason_t as return value for I/O submission path (hch)
- - Refactor MODE_SENSE emulation to allow for easier addition of
-   new mode pages. (roland)
- - Add emulation of MODE_SELECT (roland)
- - Fix bug in handling of ExpStatSN wrap-around (steve)
- - Fix bug in TMR ABORT_TASK lookup in qla2xxx target (steve)
- - Add WRITE_SAME w/ UNMAP=0 support for IBLOCK backends (nab)
- - Convert ib_srpt to use modern target_submit_cmd caller +
-   drop legacy ioctx->kref usage (nab)
- - Convert ib_srpt to use modern target_submit_tmr caller (nab)
- - Add link_magic for fabric allow_link destination target_items
-   for symlinks within target_core_fabric_configfs.c code (nab)
- - Allocate pointers in instead of full structs for
-   config_group->default_groups (sebastian)
- - Fix 32-bit highmem breakage for FILEIO (sebastian)
-
-All told, hch was able to shave off another ~1K LOC by killing the
-se_subsystem_dev abstraction, along with a number of PR + ALUA
-simplifications.  Also, a nice patch by Roland is the refactoring of
-MODE_SENSE handling, along with the addition of initial MODE_SELECT
-emulation support for virtual backends.
-
-Sebastian found a long-standing issue wrt to allocation of full
-config_group instead of pointers for config_group->default_group[]
-setup in a number of areas, which ends up saving memory with big
-configurations.  He also managed to fix another long-standing BUG wrt to
-broken 32-bit highmem support within the FILEIO backend driver.
-
-Thank you again to everyone who contributed this round!
-
---nab
-
-Andy Grover (1):
-  target/iscsi_target: Add NodeACL tags for initiator group support
-
-Chris Boot (2):
-  sbp-target: use simple assignment in tgt_agent_rw_agent_state()
-  sbp-target: fix error path in sbp_make_tpg()
-
-Christoph Hellwig (11):
-  target: kill struct se_subsystem_dev
-  target: rename spc_ops
-  target: move REPORT LUNS emulation to target_core_spc.c
-  target/pscsi: call spc_emulate_report_luns directly
-  target: provide generic sbc device type/revision helpers
-  pscsi: fix REPORT LUNS handling
-  target: kill dev->dev_task_attr_type
-  target: simplify reservations code
-  target: simplify alua support
-  target: remove ->get_device_rev
-  target: pass sense_reason as a return value
-
-Dan Carpenter (1):
-  target: update error handling for sbc_setup_write_same()
-
-Fengguang Wu (1):
-  target/pscsi: Make pscsi_configure_device + target_release_session
-    static
-
-Kees Cook (1):
-  sbp-target: remove depends on CONFIG_EXPERIMENTAL
-
-Nicholas Bellinger (14):
-  target: Fix incorrect starting offset after MODE_SENSE refactoring
-  target: Fix incorrect inversion of TPGS_EXPLICT_ALUA check
-  target: Fix possible TFO->write_pending() sense_reason_t silent WRITE
-    corruption
-  target: Fix exception path pr_reg put regression for PR RELEASE
-  target: Change sbc_emulate_noop to return sense_reason_t
-  target/sbc: Seperate WRITE_SAME based on UNMAP flag in sbc_ops
-  target: Add/check max_write_same_len device attribute + update block
-    limits VPD
-  target/iblock: Add WRITE_SAME w/ UNMAP=0 emulation support
-  target: Update copyright information to 2012
-  target/iblock: Forward declare bio helpers
-  target: Make spc_get_write_same_sectors return sector_t
-  ib_srpt: Convert I/O path to target_submit_cmd + drop legacy
-    ioctx->kref
-  ib_srpt: Convert TMR path to target_submit_tmr
-  target: Add link_magic for fabric allow_link destination target_items
-
-Roland Dreier (8):
-  iscsi-target: Use list_first_entry() where appropriate
-  target: Refactor MODE SENSE emulation
-  target: Implement mode page 0x1c, "Informational Exceptions"
-  target: Add emulation for MODE SELECT
-  iscsi-target: Fix potential deadlock on lock taken in timer
-  iscsi-target: Always send a response before terminating iSCSI
-    connection
-  target: Clean up logic in transport_put_cmd()
-  target: Clean up flow in transport_check_aborted_status()
-
-Sachin Kamat (1):
-  iscsi_target: Remove redundant null check before kfree
-
-Sebastian Andrzej Siewior (6):
-  target/configfs: allocate pointers instead of full struct for
-    default_groups
-  target/configfs: allocate only 6 slots for dev_cg->default_groups
-  target/configfs: use kmalloc() instead of kzalloc() for default
-    groups
-  target/file: Fix 32-bit highmem breakage for SGL -> iovec mapping
-  target/file: merge fd_do_readv() and fd_do_writev()
-  iscsi-target: use kstrdup() for iscsi_param
-
-Steve Hodgson (2):
-  iscsi-target: Fix bug in handling of ExpStatSN ACK during u32
-    wrap-around
-  qla2xxx: Look up LUN for abort requests
-
-Wei Yongjun (1):
-  iscsit: use GFP_ATOMIC under spin lock
-
-Yi Zou (1):
-  target/tcm_fc: fix the lockdep warning due to inconsistent lock state
-
- drivers/infiniband/ulp/srpt/ib_srpt.c          |  178 ++--
- drivers/infiniband/ulp/srpt/ib_srpt.h          |    1 -
- drivers/scsi/qla2xxx/qla_target.c              |   21 +-
- drivers/scsi/qla2xxx/tcm_qla2xxx.c             |    4 +-
- drivers/target/iscsi/iscsi_target.c            |   84 +-
- drivers/target/iscsi/iscsi_target_configfs.c   |   28 +-
- drivers/target/iscsi/iscsi_target_core.h       |    2 +-
- drivers/target/iscsi/iscsi_target_erl1.c       |   11 +-
- drivers/target/iscsi/iscsi_target_erl2.c       |    2 +-
- drivers/target/iscsi/iscsi_target_login.c      |   18 +-
- drivers/target/iscsi/iscsi_target_nego.c       |   10 +-
- drivers/target/iscsi/iscsi_target_parameters.c |   16 +-
- drivers/target/iscsi/iscsi_target_tmr.c        |    4 +-
- drivers/target/iscsi/iscsi_target_tq.c         |    3 +-
- drivers/target/iscsi/iscsi_target_util.c       |    8 +-
- drivers/target/loopback/tcm_loop.h             |    1 -
- drivers/target/sbp/Kconfig                     |    2 +-
- drivers/target/sbp/sbp_target.c                |   24 +-
- drivers/target/target_core_alua.c              |  346 +++----
- drivers/target/target_core_alua.h              |    9 +-
- drivers/target/target_core_configfs.c          |  705 ++++----------
- drivers/target/target_core_device.c            |  710 ++++++--------
- drivers/target/target_core_fabric_configfs.c   |   37 +-
- drivers/target/target_core_fabric_lib.c        |    3 +-
- drivers/target/target_core_file.c              |  279 ++----
- drivers/target/target_core_file.h              |    2 +
- drivers/target/target_core_hba.c               |    9 +-
- drivers/target/target_core_iblock.c            |  501 +++++-----
- drivers/target/target_core_iblock.h            |    1 +
- drivers/target/target_core_internal.h          |   16 +-
- drivers/target/target_core_pr.c                | 1225 ++++++++++--------------
- drivers/target/target_core_pr.h                |   10 +-
- drivers/target/target_core_pscsi.c             |  349 +++-----
- drivers/target/target_core_pscsi.h             |    2 +-
- drivers/target/target_core_rd.c                |  126 +--
- drivers/target/target_core_rd.h                |    1 +
- drivers/target/target_core_sbc.c               |  185 ++--
- drivers/target/target_core_spc.c               |  572 ++++++++----
- drivers/target/target_core_stat.c              |  312 ++-----
- drivers/target/target_core_tmr.c               |    9 +-
- drivers/target/target_core_tpg.c               |   29 +-
- drivers/target/target_core_transport.c         |  673 ++++---------
- drivers/target/target_core_ua.c                |   20 +-
- drivers/target/target_core_ua.h                |    2 +-
- drivers/target/tcm_fc/tfc_sess.c               |    2 +-
- drivers/vhost/tcm_vhost.c                      |    4 -
- include/target/target_core_backend.h           |   49 +-
- include/target/target_core_base.h              |  212 ++---
- include/target/target_core_fabric.h            |   15 +-
- 49 files changed, 2844 insertions(+), 3988 deletions(-)
 
