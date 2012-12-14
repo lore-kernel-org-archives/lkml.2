@@ -1,150 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab2LNMhl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 07:37:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40145 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753220Ab2LNMhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 07:37:40 -0500
-Date: Fri, 14 Dec 2012 13:37:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Ying Han <yinghan@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
- iterators
-Message-ID: <20121214123738.GH6898@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
- <1353955671-14385-4-git-send-email-mhocko@suse.cz>
- <CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
- <20121211155432.GC1612@dhcp22.suse.cz>
- <CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
- <20121212090652.GB32081@dhcp22.suse.cz>
- <20121212192441.GD10374@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212192441.GD10374@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755165Ab2LNMwP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 07:52:15 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:58517 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751319Ab2LNMwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 07:52:12 -0500
+Message-ID: <1355489504.2588.0.camel@thor>
+Subject: Re: [PATCH 4/5] x86: acpi: Print warning for malformed host bridge
+ resources
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Date: Fri, 14 Dec 2012 07:51:44 -0500
+In-Reply-To: <1352645365.2320.41.camel@thor>
+References: <1352343356-4006-1-git-send-email-peter@hurleysoftware.com>
+	 <1352343356-4006-5-git-send-email-peter@hurleysoftware.com>
+	 <CAErSpo6DV+HKHX=5mSUzGmbJVbZdDpco7Ct-FeJJcVjCO992bg@mail.gmail.com>
+	 <1352645365.2320.41.camel@thor>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.4-0build1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-12-12 20:24:41, Michal Hocko wrote:
-> On Wed 12-12-12 10:06:52, Michal Hocko wrote:
-> > On Tue 11-12-12 14:36:10, Ying Han wrote:
-> [...]
-> > > One exception is mem_cgroup_iter_break(), where the loop terminates
-> > > with *leaked* refcnt and that is what the iter_break() needs to clean
-> > > up. We can not rely on the next caller of the loop since it might
-> > > never happen.
+Ping?
+
+On Sun, 2012-11-11 at 09:49 -0500, Peter Hurley wrote:
+> On Sat, 2012-11-10 at 14:52 -0700, Bjorn Helgaas wrote:
+> > On Wed, Nov 7, 2012 at 7:55 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> > > An incorrectly specified host bridge window may prevent
+> > > other devices from claiming assigned resources. For example,
+> > > this flawed _CRS resource descriptor from a Dell T5400:
+> > >      DWordMemory (ResourceProducer, PosDecode, MinFixed, MaxFixed, NonCacheable, ReadWrite,
+> > >          0x00000000,         // Granularity
+> > >          0xF0000000,         // Range Minimum
+> > >          0xFE000000,         // Range Maximum
+> > >          0x00000000,         // Translation Offset
+> > >          0x0E000000,         // Length
+> > >          ,, , AddressRangeMemory, TypeStatic)
 > > 
-> > Yes, this is true and I already have a half baked patch for that. I
-> > haven't posted it yet but it basically checks all node-zone-prio
-> > last_visited and removes itself from them on the way out in pre_destroy
-> > callback (I just need to cleanup "find a new last_visited" part and will
-> > post it).
+> > I think the problem here is that the Range Maximum should be
+> > 0xFDFFFFFF, not 0xFE000000, right?
 > 
-> And a half baked patch - just compile tested
+> I presume so.
+> 
+> > > diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> > > index 192397c..3468d16 100644
+> > > --- a/arch/x86/pci/acpi.c
+> > > +++ b/arch/x86/pci/acpi.c
+> > > @@ -298,6 +298,10 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
+> > >                         "host bridge window [%#llx-%#llx] "
+> > >                         "([%#llx-%#llx] ignored, not CPU addressable)\n",
+> > >                         start, orig_end, end + 1, orig_end);
+> > > +       } else if (flags & IORESOURCE_MEM && (start & 0x0f || ~end & 0x0f)) {
+> > > +               dev_warn(&info->bridge->dev,
+> > > +                        "invalid host bridge window [%#llx-%#llx]\n",
+> > > +                        start, end);
+> > 
+> > We didn't actually *fix* anything here, so I guess we're just pointing
+> > out the reason for a subsequent failure to claim the adjacent
+> > resource.
+> 
+> Correct. There is no fix; only a diagnostic warning.
+> 
+> The warning is also a 'red flag' that, on this machine, it might be
+> better to boot the kernel with the "pci=nocrs" option.
+> 
+> > As far as I know, the spec doesn't actually require resources of ACPI
+> > devices to be non-overlapping.  Windows accepts overlapping resources,
+> > and I think Linux probably should, too, but right now we trip over
+> > this.
+> 
+> (note: I included a link below to the defect report which has
+> the /proc/iomem, dmesg & dmidecode)
+> 
+> The situation is this:
+> 
+> The adjacent resources (northbridge & southbridge) are not defined by
+> ACPI, but rather reserved with an e820 address descriptor from
+> [0xfe000000-0xfeffffff], so strictly speaking there is no overlapping
+> ACPI resource.
+> 
+> The e820 descriptor is bumped out to [0xf0000000-0xfeffffff] and the
+> malformed host bridge window is reparented to it.
+> 
+> At this point in the boot, there is no resource conflict.
+> 
+> Later in the boot, the i5k_amb driver tries to map
+> [0xfe000000-0xfe01ffff] which is the FB-DIMM AMB register window on the
+> Intel 5400 MCH and is rejected. The request is rejected because the
+> requested range does not map completely to a single parent and this is
+> not allowed. (The i5k_amb driver exposes the FB-DIMM temperature sensors
+> through sysfs).
+> 
+> There is no problem in Windows because no driver attempts to allocate
+> [0xfe000000-0xfe01ffff]. However, I doubt the PNP Manager would allow
+> another bus pdo to claim an overlapping resource with PCI bus 0. I
+> suspect the offending device would yellow bang. (That would be an
+> interesting experiment...)
+> 
+> > In the meantime (until we figure out how to handle overlapping
+> > resources better), can we do something to actually fix this?  Maybe we
+> > should truncate the end of the range to 0xFDFFFFFF like we do for
+> > non-addressable parts of the range?
+> 
+> Auto-fixing this seems problematic because it's essentially impossible
+> to determine if the resource length or the resource end or both is
+> wrong.
+> 
+> > Is there a bugzilla or a complete dmesg log to look at?
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=50161
+> 
+> Regards,
+> Peter Hurley
+> 
+> 
 
-please ignore this patch. It is totally bogus.
 
-> ---
-> From 1c976c079c383175c679e00115aee0ab8e215bf2 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Tue, 11 Dec 2012 21:02:39 +0100
-> Subject: [PATCH] NOT READY YET - just compile tested
-> 
-> memcg: remove memcg from the reclaim iterators
-> 
-> Now that per-node-zone-priority iterator caches memory cgroups rather
-> than their css ids we have to be careful and remove them from the
-> iterator when they are on the way out otherwise they might hang for
-> unbounded amount of time (until the global reclaim triggers the zone
-> under priority to find out the group is dead and let it to find the
-> final rest).
-> 
-> This is solved by hooking into mem_cgroup_pre_destroy and checking all
-> per-node-zone-priority iterators. If the current memcg is found in
-> iter->last_visited then it is replaced by its left sibling or its parent
-> otherwise. This guarantees that no group gets more reclaiming than
-> necessary and the next iteration will continue seemingly.
-> 
-> Spotted-by: Ying Han <yinghan@google.com>
-> Not-signed-off-by-yet: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   38 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 38 insertions(+)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7134148..286db74 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6213,12 +6213,50 @@ free_out:
->  	return ERR_PTR(error);
->  }
->  
-> +static void mem_cgroup_remove_cached(struct mem_cgroup *memcg)
-> +{
-> +	int node, zone;
-> +
-> +	for_each_node(node) {
-> +		struct mem_cgroup_per_node *pn = memcg->info.nodeinfo[node];
-> +		int prio;
-> +
-> +		for (zone = 0; zone < MAX_NR_ZONES; zone++) {
-> +			struct mem_cgroup_per_zone *mz;
-> +
-> +			mz = &pn->zoneinfo[zone];
-> +			for (prio = 0; prio < DEF_PRIORITY + 1; prio++) {
-> +				struct mem_cgroup_reclaim_iter *iter;
-> +
-> +				iter = &mz->reclaim_iter[prio];
-> +				rcu_read_lock();
-> +				spin_lock(&iter->iter_lock);
-> +				if (iter->last_visited == memcg) {
-> +					struct cgroup *cgroup, *prev;
-> +
-> +					cgroup = memcg->css.cgroup;
-> +					prev = list_entry_rcu(cgroup->sibling.prev, struct cgroup, sibling);
-> +					if (&prev->sibling == &prev->parent->children)
-> +						prev = prev->parent;
-> +					iter->last_visited = mem_cgroup_from_cont(prev);
-> +
-> +					/* TODO can we do this? */
-> +					css_put(&memcg->css);
-> +				}
-> +				spin_unlock(&iter->iter_lock);
-> +				rcu_read_unlock();
-> +			}
-> +		}
-> +	}
-> +}
-> +
->  static void mem_cgroup_pre_destroy(struct cgroup *cont)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->  
->  	mem_cgroup_reparent_charges(memcg);
->  	mem_cgroup_destroy_all_caches(memcg);
-> +	mem_cgroup_remove_cached(memcg);
->  }
->  
->  static void mem_cgroup_destroy(struct cgroup *cont)
-> -- 
-> 1.7.10.4
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
