@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab2LNTSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 14:18:36 -0500
-Received: from smtp109.biz.mail.bf1.yahoo.com ([98.139.244.33]:35961 "HELO
-	smtp109.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932143Ab2LNTSe (ORCPT
+	id S932243Ab2LNTTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 14:19:21 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:41362 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143Ab2LNTTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 14:18:34 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: CGM64S0VM1lr2GMFyz.EciBIF_vEJefqAHRI.qWO6QBJB.u
- rw2tz0xecFwSQNvlA4AvR_t8pEhA4VR_8BBDZbkdMFRxbwRH5hGSG4ENUCT7
- 6TShziZFxIv6_X1Jq3HhjGHuAp9.SzAkfXCIPkRk7d211AVZQ2Ug2hgB8gg.
- MbXYSuhwmTr_fVKhbKSPYyHHRFWxEeto0CSF9LFj3q0dAX7sh6KYEaO.BtP4
- I_H0EmjkAMVPW59kwzj806ISh6V9kma0ehWOYwpVxVQP381Hn_3uA_pojmz9
- CQUpewmUgOjNW9UIM4SGTav3f60TixAfTeCNByUKAUEop9EUrlWhsPCYpNoU
- 6VF4oGgIcMZOuejwyN2KdUo0Fvh_WZ9kgIZJeVCWeYiic2RfqA0Uy7XOoG8b
- NDpPHS0deds1fSHP9RjfSy0fk6S3QrTNzux5Yax7i9BfXoXeC.AnguIJoM5m
- Lbv4zGQyo.0Oof7Du5xnrHvAMAvpLBDV0VKdFgtvho1r_o8UaBim7FepJYI7
- nz4lhVJyIQvkdDaN_LeEVc4tLpJSg.9zc2eIo5gxLzMxrn3KLEFs7sfVB4Ki
- HJ2wcSrY5IjmyHxa3OvlUJkdQta6S02Me5lDLfENvrxU9Vptpih4FR7ptAKB
- 4aDBhIArfJbjMeiF_OA0LmsJWMg--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50CB7BBE.2040002@schaufler-ca.com>
-Date: Fri, 14 Dec 2012 11:19:26 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 14 Dec 2012 14:19:19 -0500
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>
-CC: Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PULL] Smack: Changes for 3.8 - after rebase
+In-Reply-To: <20121214153000.62af6cbc@pyramind.ukuu.org.uk>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+	<20121207161602.GA17710@infradead.org>
+	<495d17310e0a687d446afc86def0f058@office.etersoft.ru>
+	<20121212083401.GW5010@snowdrop.l8s.co.uk>
+	<CAKywueSN++ZCNJ1zbET_axuwXd2ZujvSof9H82E3AdeZWY_BgQ@mail.gmail.com>
+	<20121214153000.62af6cbc@pyramind.ukuu.org.uk>
+Date: Fri, 14 Dec 2012 13:19:18 -0600
+Message-ID: <CAH2r5muRyB2529EcQXFysrSDpMKe0m3JfiEc5929O6oTmG-ThQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+From: Steve French <smfrench@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, David Laight <david@l8s.co.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wine-devel@winehq.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3f0cc6ae86627de825d2371b6d61643f2ce58908:
+On Fri, Dec 14, 2012 at 9:30 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> We can make this feature (passing O_DENY* flags received from clients
+>> to filesystem) can be turned on/off on Samba/NFS server to let this
+>> particular use case work. In general, I think we really need to be
+>> sure that nobody has a read access for files that a Windows process
+>> opened with O_DENYREAD (because there can be important reasons for the
+>> Windows process to do so).
+>
+> It should only affect windows emulated tasks, nothing else
 
-  Merge tag 'yama-3.8' of git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux into next (2012-11-21 21:45:55 +1100)
+yes, but not just wine - there is probably a case for Samba server and
+NFSv4 to optionally request such behafvior).   Also we are likely to
+see more cases where users want to run Samba over an NFS mount and
+vice versa.
 
-are available in the git repository at:
+-- 
+Thanks,
 
-
-  git://git.gitorious.org/smack-next/kernel.git for-james-20121214
-
-for you to fetch changes up to e93072374112db9dc86635934ee761249be28370:
-
-  Smack: create a sysfs mount point for smackfs (2012-12-14 10:57:23 -0800)
-
-----------------------------------------------------------------
-Casey Schaufler (2):
-      Smack: use select not depends in Kconfig
-      Smack: create a sysfs mount point for smackfs
-
- security/smack/Kconfig   |    6 +++++-
- security/smack/smackfs.c |   17 +++++++++++++++++
- 2 files changed, 22 insertions(+), 1 deletion(-)
-
+Steve
