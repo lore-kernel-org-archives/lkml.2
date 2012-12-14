@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2LNDdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 22:33:41 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:35982 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754851Ab2LNDdj (ORCPT
+	id S1756089Ab2LNDlI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 22:41:08 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52886 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab2LNDlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 22:33:39 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiYLAJicylB5LB3g/2dsb2JhbABFhU+zFoYOF3OCHgEBBTocIxAIAxguFCUDIROIEr05FIxDg2JhA5YIkEmDBw
-Date: Fri, 14 Dec 2012 14:33:34 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, axboe@kernel.dk, lucho@ionkov.net,
-        jack@suse.cz, ericvh@gmail.com, viro@zeniv.linux.org.uk,
-        rminnich@sandia.gov, tytso@mit.edu, martin.petersen@oracle.com,
-        neilb@suse.de, Zheng Liu <gnehzuil.liu@gmail.com>,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
- stable pages during write
-Message-ID: <20121214033334.GA9806@dastard>
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
- <20121213080811.23360.98131.stgit@blackbox.djwong.org>
- <50CA8556.7030905@mit.edu>
- <20121214021048.GF9453@blackbox.djwong.org>
+	Thu, 13 Dec 2012 22:41:06 -0500
+Message-ID: <50CA9FA8.90109@linux.vnet.ibm.com>
+Date: Fri, 14 Dec 2012 11:40:24 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121214021048.GF9453@blackbox.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] KVM: x86: improve reexecute_instruction
+References: <50C5A747.1020105@linux.vnet.ibm.com> <50C5A807.4070301@linux.vnet.ibm.com> <20121212010951.GB2898@amt.cnet> <50C8DB11.5050204@linux.vnet.ibm.com> <20121213230204.GC11385@amt.cnet>
+In-Reply-To: <20121213230204.GC11385@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121403-1618-0000-0000-0000030621BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 06:10:49PM -0800, Darrick J. Wong wrote:
-> On Thu, Dec 13, 2012 at 05:48:06PM -0800, Andy Lutomirski wrote:
-> > On 12/13/2012 12:08 AM, Darrick J. Wong wrote:
-> > > Several complaints have been received regarding long file write latencies when
-> > > memory pages must be held stable during writeback.  Since it might not be
-> > > acceptable to stall programs for the entire duration of a page write (which may
-> > > take many milliseconds even on good hardware), enable a second strategy wherein
-> > > pages are snapshotted as part of submit_bio; the snapshot can be held stable
-> > > while writes continue.
-> > > 
-> > > This provides a band-aid to provide stable page writes on jbd without needing
-> > > to backport the fixed locking scheme in jbd2.  A mount option is added to ext4
-> > > to allow administrators to enable it there.
-> > 
-> > I'm a bit confused as to what it has to do with ext3.  Wouldn't this be
-> > useful as a mount option everywhere, though?
+On 12/14/2012 07:02 AM, Marcelo Tosatti wrote:
+
+>>> Same comment as before: the only case where it should not attempt to 
+>>> emulate is when there is a condition which makes it impossible to fix
+>>> (the information is available to detect that condition).
+>>>
+>>> The earlier suggestion
+>>>
+>>> 	"How about recording the gfn number for shadow pages that have been
+>>> shadowed in the current pagefault run?"
+>>>
+>>> Was about that.
+>>
+>> I think we can have a try. Is this change good to you, Marcelo?
+>>
+>> [eric@localhost kvm]$ git diff
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 01d7c2a..e3d0001 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -4359,24 +4359,34 @@ unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm)
+>>         return nr_mmu_pages;
+>>  }
+>>
+>> -int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
+>> +void kvm_mmu_get_sp_hierarchy(struct kvm_vcpu *vcpu, u64 addr,
+>> +                             struct kvm_mmu_sp_hierarchy *hierarchy)
+>>  {
+>>         struct kvm_shadow_walk_iterator iterator;
+>>         u64 spte;
+>> -       int nr_sptes = 0;
+>> +
+>> +       hierarchy->max_level = hierarchy->nr_levels = 0;
+>>
+>>         walk_shadow_page_lockless_begin(vcpu);
+>>         for_each_shadow_entry_lockless(vcpu, addr, iterator, spte) {
+>> -               sptes[iterator.level-1] = spte;
+>> -               nr_sptes++;
+>> +               struct kvm_mmu_page *sp =  page_header(__pa(iterator.sptep));
+>> +
+>> +               if (hierarchy->indirect_only && sp->role.direct)
+>> +                       break;
+>> +
+>> +               if (!hierarchy->max_level)
+>> +                       hierarchy->max_level = iterator.level;
+>> +
+>> +               hierarchy->shadow_gfns[iterator.level-1] = sp->gfn;
+>> +               hierarchy->sptes[iterator.level-1] = spte;
+>> +               hierarchy->nr_levels++;
+>> +
+>>                 if (!is_shadow_present_pte(spte))
+>>                         break;
+>>         }
+>>         walk_shadow_page_lockless_end(vcpu);
+>> -
+>> -       return nr_sptes;
+>>  }
 > 
-> ext3 requires snapshots; the rest are ok with either strategy.
-> 
-> *If* snapshotting is generally liked, then yes I'll go redo it as a vfs mount
-> option.
+> Record gfns while shadowing in the vcpu struct, in a struct, along with cr2.
+> Then validate 
+> That way its guaranteed its not some other vcpu.
 
-It's copying every single IO, right? If so, then please don't
-propagate any further than is necessary to fix the broken
-filesystems...
+Okay, i will try this way. :)
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
