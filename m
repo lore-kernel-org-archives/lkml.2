@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab2LNDNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 22:13:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12251 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755609Ab2LNDNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 22:13:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,277,1355126400"; 
-   d="scan'208";a="233851002"
-Date: Fri, 14 Dec 2012 11:13:30 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        alek.du@intel.com
-Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
-Message-ID: <20121214031330.GC11276@feng-snb>
-References: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
- <50CA7EE4.3000306@linaro.org>
- <20121214013725.GA11276@feng-snb>
- <50CA8837.5010800@linaro.org>
- <20121214023826.GA31613@obsidianresearch.com>
+	id S1756006Ab2LNDPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 22:15:45 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51167 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755621Ab2LNDPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 22:15:44 -0500
+Date: Fri, 14 Dec 2012 11:15:36 +0800
+From: Shaohua Li <shli@kernel.org>
+To: axboe@kernel.dk
+Cc: neilb@suse.de, linux-kernel@vger.kernel.org
+Subject: [patch 1/2]block: discard granularity might not be power of 2
+Message-ID: <20121214031536.GA30345@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121214023826.GA31613@obsidianresearch.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 07:38:26PM -0700, Jason Gunthorpe wrote:
-> On Thu, Dec 13, 2012 at 06:00:23PM -0800, John Stultz wrote:
-> 
-> > So per Jason's related patch, he's made the point that the
-> > persistent_clock and RTC class functionality are basically exclusive
-> > (well, in his case, he said this with respect to updating the RTC,
-> > not reading it - I don't mean to put words in his mouth - Please do
-> > correct me here Jason. :).  In other words, we probably should avoid
-> > configurations where both the rtc hctosys and persistent_clock
-> > interfaces are both active.
-> 
-> I only studied update_persistent_clock, read_persistent_clock is
-> very much different.
-> 
-> Looking at it, I don't think that update_persistent_clock is in any
-> way related to read_persistent_clock..  update_persistent_clock is
-> *only* called by NTP, and its *only* purpose is to update the RTC with
-> NTP synchronized time. In many configurations it will never even be
-> called.
-> 
-> I think update_persistent_clock is badly named, it should be called
-> platform_save_ntp_time_to_rtc(), keep it divorced from
-> read_presistent_clock :)
-> 
-> > make the HCTOSYS option be dependent on !HAS_PERSISTENT_CLOCK. This
-> > way we avoid having configs where there are conflicting paths that
-> > we chose from.
-> 
-> On ARM the read_presistent_clock is used to access a true monotonic
-> counter that is divorced from the system RTC - look at
-> arch/arm/plat-omap/counter_32k.c for instance.
-> 
-> This seems like a great use of that hardware resource, and no doubt
-> those mach's also have a class RTC driver available talking to
-> different hardware.
+In MD raid case, discard granularity might not be power of 2, for example, a
+4-disk raid5 has 3*chunk_size discard granularity. Correct the calculation for
+such cases.
 
-Interesting to know this, thanks for the info. For the x86 desktop
-and mobile processors I've used, the read_persistent_clock and rtc
-are the same on-board device (always power on), so I see many time
-related code are execuated twice, like init/suspend/resume if
-HCTOSYS config is enabled, that's why I came up with the patches.
+Reported-by: Neil Brown <neilb@suse.de>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+---
+ block/blk-lib.c        |   23 +++++++++++++----------
+ block/blk-settings.c   |    6 +++---
+ include/linux/blkdev.h |    7 ++++---
+ 3 files changed, 20 insertions(+), 16 deletions(-)
 
-> 
-> For mach's without that functionality ARM returns a fixed 0 value
-> from read_persistent_clock, persumably the kernel detects this and
-> falls back to using class rtc functions?
-> 
-> Maybe Feng would be better off adjusting read_persistent_clock to
-> return ENODEV in such cases??
-
-For mach's without read_persistent_clock capability, there is already
-a weakly defined 
-
-	void __attribute__((weak)) read_persistent_clock(struct timespec *ts)
-	{
-		ts->tv_sec = 0;
-		ts->tv_nsec = 0;
-	}
-so those machs can simply do nothing, and let time core code to judge it.
-
-> 
-> So, I think you have to keep your test as a run time test. To support
-> the single image ARM boot you can't make the distinction with kconfig.
-
-Good point. Figuring out the kconfig for all arm platforms is very
-challenging.
-
-Thanks,
-Feng
+Index: linux/block/blk-lib.c
+===================================================================
+--- linux.orig/block/blk-lib.c	2012-10-15 10:01:52.763544641 +0800
++++ linux/block/blk-lib.c	2012-12-14 08:56:24.539932760 +0800
+@@ -43,8 +43,8 @@ int blkdev_issue_discard(struct block_de
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	int type = REQ_WRITE | REQ_DISCARD;
+-	unsigned int max_discard_sectors;
+-	unsigned int granularity, alignment, mask;
++	sector_t max_discard_sectors;
++	sector_t granularity, alignment;
+ 	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+@@ -57,15 +57,16 @@ int blkdev_issue_discard(struct block_de
+ 
+ 	/* Zero-sector (unknown) and one-sector granularities are the same.  */
+ 	granularity = max(q->limits.discard_granularity >> 9, 1U);
+-	mask = granularity - 1;
+-	alignment = (bdev_discard_alignment(bdev) >> 9) & mask;
++	alignment = bdev_discard_alignment(bdev) >> 9;
++	alignment = sector_div(alignment, granularity);
+ 
+ 	/*
+ 	 * Ensure that max_discard_sectors is of the proper
+ 	 * granularity, so that requests stay aligned after a split.
+ 	 */
+ 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+-	max_discard_sectors = round_down(max_discard_sectors, granularity);
++	sector_div(max_discard_sectors, granularity);
++	max_discard_sectors *= granularity;
+ 	if (unlikely(!max_discard_sectors)) {
+ 		/* Avoid infinite loop below. Being cautious never hurts. */
+ 		return -EOPNOTSUPP;
+@@ -83,7 +84,7 @@ int blkdev_issue_discard(struct block_de
+ 
+ 	while (nr_sects) {
+ 		unsigned int req_sects;
+-		sector_t end_sect;
++		sector_t end_sect, tmp;
+ 
+ 		bio = bio_alloc(gfp_mask, 1);
+ 		if (!bio) {
+@@ -98,10 +99,12 @@ int blkdev_issue_discard(struct block_de
+ 		 * misaligned, stop the discard at the previous aligned sector.
+ 		 */
+ 		end_sect = sector + req_sects;
+-		if (req_sects < nr_sects && (end_sect & mask) != alignment) {
+-			end_sect =
+-				round_down(end_sect - alignment, granularity)
+-				+ alignment;
++		tmp = end_sect;
++		if (req_sects < nr_sects &&
++		    sector_div(tmp, granularity) != alignment) {
++			end_sect = end_sect - alignment;
++			sector_div(end_sect, granularity);
++			end_sect = end_sect * granularity + alignment;
+ 			req_sects = end_sect - sector;
+ 		}
+ 
+Index: linux/block/blk-settings.c
+===================================================================
+--- linux.orig/block/blk-settings.c	2012-10-15 10:01:52.763544641 +0800
++++ linux/block/blk-settings.c	2012-12-14 09:53:18.493013557 +0800
+@@ -611,7 +611,7 @@ int blk_stack_limits(struct queue_limits
+ 			bottom = b->discard_granularity + alignment;
+ 
+ 			/* Verify that top and bottom intervals line up */
+-			if (max(top, bottom) & (min(top, bottom) - 1))
++			if ((max(top, bottom) % min(top, bottom)) != 0)
+ 				t->discard_misaligned = 1;
+ 		}
+ 
+@@ -619,8 +619,8 @@ int blk_stack_limits(struct queue_limits
+ 						      b->max_discard_sectors);
+ 		t->discard_granularity = max(t->discard_granularity,
+ 					     b->discard_granularity);
+-		t->discard_alignment = lcm(t->discard_alignment, alignment) &
+-			(t->discard_granularity - 1);
++		t->discard_alignment = lcm(t->discard_alignment, alignment) %
++			t->discard_granularity;
+ 	}
+ 
+ 	return ret;
+Index: linux/include/linux/blkdev.h
+===================================================================
+--- linux.orig/include/linux/blkdev.h	2012-10-15 10:01:52.999541673 +0800
++++ linux/include/linux/blkdev.h	2012-12-13 14:26:25.469877308 +0800
+@@ -1180,13 +1180,14 @@ static inline int queue_discard_alignmen
+ 
+ static inline int queue_limit_discard_alignment(struct queue_limits *lim, sector_t sector)
+ {
+-	unsigned int alignment = (sector << 9) & (lim->discard_granularity - 1);
++	sector_t alignment = sector << 9;
++	alignment = sector_div(alignment, lim->discard_granularity);
+ 
+ 	if (!lim->max_discard_sectors)
+ 		return 0;
+ 
+-	return (lim->discard_granularity + lim->discard_alignment - alignment)
+-		& (lim->discard_granularity - 1);
++	alignment = lim->discard_granularity + lim->discard_alignment - alignment;
++	return sector_div(alignment, lim->discard_granularity);
+ }
+ 
+ static inline int bdev_discard_alignment(struct block_device *bdev)
