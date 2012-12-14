@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab2LNWA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:00:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50935 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932393Ab2LNWA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:00:58 -0500
-Message-ID: <50CBA171.4080403@zytor.com>
-Date: Fri, 14 Dec 2012 14:00:17 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932525Ab2LNWCJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:02:09 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:36681 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab2LNWCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:02:06 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: <linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Howells <dhowells@redhat.com>
+Date: Fri, 14 Dec 2012 14:01:57 -0800
+Message-ID: <87txroxpgq.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>, aarcange@redhat.com,
-        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon> <50CB9553.7050808@zytor.com> <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com>
-In-Reply-To: <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19l90tFC6xjQkFF8AapEpIKpJeRMuknbK0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 0/4] user namespace fixes
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 01:27 PM, Andy Lutomirski wrote:
-> 
-> I don't know all that much about the linux vm.  Can we create a
-> special vdso address_space or struct inode or something so that a
-> single vma can contain pages with different flags?
-> 
 
-No, that is still different vmas, but it probably isn't a big deal.
+These are fixes from Andys review of my user namespace tree.
 
-The advantage of having an inode/namespace is that it lets you use
-mmap() as opposed to mremap() with it, which might be useful, I don't know.
+The first two patches are critical must fix fixes.
 
-One option for the checkpoint people might actually be to not use the
-vdso for a process that needs to be checkpointed and restarted on a
-different machine or different kernel version.  Instead they can install
-a pseudo-vdso which just calls normal system calls, and is simply a
-static piece of code that makes normal system calls ... since the
-internals of the kernel are hidden from userspace it is "clean" that way.
+The third patch fixing commit_creds is a nice to have but fixing it
+would be good.
 
-With any actual vdso you risk something like:
+Andy, Serge  if you could give these patches a once over to make certain
+I am not doing something stupid.
 
-	-> vdso entry
-	-> signal received, transfer to signal handler
-	-> checkpoint
-	-> restart
-	-> signal handler exit
+Thank you,
+Eric
 
-... and now you return to the address in the old vdso, but the internals
-of the vdso may have changed.
+---
 
-	-hpa
+Eric W. Biederman (4):
+      Fix cap_capable to only allow owners in the parent user namespace to have caps.
+      userns:  Require CAP_SYS_ADMIN for most uses of setns.
+      userns: Add a more complete capability subset test to commit_creds
+      userns: Fix typo in description of the limitation of userns_install
 
+ fs/namespace.c           |    3 ++-
+ ipc/namespace.c          |    3 ++-
+ kernel/cred.c            |   26 +++++++++++++++++++++++++-
+ kernel/pid_namespace.c   |    3 ++-
+ kernel/user_namespace.c  |    2 +-
+ kernel/utsname.c         |    3 ++-
+ net/core/net_namespace.c |    3 ++-
+ security/commoncap.c     |   25 +++++++++++++++++--------
+ 8 files changed, 53 insertions(+), 15 deletions(-)
 
