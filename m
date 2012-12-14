@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab2LNQdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:33:04 -0500
-Received: from smtp-out-011.synserver.de ([212.40.185.11]:1185 "EHLO
-	smtp-out-011.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756534Ab2LNQdC (ORCPT
+	id S1756801Ab2LNQn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:43:29 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63418 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab2LNQn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:33:02 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 12161
-Message-ID: <50CB54C3.1090409@metafoo.de>
-Date: Fri, 14 Dec 2012 17:33:07 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	Fri, 14 Dec 2012 11:43:28 -0500
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 v4] rtc: add rtc-driver for HID sensors of type time
-References: <50C8591A.3030301@ahsoftware.de> <1355310680-2466-1-git-send-email-holler@ahsoftware.de> <50CAF473.6040901@metafoo.de> <50CB24D4.3030606@ahsoftware.de> <50CB347B.80305@ahsoftware.de> <50CB37C5.4050008@ahsoftware.de> <50CB38F2.4050806@metafoo.de> <50CB44B3.8040601@ahsoftware.de>
-In-Reply-To: <50CB44B3.8040601@ahsoftware.de>
+In-Reply-To: <20121214104310.GW19258@tbergstrom-lnx.Nvidia.com>
+References: <1355370586-6600-1-git-send-email-pgaikwad@nvidia.com>
+ <CAPtuhThBigSQMkNDf16Fo1tddTKo=rPEydHmzep0DqtgLrB+HA@mail.gmail.com>
+ <50CA17FB.9060606@wwwdotorg.org> <20121214104310.GW19258@tbergstrom-lnx.Nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Fri, 14 Dec 2012 08:43:07 -0800
+Message-ID: <CAPtuhTjN0ST=MUBLqAFjgKeXNyf4g7jEeOi66W2XDoUm_knM7Q@mail.gmail.com>
+Subject: Re: [PATCH] clk: debug clock tree
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 04:24 PM, Alexander Holler wrote:
-> Am 14.12.2012 15:34, schrieb Lars-Peter Clausen:
->> On 12/14/2012 03:29 PM, Alexander Holler wrote:
->>> Am 14.12.2012 15:15, schrieb Alexander Holler:
->>>> Am 14.12.2012 14:08, schrieb Alexander Holler:
->>>>> Am 14.12.2012 10:42, schrieb Lars-Peter Clausen:
->>>>
->>>>>> And another thing I've overlooked before:
->>>>>> wait_for_completion_interruptible_timeout can either return a positive
->>>>>> number when the completion was completed, 0 in case of an timeout, or a
->>>>>> negative error code in case it was interrupted. You need to handle all
->>>>>> three. E.g. something like this.
->>>>>>
->>>>>> ret = wait_for_completion_interruptible_timeout(...)
->>>>>> if (ret == 0)
->>>>>>     return -EIO;
->>>>>> if (ret < 0)
->>>>>>     return ret
->>>>>>
->>>>>
->>>>> Hmpf, the only working approach to use some in kernel functions really
->>>>> is to the read source yourself and don't trust anything else. :/
->>>>
->>>> Anyway, my approach doesn't work as it introduces a race condition:
->>>>
->>>>
->>>> /* get a report with all values through requesting one value */
->>>> sensor_hub_input_attr_get_raw_value(...)
->>>>
->>>> /* race if this task goes to slepp and the values were
->>>> received before it could call the below wait...
->>>>
->>>> /* wait for all values (event) */
->>>> if (!wait_for_completion_interruptible_timeout(...))
->>>>
->>>>
->>>> I'll have to look for a mechanism how to avoid that. So v5 might need
->>>> some time.
->>>
->>> Sorry for the noise. That INIT_COMPLETION() before the sensor...() does
->>> exactly that. So it's enough if I handle the different return situations of
->>> wait_for...().
->>>
->>> I will just use if(wait...()<=0) return -EIO.
->>>
+On Fri, Dec 14, 2012 at 2:43 AM, Peter De Schrijver
+<pdeschrijver@nvidia.com> wrote:
+> On Thu, Dec 13, 2012 at 07:01:31PM +0100, Stephen Warren wrote:
+>> On 12/13/2012 09:27 AM, Mike Turquette wrote:
+>> > On Wed, Dec 12, 2012 at 7:49 PM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
+>> >> Adds debug file "clock_tree" in /sys/kernel/debug/clk dir.
+>> >> It helps to view all the clock registered in tree format.
+>> >>
+>> >
+>> > Prashant,
+>> >
+>> > Thanks for submitting this.  We've been talking about having a single
+>> > file for representing the tree for some time.
+>> >
+>> > Regarding the output format had you considered using a well known
+>> > format which can be parsed using well known parsing libs?  This avoids
+>> > needing a custom parser just for this one file.  JSON springs to mind
+>> > as something lightweight and well-understood.
 >>
->> No, that's wrong. You should really return the error code returned by
->> wait_for_completion_interruptible_timeout(). This will make sure that
->> userspace restarts the syscall if necessary.
-> 
-> Sorry for my ignorance, but which reasons for interruption do exist
-> which doesn't kill the userspace too? The error number -ESYSRESTART
-> doesn't offer a hint.
+>> One advantage of the format below is that it's very easily
+>> human-readable, and it's not too hard to parse (although I guess you'd
+>> have to parse the indent level to get parent/child relation, which would
+>> suck a bit). Is there room to provide both? Otherwise, I guess the
+>> kernel could include a script to convert from JSON/whatever into the
+>> format below.
+>
+> We already have the clk directory for an easy to parse version. So I think
+> this one should be focused on being human readable.
+>
 
+I'm really not sure the clk directory structure is such a good idea.
+Hopping around directories and dumping a few files feels like a
+strange way to get at the data.
 
-Well I'm not an expert on this either, but as far as I know any signal the
-process is listening on can cause an interruption. Most signals won't kill
-the process though. More on the whole restart stuff:
-http://lwn.net/Articles/528935/
+Another key point is atomicity.  The prepare_lock mutex is only held
+for each individual read of a file under the current clock directory
+implementation.  So if you wish to read several different clock rates
+there is a caveat that the rates could change between reads.  The
+"summary" file that dumps all of the data improves on this since it
+could hold the prepare_lock mutex across the operation.
 
-- Lars
+This last point makes me realize that the current code above either
+needs to hold that lock or at least use hlist_for_each_entry_safe
+since clocks could be removed from the lists during the operation.  As
+such it is a bit unsafe.
 
+I'm OK letting the two implementations live along side each other but
+I am also sure that the clock summary dump should be reasonably
+machine readable.
+
+Regards,
+Mike
+
+> Cheers,
+>
+> Peter.
