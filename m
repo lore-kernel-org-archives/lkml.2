@@ -1,64 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab2LNUpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:45:13 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41000 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932241Ab2LNUpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:45:10 -0500
-Date: Fri, 14 Dec 2012 20:50:20 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        LSM List <linux-security-module@vger.kernel.org>
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the
- parent user namespace to have caps.
-Message-ID: <20121214205020.GA11637@mail.hallyn.com>
-References: <50CA2B55.5070402@amacapital.net>
- <87mwxhtxve.fsf@xmission.com>
- <87zk1hshk7.fsf_-_@xmission.com>
- <20121214032820.GA5115@mail.hallyn.com>
- <87bodxi9zw.fsf@xmission.com>
- <20121214152607.GA9266@mail.hallyn.com>
- <87bodwd4aw.fsf@xmission.com>
- <20121214161514.GA9962@mail.hallyn.com>
- <87r4ms5wpm.fsf@xmission.com>
- <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932389Ab2LNUpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:45:41 -0500
+Received: from gate.crashing.org ([63.228.1.57]:40109 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932241Ab2LNUpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 15:45:39 -0500
+Message-ID: <1355517897.19932.136.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git next branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Sat, 15 Dec 2012 07:44:57 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Linus Torvalds (torvalds@linux-foundation.org):
-> On Fri, Dec 14, 2012 at 10:12 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
-> >
-> > That said Serge I think I have lost track of the point of your question.
-> 
-> .. and I'm a bit unsure what I should do about this all. Including
-> pulling the pull request that actually can make this all matter.
+Hi Linus !
 
-Sorry I didn't mean to complicate this.
+Finally managed to get my head away from some other distractions
+to put this pull request together, sorry for the lateness :-)
 
-I did ack the patch and we can cull the cc list for continued discussion.
+The main highlight is probably some base POWER8 support. There's
+more to come such as transactional memory support but that will
+wait for the next one.
 
-In practical terms, the only thing the patch prevent is having two
-separate tasks each clone a new user ns with the same uid mapping, and
-having consistent relationships between the same uids between the
-namespaces.  It's worth it to prevent (or while we consider) the case
-Andy and Eric bring up.
+Overall it's pretty quiet, or rather I've been pretty poor at
+picking things up from patchwork and reviewing them this time
+around and Kumar no better on the FSL side it seems...
 
-> Hmm? Any consensus?
+Cheers,
+Ben.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+The following changes since commit d6dc24613c222f9057131ccbd5264a10bcba9f97:
 
--serge
+  Merge remote-tracking branch 'agust/merge' into merge (2012-11-21 13:24:49 +1100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+
+for you to fetch changes up to d526e85f60fce9aa2a1432cbd06e3cf20c1644c8:
+
+  powerpc+of: Rename and fix OF reconfig notifier error inject module (2012-12-14 10:32:52 +1100)
+
+----------------------------------------------------------------
+Akinobu Mita (3):
+      powerpc/iommu: Use bitmap library
+      powerpc: Remove BITOP_MASK and BITOP_WORD from asm/bitops.h
+      powerpc: Use asm-generic/bitops/le.h
+
+Alexey Kardashevskiy (1):
+      powerpc/pseries: Fix oops with MSIs when missing EEH PEs
+
+Andreas Schwab (1):
+      powerpc/powermac/cpufreq_32: Set non-infinite transition time for 7447A driver
+
+Anton Blanchard (3):
+      powerpc: Move most of setup.h out of uapi
+      powerpc: Remove stale function prototypes from setup.h
+      powerpc: Fix CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n build
+
+Aravinda Prasad (1):
+      powerpc/ptrace: Enable hardware breakpoint upon re-registering
+
+Benjamin Herrenschmidt (5):
+      powerpc/powernv: Fix OPAL debug entry
+      Merge branch 'dt' into next
+      Merge branch 'merge' into next
+      Merge remote-tracking branch 'kumar/next' into next
+      powerpc+of: Rename and fix OF reconfig notifier error inject module
+
+Dan Horák (1):
+      fbdev: Add GXT4000P and GXT6500P support to the gxt4500 driver
+
+Gavin Shan (2):
+      powerpc/pnv: Avoid bogus output
+      powerpc/eeh: Do not invalidate PE properly
+
+Ian Munsie (5):
+      powerpc: Add set_mode hcall
+      powerpc: Add wrappers to enable/disable relocation on exceptions
+      powerpc: Move get_longbusy_msecs into hvcall.h and remove duplicate function
+      powerpc: Enable relocation on during exceptions at boot
+      powerpc: Disable relocation on exceptions when kexecing
+
+Jia Hongtao (1):
+      powerpc/fsl-pci: Add PCI controller ATMU PM support
+
+JoonSoo Kim (1):
+      powerpc: Change free_bootmem() to kfree()
+
+Julia Lawall (1):
+      powerpc/rtas_flash: Eliminate possible double free
+
+K.Prasad (1):
+      powerpc/hw-breakpoint: Use generic hw-breakpoint interfaces for new PPC ptrace flags
+
+Li Zhong (1):
+      powerpc: Fix MAX_STACK_TRACE_ENTRIES too low warning !
+
+Matthew McClintock (1):
+      powerpc: dtc is required to build dtb files
+
+Michael Ellerman (12):
+      powerpc/udbg: Remove unused udbg_read()
+      powerpc/xmon: Remove unused xmon_expect() & xmon_read_poll()
+      powerpc/xmon: Remove empty xmon_map_scc()
+      powerpc/xmon: Make xmon_getchar() static
+      powerpc/xmon: Merge start.c into nonstdio.c
+      powerpc/xmon: Remove renaming #defines of scanhex() and skipbl()
+      powerpc/xmon: Remove unused #defines
+      powerpc/xmon: Use STACK_FRAME_OVERHEAD in xmon_show_stack()
+      powerpc/xmon: Fiddle xmon_depth_to_print logic in xmon_show_stack()
+      powerpc/xmon: Fallback to printk() in xmon_printf() if udbg is not setup
+      powerpc: Remove no longer used ppc_md.idle_loop()
+      powerpc/perf: Add missing L2 constraint handling in Power7 PMU
+
+Michael Neuling (16):
+      powerpc/ptrace: Fix spelling mistake
+      powerpc/ptrace: Remove unused addr parameter in ppc_del_hwdebug()
+      powerpc: make POWER7 setup code name generic
+      powerpc: Add POWER8 setup code
+      powerpc: POWER8 cputable entry
+      powerpc: Fix denorm symbol name
+      powerpc/pseries: Update ibm,architecture.vec for PAPR 2.7/POWER8
+      powerpc: Add POWER8 architected mode to cputable
+      powerpc: Whitespace changes in exception64s.S
+      powerpc: Remove unessessary 0x3000 location enforcement
+      powerpc: Make load_hander handle upto 64k offset
+      powerpc: Turn syscall handler into macros
+      powerpc: Add new macros needed for relocation on exceptions
+      powerpc: Add relocation on exception vector handlers
+      powerpc: Move initial mfspr LPCR out of __init_LPCR
+      powerpc: Setup relocation on exceptions for bare metal systems
+
+Nathan Fontenot (6):
+      powerpc+of: Add /proc device tree updating to of node add/remove
+      powerpc+of: Move of_drconf_cell struct definition to asm/prom.h
+      powerpc+of: Add of node/property notification chain for adds and removes
+      powerpc+of: Rename the drivers/of prom_* functions to of_*
+      powerpc+of: Remove the pSeries_reconfig.h file
+      powerpc+of: Export of_reconfig_notifier_[register,unregister]
+
+Nishanth Aravamudan (1):
+      powerpc/pseries: Double NR_CPUS in defconfig
+
+Srinivas Kandagatla (1):
+      powerpc/sysdev: Use module_platform_driver macro
+
+Sukadev Bhattiprolu (1):
+      powerpc/perf: Use uapi/unistd.h to fix build error
+
+Timur Tabi (2):
+      drivers/virt: the Freescale hypervisor driver doesn't need to check MSR[GS]
+      powerpc/86xx: fsl_pcibios_fixup_bus requires CONFIG_PCI
+
+Tony Breeds (2):
+      powerpc/47x: Use the new ppc-opcode infrastructure
+      powerpc: Add asm/debug.h to get powerpc_debugfs_root
+
+Tushar Behera (1):
+      powerpc/85xx: p1022ds: Use NULL instead of 0 for pointers
+
+Varun Sethi (1):
+      powerpc/iommu/fsl: Add PAMU bypass enable register to ccsr_guts struct
+
+Wei Yongjun (1):
+      powerpc/windfarm: Use module_i2c_driver to simplify the code
+
+Xuelin Shi (1):
+      powerpc/dma/raidengine: add raidengine device
+
+Yang Li (1):
+      powerpc: Fix typos in Freescale copyright claims
+
+York Sun (1):
+      powerpc/mpc85xx: Change spin table to cached memory
+
+ .../devicetree/bindings/powerpc/fsl/raideng.txt    |   81 +++++
+ Documentation/powerpc/ptrace.txt                   |   16 +
+ arch/arm/mach-mxs/mach-mxs.c                       |    2 +-
+ arch/powerpc/Makefile                              |    2 +-
+ arch/powerpc/boot/dts/fsl/p5020si-post.dtsi        |    1 +
+ arch/powerpc/boot/dts/fsl/p5020si-pre.dtsi         |    6 +
+ arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi     |   85 ++++++
+ arch/powerpc/configs/pseries_defconfig             |    2 +-
+ arch/powerpc/include/asm/bitops.h                  |   75 +----
+ arch/powerpc/include/asm/cputable.h                |   12 +-
+ arch/powerpc/include/asm/dbell.h                   |    2 +-
+ arch/powerpc/include/asm/exception-64s.h           |   97 +++++-
+ arch/powerpc/include/asm/firmware.h                |    4 +-
+ arch/powerpc/include/asm/fsl_gtm.h                 |    2 +-
+ arch/powerpc/include/asm/fsl_guts.h                |    4 +-
+ arch/powerpc/include/asm/hvcall.h                  |   23 +-
+ arch/powerpc/include/asm/immap_qe.h                |    2 +-
+ arch/powerpc/include/asm/machdep.h                 |    3 -
+ arch/powerpc/include/asm/mmu.h                     |    1 +
+ arch/powerpc/include/asm/pSeries_reconfig.h        |   47 ---
+ arch/powerpc/include/asm/ppc-opcode.h              |    6 +-
+ arch/powerpc/include/asm/prom.h                    |   16 +
+ arch/powerpc/include/asm/qe.h                      |    2 +-
+ arch/powerpc/include/asm/qe_ic.h                   |    2 +-
+ arch/powerpc/include/asm/reg.h                     |    3 +
+ arch/powerpc/include/asm/rtas.h                    |    5 +
+ arch/powerpc/include/asm/setup.h                   |   29 ++
+ arch/powerpc/include/asm/ucc.h                     |    2 +-
+ arch/powerpc/include/asm/ucc_fast.h                |    2 +-
+ arch/powerpc/include/asm/ucc_slow.h                |    2 +-
+ arch/powerpc/include/asm/udbg.h                    |    1 -
+ arch/powerpc/include/uapi/asm/setup.h              |   31 --
+ arch/powerpc/kernel/Makefile                       |    2 +-
+ .../{cpu_setup_power7.S => cpu_setup_power.S}      |   32 +-
+ arch/powerpc/kernel/cputable.c                     |   38 +++
+ arch/powerpc/kernel/entry_64.S                     |    2 +
+ arch/powerpc/kernel/exceptions-64s.S               |  308 ++++++++++++++++----
+ arch/powerpc/kernel/head_64.S                      |    6 +-
+ arch/powerpc/kernel/idle.c                         |    3 -
+ arch/powerpc/kernel/iommu.c                        |   16 +-
+ arch/powerpc/kernel/machine_kexec.c                |   14 +-
+ arch/powerpc/kernel/machine_kexec_64.c             |    8 +-
+ arch/powerpc/kernel/pci_32.c                       |    2 +-
+ arch/powerpc/kernel/prom.c                         |    7 +-
+ arch/powerpc/kernel/prom_init.c                    |   11 +-
+ arch/powerpc/kernel/ptrace.c                       |   90 +++++-
+ arch/powerpc/kernel/rtas.c                         |    1 -
+ arch/powerpc/kernel/rtas_flash.c                   |    4 +-
+ arch/powerpc/kernel/setup_64.c                     |    5 +
+ arch/powerpc/kernel/udbg.c                         |   23 --
+ arch/powerpc/mm/numa.c                             |   12 -
+ arch/powerpc/mm/tlb_nohash_low.S                   |   15 +-
+ arch/powerpc/perf/power7-pmu.c                     |   17 +-
+ arch/powerpc/platforms/52xx/lite5200.c             |    2 +-
+ arch/powerpc/platforms/82xx/pq2ads-pci-pic.c       |    8 +-
+ arch/powerpc/platforms/83xx/mpc832x_mds.c          |    2 +-
+ arch/powerpc/platforms/83xx/mpc836x_mds.c          |    2 +-
+ arch/powerpc/platforms/83xx/mpc836x_rdk.c          |    2 +-
+ arch/powerpc/platforms/83xx/mpc837x_rdb.c          |    2 +-
+ arch/powerpc/platforms/85xx/mpc85xx_mds.c          |    2 +-
+ arch/powerpc/platforms/85xx/p1022_ds.c             |    8 +-
+ arch/powerpc/platforms/85xx/smp.c                  |   49 +++-
+ arch/powerpc/platforms/86xx/mpc8610_hpcd.c         |    2 +
+ arch/powerpc/platforms/powermac/cpufreq_32.c       |    5 +-
+ arch/powerpc/platforms/powernv/pci-ioda.c          |   25 +-
+ arch/powerpc/platforms/ps3/os-area.c               |    6 +-
+ arch/powerpc/platforms/pseries/dlpar.c             |   34 +--
+ arch/powerpc/platforms/pseries/eeh_pe.c            |    2 +-
+ arch/powerpc/platforms/pseries/firmware.c          |    1 +
+ arch/powerpc/platforms/pseries/hotplug-cpu.c       |    8 +-
+ arch/powerpc/platforms/pseries/hotplug-memory.c    |   60 ++--
+ arch/powerpc/platforms/pseries/iommu.c             |   10 +-
+ arch/powerpc/platforms/pseries/mobility.c          |    4 +-
+ arch/powerpc/platforms/pseries/msi.c               |    3 +-
+ arch/powerpc/platforms/pseries/plpar_wrappers.h    |   31 ++
+ arch/powerpc/platforms/pseries/reconfig.c          |  119 +-------
+ arch/powerpc/platforms/pseries/setup.c             |   77 ++++-
+ arch/powerpc/platforms/pseries/smp.c               |    1 -
+ arch/powerpc/sysdev/fsl_gtm.c                      |    2 +-
+ arch/powerpc/sysdev/fsl_pci.c                      |   37 ++-
+ arch/powerpc/sysdev/pmi.c                          |   13 +-
+ arch/powerpc/sysdev/qe_lib/qe.c                    |    2 +-
+ arch/powerpc/sysdev/qe_lib/qe_ic.c                 |    2 +-
+ arch/powerpc/sysdev/qe_lib/qe_ic.h                 |    2 +-
+ arch/powerpc/sysdev/qe_lib/qe_io.c                 |    2 +-
+ arch/powerpc/sysdev/qe_lib/ucc.c                   |    2 +-
+ arch/powerpc/sysdev/qe_lib/ucc_fast.c              |    2 +-
+ arch/powerpc/sysdev/qe_lib/ucc_slow.c              |    2 +-
+ arch/powerpc/sysdev/qe_lib/usb.c                   |    2 +-
+ arch/powerpc/xmon/Makefile                         |    2 +-
+ arch/powerpc/xmon/nonstdio.c                       |   53 ++--
+ arch/powerpc/xmon/nonstdio.h                       |    6 -
+ arch/powerpc/xmon/start.c                          |   34 ---
+ arch/powerpc/xmon/xmon.c                           |   26 +-
+ drivers/crypto/nx/nx-842.c                         |   20 +-
+ drivers/crypto/nx/nx.c                             |    1 -
+ drivers/infiniband/hw/ehca/hcp_if.c                |   20 --
+ drivers/macintosh/smu.c                            |    2 +-
+ drivers/macintosh/windfarm_fcu_controls.c          |   14 +-
+ drivers/macintosh/windfarm_lm75_sensor.c           |   14 +-
+ drivers/macintosh/windfarm_max6690_sensor.c        |   13 +-
+ drivers/macintosh/windfarm_smu_sat.c               |   13 +-
+ drivers/net/ethernet/ibm/ehea/ehea_phyp.h          |   20 --
+ drivers/of/base.c                                  |  142 ++++++++-
+ drivers/video/Kconfig                              |    8 +-
+ drivers/video/gxt4500.c                            |   15 +-
+ drivers/virt/fsl_hypervisor.c                      |    3 -
+ include/linux/of.h                                 |   29 +-
+ lib/Kconfig.debug                                  |   10 +-
+ lib/Makefile                                       |    4 +-
+ ...nject.c => of-reconfig-notifier-error-inject.c} |   22 +-
+ tools/perf/perf.h                                  |    2 +-
+ 112 files changed, 1387 insertions(+), 803 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/powerpc/fsl/raideng.txt
+ create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-raid1.0-0.dtsi
+ delete mode 100644 arch/powerpc/include/asm/pSeries_reconfig.h
+ create mode 100644 arch/powerpc/include/asm/setup.h
+ rename arch/powerpc/kernel/{cpu_setup_power7.S => cpu_setup_power.S} (80%)
+ delete mode 100644 arch/powerpc/xmon/start.c
+ rename lib/{pSeries-reconfig-notifier-error-inject.c => of-reconfig-notifier-error-inject.c} (51%)
+
+
