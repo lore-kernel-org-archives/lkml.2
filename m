@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2LNXCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:02:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40451 "EHLO mail.kernel.org"
+	id S932709Ab2LNXCW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:02:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40460 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932601Ab2LNXCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:02:04 -0500
+	id S932658Ab2LNXCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:02:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        =?UTF-8?q?M=C3=A5ns=20Rullg=C3=A5rd?= <mans.rullgard@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 04/37] ARM: 7566/1: vfp: fix save and restore when running on pre-VFPv3 and CONFIG_VFPv3 set
-Date: Fri, 14 Dec 2012 15:00:41 -0800
-Message-Id: <20121214222253.791046119@linuxfoundation.org>
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: [ 05/37] ASoC: dmaengine: Correct Makefile when sound is built as module
+Date: Fri, 14 Dec 2012 15:00:42 -0800
+Message-Id: <20121214222254.000522007@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,117 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Walmsley <paul@pwsan.com>
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
+commit 961a7aeafab477f63d9eef26afde9cbb8badcd0f upstream.
 
-After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
-saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
-started crashing during boot with omap2plus_defconfig:
+soc-dmaengine-pcm library need to be part of the snd-soc-core in order to
+be able to compile ASoC as modules when dmaengine is enabled on the platform.
 
-[    3.875122] mmcblk0: mmc0:e624 SD04G 3.69 GiB
-[    3.915954]  mmcblk0: p1
-[    4.086639] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
-[    4.093719] Modules linked in:
-[    4.096954] CPU: 0    Not tainted  (3.6.0-02232-g759e00b #570)
-[    4.103149] PC is at vfp_reload_hw+0x1c/0x44
-[    4.107666] LR is at __und_usr_fault_32+0x0/0x8
-
-It turns out that the context save/restore fix unmasked a latent bug
-in commit 5aaf254409f8d58229107b59507a8235b715a960 ("ARM: 6203/1: Make
-VFPv3 usable on ARMv6").  When CONFIG_VFPv3 is set, but the kernel is
-booted on a pre-VFPv3 core, the code attempts to save and restore the
-d16-d31 VFP registers.  These are only present on non-D16 VFPv3+, so
-this results in an undefined instruction exception.  The code didn't
-crash before commit 846a136 because the save and restore code was
-only touching d0-d15, present on all VFP.
-
-Fix by implementing a request from Russell King to add a new HWCAP
-flag that affirmatively indicates the presence of the d16-d31
-registers:
-
-   http://marc.info/?l=linux-arm-kernel&m=135013547905283&w=2
-
-and some feedback from Måns to clarify the name of the HWCAP flag.
-
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Dave Martin <dave.martin@linaro.org>
-Cc: Måns Rullgård <mans.rullgard@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Florian Fainelli <florian@openwrt.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/hwcap.h     |    3 ++-
- arch/arm/include/asm/vfpmacros.h |   12 ++++++------
- arch/arm/vfp/vfpmodule.c         |    9 ++++++---
- 3 files changed, 14 insertions(+), 10 deletions(-)
+ sound/soc/Makefile |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/hwcap.h
-+++ b/arch/arm/include/asm/hwcap.h
-@@ -18,11 +18,12 @@
- #define HWCAP_THUMBEE	(1 << 11)
- #define HWCAP_NEON	(1 << 12)
- #define HWCAP_VFPv3	(1 << 13)
--#define HWCAP_VFPv3D16	(1 << 14)
-+#define HWCAP_VFPv3D16	(1 << 14)	/* also set for VFPv4-D16 */
- #define HWCAP_TLS	(1 << 15)
- #define HWCAP_VFPv4	(1 << 16)
- #define HWCAP_IDIVA	(1 << 17)
- #define HWCAP_IDIVT	(1 << 18)
-+#define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
- #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -1,8 +1,9 @@
+ snd-soc-core-objs := soc-core.o soc-dapm.o soc-jack.o soc-cache.o soc-utils.o
+ snd-soc-core-objs += soc-pcm.o soc-io.o
  
- #if defined(__KERNEL__)
---- a/arch/arm/include/asm/vfpmacros.h
-+++ b/arch/arm/include/asm/vfpmacros.h
-@@ -27,9 +27,9 @@
- #if __LINUX_ARM_ARCH__ <= 6
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
--	tst	\tmp, #HWCAP_VFPv3D16
--	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
--	addne	\base, \base, #32*4		    @ step over unused register space
-+	tst	\tmp, #HWCAP_VFPD32
-+	ldcnel	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
-+	addeq	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
- 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
-@@ -51,9 +51,9 @@
- #if __LINUX_ARM_ARCH__ <= 6
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
--	tst	\tmp, #HWCAP_VFPv3D16
--	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
--	addne	\base, \base, #32*4		    @ step over unused register space
-+	tst	\tmp, #HWCAP_VFPD32
-+	stcnel	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
-+	addeq	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
- 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -701,11 +701,14 @@ static int __init vfp_init(void)
- 			elf_hwcap |= HWCAP_VFPv3;
+-snd-soc-dmaengine-pcm-objs := soc-dmaengine-pcm.o
+-obj-$(CONFIG_SND_SOC_DMAENGINE_PCM) += snd-soc-dmaengine-pcm.o
++ifneq ($(CONFIG_SND_SOC_DMAENGINE_PCM),)
++snd-soc-core-objs += soc-dmaengine-pcm.o
++endif
  
- 			/*
--			 * Check for VFPv3 D16. CPUs in this configuration
--			 * only have 16 x 64bit registers.
-+			 * Check for VFPv3 D16 and VFPv4 D16.  CPUs in
-+			 * this configuration only have 16 x 64bit
-+			 * registers.
- 			 */
- 			if (((fmrx(MVFR0) & MVFR0_A_SIMD_MASK)) == 1)
--				elf_hwcap |= HWCAP_VFPv3D16;
-+				elf_hwcap |= HWCAP_VFPv3D16; /* also v4-D16 */
-+			else
-+				elf_hwcap |= HWCAP_VFPD32;
- 		}
- #endif
- 		/*
+ obj-$(CONFIG_SND_SOC)	+= snd-soc-core.o
+ obj-$(CONFIG_SND_SOC)	+= codecs/
 
 
