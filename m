@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab2LNQHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:07:43 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44463 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab2LNQHk (ORCPT
+	id S1756776Ab2LNQHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:07:53 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:40900 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756724Ab2LNQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:07:40 -0500
+	Fri, 14 Dec 2012 11:07:50 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: Ohad Ben-Cohen <ohad@wizery.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur@brendeland.net>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv2 06/11] remoteproc: Add resource entry number to callbacks
-Date: Fri, 14 Dec 2012 17:06:55 +0100
-Message-Id: <1355501220-4572-7-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [RFCv2 09/11] remoteproc: Add operation to find resource table in memory
+Date: Fri, 14 Dec 2012 17:06:58 +0100
+Message-Id: <1355501220-4572-10-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -25,107 +25,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add information on the resource entry sequence number
-to the callback functions.
+Add function find_rsc_table_va to firmware ops. This function
+returns the location of the resource table in shared memory
+after loading.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/remoteproc/remoteproc_core.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ drivers/remoteproc/remoteproc_elf_loader.c |   16 ++++++++++-
+ drivers/remoteproc/remoteproc_internal.h   |   13 ++++++++
+ drivers/remoteproc/ste_modem_rproc.c       |   43 +++++++++++++++++++---------
+ 3 files changed, 57 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index ea4b76a..2c78ea5 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -43,9 +43,8 @@
+diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
+index 69832d9..3f6e315 100644
+--- a/drivers/remoteproc/remoteproc_elf_loader.c
++++ b/drivers/remoteproc/remoteproc_elf_loader.c
+@@ -306,9 +306,23 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
+ 	return table;
+ }
  
- #include "remoteproc_internal.h"
++struct resource_table *rproc_elf_get_rsctab_addr(struct rproc *rproc,
++						 const struct firmware *fw)
++{
++	struct elf32_shdr *shdr;
++
++	shdr = find_rsc_shdr(&rproc->dev, (struct elf32_hdr *)fw->data);
++	if (!shdr)
++		return NULL;
++
++	/* Find resource table in loaded segments */
++	return rproc_da_to_va(rproc, shdr->sh_addr, shdr->sh_size);
++}
++
+ const struct rproc_fw_ops rproc_elf_fw_ops = {
+ 	.load = rproc_elf_load_segments,
+ 	.find_rsc_table = rproc_elf_find_rsc_table,
+ 	.sanity_check = rproc_elf_sanity_check,
+-	.get_boot_addr = rproc_elf_get_boot_addr
++	.get_boot_addr = rproc_elf_get_boot_addr,
++	.get_rsctab_addr = rproc_elf_get_rsctab_addr
+ };
+diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
+index 7bb6648..3a5cb7d 100644
+--- a/drivers/remoteproc/remoteproc_internal.h
++++ b/drivers/remoteproc/remoteproc_internal.h
+@@ -32,6 +32,7 @@ struct rproc;
+  *			expects to find it
+  * @sanity_check:	sanity check the fw image
+  * @get_boot_addr:	get boot address to entry point specified in firmware
++ * @get_rsctab_addr:	get resouce table address as specified in firmware
+  */
+ struct rproc_fw_ops {
+ 	struct resource_table *(*find_rsc_table) (struct rproc *rproc,
+@@ -40,6 +41,8 @@ struct rproc_fw_ops {
+ 	int (*load)(struct rproc *rproc, const struct firmware *fw);
+ 	int (*sanity_check)(struct rproc *rproc, const struct firmware *fw);
+ 	u32 (*get_boot_addr)(struct rproc *rproc, const struct firmware *fw);
++	struct resource_table *(*get_rsctab_addr)(struct rproc *rproc,
++						const struct firmware *fw);
+ };
  
--typedef int (*rproc_handle_resources_t)(struct rproc *rproc,
--				struct resource_table *table, int len);
--typedef int (*rproc_handle_resource_t)(struct rproc *rproc, void *, int avail);
-+typedef int (*rproc_handle_resource_t)(struct rproc *rproc, void *,
-+							int avail, int seqno);
+ /* from remoteproc_core.c */
+@@ -102,6 +105,16 @@ struct resource_table *rproc_find_rsc_table(struct rproc *rproc,
+ 	return NULL;
+ }
  
- /* Unique indices for remoteproc devices */
- static DEFINE_IDA(rproc_dev_index);
-@@ -300,6 +299,7 @@ void rproc_free_vring(struct rproc_vring *rvring)
-  * @rproc: the remote processor
-  * @rsc: the vring resource descriptor
-  * @avail: size of available data (for sanity checking the image)
-+ * @seqno: resource entry sequence number
-  *
-  * This resource entry requests the host to statically register a virtio
-  * device (vdev), and setup everything needed to support it. It contains
-@@ -323,7 +323,7 @@ void rproc_free_vring(struct rproc_vring *rvring)
-  * Returns 0 on success, or an appropriate error code otherwise
-  */
- static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
--								int avail)
-+							int avail, int seqno)
- {
- 	struct device *dev = &rproc->dev;
- 	struct rproc_vdev *rvdev;
-@@ -389,6 +389,7 @@ free_rvdev:
-  * @rproc: the remote processor
-  * @rsc: the trace resource descriptor
-  * @avail: size of available data (for sanity checking the image)
-+ * @seqno: resource entry sequence number
-  *
-  * In case the remote processor dumps trace logs into memory,
-  * export it via debugfs.
-@@ -401,7 +402,7 @@ free_rvdev:
-  * Returns 0 on success, or an appropriate error code otherwise
-  */
- static int rproc_handle_trace(struct rproc *rproc, struct fw_rsc_trace *rsc,
--								int avail)
-+							int avail, int seqno)
- {
- 	struct rproc_mem_entry *trace;
- 	struct device *dev = &rproc->dev;
-@@ -462,6 +463,7 @@ static int rproc_handle_trace(struct rproc *rproc, struct fw_rsc_trace *rsc,
-  * @rproc: remote processor handle
-  * @rsc: the devmem resource entry
-  * @avail: size of available data (for sanity checking the image)
-+ * @seqno: resource entry sequence number
-  *
-  * Remote processors commonly need to access certain on-chip peripherals.
-  *
-@@ -483,7 +485,7 @@ static int rproc_handle_trace(struct rproc *rproc, struct fw_rsc_trace *rsc,
-  * are outside those ranges.
-  */
- static int rproc_handle_devmem(struct rproc *rproc, struct fw_rsc_devmem *rsc,
--								int avail)
-+							int avail, int seqno)
- {
- 	struct rproc_mem_entry *mapping;
- 	struct device *dev = &rproc->dev;
-@@ -542,6 +544,7 @@ out:
-  * @rproc: rproc handle
-  * @rsc: the resource entry
-  * @avail: size of available data (for image validation)
-+ * @seqno: resource entry sequence number
-  *
-  * This function will handle firmware requests for allocation of physically
-  * contiguous memory regions.
-@@ -556,7 +559,7 @@ out:
-  * pressure is important; it may have a substantial impact on performance.
-  */
- static int rproc_handle_carveout(struct rproc *rproc,
--				struct fw_rsc_carveout *rsc, int avail)
-+			struct fw_rsc_carveout *rsc, int avail, int seqno)
- {
- 	struct rproc_mem_entry *carveout, *mapping;
- 	struct device *dev = &rproc->dev;
-@@ -722,7 +725,7 @@ rproc_handle_resource(struct rproc *rproc, struct resource_table *table,
- 		if (!handler)
- 			continue;
++static inline
++struct resource_table *rproc_get_rsctab_addr(struct rproc *rproc,
++				const struct firmware *fw)
++{
++	if (rproc->fw_ops->get_rsctab_addr)
++		return rproc->fw_ops->get_rsctab_addr(rproc, fw);
++
++	return NULL;
++}
++
+ extern const struct rproc_fw_ops rproc_elf_fw_ops;
  
--		ret = handler(rproc, rsc, avail);
-+		ret = handler(rproc, rsc, avail, i);
- 		if (ret)
- 			break;
+ #endif /* REMOTEPROC_INTERNAL_H */
+diff --git a/drivers/remoteproc/ste_modem_rproc.c b/drivers/remoteproc/ste_modem_rproc.c
+index a7743c0..59e99f1 100644
+--- a/drivers/remoteproc/ste_modem_rproc.c
++++ b/drivers/remoteproc/ste_modem_rproc.c
+@@ -64,26 +64,18 @@ static int sproc_load_segments(struct rproc *rproc, const struct firmware *fw)
+ }
+ 
+ /* Find the entry for resource table in the Table of Content */
+-static struct ste_toc_entry *sproc_find_rsc_entry(const struct firmware *fw)
++static const struct ste_toc_entry *sproc_find_rsc_entry(const void *data)
+ {
+ 	int i;
+-	struct ste_toc *toc;
+-
+-	if (!fw)
+-		return NULL;
+-
+-	toc = (void *)fw->data;
++	const struct ste_toc *toc;
++	toc = data;
+ 
+ 	/* Search the table for the resource table */
+ 	for (i = 0; i < SPROC_MAX_TOC_ENTRIES &&
+ 		    toc->table[i].start != 0xffffffff; i++) {
+-
+ 		if (!strncmp(toc->table[i].name, SPROC_RESOURCE_NAME,
+-			     sizeof(toc->table[i].name))) {
+-			if (toc->table[i].start > fw->size)
+-				return NULL;
++			     sizeof(toc->table[i].name)))
+ 			return &toc->table[i];
+-		}
  	}
+ 
+ 	return NULL;
+@@ -96,9 +88,12 @@ sproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
+ {
+ 	struct sproc *sproc = rproc->priv;
+ 	struct resource_table *table;
+-	struct ste_toc_entry *entry;
++	const struct ste_toc_entry *entry;
+ 
+-	entry = sproc_find_rsc_entry(fw);
++	if (!fw)
++		return NULL;
++
++	entry = sproc_find_rsc_entry(fw->data);
+ 	if (!entry) {
+ 		sproc_err(sproc, "resource table not found in fw\n");
+ 		return NULL;
+@@ -149,10 +144,30 @@ sproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
+ 	return table;
+ }
+ 
++/* Find the resource table inside the remote processor's firmware. */
++static struct resource_table *
++sproc_get_rsctab_addr(struct rproc *rproc, const struct firmware *fw)
++{
++	struct sproc *sproc = rproc->priv;
++	const struct ste_toc_entry *entry;
++
++	if (!fw || !sproc->fw_addr)
++		return NULL;
++
++	entry = sproc_find_rsc_entry(sproc->fw_addr);
++	if (!entry) {
++		sproc_err(sproc, "resource table not found in fw\n");
++		return NULL;
++	}
++
++	return sproc->fw_addr + entry->start;
++}
++
+ /* STE modem firmware handler operations */
+ const struct rproc_fw_ops sproc_fw_ops = {
+ 	.load = sproc_load_segments,
+ 	.find_rsc_table = sproc_find_rsc_table,
++	.get_rsctab_addr = sproc_get_rsctab_addr,
+ };
+ 
+ /* Kick the modem with specified notification id */
 -- 
 1.7.5.4
 
