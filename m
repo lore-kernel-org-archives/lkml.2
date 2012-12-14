@@ -1,87 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab2LNSmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 13:42:39 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51999 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757019Ab2LNSmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 13:42:32 -0500
-Subject: [RFC][PATCH 1/7] move debugfs to filesystems menu (fs/Kconfig)
+	id S1757086Ab2LNSnC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 13:43:02 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59283 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756896Ab2LNSmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 13:42:15 -0500
+Subject: [RFC][PATCH 6/7] consolidate compilation option configs
 To: linux-kernel@vger.kernel.org
 Cc: Dave Hansen <dave@linux.vnet.ibm.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 14 Dec 2012 13:42:01 -0500
+Date: Fri, 14 Dec 2012 13:42:07 -0500
 References: <20121214184200.8EC5168B@kernel.stglabs.ibm.com>
 In-Reply-To: <20121214184200.8EC5168B@kernel.stglabs.ibm.com>
-Message-Id: <20121214184201.2D87BED3@kernel.stglabs.ibm.com>
+Message-Id: <20121214184207.6E00DDEC@kernel.stglabs.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121418-9360-0000-0000-00000DF53A7E
+x-cbid: 12121418-3620-0000-0000-000000A3AF2C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-debugfs may have started out as a kernel hacking kind of option.  But,
-today, it is an integral part of lots of facilities like tracing that
-are far from kernel hacking.  Let's move it out of the very cluttered
-"Kernel Hacking" menu and but it next to its real family: other
-filesystems like sysfs, configfs, or /proc.
+Again, trying to come up with some common themes of the stuff in
+the kernel hacking menu...  There are quite a few options to
+tweak compilation in some way, or perform extra compile-time
+checks.  Give them their own menu.
 
-Also, "Debug filesystem" sounds like a debugging option _for_
-filesystems code, not a filesystem for debugging.  We also never call
-it "the debug filesystem."  We always say "debugfs", so reflect the
-fact that we _call_ it debugfs in the menu text.
+The diff here looks a bit funny... makes it look like I'm
+moving debugfs even though I'm actually moving the options on
+either side of it.
 
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
- linux-2.6.git-dave/fs/Kconfig        |   12 ++++++++++++
- linux-2.6.git-dave/lib/Kconfig.debug |   12 ------------
- 2 files changed, 12 insertions(+), 12 deletions(-)
+ linux-2.6.git-dave/lib/Kconfig.debug |  156 +++++++++++++++++------------------
+ 1 file changed, 80 insertions(+), 76 deletions(-)
 
-diff -puN lib/Kconfig.debug~be-clear-about-debugfs lib/Kconfig.debug
---- linux-2.6.git/lib/Kconfig.debug~be-clear-about-debugfs	2012-12-14 13:32:20.782780277 -0500
-+++ linux-2.6.git-dave/lib/Kconfig.debug	2012-12-14 13:32:22.890797974 -0500
-@@ -99,18 +99,6 @@ config UNUSED_SYMBOLS
- 	  you really need it, and what the merge plan to the mainline kernel for
- 	  your module is.
+diff -puN lib/Kconfig.debug~consolidate-compilation-configs lib/Kconfig.debug
+--- linux-2.6.git/lib/Kconfig.debug~consolidate-compilation-configs	2012-12-14 13:33:04.167144350 -0500
++++ linux-2.6.git-dave/lib/Kconfig.debug	2012-12-14 13:33:04.203144652 -0500
+@@ -25,6 +25,34 @@ config DEFAULT_MESSAGE_LOGLEVEL
+ 	  that are auditing their logs closely may want to set it to a lower
+ 	  priority.
  
--config DEBUG_FS
--	bool "Debug Filesystem"
--	help
--	  debugfs is a virtual file system that kernel developers use to put
--	  debugging files into.  Enable this option to be able to read and
--	  write to these files.
--
--	  For detailed documentation on the debugfs API, see
--	  Documentation/DocBook/filesystems.
--
--	  If unsure, say N.
--
- config HEADERS_CHECK
- 	bool "Run 'make headers_check' when building vmlinux"
- 	depends on !UML
-diff -puN fs/Kconfig~be-clear-about-debugfs fs/Kconfig
---- linux-2.6.git/fs/Kconfig~be-clear-about-debugfs	2012-12-14 13:32:20.782780277 -0500
-+++ linux-2.6.git-dave/fs/Kconfig	2012-12-14 13:32:22.890797974 -0500
-@@ -176,6 +176,18 @@ config HUGETLBFS
- config HUGETLB_PAGE
- 	def_bool HUGETLBFS
- 
-+config DEBUG_FS
-+	bool "Debug Filesystem (debugfs)"
-+	help
-+	  debugfs is a virtual file system that kernel developers use to put
-+	  debugging files into.  Enable this option to be able to read and
-+	  write to these files.
++menu "Compile-time checks and compiler options"
 +
-+	  For detailed documentation on the debugfs API, see
-+	  Documentation/DocBook/filesystems.
++config DEBUG_INFO
++	bool "Compile the kernel with debug info"
++	depends on DEBUG_KERNEL
++	help
++          If you say Y here the resulting kernel image will include
++	  debugging info resulting in a larger kernel image.
++	  This adds debug symbols to the kernel and modules (gcc -g), and
++	  is needed if you intend to use kernel crashdump or binary object
++	  tools like crash, kgdb, LKCD, gdb, etc on the kernel.
++	  Say Y here only if you plan to debug the kernel.
 +
 +	  If unsure, say N.
 +
- source "fs/configfs/Kconfig"
++config DEBUG_INFO_REDUCED
++	bool "Reduce debugging information"
++	depends on DEBUG_INFO
++	help
++	  If you say Y here gcc is instructed to generate less debugging
++	  information for structure types. This means that tools that
++	  need full debugging information (like kgdb or systemtap) won't
++	  be happy. But if you merely need debugging information to
++	  resolve line numbers there is no loss. Advantage is that
++	  build directory object sizes shrink dramatically over a full
++	  DEBUG_INFO build and compile times are reduced too.
++	  Only works with newer gcc versions.
++
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
+ 	default y
+@@ -52,20 +80,6 @@ config FRAME_WARN
+ 	  Setting it to 0 disables the warning.
+ 	  Requires gcc 4.4
  
- endmenu
+-config MAGIC_SYSRQ
+-	bool "Magic SysRq key"
+-	depends on !UML
+-	help
+-	  If you say Y here, you will have some control over the system even
+-	  if the system crashes for example during kernel debugging (e.g., you
+-	  will be able to flush the buffer cache to disk, reboot the system
+-	  immediately or dump some status information). This is accomplished
+-	  by pressing various keys while holding SysRq (Alt+PrintScreen). It
+-	  also works on a serial console (on PC hardware at least), if you
+-	  send a BREAK and then within 5 seconds a command keypress. The
+-	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
+-	  unless you really know what this hack does.
+-
+ config STRIP_ASM_SYMS
+ 	bool "Strip assembler-generated symbols during link"
+ 	default n
+@@ -144,6 +158,58 @@ config DEBUG_SECTION_MISMATCH
+ 	  - Enable verbose reporting from modpost in order to help resolve
+ 	    the section mismatches that are reported.
+ 
++#
++# Select this config option from the architecture Kconfig, if it
++# is preferred to always offer frame pointers as a config
++# option on the architecture (regardless of KERNEL_DEBUG):
++#
++config ARCH_WANT_FRAME_POINTERS
++	bool
++	help
++
++config FRAME_POINTER
++	bool "Compile the kernel with frame pointers"
++	depends on DEBUG_KERNEL && \
++		(CRIS || M68K || FRV || UML || \
++		 AVR32 || SUPERH || BLACKFIN || MN10300) || \
++		ARCH_WANT_FRAME_POINTERS
++	default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
++	help
++	  If you say Y here the resulting kernel image will be slightly
++	  larger and slower, but it gives very useful debugging information
++	  in case of kernel bugs. (precise oopses/stacktraces/warnings)
++
++	config DEBUG_FORCE_WEAK_PER_CPU
++	bool "Force weak per-cpu definitions"
++	depends on DEBUG_KERNEL
++	help
++	  s390 and alpha require percpu variables in modules to be
++	  defined weak to work around addressing range issue which
++	  puts the following two restrictions on percpu variable
++	  definitions.
++
++	  1. percpu symbols must be unique whether static or not
++	  2. percpu variables can't be defined inside a function
++
++	  To ensure that generic code follows the above rules, this
++	  option forces all percpu variables to be defined as weak.
++
++endmenu # "Compiler options"
++
++config MAGIC_SYSRQ
++	bool "Magic SysRq key"
++	depends on !UML
++	help
++	  If you say Y here, you will have some control over the system even
++	  if the system crashes for example during kernel debugging (e.g., you
++	  will be able to flush the buffer cache to disk, reboot the system
++	  immediately or dump some status information). This is accomplished
++	  by pressing various keys while holding SysRq (Alt+PrintScreen). It
++	  also works on a serial console (on PC hardware at least), if you
++	  send a BREAK and then within 5 seconds a command keypress. The
++	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
++	  unless you really know what this hack does.
++
+ config DEBUG_KERNEL
+ 	bool "Kernel debugging"
+ 	help
+@@ -944,32 +1010,6 @@ config DEBUG_BUGVERBOSE
+ 	  of the BUG call as well as the EIP and oops trace.  This aids
+ 	  debugging but costs about 70-100K of memory.
+ 
+-config DEBUG_INFO
+-	bool "Compile the kernel with debug info"
+-	depends on DEBUG_KERNEL
+-	help
+-          If you say Y here the resulting kernel image will include
+-	  debugging info resulting in a larger kernel image.
+-	  This adds debug symbols to the kernel and modules (gcc -g), and
+-	  is needed if you intend to use kernel crashdump or binary object
+-	  tools like crash, kgdb, LKCD, gdb, etc on the kernel.
+-	  Say Y here only if you plan to debug the kernel.
+-
+-	  If unsure, say N.
+-
+-config DEBUG_INFO_REDUCED
+-	bool "Reduce debugging information"
+-	depends on DEBUG_INFO
+-	help
+-	  If you say Y here gcc is instructed to generate less debugging
+-	  information for structure types. This means that tools that
+-	  need full debugging information (like kgdb or systemtap) won't
+-	  be happy. But if you merely need debugging information to
+-	  resolve line numbers there is no loss. Advantage is that
+-	  build directory object sizes shrink dramatically over a full
+-	  DEBUG_INFO build and compile times are reduced too.
+-	  Only works with newer gcc versions.
+-
+ config DEBUG_WRITECOUNT
+ 	bool "Debug filesystem writers count"
+ 	depends on DEBUG_KERNEL
+@@ -1024,27 +1064,6 @@ config DEBUG_CREDENTIALS
+ 
+ 	  If unsure, say N.
+ 
+-#
+-# Select this config option from the architecture Kconfig, if it
+-# is preferred to always offer frame pointers as a config
+-# option on the architecture (regardless of KERNEL_DEBUG):
+-#
+-config ARCH_WANT_FRAME_POINTERS
+-	bool
+-	help
+-
+-config FRAME_POINTER
+-	bool "Compile the kernel with frame pointers"
+-	depends on DEBUG_KERNEL && \
+-		(CRIS || M68K || FRV || UML || \
+-		 AVR32 || SUPERH || BLACKFIN || MN10300) || \
+-		ARCH_WANT_FRAME_POINTERS
+-	default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
+-	help
+-	  If you say Y here the resulting kernel image will be slightly
+-	  larger and slower, but it gives very useful debugging information
+-	  in case of kernel bugs. (precise oopses/stacktraces/warnings)
+-
+ config BOOT_PRINTK_DELAY
+ 	bool "Delay each boot printk message by N milliseconds"
+ 	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
+@@ -1090,21 +1109,6 @@ config DEBUG_BLOCK_EXT_DEVT
+ 
+ 	  Say N if you are unsure.
+ 
+-config DEBUG_FORCE_WEAK_PER_CPU
+-	bool "Force weak per-cpu definitions"
+-	depends on DEBUG_KERNEL
+-	help
+-	  s390 and alpha require percpu variables in modules to be
+-	  defined weak to work around addressing range issue which
+-	  puts the following two restrictions on percpu variable
+-	  definitions.
+-
+-	  1. percpu symbols must be unique whether static or not
+-	  2. percpu variables can't be defined inside a function
+-
+-	  To ensure that generic code follows the above rules, this
+-	  option forces all percpu variables to be defined as weak.
+-
+ config NOTIFIER_ERROR_INJECTION
+ 	tristate "Notifier error injection"
+ 	depends on DEBUG_KERNEL
 _
 
