@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab2LNLVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 06:21:49 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36783 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab2LNLVs (ORCPT
+	id S1753840Ab2LNLp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 06:45:56 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38693 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2LNLpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 06:21:48 -0500
-Date: Fri, 14 Dec 2012 11:26:57 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Denis Kirjanov <kirjanov@gmail.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 12/12] edac: fix kernel panic on module unloading
-Message-ID: <20121214112657.6c1b74e9@pyramind.ukuu.org.uk>
-In-Reply-To: <20121214110310.11019.21098.stgit@zurg>
-References: <20121214110229.11019.63713.stgit@zurg>
-	<20121214110310.11019.21098.stgit@zurg>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 14 Dec 2012 06:45:55 -0500
+Message-ID: <50CB116D.7050701@openvz.org>
+Date: Fri, 14 Dec 2012 15:45:49 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Jeff Garzik <jgarzik@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] ata: uncomment ata_timing for XFER_PIO_SLOW
+References: <20121214110137.9155.68183.stgit@zurg> <20121214111351.GA7307@liondog.tnic>
+In-Reply-To: <20121214111351.GA7307@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Dec 2012 15:03:10 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+Borislav Petkov wrote:
+> On Fri, Dec 14, 2012 at 03:01:37PM +0400, Konstantin Khlebnikov wrote:
+>> This patch uncomments ata timings for XFER_PIO_SLOW,
+>> otherwise ata_timing_find_mode() returns NULL and kernel crashes in
+>> pacpi_set_dmamode() after null-pointer dereference.
+>>
+>> The same problem was mentioned recently in debug patch v3.7-rc5-72-gcd705d5
+>> ("libata debugging: Warn when unable to find timing descriptor based on xfer_mode")
+>>
+>> I'm not sure about this patch, because I have no idea what this XFER_PIO_SLOW
+>
+> No, this is already fixed by:
+>
+>
+> Btw, this patch will go to stable since I can't find it in 3.7, I'm
+> guessing Jeff will send it to Linus soonish since it is in his NEXT
+> branch.
+>
+> Until that happens, you could test 3.7 by cherrypicking the patch above
+> ontop of it or by simply applying it by hand since it is only two lines.
+>
+> Or, you could wait and test -rc1 when it comes out after the world ends :-).
 
-> This patch fixes use-after-free and double-free bugs in edac_mc_sysfs_exit().
-> mci_pdev has single reference and put_device() calls mc_attr_release() which
-> calls kfree(), thus following device_del() works with already released memory.
-> An another kfree() in edac_mc_sysfs_exit() releses the same memory again. Great.
+Ah, thanks. Sorry for noise. I'll check this again in current linux-next.
 
-Patches for this were posted a while ago by Jean Delvare. See bugzilla
-50491 as well for this.
+>
+>> means and why this bug so rare (3 times during 4 days boot-reboot test) I caught
+>> this on completely ordinary PC with nvidia MCP61 chipset, sata hdd and ide dvd-rom.
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> Signed-off-by: Borislav Petkov<bp@alien8.de>
+>> Signed-off-by: Jeff Garzik<jgarzik@redhat.com>
+>
+> Btw, just FYI, this is not how S-o-b chaining works. Take a look
+> at<Documentation/SubmittingPatches>  for details on how it is done
+> correctly.
 
+ouch :facepalm: how I missed this... just copy-paste error. sorry again.
+
+>
+> HTH.
+>
 
