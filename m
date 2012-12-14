@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab2LNFnq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 00:43:46 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52860 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2LNFnp (ORCPT
+	id S1751973Ab2LNFsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 00:48:50 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63699 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab2LNFst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 00:43:45 -0500
-MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Dec 2012 21:43:23 -0800
-Message-ID: <CALCETrUf6ZPfXuFsZD32w76CQsrqg42_75cmqeTa9jW+in=41A@mail.gmail.com>
-Subject: percpu allocation failures in kvm
-To: linux-kernel@vger.kernel.org, kvm list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Dec 2012 00:48:49 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, johnstul@us.ibm.com, horms@verge.net.au,
+        shinya.kuribayashi.px@renesas.com, Magnus Damm <magnus.damm@gmail.com>,
+        tglx@linutronix.de
+Date: Fri, 14 Dec 2012 14:53:23 +0900
+Message-Id: <20121214055323.10081.12056.sendpatchset@w520>
+Subject: [PATCH 00/08] clocksource: sh_cmt: CMT driver update
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.7.0 + irrelevant patches, I get this on boot.  I've seen it on
-and off on earlier kernels, I think (although I'm not currently
-getting it on 3.5).
+clocksource: sh_cmt: CMT driver update
 
-[   10.230054] PERCPU: allocation failed, size=304 align=32, alloc
-from reserved chunk failed
-[   10.230059] Pid: 1026, comm: modprobe Tainted: G        W    3.7.0-ama+ #5
-[   10.230060] Call Trace:
-[   10.230070]  [<ffffffff81129efb>] pcpu_alloc+0x9db/0xa40
-[   10.230074]  [<ffffffff810a81ad>] ? find_symbol_in_section+0x4d/0x140
-[   10.230077]  [<ffffffff810a8160>] ? finished_loading+0x50/0x50
-[   10.230080]  [<ffffffff810a8af0>] ? each_symbol_section+0x30/0x70
-[   10.230083]  [<ffffffff810a8b61>] ? find_symbol+0x31/0x60
-[   10.230086]  [<ffffffff8112a1f3>] __alloc_reserved_percpu+0x13/0x20
-[   10.230089]  [<ffffffff810ab48d>] load_module+0x3ed/0x1b50
-[   10.230093]  [<ffffffff81075c3b>] ? __srcu_read_unlock+0x4b/0x70
+[PATCH 01/08] clocksource: sh_cmt: Take care of clk_put() when setup_irq() fails
+[PATCH 02/08] clocksource: sh_cmt: Initialize 'max_match_value' and 'lock' in sh_cmt_setup()
+[PATCH 03/08] clocksource: sh_cmt: Consolidate platform_set_drvdata() call
+[PATCH 04/08] clocksource: sh_cmt: Introduce per-register functions
+[PATCH 05/08] clocksource: sh_cmt: CMSTR and CMCSR register access update
+[PATCH 06/08] clocksource: sh_cmt: CMCNT and CMCOR register access update
+[PATCH 07/08] clocksource: sh_cmt: Add control register callbacks
+[PATCH 08/08] clocksource: sh_cmt: Add CMT register layout comment
 
---Andy
+This patch series contains a couple of driver updates from Kuribayashi-san
+together with some register access changes from me. The register access
+changes work towards adding support for 32-bit only CMT hardware, but
+the final bits are not yet included in this series due to lack of hardware.
+
+Patches 1-3:
+Signed-off-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+Signed-off-by: Magnus Damm <damm@opensource.se>
+
+Patches 4-8:
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
+
+ drivers/clocksource/sh_cmt.c |  257 ++++++++++++++++++++++++------------------
+ 1 file changed, 152 insertions(+), 105 deletions(-)
+
+
