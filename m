@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945986Ab2LNXKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:10:36 -0500
-Received: from www84.your-server.de ([213.133.104.84]:50892 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945905Ab2LNXKd (ORCPT
+	id S1946006Ab2LNXKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:10:41 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:41086 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945905Ab2LNXKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:10:33 -0500
-Message-ID: <1355526568.758.5.camel@wall-e>
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        criu@openvz.org, mingo@redhat.com, john.stultz@linaro.org,
-        tglx@linutronix.de
-Date: Sat, 15 Dec 2012 00:09:28 +0100
-In-Reply-To: <50CBAC61.5010600@zytor.com>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
-	 <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
-	 <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com>
-	 <1355379433.24701.1.camel@wall-e>
-	 <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com>
-	 <1355383038.18653.2.camel@wall-e>
-	 <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com>
-	 <50CA6E4C.6000305@zytor.com>
-	 <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com>
-	 <50CA81A4.9040702@zytor.com>
-	 <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
-	 <50CA85BD.7070502@zytor.com>
-	 <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com>
-	 <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com>
-	 <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
-	 <50CAE485.5020608@parallels.com> <50CBAC61.5010600@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Fri, 14 Dec 2012 18:10:37 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <1355255996-25953-1-git-send-email-nhorman@tuxdriver.com>
+	<1355519048-28473-1-git-send-email-nhorman@tuxdriver.com>
+Date: Fri, 14 Dec 2012 15:10:30 -0800
+In-Reply-To: <1355519048-28473-1-git-send-email-nhorman@tuxdriver.com> (Neil
+	Horman's message of "Fri, 14 Dec 2012 16:04:08 -0500")
+Message-ID: <87d2ycut5l.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/wJWvniJiomJnE04MZkWwftp3FjBNVdbc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0375]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Neil Horman <nhorman@tuxdriver.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] core_pattern: set core helpers root and namespace to crashing process
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 14.12.2012, 14:46 -0800 schrieb H. Peter Anvin:
-> On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
-> > On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
-> >> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
-> >> really need more control I'd almost push for a device/filesystem node
-> >> that could be mmapped the usual way.
-> >>
-> >> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
-> >> criu is stable enough yet that we should care.  Criu people?
-> > 
-> > It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
-> > 
-> >> (In brief summary: how annoying would it be if the vdso was no longer
-> >> just a bunch of constant bytes that lived somewhere?)
-> > 
-> > It depends on what vdso is going to be. In the perfect case it should
-> > a) be mremap-able to any address (or be at fixed address _forever_, but
-> >    I assume this is not feasible);
-> > b) have entry points at fixed (or somehow movable) places.
-> > 
-> > I admit that I didn't understand your question properly, if I did,
-> > please correct me.
-> > 
-> 
-> Either way... criu on the side, we should proceed with this vdso
-> redesign and get support for the 32-bit entry points including compat
-> mode on x86-64.
-> 
-> 	-hpa
-> 
-> 
+Neil Horman <nhorman@tuxdriver.com> writes:
 
-Sorry for not following the discussion, but im am currently trying to
-compile the vclocktime.c as a 32 bit object. Most of the (clever) work
-is done.
+> As its currently implemented, redirection of core dumps to a pipe reader should
+> be executed such that the reader runs in the namespace of the crashing process,
+> and it currently does not. This is the only sane way to deal with namespaces
+> properly it seems to me, and this patch implements that functionality.
 
-After this the next step is to map the needed fixmaps into the 32 bit
-address space. Maybe this can be done with install_special_mapping().
+I actually rather strongly disagree.
 
-I think i will do this job in the next days.
+While we have a global core dump pattern core dumps to a a pipe reader
+should be executed such that the reader runs in the namespace of the
+process that set the pattern.  We can easily restrict that to the
+initial namespaces to make the implementation simpler.
 
-- Stefani
+If you want to play namespace games you can implement all of those in
+user space once my tree merges for v3.8.
 
+I am really not a fan of the trigger process being able to control the
+environment of a privileged process.  It makes writing the privileged
+process much trickier.
 
+Eric
