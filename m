@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2LNCIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 21:08:23 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:45576 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755435Ab2LNCIW (ORCPT
+	id S1756005Ab2LNCMR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 21:12:17 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37672 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab2LNCMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 21:08:22 -0500
-Message-ID: <1355450356.18964.297.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH 02/11] drivers/base: Add hotplug framework code
-From: Toshi Kani <toshi.kani@hp.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>, "lenb@kernel.org" <lenb@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "guohanjun@huawei.com" <guohanjun@huawei.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 13 Dec 2012 18:59:16 -0700
-In-Reply-To: <20121213182422.GB9606@kroah.com>
-References: <1355354243-18657-1-git-send-email-toshi.kani@hp.com>
-	 <1355354243-18657-3-git-send-email-toshi.kani@hp.com>
-	 <20121212235418.GB22764@kroah.com>
-	 <1355371365.18964.89.camel@misato.fc.hp.com>
-	 <20121213042437.GA14240@kroah.com>
-	 <1355416251.18964.170.camel@misato.fc.hp.com>
-	 <20121213182422.GB9606@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Dec 2012 21:12:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <50CA85BD.7070502@zytor.com>
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net>
+ <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e>
+ <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e>
+ <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e>
+ <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com>
+ <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com>
+ <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com>
+ <50CA85BD.7070502@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Dec 2012 18:11:55 -0800
+Message-ID: <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com>
+Subject: Re: [PATCH] Add VDSO time function support for x86 32-bit kernel
+To: "H. Peter Anvin" <hpa@zytor.com>, criu@openvz.org
+Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 10:24 -0800, Greg KH wrote:
-> On Thu, Dec 13, 2012 at 09:30:51AM -0700, Toshi Kani wrote:
-> > On Thu, 2012-12-13 at 04:24 +0000, Greg KH wrote:
-> > > On Wed, Dec 12, 2012 at 09:02:45PM -0700, Toshi Kani wrote:
-> > > > On Wed, 2012-12-12 at 15:54 -0800, Greg KH wrote:
-> > > > > On Wed, Dec 12, 2012 at 04:17:14PM -0700, Toshi Kani wrote:
-> > > > > > Added hotplug.c, which is the hotplug framework code.
-> > > > > 
-> > > > > Again, better naming please.
-> > > > 
-> > > > Yes, I will change it to be more specific, something like
-> > > > "sys_hotplug.c".
-> > > 
-> > > Ugh, what's wrong with just a simple "system_bus.c" or something like
-> > > that, and then put all of the needed system bus logic in there and tie
-> > > the cpus and other sysdev code into that?
-> > 
-> > The issue is that the framework does not provide the system bus
-> > structure.  This is because the system bus structure is not used for CPU
-> > and memory initialization at boot (as I explained in my other email).
-> 
-> I understand, please fix that and then you will not have these issues :)
-> 
-> > The framework manages the calling sequence of hotplug operations, which
-> > is similar to the boot sequence managed by start_kernel(),
-> > kernel_init(), do_initcalls(), etc.  In such sense, this file might not
-> > be a good fit for drivers/base, but I could not find a better place for
-> > it.
-> 
-> Having "similar but slightly different" isn't a good way to do things,
-> and I think you are trying to solve that problem here, so converting
-> everything to use the driver model properly will solve these issues for
-> you, right?
-> 
-> I _really_ don't want to see yet-another-way-to-do-things be created at
-> all, unless it really really really is special and different for some
-> reason.  So far, I have yet to be convinced, especially given that your
-> reasoning for doing this seems to be "to do it correctly would be too
-> much work so I created another interface".  That isn't going to fly,
-> sorry.
+On Thu, Dec 13, 2012 at 5:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/13/2012 05:42 PM, Andy Lutomirski wrote:
+>>
+>> The 64-bit/x32 case is currently very simple and fast because it uses
+>> absolute addressing.  Admittedly, pcrel references are free, so
+>> changing this wouldn't cost much.  For native, it'll be slower, but
+>> maybe no one cares.  I seem to care about this more than anyone else,
+>> and I don't use 32 bit code. :)
+>>
+>
+> pcrel is actually cheaper than absolute addressing in 64-bit mode.
+>
+>> The benefit of switching is that the vdso code could be the same in
+>> all three cases.  (Actually, it's even better than that.  All of the
+>> VVAR magic could be the same in the vdso and the kernel -- the kernel
+>> linker script would just have to have an appropriate symbol to see the
+>> appropriate mapping.)
+>>
+>>
+>> This:
+>>
+>> __attribute__((visibility("hidden"))) int foo;
+>>
+>> int get_foo(void)
+>> {
+>>   return foo;
+>> }
+>>
+>> generates a rip-relative access on 64 bits and GOTOFF on 32 bits.
+>>
+>> The only reason I didn't use a real symbol in the first place is
+>> because I couldn't figure out how to get gcc to emit an absolute
+>> relocation in pic code.
+>
+> Well, then, we wouldn't need to do that... this is starting to sound
+> like a significant win.
 
-Let's continue to discuss on other thread since I copied s390 and ppc
-folks on that one.
+How will this avoid breaking checkpoint/restore in userspace?  If the
+vdso is not just plain old code, criu presumably needs to know about
+it.  Should there be an arch_prctl(ARCH_MAP_VDSO, addr) to create a
+vdso mapping somewhere?
 
-Thanks,
--Toshi
-
+--Andy
