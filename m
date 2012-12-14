@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790Ab2LNXCq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:02:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40556 "EHLO mail.kernel.org"
+	id S1422673Ab2LNXC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:02:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40589 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932659Ab2LNXCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:02:43 -0500
+	id S932655Ab2LNXCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:02:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 22/37] USB: mark uas driver as BROKEN
-Date: Fri, 14 Dec 2012 15:00:59 -0800
-Message-Id: <20121214222257.166392858@linuxfoundation.org>
+        =?UTF-8?q?S=C3=A9bastien=20Wilmet?= <swilmet@gnome.org>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 24/37] ACPI / PM: Add Sony Vaio VPCEB1S1E to nonvs blacklist.
+Date: Fri, 14 Dec 2012 15:01:01 -0800
+Message-Id: <20121214222257.357418924@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222252.781413287@linuxfoundation.org>
 References: <20121214222252.781413287@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,33 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit fb37ef98015f864d22be223a0e0d93547cd1d4ef upstream.
+commit 876ab79055019e248508cfd0dee7caa3c0c831ed upstream.
 
-As reported https://bugzilla.kernel.org/show_bug.cgi?id=51031, the UAS
-driver causes problems and has been asked to be not built into any of
-the major distributions.  To prevent users from running into problems
-with it, and for distros that were not notified, just mark the whole
-thing as broken.
+Sony Vaio VPCEB1S1E does not resume correctly without
+acpi_sleep=nonvs, so add it to the ACPI sleep blacklist.
 
-Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=48781
+Reported-by: Sébastien Wilmet <swilmet@gnome.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/sleep.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -203,7 +203,7 @@ config USB_STORAGE_ENE_UB6250
- 
- config USB_UAS
- 	tristate "USB Attached SCSI"
--	depends on USB && SCSI
-+	depends on USB && SCSI && BROKEN
- 	help
- 	  The USB Attached SCSI protocol is supported by some USB
- 	  storage devices.  It permits higher performance by supporting
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -519,6 +519,14 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VPCEB1S1E",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1S1E"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VGN-FW520F",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 
 
