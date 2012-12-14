@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab2LNXL6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:11:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41207 "EHLO mail.kernel.org"
+	id S932928Ab2LNXNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:13:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41134 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932854Ab2LNXGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:06:14 -0500
+	id S1945900Ab2LNXFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:05:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@suse.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 06/27] x86: hpet: Fix masking of MSI interrupts
-Date: Fri, 14 Dec 2012 15:01:19 -0800
-Message-Id: <20121214222252.537002342@linuxfoundation.org>
+        Soeren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [ 01/27] mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
+Date: Fri, 14 Dec 2012 15:01:14 -0800
+Message-Id: <20121214222251.527615897@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
 References: <20121214222251.229078963@linuxfoundation.org>
@@ -25,42 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit 6acf5a8c931da9d26c8dd77d784daaf07fa2bff0 upstream.
+commit 387870f2d6d679746020fa8e25ef786ff338dc98 upstream.
 
-HPET_TN_FSB is not a proper mask bit; it merely toggles between MSI and
-legacy interrupt delivery. The proper mask bit is HPET_TN_ENABLE, so
-use both bits when (un)masking the interrupt.
+dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+regardless the flags provided by the caller. This causes excessive
+pruning of emergency memory pools without any good reason. Additionaly,
+on ARM architecture any driver which is using dmapools will sooner or
+later  trigger the following error:
+"ERROR: 256 KiB atomic DMA coherent pool is too small!
+Please increase it with coherent_pool= kernel parameter!".
+Increasing the coherent pool size usually doesn't help much and only
+delays such error, because all GFP_ATOMIC DMA allocations are always
+served from the special, very limited memory pool.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/5093E09002000078000A60E6@nat28.tlf.novell.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This patch changes the dmapool code to correctly use gfp flags provided
+by the dmapool caller.
+
+Reported-by: Soeren Moch <smoch@web.de>
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Tested-by: Soeren Moch <smoch@web.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/hpet.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/dmapool.c |   31 +++++++------------------------
+ 1 file changed, 7 insertions(+), 24 deletions(-)
 
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -434,7 +434,7 @@ void hpet_msi_unmask(struct irq_data *da
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -50,7 +50,6 @@ struct dma_pool {		/* the pool */
+ 	size_t allocation;
+ 	size_t boundary;
+ 	char name[32];
+-	wait_queue_head_t waitq;
+ 	struct list_head pools;
+ };
  
- 	/* unmask it */
- 	cfg = hpet_readl(HPET_Tn_CFG(hdev->num));
--	cfg |= HPET_TN_FSB;
-+	cfg |= HPET_TN_ENABLE | HPET_TN_FSB;
- 	hpet_writel(cfg, HPET_Tn_CFG(hdev->num));
+@@ -62,8 +61,6 @@ struct dma_page {		/* cacheable header f
+ 	unsigned int offset;
+ };
+ 
+-#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
+-
+ static DEFINE_MUTEX(pools_lock);
+ 
+ static ssize_t
+@@ -172,7 +169,6 @@ struct dma_pool *dma_pool_create(const c
+ 	retval->size = size;
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+-	init_waitqueue_head(&retval->waitq);
+ 
+ 	if (dev) {
+ 		int ret;
+@@ -227,7 +223,6 @@ static struct dma_page *pool_alloc_page(
+ 		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+ #endif
+ 		pool_initialise_page(pool, page);
+-		list_add(&page->page_list, &pool->page_list);
+ 		page->in_use = 0;
+ 		page->offset = 0;
+ 	} else {
+@@ -315,30 +310,21 @@ void *dma_pool_alloc(struct dma_pool *po
+ 	might_sleep_if(mem_flags & __GFP_WAIT);
+ 
+ 	spin_lock_irqsave(&pool->lock, flags);
+- restart:
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
+ 		if (page->offset < pool->allocation)
+ 			goto ready;
+ 	}
+-	page = pool_alloc_page(pool, GFP_ATOMIC);
+-	if (!page) {
+-		if (mem_flags & __GFP_WAIT) {
+-			DECLARE_WAITQUEUE(wait, current);
+ 
+-			__set_current_state(TASK_UNINTERRUPTIBLE);
+-			__add_wait_queue(&pool->waitq, &wait);
+-			spin_unlock_irqrestore(&pool->lock, flags);
++	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
++	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-			schedule_timeout(POOL_TIMEOUT_JIFFIES);
++	page = pool_alloc_page(pool, mem_flags);
++	if (!page)
++		return NULL;
+ 
+-			spin_lock_irqsave(&pool->lock, flags);
+-			__remove_wait_queue(&pool->waitq, &wait);
+-			goto restart;
+-		}
+-		retval = NULL;
+-		goto done;
+-	}
++	spin_lock_irqsave(&pool->lock, flags);
+ 
++	list_add(&page->page_list, &pool->page_list);
+  ready:
+ 	page->in_use++;
+ 	offset = page->offset;
+@@ -348,7 +334,6 @@ void *dma_pool_alloc(struct dma_pool *po
+ #ifdef	DMAPOOL_DEBUG
+ 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+ #endif
+- done:
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 	return retval;
  }
- 
-@@ -445,7 +445,7 @@ void hpet_msi_mask(struct irq_data *data
- 
- 	/* mask it */
- 	cfg = hpet_readl(HPET_Tn_CFG(hdev->num));
--	cfg &= ~HPET_TN_FSB;
-+	cfg &= ~(HPET_TN_ENABLE | HPET_TN_FSB);
- 	hpet_writel(cfg, HPET_Tn_CFG(hdev->num));
- }
- 
+@@ -435,8 +420,6 @@ void dma_pool_free(struct dma_pool *pool
+ 	page->in_use--;
+ 	*(int *)vaddr = page->offset;
+ 	page->offset = offset;
+-	if (waitqueue_active(&pool->waitq))
+-		wake_up_locked(&pool->waitq);
+ 	/*
+ 	 * Resist a temptation to do
+ 	 *    if (!is_page_busy(page)) pool_free_page(pool, page);
 
 
