@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab2LNUb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 15:31:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52813 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab2LNUb0 (ORCPT
+	id S932362Ab2LNUpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 15:45:13 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41000 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241Ab2LNUpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 15:31:26 -0500
-Message-ID: <50CB8C74.3090102@canonical.com>
-Date: Fri, 14 Dec 2012 15:30:44 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
+	Fri, 14 Dec 2012 15:45:10 -0500
+Date: Fri, 14 Dec 2012 20:50:20 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        containers@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the
+ parent user namespace to have caps.
+Message-ID: <20121214205020.GA11637@mail.hallyn.com>
+References: <50CA2B55.5070402@amacapital.net>
+ <87mwxhtxve.fsf@xmission.com>
+ <87zk1hshk7.fsf_-_@xmission.com>
+ <20121214032820.GA5115@mail.hallyn.com>
+ <87bodxi9zw.fsf@xmission.com>
+ <20121214152607.GA9266@mail.hallyn.com>
+ <87bodwd4aw.fsf@xmission.com>
+ <20121214161514.GA9962@mail.hallyn.com>
+ <87r4ms5wpm.fsf@xmission.com>
+ <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
 MIME-Version: 1.0
-To: martin.petersen@oracle.com
-CC: Kernel Team <kernel-team@lists.ubuntu.com>, linux-kernel@vger.kernel.org,
-        snitzer@redhat.com, jgarzik@redhat.com, JBottomley@Parallels.com
-Subject: [v3.7 Regression]  [SCSI] sd: Implement support for WRITE SAME
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw5CMf0-o=yDt2Rj-SYH4pfW1L9QbNb6uKHEdzAyYcvGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+Quoting Linus Torvalds (torvalds@linux-foundation.org):
+> On Fri, Dec 14, 2012 at 10:12 AM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+> >
+> > That said Serge I think I have lost track of the point of your question.
+> 
+> .. and I'm a bit unsure what I should do about this all. Including
+> pulling the pull request that actually can make this all matter.
 
-A bug was opened against the Ubuntu kernel[0].  After a kernel bisect, 
-it was found that reverting the following commit resolved this bug:
+Sorry I didn't mean to complicate this.
 
-commit 5db44863b6ebbb400c5e61d56ebe8f21ef48b1bd
-Author: Martin K. Petersen <martin.petersen@oracle.com>
-Date:   Tue Sep 18 12:19:32 2012 -0400
-[SCSI] sd: Implement support for WRITE SAME
+I did ack the patch and we can cull the cc list for continued discussion.
 
-The regression was introduced as of v3.7-rc7.
+In practical terms, the only thing the patch prevent is having two
+separate tasks each clone a new user ns with the same uid mapping, and
+having consistent relationships between the same uids between the
+namespaces.  It's worth it to prevent (or while we consider) the case
+Andy and Eric bring up.
 
-The bug can be reproduced with the following commands, which will 
-operate on a virtual scsi_debug device, so they won't change any data on 
-the test system. However, this will completely crash the system:
+> Hmm? Any consensus?
 
-sudo modprobe scsi_debug
-sudo luksformat -t ext4 /dev/sdb <- Or whatever device gets assigned 
-after inserting scsi_debug.
-sudo cryptsetup luksOpen /dev/sdb treasure
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-Everything works fine up to here, but the following will cause the crash:
-
-sudo mount /dev/mapper/treasure /mnt
-
-The bug can be reproduced on bare metal, in a VM and on i386 or amd64.
-
-I see that you are the author of this patch, so I wanted to run this by 
-you.  I was thinking of requesting a revert for v3.7, but I wanted to 
-get your feedback first.
-
-
-Thanks,
-
-Joe
-
-
-[0] https://bugs.launchpad.net/bugs/1089818
+-serge
