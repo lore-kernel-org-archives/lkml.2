@@ -1,127 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab2LNPrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 10:47:15 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:57419 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756396Ab2LNPrL (ORCPT
+	id S1756528Ab2LNPrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 10:47:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49668 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756302Ab2LNPrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 10:47:11 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-security-module@vger.kernel.org
-References: <87ip88uw4n.fsf@xmission.com> <50CA2B55.5070402@amacapital.net>
-	<87mwxhtxve.fsf@xmission.com> <87zk1hshk7.fsf_-_@xmission.com>
-	<20121214032820.GA5115@mail.hallyn.com> <87bodxi9zw.fsf@xmission.com>
-	<20121214152607.GA9266@mail.hallyn.com>
-Date: Fri, 14 Dec 2012 07:47:03 -0800
-In-Reply-To: <20121214152607.GA9266@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 14 Dec 2012 15:26:07 +0000")
-Message-ID: <87bodwd4aw.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 14 Dec 2012 10:47:45 -0500
+Date: Fri, 14 Dec 2012 17:40:30 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Paolo Pisati <paolo.pisati@canonical.com>
+CC: Felipe Balbi <balbi@ti.com>, linux-omap <linux-omap@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>,
+        Robert Nelson <robertcnelson@gmail.com>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
+ original voltage values
+Message-ID: <20121214154030.GD18233@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1355389980-5532-1-git-send-email-paolo.pisati@canonical.com>
+ <1355389980-5532-2-git-send-email-paolo.pisati@canonical.com>
+ <20121213094715.GA1916@arwen.pp.htv.fi>
+ <20121214153943.GA3306@luxor.wired.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+ycHDm+b1GGlHLurFdwVu1VLHqT/j1Qxg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3881]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the parent user namespace to have caps.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7DO5AaGCk89r4vaK"
+Content-Disposition: inline
+In-Reply-To: <20121214153943.GA3306@luxor.wired.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+--7DO5AaGCk89r4vaK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> "Serge E. Hallyn" <serge@hallyn.com> writes:
->> 
->> > Quoting Eric W. Biederman (ebiederm@xmission.com):
->> >> 
->> >> Andy Lutomirski pointed out that the current behavior of allowing the
->> >> owner of a user namespace to have all caps when that owner is not in a
->> >> parent user namespace is wrong.
->> >
->> > To make sure I understand right, the issue is when a uid is mapped
->> > into multiple namespaces.
->> 
->> Yes.
->> 
->> i.e. uid 1000 in ns1 may own ns2, but uid 1000 in ns3 does not?
->> 
->> I am not certain of your example.
->> 
->> The simple case is:
->> 
->> init_user_ns:
->>      child_user_ns1 (owned by uid == 0 [in all user namespaces])
->>            child_user_ns2 (owned by uid == 0 [ in all user namespaces])
->> 
->> 
->> root (uid == 0) in child_user_ns2 has all rights over anything in
->> child_user_ns1.
->
-> Well that is only if there was no mapping.  (since we're comparing
-> kuids, not uid_ts).  right?  If you didn't map uid 0 in child_user_ns2
-> to another id in the parent ns, you weren't all *that* serious about
-> isolating the ns.
->
-> The case I was thinking is
->
->   init_user_ns:  [0-uidmax]
->       child_user_ns1  [100000-199999]
->       child_user_ns2  [100000-199999]
->         child_user_ns3  [200000-299999]
->
-> with unfortunate mappings  - ns1 and ns2 should have had nonoverlapping
-> ranges, but in any case now uid 1000 in ns1 can exert privilege over
-> ns3.  Again, uids comparisons will succeed for file access anyway, so
-> ns1 can 0wn ns2 and ns3 other ways.
+Hi,
 
-Yes yours is the more realistic scenario.  Mine was simplified to be clear.
+On Fri, Dec 14, 2012 at 04:39:43PM +0100, Paolo Pisati wrote:
+> On Thu, Dec 13, 2012 at 11:47:15AM +0200, Felipe Balbi wrote:
+> > On Thu, Dec 13, 2012 at 10:13:00AM +0100, Paolo Pisati wrote:
+> > > Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+> > > Tested-by: Robert Nelson <robertcnelson@gmail.com>
+> >=20
+> > please read Documentation/stable_kernel_rules.txt, you'll see this is
+> > wrong.
+>=20
+> you mean that i should have waited for the commit to hit Linus's tree bef=
+ore
+> cc-ing stable?
 
-> Heck I'm starting to think the bug is a feature - surely given the
-> mappings above I meant for ns1 and ns2 to bleed privilege to each
-> other?
+No no, I mean that before you SoB you should have a:
 
-The serious problem is that privileges can bleed up. A user in 
-ns3 can wind up owning ns2 or ns1.  Which totally defeats the permission
-model.  You have CAP_DAC_OVERRIDE so you don't even need access to files
-you own, etc, etc.
+Cc: <stable@vger.kernel.org> # v3.x v3.y ...
 
-Or the more fun version as root:
-	/* Drop all privs */
-	pid = clone(CLONE_NEWUSER);
-	if (pid == 0) {
-		/* Have all privs! Bahaha */
-	}
+Something like the commit below:
 
-Which makes dropping capabilies a joke.
+commit 041d81f493d90c940ec41f0ec98bc7c4f2fba431
+Author: Felipe Balbi <balbi@ti.com>
+Date:   Thu Oct 4 11:58:00 2012 +0300
 
-And since up to through 3.7 the only user that can create a user namespace
-is root that is a very realistic scenario.  It doesn't work against the
-initial user namespace thankfully, but in v3.7 it works against every
-other user namespace.
+    usb: dwc3: gadget: fix 'endpoint always busy' bug
+   =20
+    If a USB transfer has already been started, meaning
+    we have already issued StartTransfer command to that
+    particular endpoint, DWC3_EP_BUSY flag has also
+    already been set.
+   =20
+    When we try to cancel this transfer which is already
+    in controller's cache, we will not receive XferComplete
+    event and we must clear DWC3_EP_BUSY in order to allow
+    subsequent requests to be properly started.
+   =20
+    The best place to clear that flag is right after issuing
+    DWC3_DEPCMD_ENDTRANSFER.
+   =20
+    Cc: stable@vger.kernel.org # v3.4 v3.5 v3.6
+    Reported-by: Moiz Sonasath <m-sonasath@ti.com>
+    Signed-off-by: Felipe Balbi <balbi@ti.com>
 
-To keep user namespaces safe we need to maintain the invariant that a
-child user namespace can not get capapabilities in it's parent user
-namespace.
 
-Eric
+--=20
+balbi
+
+--7DO5AaGCk89r4vaK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQy0huAAoJEIaOsuA1yqREMUQQAJOjquBR3LJ8aDeik52K4ej+
+BEBY00obnBmfUnH91O1GYkhu2EVxSxknJiJtlgbyYNm2NMpPsFJpn4qUtErvdJs8
+cEdzZmFF3DDklpalqOAgLytbOUHi2dZAn9fvDqgHyS+1yHa2u5icUOlmSkS46aXU
+AH4YiOtJYnJf3lzZiZMmOvoDSs9N3C6dyQ9abMr1Z/SSdGfql4XCDZq8ccdiu3vt
+DiuldMLD95rpSaeeFocfWkXyFV3ssvPjh284Kf9JfWfqazkX52XXRHjZ6WG9C2Ar
+39JQKKRdU/P2EMA4+eEhpNqDK/dy9ma3myjahITzbF5rRoKzuhqDDXrAZaG9sqPn
+PzcRxPQPHFwHPtsjsKgqbm0Zpwv7FZ9/NNiPRJX3yxd9p/CNmCVwA1xEivfldDIk
+XOKusE5G8CaHhiDNenag2F2DQDa5EaDDiXbV9iqpZgBW5q+ijAPnv8N8FQ2lcjfc
+WtZQ0fS9c6vbAzP5I89tsbvTlBF8bDHf/POo1p/OSpSnV80L5BtZzR0AE9hX1XTQ
+9Kr+dfdcfITafMPJjrMNqrewseKOHPJS6nM3hLhQOFL+Sz2gFIt1sFHel2VsuuIR
+bJEo5YX0TdBCqECosNdtchG4SxSlfq6+cadWfGwsw3kdW4E1JW4Z5q9QVLw7zpOs
+Cw+XOu47g/sQSWGX8tQB
+=pUyD
+-----END PGP SIGNATURE-----
+
+--7DO5AaGCk89r4vaK--
