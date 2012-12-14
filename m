@@ -1,254 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab2LNJd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:33:57 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:56534 "EHLO mx3.cyfra.ua"
+	id S1755589Ab2LNJeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:34:23 -0500
+Received: from canardo.mork.no ([148.122.252.1]:42737 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab2LNJdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:33:55 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH 1/2 v3] Fix memory freeing issues
-Date: Fri, 14 Dec 2012 11:33:50 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Cong Ding <dinggnu@gmail.com>
-References: <201212101118.08463.vitas@nppfactor.kiev.ua> <201212101144.45967.vitas@nppfactor.kiev.ua> <20121213181354.GI4261@local>
-In-Reply-To: <20121213181354.GI4261@local>
+	id S1753839Ab2LNJdn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 04:33:43 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: linux-kernel@vger.kernel.org
+Cc: Norbert Warmuth <nwarmuth@t-online.de>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Bisected oops regression between v3.7-rc8 and v3.7: nmi_watchdog
+Organization: m
+Date: Fri, 14 Dec 2012 10:33:33 +0100
+Message-ID: <87y5h1c70y.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212141133.50312.vitas@nppfactor.kiev.ua>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 December 2012 20:13:54 Hans J. Koch wrote:
-> On Mon, Dec 10, 2012 at 11:44:45AM +0200, Vitalii Demianets wrote:
-> > 1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which
-> > was obviously wrong and unrelated to the fact if uioinfo was allocated
-> > statically or dynamically. This patch introduces new flag which clearly
-> > shows if uioinfo was allocated dynamically and kfrees uioinfo based on
-> > that flag; 2. Fix: priv data was not freed in case platform_get_irq()
-> > failed. As it was caused mainly by improper exit labels naming, labels
-> > were renamed too; 3. The case of uioinfo AND pdev->dev.of_node both NULL
-> > (not initialized in platform data) was not treated properly.
-> >
-> > Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-> > ---
-> > v2: Constants naming style
-> > v3: Comments: better wording in comment accompanying flags initialization
-> > & removed obsoleted OF comment
->
-> That comment is obsolete as well.
->
+Hello,
 
-Hans, this patch deals only and exclusively with memory freeing issues. This 
-patch does not change in any way any other functionality. Particularly, it 
-does not change irq-related bit flag.
-That comment is about irq-related bit flag. As long as this patch does not 
-remove that flag, the comment is not obsolete.
+I was a bit surprised by v3.7 hanging "all the time", usually just
+freezing but sometimes with a stack dump pointing to timerqueue_del
+calling rb_erase and oopsing there. Of course I could never make it dump
+anything when prepared to capture it via netconsole, so the best I have
+is this picture: http://www.mork.no/~bjorn/20121213_203557.jpg
 
-> > ---
-> >  drivers/uio/uio_pdrv_genirq.c |   47
-> > ++++++++++++++++++++++++---------------- 1 files changed, 28
-> > insertions(+), 19 deletions(-)
-> >
-> > diff --git a/drivers/uio/uio_pdrv_genirq.c
-> > b/drivers/uio/uio_pdrv_genirq.c index 42202cd..cc5233b 100644
-> > --- a/drivers/uio/uio_pdrv_genirq.c
-> > +++ b/drivers/uio/uio_pdrv_genirq.c
-> > @@ -30,6 +30,11 @@
-> >
-> >  #define DRIVER_NAME "uio_pdrv_genirq"
-> >
-> > +enum {
-> > +	UIO_IRQ_DISABLED = 0,
-> > +	UIO_INFO_ALLOCED = 1,
-> > +};
->
-> We don't need these flags.
+I discovered that the freeze was related to plugging AC power and
+started bisecting from v3.7-rc3, which I had been running for quite a
+while and therefore was confident did not have this problem.  The bisect
+log ended up as this:
 
-1) This patch does need UIO_INFO_ALLOCED flag, because we need to know in the 
-uio_pdrv_genirq_remove() routine if uioinfo was allocated dynamically or 
-statically. If flag UIO_INFO_ALLOCED is set, then uioinfo was allocated 
-dynamically and should be freed.
-2) As for UIO_IRQ_DISABLED - I'm not introducing this flag. It is not new; it 
-was there in the priv->flags already, although unnamed. What this patch 
-does - it gives the name to the previously unnamed flag. It does not change 
-its semantics, it does nod add or remove it. The patch is keeping all not 
-memory-related things in status quo.
-
-I understand you want this flag removed. But it is completely another story, 
-nothing in common with memory freeing issues. And this patch is dealing with 
-memory freeing issues only. Not touching any other functionality.
-
->
-> > +
-> >  struct uio_pdrv_genirq_platdata {
-> >  	struct uio_info *uioinfo;
-> >  	spinlock_t lock;
-> > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq,
-> > struct uio_info *dev_info) * remember the state so we can allow user
-> > space to enable it later. */
-> >
-> > -	if (!test_and_set_bit(0, &priv->flags))
-> > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
->
-> Remove the "if" completely, we need to disable the irq unconditionally.
-
-Hans, why do you want to put in this patch, which is dealing with 
-memory-freeing issues only, completely unrelated functional changes?
-I understand you want that flag removed. So, you can do it in another patch. 
-This patch does not change anything except memory freeing bugs.
+bjorn@canardo:/usr/local/src/build-tmp/linux$ git bisect log
+# bad: [29594404d7fe73cd80eaa4ee8c43dcc53970c60e] Linux 3.7
+# good: [8f0d8163b50e01f398b14bcd4dc039ac5ab18d64] Linux 3.7-rc3
+git bisect start 'v3.7' 'v3.7-rc3'
+# good: [29282fde80d44e587f8c152b10049a56e61659f0] KVM: x86: Fix invalid secondary exec controls in vmx_cpuid_update()
+git bisect good 29282fde80d44e587f8c152b10049a56e61659f0
+# good: [2654ad44b5f7a5f1b12d722a37d9b9df69d57899] Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 2654ad44b5f7a5f1b12d722a37d9b9df69d57899
+# good: [086486e46e4206cfa1140fb9682ad67c8a4502fb] Merge branch 'for-linus' of git://git.samba.org/sfrench/cifs-2.6
+git bisect good 086486e46e4206cfa1140fb9682ad67c8a4502fb
+# good: [25a3bc6bd1ca03ab504b8c55c98f8d0135644d53] [parisc] open(2) compat bug
+git bisect good 25a3bc6bd1ca03ab504b8c55c98f8d0135644d53
+# bad: [cfd1f032f98e5ab3a04f23a0adbd53ff8744827d] Merge branch 'core-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect bad cfd1f032f98e5ab3a04f23a0adbd53ff8744827d
+# good: [b69f0859dc8e633c5d8c06845811588fe17e68b3] Linux 3.7-rc8
+git bisect good b69f0859dc8e633c5d8c06845811588fe17e68b3
+# good: [ca50496eb487b639de1f502e77a48dde84152fb9] Merge branch 'for-3.7-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
+git bisect good ca50496eb487b639de1f502e77a48dde84152fb9
+# good: [70dcc535bdf30ffaef58b867fbde45c0287f34c6] Merge tag 'upstream-3.7-rc9' of git://git.infradead.org/linux-ubi
+git bisect good 70dcc535bdf30ffaef58b867fbde45c0287f34c6
+# good: [df2fc246c8ee8b6067af1fa55d3bc23107457f61] Merge branch 'fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux
+git bisect good df2fc246c8ee8b6067af1fa55d3bc23107457f61
+# bad: [8d4516904b39507458bee8115793528e12b1d8dd] watchdog: Fix CPU hotplug regression
+git bisect bad 8d4516904b39507458bee8115793528e12b1d8dd
 
 
->
-> >  		disable_irq_nosync(irq);
-> >
-> >  	return IRQ_HANDLED;
-> > @@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info
-> > *dev_info, s32 irq_on)
-> >
-> >  	spin_lock_irqsave(&priv->lock, flags);
-> >  	if (irq_on) {
-> > -		if (test_and_clear_bit(0, &priv->flags))
-> > +		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
-> >  			enable_irq(dev_info->irq);
-> >  	} else {
-> > -		if (!test_and_set_bit(0, &priv->flags))
-> > +		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-> >  			disable_irq(dev_info->irq);
->
-> Same here: irqcontrol has to enable/disable the irq unconditionally.
+and I can confirm that reverting 8d451690 does fix the problem.  After
+having found this, it became clearer to me why the freeze was related to
+plugging AC power: I use laptop-mode-tools in its default Debian
+configuration, which will disable the nmi_watchdog on battery power and
+enable it on AC power.
 
-Same here. This patch is dealing with memory freeing issues only. Why do you 
-want to put in this patch completely unrelated functional changes?
+So the simple test case which will hang my (and presumably also your) PC
+on plain v3.7 is:
 
->
-> >  	}
-> >  	spin_unlock_irqrestore(&priv->lock, flags);
-> > @@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct
-> > platform_device *pdev) struct uio_mem *uiomem;
-> >  	int ret = -EINVAL;
-> >  	int i;
-> > +	bool uioinfo_alloced = false;
-> >
-> > -	if (!uioinfo) {
-> > +	if (!uioinfo && pdev->dev.of_node) {
-> >  		int irq;
-> >
-> >  		/* alloc uioinfo for one device */
-> > @@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct
-> > platform_device *pdev) if (!uioinfo) {
-> >  			ret = -ENOMEM;
-> >  			dev_err(&pdev->dev, "unable to kmalloc\n");
-> > -			goto bad2;
-> > +			goto out;
-> >  		}
-> >  		uioinfo->name = pdev->dev.of_node->name;
-> >  		uioinfo->version = "devicetree";
-> > +		uioinfo_alloced = true;
-> >
-> >  		/* Multiple IRQs are not supported */
-> >  		irq = platform_get_irq(pdev, 0);
-> > @@ -125,32 +132,35 @@ static int uio_pdrv_genirq_probe(struct
-> > platform_device *pdev)
-> >
-> >  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
-> >  		dev_err(&pdev->dev, "missing platform_data\n");
-> > -		goto bad0;
-> > +		goto out_uioinfo;
-> >  	}
-> >
-> >  	if (uioinfo->handler || uioinfo->irqcontrol ||
-> >  	    uioinfo->irq_flags & IRQF_SHARED) {
-> >  		dev_err(&pdev->dev, "interrupt configuration error\n");
-> > -		goto bad0;
-> > +		goto out_uioinfo;
-> >  	}
-> >
-> >  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-> >  	if (!priv) {
-> >  		ret = -ENOMEM;
-> >  		dev_err(&pdev->dev, "unable to kmalloc\n");
-> > -		goto bad0;
-> > +		goto out_uioinfo;
-> >  	}
-> >
-> >  	priv->uioinfo = uioinfo;
-> >  	spin_lock_init(&priv->lock);
-> > -	priv->flags = 0; /* interrupt is enabled to begin with */
-> > +	/* Interrupt is enabled to begin with,
-> > +	 * that's why UIO_IRQ_DISABLED flag is not initially set.
-> > +	 */
-> > +	priv->flags = uioinfo_alloced ? BIT_MASK(UIO_INFO_ALLOCED) : 0;
-> >  	priv->pdev = pdev;
-> >
-> >  	if (!uioinfo->irq) {
-> >  		ret = platform_get_irq(pdev, 0);
-> >  		if (ret < 0) {
-> >  			dev_err(&pdev->dev, "failed to get IRQ\n");
-> > -			goto bad0;
-> > +			goto out_priv;
-> >  		}
-> >  		uioinfo->irq = ret;
-> >  	}
-> > @@ -205,19 +215,19 @@ static int uio_pdrv_genirq_probe(struct
-> > platform_device *pdev) ret = uio_register_device(&pdev->dev,
-> > priv->uioinfo);
-> >  	if (ret) {
-> >  		dev_err(&pdev->dev, "unable to register uio device\n");
-> > -		goto bad1;
-> > +		goto out_pm;
-> >  	}
-> >
-> >  	platform_set_drvdata(pdev, priv);
-> >  	return 0;
-> > - bad1:
-> > -	kfree(priv);
-> > +out_pm:
-> >  	pm_runtime_disable(&pdev->dev);
-> > - bad0:
-> > -	/* kfree uioinfo for OF */
-> > -	if (pdev->dev.of_node)
-> > +out_priv:
-> > +	kfree(priv);
-> > +out_uioinfo:
-> > +	if (uioinfo_alloced)
-> >  		kfree(uioinfo);
->
-> why check that variable? kfree can handle NULL pointers very well.
+ echo 0 > /proc/sys/kernel/nmi_watchdog
+ echo 1 > /proc/sys/kernel/nmi_watchdog
 
-This variable shows if uioinfo was allocated dynamically or statically. We 
-want kfree(uioinfo) only for the dynamically allocated memory.
+without any cmdline nmi_watchdog parameters, i.e. enabled.
 
->
-> > - bad2:
-> > +out:
-> >  	return ret;
-> >  }
-> >
-> > @@ -231,8 +241,7 @@ static int uio_pdrv_genirq_remove(struct
-> > platform_device *pdev) priv->uioinfo->handler = NULL;
-> >  	priv->uioinfo->irqcontrol = NULL;
-> >
-> > -	/* kfree uioinfo for OF */
-> > -	if (pdev->dev.of_node)
-> > +	if (test_bit(UIO_INFO_ALLOCED, &priv->flags))
-> >  		kfree(priv->uioinfo);
-> >
-> >  	kfree(priv);
-> > --
-> > 1.7.8.6
+I'll followup with a proposed revert patch, but I guess you will want to
+come up with something which fixes the original problem as well.  But
+given the serious effect of the bug, causing a 100% reproducable freeze
+on a standard distro laptop setup, I hope that the revert will go into
+v3.7.1 unless a real fix can be prepared in time.
 
-Please, note, that this patch does not change irq-related functionality at 
-all. I understand that you want to change it, but it is not what this patch 
-is about. It deals with memory freeing issues only.
 
-Do you have technical objections to the memory issues fixes, which this patch 
-is about?
+Thanks,
+Bjørn
