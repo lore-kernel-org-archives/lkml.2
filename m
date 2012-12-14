@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab2LNW2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:28:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38387 "EHLO mail.kernel.org"
+	id S1757287Ab2LNW2a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:28:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38426 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab2LNW2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:28:14 -0500
+	id S1757232Ab2LNW20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:28:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Haren Myneni <haren@us.ibm.com>
-Subject: [ 21/22] powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
-Date: Fri, 14 Dec 2012 14:26:06 -0800
-Message-Id: <20121214222254.729285780@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        A Sh <smr.ash1991@gmail.com>
+Subject: [ 19/22] xhci: Extend Fresco Logic MSI quirk.
+Date: Fri, 14 Dec 2012 14:26:04 -0800
+Message-Id: <20121214222254.258983867@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -27,51 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 1b6ca2a6fe56e7697d57348646e07df08f43b1bb upstream.
+commit bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 upstream.
 
-Writing to dscr_default in sysfs doesn't actually change the DSCR -
-we rely on a context switch on each CPU to do the work. There is no
-guarantee we will get a context switch in a reasonable amount of time
-so fire off an IPI to force an immediate change.
+Ali reports that plugging a device into the Fresco Logic xHCI host with
+PCI device ID 1400 produces an IRQ error:
 
-This issue was found with the following test case:
+ do_IRQ: 3.176 No irq handler for vector (irq -1)
 
-http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+Other early Fresco Logic host revisions don't support MSI, even though
+their PCI config space claims they do.  Extend the quirk to disabling
+MSI to this chipset revision.  Also enable the short transfer quirk,
+since it's likely this revision also has that quirk, and it should be
+harmless to enable.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Haren Myneni <haren@us.ibm.com>
+04:00.0 0c03: 1b73:1400 (rev 01) (prog-if 30 [XHCI])
+        Subsystem: 1d5c:1000
+        Physical Slot: 3
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 51
+        Region 0: Memory at d4600000 (32-bit, non-prefetchable) [size=64K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [68] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000feeff00c  Data: 41b1
+        Capabilities: [80] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Kernel driver in use: xhci_hcd
+
+This patch should be backported to stable kernels as old as 2.6.36, that
+contain the commit f5182b4155b9d686c5540a6822486400e34ddd98 "xhci:
+Disable MSI for some Fresco Logic hosts."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: A Sh <smr.ash1991@gmail.com>
+Tested-by: A Sh <smr.ash1991@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/sysfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/xhci-pci.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -192,6 +192,12 @@ static ssize_t show_dscr_default(struct
- 	return sprintf(buf, "%lx\n", dscr_default);
- }
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -28,6 +28,7 @@
+ /* Device for a quirk */
+ #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
+ #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
++#define PCI_DEVICE_ID_FRESCO_LOGIC_FL1400	0x1400
  
-+static void update_dscr(void *dummy)
-+{
-+	if (!current->thread.dscr_inherit)
-+		mtspr(SPRN_DSCR, dscr_default);
-+}
-+
- static ssize_t __used store_dscr_default(struct sysdev_class *class,
- 		struct sysdev_class_attribute *attr, const char *buf,
- 		size_t count)
-@@ -204,6 +210,8 @@ static ssize_t __used store_dscr_default
- 		return -EINVAL;
- 	dscr_default = val;
+ #define PCI_VENDOR_ID_ETRON		0x1b6f
+ #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+@@ -109,8 +110,10 @@ static int xhci_pci_setup(struct usb_hcd
  
-+	on_each_cpu(update_dscr, NULL, 1);
-+
- 	return count;
- }
- 
+ 	/* Look for vendor-specific quirks */
+ 	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
+-			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK) {
+-		if (pdev->revision == 0x0) {
++			(pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK ||
++			 pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_FL1400)) {
++		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
++				pdev->revision == 0x0) {
+ 			xhci->quirks |= XHCI_RESET_EP_QUIRK;
+ 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
+ 					" endpoint cmd after reset endpoint\n");
 
 
