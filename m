@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab2LNWa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:30:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38826 "EHLO mail.kernel.org"
+	id S932606Ab2LNWbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:31:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38850 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932171Ab2LNWav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:30:51 -0500
+	id S932171Ab2LNWbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:31:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 21/28] ACPI / PNP: Do not crash due to stale pointer use during system resume
-Date: Fri, 14 Dec 2012 14:26:38 -0800
-Message-Id: <20121214222255.366390940@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 23/28] USB: OHCI: workaround for hardware bug: retired TDs not added to the Done Queue
+Date: Fri, 14 Dec 2012 14:26:40 -0800
+Message-Id: <20121214222255.708101805@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -25,49 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a6b5e88c0e42093b9057856f35770966c8c591e3 upstream.
+commit 50ce5c0683aa83eb161624ea89daa5a9eee0c2ce upstream.
 
-During resume from system suspend the 'data' field of
-struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
-due to removal of the associated ACPI device node object in the
-previous suspend-resume cycle.  This happens, for example, if a
-dockable machine is booted in the docking station and then suspended
-and resumed and suspended again.  If that happens,
-pnpacpi_build_resource_template() called from pnpacpi_set_resources()
-attempts to use that pointer and crashes.
+This patch (as1636) is a partial workaround for a hardware bug
+affecting OHCI controllers by NVIDIA at least, maybe others too.  When
+the controller retires a Transfer Descriptor, it is supposed to add
+the TD onto the Done Queue.  But sometimes this doesn't happen, with
+the result that ohci-hcd never realizes the corresponding transfer has
+finished.  Symptoms can vary; a typical result is that USB audio stops
+working after a while.
 
-However, pnpacpi_set_resources() actually checks the device's ACPI
-handle, attempts to find the ACPI device node object attached to it
-and returns an error code if that fails, so in fact it knows what the
-correct value of dev->data should be.  Use this observation to update
-dev->data with the correct value if necessary and dump a call trace
-if that's the case (once).
+The patch works around the problem by recognizing that TDs are always
+processed in order.  Therefore, if a later TD is found on the Done
+Queue than all the earlier TDs for the same endpoint must be finished
+as well.
 
-We still need to fix the root cause of this issue, but preventing
-systems from crashing because of it is an improvement too.
+Unfortunately this won't solve the problem in cases where the missing
+TD is the last one in the endpoint's queue.  A complete fix would
+require a signficant amount of change to the driver.
 
-Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/pnpacpi/core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/ohci-q.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -95,6 +95,9 @@ static int pnpacpi_set_resources(struct
- 		return -ENODEV;
- 	}
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -1128,6 +1128,25 @@ dl_done_list (struct ohci_hcd *ohci)
  
-+	if (WARN_ON_ONCE(acpi_dev != dev->data))
-+		dev->data = acpi_dev;
+ 	while (td) {
+ 		struct td	*td_next = td->next_dl_td;
++		struct ed	*ed = td->ed;
 +
- 	ret = pnpacpi_build_resource_template(dev, &buffer);
- 	if (ret)
- 		return ret;
++		/*
++		 * Some OHCI controllers (NVIDIA for sure, maybe others)
++		 * occasionally forget to add TDs to the done queue.  Since
++		 * TDs for a given endpoint are always processed in order,
++		 * if we find a TD on the donelist then all of its
++		 * predecessors must be finished as well.
++		 */
++		for (;;) {
++			struct td	*td2;
++
++			td2 = list_first_entry(&ed->td_list, struct td,
++					td_list);
++			if (td2 == td)
++				break;
++			takeback_td(ohci, td2);
++		}
++
+ 		takeback_td(ohci, td);
+ 		td = td_next;
+ 	}
 
 
