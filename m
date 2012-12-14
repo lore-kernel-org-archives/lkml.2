@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab2LNXbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:31:25 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58697 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932778Ab2LNXbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:31:23 -0500
-Date: Fri, 14 Dec 2012 23:36:32 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 4/4] userns: Fix typo in description of the limitation
- of userns_install
-Message-ID: <20121214233632.GB13659@mail.hallyn.com>
-References: <87txroxpgq.fsf@xmission.com>
- <876244xpbj.fsf@xmission.com>
+	id S932878Ab2LNXb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:31:58 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34202 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932786Ab2LNXb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:31:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sivaram Nair <sivaramn@nvidia.com>
+Cc: ccross@android.com, santosh.shilimkar@ti.com, khilman@ti.com,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] cpuidle: coupled: fix ready counter decrement
+Date: Sat, 15 Dec 2012 00:37:03 +0100
+Message-ID: <4511257.Msp501Wi5G@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1355474528-13094-1-git-send-email-sivaramn@nvidia.com>
+References: <1355474528-13094-1-git-send-email-sivaramn@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <876244xpbj.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+On Friday, December 14, 2012 10:42:08 AM Sivaram Nair wrote:
+> The ready_waiting_counts atomic variable is compared against the wrong
+> online cpu count. The latter is computed incorrectly using logical-OR
+> instead of bit-OR. This patch fixes that.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+I'm queuing this up for submission as v3.8 material.
 
+I suppose it should be marked for -stable too?
+
+Rafael
+
+
+> Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
 > ---
->  kernel/user_namespace.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/cpuidle/coupled.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index f5975cc..2b042c4 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -799,7 +799,7 @@ static int userns_install(struct nsproxy *nsproxy, void *ns)
->  	if (user_ns == current_user_ns())
->  		return -EINVAL;
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 3265844..2a297f8 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -209,7 +209,7 @@ inline int cpuidle_coupled_set_not_ready(struct cpuidle_coupled *coupled)
+>  	int all;
+>  	int ret;
 >  
-> -	/* Threaded many not enter a different user namespace */
-> +	/* Threaded processes may not enter a different user namespace */
->  	if (atomic_read(&current->mm->mm_users) > 1)
->  		return -EINVAL;
+> -	all = coupled->online_count || (coupled->online_count << WAITING_BITS);
+> +	all = coupled->online_count | (coupled->online_count << WAITING_BITS);
+>  	ret = atomic_add_unless(&coupled->ready_waiting_counts,
+>  		-MAX_WAITING_CPUS, all);
 >  
-> -- 
-> 1.7.5.4
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
