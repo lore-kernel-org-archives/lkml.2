@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab2LNIfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 03:35:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:40226 "EHLO relay.sw.ru"
+	id S1754140Ab2LNIhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 03:37:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59482 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab2LNIfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 03:35:08 -0500
-Message-ID: <50CAE485.5020608@parallels.com>
-Date: Fri, 14 Dec 2012 12:34:13 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751088Ab2LNIhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 03:37:42 -0500
+Date: Fri, 14 Dec 2012 09:37:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Satoru Moriya <satoru.moriya@hds.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
+ going OOM
+Message-ID: <20121214083738.GA6898@dhcp22.suse.cz>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
+ <20121213103420.GW1009@suse.de>
+ <20121213152959.GE21644@dhcp22.suse.cz>
+ <20121213160521.GG21644@dhcp22.suse.cz>
+ <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
+ <20121214045030.GE6317@cmpxchg.org>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, aarcange@redhat.com, ak@linux.intel.com,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
-In-Reply-To: <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121214045030.GE6317@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
-> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
-> really need more control I'd almost push for a device/filesystem node
-> that could be mmapped the usual way.
+On Thu 13-12-12 23:50:30, Johannes Weiner wrote:
+> On Thu, Dec 13, 2012 at 10:25:43PM +0000, Satoru Moriya wrote:
+> > 
+> > On 12/13/2012 11:05 AM, Michal Hocko wrote:> On Thu 13-12-12 16:29:59, Michal Hocko wrote:
+> > >> On Thu 13-12-12 10:34:20, Mel Gorman wrote:
+> > >>> On Wed, Dec 12, 2012 at 04:43:34PM -0500, Johannes Weiner wrote:
+> > >>>> When a reclaim scanner is doing its final scan before giving up and 
+> > >>>> there is swap space available, pay no attention to swappiness 
+> > >>>> preference anymore.  Just swap.
+> > >>>>
+> > >>>> Note that this change won't make too big of a difference for 
+> > >>>> general
+> > >>>> reclaim: anonymous pages are already force-scanned when there is 
+> > >>>> only very little file cache left, and there very likely isn't when 
+> > >>>> the reclaimer enters this final cycle.
+> > >>>>
+> > >>>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > >>>
+> > >>> Ok, I see the motivation for your patch but is the block inside 
+> > >>> still wrong for what you want? After your patch the block looks like 
+> > >>> this
+> > >>>
+> > >>>                 if (sc->priority || noswap) {
+> > >>>                         scan >>= sc->priority;
+> > >>>                         if (!scan && force_scan)
+> > >>>                                 scan = SWAP_CLUSTER_MAX;
+> > >>>                         scan = div64_u64(scan * fraction[file], denominator);
+> > >>>                 }
+> > >>>
+> > >>> if sc->priority == 0 and swappiness==0 then you enter this block but 
+> > >>> fraction[0] for anonymous pages will also be 0 and because of the 
+> > >>> ordering of statements there, scan will be
+> > >>>
+> > >>> scan = scan * 0 / denominator
+> > >>>
+> > >>> so you are still not reclaiming anonymous pages in the swappiness=0 
+> > >>> case. What did I miss?
+> > >>
+> > >> Yes, now that you have mentioned that I realized that it really 
+> > >> doesn't make any sense. fraction[0] is _always_ 0 for swappiness==0. 
+> > >> So we just made a bigger pressure on file LRUs. So this sounds like a 
+> > >> misuse of the swappiness. This all has been introduced with fe35004f 
+> > >> (mm: avoid swapping out with swappiness==0).
+> > >>
+> > >> I think that removing swappiness check make sense but I am not sure 
+> > >> it does what the changelog says. It should have said that checking 
+> > >> swappiness doesn't make any sense for small LRUs.
+> > >
+> > > Bahh, wait a moment. Now I remember why the check made sense 
+> > > especially for memcg.
+> > > It made "don't swap _at all_ for swappiness==0" for real - you are 
+> > > even willing to sacrifice OOM. Maybe this is OK for the global case 
+> > > because noswap would safe you here (assuming that there is no swap if 
+> > > somebody doesn't want to swap at all and swappiness doesn't play such 
+> > > a big role) but for memcg you really might want to prevent from 
+> > > swapping - not everybody has memcg swap extension enabled and swappiness is handy then.
+> > > So I am not sure this is actually what we want. Need to think about it.
+> > 
+> > I introduced swappiness check here with fe35004f because, in some
+> > cases, we prefer OOM to swap out pages to detect problems as soon
+> > as possible. Basically, we design the system not to swap out and
+> > so if it causes swapping, something goes wrong.
 > 
-> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
-> criu is stable enough yet that we should care.  Criu people?
+> I might be missing something terribly obvious, but... why do you add
+> swap space to the system in the first place?  Or in case of cgroups,
+> why not set the memsw limit equal to the memory limit?
 
-It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
-
-> (In brief summary: how annoying would it be if the vdso was no longer
-> just a bunch of constant bytes that lived somewhere?)
-
-It depends on what vdso is going to be. In the perfect case it should
-a) be mremap-able to any address (or be at fixed address _forever_, but
-   I assume this is not feasible);
-b) have entry points at fixed (or somehow movable) places.
-
-I admit that I didn't understand your question properly, if I did,
-please correct me.
-
-Thanks,
-Pavel
+I can answer the later. Because memsw comes with its price and
+swappiness is much cheaper. On the other hand it makes sense that
+swappiness==0 doesn't swap at all. Or do you think we should get back to
+_almost_ doesn't swap at all?
+-- 
+Michal Hocko
+SUSE Labs
