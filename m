@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422648Ab2LNWmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:42:10 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60373 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685Ab2LNWmF (ORCPT
+	id S932696Ab2LNWmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:42:52 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55651 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932655Ab2LNWmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:42:05 -0500
+	Fri, 14 Dec 2012 17:42:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/12] cfq-iosched: add hierarchical cfq_group statistics
-Date: Fri, 14 Dec 2012 14:41:25 -0800
-Message-Id: <1355524885-22719-13-git-send-email-tj@kernel.org>
+Subject: [PATCH 10/12] blkcg: add blkg_policy_data->plid
+Date: Fri, 14 Dec 2012 14:41:23 -0800
+Message-Id: <1355524885-22719-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
 References: <1355524885-22719-1-git-send-email-tj@kernel.org>
@@ -22,104 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately, at this point, there's no way to make the existing
-statistics hierarchical without creating nasty surprises for the
-existing users.  Just create recursive counterpart of the existing
-stats.
+Add pd->plid so that the policy a pd belongs to can be identified
+easily.  This will be used to implement hierarchical blkg_[rw]stats.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/cfq-iosched.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 63 insertions(+)
+ block/blk-cgroup.c | 2 ++
+ block/blk-cgroup.h | 3 ++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index ceade6e..15cb97e 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1669,6 +1669,26 @@ static int cfqg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
- 	return 0;
- }
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 16ea5a1..fbf96ce 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -113,6 +113,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
  
-+static int cfqg_print_stat_recursive(struct cgroup *cgrp, struct cftype *cft,
-+				     struct seq_file *sf)
-+{
-+	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-+
-+	blkcg_print_blkgs(sf, blkcg, blkg_prfill_stat_recursive,
-+			  &blkcg_policy_cfq, cft->private, false);
-+	return 0;
-+}
-+
-+static int cfqg_print_rwstat_recursive(struct cgroup *cgrp, struct cftype *cft,
-+				       struct seq_file *sf)
-+{
-+	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-+
-+	blkcg_print_blkgs(sf, blkcg, blkg_prfill_rwstat_recursive,
-+			  &blkcg_policy_cfq, cft->private, true);
-+	return 0;
-+}
-+
- #ifdef CONFIG_DEBUG_BLK_CGROUP
- static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
- 				      struct blkg_policy_data *pd, int off)
-@@ -1740,6 +1760,7 @@ static struct cftype cfq_blkcg_files[] = {
- 		.write_u64 = cfq_set_leaf_weight,
- 	},
+ 		blkg->pd[i] = pd;
+ 		pd->blkg = blkg;
++		pd->plid = i;
  
-+	/* statistics, covers only the tasks in the cfqg */
- 	{
- 		.name = "time",
- 		.private = offsetof(struct cfq_group, stats.time),
-@@ -1780,6 +1801,48 @@ static struct cftype cfq_blkcg_files[] = {
- 		.private = offsetof(struct cfq_group, stats.queued),
- 		.read_seq_string = cfqg_print_rwstat,
- 	},
-+
-+	/* the same statictics which cover the cfqg and its descendants */
-+	{
-+		.name = "time_recursive",
-+		.private = offsetof(struct cfq_group, stats.time),
-+		.read_seq_string = cfqg_print_stat_recursive,
-+	},
-+	{
-+		.name = "sectors_recursive",
-+		.private = offsetof(struct cfq_group, stats.sectors),
-+		.read_seq_string = cfqg_print_stat_recursive,
-+	},
-+	{
-+		.name = "io_service_bytes_recursive",
-+		.private = offsetof(struct cfq_group, stats.service_bytes),
-+		.read_seq_string = cfqg_print_rwstat_recursive,
-+	},
-+	{
-+		.name = "io_serviced_recursive",
-+		.private = offsetof(struct cfq_group, stats.serviced),
-+		.read_seq_string = cfqg_print_rwstat_recursive,
-+	},
-+	{
-+		.name = "io_service_time_recursive",
-+		.private = offsetof(struct cfq_group, stats.service_time),
-+		.read_seq_string = cfqg_print_rwstat_recursive,
-+	},
-+	{
-+		.name = "io_wait_time_recursive",
-+		.private = offsetof(struct cfq_group, stats.wait_time),
-+		.read_seq_string = cfqg_print_rwstat_recursive,
-+	},
-+	{
-+		.name = "io_merged_recursive",
-+		.private = offsetof(struct cfq_group, stats.merged),
-+		.read_seq_string = cfqg_print_rwstat_recursive,
-+	},
-+	{
-+		.name = "io_queued_recursive",
-+		.private = offsetof(struct cfq_group, stats.queued),
-+		.read_seq_string = cfqg_print_rwstat_recursive,
-+	},
- #ifdef CONFIG_DEBUG_BLK_CGROUP
- 	{
- 		.name = "avg_queue_size",
+ 		/* invoke per-policy init */
+ 		if (pol->pd_init_fn)
+@@ -908,6 +909,7 @@ int blkcg_activate_policy(struct request_queue *q,
+ 
+ 		blkg->pd[pol->plid] = pd;
+ 		pd->blkg = blkg;
++		pd->plid = pol->plid;
+ 		pol->pd_init_fn(blkg);
+ 
+ 		spin_unlock(&blkg->blkcg->lock);
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 2446225..40f5b97 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -81,8 +81,9 @@ struct blkg_rwstat {
+  * beginning and pd_size can't be smaller than pd.
+  */
+ struct blkg_policy_data {
+-	/* the blkg this per-policy data belongs to */
++	/* the blkg and policy id this per-policy data belongs to */
+ 	struct blkcg_gq			*blkg;
++	int				plid;
+ 
+ 	/* used during policy activation */
+ 	struct list_head		alloc_node;
 -- 
 1.7.11.7
 
