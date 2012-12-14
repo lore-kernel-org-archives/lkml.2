@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab2LNW3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:29:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38664 "EHLO mail.kernel.org"
+	id S1757421Ab2LNW3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:29:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38676 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756868Ab2LNW3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:29:37 -0500
+	id S1756868Ab2LNW3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:29:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Xiaotian Feng <xtfeng@gmail.com>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 06/28] workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
-Date: Fri, 14 Dec 2012 14:26:23 -0800
-Message-Id: <20121214222251.950520213@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 07/28] drm/i915: do not ignore eDP bpc settings from vbt
+Date: Fri, 14 Dec 2012 14:26:24 -0800
+Message-Id: <20121214222252.122410921@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222250.501309822@linuxfoundation.org>
 References: <20121214222250.501309822@linuxfoundation.org>
@@ -26,47 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit fc4b514f2727f74a4587c31db87e0e93465518c3 upstream.
+commit 2f4f649a69a9eb51f6e98130e19dd90a260a4145 upstream.
 
-8852aac25e ("workqueue: mod_delayed_work_on() shouldn't queue timer on
-0 delay") unexpectedly uncovered a very nasty abuse of delayed_work in
-megaraid - it allocated work_struct, casted it to delayed_work and
-then pass that into queue_delayed_work().
+There are laptops out there that need the eDP bpc from VBT. This is
+effectively a revert of
 
-Previously, this was okay because 0 @delay short-circuited to
-queue_work() before doing anything with delayed_work.  8852aac25e
-moved 0 @delay test into __queue_delayed_work() after sanity check on
-delayed_work making megaraid trigger BUG_ON().
+commit 4344b813f105a19f793f1fd93ad775b784648b95
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Aug 10 11:10:20 2012 +0200
 
-Although megaraid is already fixed by c1d390d8e6 ("megaraid: fix
-BUG_ON() from incorrect use of delayed work"), this patch converts
-BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s so that such
-abusers, if there are more, trigger warning but don't crash the
-machine.
+    drm/i915: ignore eDP bpc settings from vbt
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+but putting the VBT check after the EDID check to see them both in dmesg if
+this clamps more than the EDID. We have enough history with bpc clamping to
+warrant the extra debug info.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47641
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56401
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1141,8 +1141,8 @@ int queue_delayed_work_on(int cpu, struc
- 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
- 		unsigned int lcpu;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4996,6 +4996,17 @@ static bool intel_choose_pipe_bpp_dither
+ 			}
+ 		}
  
--		BUG_ON(timer_pending(timer));
--		BUG_ON(!list_empty(&work->entry));
-+		WARN_ON_ONCE(timer_pending(timer));
-+		WARN_ON_ONCE(!list_empty(&work->entry));
- 
- 		timer_stats_timer_set_start_info(&dwork->timer);
- 
++		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
++			/* Use VBT settings if we have an eDP panel */
++			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
++
++			if (edp_bpc < display_bpc) {
++				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
++				display_bpc = edp_bpc;
++			}
++			continue;
++		}
++
+ 		/*
+ 		 * HDMI is either 12 or 8, so if the display lets 10bpc sneak
+ 		 * through, clamp it down.  (Note: >12bpc will be caught below.)
 
 
