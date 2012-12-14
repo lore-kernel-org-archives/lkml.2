@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2LNDtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 22:49:19 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:39601 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab2LNDtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 22:49:18 -0500
-X-Spam-Score: -100.7
-Message-ID: <50CAA1F2.9000003@asianux.com>
-Date: Fri, 14 Dec 2012 11:50:10 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756099Ab2LNDvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 22:51:47 -0500
+Received: from ozlabs.org ([203.10.76.45]:59469 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755708Ab2LNDvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Dec 2012 22:51:46 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: some merging notes
+In-Reply-To: <20121212091552.02c72c8926f9f9147b080d68@canb.auug.org.au>
+References: <20121212091552.02c72c8926f9f9147b080d68@canb.auug.org.au>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 14 Dec 2012 12:29:49 +1030
+Message-ID: <87zk1h2y22.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.ramirez@copitl.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] drivers/staging/tidspbridge:  strcpy and strncpy,  src
- length checking issue.
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Omar Ramirez Luna:
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> The virtio tree
+> (git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git#virtio-next)
+> has a conflict with the net-next tree
+> (git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git#master)
+> that requires the following extra fix up patch:
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 33d6f6f..8afe32d 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -147,7 +147,7 @@ struct padded_vnet_hdr {
+>   */
+>  static int vq2txq(struct virtqueue *vq)
+>  {
+> -	return (virtqueue_get_queue_index(vq) - 1) / 2;
+> +	return (vq->index - 1) / 2;
+>  }
+>  
+>  static int txq2vq(int txq)
+> @@ -157,7 +157,7 @@ static int txq2vq(int txq)
+>  
+>  static int vq2rxq(struct virtqueue *vq)
+>  {
+> -	return virtqueue_get_queue_index(vq) / 2;
+> +	return vq->index / 2;
+>  }
 
-  in drivers/staging/tidspbridge/rmgr/proc.c:
+I had to fold in a fix to another commit, so I also altered the commit
+which removed virtqueue_get_queue_index().  I'll remove it next time.
 
-    if strlen(drv_datap->base_img) == size, will pass checking (line 397)
-    the size is the full length of exec_file (line 382, line 468..469)
-    strcpy causes issue: src len is strlen(drv_datap->base_img) + '\0'. (line 400)
+I'll give it a couple of days in -next to be sure.
 
-    strncpy seems also has issue: need use size instead of strlen(iva_img) + 1. (line 402..403)
-
-  please help to check, thanks.
-
-gchen.
-
-
- 380 static int get_exec_file(struct cfg_devnode *dev_node_obj,
- 381                                 struct dev_object *hdev_obj,
- 382                                 u32 size, char *exec_file)
- 383 {
- 384         u8 dev_type;
- 385         s32 len;
- 386         struct drv_data *drv_datap = dev_get_drvdata(bridge);
- 387 
- 388         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
- 389 
- 390         if (!exec_file)
- 391                 return -EFAULT;
- 392 
- 393         if (dev_type == DSP_UNIT) {
- 394                 if (!drv_datap || !drv_datap->base_img)
- 395                         return -EFAULT;
- 396 
- 397                 if (strlen(drv_datap->base_img) > size)
- 398                         return -EINVAL;
- 399 
- 400                 strcpy(exec_file, drv_datap->base_img);
- 401         } else if (dev_type == IVA_UNIT && iva_img) {
- 402                 len = strlen(iva_img);
- 403                 strncpy(exec_file, iva_img, len + 1);
- 404         } else {
- 405                 return -ENOENT;
- 406         }
- 407 
- 408         return 0;
- 409 }
- 410 
- ...
-
- 465         /* Get the default executable for this board... */
- 466         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
- 467         p_proc_object->processor_id = dev_type;
- 468         status = get_exec_file(dev_node_obj, hdev_obj, sizeof(sz_exec_file),
- 469                                sz_exec_file);
-
+Thanks,
+Rusty.
