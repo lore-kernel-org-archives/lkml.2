@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2LNLwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 06:52:02 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57833 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab2LNLwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 06:52:00 -0500
-Date: Fri, 14 Dec 2012 12:51:59 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] ata: uncomment ata_timing for XFER_PIO_SLOW
-Message-ID: <20121214115159.GC7307@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@redhat.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <20121214110137.9155.68183.stgit@zurg>
- <20121214111351.GA7307@liondog.tnic>
- <50CB116D.7050701@openvz.org>
+	id S1754062Ab2LNLzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 06:55:40 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:32808 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab2LNLzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 06:55:39 -0500
+Message-ID: <50CB13B5.6090203@openvz.org>
+Date: Fri, 14 Dec 2012 15:55:33 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50CB116D.7050701@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, Denis Kirjanov <kirjanov@gmail.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 12/12] edac: fix kernel panic on module unloading
+References: <20121214110229.11019.63713.stgit@zurg> <20121214110310.11019.21098.stgit@zurg> <20121214112657.6c1b74e9@pyramind.ukuu.org.uk>
+In-Reply-To: <20121214112657.6c1b74e9@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 03:45:49PM +0400, Konstantin Khlebnikov wrote:
-> ouch :facepalm: how I missed this... just copy-paste error. sorry again.
+Alan Cox wrote:
+> On Fri, 14 Dec 2012 15:03:10 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> This patch fixes use-after-free and double-free bugs in edac_mc_sysfs_exit().
+>> mci_pdev has single reference and put_device() calls mc_attr_release() which
+>> calls kfree(), thus following device_del() works with already released memory.
+>> An another kfree() in edac_mc_sysfs_exit() releses the same memory again. Great.
+>
+> Patches for this were posted a while ago by Jean Delvare. See bugzilla
+> 50491 as well for this.
+>
 
-No sorries - it can happen to anyone! :-) Keep up the good work.
+Seems like this is different bugs, that was in "i7core_edac", this one in "edac_core"
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
