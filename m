@@ -1,169 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab2LNBOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Dec 2012 20:14:15 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51284 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2LNBOO (ORCPT
+	id S1755257Ab2LNBRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Dec 2012 20:17:14 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9055 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab2LNBRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Dec 2012 20:14:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121212192441.GD10374@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
-	<1353955671-14385-4-git-send-email-mhocko@suse.cz>
-	<CALWz4ixPmvguxQO8s9mqH+OLEXC5LDfzEVFx_qqe2hBaRcsXiA@mail.gmail.com>
-	<20121211155432.GC1612@dhcp22.suse.cz>
-	<CALWz4izL7fEuQhEvKa7mUqi0sa25mcFP-xnTnL3vU3Z17k7VHg@mail.gmail.com>
-	<20121212090652.GB32081@dhcp22.suse.cz>
-	<20121212192441.GD10374@dhcp22.suse.cz>
-Date: Thu, 13 Dec 2012 17:14:13 -0800
-Message-ID: <CALWz4iygkxRUJX2bEhHp6nyEwyVA8w8WxNcQqzmXuMeH8kMuYA@mail.gmail.com>
-Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup iterators
-From: Ying Han <yinghan@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Dec 2012 20:17:13 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YXxC6ppya9MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=jeKsYFhGskIA:10 a=VwQbUJbxAAAA:8 a=o2YJhybyzS7DZUXLfAUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1355447831.17101.391.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/3] [GIT PULL] tracing: Some more updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 13 Dec 2012 20:17:11 -0500
+In-Reply-To: <20121129012340.602023062@goodmis.org>
+References: <20121129012340.602023062@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 11:24 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Wed 12-12-12 10:06:52, Michal Hocko wrote:
->> On Tue 11-12-12 14:36:10, Ying Han wrote:
-> [...]
->> > One exception is mem_cgroup_iter_break(), where the loop terminates
->> > with *leaked* refcnt and that is what the iter_break() needs to clean
->> > up. We can not rely on the next caller of the loop since it might
->> > never happen.
->>
->> Yes, this is true and I already have a half baked patch for that. I
->> haven't posted it yet but it basically checks all node-zone-prio
->> last_visited and removes itself from them on the way out in pre_destroy
->> callback (I just need to cleanup "find a new last_visited" part and will
->> post it).
->
-> And a half baked patch - just compile tested
-> ---
-> From 1c976c079c383175c679e00115aee0ab8e215bf2 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Tue, 11 Dec 2012 21:02:39 +0100
-> Subject: [PATCH] NOT READY YET - just compile tested
->
-> memcg: remove memcg from the reclaim iterators
->
-> Now that per-node-zone-priority iterator caches memory cgroups rather
-> than their css ids we have to be careful and remove them from the
-> iterator when they are on the way out otherwise they might hang for
-> unbounded amount of time (until the global reclaim triggers the zone
-> under priority to find out the group is dead and let it to find the
-> final rest).
->
-> This is solved by hooking into mem_cgroup_pre_destroy and checking all
-> per-node-zone-priority iterators. If the current memcg is found in
-> iter->last_visited then it is replaced by its left sibling or its parent
-> otherwise. This guarantees that no group gets more reclaiming than
-> necessary and the next iteration will continue seemingly.
->
-> Spotted-by: Ying Han <yinghan@google.com>
-> Not-signed-off-by-yet: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   38 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 38 insertions(+)
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7134148..286db74 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6213,12 +6213,50 @@ free_out:
->         return ERR_PTR(error);
->  }
->
-> +static void mem_cgroup_remove_cached(struct mem_cgroup *memcg)
-> +{
-> +       int node, zone;
-> +
-> +       for_each_node(node) {
-> +               struct mem_cgroup_per_node *pn = memcg->info.nodeinfo[node];
-> +               int prio;
-> +
-> +               for (zone = 0; zone < MAX_NR_ZONES; zone++) {
-> +                       struct mem_cgroup_per_zone *mz;
-> +
-> +                       mz = &pn->zoneinfo[zone];
-> +                       for (prio = 0; prio < DEF_PRIORITY + 1; prio++) {
-> +                               struct mem_cgroup_reclaim_iter *iter;
-> +
-> +                               iter = &mz->reclaim_iter[prio];
-> +                               rcu_read_lock();
-> +                               spin_lock(&iter->iter_lock);
-> +                               if (iter->last_visited == memcg) {
-> +                                       struct cgroup *cgroup, *prev;
-> +
-> +                                       cgroup = memcg->css.cgroup;
-> +                                       prev = list_entry_rcu(cgroup->sibling.prev, struct cgroup, sibling);
-> +                                       if (&prev->sibling == &prev->parent->children)
-> +                                               prev = prev->parent;
-> +                                       iter->last_visited = mem_cgroup_from_cont(prev);
-> +
-> +                                       /* TODO can we do this? */
-> +                                       css_put(&memcg->css);
-> +                               }
-> +                               spin_unlock(&iter->iter_lock);
-> +                               rcu_read_unlock();
-> +                       }
-> +               }
-> +       }
-> +}
-> +
->  static void mem_cgroup_pre_destroy(struct cgroup *cont)
->  {
->         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->
->         mem_cgroup_reparent_charges(memcg);
->         mem_cgroup_destroy_all_caches(memcg);
-> +       mem_cgroup_remove_cached(memcg);
->  }
->
->  static void mem_cgroup_destroy(struct cgroup *cont)
-> --
-> 1.7.10.4
->
-> --
-> Michal Hocko
-> SUSE Labs
+On Wed, 2012-11-28 at 20:23 -0500, Steven Rostedt wrote:
+> Ingo,
+> 
+> This is based off of my last pull request on tip/perf/core.
+> 
+> Please pull the latest tip/perf/core-2 tree, which can be found at:
 
-I haven't tried this patch set yet. Before I am doing that, I am
-curious whether changing the target reclaim to be consistent with
-global reclaim something worthy to consider based my last reply:
+Ping?
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 53dcde9..3f158c5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1911,20 +1911,6 @@ static void shrink_zone(struct zone *zone,
-struct scan_control *sc)
+This has been in linux-next for a few weeks too. It's all ready to go in
+this merge window.
 
-                shrink_lruvec(lruvec, sc);
+-- Steve
 
--               /*
--                * Limit reclaim has historically picked one memcg and
--                * scanned it with decreasing priority levels until
--                * nr_to_reclaim had been reclaimed.  This priority
--                * cycle is thus over after a single memcg.
--                *
--                * Direct reclaim and kswapd, on the other hand, have
--                * to scan all memory cgroups to fulfill the overall
--                * scan target for the zone.
--                */
--               if (!global_reclaim(sc)) {
--                       mem_cgroup_iter_break(root, memcg);
--                       break;
--               }
-                memcg = mem_cgroup_iter(root, memcg, &reclaim);
-        } while (memcg);
- }
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/core-2
+> 
+> Head SHA1: bf3071f5a054db9e5bab873355d27a7330ce5187
+> 
+> 
+> Anton Vorontsov (1):
+>       tracing: Remove unneeded checks from the stack tracer
+> 
+> Dave Jones (1):
+>       tracing: Remove unnecessary WARN_ONCE's from tracing_buffers_splice_read
+> 
+> Hiraku Toyooka (1):
+>       tracing: Add a resize function to make one buffer equivalent to another buffer
+> 
+> ----
+>  kernel/trace/trace.c       |   60 +++++++++++++++++++++++---------------------
+>  kernel/trace/trace_stack.c |    4 ---
+>  2 files changed, 31 insertions(+), 33 deletions(-)
 
---Ying
+
