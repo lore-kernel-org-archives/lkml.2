@@ -1,57 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2LNJdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 04:33:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33488 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab2LNJdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 04:33:11 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        Huqiao <huqiao36@huawei.com>
-Subject: Re: [PATCH 1/1]linux-usb: optimize to match the Huawei USB storage devices and support new switch command
-Date: Fri, 14 Dec 2012 10:33:39 +0100
-Message-ID: <1758237.OLMhWhauCd@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8-12-desktop+; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121214093141.7e4eba61@pyramind.ukuu.org.uk>
-References: <fe8c905bb12.b12fe8c905b@huawei.com> <910F9D9E13B84F4C8FA771DC9BDE99F326FBFB54@szxeml546-mbs.china.huawei.com> <20121214093141.7e4eba61@pyramind.ukuu.org.uk>
+	id S1755273Ab2LNJdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 04:33:45 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61909 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab2LNJdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 04:33:42 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <50CA84FF.5070907@intel.com>
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
+	<1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
+	<50C93AC1.1060202@intel.com>
+	<CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
+	<50C9E552.1010600@intel.com>
+	<CAKfTPtCUDEC50xexmLQ1d9qvBz1iJnf4aGSGjN==jqZwpxrwiQ@mail.gmail.com>
+	<CAKfTPtAhFtGKOtwumuav+pndoAZiKjHvYoE2NZxtgP+qHuHY3g@mail.gmail.com>
+	<50CA84FF.5070907@intel.com>
+Date: Fri, 14 Dec 2012 10:33:39 +0100
+Message-ID: <CAKfTPtCarhT3J3xOD6jOh_91Pm5FK4V_DAk5QLs_=8rVF+-fsQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, preeti@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
+        arjan@linux.intel.com, amit.kucheria@linaro.org,
+        viresh.kumar@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 December 2012 09:31:41 Alan Cox wrote:
-> On Fri, 14 Dec 2012 03:01:24 +0000
-> "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com> wrote:
-> 
-> > Dear Alan:
-> > 
-> > 	This prevents people getting access to the storage device if they want.
-> > 	----In our device, after its switching, it will keep the cdrom port together with other ports (such as modem port). So you can access the storage device too, after our switch.
-> 
-> Ok so the behaviour is
-> 
-> 	plug in device
-> 	"I am a CD-ROM"
-> 	command sent
-> 	"I am a CD-ROM, I am a modem, I am other things"
-> 
-> with the newer devices ?
+On 14 December 2012 02:46, Alex Shi <alex.shi@intel.com> wrote:
+> On 12/13/2012 11:48 PM, Vincent Guittot wrote:
+>> On 13 December 2012 15:53, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+>>> On 13 December 2012 15:25, Alex Shi <alex.shi@intel.com> wrote:
+>>>> On 12/13/2012 06:11 PM, Vincent Guittot wrote:
+>>>>> On 13 December 2012 03:17, Alex Shi <alex.shi@intel.com> wrote:
+>>>>>> On 12/12/2012 09:31 PM, Vincent Guittot wrote:
+>>>>>>> During the creation of sched_domain, we define a pack buddy CPU for each CPU
+>>>>>>> when one is available. We want to pack at all levels where a group of CPU can
+>>>>>>> be power gated independently from others.
+>>>>>>> On a system that can't power gate a group of CPUs independently, the flag is
+>>>>>>> set at all sched_domain level and the buddy is set to -1. This is the default
+>>>>>>> behavior.
+>>>>>>> On a dual clusters / dual cores system which can power gate each core and
+>>>>>>> cluster independently, the buddy configuration will be :
+>>>>>>>
+>>>>>>>       | Cluster 0   | Cluster 1   |
+>>>>>>>       | CPU0 | CPU1 | CPU2 | CPU3 |
+>>>>>>> -----------------------------------
+>>>>>>> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
+>>>>>>>
+>>>>>>> Small tasks tend to slip out of the periodic load balance so the best place
+>>>>>>> to choose to migrate them is during their wake up. The decision is in O(1) as
+>>>>>>> we only check again one buddy CPU
+>>>>>>
+>>>>>> Just have a little worry about the scalability on a big machine, like on
+>>>>>> a 4 sockets NUMA machine * 8 cores * HT machine, the buddy cpu in whole
+>>>>>> system need care 64 LCPUs. and in your case cpu0 just care 4 LCPU. That
+>>>>>> is different on task distribution decision.
+>>>>>
+>>>>> The buddy CPU should probably not be the same for all 64 LCPU it
+>>>>> depends on where it's worth packing small tasks
+>>>>
+>>>> Do you have further ideas for buddy cpu on such example?
+>>>
+>>> yes, I have several ideas which were not really relevant for small
+>>> system but could be interesting for larger system
+>>>
+>>> We keep the same algorithm in a socket but we could either use another
+>>> LCPU in the targeted socket (conf0) or chain the socket (conf1)
+>>> instead of packing directly in one LCPU
+>>>
+>>> The scheme below tries to summaries the idea:
+>>>
+>>> Socket      | socket 0 | socket 1   | socket 2   | socket 3   |
+>>> LCPU        | 0 | 1-15 | 16 | 17-31 | 32 | 33-47 | 48 | 49-63 |
+>>> buddy conf0 | 0 | 0    | 1  | 16    | 2  | 32    | 3  | 48    |
+>>> buddy conf1 | 0 | 0    | 0  | 16    | 16 | 32    | 32 | 48    |
+>>> buddy conf2 | 0 | 0    | 16 | 16    | 32 | 32    | 48 | 48    |
+>>>
+>>> But, I don't know how this can interact with NUMA load balance and the
+>>> better might be to use conf3.
+>>
+>> I mean conf2 not conf3
+>
+> So, it has 4 levels 0/16/32/ for socket 3 and 0 level for socket 0, it
+> is unbalanced for different socket.
 
-For such devices we should put the switching code into generic code,
-not a device driver so that we have a chance to do reset_resume()
-on those devices.
+That the target because we have decided to pack the small tasks in
+socket 0 when we have parsed the topology at boot.
+We don't have to loop into sched_domain or sched_group anymore to find
+the best LCPU when a small tasks wake up.
 
-	Regards
-		Oliver
+>
+> And the ground level has just one buddy for 16 LCPUs - 8 cores, that's
+> not a good design, consider my previous examples: if there are 4 or 8
+> tasks in one socket, you just has 2 choices: spread them into all cores,
+> or pack them into one LCPU. Actually, moving them just into 2 or 4 cores
+> maybe a better solution. but the design missed this.
 
+You speak about tasks without any notion of load. This patch only care
+of small tasks and light LCPU load, but it falls back to default
+behavior for other situation. So if there are 4 or 8 small tasks, they
+will migrate to the socket 0 after 1 or up to 3 migration (it depends
+of the conf and the LCPU they come from).
+
+Then, if too much small tasks wake up simultaneously on the same LCPU,
+the default load balance will spread them in the core/cluster/socket
+
+>
+> Obviously, more and more cores is the trend on any kinds of CPU, the
+> buddy system seems hard to catch up this.
+>
+>
