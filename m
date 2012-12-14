@@ -1,42 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab2LNPVe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 10:21:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46177 "EHLO mx2.suse.de"
+	id S932170Ab2LNPVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 10:21:42 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:34445 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932074Ab2LNPVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 10:21:30 -0500
-Message-ID: <50CB43F4.2000908@suse.cz>
-Date: Fri, 14 Dec 2012 16:21:24 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932074Ab2LNPVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 10:21:37 -0500
+Subject: [PATCH 5/6] fuse: truncate file if async dio failed
+To: miklos@szeredi.hu
+From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Fri, 14 Dec 2012 19:21:18 +0400
+Message-ID: <20121214152113.27155.58793.stgit@maximpc.sw.ru>
+In-Reply-To: <20121214151424.27155.45971.stgit@maximpc.sw.ru>
+References: <20121214151424.27155.45971.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/1] scripts/config: Fix wrong "shift" for --keep-case
-References: <1355467682-17217-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1355467682-17217-1-git-send-email-hdoyu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-2
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.12.2012 07:47, Hiroshi Doyu wrote:
-> Remove wrong "shift" for --keep-case. There is always "shift" at
-> beginning of while-loop. No need "shift" at --keep-case just before
-> "continue" to process next argument.
-> 
-> Now the following works as expected:
-> 
-> ./scripts/config -e aAa -k -e bBb -e cCc && tail -3 .config
-> CONFIG_AAA=y
-> CONFIG_bBb=y
-> CONFIG_cCc=y
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+The patch improves error handling in fuse_direct_IO(): if we successfully
+submitted several fuse requests on behalf of synchronous direct write
+extending file and some of them failed, let's try to do our best to clean-up.
 
-Applied to kbuild.git#misc, thanks.
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+---
+ fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 53 insertions(+), 2 deletions(-)
 
-Michal
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 05eed23..b6e9b8d 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2340,6 +2340,53 @@ int fuse_notify_poll_wakeup(struct fuse_conn *fc,
+ 	return 0;
+ }
+ 
++static void fuse_do_truncate(struct file *file)
++{
++	struct fuse_file *ff = file->private_data;
++	struct inode *inode = file->f_mapping->host;
++	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_req *req;
++	struct fuse_setattr_in inarg;
++	struct fuse_attr_out outarg;
++	int err;
++
++	req = fuse_get_req_nopages(fc);
++	if (IS_ERR(req)) {
++		printk(KERN_WARNING "failed to allocate req for truncate "
++		       "(%ld)\n", PTR_ERR(req));
++		return;
++	}
++
++	memset(&inarg, 0, sizeof(inarg));
++	memset(&outarg, 0, sizeof(outarg));
++
++	inarg.valid |= FATTR_SIZE;
++	inarg.size = i_size_read(inode);
++
++	inarg.valid |= FATTR_FH;
++	inarg.fh = ff->fh;
++
++	req->in.h.opcode = FUSE_SETATTR;
++	req->in.h.nodeid = get_node_id(inode);
++	req->in.numargs = 1;
++	req->in.args[0].size = sizeof(inarg);
++	req->in.args[0].value = &inarg;
++	req->out.numargs = 1;
++	if (fc->minor < 9)
++		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
++	else
++		req->out.args[0].size = sizeof(outarg);
++	req->out.args[0].value = &outarg;
++
++	fuse_request_send(fc, req);
++	err = req->out.h.error;
++	fuse_put_request(fc, req);
++
++	if (err)
++		printk(KERN_WARNING "failed to truncate to %lld with error "
++		       "%d\n", i_size_read(inode), err);
++}
++
+ static ssize_t
+ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs)
+@@ -2400,8 +2447,12 @@ fuse_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
+ 		kfree(io);
+ 	}
+ 
+-	if (rw == WRITE && ret > 0)
+-		fuse_write_update_size(inode, pos);
++	if (rw == WRITE) {
++		if (ret > 0)
++			fuse_write_update_size(inode, pos);
++		else if (ret < 0 && offset + count > i_size)
++			fuse_do_truncate(file);
++	}
+ 
+ 	return ret;
+ }
+
