@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab2LNQKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 11:10:09 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:38252 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab2LNQKG (ORCPT
+	id S1756625Ab2LNQNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 11:13:08 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:65223 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756445Ab2LNQNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 11:10:06 -0500
-Date: Fri, 14 Dec 2012 16:15:14 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the
- parent user namespace to have caps.
-Message-ID: <20121214161514.GA9962@mail.hallyn.com>
-References: <87ip88uw4n.fsf@xmission.com>
- <50CA2B55.5070402@amacapital.net>
- <87mwxhtxve.fsf@xmission.com>
- <87zk1hshk7.fsf_-_@xmission.com>
- <20121214032820.GA5115@mail.hallyn.com>
- <87bodxi9zw.fsf@xmission.com>
- <20121214152607.GA9266@mail.hallyn.com>
- <87bodwd4aw.fsf@xmission.com>
+	Fri, 14 Dec 2012 11:13:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bodwd4aw.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121214144927.GS4939@ZenIV.linux.org.uk>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+ <20121214072755.GR4939@ZenIV.linux.org.uk> <CALCETrVw9Pc1sUZBL=wtLvsnBnkW5LAO5iu-i=T2oMOdwQfjHg@mail.gmail.com>
+ <20121214144927.GS4939@ZenIV.linux.org.uk>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 14 Dec 2012 08:12:45 -0800
+Message-ID: <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
+Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on mmap
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, "J??rn Engel" <joern@logfs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
-> 
-> > Quoting Eric W. Biederman (ebiederm@xmission.com):
-> >> "Serge E. Hallyn" <serge@hallyn.com> writes:
-> >> 
-> >> > Quoting Eric W. Biederman (ebiederm@xmission.com):
-> >> >> 
-> >> >> Andy Lutomirski pointed out that the current behavior of allowing the
-> >> >> owner of a user namespace to have all caps when that owner is not in a
-> >> >> parent user namespace is wrong.
-> >> >
-> >> > To make sure I understand right, the issue is when a uid is mapped
-> >> > into multiple namespaces.
-> >> 
-> >> Yes.
-> >> 
-> >> i.e. uid 1000 in ns1 may own ns2, but uid 1000 in ns3 does not?
-> >> 
-> >> I am not certain of your example.
-> >> 
-> >> The simple case is:
-> >> 
-> >> init_user_ns:
-> >>      child_user_ns1 (owned by uid == 0 [in all user namespaces])
-> >>            child_user_ns2 (owned by uid == 0 [ in all user namespaces])
-> >> 
-> >> 
-> >> root (uid == 0) in child_user_ns2 has all rights over anything in
-> >> child_user_ns1.
-> >
-> > Well that is only if there was no mapping.  (since we're comparing
-> > kuids, not uid_ts).  right?  If you didn't map uid 0 in child_user_ns2
-> > to another id in the parent ns, you weren't all *that* serious about
-> > isolating the ns.
-> >
-> > The case I was thinking is
-> >
-> >   init_user_ns:  [0-uidmax]
-> >       child_user_ns1  [100000-199999]
-> >       child_user_ns2  [100000-199999]
-> >         child_user_ns3  [200000-299999]
+On Fri, Dec 14, 2012 at 6:49 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Dec 14, 2012 at 03:14:50AM -0800, Andy Lutomirski wrote:
+>
+>> > Wait a minute.  get_user_pages() relies on ->mmap_sem being held.  Unless
+>> > I'm seriously misreading your patch it removes that protection.  And yes,
+>> > I'm aware of execve-related exception; it's in special circumstances -
+>> > bprm->mm is guaranteed to be not shared (and we need to rearchitect that
+>> > area anyway, but that's a separate story).
+>>
+>> Unless I completely screwed up the patch, ->mmap_sem is still held for
+>> read (it's downgraded from write).  It's just not held for write
+>> anymore.
+>
+> Huh?  I'm talking about the call of get_user_pages() in aio_setup_ring().
+> With your patch it's done completely outside of ->mmap_sem, isn't it?
 
-Wait is my example above possible?  Or does child_user_ns3's range need
-to be a subset of child_user_ns2's?
+Oh, /that/ call to get_user_pages.  That would qualify as screwing up...
 
-In which case it would be
+Since dropping and reacquiring mmap_sem there is probably a bad idea
+there, I'll rework this and post a v2.
 
-       child_user_ns1  [100000-199999]
-       child_user_ns2  [100000-199999]
-         child_user_ns3  [120000-129999]
-
-> > with unfortunate mappings  - ns1 and ns2 should have had nonoverlapping
-> > ranges, but in any case now uid 1000 in ns1 can exert privilege over
-> > ns3.  Again, uids comparisons will succeed for file access anyway, so
-> > ns1 can 0wn ns2 and ns3 other ways.
-> 
-> Yes yours is the more realistic scenario.  Mine was simplified to be clear.
-> 
-> > Heck I'm starting to think the bug is a feature - surely given the
-> > mappings above I meant for ns1 and ns2 to bleed privilege to each
-> > other?
-> 
-> The serious problem is that privileges can bleed up. A user in 
-> ns3 can wind up owning ns2 or ns1.  Which totally defeats the permission
-> model.  You have CAP_DAC_OVERRIDE so you don't even need access to files
-> you own, etc, etc.
-
-Would that not require intervention from the init_user_ns?  In my
-example above (let's add that ns2 is owned by kuid.uid=1000 in
-init_user_ns), root in child_user_ns2 cannot map kuid.val=0 or
-kuid.val=1000 into ns3 because 0 and 1000 are not in the range
-100000-199999.  So there is no uid in child_user_ns3 which is able
-to spoof uid=0 in child_user_ns1.
-
--serge
+--Andy
