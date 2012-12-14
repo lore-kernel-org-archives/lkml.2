@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab2LNW1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 17:27:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38249 "EHLO mail.kernel.org"
+	id S1757148Ab2LNW13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 17:27:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38217 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757152Ab2LNW1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 17:27:35 -0500
+	id S1757131Ab2LNW1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 17:27:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rui li <li.rui27@zte.com.cn>
-Subject: [ 09/22] USB: add new zte 3g-dongles pid to option.c
-Date: Fri, 14 Dec 2012 14:25:54 -0800
-Message-Id: <20121214222251.858341959@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 07/22] tmpfs: fix shared mempolicy leak
+Date: Fri, 14 Dec 2012 14:25:52 -0800
+Message-Id: <20121214222251.420538160@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20121214222249.889051473@linuxfoundation.org>
 References: <20121214222249.889051473@linuxfoundation.org>
@@ -25,75 +26,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "li.rui27@zte.com.cn" <li.rui27@zte.com.cn>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 31b6a1048b7292efff8b5b53ae3d9d29adde385e upstream.
+commit 18a2f371f5edf41810f6469cb9be39931ef9deb9 upstream.
 
-Signed-off-by: Rui li <li.rui27@zte.com.cn>
+This fixes a regression in 3.7-rc, which has since gone into stable.
+
+Commit 00442ad04a5e ("mempolicy: fix a memory corruption by refcount
+imbalance in alloc_pages_vma()") changed get_vma_policy() to raise the
+refcount on a shmem shared mempolicy; whereas shmem_alloc_page() went
+on expecting alloc_page_vma() to drop the refcount it had acquired.
+This deserves a rework: but for now fix the leak in shmem_alloc_page().
+
+Hugh: shmem_swapin() did not need a fix, but surely it's clearer to use
+the same refcounting there as in shmem_alloc_page(), delete its onstack
+mempolicy, and the strange mpol_cond_copy() and __mpol_cond_copy() -
+those were invented to let swapin_readahead() make an unknown number of
+calls to alloc_pages_vma() with one mempolicy; but since 00442ad04a5e,
+alloc_pages_vma() has kept refcount in balance, so now no problem.
+
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/usb/serial/option.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -883,6 +883,10 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0126, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0128, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0135, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0136, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0137, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0139, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0142, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0143, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0144, 0xff, 0xff, 0xff) },
-@@ -903,20 +907,34 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0165, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0167, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0189, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0191, 0xff, 0xff, 0xff), /* ZTE EuFi890 */
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0196, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0197, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0199, 0xff, 0xff, 0xff), /* ZTE MF820S */
- 	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0200, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0201, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0254, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
- 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0330, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0395, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0414, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0417, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1018, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1021, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
-@@ -1096,6 +1114,10 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1298, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1299, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1300, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1301, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1302, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1303, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1333, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1401, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1402, 0xff, 0xff, 0xff),
+---
+ include/linux/mempolicy.h |   16 ----------------
+ mm/mempolicy.c            |   22 ----------------------
+ mm/shmem.c                |   22 +++++++++++++---------
+ 3 files changed, 13 insertions(+), 47 deletions(-)
+
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -137,16 +137,6 @@ static inline void mpol_cond_put(struct
+ 		__mpol_put(pol);
+ }
+ 
+-extern struct mempolicy *__mpol_cond_copy(struct mempolicy *tompol,
+-					  struct mempolicy *frompol);
+-static inline struct mempolicy *mpol_cond_copy(struct mempolicy *tompol,
+-						struct mempolicy *frompol)
+-{
+-	if (!frompol)
+-		return frompol;
+-	return __mpol_cond_copy(tompol, frompol);
+-}
+-
+ extern struct mempolicy *__mpol_dup(struct mempolicy *pol);
+ static inline struct mempolicy *mpol_dup(struct mempolicy *pol)
+ {
+@@ -270,12 +260,6 @@ static inline void mpol_cond_put(struct
+ {
+ }
+ 
+-static inline struct mempolicy *mpol_cond_copy(struct mempolicy *to,
+-						struct mempolicy *from)
+-{
+-	return from;
+-}
+-
+ static inline void mpol_get(struct mempolicy *pol)
+ {
+ }
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1973,28 +1973,6 @@ struct mempolicy *__mpol_dup(struct memp
+ 	return new;
+ }
+ 
+-/*
+- * If *frompol needs [has] an extra ref, copy *frompol to *tompol ,
+- * eliminate the * MPOL_F_* flags that require conditional ref and
+- * [NOTE!!!] drop the extra ref.  Not safe to reference *frompol directly
+- * after return.  Use the returned value.
+- *
+- * Allows use of a mempolicy for, e.g., multiple allocations with a single
+- * policy lookup, even if the policy needs/has extra ref on lookup.
+- * shmem_readahead needs this.
+- */
+-struct mempolicy *__mpol_cond_copy(struct mempolicy *tompol,
+-						struct mempolicy *frompol)
+-{
+-	if (!mpol_needs_cond_ref(frompol))
+-		return frompol;
+-
+-	*tompol = *frompol;
+-	tompol->flags &= ~MPOL_F_SHARED;	/* copy doesn't need unref */
+-	__mpol_put(frompol);
+-	return tompol;
+-}
+-
+ /* Slow path of a mempolicy comparison */
+ int __mpol_equal(struct mempolicy *a, struct mempolicy *b)
+ {
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1168,19 +1168,20 @@ static struct mempolicy *shmem_get_sbmpo
+ static struct page *shmem_swapin(swp_entry_t entry, gfp_t gfp,
+ 			struct shmem_inode_info *info, unsigned long idx)
+ {
+-	struct mempolicy mpol, *spol;
+ 	struct vm_area_struct pvma;
+ 	struct page *page;
+ 
+-	spol = mpol_cond_copy(&mpol,
+-				mpol_shared_policy_lookup(&info->policy, idx));
+-
+ 	/* Create a pseudo vma that just contains the policy */
+ 	pvma.vm_start = 0;
+ 	pvma.vm_pgoff = idx;
+ 	pvma.vm_ops = NULL;
+-	pvma.vm_policy = spol;
++	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, idx);
++
+ 	page = swapin_readahead(entry, gfp, &pvma, 0);
++
++	/* Drop reference taken by mpol_shared_policy_lookup() */
++	mpol_cond_put(pvma.vm_policy);
++
+ 	return page;
+ }
+ 
+@@ -1188,6 +1189,7 @@ static struct page *shmem_alloc_page(gfp
+ 			struct shmem_inode_info *info, unsigned long idx)
+ {
+ 	struct vm_area_struct pvma;
++	struct page *page;
+ 
+ 	/* Create a pseudo vma that just contains the policy */
+ 	pvma.vm_start = 0;
+@@ -1195,10 +1197,12 @@ static struct page *shmem_alloc_page(gfp
+ 	pvma.vm_ops = NULL;
+ 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, idx);
+ 
+-	/*
+-	 * alloc_page_vma() will drop the shared policy reference
+-	 */
+-	return alloc_page_vma(gfp, &pvma, 0);
++	page = alloc_page_vma(gfp, &pvma, 0);
++
++	/* Drop reference taken by mpol_shared_policy_lookup() */
++	mpol_cond_put(pvma.vm_policy);
++
++	return page;
+ }
+ #else /* !CONFIG_NUMA */
+ #ifdef CONFIG_TMPFS
 
 
