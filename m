@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab2LOWRF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 17:17:05 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:45984 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2LOWRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 17:17:02 -0500
-Message-ID: <50CCF6DB.7080204@gmail.com>
-Date: Sat, 15 Dec 2012 16:16:59 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
+	id S1753986Ab2LOWSn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 17:18:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60276 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab2LOWSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 17:18:42 -0500
+Message-ID: <50CCF6F6.4020107@zytor.com>
+Date: Sat, 15 Dec 2012 14:17:26 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Don Dutile <ddutile@redhat.com>
-CC: Jason Gao <pkill.2012@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        kvm <kvm@vger.kernel.org>
-Subject: Re: DMAR and DRHD errors[DMAR:[fault reason 06] PTE Read access is
- not set] Vt-d & intel_iommu
-References: <CANmqhJAuLoi_Y2Hsz+UnddHXYd9TCW-7qxp3fybDayfh33Y3Zg@mail.gmail.com> <50CB9ADC.2020103@redhat.com>
-In-Reply-To: <50CB9ADC.2020103@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+References: <20121211170605.GD28827@liondog.tnic> <50C76F9E.4080001@zytor.com> <CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com> <50C7C859.60405@zytor.com> <CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com> <50C82ABF.3020907@zytor.com> <20121212133853.GC8760@liondog.tnic> <50C963B1.3040609@zytor.com> <50C96717.3020407@zytor.com> <20121213191317.GE31485@liondog.tnic> <50CA4A7A.10104@zytor.com> <CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com> <50CB8213.9000908@zytor.com> <CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com> <CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com> <CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com> <50CCCFD0.7030704@linux.intel.com> <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com> <50CCEE49.3080801@zytor.com> <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 03:32 PM, Don Dutile wrote:
-> On 12/13/2012 04:50 AM, Jason Gao wrote:
->> Dear List:
->>
->> Description of problem:
->> After installed Centos 6.3(RHEL6.3) on my Dell R710(lastest
->> bios:Version: 6.3.0,Release Date: 07/24/2012) server,and updated
->> lastest kernel "2.6.32-279.14.1.el6.x86_64",I want to use the Intel
->> 82576 ET Dual Port nic's SR-IOV feature,assigning VFs to kvm guest
->>
->> appended kernel boot parameter: intel_iommu=on,after boot with the
->> following messages:
->>
->> Dec 13 16:58:15 2 kernel: DRHD: handling fault status reg 2
->> Dec 13 16:58:15 2 kernel: DMAR:[DMA Read] Request device [03:00.0]
->> fault addr ffe65000
->> Dec 13 16:58:15 2 kernel: DMAR:[fault reason 06] PTE Read access is
->> not set
->> Dec 13 16:58:15 2 kernel: DRHD: handling fault status reg 102
->> Dec 13 16:58:15 2 kernel: DMAR:[DMA Read] Request device [03:00.0]
->> fault addr ffe8a000
->> Dec 13 16:58:15 2 kernel: DMAR:[fault reason 06] PTE Read access is
->> not set
->> Dec 13 16:58:15 2 kernel: scsi 0:0:32:0: Enclosure         DP
->> BACKPLANE        1.07 PQ: 0 ANSI: 5
->> Dec 13 16:58:15 2 kernel: DRHD: handling fault status reg 202
->> Dec 13 16:58:15 2 kernel: DMAR:[DMA Read] Request device [03:00.0]
->> fault addr ffe89000
->> Dec 13 16:58:15 2 kernel: DMAR:[fault reason 06] PTE Read access is
->> not set
->>
->> full dmesg detail:
->>     http://pastebin.com/BzFQV0jU
->> lspci -vvv full detail:
->>     http://pastebin.com/9rP2d1br
->>
->>
->> it's a production server,and I'm not sure if this is a critical
->> problem,how to fix it,any help would be greatly appreciated.
+On 12/15/2012 02:13 PM, Yinghai Lu wrote:
 >
-> DMAR table does not have an entry for this device to this region.
-> Once the driver reconfigs/resets the device to stop polling bios-boot
-> cmd rings and use (new) OS (dma-mapped) rings, there's a period of time
-> during this transition that the hw is babbling away to an area that is no
-> longer mapped.
+> AMD system could have all mem between TOLM and TOHM all WB, and don
+> need to set them in MTRRs entries.
+>
 
-Maybe some kind of boot PCI quirk is needed to stop the device DMA 
-activity before enabling the IOMMU?
+I include the TOM2 mechanism in the overall umbrella of MTRRs for this 
+purpose.
+
+> and also your switchover change that handle cross 1G, and 512g, and it
+> is not 1G aligned.
+> for example, if kernel at 4095G+512M, it will map from 4095G+512M to
+> 4096G + 512M.
+
+That is for the kernel region itself (that code is actually unchanged 
+from the current code), and yes, we could cap that one to _end if there 
+are systems which have bugs in that area.  The dynamic page tables map 
+1G aligned at a time.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
