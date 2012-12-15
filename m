@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2LOOxv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 09:53:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38468 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756600Ab2LOOxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 09:53:49 -0500
-Date: Sat, 15 Dec 2012 23:53:45 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paolo Pisati <paolo.pisati@canonical.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Robert Nelson <robertcnelson@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
- original voltage values
-Message-ID: <20121215145344.GF22033@opensource.wolfsonmicro.com>
-References: <1355389980-5532-1-git-send-email-paolo.pisati@canonical.com>
- <1355389980-5532-2-git-send-email-paolo.pisati@canonical.com>
+	id S1754029Ab2LOPDR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 10:03:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33279 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753090Ab2LOPDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 10:03:15 -0500
+Date: Sat, 15 Dec 2012 16:55:46 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Felipe Balbi <balbi@ti.com>, <spi-devel-general@lists.sourceforge.net>,
+        <rob@landley.net>, <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 2/2] spi: devicetree: add support for loopback mode
+Message-ID: <20121215145546.GA15606@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1355301960-21523-1-git-send-email-balbi@ti.com>
+ <1355301960-21523-2-git-send-email-balbi@ti.com>
+ <20121215003224.CBFD93E0BEC@localhost>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xkXJwpr35CY/Lc3I"
+	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
 Content-Disposition: inline
-In-Reply-To: <1355389980-5532-2-git-send-email-paolo.pisati@canonical.com>
-X-Cookie: You will never know hunger.
+In-Reply-To: <20121215003224.CBFD93E0BEC@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---xkXJwpr35CY/Lc3I
+--YiEDa0DAkWCtVeE4
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Dec 13, 2012 at 10:13:00AM +0100, Paolo Pisati wrote:
-> Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
-> Tested-by: Robert Nelson <robertcnelson@gmail.com>
+On Sat, Dec 15, 2012 at 12:32:24AM +0000, Grant Likely wrote:
+> On Wed, 12 Dec 2012 10:46:00 +0200, Felipe Balbi <balbi@ti.com> wrote:
+> > there are a few spi master drivers which make
+> > use of that flag but there is no way to pass it
+> > through devicetree.
+> >=20
+> > This patch just creates a way to pass SPI_LOOP
+> > via devicetree.
+>=20
+> I don't understand how this would be useful since loopback mode is
+> really just a test feature. Is there any reason to do loopback for
+> something other than test?
+>=20
+> I think it would be better to add a sysfs or debugfs property to
+> manipulate the SPI_LOOP flag from userspace. What do you think?
 
-Applied, thanks.
+might be nicer in the long run, indeed. Want me to look into it, or do
+you wanna do it yourself ?
 
---xkXJwpr35CY/Lc3I
+--=20
+balbi
+
+--YiEDa0DAkWCtVeE4
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQzI7gAAoJELSic+t+oim9p7EQAIOVAi4irUMtMIVyVCBMCWgj
-O55CojOoetm2RIiGMJh4HvbPnF84EFAqN+v0aNiXNTlFVoDdTlji14UgUO1+tp8T
-CwoJViodSq8f9pxP/YuJKeM07yaSaJ1b8RBUGZIQUldwket3EQdMdwwd0XnIE0TK
-z0SxU4afLjzOx1R1KZkcUiBR6HEWll+R7eMjBSDL8fqrYnh6pqtG8r314KGuUgU7
-41893tQ8ETpYR1PMUyK1ghMb7WTz6Z2Op8mn7tshEH3cgpYmmULVUInjAjS7Hyqh
-YSm6ZViGxmZ1TK0tNxcZynRRYKSs7t6iKfJC2Wf6DeE2SNOgX+cEN1HtaVxUNqbw
-iWaRsXNjZ/mZx6dsIgz95JwByeMfDkZp7JcX4UnFLkObKGPj//bPKzvcXZ1j+hws
-+qYcKfX1Vw+CIe9SasI1IREdQrmEWHc2okquikAq8Mg6Lyeaxd7IlX4++lDJZPwv
-haKghjPp5V4y9p4aPXWUxKQ2QfuwcW7pJQhYHAz96HwUmME/cIhrQeEoMFGs/1sC
-gVKKue8KPQ3hNvfHU1ASzgFhDTAQLqBIBFIPhzC1m5/suFGsBnPzlifkOI6Mn967
-zvCpi15y4DEOxoBpDyak5P64JBYbzOzGoDB4FyxzRZd4KxQASFHfr+1GLL96+SUF
-GnvNuhQqfl86Z9xDrAAq
-=g8E9
+iQIcBAEBAgAGBQJQzI9xAAoJEIaOsuA1yqREwFgP/RdGkkiBhtfeNQAHXMa/bNxI
+9dUPXPLjMtMLDj0eEgqUOsJWSFhhq7Sh+yenElWQAfyKjtNMqDsm3ZPLb9VRRHue
+a2G1NuD9T86+7NY6FjxglY9XAIqOosIQ3NlwKHnDkNbpwDdVwwQPw8Cw9UJWH/2q
+PM3UHHIWifXqXADKlBiznY5rNnpQVEfY2/zm5U5jcUZDPq4cqfdFMxVneEZOgqtD
+DJpuskr2Udflw17l1rSVDXmNKfGftavMpMTxVN60deZdlNBwkFt/cyfMB8nFewFJ
+RTtKEZNstCkH7AHa/V0fp8s1bB2Zd2zuF00ofGABXx2T7sjqnW082yhFZXPzOgON
+xNRnFThKcF6KkEzO/C/Kl8yXoHC2T1QONDV/quL73xk+5T3eXP723l2U6Qb4d+tf
+hlxPMEIE8HAsspKK6FcYuaNxnKOHLB9pJe1tTEaLIlWFvHL90uzTJz/dEksM+URO
+xFXmEVyN7LDgpDErHUL01daCnHAKF8XiUwa12FEA2Uvn5qw83gTTO0ou3lBjlRaN
+3P6OTxrEvVNaElWW29FRpmjDQ4P7WWzjr6ftIbKtN0SS5BgH81XcLN40XlPx95LK
+mc4jwtxqlcplXOIOks2xfTsTSitJ9aqSwn4mKT00+CWopLXdc7p8NYtX8zOM+05G
+A6cIfq/os96qVbMrQeyI
+=SeZs
 -----END PGP SIGNATURE-----
 
---xkXJwpr35CY/Lc3I--
+--YiEDa0DAkWCtVeE4--
