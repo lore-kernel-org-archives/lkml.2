@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab2LOWNK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 17:13:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48668 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab2LOWNI (ORCPT
+	id S1752445Ab2LOWQX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 17:16:23 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:50210 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2LOWQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 17:13:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <50CCEE49.3080801@zytor.com>
-References: <20121211170605.GD28827@liondog.tnic>
-	<CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com>
-	<50C76F9E.4080001@zytor.com>
-	<CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com>
-	<50C7C859.60405@zytor.com>
-	<CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
-	<50C82ABF.3020907@zytor.com>
-	<20121212133853.GC8760@liondog.tnic>
-	<50C963B1.3040609@zytor.com>
-	<50C96717.3020407@zytor.com>
-	<20121213191317.GE31485@liondog.tnic>
-	<50CA4A7A.10104@zytor.com>
-	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
-	<50CB8213.9000908@zytor.com>
-	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
-	<CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
-	<CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
-	<50CCCFD0.7030704@linux.intel.com>
-	<CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
-	<50CCEE49.3080801@zytor.com>
-Date: Sat, 15 Dec 2012 14:13:06 -0800
-X-Google-Sender-Auth: hAZzn8ZXEOR57qfvgly9x2yWe5o
-Message-ID: <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 15 Dec 2012 17:16:22 -0500
+Date: Sun, 16 Dec 2012 09:16:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arvind R <arvino55@gmail.com>
+Cc: linux-edac@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH 3.7.0 5/9] i82975x_edac: optimise mode detection
+Message-Id: <20121216091620.9a2cc610d18d848317eb9dad@canb.auug.org.au>
+In-Reply-To: <CAA_L+UPvp8i6SaATD=uQmvYeEp6vbYGBFM=LRE1MWCMGff5JkA@mail.gmail.com>
+References: <CAA_L+UPvp8i6SaATD=uQmvYeEp6vbYGBFM=LRE1MWCMGff5JkA@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sun__16_Dec_2012_09_16_20_+1100_oYD0N.zmCjy0IZfe"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 1:40 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/15/2012 12:55 PM, Yinghai Lu wrote:
->> Also if we set map too large, could have chance to cover mem hole near
->> 1T for AMD HT system.
->
->
-> Again, should not be cachable in the MTRRs, and even so, is 1G aligned
-> already.
+--Signature=_Sun__16_Dec_2012_09_16_20_+1100_oYD0N.zmCjy0IZfe
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-AMD system could have all mem between TOLM and TOHM all WB, and don
-need to set them in MTRRs entries.
+On Sun, 16 Dec 2012 02:12:51 +0530 Arvind R <arvino55@gmail.com> wrote:
+>
+> Subject: [PATCH 3.7.0 5/9] i82975x_edac: optimise mode detection
+>=20
+> Minor optimisation of dual channel symmetric operation. Return
+> value changed to bool.
 
-and also your switchover change that handle cross 1G, and 512g, and it
-is not 1G aligned.
-for example, if kernel at 4095G+512M, it will map from 4095G+512M to
-4096G + 512M.
+And you moved the function for no reason that is obvious form the patch.
+
+> +/* Return 1 if dual channel mode is active.  Else return 0. */
+
+The comment is no longer correct i.e. you are no returning true/false not
+0/1.
+
+> +static bool dual_channel_active(void __iomem *mch_window)
+> +{
+> +	/*
+> +	 * We treat interleaved-symmetric configuration as dual-channel.
+> +	 * All other configurations are virtual single channel mode.
+> +	 * bit-0 of EAP always provides the real channel in error.
+> +	 */
+> +	u8	drb[2];
+> +	int	row;
+> +	bool    dualch;
+> +
+> +	for (dualch =3D 1, row =3D 0; dualch &&
+
+um	dualch =3D true
+
+> +			(row < I82975X_NR_CSROWS_PER_CHANNEL); row++) {
+> +		drb[0] =3D readb(mch_window + I82975X_DRB + row);
+> +		drb[1] =3D readb(mch_window + I82975X_DRB + row + 0x80);
+> +		dualch &=3D (drb[0] =3D=3D drb[1]);
+
+Don't do bit operations on a bool.
+
+> +	}
+> +	return dualch;
+> +}
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sun__16_Dec_2012_09_16_20_+1100_oYD0N.zmCjy0IZfe
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQzPa0AAoJEECxmPOUX5FE8lkP/jLX48KzXduqHrui58PKuk5F
+OePMDt2/QV0T/LCY+QvUPKvnzGVYBSaq6TzRcQv0rgjcpiGDyd96VqdUEzzXOx7c
+gvyY++I1NQDKo+WVBtdQ05AorhDNuXD6TudkfOdJCTuSXWpyFmYDg7mVKfzB7lJp
+pZFqOC9S8uzGNX8xQKzb4egFJPc03dXkxNcR0GqY/ERcIXH38wWYlJatYzBiiIYN
+XSfTwtxDwkY3GugeE5RfsfciatvdW8onJ1dXPni9lSmy5+XOzpJYgbe9lKCdH6Jv
+URo+nPriA3bH1oiUG8zrnzT86kYy6BhQ4binkMdY+jL58WAjIseeBfu/P7mz3UBp
+pCad1JIJJGqqcxlBLLPBxO4dyH6SyzjtgiaIXab77ZoS/5nm02L8370qGaXnMzC9
+WmIWsNNgdjnB+zkJTkgMuQUgFeRz9boWT0ufeYhHscfniYD4GzveUMPMdyKjPBJy
+ep9OJDgpZqR7zvAd6wOR6j/TLbkAdP+lOsJNiba7JtlrTuwot+D6ooK9D8N9XA5O
+29YB6VrPZOfP/+g7A4Pf40w6a+H/UUkgFGsV/zmlHuY3pl+m2b54qiFnp4ollTa+
+6XO6SJ5bj7+rIK2Ajd0Vd7wbvRn2PJ38eJJFvnp/DLTsL7j3TJQz3M2o7BDGmCga
+s/lT04EGJ/dF8v9uwMoc
+=IkVq
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__16_Dec_2012_09_16_20_+1100_oYD0N.zmCjy0IZfe--
