@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab2LOPZe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 10:25:34 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36967 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab2LOPZd (ORCPT
+	id S1753677Ab2LOPnu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 10:43:50 -0500
+Received: from mail-wi0-f194.google.com ([209.85.212.194]:65268 "EHLO
+	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab2LOPns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 10:25:33 -0500
-Message-ID: <50CC9663.4010200@gmail.com>
-Date: Sat, 15 Dec 2012 23:25:23 +0800
-From: ys <sickamd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 15 Dec 2012 10:43:48 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: kconfig-frontends-3.7.0.0 released
+Date: Sat, 15 Dec 2012 16:43:36 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.9-treguer; KDE/4.4.5; x86_64; ; )
+Cc: lwn@lwn.net, "Yann E. MORIN" <yann.morin.1998@free.fr>
 MIME-Version: 1.0
-To: david@fromorbit.com
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        adilger@dilger.ca
-Subject: [PATCH] vfs: update atimes over one day in the past or future
-Content-Type: multipart/mixed;
- boundary="------------030503060804010400080106"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212151643.36850.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030503060804010400080106
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Hello All!
 
+I'm pleased to announce the release of kconfig-frontends 3.7.0.0!
+Go download it there:
+    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.7.0.0.tar.xz
+    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.7.0.0.tar.bz2
 
+The kconfig-frontends package provides the kconfig parser, as well as all the
+kconfig frontends and utilities, packaged using the traditional autotools, so
+the kconfig infrastructure is easy to deploy, either locally or system-wide.
 
---------------030503060804010400080106
-Content-Type: text/x-patch;
- name="0001-vfs-update-atimes-over-one-day-in-the-past-or-future.patch"
-Content-Transfer-Encoding: 8bit
-Content-Disposition: attachment;
- filename*0="0001-vfs-update-atimes-over-one-day-in-the-past-or-future.pa";
- filename*1="tch"
+What's new since 3.6.0.0:
+  - updated from linux-3.7:
+    - kconfig: replace 'oldnoconfig' with 'olddefconfig', and keep the old name as an alias
+    - menuconfig: Assign jump keys per-page instead of globally
+    - kconfig: document oldnoconfig to what it really does in conf.c
+  - yet a bit more of Cygwin compatibility
 
->From 3d56c131b58a21c05bcd677b9d2ba915abcbf195 Mon Sep 17 00:00:00 2001
-From: yangsheng <sickamd@gmail.com>
-Date: Sat, 15 Dec 2012 21:46:22 +0800
-Subject: [PATCH] vfs: update atimes over one day in the past or future
+As a reminder, the home for kconfig-frontends is:
+  http://ymorin.is-a-geek.org/projects/kconfig-frontends
 
-Relatime should update the inode atime if it is more than one day
-in the future.  The original problem seen was a tarball that had
-a bad atime in the distant future, but could also happen if someone
-fat-fingers a "touch".  The future atime will never be fixed.
+And the repository can be browsed or hg-cloned from:
+  http://ymorin.is-a-geek.org/hg/kconfig-frontends
 
-Without relatime enabled, a future atime is updated to the current
-kernel time on access.  Relatime is meant to reduce the frequency
-of atime updates, not decide if whether the system clock or the
-inode timestamp is correct or not.
+kconfig-frontends is not meant to replace the in-tree Linux kconfig, but
+really targets third-party projects that want an easy path to following
+the evolution of kconfig, without the burden to manually synchronise from
+the Linux kernel source tree.
 
-Signed-off-by: Yang Sheng <sickamd@gmail.com>
-Signed-off-by: Andreas Dilger <adilger@dilger.ca>
-Acked-by: David Chinner <david@fromorbit.com>
-CC: stable@vger.kernel.org
----
- fs/inode.c | 7 ++++---
- 1 个文件被修改，插入 4 行(+)，删除 3 行(-)
+Any comment, any feedback, any patch is welcome! ;-)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 14084b7..8713dc8 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1488,10 +1488,11 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
- 		return 1;
- 
- 	/*
--	 * Is the previous atime value older than a day? If yes,
--	 * update atime:
-+	 * Update atime if it's older than a day or more than a day
-+	 * in the future, which we assume is corrupt.
-+	 * 	 	 
- 	 */
--	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
-+	if (abs(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
- 		return 1;
- 	/*
- 	 * Good, we can skip the atime update:
+Regards,
+Yann E. MORIN.
+
 -- 
-1.7.11.7
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
 
-
---------------030503060804010400080106--
