@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab2LOATq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 19:19:46 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:36369 "EHLO zene.cmpxchg.org"
+	id S1757200Ab2LOAUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 19:20:54 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34264 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902Ab2LOATp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 19:19:45 -0500
-Date: Fri, 14 Dec 2012 19:18:51 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>, Satoru Moriya <satoru.moriya@hds.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
- going OOM
-Message-ID: <20121215001850.GA21353@cmpxchg.org>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
- <20121213103420.GW1009@suse.de>
- <20121213152959.GE21644@dhcp22.suse.cz>
- <20121213160521.GG21644@dhcp22.suse.cz>
- <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
- <20121214045030.GE6317@cmpxchg.org>
- <20121214083738.GA6898@dhcp22.suse.cz>
- <50CB493B.8000900@redhat.com>
- <20121214161345.GA18780@dhcp22.suse.cz>
+	id S1756797Ab2LOAUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 19:20:52 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Jan-Matthias Braun <jan_braun@gmx.net>, Jiri Kosina <jkosina@suse.cz>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late suspend/early resume
+Date: Sat, 15 Dec 2012 01:25:58 +0100
+Message-ID: <3307221.dy6xvn45xe@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1988667.JSHu2WyJuF@vostro.rjw.lan>
+References: <1988667.JSHu2WyJuF@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121214161345.GA18780@dhcp22.suse.cz>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 05:13:45PM +0100, Michal Hocko wrote:
-> On Fri 14-12-12 10:43:55, Rik van Riel wrote:
-> > On 12/14/2012 03:37 AM, Michal Hocko wrote:
-> > 
-> > >I can answer the later. Because memsw comes with its price and
-> > >swappiness is much cheaper. On the other hand it makes sense that
-> > >swappiness==0 doesn't swap at all. Or do you think we should get back to
-> > >_almost_ doesn't swap at all?
-> > 
-> > swappiness==0 will swap in emergencies, specifically when we have
-> > almost no page cache left, we will still swap things out:
-> > 
-> >         if (global_reclaim(sc)) {
-> >                 free  = zone_page_state(zone, NR_FREE_PAGES);
-> >                 if (unlikely(file + free <= high_wmark_pages(zone))) {
-> >                         /*
-> >                          * If we have very few page cache pages, force-scan
-> >                          * anon pages.
-> >                          */
-> >                         fraction[0] = 1;
-> >                         fraction[1] = 0;
-> >                         denominator = 1;
-> >                         goto out;
-> > 
-> > This makes sense, because people who set swappiness==0 but
-> > do have swap space available would probably prefer some
-> > emergency swapping over an OOM kill.
-> 
-> Yes, but this is the global reclaim path. I was arguing about
-> swappiness==0 & memcg. As this patch doesn't make a big difference for
-> the global case (as both the changelog and you mentioned) then we should
-> focus on whether this is desirable change for the memcg path. I think it
-> makes sense to keep "no swapping at all for memcg semantic" as we have
-> it currently.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I would prefer we could agree on one thing, though.  Having global
-reclaim behave different from memcg reclaim violates the principle of
-least surprise.  Having the code behave like that implicitely without
-any mention of global_reclaim() and vm_swappiness() is unacceptable.
+Currently, the PM core disables runtime PM for all devices right
+after executing subsystem/driver .suspend() callbacks for them
+and re-enables it right before executing subsystem/driver .resume()
+callbacks for them.  This may lead to problems when there are
+two devices such that the .suspend() callback executed for one of
+them depends on runtime PM working for the other.  In that case,
+if runtime PM has already been disabled for the second device,
+the first one's .suspend() won't work correctly (and analogously
+for resume).
+
+To make those issues go away, make the PM core disable runtime PM
+for devices right before executing subsystem/driver .suspend_late()
+callbacks for them and enable runtime PM for them right after
+executing subsystem/driver .resume_early() callbacks for them.  This
+way the potential conflitcs between .suspend_late()/.resume_early()
+and their runtime PM counterparts are still prevented from happening,
+but the subtle ordering issues related to disabling/enabling runtime
+PM for devices during system suspend/resume are much easier to avoid.
+
+Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ Documentation/power/runtime_pm.txt |    9 +++++----
+ drivers/base/power/main.c          |    9 ++++-----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+Index: linux/drivers/base/power/main.c
+===================================================================
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -513,6 +513,8 @@ static int device_resume_early(struct de
+ 
+  Out:
+ 	TRACE_RESUME(error);
++
++	pm_runtime_enable(dev);
+ 	return error;
+ }
+ 
+@@ -589,8 +591,6 @@ static int device_resume(struct device *
+ 	if (!dev->power.is_suspended)
+ 		goto Unlock;
+ 
+-	pm_runtime_enable(dev);
+-
+ 	if (dev->pm_domain) {
+ 		info = "power domain ";
+ 		callback = pm_op(&dev->pm_domain->ops, state);
+@@ -930,6 +930,8 @@ static int device_suspend_late(struct de
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
+ 
++	__pm_runtime_disable(dev, false);
++
+ 	if (dev->power.syscore)
+ 		return 0;
+ 
+@@ -1133,11 +1135,8 @@ static int __device_suspend(struct devic
+ 
+  Complete:
+ 	complete_all(&dev->power.completion);
+-
+ 	if (error)
+ 		async_error = error;
+-	else if (dev->power.is_suspended)
+-		__pm_runtime_disable(dev, false);
+ 
+ 	return error;
+ }
+Index: linux/Documentation/power/runtime_pm.txt
+===================================================================
+--- linux.orig/Documentation/power/runtime_pm.txt
++++ linux/Documentation/power/runtime_pm.txt
+@@ -642,12 +642,13 @@ out the following operations:
+   * During system suspend it calls pm_runtime_get_noresume() and
+     pm_runtime_barrier() for every device right before executing the
+     subsystem-level .suspend() callback for it.  In addition to that it calls
+-    pm_runtime_disable() for every device right after executing the
+-    subsystem-level .suspend() callback for it.
++    __pm_runtime_disable() with 'false' as the second argument for every device
++    right before executing the subsystem-level .suspend_late() callback for it.
+ 
+   * During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
+-    for every device right before and right after executing the subsystem-level
+-    .resume() callback for it, respectively.
++    for every device right after executing the subsystem-level .resume_early()
++    callback and right after executing the subsystem-level .resume() callback
++    for it, respectively.
+ 
+ 7. Generic subsystem callbacks
+ 
+
