@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab2LOBxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 20:53:30 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57372 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab2LOBx3 (ORCPT
+	id S1755218Ab2LOCB2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 21:01:28 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47572 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2LOCB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 20:53:29 -0500
+	Fri, 14 Dec 2012 21:01:27 -0500
+Date: Sat, 15 Dec 2012 02:06:36 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/4] userns: Add a more complete capability subset test
+ to commit_creds
+Message-ID: <20121215020636.GA14713@mail.hallyn.com>
+References: <87txroxpgq.fsf@xmission.com>
+ <87bodwxpcg.fsf@xmission.com>
+ <20121215000338.GC13659@mail.hallyn.com>
+ <87r4msrx6t.fsf@xmission.com>
+ <20121215004735.GA14295@mail.hallyn.com>
+ <87lid0rvh9.fsf@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <4511257.Msp501Wi5G@vostro.rjw.lan>
-References: <1355474528-13094-1-git-send-email-sivaramn@nvidia.com>
-	<4511257.Msp501Wi5G@vostro.rjw.lan>
-Date: Fri, 14 Dec 2012 17:53:28 -0800
-X-Google-Sender-Auth: nMlBc-FswoT5uIMPvNjrPiQRkL0
-Message-ID: <CAMbhsRQXAwObH0TL9Kx9pCscQ3r19_KyV9MCMTQ_qYfrxP5XTw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] cpuidle: coupled: fix ready counter decrement
-From: Colin Cross <ccross@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Sivaram Nair <sivaramn@nvidia.com>, santosh.shilimkar@ti.com,
-        khilman@ti.com, daniel.lezcano@linaro.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lid0rvh9.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 3:37 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, December 14, 2012 10:42:08 AM Sivaram Nair wrote:
->> The ready_waiting_counts atomic variable is compared against the wrong
->> online cpu count. The latter is computed incorrectly using logical-OR
->> instead of bit-OR. This patch fixes that.
->
-> I'm queuing this up for submission as v3.8 material.
->
-> I suppose it should be marked for -stable too?
->
-> Rafael
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 
+> When unsharing a user namespace we reduce our credentials to just what
+> can be done in that user namespace.  This is a subset of the credentials
+> we previously had.  Teach commit_creds to recognize this is a subset
+> of the credentials we have had before and don't clear the dumpability flag.
+> 
+> This allows an unprivileged  program to do:
+> unshare(CLONE_NEWUSER);
+> fd = open("/proc/self/uid_map", O_RDWR);
+> 
+> Where previously opening the uid_map writable would fail because
+> the the task had been made non-dumpable.
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Acked-by: Colin Cross <ccross@android.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-Looks suitable for stable.
-
->> Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
->> ---
->>  drivers/cpuidle/coupled.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
->> index 3265844..2a297f8 100644
->> --- a/drivers/cpuidle/coupled.c
->> +++ b/drivers/cpuidle/coupled.c
->> @@ -209,7 +209,7 @@ inline int cpuidle_coupled_set_not_ready(struct cpuidle_coupled *coupled)
->>       int all;
->>       int ret;
->>
->> -     all = coupled->online_count || (coupled->online_count << WAITING_BITS);
->> +     all = coupled->online_count | (coupled->online_count << WAITING_BITS);
->>       ret = atomic_add_unless(&coupled->ready_waiting_counts,
->>               -MAX_WAITING_CPUS, all);
->>
->>
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+> ---
+>  kernel/cred.c |   27 ++++++++++++++++++++++++++-
+>  1 files changed, 26 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/cred.c b/kernel/cred.c
+> index 48cea3d..709d521 100644
+> --- a/kernel/cred.c
+> +++ b/kernel/cred.c
+> @@ -455,6 +455,31 @@ error_put:
+>  	return ret;
+>  }
+>  
+> +static bool cred_cap_issubset(const struct cred *set, const struct cred *subset)
+> +{
+> +	const struct user_namespace *set_ns = set->user_ns;
+> +	const struct user_namespace *subset_ns = subset->user_ns;
+> +
+> +	/* If the two credentials are in the same user namespace see if
+> +	 * the capabilities of subset are a subset of set.
+> +	 */
+> +	if (set_ns == subset_ns)
+> +		return cap_issubset(subset->cap_permitted, set->cap_permitted);
+> +
+> +	/* The credentials are in a different user namespaces
+> +	 * therefore one is a subset of the other only if a set is an
+> +	 * ancestor of subset and set->euid is owner of subset or one
+> +	 * of subsets ancestors.
+> +	 */
+> +	for (;subset_ns != &init_user_ns; subset_ns = subset_ns->parent) {
+> +		if ((set_ns == subset_ns->parent)  &&
+> +		    uid_eq(subset_ns->owner, set->euid))
+> +			return true;
+> +	}
+> +
+> +	return false;
+> +}
+> +
+>  /**
+>   * commit_creds - Install new credentials upon the current task
+>   * @new: The credentials to be assigned
+> @@ -493,7 +518,7 @@ int commit_creds(struct cred *new)
+>  	    !gid_eq(old->egid, new->egid) ||
+>  	    !uid_eq(old->fsuid, new->fsuid) ||
+>  	    !gid_eq(old->fsgid, new->fsgid) ||
+> -	    !cap_issubset(new->cap_permitted, old->cap_permitted)) {
+> +	    !cred_cap_issubset(old, new)) {
+>  		if (task->mm)
+>  			set_dumpable(task->mm, suid_dumpable);
+>  		task->pdeath_signal = 0;
+> -- 
+> 1.7.5.4
