@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab2LOEfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 23:35:24 -0500
-Received: from smtp.polymtl.ca ([132.207.4.11]:53099 "EHLO smtp.polymtl.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756232Ab2LOEfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 23:35:10 -0500
-From: Simon Marchi <simon.marchi@polymtl.ca>
-To: cmetcalf@tilera.com
-Cc: linux-kernel@vger.kernel.org, Simon Marchi <simon.marchi@polymtl.ca>
-Subject: [PATCH 3/3] arch/tile: set CORE_DUMP_USE_REGSET on tilegx
-Date: Fri, 14 Dec 2012 23:34:51 -0500
-Message-Id: <1355546091-32537-3-git-send-email-simon.marchi@polymtl.ca>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1355546091-32537-1-git-send-email-simon.marchi@polymtl.ca>
-References: <1355546091-32537-1-git-send-email-simon.marchi@polymtl.ca>
-X-Poly-FromMTA: ([132.207.72.18]) at Sat, 15 Dec 2012 04:34:59 +0000
+	id S1751018Ab2LOF2K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 00:28:10 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49641 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab2LOF2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 00:28:09 -0500
+Message-ID: <50CC0AC4.3080206@infradead.org>
+Date: Fri, 14 Dec 2012 21:29:40 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        linux-next@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: mmotm 2012-12-14-17-51 uploaded (staging/sb105x)
+References: <20121215015227.144C820004E@hpza10.eem.corp.google.com>
+In-Reply-To: <20121215015227.144C820004E@hpza10.eem.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the previous patch which adds support for user_regset, tilegx
-can now use this feature.
+On 12/14/12 17:52, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2012-12-14-17-51 has been uploaded to
+> 
+>    http://www.ozlabs.org/~akpm/mmotm/
+> 
+> mmotm-readme.txt says
+> 
+> README for mm-of-the-moment:
+> 
+> http://www.ozlabs.org/~akpm/mmotm/
+> 
+> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> more than once a week.
+> 
 
-Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
----
- arch/tile/include/asm/elf.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-index f8ccf08..7a793c7 100644
---- a/arch/tile/include/asm/elf.h
-+++ b/arch/tile/include/asm/elf.h
-@@ -169,4 +169,8 @@ do { \
- 
- #endif /* CONFIG_COMPAT */
- 
-+#ifdef __tilegx__
-+#define CORE_DUMP_USE_REGSET
-+#endif /* __tilegx__ */
-+
- #endif /* _ASM_TILE_ELF_H */
+(not from mmotm patches)
+
+When CONFIG_PARPORT is not enabled:
+
+drivers/built-in.o: In function `multi_init':
+sb_pci_mp.c:(.init.text+0x162ac): undefined reference to `parport_pc_probe_port'
+
+
+
 -- 
-1.7.1
-
+~Randy
