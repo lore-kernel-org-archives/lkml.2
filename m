@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab2LONQz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 08:16:55 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:55689 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756537Ab2LONQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 08:16:53 -0500
-X-ASG-Debug-ID: 1355577412-03d6a57f9b385350001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <50CC7840.4090403@fusionio.com>
-Date: Sat, 15 Dec 2012 14:16:48 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1756660Ab2LOOP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 09:15:28 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45604 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753193Ab2LOOP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 09:15:26 -0500
+Date: Sat, 15 Dec 2012 23:15:20 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Paolo Pisati <paolo.pisati@canonical.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org, Robert Nelson <robertcnelson@gmail.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] regulator: core: if voltage scaling fails, restore
+ original voltage values
+Message-ID: <20121215141519.GA22033@opensource.wolfsonmicro.com>
+References: <1355389980-5532-1-git-send-email-paolo.pisati@canonical.com>
+ <1355389980-5532-2-git-send-email-paolo.pisati@canonical.com>
+ <20121213094715.GA1916@arwen.pp.htv.fi>
+ <20121214153943.GA3306@luxor.wired.org>
+ <20121214154030.GD18233@arwen.pp.htv.fi>
 MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: Jack Wang <jack.wang.usish@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "zab@redhat.com" <zab@redhat.com>, "bcrl@kvack.org" <bcrl@kvack.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
-References: <1354568322-29029-1-git-send-email-koverstreet@google.com> <20121213211808.GJ25017@kernel.dk> <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com> <50CAD6D9.5070703@fusionio.com> <20121215092526.GA10411@moria.home.lan> <50CC46F8.3070600@fusionio.com> <20121215103658.GB10411@moria.home.lan>
-X-ASG-Orig-Subj: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
-In-Reply-To: <20121215103658.GB10411@moria.home.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1355577412
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.117082
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
+Content-Disposition: inline
+In-Reply-To: <20121214154030.GD18233@arwen.pp.htv.fi>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-15 11:36, Kent Overstreet wrote:
->> Knock yourself out - I already took a quick look at it, and conversion
->> should be pretty simple. It's the mtip32xx driver, it's in the kernel. I
->> would suggest getting rid of the ->async_callback() (since it's always
->> bio_endio()) since that'll make it cleaner.
-> 
-> Just pushed my conversion - it's untested, but it's pretty
-> straightforward.
 
-You forgot a batch_complete_init(). With that, it works. Single device
-is ~1050K now, so still slower than jaio without batching (which was
-~1220K).  But it's an improvement over kaio-dio, which was roughly ~930K
-IOPS.
+--x+6KMIRAuhnl3hBn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Jens Axboe
+On Fri, Dec 14, 2012 at 05:40:30PM +0200, Felipe Balbi wrote:
 
+> No no, I mean that before you SoB you should have a:
+
+> Cc: <stable@vger.kernel.org> # v3.x v3.y ...
+
+It's perfectly OK to omit this unless there's an awareness that the
+backport won't work on some kernels.
+
+--x+6KMIRAuhnl3hBn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQzIXwAAoJELSic+t+oim9saoQAInSC8dlZVoyYw10UXMwJZ0a
+GDEYalibcwOvvSxPP04MsZNM06qu4DqhTbfXFxOPb8TcHXNr0Q1oU+cOMaEeYif8
+5O6imOxaY014vqkYtMBtD1EsYFpl5nVU27Voge7fW1wxMb55iYMtCIcitADUD8W8
+i2okhDMG9HAfMBwiI1AB1Q0zaL62la9qQfxrNKQX7Em7ZGTXgyStmqoyP7ucKlSP
+0j5dxpcZk/dtaEku5ZXxCFo7ZbqNgJ5f41FfaRuXsLwjyZGikpoeqfHBV2c0YyMa
+72KIts4jIhItIAZnwiuuD1868JPaf6/80uTRw9LS6hPiTy1AWgLCPeHX7cIT9yG8
++StsbAuMgX2nmN6bH5Li1FDMFoWc2qED72UYDfpsO/OVHQFDoRM0OpPaCGFoMRNe
+XldhrIfzAh64ef/txNs2fbRdGatNhgmsbuhUbkZYVyx5jFRpc5LEpVR9IDwvthNy
+immo6XLkd5yoqmQsIHgcBIkdFKktL648/0hRyQ1Y6qZ+D4IUJADzI5OgEFgfDIIs
+93q7ZVP9qFfuJ3dUZAvwvFufBwlFQSmkGU1+8NrES9UK6pffIZM96PWSimv2dlu4
+Ea72fkjGQhWsGrPnP7Fv7DWQ65FKTIHbWhf95tx+Gyt/fTjkmQwDzEhuQj7aVopK
+i+9JpZ8L+os6ZrE9cy9J
+=JNW9
+-----END PGP SIGNATURE-----
+
+--x+6KMIRAuhnl3hBn--
