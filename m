@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab2LOVQl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 16:16:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57886 "EHLO mx2.suse.de"
+	id S1752217Ab2LOVdH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 16:33:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60030 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab2LOVQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 16:16:40 -0500
-Date: Sat, 15 Dec 2012 22:16:29 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jan-Matthias Braun <jan_braun@gmx.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late
- suspend/early resume
-In-Reply-To: <3307221.dy6xvn45xe@vostro.rjw.lan>
-Message-ID: <alpine.LNX.2.00.1212152215300.3487@pobox.suse.cz>
-References: <1988667.JSHu2WyJuF@vostro.rjw.lan> <3307221.dy6xvn45xe@vostro.rjw.lan>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751068Ab2LOVdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 16:33:06 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
+References: <20121211170605.GD28827@liondog.tnic> <CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com> <50C76F9E.4080001@zytor.com> <CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com> <50C7C859.60405@zytor.com> <CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com> <50C82ABF.3020907@zytor.com> <20121212133853.GC8760@liondog.tnic> <50C963B1.3040609@zytor.com> <50C96717.3020407@zytor.com> <20121213191317.GE31485@liondog.tnic> <50CA4A7A.10104@zytor.com> <CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com> <50CB8213.9000908@zytor.com> <CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com> <CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com> <CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com> <50CCCFD0.7030704@linux.intel.com> <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update ucode on Intel's CPU
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 15 Dec 2012 13:31:35 -0800
+To: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Borislav Petkov <bp@alien8.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Message-ID: <6684d9ac-52a7-483a-8eaf-bfc79de484c1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Dec 2012, Rafael J. Wysocki wrote:
+The mem hole at 1T should not be marked cachable in the MTRRs.
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Currently, the PM core disables runtime PM for all devices right
-> after executing subsystem/driver .suspend() callbacks for them
-> and re-enables it right before executing subsystem/driver .resume()
-> callbacks for them.  This may lead to problems when there are
-> two devices such that the .suspend() callback executed for one of
-> them depends on runtime PM working for the other.  In that case,
-> if runtime PM has already been disabled for the second device,
-> the first one's .suspend() won't work correctly (and analogously
-> for resume).
-> 
-> To make those issues go away, make the PM core disable runtime PM
-> for devices right before executing subsystem/driver .suspend_late()
-> callbacks for them and enable runtime PM for them right after
-> executing subsystem/driver .resume_early() callbacks for them.  This
-> way the potential conflitcs between .suspend_late()/.resume_early()
-> and their runtime PM counterparts are still prevented from happening,
-> but the subtle ordering issues related to disabling/enabling runtime
-> PM for devices during system suspend/resume are much easier to avoid.
-> 
-> Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-Hi Rafael,
-
-just curious what is the reason for resend? Do you want to gather more 
-Acks before pushing this upstream?
-
-Thanks.
+>On Sat, Dec 15, 2012 at 11:30 AM, H. Peter Anvin <hpa@linux.intel.com>
+>wrote:
+>> What is the point of only managing 2M at a time?  Now you have to
+>have
+>> more conditionals and you don't get any more memory efficiency.
+>
+>We don't need to, because real_data is less than 2M, and ramdisk is
+>about 16M.
+>
+>Also if we set map too large, could have chance to cover mem hole near
+>1T for AMD HT system.
+>
+>>
+>> Filling arbitrarily into the brk is not acceptable... the brk is an
+>O(1)
+>> area and all brk allocations need to be reserved at compile time, so
+>the
+>> overflow handling is still necessary.
+>
+>if run out of BRK, we will get panic, because early_make_pgtable will
+>return -1.
+>
+>and current BRK already have 64 slop space.
+>
+>BTW, did you look at smp boot problem with early_level4_pgt version?
+>
+>Yinghai
 
 -- 
-Jiri Kosina
-SUSE Labs
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
