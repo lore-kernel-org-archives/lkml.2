@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2LOQlb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 11:41:31 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:54647 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2LOQla (ORCPT
+	id S1753946Ab2LOQm3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 11:42:29 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41363 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab2LOQm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 11:41:30 -0500
+	Sat, 15 Dec 2012 11:42:28 -0500
 MIME-Version: 1.0
 In-Reply-To: <CAN1soZze6Ogn_zi7JJN0JNzoMFkHLJyKyjTV7rSWUmQhwRU0NQ@mail.gmail.com>
 References: <1354522477-11991-1-git-send-email-haojian.zhuang@gmail.com>
 	<CAN1soZze6Ogn_zi7JJN0JNzoMFkHLJyKyjTV7rSWUmQhwRU0NQ@mail.gmail.com>
-Date: Sun, 16 Dec 2012 00:41:29 +0800
-Message-ID: <CAN1soZxJ_JCEVV5v99tFi22fq5AEOCBj1D5PY=vmGGW_gDWuJQ@mail.gmail.com>
+Date: Sun, 16 Dec 2012 00:42:26 +0800
+Message-ID: <CAN1soZw=TjxENOPLLHb08FuWpVYH-s-3mVvLd7yTymU2UGovww@mail.gmail.com>
 Subject: Re: [PATCH] clk: factor: calculate rate by do_div
 From: Haojian Zhuang <haojian.zhuang@gmail.com>
 To: "linux-arm-kernel@lists.infradead.org" 
@@ -61,4 +61,4 @@ On Tue, Dec 4, 2012 at 9:32 AM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
 >
 > Correct Mike's email address.
 
-Any comments? Does it mean that nobody want to fix the bug?
+Any comments? It's the bug what needs to be fixed.
