@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945931Ab2LOBYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 20:24:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24833 "EHLO mx1.redhat.com"
+	id S1945965Ab2LOBYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 20:24:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63757 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932266Ab2LOBYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 20:24:12 -0500
-Date: Fri, 14 Dec 2012 23:03:55 -0200
+	id S1945926Ab2LOBYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 20:24:14 -0500
+Date: Fri, 14 Dec 2012 23:05:46 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] kvm: memory slot cleanups, fix, and increase
-Message-ID: <20121215010355.GB27536@amt.cnet>
-References: <20121210171417.10461.20079.stgit@bling.home>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] KVM: x86: improve reexecute_instruction
+Message-ID: <20121215010546.GC27536@amt.cnet>
+References: <50C5A747.1020105@linux.vnet.ibm.com>
+ <20121211233641.GA14520@amt.cnet>
+ <50C8E3A3.4050106@linux.vnet.ibm.com>
+ <20121213225408.GB11385@amt.cnet>
+ <50CAB001.2040106@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
+In-Reply-To: <50CAB001.2040106@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 10, 2012 at 10:32:39AM -0700, Alex Williamson wrote:
-> v2: Update 02/10 to not check userspace_addr when slot is removed.
->     Yoshikawa-san withdrew objection to increase slot_bitmap prior
->     to his series to remove slot_bitmap.
+On Fri, Dec 14, 2012 at 12:50:09PM +0800, Xiao Guangrong wrote:
+> >>> program a timer interrupt and #GP? 
+> >>
+> >> Could you please explain the detail?
+> > 
+> > Before the instruction which writes continuously to the pagetable, arm
+> > say lapic timer. #GP on the interrupt handler and test with failure.
 > 
-> This series does away with any kind of complicated resizing of the
-> slot array and simply does a one time increase.  I do compact struct
-> kvm_memory_slot a bit to take better advantage of the space we are
-> using.  This reduces each slot from 64 bytes (x86_64) to 56 bytes.
-> By enforcing the API around valid operations for an unused slot and
-> fields that can be modified runtime, I found and was able to fix a
-> bug in iommu mapping for slots.  The renames enabled me to find the
-> previously posted bug fix for catching slot overlaps.
-> 
-> As mentioned in the series, the primary motivation for increasing
-> memory slots is assigned devices.  With this, I've been able to
-> assign 30 devices to a single VM and could have gone further, but
-> ran out of SRIOV VFs.  Typical devices use anywhere from 2-4 slots
-> and max out at 8 slots.  125 user slots (3 private slots) allows
-> us to support between 28 and 56 typical devices per VM.
-> 
-> Tested on x86_64, compiled on ia64, powerpc, and s390.
-> 
-> Thanks,
-> Alex
+> Sorry, I am confused about this. After Qemu exits due to KVM_EXIT_INTERNAL_ERROR,
+> the vm is stopped then interrupt can not be injected to guest. Or i missed something?
 
-Applied, thanks.
+Yes, but without fixed kernel kvm-unit test executable loops continuously.
+Perhaps its more appropriate to fix generically, nevermind.
 
