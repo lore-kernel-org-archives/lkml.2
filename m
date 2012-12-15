@@ -1,181 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab2LOG3O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 01:29:14 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:39496 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab2LOG3M (ORCPT
+	id S1751326Ab2LOGlI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 01:41:08 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:59966 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2LOGlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 01:29:12 -0500
-Message-ID: <50CC18B3.5070800@gmail.com>
-Date: Sat, 15 Dec 2012 10:29:07 +0400
-From: Nikolay Epifanov <nik.epifanov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joonyoung Shim <dofmind@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] input: add MELFAS mms144 touchscreen driver
-References: <50C9C368.4060202@gmail.com> <CAPLVkLtbz+mosPtgPJQtOpO+xmAxzrqYmJkLzDWdoc4dQYve5w@mail.gmail.com>
-In-Reply-To: <CAPLVkLtbz+mosPtgPJQtOpO+xmAxzrqYmJkLzDWdoc4dQYve5w@mail.gmail.com>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 8bit
+	Sat, 15 Dec 2012 01:41:06 -0500
+Message-ID: <1355553634.4731.13.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+From: Mike Galbraith <bitbucket@online.de>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Alex Shi <alex.shi@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, linux@arm.linux.org.uk,
+        pjt@google.com, santosh.shilimkar@ti.com, Morten.Rasmussen@arm.com,
+        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, viresh.kumar@linaro.org
+Date: Sat, 15 Dec 2012 07:40:34 +0100
+In-Reply-To: <CAKfTPtDw6Tk6oVut5REBsbCoHD3JE0ajHKp=aYhwx0j9NiTKGQ@mail.gmail.com>
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
+	 <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
+	 <50C93AC1.1060202@intel.com>
+	 <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
+	 <50C9E552.1010600@intel.com> <1355460356.5777.12.camel@marge.simpson.net>
+	 <50CAC905.9070100@intel.com> <1355471146.7641.13.camel@marge.simpson.net>
+	 <CAKfTPtDw6Tk6oVut5REBsbCoHD3JE0ajHKp=aYhwx0j9NiTKGQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:Kv9uEI9l59B6pzhMm0N2DLvbtM3diCx6jCCvYmQSsyd
+ 2tI7tZ9ERvBrNKTbZhDsi2F2o9Ilod+nZp1NveAsgMf5zDJE/x
+ BJrWzu9+sl7njfmDS/wBdlEyvv4KaFP5Wg0BCVTLreOgKewM9w
+ FMuyLyK2JLOWyHeNMXChf668CspVMzWzmb86/HsDzcpw0MbqPD
+ UskTkGrZX5M739ZkFMeJpbVSzpFe6+K9RuLmtO6OMziDei5rS2
+ aX+wXvaSK0fDn49QLD7l9LWFsF1OAzt/OC+hlOr5ck7Tmpfs3M
+ eLaguUZlqwyZdhpI324vXxUnhjNVyvi9+7ex2WepDCjvK82eB4
+ +48jFMNkPG6JFQXctXubI3nJg2B7qbxIuqf2jqToDXQLOTyrxW
+ Mx0nqw5+0fL/g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.12.2012 05:46, Joonyoung Shim wrote:
-> Hi,
+On Fri, 2012-12-14 at 11:43 +0100, Vincent Guittot wrote: 
+> On 14 December 2012 08:45, Mike Galbraith <bitbucket@online.de> wrote:
+> > On Fri, 2012-12-14 at 14:36 +0800, Alex Shi wrote:
+> >> On 12/14/2012 12:45 PM, Mike Galbraith wrote:
+> >> >> > Do you have further ideas for buddy cpu on such example?
+> >> >>> > >
+> >> >>> > > Which kind of sched_domain configuration have you for such system ?
+> >> >>> > > and how many sched_domain level have you ?
+> >> >> >
+> >> >> > it is general X86 domain configuration. with 4 levels,
+> >> >> > sibling/core/cpu/numa.
+> >> > CPU is a bug that slipped into domain degeneration.  You should have
+> >> > SIBLING/MC/NUMA (chasing that down is on todo).
+> >>
+> >> Maybe.
+> >> the CPU/NUMA is different on domain flags, CPU has SD_PREFER_SIBLING.
+> >
+> > What I noticed during (an unrelated) bisection on a 40 core box was
+> > domains going from so..
+> >
+> > 3.4.0-bisect (virgin)
+> > [    5.056214] CPU0 attaching sched-domain:
+> > [    5.065009]  domain 0: span 0,32 level SIBLING
+> > [    5.075011]   groups: 0 (cpu_power = 589) 32 (cpu_power = 589)
+> > [    5.088381]   domain 1: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level MC
+> > [    5.107669]    groups: 0,32 (cpu_power = 1178)  4,36 (cpu_power = 1178)  8,40 (cpu_power = 1178) 12,44 (cpu_power = 1178)
+> >                          16,48 (cpu_power = 1177) 20,52 (cpu_power = 1178) 24,56 (cpu_power = 1177) 28,60 (cpu_power = 1177)
+> >                          64,72 (cpu_power = 1176) 68,76 (cpu_power = 1176)
+> > [    5.162115]    domain 2: span 0-79 level NODE
+> > [    5.171927]     groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11773)
+> >                            1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77 (cpu_power = 11772)
+> >                            2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62,66,70,74,78 (cpu_power = 11773)
+> >                            3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63,67,71,75,79 (cpu_power = 11770)
+> >
+> > ..to so, which looks a little bent.  CPU and MC have identical spans, so
+> > CPU should have gone away, as it used to do.
+> >
+> > 3.6.0-bisect (virgin)
+> > [    3.978338] CPU0 attaching sched-domain:
+> > [    3.987125]  domain 0: span 0,32 level SIBLING
+> > [    3.997125]   groups: 0 (cpu_power = 588) 32 (cpu_power = 589)
+> > [    4.010477]   domain 1: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level MC
+> > [    4.029748]    groups: 0,32 (cpu_power = 1177)  4,36 (cpu_power = 1177)  8,40 (cpu_power = 1178) 12,44 (cpu_power = 1178)
+> >                          16,48 (cpu_power = 1178) 20,52 (cpu_power = 1178) 24,56 (cpu_power = 1178) 28,60 (cpu_power = 1178)
+> >                          64,72 (cpu_power = 1178) 68,76 (cpu_power = 1177)
+> > [    4.084143]    domain 2: span 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 level CPU
+> > [    4.103796]     groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11777)
+> > [    4.124373]     domain 3: span 0-79 level NUMA
+> > [    4.134369]      groups: 0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76 (cpu_power = 11777)
+> >                             1,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77 (cpu_power = 11778)
+> >                             2,6,10,14,18,22,26,30,34,38,42,46,50,54,58,62,66,70,74 ,78 (cpu_power = 11778)
+> >                             3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63,67,71,75,79 (cpu_power = 11780)
+> >
 > 
-> 2012년 12월 13일 목요일에 Nikolay Epifanov님이 작성:
+> Thanks. that's an interesting example of a numa topology
 > 
->     This is an initial driver for MELFAS touchscreen chip mms144.
+> For your sched_domain difference,
+> On 3.4, SD_PREFER_SIBLING was set for both MC and CPU level thanks to
+> sd_balance_for_mc_power and  sd_balance_for_package_power
+> On 3.6, SD_PREFER_SIBLING is only set for CPU level and this flag
+> difference with MC level prevents the destruction of CPU sched_domain
+> during the degeneration
 > 
->     Signed-off-by: Nikolay Epifanov <nik.epifanov@gmail.com>
->     ---
->     I don't know whether single driver could be used for both mms114 and
->     mms144.
->     Couldn't find datasheets for any of them.
-> 
-> 
-> The touch data process logic of this driver is almost same with it of
-> mms114 driver and offset of many registers is also same. I think you can
-> merge this to mms114 driver.
-> 
-> Thanks.
-> 
-> 
->     There are two firmwares available under redistribution license from
->     AOSP tree:
->     for FPCB revisions 3.2 and 3.1. Not sure if those are Melfas original
->     or modified by Samsung. (Just for reference: they are
->     mms144_ts_rev3*.fw at
->     https://android.googlesource.com/device/samsung/tuna/+/214d003a47e7fe2962df667c5d65bce92a21a40e/
-> 
->     mux_fw_flash(bool) from platform data switches pins between
->     I2C<->GPIO modes.
-> 
->     Driver has been tested on Samsung Galaxy Nexus except suspend/resume.
-> 
->     Applied on
->     git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
->     <http://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git>
->     branch next.
-> 
->       drivers/input/touchscreen/Kconfig  |   14 +
->       drivers/input/touchscreen/Makefile |    1 +
->       drivers/input/touchscreen/mms144.c |  821
->     ++++++++++++++++++++++++++++++++++++
->       include/linux/i2c/mms144.h         |   34 ++
->       4 files changed, 870 insertions(+)
-> 
->     diff --git a/drivers/input/touchscreen/Kconfig
->     b/drivers/input/touchscreen/Kconfig
->     index b93b598..78d9cd3 100644
->     --- a/drivers/input/touchscreen/Kconfig
->     +++ b/drivers/input/touchscreen/Kconfig
->     @@ -369,6 +369,20 @@ config TOUCHSCREEN_MMS114
->                To compile this driver as a module, choose M here: the
->                module will be called mms114.
-> 
->     +config TOUCHSCREEN_MMS144
->     +       tristate "MELFAS MMS144 touchscreen"
->     +       depends on I2C
->     +       help
->     +         Say Y here if you have the MELFAS MMS144 touchscreen
->     controller
->     +         chip in your system.
->     +         Such kind of chip can be found in Samsung Galaxy Nexus
->     +         touchscreens.
->     +
->     +         If unsure, say N.
->     +
->     +         To compile this driver as a module, choose M here: the
->     +         module will be called mms144.
->     +
->       config TOUCHSCREEN_MTOUCH
->              tristate "MicroTouch serial touchscreens"
->              select SERIO
->     diff --git a/drivers/input/touchscreen/Makefile
->     b/drivers/input/touchscreen/Makefile
->     index 5f949c0..cfbe87c 100644
->     --- a/drivers/input/touchscreen/Makefile
->     +++ b/drivers/input/touchscreen/Makefile
->     @@ -39,6 +39,7 @@ obj-$(CONFIG_TOUCHSCREEN_MC13783)     += mc13783_ts.o
->       obj-$(CONFIG_TOUCHSCREEN_MCS5000)      += mcs5000_ts.o
->       obj-$(CONFIG_TOUCHSCREEN_MIGOR)                += migor_ts.o
->       obj-$(CONFIG_TOUCHSCREEN_MMS114)       += mms114.o
->     +obj-$(CONFIG_TOUCHSCREEN_MMS144)       += mms144.o
->       obj-$(CONFIG_TOUCHSCREEN_MTOUCH)       += mtouch.o
->       obj-$(CONFIG_TOUCHSCREEN_MK712)                += mk712.o
->       obj-$(CONFIG_TOUCHSCREEN_HP600)                += hp680_ts_input.o
->     diff --git a/drivers/input/touchscreen/mms144.c
->     b/drivers/input/touchscreen/mms144.c
->     new file mode 100644
->     index 0000000..3bb84d0
->     --- /dev/null
->     +++ b/drivers/input/touchscreen/mms144.c
->     @@ -0,0 +1,821 @@
->     +/*
->     + * mms144.c - Touchscreen driver for Melfas MMS144 touch controllers
->     + *
->     + * Copyright (C) 2011 Google Inc.
->     + * Author: Dima Zavin <dima@android.com>
->     + *         Simon Wilson <simonwilson@google.com>
->     + * Copyright (C) 2012 Nikolay Epifanov <nik.epifanov@gmail.com>
->     + *
->     + * ISP reflashing code based on original code from Melfas.
->     + *
->     + * This program is free software; you can redistribute  it and/or
->     modify it
->     + * under  the terms of  the GNU General  Public License as
->     published by the
->     + * Free Software Foundation;  either version 2 of the  License, or
->     (at your
->     + * option) any later version.
->     + *
->     + */
->     +
->     +#include <linux/completion.h>
->     +#include <linux/delay.h>
->     +#include <linux/firmware.h>
->     +#include <linux/gpio.h>
->     +#include <linux/i2c.h>
->     +#include <linux/i2c/mms144.h>
->     +#include <linux/init.h>
->     +#include <linux/input.h>
->     +#include <linux/input/mt.h>
->     +#include <linux/interrupt.h>
->     +#include <linux/irq.h>
->     +#include <linux/module.h>
->     +#include <linux/mutex.h>
->     +#include <linux/slab.h>
->     +#include <linux/unaligned/le_struct.h>
->     +
->     +#define MAX_FINGERS            10
->     +#define MAX_WIDTH              30
->     +#define MAX_PRESSURE           255
->     +#define FINGER_EVENT_SZ                6
->     +
->     +/* Registers */
->     +#define MMS_MODE_CONTROL       0x01
->     +#define MMS_XYRES_HI           0x02
->     +#define MMS_XRES_LO            0x03
->     +#define MMS_YRES_LO            0x04
->     +
->     +#define MMS_INPUT_EVENT_PKT_SZ 0x0F
->     +#define MMS_INPUT_EVENT0       0x10
->     +
->     +#define MMS_TSP_REVISION       0xF0
->     +#define MMS_HW_REVISION                0xF1
->     +#define MMS_COMPAT_GROUP       0xF2
->     +#define MMS_FW_VERSION         0xF3
-> 
-> 
-> Above registers are same with them of mms114 driver.
+> We may need to set SD_PREFER_SIBLING for MC level
 
-Hi,
+Ah, that explains oddity. (todo--).
 
-thanks, I'll give it a shot.
+Hm, seems changing flags should trigger a rebuild. (todo++,drat).
+
+-Mike
 
