@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab2LOLGz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 06:06:55 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48983 "EHLO
+	id S1756534Ab2LOLHb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 06:07:31 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45577 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508Ab2LOLGx (ORCPT
+	with ESMTP id S1755778Ab2LOLH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 06:06:53 -0500
-Message-ID: <50CC5832.8000704@gmail.com>
-Date: Sat, 15 Dec 2012 12:00:02 +0100
+	Sat, 15 Dec 2012 06:07:29 -0500
+Message-ID: <50CC5856.6080704@gmail.com>
+Date: Sat, 15 Dec 2012 12:00:38 +0100
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+CC: Rob Landley <rob@landley.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         David Howells <dhowells@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Marco Stornelli <marco.stornelli@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 20/21] mm: drop vmtruncate
+Subject: [PATCH 21/21] documentation: drop vmtruncate
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,55 +31,76 @@ Removed vmtruncate
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- include/linux/mm.h |    1 -
- mm/truncate.c      |   23 -----------------------
- 2 files changed, 0 insertions(+), 24 deletions(-)
+ Documentation/filesystems/Locking |    6 ------
+ Documentation/filesystems/porting |    2 +-
+ Documentation/filesystems/vfs.txt |   11 -----------
+ 3 files changed, 1 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4af4f0b..6c93b79 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -977,7 +977,6 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index e540a24..f48e0c6 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -80,7 +80,6 @@ rename:		yes (all)	(see below)
+ readlink:	no
+ follow_link:	no
+ put_link:	no
+-truncate:	yes		(see below)
+ setattr:	yes
+ permission:	no (may not block if called in rcu-walk mode)
+ get_acl:	no
+@@ -96,11 +95,6 @@ atomic_open:	yes
+ 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
+ victim.
+ 	cross-directory ->rename() has (per-superblock) ->s_vfs_rename_sem.
+-	->truncate() is never called directly - it's a callback, not a
+-method. It's called by vmtruncate() - deprecated library function used by
+-->setattr(). Locking information above applies to that call (i.e. is
+-inherited from ->setattr() - vmtruncate() is used when ATTR_SIZE had been
+-passed).
  
- extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
- extern void truncate_setsize(struct inode *inode, loff_t newsize);
--extern int vmtruncate(struct inode *inode, loff_t offset);
- void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
- int truncate_inode_page(struct address_space *mapping, struct page *page);
- int generic_error_remove_page(struct address_space *mapping, struct page *page);
-diff --git a/mm/truncate.c b/mm/truncate.c
-index d51ce92..c75b736 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -577,29 +577,6 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
- EXPORT_SYMBOL(truncate_setsize);
+ See Documentation/filesystems/directory-locking for more detailed discussion
+ of the locking scheme for directory operations.
+diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
+index 0742fee..0472c31 100644
+--- a/Documentation/filesystems/porting
++++ b/Documentation/filesystems/porting
+@@ -281,7 +281,7 @@ ext2_write_failed and callers for an example.
  
- /**
-- * vmtruncate - unmap mappings "freed" by truncate() syscall
-- * @inode: inode of the file used
-- * @newsize: file offset to start truncating
-- *
-- * This function is deprecated and truncate_setsize or truncate_pagecache
-- * should be used instead, together with filesystem specific block truncation.
-- */
--int vmtruncate(struct inode *inode, loff_t newsize)
--{
--	int error;
+ [mandatory]
+ 
+-	->truncate is going away.  The whole truncate sequence needs to be
++	->truncate is gone.  The whole truncate sequence needs to be
+ implemented in ->setattr, which is now mandatory for filesystems
+ implementing on-disk size changes.  Start with a copy of the old inode_setattr
+ and vmtruncate, and the reorder the vmtruncate + foofs_vmtruncate sequence to
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index 2ee133e..e386909 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -350,7 +350,6 @@ struct inode_operations {
+ 	int (*readlink) (struct dentry *, char __user *,int);
+         void * (*follow_link) (struct dentry *, struct nameidata *);
+         void (*put_link) (struct dentry *, struct nameidata *, void *);
+-	void (*truncate) (struct inode *);
+ 	int (*permission) (struct inode *, int);
+ 	int (*get_acl)(struct inode *, int);
+ 	int (*setattr) (struct dentry *, struct iattr *);
+@@ -431,16 +430,6 @@ otherwise noted.
+   	started might not be in the page cache at the end of the
+   	walk).
+ 
+-  truncate: Deprecated. This will not be called if ->setsize is defined.
+-	Called by the VFS to change the size of a file.  The
+- 	i_size field of the inode is set to the desired size by the
+- 	VFS before this method is called.  This method is called by
+- 	the truncate(2) system call and related functionality.
 -
--	error = inode_newsize_ok(inode, newsize);
--	if (error)
--		return error;
+-	Note: ->truncate and vmtruncate are deprecated. Do not add new
+-	instances/calls of these. Filesystems should be converted to do their
+-	truncate sequence via ->setattr().
 -
--	truncate_setsize(inode, newsize);
--	if (inode->i_op->truncate)
--		inode->i_op->truncate(inode);
--	return 0;
--}
--EXPORT_SYMBOL(vmtruncate);
--
--/**
-  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
-  * @inode: inode
-  * @lstart: offset of beginning of hole
+   permission: called by the VFS to check for access rights on a POSIX-like
+   	filesystem.
+ 
 -- 
 1.7.3.4
