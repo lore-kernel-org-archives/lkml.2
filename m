@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab2LOLDR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 06:03:17 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58726 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab2LOLDQ (ORCPT
+	id S1756373Ab2LOLDz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 06:03:55 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57238 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab2LOLDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 06:03:16 -0500
-Message-ID: <50CC5759.6050109@gmail.com>
-Date: Sat, 15 Dec 2012 11:56:25 +0100
+	Sat, 15 Dec 2012 06:03:53 -0500
+Message-ID: <50CC577F.90900@gmail.com>
+Date: Sat, 15 Dec 2012 11:57:03 +0100
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+CC: Petr Vandrovec <petr@vandrovec.name>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         David Howells <dhowells@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Michael Kerrisk <mtk.manpages@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/21] minix: drop vmtruncate
+Subject: [PATCH 16/21] ncpfs: drop vmtruncate
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,70 +29,23 @@ Removed vmtruncate
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/minix/file.c  |    6 ++++--
- fs/minix/inode.c |   17 ++++++++++++-----
- 2 files changed, 16 insertions(+), 7 deletions(-)
+ fs/ncpfs/inode.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/fs/minix/file.c b/fs/minix/file.c
-index 4493ce6..adc6f54 100644
---- a/fs/minix/file.c
-+++ b/fs/minix/file.c
-@@ -34,9 +34,12 @@ static int minix_setattr(struct dentry *dentry, struct iattr *attr)
+diff --git a/fs/ncpfs/inode.c b/fs/ncpfs/inode.c
+index d7e9fe7..1acdad7 100644
+--- a/fs/ncpfs/inode.c
++++ b/fs/ncpfs/inode.c
+@@ -976,9 +976,7 @@ int ncp_notify_change(struct dentry *dentry, struct iattr *attr)
+ 			goto out;
  
- 	if ((attr->ia_valid & ATTR_SIZE) &&
- 	    attr->ia_size != i_size_read(inode)) {
--		error = vmtruncate(inode, attr->ia_size);
-+		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (error)
- 			return error;
-+
-+		truncate_setsize(inode, attr->ia_size);
-+		minix_truncate(inode);
+ 		if (attr->ia_size != i_size_read(inode)) {
+-			result = vmtruncate(inode, attr->ia_size);
+-			if (result)
+-				goto out;
++			truncate_setsize(inode, attr->ia_size);
+ 			mark_inode_dirty(inode);
+ 		}
  	}
- 
- 	setattr_copy(inode, attr);
-@@ -45,7 +48,6 @@ static int minix_setattr(struct dentry *dentry, struct iattr *attr)
- }
- 
- const struct inode_operations minix_file_inode_operations = {
--	.truncate	= minix_truncate,
- 	.setattr	= minix_setattr,
- 	.getattr	= minix_getattr,
- };
-diff --git a/fs/minix/inode.c b/fs/minix/inode.c
-index 4fc5f8a..99541cc 100644
---- a/fs/minix/inode.c
-+++ b/fs/minix/inode.c
-@@ -395,6 +395,16 @@ int minix_prepare_chunk(struct page *page, loff_t pos, unsigned len)
- 	return __block_write_begin(page, pos, len, minix_get_block);
- }
- 
-+static void minix_write_failed(struct address_space *mapping, loff_t to)
-+{
-+	struct inode *inode = mapping->host;
-+
-+	if (to > inode->i_size) {
-+		truncate_pagecache(inode, to, inode->i_size);
-+		minix_truncate(inode);
-+	}
-+}
-+
- static int minix_write_begin(struct file *file, struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned flags,
- 			struct page **pagep, void **fsdata)
-@@ -403,11 +413,8 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
- 
- 	ret = block_write_begin(mapping, pos, len, flags, pagep,
- 				minix_get_block);
--	if (unlikely(ret)) {
--		loff_t isize = mapping->host->i_size;
--		if (pos + len > isize)
--			vmtruncate(mapping->host, isize);
--	}
-+	if (unlikely(ret))
-+		minix_write_failed(mapping, pos + len);
- 
- 	return ret;
- }
 -- 
 1.7.3.4
