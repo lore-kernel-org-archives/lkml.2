@@ -1,106 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab2LOLHb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 06:07:31 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45577 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755778Ab2LOLH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 06:07:29 -0500
-Message-ID: <50CC5856.6080704@gmail.com>
-Date: Sat, 15 Dec 2012 12:00:38 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756067Ab2LOLRd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 06:17:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34633 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588Ab2LOLRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 06:17:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, cpufreq <cpufreq@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq_stats: fix race between stats allocation and first usage
+Date: Sat, 15 Dec 2012 12:22:38 +0100
+Message-ID: <2504655.pJNUDF76QM@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <50CC205D.4040106@openvz.org>
+References: <20121214105921.5139.502.stgit@zurg> <4367394.4dMqb5NnJH@vostro.rjw.lan> <50CC205D.4040106@openvz.org>
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Rob Landley <rob@landley.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 21/21] documentation: drop vmtruncate
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed vmtruncate
+On Saturday, December 15, 2012 11:01:49 AM Konstantin Khlebnikov wrote:
+> Rafael J. Wysocki wrote:
+> > On Friday, December 14, 2012 02:59:21 PM Konstantin Khlebnikov wrote:
+> >> This patch forces complete struct cpufreq_stats allocation for all cpus before
+> >> registering CPUFREQ_TRANSITION_NOTIFIER notifier, otherwise in some conditions
+> >> cpufreq_stat_notifier_trans() can be called in the middle of stats allocation,
+> >> in this case cpufreq_stats_table already exists, but stat->freq_table is NULL.
+> >
+> > I'll queue it up for submission as v3.8 material.
+> >
+> > Does it need to be marked as -stable material too?
+> 
+> It's very old and rare bug. I think you can leave it as is.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
- Documentation/filesystems/Locking |    6 ------
- Documentation/filesystems/porting |    2 +-
- Documentation/filesystems/vfs.txt |   11 -----------
- 3 files changed, 1 insertions(+), 18 deletions(-)
+OK
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index e540a24..f48e0c6 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -80,7 +80,6 @@ rename:		yes (all)	(see below)
- readlink:	no
- follow_link:	no
- put_link:	no
--truncate:	yes		(see below)
- setattr:	yes
- permission:	no (may not block if called in rcu-walk mode)
- get_acl:	no
-@@ -96,11 +95,6 @@ atomic_open:	yes
- 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
- victim.
- 	cross-directory ->rename() has (per-superblock) ->s_vfs_rename_sem.
--	->truncate() is never called directly - it's a callback, not a
--method. It's called by vmtruncate() - deprecated library function used by
--->setattr(). Locking information above applies to that call (i.e. is
--inherited from ->setattr() - vmtruncate() is used when ATTR_SIZE had been
--passed).
- 
- See Documentation/filesystems/directory-locking for more detailed discussion
- of the locking scheme for directory operations.
-diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
-index 0742fee..0472c31 100644
---- a/Documentation/filesystems/porting
-+++ b/Documentation/filesystems/porting
-@@ -281,7 +281,7 @@ ext2_write_failed and callers for an example.
- 
- [mandatory]
- 
--	->truncate is going away.  The whole truncate sequence needs to be
-+	->truncate is gone.  The whole truncate sequence needs to be
- implemented in ->setattr, which is now mandatory for filesystems
- implementing on-disk size changes.  Start with a copy of the old inode_setattr
- and vmtruncate, and the reorder the vmtruncate + foofs_vmtruncate sequence to
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 2ee133e..e386909 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -350,7 +350,6 @@ struct inode_operations {
- 	int (*readlink) (struct dentry *, char __user *,int);
-         void * (*follow_link) (struct dentry *, struct nameidata *);
-         void (*put_link) (struct dentry *, struct nameidata *, void *);
--	void (*truncate) (struct inode *);
- 	int (*permission) (struct inode *, int);
- 	int (*get_acl)(struct inode *, int);
- 	int (*setattr) (struct dentry *, struct iattr *);
-@@ -431,16 +430,6 @@ otherwise noted.
-   	started might not be in the page cache at the end of the
-   	walk).
- 
--  truncate: Deprecated. This will not be called if ->setsize is defined.
--	Called by the VFS to change the size of a file.  The
-- 	i_size field of the inode is set to the desired size by the
-- 	VFS before this method is called.  This method is called by
-- 	the truncate(2) system call and related functionality.
--
--	Note: ->truncate and vmtruncate are deprecated. Do not add new
--	instances/calls of these. Filesystems should be converted to do their
--	truncate sequence via ->setattr().
--
-   permission: called by the VFS to check for access rights on a POSIX-like
-   	filesystem.
- 
+Thanks,
+Rafael
+
+
 -- 
-1.7.3.4
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
