@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab2LOOVn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 09:21:43 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36280 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756314Ab2LOOVl (ORCPT
+	id S1756672Ab2LOOWx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 09:22:53 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45124 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab2LOOWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 09:21:41 -0500
-Date: Sat, 15 Dec 2012 23:21:36 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, grundler@chromium.org,
-        devicetree-discuss@lists.ozlabs.org, w.sang@pengutronix.de,
-        ben-linux@fluff.org, khali@linux-fr.org, naveen@chromium.org
-Subject: Re: [PATCH 1/2] i2c-core: Add gpio based bus arbitration
- implementation
-Message-ID: <20121215142135.GB22033@opensource.wolfsonmicro.com>
-References: <1355464254-12768-1-git-send-email-ch.naveen@samsung.com>
- <1355464254-12768-2-git-send-email-ch.naveen@samsung.com>
- <50CB4E99.9060506@wwwdotorg.org>
+	Sat, 15 Dec 2012 09:22:51 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="neYutvxvOLaeuPCA"
-Content-Disposition: inline
-In-Reply-To: <50CB4E99.9060506@wwwdotorg.org>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121214222251.229078963@linuxfoundation.org>
+References: <20121214222251.229078963@linuxfoundation.org>
+Date: Sat, 15 Dec 2012 07:22:51 -0700
+Message-ID: <CAKocOOMPoaiwnCtCgcxNBUx3p=SP63uyTkQeB7Kw3KdO2Evp4A@mail.gmail.com>
+Subject: Re: [ 00/27] 3.7.1-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 14, 2012 at 4:01 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.7.1 release.
+> There are 27 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Dec 16 22:16:56 UTC 2012.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.1-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
 
---neYutvxvOLaeuPCA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Patches applied cleanly to 3.0.y, 3.4.y, 3.6.y, and 3.7.y.
+ompiled and booted on the following systems:
+HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-On Fri, Dec 14, 2012 at 09:06:49AM -0700, Stephen Warren wrote:
-> On 12/13/2012 10:50 PM, Naveen Krishna Chatradhi wrote:
+I started cross-compile tests and will report the status
 
-> > +The first should be an output, and is used to claim the I2C bus,
-> > +the second should be an input, and signals that the other side (Client)
-> > +wants to claim the bus. This allows two masters to share the same I2C bus.
-
-> I'm confused why this is even needed; the I2C protocol itself defines
-> how multi-master is supposed to work, just using the regular SCL/SDA lines.
-
-Practically speaking essentially no systems actually do that - mostly
-Linux will treat failure to get the bus as an error for example.  You
-also get things like read operations which appear as multiple
-transactions on the I2C bus so require something higher level than what
-multi-master provides.
-
---neYutvxvOLaeuPCA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQzIdaAAoJELSic+t+oim9ziYP/3Xec5OTpdhalJ/3xknDDvHI
-FhaH4Lk8Fdl3pRAuqJFUdR+4feutuVv+Gii95Wde76uw9Kp4/q6PlKCjrBZ+m4Cb
-GXFpODwvHwOdk8f0MqxaL88KBbUBgq6Psl1lOW8xww898r7M/+2auq+QvLM0IpZt
-sgVOD5qUwfpl5jgyNjEdsTtU2XinhputoGj0IFa4Fc3GPmsmC35F/ttiB+QMnHlC
-vO8ucntVom7Y5UecCD4+eh4iR5Xs6s7x7BH7FxeaLCSsEYH1B8EKrn5v3q4hMmjk
-2tKrhXeHtkxO2+Am1WAC95lrutHxYNPnaNJxE114/eba2d2YKqqHd40028V2twsy
-BT9VlaV0IG9bZTPmXnl2dqFSHj7NYZ8s9LcWkS4AEmo7K+wzQRo7SYdfCOZJed80
-8qWRo3zA5umUn0zW6Jy6aWqFH8EhUZWSXOTTDuAAxgpIS/QjQO/evVtHqg4UQy4V
-4jIpK48FWEC411pPVRTKEKo6d0micOv0GoWv8nvRInBGFxB0wXBrJHSLA7TbnT+t
-oiloBdi3uXvmweLRpg8n+4vbsQHgpdHucpai9u3eUQKU6HuRiJREypphUa3o3/uM
-V8XafhCb5RasXaDKkHCYCeolTzWlVMKnV0bgEYMfifbjvnroQTmYHitQsZf4t95f
-fFQiq2aSuoSJdL8oal5/
-=cduo
------END PGP SIGNATURE-----
-
---neYutvxvOLaeuPCA--
+-- Shuah
