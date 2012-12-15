@@ -1,162 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2LOSjV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 13:39:21 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:37773 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab2LOSjT (ORCPT
+	id S1751094Ab2LOSkt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 13:40:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47064 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750995Ab2LOSkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 13:39:19 -0500
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1355139247.22545.6.camel@hal>
-References: <1355139247.22545.6.camel@hal>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sat, 15 Dec 2012 19:38:59 +0100
-Message-ID: <CAKgNAkimi3joE3u1fGdX-d3kqkEb0ggG=wU=jyKnRPHsc=poMA@mail.gmail.com>
-Subject: Re: man page for s390_runtime_instr syscall
-To: Jan Glauber <jang@linux.vnet.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 15 Dec 2012 13:40:47 -0500
+Message-ID: <1355596839.18807.12.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 135/241] md/raid10: close race that lose writes lost
+ when replacement completes.
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Date: Sat, 15 Dec 2012 18:40:39 +0000
+In-Reply-To: <1355407206-17100-136-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	 <1355407206-17100-136-git-send-email-herton.krzesinski@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-WIQy3fWW+iRW9D5euAho"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jan,
 
-On Mon, Dec 10, 2012 at 12:34 PM, Jan Glauber <jang@linux.vnet.ibm.com> wrote:
-> Hi Michael,
+--=-WIQy3fWW+iRW9D5euAho
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 2012-12-13 at 11:58 -0200, Herton Ronaldo Krzesinski wrote:
+> 3.5.7.2 -stable review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: NeilBrown <neilb@suse.de>
+>=20
+> commit e7c0c3fa29280d62aa5e11101a674bb3064bd791 upstream.
+>=20
+> When a replacement operation completes there is a small window
+> when the original device is marked 'faulty' and the replacement
+> still looks like a replacement.  The faulty should be removed and
+> the replacement moved in place very quickly, bit it isn't instant.
+>=20
+> So the code write out to the array must handle the possibility that
+> the only working device for some slot in the replacement - but it
+> doesn't.  If the primary device is faulty it just gives up.  This
+> can lead to corruption.
+>=20
+> So make the code more robust: if either  the primary or the
+> replacement is present and working, write to them.  Only when
+> neither are present do we give up.
+>=20
+> This bug has been present since replacement was introduced in
+> 3.3, so it is suitable for any -stable kernel since then.
+
+This is missing from 3.4, so Greg will presumably want to apply this (if
+the backport is correct).
+
+Ben.
+
+> Reported-by: "George Spelvin" <linux@horizon.com>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> [ herton: hairy code adjustment on 3rd hunk (conf->copies for loop) ]
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
 >
-> I've written a man page for the s390_runtime_instr syscall which was
-> merged with 3.7 (e4b8b3f). Now the question is if you would like to
-> include it in the man-pages although it is completely s390 specific
-and wont be available on any other arch? Or should it go into a
-> different package?
-
-Thanks for this page. The man-pages package is the right place for it,
-but a few things need fixing. Could you see below and resubmit please?
-
-> --- /dev/null   2012-12-04 10:52:46.657720288 +0100
-> +++ s390_runtime_instr.2        2012-10-09 13:55:39.000000000 +0200
-> @@ -0,0 +1,73 @@
-> +.\" Copyright IBM Corp. 2012
-> +.\" Author: Jan Glauber <jang@linux.vnet.ibm.com>
-
-You have provided no license here. Can you please add one. Please see
-http://www.kernel.org/doc/man-pages/licenses.html. (My preference is
-the "verbatim" license, but others are of course possible.)
-
-> +.\"
-> +.TH S390_RUNTIME_INSTR 2 2012-10-09 "Linux Programmer's Manual"
-
-Update the date here.
-
-> +.SH NAME
-> +s390_runtime_instr \- enable/disable s390 CPU runtime instrumentation
-> +.SH SYNOPSIS
-> +.nf
-> +.B #include <asm/runtime_instr.h>
+> ---
+>  drivers/md/raid10.c |  113 +++++++++++++++++++++++++++------------------=
+------
+>  1 file changed, 59 insertions(+), 54 deletions(-)
+>=20
+> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+> index 17fae37..0920adf 100644
+> --- a/drivers/md/raid10.c
+> +++ b/drivers/md/raid10.c
+> @@ -1267,18 +1267,21 @@ retry_write:
+>  			blocked_rdev =3D rrdev;
+>  			break;
+>  		}
+> +		if (rdev && (test_bit(Faulty, &rdev->flags)
+> +			     || test_bit(Unmerged, &rdev->flags)))
+> +			rdev =3D NULL;
+>  		if (rrdev && (test_bit(Faulty, &rrdev->flags)
+>  			      || test_bit(Unmerged, &rrdev->flags)))
+>  			rrdev =3D NULL;
+> =20
+>  		r10_bio->devs[i].bio =3D NULL;
+>  		r10_bio->devs[i].repl_bio =3D NULL;
+> -		if (!rdev || test_bit(Faulty, &rdev->flags) ||
+> -		    test_bit(Unmerged, &rdev->flags)) {
 > +
-> +.BI "int s390_runtime_instr(int " command ", int " signum ");
-> +.fi
+> +		if (!rdev && !rrdev) {
+>  			set_bit(R10BIO_Degraded, &r10_bio->state);
+>  			continue;
+>  		}
+> -		if (test_bit(WriteErrorSeen, &rdev->flags)) {
+> +		if (rdev && test_bit(WriteErrorSeen, &rdev->flags)) {
+>  			sector_t first_bad;
+>  			sector_t dev_sector =3D r10_bio->devs[i].addr;
+>  			int bad_sectors;
+> @@ -1320,8 +1323,10 @@ retry_write:
+>  					max_sectors =3D good_sectors;
+>  			}
+>  		}
+> -		r10_bio->devs[i].bio =3D bio;
+> -		atomic_inc(&rdev->nr_pending);
+> +		if (rdev) {
+> +			r10_bio->devs[i].bio =3D bio;
+> +			atomic_inc(&rdev->nr_pending);
+> +		}
+>  		if (rrdev) {
+>  			r10_bio->devs[i].repl_bio =3D bio;
+>  			atomic_inc(&rrdev->nr_pending);
+> @@ -1377,58 +1382,58 @@ retry_write:
+>  	for (i =3D 0; i < conf->copies; i++) {
+>  		struct bio *mbio;
+>  		int d =3D r10_bio->devs[i].devnum;
+> -		if (!r10_bio->devs[i].bio)
+> -			continue;
+> -
+> -		mbio =3D bio_clone_mddev(bio, GFP_NOIO, mddev);
+> -		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
+> -			    max_sectors);
+> -		r10_bio->devs[i].bio =3D mbio;
+> -
+> -		mbio->bi_sector	=3D (r10_bio->devs[i].addr+
+> -				   choose_data_offset(r10_bio,
+> -						      conf->mirrors[d].rdev));
+> -		mbio->bi_bdev =3D conf->mirrors[d].rdev->bdev;
+> -		mbio->bi_end_io	=3D raid10_end_write_request;
+> -		mbio->bi_rw =3D WRITE | do_sync | do_fua;
+> -		mbio->bi_private =3D r10_bio;
+> -
+> -		atomic_inc(&r10_bio->remaining);
+> -		spin_lock_irqsave(&conf->device_lock, flags);
+> -		bio_list_add(&conf->pending_bio_list, mbio);
+> -		conf->pending_count++;
+> -		spin_unlock_irqrestore(&conf->device_lock, flags);
+> -		if (!mddev_check_plugged(mddev))
+> -			md_wakeup_thread(mddev->thread);
+> -
+> -		if (!r10_bio->devs[i].repl_bio)
+> -			continue;
+> +		if (r10_bio->devs[i].bio) {
+> +			struct md_rdev *rdev =3D conf->mirrors[d].rdev;
+> +			mbio =3D bio_clone_mddev(bio, GFP_NOIO, mddev);
+> +			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
+> +				    max_sectors);
+> +			r10_bio->devs[i].bio =3D mbio;
 > +
-> +.SH DESCRIPTION
-> +The
-> +.BR s390_runtime_instr ()
-> +system call starts or stops CPU runtime instrumentation for the current thread.
+> +			mbio->bi_sector	=3D (r10_bio->devs[i].addr+
+> +					   choose_data_offset(r10_bio,
+> +							      rdev));
+> +			mbio->bi_bdev =3D rdev->bdev;
+> +			mbio->bi_end_io =3D raid10_end_write_request;
+> +			mbio->bi_rw =3D WRITE | do_sync | do_fua;
+> +			mbio->bi_private =3D r10_bio;
+> =20
+> -		mbio =3D bio_clone_mddev(bio, GFP_NOIO, mddev);
+> -		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
+> -			    max_sectors);
+> -		r10_bio->devs[i].repl_bio =3D mbio;
+> +			atomic_inc(&r10_bio->remaining);
+> +			spin_lock_irqsave(&conf->device_lock, flags);
+> +			bio_list_add(&conf->pending_bio_list, mbio);
+> +			conf->pending_count++;
+> +			spin_unlock_irqrestore(&conf->device_lock, flags);
+> +			if (!mddev_check_plugged(mddev))
+> +				md_wakeup_thread(mddev->thread);
+> +		}
+> =20
+> -		/* We are actively writing to the original device
+> -		 * so it cannot disappear, so the replacement cannot
+> -		 * become NULL here
+> -		 */
+> -		mbio->bi_sector	=3D (r10_bio->devs[i].addr +
+> -				   choose_data_offset(
+> -					   r10_bio,
+> -					   conf->mirrors[d].replacement));
+> -		mbio->bi_bdev =3D conf->mirrors[d].replacement->bdev;
+> -		mbio->bi_end_io	=3D raid10_end_write_request;
+> -		mbio->bi_rw =3D WRITE | do_sync | do_fua;
+> -		mbio->bi_private =3D r10_bio;
+> +		if (r10_bio->devs[i].repl_bio) {
+> +			struct md_rdev *rdev =3D conf->mirrors[d].replacement;
+> +			if (rdev =3D=3D NULL) {
+> +				/* Replacement just got moved to main 'rdev' */
+> +				smp_mb();
+> +				rdev =3D conf->mirrors[d].rdev;
+> +			}
+> +			mbio =3D bio_clone_mddev(bio, GFP_NOIO, mddev);
+> +			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
+> +				    max_sectors);
+> +			r10_bio->devs[i].repl_bio =3D mbio;
 > +
-> +The
-> +.IR command
-> +argument controls whether runtime instumentation is started
+> +			mbio->bi_sector =3D (r10_bio->devs[i].addr +
+> +					   choose_data_offset(
+> +						   r10_bio, rdev));
+> +			mbio->bi_bdev =3D rdev->bdev;
+> +			mbio->bi_end_io =3D raid10_end_write_request;
+> +			mbio->bi_rw =3D WRITE | do_sync | do_fua;
+> +			mbio->bi_private =3D r10_bio;
+> =20
+> -		atomic_inc(&r10_bio->remaining);
+> -		spin_lock_irqsave(&conf->device_lock, flags);
+> -		bio_list_add(&conf->pending_bio_list, mbio);
+> -		conf->pending_count++;
+> -		spin_unlock_irqrestore(&conf->device_lock, flags);
+> -		if (!mddev_check_plugged(mddev))
+> -			md_wakeup_thread(mddev->thread);
+> +			atomic_inc(&r10_bio->remaining);
+> +			spin_lock_irqsave(&conf->device_lock, flags);
+> +			bio_list_add(&conf->pending_bio_list, mbio);
+> +			conf->pending_count++;
+> +			spin_unlock_irqrestore(&conf->device_lock, flags);
+> +			if (!mddev_check_plugged(mddev))
+> +				md_wakeup_thread(mddev->thread);
+> +		}
+>  	}
+> =20
+>  	/* Don't remove the bias on 'remaining' (one_write_done) until
 
-Spelling: instrumentation
+--=20
+Ben Hutchings
+Theory and practice are closer in theory than in practice.
+                                - John Levine, moderator of comp.compilers
 
-> +( 1 ) or stopped ( 2 ) for the current thread.
-> +
-> +The
-> +.IR signum
-> +argument specifies the number of a real-time signal. The
+--=-WIQy3fWW+iRW9D5euAho
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Please start new sentences on a new source line.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> +real-time signal is sent to the thread if the runtime instrumentation
-> +buffer is full or if the runtime-instrumentation-halted interrupt
-> +occured.
+iQIVAwUAUMzEKOe/yOyVhhEJAQokoBAApgHzzSDB64588dBk8AXqsL3MXrSAczAp
+nROr4/iipMWVrOgITPTFn+RWu3t4cwKK1k1j7vRPAeCNjOy2ERGTFClkWmGtpTeo
+ilm1NJj7hFg/lW/1wWilaIyk3OHKdy6uZP/BdspkiZHI7MtI90/jZYDXvEIH5tnI
+ybjmjkIMFbZ8no0YMaqaLE94VYP3eh7kpmN+rNDuxP6sPnxn1O2KVN/u5cQ7kTRP
+LXvw7p28xZNSTxxPGcWi/KBowCU6gdB3rsaiZs0lsYCGoPJKtfKjoLwD53TaA8xZ
+78VJbJETyanKz1E2Aj7nQ6f6TWBxmXuEGUuM+QtN6PDrvDVedpSCjIzE8QMQZO4e
+SvSauji21VUl3imWRZcgCUe4Y0IsO4+o8NCz0zlGacPMioUpL6ixVxOw+S5hKmf4
+TguR52O5rNy74uA9tF+c7Q4MgiLGETLl6RqVevVVuVnALn8ICMzUctk4ZVIrzBUA
+r32Wk5siFQ7BYOWu5mDcJVOx39VxZDx8a+SXafObGg8a2C84vyvi7gqCk2uVfZzN
+mldYDrOt7VPxAdj8T0QEXfRo8AJVsYpv77e338ttphujOfrIgqUEDfrOsAnPTixh
+BMuM/96we9ZpWyR4LA5EejNFRsePeDTOrS8Mv20IaTzB+wrd3BEz3iCQV5vgfDhl
+egkuVpru5Tw=
+=bywK
+-----END PGP SIGNATURE-----
 
-Spelling: occurred.
-
-> +
-> +.SH RETURN VALUE
-> +On success
-> +.BR s390_runtime_instr ()
-> +returns 0 and enables the thread for
-> +runtime instrumentation by assigning the thread a default runtime
-> +instrumentation control block. The caller can then read and modify the
-
-Start new sentence on a new source line.
-
-> +control block and start the runtime instrumentation. On error, -1 is
-
-Start new sentence on a new source line.
-
-> +returned and
-> +.IR errno
-> +is set to one of the error codes listed below.
-> +
-> +.SH ERRORS
-> +.TP
-> +.B EOPNOTSUPP
-> +The runtime instrumentation facility is not available.
-> +.TP
-> +.B EINVAL
-> +The value specified in
-> +.IR command
-> +is not a valid command or the value specified in
-> +.IR signum
-> +is not a real-time signal number.
-> +.TP
-> +.B ENOMEM
-> +Allocating memory for the runtime instrumentation control block
-> +failed.
-> +
-> +.SH VERSIONS
-> +This system call is available since Linux 3.7.
-> +
-> +.SH CONFORMING TO
-> +This system call
-
-This Linux-specific system call
-
-> +is only available on the s390 architecture. The runtime instrumentation facility is available
-
-http://www.kernel.org/doc/man-pages/licenses.html
-
-> +beginning with System z EC12.
-> +
-> +.SH NOTES
-> +Glibc does not provide a wrapper for this system call, use
-> +.BR syscall (2)
-> +to call it.
-
-Somewhere around here it would be nice to have some notes on how one
-uses this RI feature. The commit
-e4b8b3f33fcaa0ed6e6b5482a606091d8cd20beb has a bit of info. I'd
-suggest including that info in the page, with (possibly) an example.
-
-> +
-> +.SH SEE ALSO
-> +.BR signal (7),
-> +.BR syscall (2)
-
-Order entries here by section number.
-
-Thanks,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+--=-WIQy3fWW+iRW9D5euAho--
