@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946125Ab2LOAG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 19:06:56 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:42035 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945910Ab2LOAGz (ORCPT
+	id S1757162Ab2LOAJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 19:09:39 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:60930 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756905Ab2LOAJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 19:06:55 -0500
-Message-ID: <50CBBF28.4050006@paradoxuncreated.com>
-Date: Sat, 15 Dec 2012 01:07:04 +0100
-From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 14 Dec 2012 19:09:38 -0500
+Date: Sat, 15 Dec 2012 00:14:47 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        containers@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC][PATCH] Fix cap_capable to only allow owners in the
+ parent user namespace to have caps.
+Message-ID: <20121215001447.GD13659@mail.hallyn.com>
+References: <87mwxhtxve.fsf@xmission.com>
+ <87zk1hshk7.fsf_-_@xmission.com>
+ <20121214032820.GA5115@mail.hallyn.com>
+ <87bodxi9zw.fsf@xmission.com>
+ <20121214152607.GA9266@mail.hallyn.com>
+ <87bodwd4aw.fsf@xmission.com>
+ <20121214161514.GA9962@mail.hallyn.com>
+ <87r4ms5wpm.fsf@xmission.com>
+ <20121214202921.GA11450@mail.hallyn.com>
+ <87bodww9hv.fsf@xmission.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Gnu
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bodww9hv.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GNU GPL licence, is an open-source licence. However GNU has come to 
-be associated with cows, stupid slogans involving beer, and Richard 
-Stallman in a tinfoil-hat making obscure statements, such as acting as 
-thought-police and forbidding the term "open source". Maybe he was one 
-of those people who did a lot of LSD in the early hacking-culture. Silly 
-dances, and naive geekness, treating trash-women with respect, and 
-having romantic thoughts about them on his blog.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serge@hallyn.com> writes:
+> 
+> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 
+> >> A child user namespace having capabilities against processes in it's
+> >> parent seems totally bizarre and pretty dangerous from a capabilities
+> >> standpoint.
+> >
+> > How would it have them against its parent?
+> 
+> init_user_ns
+>    userns a --- created by kuid 1
 
-I don`t know what happened, but the open-source movement has grown 
-large, and too large for these kinds of obscurities.
+Now a mapping needs to be set up (by a task with CAP_SYS_ADMIN in
+init_user_ns) which allows kuids 1 and 2 to be used by userns a.
+Otherwise (if no mapping is set up) userns a only has the overlowuid.
 
-Humans, before God, has not been enjoined to respect obscure licences, 
-or the culture associated with them.
+Realistically only kuids over 100000 (let's say) would used.  i.e.
+kuids 100,000-199,999 would map to container uids 0-99,999.
 
-But God is just. And these kinds of licences, can easily be replaced by 
-others, who respect the sentiments of open-source. And that we can do 
-togheter, in a common decision in agreement by all. And as open-source 
-is growing, that is what I think we should do. Take the licence to the 
-level, of the movement as a whole. If Stallman wants to protest, if will 
-just be him, and his obscure behaviour.
+>      userns b -- created by kuid 2
 
-And while we are at it, the linux penguin can go aswell.
+Now a mapping needs to be set up (by a task with CAP_SYS_ADMIN in
+userns a) which allows kuids 1 and 2 to be used by userns b.
 
-And ofcourse that should be true of eagles in symbolism related to the 
-US, or lions in symbolism related to Norway, for that matter.
+If userns had been mapped with kuids 100,000-199,999 mapping to
+uids 0-99999, then only kuids in that range could be mapped into
+userns b.
 
-Do you know what an eagle does? It looks at it`s prey, maybe a mouse, 
-from high above, flies down, rips it`s skull open, and eats it`s brain. 
-That is how the animal world is. Trained from child for killing, to 
-survive. But what that has to do with national symbolism, you really can 
-wonder.
+>         process c in userns b with kuid 1
+>
+> Serge read the first permisison check in common_cap. 
+> Think what happens in the above example.
+> 
+> For the rest I understand your concern.
 
-Peace Be With You.
-Uwaysi.
+Ok.  Then we can discuss my concern later (after the new year).
 
-Also posted on my blog - http://paradoxuncreated.com/Blog/wordpress/?p=5801
+> Serge please read and look at the patches I have posted to fix
+> the issues Andy found with the user namespace tree.  Especially
+> the fix to commit_creds.
 
+The setns fixes were IMO the most important - and interesting - ones :)
+
+Thanks, Andy!
+
+> After you have looked at the patches to fix the issues I will
+> be happy to discuss things further with you.
+
+Thanks,
+-serge
