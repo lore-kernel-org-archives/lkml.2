@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab2LOKhh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 05:37:37 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45312 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab2LOKhd (ORCPT
+	id S1754270Ab2LOKuY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 05:50:24 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:56543 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab2LOKuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 05:37:33 -0500
-Date: Sat, 15 Dec 2012 02:36:58 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Jack Wang <jack.wang.usish@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "zab@redhat.com" <zab@redhat.com>, "bcrl@kvack.org" <bcrl@kvack.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
-Message-ID: <20121215103658.GB10411@moria.home.lan>
-References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
- <20121213211808.GJ25017@kernel.dk>
- <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com>
- <50CAD6D9.5070703@fusionio.com>
- <20121215092526.GA10411@moria.home.lan>
- <50CC46F8.3070600@fusionio.com>
+	Sat, 15 Dec 2012 05:50:21 -0500
+Message-ID: <50CC544D.8050505@gmail.com>
+Date: Sat, 15 Dec 2012 11:43:25 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50CC46F8.3070600@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Evgeniy Dushistov <dushistov@mail.ru>, reiserfs-devel@vger.kernel.org,
+        Bob Copeland <me@bobcopeland.com>, ocfs2-devel@oss.oracle.com,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        Petr Vandrovec <petr@vandrovec.name>, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, linux-doc@vger.kernel.org
+Subject: [PATCH 00/21 v5] drop vmtruncate
+References: <508295AF.60606@gmail.com> <5094E219.5020009@gmail.com>
+In-Reply-To: <5094E219.5020009@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 10:46:32AM +0100, Jens Axboe wrote:
-> On 2012-12-15 10:25, Kent Overstreet wrote:
-> > Cool, thanks for the numbers!
-> > 
-> > I suspect the difference is due to contention on the ringbuffer,
-> > completion side. You didn't enable my batched completion stuff, did you?
-> 
-> No, haven't tried the batching yet.
-> 
-> > I suspect the numbers would look quite a bit different with that,
-> > based on my own profiling. If the driver for the device you're testing
-> > on is open source, I'd be happy to do the conversion (it's a 5 minute
-> > job).
-> 
-> Knock yourself out - I already took a quick look at it, and conversion
-> should be pretty simple. It's the mtip32xx driver, it's in the kernel. I
-> would suggest getting rid of the ->async_callback() (since it's always
-> bio_endio()) since that'll make it cleaner.
+Hi all,
 
-Just pushed my conversion - it's untested, but it's pretty
-straightforward.
+I send again the vmtruncate patch series. No change from the latest version, only rebased on the latest
+Linus's tree. I hope we can merge it for 3.8.
 
-> 
-> > Also, I don't think our approaches really conflict - it's been awhile
-> 
-> Completely agree. I split my patches up a bit yesterday, and then I took
-> a look at your series. There's a bit of overlap between the two, but
-> really most of it would be useful together. You can see the (bit more)
-> split series here:
-> 
-> http://git.kernel.dk/?p=linux-block.git;a=shortlog;h=refs/heads/aio-dio
+Marco
 
-Cool, taking a look at it now.
+Changes:
+v5: rebased after 3.7 release
+v4: fix an error for ocfs2, silently ignore truncate for procfs as suggested by Al
+v3: reworked after Al and Christoph comments
+v2: add documentation cleaning
+v1: first draft
 
-> 
-> > since I looked at your patch but you're getting rid of the aio
-> > ringbuffer and using a linked list instead, right? My batched completion
-> > stuff should still benefit that case.
-> 
-> Yes, I make the ring interface optional. Basically you tell aio to use
-> the ring or not at io_queue_init() time. If you don't care about the
-> ring, we can use a lockless list for the completions.
+Marco Stornelli (21):
+  ufs: drop vmtruncate
+  sysv: drop vmtruncate
+  reiserfs: drop vmtruncate
+  procfs: drop vmtruncate
+  omfs: drop vmtruncate
+  ocfs2: drop vmtruncate
+  adfs: drop vmtruncate
+  affs: drop vmtruncate
+  bfs: drop vmtruncate
+  hfs: drop vmtruncate
+  hpfs: drop vmtruncate
+  jfs: drop vmtruncate
+  hfsplus: drop vmtruncate
+  logfs: drop vmtruncate
+  minix: drop vmtruncate
+  ncpfs: drop vmtruncate
+  nilfs2: drop vmtruncate
+  ntfs: drop vmtruncate
+  vfs: drop vmtruncate
+  mm: drop vmtruncate
+  documentation: drop vmtruncate
 
-Yeah, it is a good idea - I'm certainly not attached to the current
-ringbuffer implementation (though a ringbuffer isn't a terrible idea if
-we had one that was implemented correctly).
+ Documentation/filesystems/Locking |    6 ------
+ Documentation/filesystems/porting |    2 +-
+ Documentation/filesystems/vfs.txt |   11 -----------
+ fs/adfs/inode.c                   |   15 ++++++++++-----
+ fs/affs/file.c                    |   18 ++++++++++++------
+ fs/affs/inode.c                   |    5 ++++-
+ fs/bfs/file.c                     |   15 ++++++++++-----
+ fs/hfs/inode.c                    |   26 ++++++++++++++++++--------
+ fs/hfsplus/inode.c                |   27 ++++++++++++++++-----------
+ fs/hpfs/file.c                    |   18 ++++++++++++------
+ fs/hpfs/inode.c                   |    5 ++++-
+ fs/jfs/file.c                     |    6 ++++--
+ fs/jfs/inode.c                    |   20 ++++++++++++++------
+ fs/libfs.c                        |    2 --
+ fs/logfs/readwrite.c              |   10 ++++++++--
+ fs/minix/file.c                   |    6 ++++--
+ fs/minix/inode.c                  |   17 ++++++++++++-----
+ fs/ncpfs/inode.c                  |    4 +---
+ fs/nilfs2/file.c                  |    1 -
+ fs/nilfs2/inode.c                 |   24 +++++++++++++++---------
+ fs/nilfs2/nilfs.h                 |    1 +
+ fs/nilfs2/recovery.c              |    3 ++-
+ fs/ntfs/file.c                    |   16 +++++++++++++---
+ fs/ntfs/inode.c                   |    8 ++++++--
+ fs/ntfs/inode.h                   |    4 ++++
+ fs/ocfs2/file.c                   |   18 ------------------
+ fs/omfs/file.c                    |   22 +++++++++++++++-------
+ fs/proc/base.c                    |    7 -------
+ fs/proc/generic.c                 |    9 +--------
+ fs/proc/proc_sysctl.c             |    7 -------
+ fs/reiserfs/file.c                |    3 +--
+ fs/reiserfs/inode.c               |   15 +++++++++++----
+ fs/reiserfs/reiserfs.h            |    1 +
+ fs/sysv/file.c                    |    5 +++--
+ fs/sysv/itree.c                   |   17 ++++++++++++-----
+ fs/ufs/inode.c                    |   15 ++++++++++-----
+ include/linux/fs.h                |    1 -
+ include/linux/mm.h                |    1 -
+ mm/truncate.c                     |   23 -----------------------
+ 39 files changed, 225 insertions(+), 189 deletions(-)
 
-> You completely remove the cancel, I just make it optional for the gadget
-> case. I'm fine with either of them, though I did not look at your usb
-> change in detail. If it's clean, I suspect we should just kill cancel
-> completion as you did.
+-- 
+1.7.3.4
 
-We (Zach and I) actually made it optional too, more or less - I haven't
-looked at how you did it yet, but in my tree the linked list is there,
-but the kiocb isn't added to the kioctx's list until something sets a
-cancel function.
-
-> > Though - hrm, I'd have expected getting rid of the cancellation linked
-> > list to make a bigger difference and both our patchsets do that.
-> 
-> The machine in question runs out of oomph, which is hampering the
-> results. I should have it beefed up next week. It's running E5-2630
-> right now, will move to E5-2690. I think that should make the results
-> clearer.
-
-Well, the fact that it's cpu bound just means the throughput numbers for
-our various patches are different... and what I'm really interested in
-is the profiles, I can't think of any reason cpu speed would affect that
-much.
-
-> > What device are you testing on, and what's your fio script? I may just
-> > have to buy some hardware so I can test this myself.
-> 
-> Pretty basic script, it's attached. Probably could eek more out of the
-> system, but it's been fine for just basic apples-to-apples comparison.
-> I'm using 6x p320h for this test case.
-
-Thanks - I'll have to see if I can get something setup that roughly
-matches your setup. 
