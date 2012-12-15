@@ -1,53 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab2LOW3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 17:29:23 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51382 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab2LOW3V (ORCPT
+	id S1754641Ab2LOW30 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 17:29:26 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38234 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab2LOW3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 17:29:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355529222.31680.143.camel@haakon2.linux-iscsi.org>
-References: <1355529222.31680.143.camel@haakon2.linux-iscsi.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 15 Dec 2012 14:28:59 -0800
-X-Google-Sender-Auth: OsLkZ93sAU7vttcJxXXO0oQXnRg
-Message-ID: <CA+55aFzHGQX1KWPcRwiFqK3EifodAfN=NQ=OMQKww2qM57gYsA@mail.gmail.com>
-Subject: Re: [GIT PULL] target updates for v3.8-rc1
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 15 Dec 2012 17:29:25 -0500
+Date: Sat, 15 Dec 2012 22:34:48 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fadvise: perform WILLNEED readahead in a workqueue
+Message-ID: <20121215223448.08272fd5@pyramind.ukuu.org.uk>
+In-Reply-To: <20121215005448.GA7698@dcvr.yhbt.net>
+References: <20121215005448.GA7698@dcvr.yhbt.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 3:53 PM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
->
-> Here are the target updates for v3.8-rc1 merge window code.  Please go
-> ahead and pull from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
->
-> Just a heads up that there is a minor merge conflict that you'll
-> encounter in target_handle_task_attr() code, that sfr has been carrying
-> a fix for recently within -next.  After dropping the HEAD section, the
-> resolution should look like:
+On Sat, 15 Dec 2012 00:54:48 +0000
+Eric Wong <normalperson@yhbt.net> wrote:
 
-Hmm. This is *not* how I resolved that conflict - that seems to drop the new
+> Applications streaming large files may want to reduce disk spinups and
+> I/O latency by performing large amounts of readahead up front
 
-     complete(&cmd->t_transport_stop_comp);
 
-added by Roland in commit 3ea160b3e8f0 ("target: Fix handling of
-aborted commands").
-
-So my conflict resolution looks different.
-
-Which may be a bug, of course. Nicholas, Roland, please check my end result,
-
-                  Linus
+How does it compare benchmark wise with a user thread or using the
+readahead() call ?
