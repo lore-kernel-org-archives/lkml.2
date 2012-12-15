@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab2LOMJl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 07:09:41 -0500
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:26461 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755724Ab2LOMJj (ORCPT
+	id S1756447Ab2LOMe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 07:34:28 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:54098 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab2LOMe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 07:09:39 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAGNnzFB8qkPM/2dsb2JhbAANOLsCg2mDEQEBAQMBOEABBQsLGAkWDwkDAgECAUUGDQEHAQGHfAEMqCGTPYxdhEMDqVY
-X-IronPort-AV: E=Sophos;i="4.84,290,1355068800"; 
-   d="scan'208";a="57748178"
-Message-ID: <50CC687F.6060305@westnet.com.au>
-Date: Sat, 15 Dec 2012 22:09:35 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] m68k updates for 3.8
-References: <1355521700.18402.7@driftwood>
-In-Reply-To: <1355521700.18402.7@driftwood>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 15 Dec 2012 07:34:26 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 15 Dec 2012 13:34:10 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] staging/fwserial: Drop suggestion for helper fn
+ integration
+Message-ID: <20121215133410.0b6add5c@stein>
+In-Reply-To: <1355551400-8204-7-git-send-email-peter@hurleysoftware.com>
+References: <1355551400-8204-1-git-send-email-peter@hurleysoftware.com>
+	<1355551400-8204-7-git-send-email-peter@hurleysoftware.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2012 07:48 AM, Rob Landley wrote:
-> On 12/14/2012 06:04:51 AM, Greg Ungerer wrote:
->> Hi Rob,
-> ...
->>> Somebody got one of my images to boot under aranym but they had to patch
->>> the kernel fairly extensively to add the emulated device support that
->>> emulator provided. It doesn't emulate real devices the way qemu does,
->>> but qemu doesn't fully emulate the processor (just coldfire in
->>> mainline)...
->>
->> I use aranym for testing m68k. Though I don't really pound to heavily
->> on the devices. I really only cross-compile small systems for testing
->> on it.
->
-> What kernel config do you use for aranym? I don't see an an aranym entry in
-> arch/m68k/configs, and I stopped using it precisely because it required
-> several large patches to add emulated device support for everything from
-> serial console to block devices. (There was a kernel upgrade, it broke,
-> I cut a release without it. Pretty much the same reason I stopped using
-> squashfs for a year or so until it finally got merged.)
+On Dec 15 Peter Hurley wrote:
+> The firewire core does not require or want the suggested helper fns;
+> drop suggestion from TODO file.
 
-arch/m68k/configs/atari_defconfig
+It's not about the core, but about what the highlevel drivers need.
+(I.e. protocol drivers and some higherlevel parts of the core, e.g.
+the userspace driver interface.)
 
-AranyM is an Atari emulator. As far as I know all the special device
-support has been merged into mainline now.
+If it is something which two or more drivers use, it goes into the core.
+(Or into a library, as Clemens did with snd-firewire-lib.)  If it is
+something which needs assistance by the lowlevel driver, it goes into the
+core or passes through the core, regardless whether one or more protocol
+drivers need it.  (Example:  Physical DMA filtering for the SBP-2
+initiator driver.)  If it is something very complicated and 1394
+architecture specific, but still only needed by one highlevel driver, I
+for one am more comfortable with leaving this in the respective driver
+rather than moving this into the core.
 
+The packet payload calculation is a 1394 architecture arcanum and is needed
+in on form or another in more than one driver (firewire-net, -sbp2, and
+now fwserial).  But as discussed, what they precisely need in the end
+differs to a degree that leaves nothing substantial to share.
 
-> I can poke Laurent Vivier about possibly getting the qemu-system-m68k
-> and the q800 board emulation to work better if there's interest from
-> anyone other than me. (I just checked and it dies at the same place it
-> did last year: setting up the page tables. The MMU emulation ain't
-> there, and I haven't got documentation for it.)
->
-> My interest is that my aboriginal linux setup builds the same system for
-> a dozen different targets and then natively builds packages inside the
-> emulator. This allows me to regression test if their behavior diverges,
-> even from a cron job if I want to. From my viewpoint, the more targets
-> the merrier.
->
-> (I don't care hugely about which board emulation I'm using, the point is
-> to run a native root filesystem including a native toolchain and build
-> stuff locally on the board. This requires at least 256 megs of memory in
-> the emulated board for gcc 4.2 (more for newer versions), and ideally I
-> want a virtual network card so I can hook up distcc to the cross
-> compiler and move the heavy lifting of compilation outside the emulator
-> without reintroducing the whole "keep track of two simultaneous build
-> contexts" complexity of cross compiling. So it's not "q800 vs aranym",
-> it's "I already got qemu to emulate all the other targets I'm testing
-> and it doesn't require an extensively patched kernel" vs "other emulator
-> requiring patched kernel"...)
-
-For whatever it is worth I don't run patched kernels under AranyM.
-But I don't really care to much about the odd ball devices either
-for most of the testing I use it for.
-
-Regards
-Greg
-
-
+[That's too many words about a two- or three-line piece of code; but on the
+on the other hand it is a generally relevant consideration whenever new
+functionality is to be added somewhere in the driver stack.]
+-- 
+Stefan Richter
+-=====-===-- ==-- -====
+http://arcgraph.de/sr/
