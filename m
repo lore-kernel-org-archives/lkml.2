@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945988Ab2LOBYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 20:24:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab2LOBYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 20:24:13 -0500
-Date: Fri, 14 Dec 2012 23:03:12 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, kvm list <kvm@vger.kernel.org>
-Subject: Re: percpu allocation failures in kvm
-Message-ID: <20121215010312.GA27536@amt.cnet>
-References: <CALCETrUf6ZPfXuFsZD32w76CQsrqg42_75cmqeTa9jW+in=41A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUf6ZPfXuFsZD32w76CQsrqg42_75cmqeTa9jW+in=41A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932783Ab2LOB3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 20:29:05 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:30564 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab2LOB3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 20:29:03 -0500
+Message-ID: <1355534397.18964.304.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tang Chen <tangchen@cn.fujitsu.com>, Huxinwei <huxinwei@huawei.com>
+Date: Fri, 14 Dec 2012 18:19:57 -0700
+In-Reply-To: <50C9F0F5.40307@gmail.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	       <50B5EFE9.3040206@huawei.com>
+	      <1354128096.26955.276.camel@misato.fc.hp.com>
+	     <50B6E936.2080308@huawei.com>
+	  <1354228028.7776.56.camel@misato.fc.hp.com>
+	     <50BC29C6.6050706@huawei.com>
+	   <1354579848.21585.54.camel@misato.fc.hp.com>
+	  <50C0CA90.7010608@gmail.com>
+	   <1354849065.21116.61.camel@misato.fc.hp.com>
+	 <50C1852D.3000104@huawei.com>  <1354928933.28379.37.camel@misato.fc.hp.com>
+	 <50C74481.7010107@gmail.com> <1355409749.18964.107.camel@misato.fc.hp.com>
+	 <50C9F0F5.40307@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 09:43:23PM -0800, Andy Lutomirski wrote:
-> On 3.7.0 + irrelevant patches, I get this on boot.  I've seen it on
-> and off on earlier kernels, I think (although I'm not currently
-> getting it on 3.5).
-> 
-> [   10.230054] PERCPU: allocation failed, size=304 align=32, alloc
-> from reserved chunk failed
-> [   10.230059] Pid: 1026, comm: modprobe Tainted: G        W    3.7.0-ama+ #5
-> [   10.230060] Call Trace:
-> [   10.230070]  [<ffffffff81129efb>] pcpu_alloc+0x9db/0xa40
-> [   10.230074]  [<ffffffff810a81ad>] ? find_symbol_in_section+0x4d/0x140
-> [   10.230077]  [<ffffffff810a8160>] ? finished_loading+0x50/0x50
-> [   10.230080]  [<ffffffff810a8af0>] ? each_symbol_section+0x30/0x70
-> [   10.230083]  [<ffffffff810a8b61>] ? find_symbol+0x31/0x60
-> [   10.230086]  [<ffffffff8112a1f3>] __alloc_reserved_percpu+0x13/0x20
-> [   10.230089]  [<ffffffff810ab48d>] load_module+0x3ed/0x1b50
-> [   10.230093]  [<ffffffff81075c3b>] ? __srcu_read_unlock+0x4b/0x70
-> 
-> --Andy
+On Thu, 2012-12-13 at 23:15 +0800, Jiang Liu wrote:
+> On 12/13/2012 10:42 PM, Toshi Kani wrote:
+> > On Tue, 2012-12-11 at 22:34 +0800, Jiang Liu wrote:
+> >> On 12/08/2012 09:08 AM, Toshi Kani wrote:
+> >>> On Fri, 2012-12-07 at 13:57 +0800, Jiang Liu wrote:
+> >>>> On 2012-12-7 10:57, Toshi Kani wrote:
+> >>>>> On Fri, 2012-12-07 at 00:40 +0800, Jiang Liu wrote:
+ :
+> >>>
+> >>>> 2) an ACPI based hotplug manager driver, which is a platform independent
+> >>>>    driver and manages all hotplug slot created by the slot driver.
+> >>>
+> >>> It is surely impressive work, but I think is is a bit overdoing.  I
+> >>> expect hot-pluggable servers come with management console and/or GUI
+> >>> where a user can manage hardware units and initiate hot-plug operations.
+> >>> I do not think the kernel needs to step into such area since it tends to
+> >>> be platform-specific. 
+> >> One of the major usages of this feature is for testing. 
+> >> It will be hard for OSVs and OEMs to verify hotplug functionalities if it could
+> >> only be tested by physical hotplug or through management console. So to pave the
+> >> way for hotplug, we need to provide a mechanism for OEMs and OSVs to execute 
+> >> auto stress tests for hotplug functionalities.
+> > 
+> > Yes, but such OS->FW interface is platform-specific.  Some platforms use
+> > IPMI for the OS to communicate with the management console.  In this
+> > case, an OEM-specific command can be used to request a hotplug through
+> > IPMI.  Some platforms may also support test programs to run on the
+> > management console for validations.
+> > 
+> > For early development testing, Yinghai's SCI emulation patch can be used
+> > to emulate hotplug events from the OS.  It would be part of the kernel
+> > debugging features once this patch is accepted. 
+> Hi Toshi,
+> 	ACPI 5.0 has provided some mechanism to normalize the way to issue
+> RAS related requests to firmware. I hope ACPI 5.x will define some standardized
+> ways based on the PCC defined in 5.0. If needed, we may provide platform
+> specific methods for them too.
 
-You're loading the kvm module, or loading some other module inside
-a kvm guest?
+Thanks for the pointer!  Yeah, the spec purposely does not define the
+command.  When we support PCC, we will need to provide a way for user
+app or oem module to supply a payload. 
+
+Thanks,
+-Toshi
 
