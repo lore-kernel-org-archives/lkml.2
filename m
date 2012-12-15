@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab2LOUhy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 15:37:54 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43206 "EHLO
+	id S1752205Ab2LOUix (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 15:38:53 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53293 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab2LOUhw (ORCPT
+	with ESMTP id S1751658Ab2LOUiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 15:37:52 -0500
+	Sat, 15 Dec 2012 15:38:51 -0500
 MIME-Version: 1.0
-Date: Sun, 16 Dec 2012 02:07:51 +0530
-Message-ID: <CAA_L+UNJ_zSaCvtvWSa_BriU9UYYPomWNXdGKOsoLPG6hTN=QA@mail.gmail.com>
-Subject: [PATCH 3.7.0 0/9] i82975x_edac: driver cleanup
+Date: Sun, 16 Dec 2012 02:08:50 +0530
+Message-ID: <CAA_L+UP_CtY4wTnOGASwqb9PJnb9XyGpGauTKk6=wssagg1GPw@mail.gmail.com>
+Subject: [PATCH 3.7.0 1/9] i82975x_edac.c: fix style errors
 From: Arvind R <arvino55@gmail.com>
-To: linux-edac@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+To: linux-edac@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH 3.7.0 0/9] i82975x_edac: driver cleanup
+Subject: [PATCH 3.7.0 1/9] i82975x_edac.c: fix style errors
 
-This patchset cleans up the accumulated mess the driver has become.
-Currently, it does not crash, but serves no other purpose. This patch-set
-gets it to print correct DIMM labels on errors, and sync with the core
-w.r.t memory layout.
-
-It consists of 9 patches as follows:
-	1. fix style errors:
-	    clean up the source w.r.t. long lines
-
-	2. fix layers initialisation:
-		the wrong initialisation caused the fatal 3.6 crash that has been
-		temporarily fixed. The csrow_init func did not handle rows
-		exceeding 8 in number.
-		This patch sets channels as 1 or 2 and chip_select accordingly, so
-		that there are always 8 ranks of memory.
-
-	3. cleanup debug code:
-		Remove / modify debug levels to sane values. Fixes log flooding when
-		CONFIG_EDAC_DEBUG set.
-		Move local ifdef debug code to print DRAM settings into
-		CONFIG_EDAC_DEBUG section.
-
-	4. remove unnecessary function:
-		function returning a constant DEV_X8 value and used only once, removed.
-	
-	5. optimise mode detection:
-		dual_channel_active now returns bool. With minor optimisations.
-
-	6. unmap pcibar after init:
-		remove the unused iomapped mch_window in private data structure; and
-		unmap the window after initialisation. Now that __devinit is deprecated,
-		this is needed.
-
-	7. correct dimm label initialisation:
-		fix dimm labels to correspond to mobo legends. Assumes 2 ranks per DIMM
-		and DIMMS not spanning channels - as it is on Asus P5WDG2 family at least.
-		Currently, the label bears no correspondance to mobo legends.
-
-	8. fix wrong offset reported:
-		fixes the sometimes greate than PAGESIZE offset reporting caused by mixup
-		of grain-size and grain-shift.
-
-	9. set SW-SCRUB mode and bump revision:
-		With the error address being correct in the core's view,
-		enable SCRUB_SW_SRC so CEs can be written back.
-		And update driver revision.
-
+splits or shortens extra long lines in source.
 Signed-off-by: Arvind R. <arvino55@gmail.com>
 ---
-Total changes:
- i82975x_edac.c |  349 +++++++++++++++++++++---------------------
-  1 file changed, 175 insertions(+), 174 deletions(-)
+ i82975x_edac.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+--- a/drivers/edac/i82975x_edac.c	2012-12-11 09:00:57 +0530
++++ b/drivers/edac/i82975x_edac.c	2012-12-15 16:01:29 +0530
+@@ -48,7 +48,7 @@
+ #define I82975X_DES		0x5d	/* Dram ERRor DeSTination (8b)
+ 					 * 0h:    Processor Memory Reads
+ 					 * 1h:7h  reserved
+-					 * More - See Page 65 of Intel DocSheet.
++					 * More - See Pg.65 of Intel DocSheet.
+ 					 */
+
+ #define I82975X_ERRSTS		0xc8	/* Error Status Register (16b)
+@@ -98,7 +98,7 @@ NOTE: Only ONE of the three must be enab
+ #define I82975X_XEAP	0xfc	/* Extended Dram Error Address Pointer (8b)
+ 					 *
+ 					 * 7:1   reserved
+-					 * 0     Bit32 of the Dram Error Address
++					 * 0     Bit32 of Dram Error Address
+ 					 */
+
+ #define I82975X_MCHBAR		0x44	/*
+@@ -305,13 +305,13 @@ static int i82975x_process_error_info(st
+ 			"\tXEAP=%u\n"
+ 			"\t EAP=0x%08x\n"
+ 			"\tPAGE=0x%08x\n",
+-			(info->xeap & 1) ? 1 : 0, info->eap, (unsigned int) page);
++			(info->xeap & 1) ? 1 : 0, info->eap, (unsigned) page);
+ 		return 0;
+ 	}
+ 	chan = (mci->csrows[row]->nr_channels == 1) ? 0 : info->eap & 1;
+ 	offst = info->eap
+ 			& ((1 << PAGE_SHIFT) -
+-			   (1 << mci->csrows[row]->channels[chan]->dimm->grain));
++			(1 << mci->csrows[row]->channels[chan]->dimm->grain));
+
+ 	if (info->errsts & 0x0002)
+ 		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
+@@ -420,12 +420,13 @@ static void i82975x_init_csrows(struct m
+
+ 			dimm->nr_pages = nr_pages / csrow->nr_channels;
+
+-			snprintf(csrow->channels[chan]->dimm->label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
++			snprintf(csrow->channels[chan]->dimm->label,
++				 EDAC_MC_LABEL_LEN, "DIMM %c%d",
+ 				 (chan == 0) ? 'A' : 'B',
+ 				 index);
+-			dimm->grain = 1 << 7;	/* 128Byte cache-line resolution */
++			dimm->grain = 1 << 7;	/* always */
+ 			dimm->dtype = i82975x_dram_type(mch_window, index);
+-			dimm->mtype = MEM_DDR2; /* I82975x supports only DDR2 */
++			dimm->mtype = MEM_DDR2; /* only supported */
+ 			dimm->edac_mode = EDAC_SECDED; /* only supported */
+ 		}
