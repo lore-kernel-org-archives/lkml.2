@@ -1,102 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab2LOKy0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 05:54:26 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40645 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2LOKyW (ORCPT
+	id S1755854Ab2LOKys (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 05:54:48 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38437 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab2LOKyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 05:54:22 -0500
-Message-ID: <50CC5543.9030206@gmail.com>
-Date: Sat, 15 Dec 2012 11:47:31 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 15 Dec 2012 05:54:47 -0500
+Message-ID: <50CC56F3.1020907@kernel.org>
+Date: Sat, 15 Dec 2012 10:54:43 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 03/21] reiserfs: drop vmtruncate
-Content-Type: text/plain; charset=ISO-8859-15
+To: Alexander Holler <holler@ahsoftware.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4 v2] iio: hid-sensors: respect CONFIG_IIO_TRIGGER
+References: <50C73AFC.1050904@jic23.retrosnub.co.uk> <1355250106-3114-1-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <1355250106-3114-1-git-send-email-holler@ahsoftware.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed vmtruncate
+On 12/11/2012 06:21 PM, Alexander Holler wrote:
+> Not much to say, without that change, hid-sensor-trigger will be
+> always compiled if HID_SENSOR_IIO_COMMON is selected which fails if
+> CONFIG_IIO_TRIGGER is not set because CONFIG_IIO_CONSUMERS_PER_TRIGGER
+> will not be defined.
+> 
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/reiserfs/file.c     |    3 +--
- fs/reiserfs/inode.c    |   15 +++++++++++----
- fs/reiserfs/reiserfs.h |    1 +
- 3 files changed, 13 insertions(+), 6 deletions(-)
+Not sure what tree this was against as it is needs some fixing up for
+staging-next and currently mainline.  Ah well fixed up and added to togreg
+branch of
 
-diff --git a/fs/reiserfs/file.c b/fs/reiserfs/file.c
-index 8375c92..50302d6 100644
---- a/fs/reiserfs/file.c
-+++ b/fs/reiserfs/file.c
-@@ -126,7 +126,7 @@ static int reiserfs_file_open(struct inode *inode, struct file *file)
- 	return err;
- }
- 
--static void reiserfs_vfs_truncate_file(struct inode *inode)
-+void reiserfs_vfs_truncate_file(struct inode *inode)
- {
- 	mutex_lock(&(REISERFS_I(inode)->tailpack));
- 	reiserfs_truncate_file(inode, 1);
-@@ -312,7 +312,6 @@ const struct file_operations reiserfs_file_operations = {
- };
- 
- const struct inode_operations reiserfs_file_inode_operations = {
--	.truncate = reiserfs_vfs_truncate_file,
- 	.setattr = reiserfs_setattr,
- 	.setxattr = reiserfs_setxattr,
- 	.getxattr = reiserfs_getxattr,
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index d83736f..95d7680 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3085,8 +3085,10 @@ static ssize_t reiserfs_direct_IO(int rw, struct kiocb *iocb,
- 		loff_t isize = i_size_read(inode);
- 		loff_t end = offset + iov_length(iov, nr_segs);
- 
--		if (end > isize)
--			vmtruncate(inode, isize);
-+		if ((end > isize) && inode_newsize_ok(inode, isize) == 0) {
-+			truncate_setsize(inode, isize);
-+			reiserfs_vfs_truncate_file(inode);
-+		}
- 	}
- 
- 	return ret;
-@@ -3200,8 +3202,13 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
- 	 */
- 	reiserfs_write_unlock_once(inode->i_sb, depth);
- 	if ((attr->ia_valid & ATTR_SIZE) &&
--	    attr->ia_size != i_size_read(inode))
--		error = vmtruncate(inode, attr->ia_size);
-+	    attr->ia_size != i_size_read(inode)) {
-+		error = inode_newsize_ok(inode, attr->ia_size);
-+		if (!error) {
-+			truncate_setsize(inode, attr->ia_size);
-+			reiserfs_vfs_truncate_file(inode);
-+		}
-+	}
- 
- 	if (!error) {
- 		setattr_copy(inode, attr);
-diff --git a/fs/reiserfs/reiserfs.h b/fs/reiserfs/reiserfs.h
-index 33215f5..157e474 100644
---- a/fs/reiserfs/reiserfs.h
-+++ b/fs/reiserfs/reiserfs.h
-@@ -2455,6 +2455,7 @@ struct reiserfs_transaction_handle *reiserfs_persistent_transaction(struct
- 								    *,
- 								    int count);
- int reiserfs_end_persistent_transaction(struct reiserfs_transaction_handle *);
-+void reiserfs_vfs_truncate_file(struct inode *inode);
- int reiserfs_commit_page(struct inode *inode, struct page *page,
- 			 unsigned from, unsigned to);
- void reiserfs_flush_old_commits(struct super_block *);
--- 
-1.7.3.4
+git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+
+Please check I haven't messed it up.
+> ---
+>  drivers/iio/accel/Kconfig               |    1 +
+>  drivers/iio/common/hid-sensors/Kconfig  |   13 ++++++++++++-
+>  drivers/iio/common/hid-sensors/Makefile |    3 ++-
+>  drivers/iio/gyro/Kconfig                |    1 +
+>  drivers/iio/light/Kconfig               |    1 +
+>  drivers/iio/magnetometer/Kconfig        |    1 +
+>  6 files changed, 18 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iio/accel/Kconfig b/drivers/iio/accel/Kconfig
+> index b2510c4..b84b806 100644
+> --- a/drivers/iio/accel/Kconfig
+> +++ b/drivers/iio/accel/Kconfig
+> @@ -8,6 +8,7 @@ config HID_SENSOR_ACCEL_3D
+>  	select IIO_BUFFER
+>  	select IIO_TRIGGERED_BUFFER
+>  	select HID_SENSOR_IIO_COMMON
+> +	select HID_SENSOR_IIO_TRIGGER
+>  	tristate "HID Acelerometers 3D"
+>  	help
+>  	  Say yes here to build support for the HID SENSOR
+> diff --git a/drivers/iio/common/hid-sensors/Kconfig b/drivers/iio/common/hid-sensors/Kconfig
+> index 8e63d81..e294f31 100644
+> --- a/drivers/iio/common/hid-sensors/Kconfig
+> +++ b/drivers/iio/common/hid-sensors/Kconfig
+> @@ -6,7 +6,7 @@ menu "Hid Sensor IIO Common"
+>  config HID_SENSOR_IIO_COMMON
+>  	tristate "Common modules for all HID Sensor IIO drivers"
+>  	depends on HID_SENSOR_HUB
+> -	select IIO_TRIGGER if IIO_BUFFER
+> +	select HID_SENSOR_IIO_TRIGGER if IIO_BUFFER
+>  	help
+>  	  Say yes here to build support for HID sensor to use
+>  	  HID sensor common processing for attributes and IIO triggers.
+> @@ -14,6 +14,17 @@ config HID_SENSOR_IIO_COMMON
+>  	  HID sensor drivers, this module contains processing for those
+>  	  attributes.
+>  
+> +config HID_SENSOR_IIO_TRIGGER
+> +	tristate "Common module (trigger) for all HID Sensor IIO drivers"
+> +	depends on HID_SENSOR_HUB && HID_SENSOR_IIO_COMMON
+> +	select IIO_TRIGGER
+> +	help
+> +	  Say yes here to build trigger support for HID sensors.
+> +	  Triggers will be send if all requested attributes were read.
+> +
+> +	  If this driver is compiled as a module, it will be named
+> +	  hid-sensor-trigger.
+> +
+>  config HID_SENSOR_ENUM_BASE_QUIRKS
+>  	tristate "ENUM base quirks for HID Sensor IIO drivers"
+>  	depends on HID_SENSOR_IIO_COMMON
+> diff --git a/drivers/iio/common/hid-sensors/Makefile b/drivers/iio/common/hid-sensors/Makefile
+> index 1f463e0..22e7c5a 100644
+> --- a/drivers/iio/common/hid-sensors/Makefile
+> +++ b/drivers/iio/common/hid-sensors/Makefile
+> @@ -3,4 +3,5 @@
+>  #
+>  
+>  obj-$(CONFIG_HID_SENSOR_IIO_COMMON) += hid-sensor-iio-common.o
+> -hid-sensor-iio-common-y := hid-sensor-attributes.o hid-sensor-trigger.o
+> +obj-$(CONFIG_HID_SENSOR_IIO_TRIGGER) += hid-sensor-trigger.o
+> +hid-sensor-iio-common-y := hid-sensor-attributes.o
+> diff --git a/drivers/iio/gyro/Kconfig b/drivers/iio/gyro/Kconfig
+> index 21e27e2..bc9daff 100644
+> --- a/drivers/iio/gyro/Kconfig
+> +++ b/drivers/iio/gyro/Kconfig
+> @@ -8,6 +8,7 @@ config HID_SENSOR_GYRO_3D
+>  	select IIO_BUFFER
+>  	select IIO_TRIGGERED_BUFFER
+>  	select HID_SENSOR_IIO_COMMON
+> +	select HID_SENSOR_IIO_TRIGGER
+>  	tristate "HID Gyroscope 3D"
+>  	help
+>  	  Say yes here to build support for the HID SENSOR
+> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+> index 1763c9b..dbf80ab 100644
+> --- a/drivers/iio/light/Kconfig
+> +++ b/drivers/iio/light/Kconfig
+> @@ -47,6 +47,7 @@ config HID_SENSOR_ALS
+>  	select IIO_BUFFER
+>  	select IIO_TRIGGERED_BUFFER
+>  	select HID_SENSOR_IIO_COMMON
+> +	select HID_SENSOR_IIO_TRIGGER
+>  	tristate "HID ALS"
+>  	help
+>  	  Say yes here to build support for the HID SENSOR
+> diff --git a/drivers/iio/magnetometer/Kconfig b/drivers/iio/magnetometer/Kconfig
+> index c1f0cdd..ff11d68 100644
+> --- a/drivers/iio/magnetometer/Kconfig
+> +++ b/drivers/iio/magnetometer/Kconfig
+> @@ -8,6 +8,7 @@ config HID_SENSOR_MAGNETOMETER_3D
+>  	select IIO_BUFFER
+>  	select IIO_TRIGGERED_BUFFER
+>  	select HID_SENSOR_IIO_COMMON
+> +	select HID_SENSOR_IIO_TRIGGER
+>  	tristate "HID Magenetometer 3D"
+>  	help
+>  	  Say yes here to build support for the HID SENSOR
+> 
