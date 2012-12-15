@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab2LORZo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 12:25:44 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:50714 "EHLO www.hansjkoch.de"
+	id S1752997Ab2LOR2L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 12:28:11 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33579 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab2LORZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 12:25:42 -0500
-Date: Sat, 15 Dec 2012 18:25:40 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Cong Ding <dinggnu@gmail.com>
-Subject: Re: [PATCH 1/2 v3] Fix memory freeing issues
-Message-ID: <20121215172540.GB2589@local>
-References: <201212101118.08463.vitas@nppfactor.kiev.ua>
- <201212101144.45967.vitas@nppfactor.kiev.ua>
- <20121213181354.GI4261@local>
- <201212141133.50312.vitas@nppfactor.kiev.ua>
+	id S1750795Ab2LOR2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 12:28:09 -0500
+Date: Sat, 15 Dec 2012 18:28:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v6 04/27] x86, boot: Move lldt/ltr out of 64bit code
+ section
+Message-ID: <20121215172805.GA20393@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@gmail.com>,
+	Matt Fleming <matt.fleming@intel.com>
+References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
+ <1355436141-8668-5-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201212141133.50312.vitas@nppfactor.kiev.ua>
+In-Reply-To: <1355436141-8668-5-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 11:33:50AM +0200, Vitalii Demianets wrote:
+On Thu, Dec 13, 2012 at 02:01:58PM -0800, Yinghai Lu wrote:
+> commit 08da5a2ca
 > 
-> Hans, why do you want to put in this patch, which is dealing with 
-> memory-freeing issues only, completely unrelated functional changes?
+>     x86_64: Early segment setup for VT
+> 
+> add lldt/ltr to clean more segments.
+> 
+> Those code are put in code64, and it is using gdt that is only
+> loaded from code32 path.
+> 
+> That breaks booting with 64bit bootloader that does not go through
+> code32 path. It get at startup_64 directly,  and it has different
+> gdt.
+> 
+> Move those lines into code32 after their gdt is loaded.
 
-Because during review of your patch we happened to find another issue
-a few lines up and down. Why not fix it on the way?
+Let me rewrite that commit message for ya, you tell me whether I got it
+right:
 
-What I'd like is simply
+"08da5a2ca479 ("x86_64: Early segment setup for VT") sets up LDT and TR
+into a valid state in order to speed up boot decompression under VT. The
+code which loads the GDT is executed in the 32-bit startup code while
+the above change in the 64-bit part.
 
-[PATCH] Fix uio_pdrv_genirq issues
+However, this breaks 64-bit bootloaders which jump straight to the
+64-bit startup entry point and thus skip LDR and TR setup because they
+use a different GDT.
 
-If you like, make it two patches, one with your memory-freeing issue
-and one "Remove irq tracking" or something like that. That's just
-three or four lines difference, I'd even accept it if it were only
-one patch.
+Fix this by moving the LDT and TR setup to the 32-bit section."
 
-I don't want to fix one thing now and leave the other one unresolved.
-That would just be a waste of time.
+Is that correct?
 
-To be clear, I have no objections regarding your memory freeing ideas.
+If so, why not take the time and try to write your commits more
+understandably so that bystanders like me don't have to look at the code
+first and scramble to understand what you mean?
 
-Thanks,
-Hans
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
