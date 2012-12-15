@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2LOUyY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 15:54:24 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57057 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab2LOUyW (ORCPT
+	id S1753280Ab2LOUzn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 15:55:43 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43300 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab2LOUzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 15:54:22 -0500
+	Sat, 15 Dec 2012 15:55:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAN1soZxJ_JCEVV5v99tFi22fq5AEOCBj1D5PY=vmGGW_gDWuJQ@mail.gmail.com>
-References: <1354522477-11991-1-git-send-email-haojian.zhuang@gmail.com>
- <CAN1soZze6Ogn_zi7JJN0JNzoMFkHLJyKyjTV7rSWUmQhwRU0NQ@mail.gmail.com> <CAN1soZxJ_JCEVV5v99tFi22fq5AEOCBj1D5PY=vmGGW_gDWuJQ@mail.gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Sat, 15 Dec 2012 12:54:01 -0800
-Message-ID: <CAPtuhTg4NZqSAAaRvOb+0E_Op0Ye8+h=XeRyees-M-DpXXziqQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: factor: calculate rate by do_div
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <50CCCFD0.7030704@linux.intel.com>
+References: <20121211170605.GD28827@liondog.tnic>
+	<CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com>
+	<50C76F9E.4080001@zytor.com>
+	<CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com>
+	<50C7C859.60405@zytor.com>
+	<CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
+	<50C82ABF.3020907@zytor.com>
+	<20121212133853.GC8760@liondog.tnic>
+	<50C963B1.3040609@zytor.com>
+	<50C96717.3020407@zytor.com>
+	<20121213191317.GE31485@liondog.tnic>
+	<50CA4A7A.10104@zytor.com>
+	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
+	<50CB8213.9000908@zytor.com>
+	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
+	<CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
+	<CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
+	<50CCCFD0.7030704@linux.intel.com>
+Date: Sat, 15 Dec 2012 12:55:40 -0800
+X-Google-Sender-Auth: K8PsWiXGtfPIlSnCZe7r6Uj_Zog
+Message-ID: <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bergmann Arnd <arnd@arndb.de>
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 8:41 AM, Haojian Zhuang
-<haojian.zhuang@gmail.com> wrote:
-> On Tue, Dec 4, 2012 at 9:32 AM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
->> On Mon, Dec 3, 2012 at 4:14 PM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
->>> clk->rate = parent->rate / div * mult
->>>
->>> The formula is OK. But it may overflow while we do operate with
->>> unsigned long. So use do_div instead.
->>>
->>> Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
->>> ---
->>>  drivers/clk/clk-fixed-factor.c |    5 ++++-
->>>  1 file changed, 4 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
->>> index a489985..1ef271e 100644
->>> --- a/drivers/clk/clk-fixed-factor.c
->>> +++ b/drivers/clk/clk-fixed-factor.c
->>> @@ -28,8 +28,11 @@ static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
->>>                 unsigned long parent_rate)
->>>  {
->>>         struct clk_fixed_factor *fix = to_clk_fixed_factor(hw);
->>> +       unsigned long long int rate;
->>>
->>> -       return parent_rate * fix->mult / fix->div;
->>> +       rate = (unsigned long long int)parent_rate * fix->mult;
->>> +       do_div(rate, fix->div);
->>> +       return (unsigned long)rate;
->>>  }
->>>
->>>  static long clk_factor_round_rate(struct clk_hw *hw, unsigned long rate,
->>> --
->>> 1.7.10.4
->>>
->>
->> Correct Mike's email address.
+On Sat, Dec 15, 2012 at 11:30 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> What is the point of only managing 2M at a time?  Now you have to have
+> more conditionals and you don't get any more memory efficiency.
+
+We don't need to, because real_data is less than 2M, and ramdisk is about 16M.
+
+Also if we set map too large, could have chance to cover mem hole near
+1T for AMD HT system.
+
 >
-> Any comments? Does it mean that nobody want to fix the bug?
+> Filling arbitrarily into the brk is not acceptable... the brk is an O(1)
+> area and all brk allocations need to be reserved at compile time, so the
+> overflow handling is still necessary.
 
-Thanks for the patch.  My apologies for letting this one slip through
-the cracks but my normal email workflow was unavoidably disrupted and
-I find myself playing catch-up with pending patches.
+if run out of BRK, we will get panic, because early_make_pgtable will return -1.
 
-The patch looks good to me but I'll change the $SUBJECT to "clk:
-fixed-factor: round_rate should use do_div" and do some testing before
-taking it in.
+and current BRK already have 64 slop space.
 
-Regards,
-Mike
+BTW, did you look at smp boot problem with early_level4_pgt version?
+
+Yinghai
