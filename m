@@ -1,229 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab2LOMsa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 07:48:30 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:57192 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab2LOMs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 07:48:29 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 4/4 RESEND] hid: iio: rename struct hid_sensor_iio_common to hid_sensor_common
-Date: Sat, 15 Dec 2012 13:45:37 +0100
-Message-Id: <1355575537-10093-4-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1355575537-10093-1-git-send-email-holler@ahsoftware.de>
-References: <50CC6FE3.6060705@ahsoftware.de>
- <1355575537-10093-1-git-send-email-holler@ahsoftware.de>
+	id S1756640Ab2LOM7t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 07:59:49 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:35903 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756393Ab2LOM7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 07:59:48 -0500
+X-ASG-Debug-ID: 1355576386-03d6a559e0928920001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <50CC743E.6040307@fusionio.com>
+Date: Sat, 15 Dec 2012 13:59:42 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Kent Overstreet <koverstreet@google.com>
+CC: Jack Wang <jack.wang.usish@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "zab@redhat.com" <zab@redhat.com>, "bcrl@kvack.org" <bcrl@kvack.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
+References: <1354568322-29029-1-git-send-email-koverstreet@google.com> <20121213211808.GJ25017@kernel.dk> <CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com> <50CAD6D9.5070703@fusionio.com> <20121215092526.GA10411@moria.home.lan> <50CC46F8.3070600@fusionio.com> <20121215103658.GB10411@moria.home.lan>
+X-ASG-Orig-Subj: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
+In-Reply-To: <20121215103658.GB10411@moria.home.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1355576386
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.117082
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The structure with common attributes for hid-sensors isn't specific
-to the iio-subsystem, so rename it to hid_sensor_common.
+On 2012-12-15 11:36, Kent Overstreet wrote:
+> On Sat, Dec 15, 2012 at 10:46:32AM +0100, Jens Axboe wrote:
+>> On 2012-12-15 10:25, Kent Overstreet wrote:
+>>> Cool, thanks for the numbers!
+>>>
+>>> I suspect the difference is due to contention on the ringbuffer,
+>>> completion side. You didn't enable my batched completion stuff, did you?
+>>
+>> No, haven't tried the batching yet.
+>>
+>>> I suspect the numbers would look quite a bit different with that,
+>>> based on my own profiling. If the driver for the device you're testing
+>>> on is open source, I'd be happy to do the conversion (it's a 5 minute
+>>> job).
+>>
+>> Knock yourself out - I already took a quick look at it, and conversion
+>> should be pretty simple. It's the mtip32xx driver, it's in the kernel. I
+>> would suggest getting rid of the ->async_callback() (since it's always
+>> bio_endio()) since that'll make it cleaner.
+> 
+> Just pushed my conversion - it's untested, but it's pretty
+> straightforward.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- drivers/iio/accel/hid-sensor-accel-3d.c            |    2 +-
- .../iio/common/hid-sensors/hid-sensor-attributes.c |   10 +++++-----
- .../iio/common/hid-sensors/hid-sensor-trigger.c    |    4 ++--
- .../iio/common/hid-sensors/hid-sensor-trigger.h    |    2 +-
- drivers/iio/gyro/hid-sensor-gyro-3d.c              |    2 +-
- drivers/iio/light/hid-sensor-als.c                 |    2 +-
- drivers/iio/magnetometer/hid-sensor-magn-3d.c      |    2 +-
- drivers/rtc/rtc-hid-sensor-time.c                  |    2 +-
- include/linux/hid-sensor-hub.h                     |   12 ++++++------
- 9 files changed, 19 insertions(+), 19 deletions(-)
+Let me give it a whirl. It'll likely improve the situation, since we are
+CPU limited at this point. I will definitely add the batching on my side
+too, it's a clear win for the (usual) case of reaping multiple
+completion events per IRQ.
 
-diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
-index 72371aa..2133da8 100644
---- a/drivers/iio/accel/hid-sensor-accel-3d.c
-+++ b/drivers/iio/accel/hid-sensor-accel-3d.c
-@@ -43,7 +43,7 @@ enum accel_3d_channel {
- 
- struct accel_3d_state {
- 	struct hid_sensor_hub_callbacks callbacks;
--	struct hid_sensor_iio_common common_attributes;
-+	struct hid_sensor_common common_attributes;
- 	struct hid_sensor_hub_attribute_info accel[ACCEL_3D_CHANNEL_MAX];
- 	u32 accel_val[ACCEL_3D_CHANNEL_MAX];
- };
-diff --git a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
-index 5873f16..75b5473 100644
---- a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
-+++ b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
-@@ -113,7 +113,7 @@ static u32 convert_to_vtf_format(int size, int exp, int val1, int val2)
- 	return value;
- }
- 
--int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_read_samp_freq_value(struct hid_sensor_common *st,
- 				int *val1, int *val2)
- {
- 	s32 value;
-@@ -140,7 +140,7 @@ int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
- }
- EXPORT_SYMBOL(hid_sensor_read_samp_freq_value);
- 
--int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_write_samp_freq_value(struct hid_sensor_common *st,
- 				int val1, int val2)
- {
- 	s32 value;
-@@ -168,7 +168,7 @@ int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
- }
- EXPORT_SYMBOL(hid_sensor_write_samp_freq_value);
- 
--int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_read_raw_hyst_value(struct hid_sensor_common *st,
- 				int *val1, int *val2)
- {
- 	s32 value;
-@@ -190,7 +190,7 @@ int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
- }
- EXPORT_SYMBOL(hid_sensor_read_raw_hyst_value);
- 
--int hid_sensor_write_raw_hyst_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_write_raw_hyst_value(struct hid_sensor_common *st,
- 					int val1, int val2)
- {
- 	s32 value;
-@@ -211,7 +211,7 @@ EXPORT_SYMBOL(hid_sensor_write_raw_hyst_value);
- 
- int hid_sensor_parse_common_attributes(struct hid_sensor_hub_device *hsdev,
- 					u32 usage_id,
--					struct hid_sensor_iio_common *st)
-+					struct hid_sensor_common *st)
- {
- 
- 	sensor_hub_input_get_attribute_info(hsdev,
-diff --git a/drivers/iio/common/hid-sensors/hid-sensor-trigger.c b/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
-index b097b68..58fc108 100644
---- a/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
-+++ b/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
-@@ -31,7 +31,7 @@
- static int hid_sensor_data_rdy_trigger_set_state(struct iio_trigger *trig,
- 						bool state)
- {
--	struct hid_sensor_iio_common *st = trig->private_data;
-+	struct hid_sensor_common *st = trig->private_data;
- 	int state_val;
- 
- 	state_val = state ? 1 : 0;
-@@ -65,7 +65,7 @@ static const struct iio_trigger_ops hid_sensor_trigger_ops = {
- };
- 
- int hid_sensor_setup_trigger(struct iio_dev *indio_dev, const char *name,
--				struct hid_sensor_iio_common *attrb)
-+				struct hid_sensor_common *attrb)
- {
- 	int ret;
- 	struct iio_trigger *trig;
-diff --git a/drivers/iio/common/hid-sensors/hid-sensor-trigger.h b/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
-index fd98297..9a87314 100644
---- a/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
-+++ b/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
-@@ -20,7 +20,7 @@
- #define _HID_SENSOR_TRIGGER_H
- 
- int hid_sensor_setup_trigger(struct iio_dev *indio_dev, const char *name,
--				struct hid_sensor_iio_common *attrb);
-+				struct hid_sensor_common *attrb);
- void hid_sensor_remove_trigger(struct iio_dev *indio_dev);
- 
- #endif
-diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index b98cd70..85330ad 100644
---- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
-+++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-@@ -43,7 +43,7 @@ enum gyro_3d_channel {
- 
- struct gyro_3d_state {
- 	struct hid_sensor_hub_callbacks callbacks;
--	struct hid_sensor_iio_common common_attributes;
-+	struct hid_sensor_common common_attributes;
- 	struct hid_sensor_hub_attribute_info gyro[GYRO_3D_CHANNEL_MAX];
- 	u32 gyro_val[GYRO_3D_CHANNEL_MAX];
- };
-diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
-index 9610989..051b88c 100644
---- a/drivers/iio/light/hid-sensor-als.c
-+++ b/drivers/iio/light/hid-sensor-als.c
-@@ -38,7 +38,7 @@
- 
- struct als_state {
- 	struct hid_sensor_hub_callbacks callbacks;
--	struct hid_sensor_iio_common common_attributes;
-+	struct hid_sensor_common common_attributes;
- 	struct hid_sensor_hub_attribute_info als_illum;
- 	u32 illum;
- };
-diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-index 4957430..5c59044 100644
---- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-+++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-@@ -43,7 +43,7 @@ enum magn_3d_channel {
- 
- struct magn_3d_state {
- 	struct hid_sensor_hub_callbacks callbacks;
--	struct hid_sensor_iio_common common_attributes;
-+	struct hid_sensor_common common_attributes;
- 	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
- 	u32 magn_val[MAGN_3D_CHANNEL_MAX];
- };
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-index 25cac6e..0438c9e 100644
---- a/drivers/rtc/rtc-hid-sensor-time.c
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -39,7 +39,7 @@ enum hid_time_channel {
- 
- struct hid_time_state {
- 	struct hid_sensor_hub_callbacks callbacks;
--	struct hid_sensor_iio_common common_attributes;
-+	struct hid_sensor_common common_attributes;
- 	struct hid_sensor_hub_attribute_info info[TIME_RTC_CHANNEL_MAX];
- 	struct rtc_time last_time;
- 	spinlock_t lock_last_time;
-diff --git a/include/linux/hid-sensor-hub.h b/include/linux/hid-sensor-hub.h
-index e6265f9..ecefb73 100644
---- a/include/linux/hid-sensor-hub.h
-+++ b/include/linux/hid-sensor-hub.h
-@@ -161,7 +161,7 @@ int sensor_hub_get_feature(struct hid_sensor_hub_device *hsdev, u32 report_id,
- /* hid-sensor-attributes */
- 
- /* Common hid sensor iio structure */
--struct hid_sensor_iio_common {
-+struct hid_sensor_common {
- 	struct hid_sensor_hub_device *hsdev;
- 	struct platform_device *pdev;
- 	unsigned usage_id;
-@@ -185,14 +185,14 @@ static inline int hid_sensor_convert_exponent(int unit_expo)
- 
- int hid_sensor_parse_common_attributes(struct hid_sensor_hub_device *hsdev,
- 					u32 usage_id,
--					struct hid_sensor_iio_common *st);
--int hid_sensor_write_raw_hyst_value(struct hid_sensor_iio_common *st,
-+					struct hid_sensor_common *st);
-+int hid_sensor_write_raw_hyst_value(struct hid_sensor_common *st,
- 					int val1, int val2);
--int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_read_raw_hyst_value(struct hid_sensor_common *st,
- 					int *val1, int *val2);
--int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_write_samp_freq_value(struct hid_sensor_common *st,
- 					int val1, int val2);
--int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
-+int hid_sensor_read_samp_freq_value(struct hid_sensor_common *st,
- 					int *val1, int *val2);
- 
- #endif
+>>> since I looked at your patch but you're getting rid of the aio
+>>> ringbuffer and using a linked list instead, right? My batched completion
+>>> stuff should still benefit that case.
+>>
+>> Yes, I make the ring interface optional. Basically you tell aio to use
+>> the ring or not at io_queue_init() time. If you don't care about the
+>> ring, we can use a lockless list for the completions.
+> 
+> Yeah, it is a good idea - I'm certainly not attached to the current
+> ringbuffer implementation (though a ringbuffer isn't a terrible idea if
+> we had one that was implemented correctly).
+
+I agree, ringbuffer isn't necessarily a bad interface. But the fact is
+that:
+
+1) Current ringbuffer is broken
+2) And nobody uses it
+
+So as an interface, I think it's dead.
+
+>> You completely remove the cancel, I just make it optional for the gadget
+>> case. I'm fine with either of them, though I did not look at your usb
+>> change in detail. If it's clean, I suspect we should just kill cancel
+>> completion as you did.
+> 
+> We (Zach and I) actually made it optional too, more or less - I haven't
+> looked at how you did it yet, but in my tree the linked list is there,
+> but the kiocb isn't added to the kioctx's list until something sets a
+> cancel function.
+
+Sounds like the same approach I took - list is still there, and whether
+the node is empty or not signifies whether we need to lock and remove
+the entry on completion.
+
+>>> Though - hrm, I'd have expected getting rid of the cancellation linked
+>>> list to make a bigger difference and both our patchsets do that.
+>>
+>> The machine in question runs out of oomph, which is hampering the
+>> results. I should have it beefed up next week. It's running E5-2630
+>> right now, will move to E5-2690. I think that should make the results
+>> clearer.
+> 
+> Well, the fact that it's cpu bound just means the throughput numbers for
+> our various patches are different... and what I'm really interested in
+> is the profiles, I can't think of any reason cpu speed would affect that
+> much.
+
+Sure, that's a given, since they have the same horse power available and
+the setup is identical (same process pinning, irq pinning, etc).
+
 -- 
-1.7.8.6
+Jens Axboe
 
