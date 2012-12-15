@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab2LOB3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 20:29:05 -0500
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:30564 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab2LOB3D (ORCPT
+	id S1945923Ab2LOBmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 20:42:10 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:60038 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab2LOBmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 20:29:03 -0500
-Message-ID: <1355534397.18964.304.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tang Chen <tangchen@cn.fujitsu.com>, Huxinwei <huxinwei@huawei.com>
-Date: Fri, 14 Dec 2012 18:19:57 -0700
-In-Reply-To: <50C9F0F5.40307@gmail.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	       <50B5EFE9.3040206@huawei.com>
-	      <1354128096.26955.276.camel@misato.fc.hp.com>
-	     <50B6E936.2080308@huawei.com>
-	  <1354228028.7776.56.camel@misato.fc.hp.com>
-	     <50BC29C6.6050706@huawei.com>
-	   <1354579848.21585.54.camel@misato.fc.hp.com>
-	  <50C0CA90.7010608@gmail.com>
-	   <1354849065.21116.61.camel@misato.fc.hp.com>
-	 <50C1852D.3000104@huawei.com>  <1354928933.28379.37.camel@misato.fc.hp.com>
-	 <50C74481.7010107@gmail.com> <1355409749.18964.107.camel@misato.fc.hp.com>
-	 <50C9F0F5.40307@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Dec 2012 20:42:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
+ <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
+ <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 14 Dec 2012 17:41:47 -0800
+X-Google-Sender-Auth: CyxeH4HQdJ0RECsE0xUFWEaQOmc
+Message-ID: <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+To: David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 23:15 +0800, Jiang Liu wrote:
-> On 12/13/2012 10:42 PM, Toshi Kani wrote:
-> > On Tue, 2012-12-11 at 22:34 +0800, Jiang Liu wrote:
-> >> On 12/08/2012 09:08 AM, Toshi Kani wrote:
-> >>> On Fri, 2012-12-07 at 13:57 +0800, Jiang Liu wrote:
-> >>>> On 2012-12-7 10:57, Toshi Kani wrote:
-> >>>>> On Fri, 2012-12-07 at 00:40 +0800, Jiang Liu wrote:
- :
-> >>>
-> >>>> 2) an ACPI based hotplug manager driver, which is a platform independent
-> >>>>    driver and manages all hotplug slot created by the slot driver.
-> >>>
-> >>> It is surely impressive work, but I think is is a bit overdoing.  I
-> >>> expect hot-pluggable servers come with management console and/or GUI
-> >>> where a user can manage hardware units and initiate hot-plug operations.
-> >>> I do not think the kernel needs to step into such area since it tends to
-> >>> be platform-specific. 
-> >> One of the major usages of this feature is for testing. 
-> >> It will be hard for OSVs and OEMs to verify hotplug functionalities if it could
-> >> only be tested by physical hotplug or through management console. So to pave the
-> >> way for hotplug, we need to provide a mechanism for OEMs and OSVs to execute 
-> >> auto stress tests for hotplug functionalities.
-> > 
-> > Yes, but such OS->FW interface is platform-specific.  Some platforms use
-> > IPMI for the OS to communicate with the management console.  In this
-> > case, an OEM-specific command can be used to request a hotplug through
-> > IPMI.  Some platforms may also support test programs to run on the
-> > management console for validations.
-> > 
-> > For early development testing, Yinghai's SCI emulation patch can be used
-> > to emulate hotplug events from the OS.  It would be part of the kernel
-> > debugging features once this patch is accepted. 
-> Hi Toshi,
-> 	ACPI 5.0 has provided some mechanism to normalize the way to issue
-> RAS related requests to firmware. I hope ACPI 5.x will define some standardized
-> ways based on the PCC defined in 5.0. If needed, we may provide platform
-> specific methods for them too.
+I was wrong. It's not the x86 UAPI split, it's the DT pull. More people added.
 
-Thanks for the pointer!  Yeah, the spec purposely does not define the
-command.  When we support PCC, we will need to provide a way for user
-app or oem module to supply a payload. 
+Grant and Guennadi - it looks like some nasty memory corruption,
+because now it didn't cause infinite scrolling, now it caused an oops
+in unmap_single_vma() during exit_vmas(). In udevd. Followed by a
+hang. I don't know *which* commit it is yet, but commit 4939e27d46fe
+("Merge tag 'devicetree-for-linus' ...") is bad, and the previous
+merge (the ARM mvebu one is fine).
 
-Thanks,
--Toshi
+I'll bisect to the commit, but wanted to let David off the hook, and
+put the DT people on the hook. Maybe it's some odd merge artifact,
+although I don't think that one had any conflicts at all.
 
+             Linus
+
+On Fri, Dec 14, 2012 at 5:16 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Ugh. This doesn't seem to work for me at all. It causes infinite
+> scrolling of some text that I have no idea about.
+>
+> I started bisecting (because I thought it might be something else and
+> I hadn't booted after every pull), but by now the only thing I have
+> left is ARM and a couple of tiny OF patches .. and the x86 UAPI split.
+>
+> The split *should* have been safe, since it's mostly a "compile or
+> not" thing like Peter said, but we had similar problems on other
+> architectures, when things compiled but didn't actually work due to
+> missing #define's and #ifdef handling. Things like
+> architecture-specific macros that have default versions available when
+> the macro is missing etc.
+>
+> Now, maybe it's some of the other remaining commits after all, but
+> from where I am in the bisection it really looks like the uapi patch
+> is the most likely culprit. So I thought I'd let people know...
+>
+>             Linus
