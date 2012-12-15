@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab2LNXzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 18:55:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52082 "EHLO mail.zytor.com"
+	id S1757182Ab2LNX5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 18:57:12 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34232 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757041Ab2LNXzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 18:55:31 -0500
-Message-ID: <50CBBC58.4080307@zytor.com>
-Date: Fri, 14 Dec 2012 15:55:04 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757105Ab2LNX5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 18:57:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sivaram Nair <sivaramn@nvidia.com>
+Cc: rafael.j.wysocki@intel.com, len.brown@intel.com, daniel.lezcano@linaro.org,
+        khilman@ti.com, ccross@android.com, riel@redhat.com,
+        youquan.song@intel.com, akpm@linux-foundation.org, shuox.liu@intel.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] cpuidle: fix finding state with min power_usage
+Date: Sat, 15 Dec 2012 01:02:15 +0100
+Message-ID: <1380999.e8r58IGCHN@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1355491060-970-1-git-send-email-sivaramn@nvidia.com>
+References: <1355491060-970-1-git-send-email-sivaramn@nvidia.com>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andy Lutomirski <luto@amacapital.net>, aarcange@redhat.com,
-        ak@linux.intel.com, Pavel Emelyanov <xemul@parallels.com>,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CB7459.7010107@zytor.com> <20121214201217.GE6582@moon> <50CB9553.7050808@zytor.com> <CALCETrUS7JDtLd0jYy7cRNoBm1VHhMw3sTPRjhsm3uDwoPQrCA@mail.gmail.com> <50CBA171.4080403@zytor.com> <20121214222517.GG6582@moon> <50CBA7BC.4020001@zytor.com> <20121214224307.GH6582@moon> <50CBACD2.60307@zytor.com> <50CBBACA.2070108@linaro.org>
-In-Reply-To: <50CBBACA.2070108@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 03:48 PM, John Stultz wrote:
-> On 12/14/2012 02:48 PM, H. Peter Anvin wrote:
->> On 12/14/2012 02:43 PM, Cyrill Gorcunov wrote:
->>> On Fri, Dec 14, 2012 at 02:27:08PM -0800, H. Peter Anvin wrote:
->>>
->>>
->>> This won't help in case of scenario you've been pointing in
->>> previous email (where c/r happens in a middle of vdso),
->>> would it? Because we still need somehow to be sure we're not
->>> checkpointing in a middle of signal handler which will return
->>> to some vdso place.
->> It is okay if and only if those vdso places never change... which I
->> think is doable if they only contain trival system call wrappers, i.e.
->> something like:
->>
->>     movl $__SYS_gettimeofday, %eax
->>     syscall
->>     ret
+On Friday, December 14, 2012 03:17:36 PM Sivaram Nair wrote:
+> Since cpuidle_state.power_usage is a signed value, use INT_MAX (instead
+> of -1) to init the local copies so that functions that tries to find
+> cpuidle states with minimum power usage works correctly even if they use
+> non-negative values.
+
+I'm queuing this up for submission as v3.8 material.
+
+Thanks,
+Rafael
+
+
+> Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
+> ---
+>  drivers/cpuidle/cpuidle.c        |    2 +-
+>  drivers/cpuidle/governors/menu.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Though doesn't this make it easier for exploits (somewhat undoing ASLR)?
-> I know Andi always wanted to avoid having syscall instructions at a
-> fixed location for the old vsyscall code (though I know we had it
-> none-the-less for awhile).   But maybe I'm confusing issues here?
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 8df53dd..fb4a7dd 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -70,7 +70,7 @@ int cpuidle_play_dead(void)
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+>  	int i, dead_state = -1;
+> -	int power_usage = -1;
+> +	int power_usage = INT_MAX;
+>  
+>  	if (!drv)
+>  		return -ENODEV;
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index bd40b94..20ea33a 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -312,7 +312,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  {
+>  	struct menu_device *data = &__get_cpu_var(menu_devices);
+>  	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+> -	int power_usage = -1;
+> +	int power_usage = INT_MAX;
+>  	int i;
+>  	int multiplier;
+>  	struct timespec t;
 > 
-
-They aren't in fixed addresses across processes... the vdso location can
-still be randomized.  It just has to be the same across the
-checkpoint/restart operation, just like all the other instructions.
-
-	-hpa
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
