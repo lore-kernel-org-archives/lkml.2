@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab2LOT6Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 14:58:24 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:55946 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab2LOT6X (ORCPT
+	id S1751924Ab2LOT70 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 14:59:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47580 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751093Ab2LOT7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 14:58:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <50CCD24F.9090603@zytor.com>
-References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
- <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
- <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
- <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
- <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
- <20121215163323.GA229@x4> <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com>
- <50CCD24F.9090603@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 15 Dec 2012 11:58:00 -0800
-X-Google-Sender-Auth: ySBNTyBkV98xxMaBTBwnZyXb5_A
-Message-ID: <CA+55aFxi5SnacGoHzHuth4PvTRQQWA5kWM+D2Mn+FgV4VGYADQ@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/uapi for 3.8
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jan Beulich <jbeulich@suse.com>, Matt Fleming <matt.fleming@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 15 Dec 2012 14:59:24 -0500
+Message-ID: <1355601558.18807.28.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 162/241] Bluetooth: ath3k: Add support for VAIO VPCEH
+ [0489:e027]
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Marcos Chaparro <marcos@mrkindustries.com.ar>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Date: Sat, 15 Dec 2012 19:59:18 +0000
+In-Reply-To: <1355407206-17100-163-git-send-email-herton.krzesinski@canonical.com>
+References: <1355407206-17100-1-git-send-email-herton.krzesinski@canonical.com>
+	 <1355407206-17100-163-git-send-email-herton.krzesinski@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-18/8Kz6G0wU+szCx/LbO"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 11:41 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Matt is on vacation, and I'm partly offline for the weekend, but that
-> definitely seems suspicious.  Do we have a memory map of the affected
-> machine(s)?
 
-Here's mine.
+--=-18/8Kz6G0wU+szCx/LbO
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-  e820: BIOS-provided physical RAM map:
-  BIOS-e820: [mem 0x0000000000000000-0x000000000009e7ff] usable
-  BIOS-e820: [mem 0x000000000009e800-0x000000000009ffff] reserved
-  BIOS-e820: [mem 0x00000000000e4000-0x00000000000fffff] reserved
-  BIOS-e820: [mem 0x0000000000100000-0x00000000bdc6ffff] usable
-  BIOS-e820: [mem 0x00000000bdc70000-0x00000000bdc87fff] ACPI data
-  BIOS-e820: [mem 0x00000000bdc88000-0x00000000bdcdbfff] ACPI NVS
-  BIOS-e820: [mem 0x00000000bdcdc000-0x00000000bfffffff] reserved
-  BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
-  BIOS-e820: [mem 0x00000000ff800000-0x00000000ffffffff] reserved
-  BIOS-e820: [mem 0x0000000100000000-0x00000001fbffffff] usable
-  BIOS-e820: [mem 0x00000001fc000000-0x00000001ffffffff] reserved
-  BIOS-e820: [mem 0x0000000200000000-0x000000023fffffff] usable
+On Thu, 2012-12-13 at 11:58 -0200, Herton Ronaldo Krzesinski wrote:
+> 3.5.7.2 -stable review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: Marcos Chaparro <marcos@mrkindustries.com.ar>
+>=20
+> commit acd9454433e28c1a365d8b069813c35c1c3a8ac3 upstream.
+>=20
+> Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH t=
+o the
+> devices list.
+> Before this, the bluetooth module was identified as an Foxconn / Hai blue=
+tooth
+> device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth
+> [0cf3:3005].
+[...]
 
-but as mentioned, there's bound to be some particular kernel layout
-that triggers this, because I definitely ran a few kernels with that
-commit in it without problems (and clearly other people are too).
-Looking at my boot log, I had successful boots with both 6a57d104c8cb
-and c2714334b944, which contains that commit.
+This seems to be applicable to 3.{0,2,4,6}.y as well...
 
-It might also be that it causes some massive corruption at boot time,
-but it then requires that that particular memory is actually used. So
-maybe it's not so much about the memory map except indirectly.
+Ben.
 
-But that commit *does* look a lot more likely than the things I looked at.
+--=20
+Ben Hutchings
+Theory and practice are closer in theory than in practice.
+                                - John Levine, moderator of comp.compilers
 
-Markus, how did you happen to pinpoint that particular commit? Is it
-entirely repeatable for you?
+--=-18/8Kz6G0wU+szCx/LbO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-              Linus
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUMzWlue/yOyVhhEJAQoGsxAAphsHpbk1uUwGs8EGuJZL8EAbKRr7wrNR
+LGisGivc5aOgrHO1I60EGz4orA8CJNBW3qAVK46IkLf1w1TyWNANqlpbl42mehp6
+5XV4WfZzFNfHXR6nPGSgZKi5kKY1dxuOMG6qIRCJGqwZSivw4MwMjHlXUb8sl0+q
+m8dYaaObq9+fP9lMCkaNbnfFwsXgaokJkfBkpdenDPTBG6NLlQw7PEt5qJ0Yn1hb
+ZA8ihhdOfUTVD4o4Y475oOf25839wG5ZC74hsaS5/7C6QXuq/GLpQhfjIk2MLW/t
+0u+qv/JnnHH8gEKiWr3n6Mggtye4j+VMdwL4scVbob7etsybuRPf+k1QsziR6GGe
+nsLC1gUW+KuaOLBsqwTU+1O5f4bn+neAG5CX1YUbOYMdqTr57sdKyhDk6pJv1+9H
+TDIyvU8M5wZdsn4wscsb3n/AOa/E+BF5Z/V1w+8/SUc8Q+iSQppcYZf7Fow3c4D0
+ba1F/B1i7+YaLOv3D3lSWFOtMuzEfC/4vHzB2enUp0O16yFsFFR+TJ1+drf85+nf
+Dqw3RxjHDnmSNg79WH1NSeKB6oGrNx4oSzBnn4o05GgU+c62c8ak2jH+h1/O5X58
+TmSUWSOQPCET6g6gGpvm/TUmtiPl1/bZCSBZv8ZrHQ0N72zORKWElmP+W7DtgDD4
+MfzJTVby2/o=
+=iDqP
+-----END PGP SIGNATURE-----
+
+--=-18/8Kz6G0wU+szCx/LbO--
