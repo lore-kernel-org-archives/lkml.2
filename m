@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab2LORGc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 12:06:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55104 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750995Ab2LORGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 12:06:30 -0500
-Date: Sat, 15 Dec 2012 18:06:25 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v6 03/27] x86, boot: move verify_cpu.S and no_longmode
- after 0x200
-Message-ID: <20121215170625.GA9875@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
- <1355436141-8668-4-git-send-email-yinghai@kernel.org>
+	id S1754410Ab2LORHp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 12:07:45 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56220 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab2LORHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 12:07:44 -0500
+Date: Sat, 15 Dec 2012 17:07:41 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jonas Bonn <jonas.bonn@gmail.com>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [braindump][RFC] signals and syscall restarts (Re: [PATCH v2
+ 19/44] metag: Signal handling)
+Message-ID: <20121215170741.GU4939@ZenIV.linux.org.uk>
+References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
+ <1354723742-6195-20-git-send-email-james.hogan@imgtec.com>
+ <20121205171609.GW4939@ZenIV.linux.org.uk>
+ <50C07ECE.9070602@imgtec.com>
+ <20121206220955.GZ4939@ZenIV.linux.org.uk>
+ <20121208074429.GC4939@ZenIV.linux.org.uk>
+ <CACM3HyGHQRkqyqV=X8HKGhh-x3izA9Utr2F_C9nJjPvrxd85+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355436141-8668-4-git-send-email-yinghai@kernel.org>
+In-Reply-To: <CACM3HyGHQRkqyqV=X8HKGhh-x3izA9Utr2F_C9nJjPvrxd85+A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 02:01:57PM -0800, Yinghai Lu wrote:
-> We are short of space before 0x200 that is entry for startup_64.
+On Sat, Dec 15, 2012 at 05:26:30PM +0100, Jonas Bonn wrote:
 
-And you're moving this down because of the couple of bytes the next
-patch is adding? If so, then explain that here.
-
-> According to hpa, we can not change startup_64 to other offset and
-> that become ABI now.
+> That said, let me point again to the series I posted for review a year
+> ago that attempts to make the restart logic more generic:
 > 
-> We could move function verify_cpu and no_longmode down, because one is
-> used via call and another will not return.
-> So could avoid extra code of jmp back and forth if we would move other
-> lines.
-
-What does that sentence even mean? Why is it in the commit message?
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/boot/compressed/head_64.S |   17 +++++++++--------
->  1 file changed, 9 insertions(+), 8 deletions(-)
+> https://lkml.org/lkml/2011/10/23/80
 > 
-> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-> index 2c4b171..fb984c0 100644
-> --- a/arch/x86/boot/compressed/head_64.S
-> +++ b/arch/x86/boot/compressed/head_64.S
-> @@ -176,14 +176,6 @@ ENTRY(startup_32)
->  	lret
->  ENDPROC(startup_32)
->  
-> -no_longmode:
-> -	/* This isn't an x86-64 CPU so hang */
-> -1:
-> -	hlt
-> -	jmp     1b
-> -
-> -#include "../../kernel/verify_cpu.S"
-> -
->  	/*
->  	 * Be careful here startup_64 needs to be at a predictable
->  	 * address so I can export it in an ELF header.  Bootloaders
-> @@ -349,6 +341,15 @@ relocated:
->   */
->  	jmp	*%rbp
->  
-> +	.code32
-> +no_longmode:
-> +	/* This isn't an x86-64 CPU so hang */
-> +1:
-> +	hlt
-> +	jmp     1b
-> +
-> +#include "../../kernel/verify_cpu.S"
-> +
->  	.data
->  gdt:
->  	.word	gdt_end - gdt
-> -- 
-> 1.7.10.4
+> The entires patch series, which doesn't necessarily even apply to
+> Linux master anymore due to other changes along the way, can be found
+> at:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> git://openrisc.net/~jonas/linux  ('signal-arch' branch)
+> 
+> Commit 4aa1797d978fe2d45ececceee535257e19374df8 is the interesting one there.
+> 
+> Al, what do you think?
 
--- 
-Regards/Gruss,
-    Boris.
+In principle that's a nice cleanup, but...  For one thing, I really do not
+believe that we should be returning to userland for handlerless restarts.
+At all.  In that respect s390 and arm do it right.  Moreover, the loop calling
+do_notify_resume() is better off in C (see e.g. alpha and arm for examples of
+that approach).
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Another thing is interplay with ptrace ;-/  And ptrace ABI is pretty much
+"whatever gdb and its ilk happen to rely upon" - it's not formalized at
+all and by now it's too late for existing ports.  Worse, we get to keep it
+working as is; old binaries shall not be broken.
+
+Hell knows...  ptrace vs. signals is a thing of horror, indeed - I had a damn
+good reason for not including it into this braindump.  Note that there are
+several aspects of behaviour that vary between the architectures:
+	* get_signal_to_deliver() is a chance for tracer to play with our
+state; what instruction pointer value should it see in case of possible
+restart?
+	* Does the change of instruction pointer done by tracer cancel
+restart?  Or is there some other way for tracer to signal the need of
+such cancel?
+	* Does the change of syscall return value done by tracer affect
+(or cancel) the restart?
+And that's just for starters - I'm leaving aside the unholy mess around
+single-stepping vs. signals.  The question here is not just "what behaviour
+would make sense if we designed it from scratch", it's "what behaviour is
+demonstrated by this architecture".  gdb is chock-full of arch-dependent
+workarounds and yes, we need to keep that working.  Moreover, gdb isn't
+the only thing tied to that crap.
+
+	What we need is a decent review of what's in there for all
+architectures.  And that'll take cooperation from maintainers -
+it's far too easy to miss things on 3rd-party review in that area ;-/
