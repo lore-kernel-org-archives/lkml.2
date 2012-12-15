@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab2LOC0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 21:26:40 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49581 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab2LOC0j (ORCPT
+	id S1755334Ab2LOCi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 21:38:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53670 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2LOCi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 21:26:39 -0500
-Date: Fri, 14 Dec 2012 18:29:18 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dave Jones <davej@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:476
- flush_to_ldisc+0x1de/0x1f0()
-Message-ID: <20121215022918.GC21333@kroah.com>
-References: <20121212030124.GA10828@redhat.com>
+	Fri, 14 Dec 2012 21:38:56 -0500
+Message-ID: <50CBE296.2040107@canonical.com>
+Date: Fri, 14 Dec 2012 21:38:14 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121212030124.GA10828@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Snitzer <snitzer@redhat.com>
+CC: martin.petersen@oracle.com, Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, jgarzik@redhat.com,
+        JBottomley@Parallels.com, Milan Broz <mbroz@redhat.com>
+Subject: Re: [v3.7 Regression]  [SCSI] sd: Implement support for WRITE SAME
+References: <50CB8C74.3090102@canonical.com> <20121214211159.GA4204@redhat.com>
+In-Reply-To: <20121214211159.GA4204@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 10:01:24PM -0500, Dave Jones wrote:
-> Fuzz-testing fallout from post 3.7 tree as of commit 414a6750e59b0b687034764c464e9ddecac0f7a6
-> 
-> [ 2181.230579] ------------[ cut here ]------------
-> [ 2181.231277] WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc+0x1de/0x1f0()
-> [ 2181.232358] Hardware name: GA-MA78GM-S2H
-> [ 2181.232925] tty is NULL
-> [ 2181.233430] Modules linked in: l2tp_ppp l2tp_core fuse rfcomm binfmt_misc hidp bnep scsi_transport_iscsi ipt_ULOG nfnetlink rose ipx p8023 p8022 caif_socket caif af_rxrpc x25 irda af_key appletalk pppoe netrom pppox ppp_generic decnet phonet slhc psnap crc_ccitt ax25 llc2 rds atm llc nfc can nfsv3 nfs_acl nfs fscache lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek btusb snd_hda_intel bluetooth usb_debug snd_hda_codec microcode snd_pcm serio_raw pcspkr snd_page_alloc snd_timer edac_core snd soundcore r8169 mii vhost_net tun macvtap macvlan kvm_amd kvm
-> [ 2181.245632] Pid: 29787, comm: kworker/0:1 Not tainted 3.7.0+ #12
-> [ 2181.246503] Call Trace:
-> [ 2181.246851]  [<ffffffff8104da4f>] warn_slowpath_common+0x7f/0xc0
-> [ 2181.247725]  [<ffffffff8104db46>] warn_slowpath_fmt+0x46/0x50
-> [ 2181.248558]  [<ffffffff8132e6ba>] ? ___ratelimit+0x9a/0x120
-> [ 2181.249347]  [<ffffffff813e897e>] flush_to_ldisc+0x1de/0x1f0
-> [ 2181.250164]  [<ffffffff81071237>] process_one_work+0x207/0x750
-> [ 2181.251013]  [<ffffffff810711c7>] ? process_one_work+0x197/0x750
-> [ 2181.251893]  [<ffffffff8106de50>] ? destroy_work_on_stack+0x20/0x20
-> [ 2181.252809]  [<ffffffff813e87a0>] ? tty_insert_flip_string_fixed_flag+0x110/0x110
-> [ 2181.253993]  [<ffffffff81071b56>] worker_thread+0x156/0x440
-> [ 2181.254815]  [<ffffffff81071a00>] ? rescuer_thread+0x240/0x240
-> [ 2181.255638]  [<ffffffff810784bd>] kthread+0xed/0x100
-> [ 2181.256374]  [<ffffffff810b80ce>] ? put_lock_stats.isra.23+0xe/0x40
-> [ 2181.257290]  [<ffffffff810783d0>] ? kthread_create_on_node+0x160/0x160
-> [ 2181.258223]  [<ffffffff816a8ddc>] ret_from_fork+0x7c/0xb0
-> [ 2181.259018]  [<ffffffff810783d0>] ? kthread_create_on_node+0x160/0x160
-> [ 2181.259969] ---[ end trace 12dd9f01acd7e09f ]---
+On 12/14/2012 04:11 PM, Mike Snitzer wrote:
+> On Fri, Dec 14 2012 at  3:30pm -0500,
+> Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+>
+>> Hi Martin,
+>>
+>> A bug was opened against the Ubuntu kernel[0].  After a kernel
+>> bisect, it was found that reverting the following commit resolved
+>> this bug:
+>>
+>> commit 5db44863b6ebbb400c5e61d56ebe8f21ef48b1bd
+>> Author: Martin K. Petersen <martin.petersen@oracle.com>
+>> Date:   Tue Sep 18 12:19:32 2012 -0400
+>> [SCSI] sd: Implement support for WRITE SAME
+>>
+>> The regression was introduced as of v3.7-rc7.
+>>
+>> The bug can be reproduced with the following commands, which will
+>> operate on a virtual scsi_debug device, so they won't change any
+>> data on the test system. However, this will completely crash the
+>> system:
+>>
+>> sudo modprobe scsi_debug
+>> sudo luksformat -t ext4 /dev/sdb <- Or whatever device gets assigned
+>> after inserting scsi_debug.
+>> sudo cryptsetup luksOpen /dev/sdb treasure
+>>
+>> Everything works fine up to here, but the following will cause the crash:
+>>
+>> sudo mount /dev/mapper/treasure /mnt
+>>
+>> The bug can be reproduced on bare metal, in a VM and on i386 or amd64.
+>>
+>> I see that you are the author of this patch, so I wanted to run this
+>> by you.  I was thinking of requesting a revert for v3.7, but I
+>> wanted to get your feedback first.
+>>
+>>
+>> Thanks,
+>>
+>> Joe
+>>
+>>
+>> [0] https://bugs.launchpad.net/bugs/1089818
+> The WRITE SAME change was introduced long before v3.7-rc7.  I think your
+> bisect is somehow wrong.
+ From Linus' tree:
+git describe --contains 5db4486
+v3.7-rc7~19^2
 
-Jiri, I thought we resolved these warnings in the linux-next tree, how
-are they still showing up?
+Reverting commit 5db4486 solves the bug previously mentioned.
 
-thanks,
+>
+> Milan Broz recently pointed out issues he found with luks when using a
+> late 3.7-rc (rc7 afaik).  Linus fixed that issue with this commit (which
+> landed in the final v3.7):
+> http://git.kernel.org/linus/684c9aaebbb0ea3a9954
+>
+> That may not be _the_ problem though.  But have you tried the final
+> v3.7?
 
-greg k-h
+Yes, v3.7 without reverting 5db4486 exhibits the bug.
+
+>
+> Mike
+I'll research further and provide additional data.
