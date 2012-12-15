@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab2LOBSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Dec 2012 20:18:08 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:49602 "EHLO e7.ny.us.ibm.com"
+	id S1945931Ab2LOBYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Dec 2012 20:24:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24833 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932151Ab2LOBSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Dec 2012 20:18:05 -0500
-Message-ID: <50CBCFC3.2040304@us.ibm.com>
-Date: Fri, 14 Dec 2012 17:17:55 -0800
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932266Ab2LOBYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Dec 2012 20:24:12 -0500
+Date: Fri, 14 Dec 2012 23:03:55 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] kvm: memory slot cleanups, fix, and increase
+Message-ID: <20121215010355.GB27536@amt.cnet>
+References: <20121210171417.10461.20079.stgit@bling.home>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH] time: create __getnstimeofday for WARNless calls
-References: <20121119182616.GA4557@www.outflux.net> <CAGXu5jKdOsBUwZRwOQDeRdFjo-K=uEQdJNMgy4N1dyzrUGcAHw@mail.gmail.com> <50CBCF83.30700@us.ibm.com>
-In-Reply-To: <50CBCF83.30700@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121501-5806-0000-0000-00001D035946
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210171417.10461.20079.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 05:16 PM, John Stultz wrote:
-> On 12/13/2012 10:17 AM, Kees Cook wrote:
->> John, any feedback on this?
->>
->
-> Looking at my inbox, I actually can't find a copy of this specific 
-> patch. Do you mind bouncing it to me, so I have something I can apply?
-Nm, I found it.
+On Mon, Dec 10, 2012 at 10:32:39AM -0700, Alex Williamson wrote:
+> v2: Update 02/10 to not check userspace_addr when slot is removed.
+>     Yoshikawa-san withdrew objection to increase slot_bitmap prior
+>     to his series to remove slot_bitmap.
+> 
+> This series does away with any kind of complicated resizing of the
+> slot array and simply does a one time increase.  I do compact struct
+> kvm_memory_slot a bit to take better advantage of the space we are
+> using.  This reduces each slot from 64 bytes (x86_64) to 56 bytes.
+> By enforcing the API around valid operations for an unused slot and
+> fields that can be modified runtime, I found and was able to fix a
+> bug in iommu mapping for slots.  The renames enabled me to find the
+> previously posted bug fix for catching slot overlaps.
+> 
+> As mentioned in the series, the primary motivation for increasing
+> memory slots is assigned devices.  With this, I've been able to
+> assign 30 devices to a single VM and could have gone further, but
+> ran out of SRIOV VFs.  Typical devices use anywhere from 2-4 slots
+> and max out at 8 slots.  125 user slots (3 private slots) allows
+> us to support between 28 and 56 typical devices per VM.
+> 
+> Tested on x86_64, compiled on ia64, powerpc, and s390.
+> 
+> Thanks,
+> Alex
 
-thanks
--john
+Applied, thanks.
 
