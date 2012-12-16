@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2LPUkT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 15:40:19 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:37827 "EHLO
+	id S1752437Ab2LPUsK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 15:48:10 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4071 "EHLO
 	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab2LPUkR (ORCPT
+	with ESMTP id S1751031Ab2LPUsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 15:40:17 -0500
-Date: Sun, 16 Dec 2012 21:40:06 +0100
+	Sun, 16 Dec 2012 15:48:08 -0500
+Date: Sun, 16 Dec 2012 21:48:00 +0100
 From: Jean Delvare <khali@linux-fr.org>
-To: Vinod Koul <vinod.koul@linux.intel.com>, Dan Williams <djbw@fb.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dma: ipu: Drop unused spinlock
-Message-ID: <20121216214006.29f3152c@endymion.delvare>
-In-Reply-To: <1347592212.1943.15.camel@vkoul-udesk3>
-References: <20120906091935.64c851ac@endymion.delvare>
-	<1347592212.1943.15.camel@vkoul-udesk3>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Finn Thain <fthain@telegraphics.com.au>
+Subject: Re: [PATCH] swim: Add missing spinlock init
+Message-ID: <20121216214800.3ad603b4@endymion.delvare>
+In-Reply-To: <CAMuHMdUXvB8P9J26KbMXeicv0BH=gdaCHaRq-ZAP=73hn+ThMw@mail.gmail.com>
+References: <20120906134830.52cbdfec@endymion.delvare>
+	<CAMuHMdUXvB8P9J26KbMXeicv0BH=gdaCHaRq-ZAP=73hn+ThMw@mail.gmail.com>
 X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,33 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012 08:40:12 +0530, Vinod Koul wrote:
-> On Thu, 2012-09-06 at 09:19 +0200, Jean Delvare wrote:
-> > I was checking why this spinlock was never initialized, but it turns
-> > out it's not used anywhere, so we can drop it.
-> > 
+Hi Geert,
+
+On Thu, 6 Sep 2012 14:03:27 +0200, Geert Uytterhoeven wrote:
+> On Thu, Sep 6, 2012 at 1:48 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> > It doesn't seem this spinlock was properly initialized.
+> 
+> Quiet possible. There's no SMP on m68k, so all spinlock ops expand to nothing.
+
+Can we apply my patch still? Or were you suggesting you're fine with
+the code as it is?
+
+Certainly this isn't my area of expertise but I don't quite get the
+point of passing a custom lock to blk_init_queue() if locks resolve to
+nothing anyway.
+
 > > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Finn Thain <fthain@telegraphics.com.au>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 > > ---
 > > I can't even build-test this.
-> > 
-> >  drivers/dma/ipu/ipu_irq.c |    1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > --- linux-3.6-rc4.orig/drivers/dma/ipu/ipu_irq.c	2012-08-04 21:49:26.000000000 +0200
-> > +++ linux-3.6-rc4/drivers/dma/ipu/ipu_irq.c	2012-09-06 09:13:31.034228670 +0200
-> > @@ -45,7 +45,6 @@ static void ipu_write_reg(struct ipu *ip
-> >  struct ipu_irq_bank {
-> >  	unsigned int	control;
-> >  	unsigned int	status;
-> > -	spinlock_t	lock;
-> >  	struct ipu	*ipu;
-> >  };
->
-> Dan, you okay with this?
-
-What happened to this patch? Dan, please?
+> >
+> >  drivers/block/swim.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > --- linux-3.6-rc4.orig/drivers/block/swim.c     2012-07-21 22:58:29.000000000 +0200
+> > +++ linux-3.6-rc4/drivers/block/swim.c  2012-09-06 13:09:26.713382169 +0200
+> > @@ -845,6 +845,7 @@ static int __devinit swim_floppy_init(st
+> >                 swd->unit[drive].swd = swd;
+> >         }
+> >
+> > +       spin_lock_init(&swd->lock);
+> >         swd->queue = blk_init_queue(do_fd_request, &swd->lock);
+> >         if (!swd->queue) {
+> >                 err = -ENOMEM;
 
 -- 
 Jean Delvare
