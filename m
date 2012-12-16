@@ -1,110 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab2LPTli (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 14:41:38 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:57064 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab2LPTlh convert rfc822-to-8bit (ORCPT
+	id S1751591Ab2LPTmu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 14:42:50 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:51732
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab2LPTmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 14:41:37 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: =?utf-8?q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Subject: Re: Bisected oops regression between v3.7-rc8 and v3.7: nmi_watchdog
-Date: Sun, 16 Dec 2012 20:41:32 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Norbert Warmuth <nwarmuth@t-online.de>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <87y5h1c70y.fsf@nemi.mork.no>
-In-Reply-To: <87y5h1c70y.fsf@nemi.mork.no>
+	Sun, 16 Dec 2012 14:42:49 -0500
+Date: Sun, 16 Dec 2012 20:42:44 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <315845667.20121216204244@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.8.0-rc0 on xen-unstable: RCU Stall during boot as dom0 kernel after IOAPIC
+In-Reply-To: <20121216173824.GA4518@phenom.dumpdata.com>
+References: <1995613404.20121214165557@eikelenboom.it> <20121216173824.GA4518@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201212162041.32350.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 14 grudnia 2012 o 10:33:33 Bjørn Mork wrote:
-> Hello,
-> 
-> I was a bit surprised by v3.7 hanging "all the time", usually just
-> freezing but sometimes with a stack dump pointing to timerqueue_del
-> calling rb_erase and oopsing there. Of course I could never make it dump
-> anything when prepared to capture it via netconsole, so the best I have
-> is this picture: http://www.mork.no/~bjorn/20121213_203557.jpg
-> 
-> I discovered that the freeze was related to plugging AC power and
-> started bisecting from v3.7-rc3, which I had been running for quite a
-> while and therefore was confident did not have this problem.  The bisect
-> log ended up as this:
-> 
-> bjorn@canardo:/usr/local/src/build-tmp/linux$ git bisect log
-> # bad: [29594404d7fe73cd80eaa4ee8c43dcc53970c60e] Linux 3.7
-> # good: [8f0d8163b50e01f398b14bcd4dc039ac5ab18d64] Linux 3.7-rc3
-> git bisect start 'v3.7' 'v3.7-rc3'
-> # good: [29282fde80d44e587f8c152b10049a56e61659f0] KVM: x86: Fix invalid
-> secondary exec controls in vmx_cpuid_update() git bisect good
-> 29282fde80d44e587f8c152b10049a56e61659f0
-> # good: [2654ad44b5f7a5f1b12d722a37d9b9df69d57899] Merge branch
-> 'x86-urgent-for-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip git bisect good
-> 2654ad44b5f7a5f1b12d722a37d9b9df69d57899
-> # good: [086486e46e4206cfa1140fb9682ad67c8a4502fb] Merge branch 'for-linus'
-> of git://git.samba.org/sfrench/cifs-2.6 git bisect good
-> 086486e46e4206cfa1140fb9682ad67c8a4502fb
-> # good: [25a3bc6bd1ca03ab504b8c55c98f8d0135644d53] [parisc] open(2) compat
-> bug git bisect good 25a3bc6bd1ca03ab504b8c55c98f8d0135644d53
-> # bad: [cfd1f032f98e5ab3a04f23a0adbd53ff8744827d] Merge branch
-> 'core-urgent-for-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip git bisect bad
-> cfd1f032f98e5ab3a04f23a0adbd53ff8744827d
-> # good: [b69f0859dc8e633c5d8c06845811588fe17e68b3] Linux 3.7-rc8
-> git bisect good b69f0859dc8e633c5d8c06845811588fe17e68b3
-> # good: [ca50496eb487b639de1f502e77a48dde84152fb9] Merge branch
-> 'for-3.7-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq git
-> bisect good ca50496eb487b639de1f502e77a48dde84152fb9
-> # good: [70dcc535bdf30ffaef58b867fbde45c0287f34c6] Merge tag
-> 'upstream-3.7-rc9' of git://git.infradead.org/linux-ubi git bisect good
-> 70dcc535bdf30ffaef58b867fbde45c0287f34c6
-> # good: [df2fc246c8ee8b6067af1fa55d3bc23107457f61] Merge branch 'fixes' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux git bisect good
-> df2fc246c8ee8b6067af1fa55d3bc23107457f61
-> # bad: [8d4516904b39507458bee8115793528e12b1d8dd] watchdog: Fix CPU hotplug
-> regression git bisect bad 8d4516904b39507458bee8115793528e12b1d8dd
-> 
-> 
-> and I can confirm that reverting 8d451690 does fix the problem.  After
-> having found this, it became clearer to me why the freeze was related to
-> plugging AC power: I use laptop-mode-tools in its default Debian
-> configuration, which will disable the nmi_watchdog on battery power and
-> enable it on AC power.
-> 
-> So the simple test case which will hang my (and presumably also your) PC
-> on plain v3.7 is:
-> 
->  echo 0 > /proc/sys/kernel/nmi_watchdog
->  echo 1 > /proc/sys/kernel/nmi_watchdog
-> 
-> without any cmdline nmi_watchdog parameters, i.e. enabled.
-> 
-> I'll followup with a proposed revert patch, but I guess you will want to
-> come up with something which fixes the original problem as well.  But
-> given the serious effect of the bug, causing a 100% reproducable freeze
-> on a standard distro laptop setup, I hope that the revert will go into
-> v3.7.1 unless a real fix can be prepared in time.
-> 
-> 
-> Thanks,
-> Bjørn
 
-Confirm similar behaviour (I didn't do bisection): kernel sometimes opps when 
-plug in AC adapter.
+Sunday, December 16, 2012, 6:38:24 PM, you wrote:
 
-Regards
+> On Fri, Dec 14, 2012 at 04:55:57PM +0100, Sander Eikelenboom wrote:
+>> Hi Konrad,
+>> 
+>> I just tried to boot a 3.8.0-rc0 kernel (last commit: 7313264b899bbf3988841296265a6e0e8a7b6521) as dom0 on my machine with current xen-unstable.
 
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+> Yeah, saw it over the Dec 11->Dec 12 merges and was out on
+> vacation during that time (just got back).
+
+> Did you by any chance try to do a git bisect to narrow down
+> which merge it was?
+
+Hi Konrad,
+
+Nope haven't had the time, I only tried resetting to commit 189251705649bdfdf5e5850eb178f8cbfdac5480 as a "hunch"(just before a lot of x86 and rcu commits), but the result didn't boot ..
+
+--
+Sander
+
+> Thanks!
+>> The boot stalls:
+>> 
+>> [    0.000000] ACPI: PM-Timer IO Port: 0x808
+>> [    0.000000] ACPI: Local APIC address 0xfee00000
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
+>> [    0.000000] ACPI: IOAPIC (id[0x06] address[0xfec00000] gsi_base[0])
+>> [    0.000000] IOAPIC[0]: apic_id 6, version 33, address 0xfec00000, GSI 0-23
+>> [    0.000000] ACPI: IOAPIC (id[0x07] address[0xfec20000] gsi_base[24])
+>> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
+>> [   64.598628] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>> [   64.598676]  0: (1 GPs behind) idle=aed/140000000000000/0 drain=5 . timer not pending
+>> [   64.598683]  (detected by 1, t=18004 jiffies, g=18446744073709551414, c=18446744073709551413, q=162)
+>> [   64.598692] sending NMI to all CPUs:
+>> [   64.598716] xen: vector 0x2 is not implemented
+>> 
+>> 
+>> Perhaps an interesting line is the incomplete (no end of range, and it stalls there some time before the kernel reports the stall itself:
+>> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
+>> 
+>> 
+>> The exact seem config with 3.7.0 as kernel works fine.
+>> Complete serial log is attached.
+>> 
+>> --
+>> 
+>> Sander
+>> 
+>> 
+
+
+
+
