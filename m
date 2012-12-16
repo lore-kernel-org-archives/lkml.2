@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2LPRRv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:17:51 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40734 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2LPRRt (ORCPT
+	id S1752127Ab2LPRYz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:24:55 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:43759 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab2LPRYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:17:49 -0500
-Date: Sun, 16 Dec 2012 09:17:47 -0800 (PST)
-Message-Id: <20121216.091747.271269648244929827.davem@davemloft.net>
-To: simon@fire.lp0.eu
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, vyasevic@redhat.com
-Subject: Re: [PATCH] ipv6: Fix Makefile offload objects
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50CDFB36.1020604@simon.arlott.org.uk>
-References: <50CDFB36.1020604@simon.arlott.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Dec 2012 12:24:53 -0500
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: Hideki EIRAKU <hdk@igel.co.jp>
+Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Simon Horman <horms@verge.net.au>, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [PATCH/WIP/RFC 01/14] ARM: sh-mobile: Protect ipmmu.h header with ifndef/define
+Date: Sun, 16 Dec 2012 18:25:47 +0100
+Message-Id: <1355678760-27357-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1355678760-27357-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1350290093-998-1-git-send-email-hdk@igel.co.jp>
+ <1355678760-27357-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Arlott <simon@fire.lp0.eu>
-Date: Sun, 16 Dec 2012 16:47:50 +0000
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+---
+ arch/arm/mach-shmobile/include/mach/ipmmu.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-> The following commit breaks IPv6 TCP transmission for me:
-> 	Commit 75fe83c32248d99e6d5fe64155e519b78bb90481
-> 	Author: Vlad Yasevich <vyasevic@redhat.com>
-> 	Date:   Fri Nov 16 09:41:21 2012 +0000
-> 	ipv6: Preserve ipv6 functionality needed by NET
-> 
-> This patch fixes the typo "ipv6_offload" which should be
-> "ipv6-offload".
-> 
-> I don't know why not including the offload modules should
-> break TCP. Disabling all offload options on the NIC didn't
-> help. Outgoing pulseaudio traffic kept stalling.
-> 
-> Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+diff --git a/arch/arm/mach-shmobile/include/mach/ipmmu.h b/arch/arm/mach-shmobile/include/mach/ipmmu.h
+index ede2f0b..4b805b1f 100644
+--- a/arch/arm/mach-shmobile/include/mach/ipmmu.h
++++ b/arch/arm/mach-shmobile/include/mach/ipmmu.h
+@@ -1,3 +1,6 @@
++#ifndef __SHMOBILE_IPMMU_H__
++#define __SHMOBILE_IPMMU_H__
++
+ #ifdef CONFIG_SHMOBILE_IPMMU_TLB
+ void ipmmu_tlb_flush(struct device *ipmmu_dev);
+ void ipmmu_tlb_set(struct device *ipmmu_dev, unsigned long phys, int size,
+@@ -14,3 +17,5 @@ static int ipmmu_iommu_init(struct device *dev)
+ 	return -EINVAL;
+ }
+ #endif
++
++#endif /* __SHMOBILE_IPMMU_H__ */
+-- 
+1.7.8.6
 
-Applied, since the fix is so obvious.
-
-I'll let Vlad explain why it has such an unexpected
-effect.
-
-Thanks.
