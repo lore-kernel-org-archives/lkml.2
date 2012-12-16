@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2LPPfv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 10:35:51 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:36409 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab2LPPft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 10:35:49 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Hauke Mehrtens <hauke@hauke-m.de>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Michael Buesch <m@bues.ch>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/2] ssb: SSB_DRIVER_GPIO should depend on GPIOLIB instead of selecting it
-Date: Sun, 16 Dec 2012 16:35:36 +0100
-Message-Id: <1355672136-24808-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1355672136-24808-1-git-send-email-geert@linux-m68k.org>
-References: <1355672136-24808-1-git-send-email-geert@linux-m68k.org>
+	id S1753293Ab2LPP4Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 10:56:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5083 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab2LPP4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 10:56:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
+   d="scan'208";a="258036096"
+Date: Sun, 16 Dec 2012 17:59:53 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / PM: Do not apply ACPI_SUCCESS() to
+ acpi_bus_get_device() result
+Message-ID: <20121216155953.GN2261@intel.com>
+References: <1432424.eSUdEQ1VBT@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1432424.eSUdEQ1VBT@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ec43b08b5733494ad88aa618ecdf534320dd8207 ("ssb: add GPIO driver")
-added SSB_DRIVER_GPIO, which unconditionally selects GPIOLIB, causing
-a Kconfig warning:
+On Sun, Dec 16, 2012 at 02:32:06PM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Since the return value of acpi_bus_get_device() is not of type
+> acpi_status, ACPI_SUCCESS() should not be used for checking its
+> return value.  Fix that.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-warning: (ARCH_REQUIRE_GPIOLIB && SSB_DRIVER_GPIO && BCMA_DRIVER_GPIO && MFD_TC6393XB && FB_VIA) selects GPIOLIB which has unmet direct dependencies (ARCH_WANT_OPTIONAL_GPIOLIB || ARCH_REQUIRE_GPIOLIB)
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-and build failure for m68k/allmodconfig:
-
-In file included from drivers/ssb/ssb_private.h:5,
-                 from drivers/ssb/main.c:12:
-include/linux/ssb/ssb.h:440: error: field ‘gpio’ has incomplete type
-make[4]: *** [drivers/ssb/main.o] Error 1
-make[3]: *** [drivers/ssb/] Error 2
-
-Turn the select into a dependency to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/ssb/Kconfig |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/ssb/Kconfig b/drivers/ssb/Kconfig
-index ff3c8a2..5d6f2ec 100644
---- a/drivers/ssb/Kconfig
-+++ b/drivers/ssb/Kconfig
-@@ -162,8 +162,7 @@ config SSB_DRIVER_GIGE
- 
- config SSB_DRIVER_GPIO
- 	bool "SSB GPIO driver"
--	depends on SSB
--	select GPIOLIB
-+	depends on SSB && GPIOLIB
- 	help
- 	  Driver to provide access to the GPIO pins on the bus.
- 
--- 
-1.7.0.4
-
+> ---
+>  drivers/acpi/device_pm.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> Index: linux/drivers/acpi/device_pm.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/device_pm.c
+> +++ linux/drivers/acpi/device_pm.c
+> @@ -358,8 +358,7 @@ static struct acpi_device *acpi_dev_pm_g
+>  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+>  	struct acpi_device *adev;
+>  
+> -	return handle && ACPI_SUCCESS(acpi_bus_get_device(handle, &adev)) ?
+> -		adev : NULL;
+> +	return handle && !acpi_bus_get_device(handle, &adev) ? adev : NULL;
+>  }
+>  
+>  /**
