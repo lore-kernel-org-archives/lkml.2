@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab2LPRsu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:48:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2918 "EHLO mga02.intel.com"
+	id S1753214Ab2LPRtI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:49:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2911 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752632Ab2LPRpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:45:51 -0500
+	id S1752592Ab2LPRpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:45:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
-   d="scan'208";a="234790705"
+   d="scan'208";a="234790699"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Thomas Gleixner" <tglx@linutronix.de>,
@@ -19,9 +19,9 @@ To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Yinghai Lu" <yinghai@kernel.org>,
         "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v3 04/10] x86/microcode_core_early.c: Define interfaces for early loading ucode
-Date: Sun, 16 Dec 2012 02:43:23 -0800
-Message-Id: <1355654609-16800-5-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v3 02/10] x86/microcode_intel.h: Define functions and macros for early loading ucode
+Date: Sun, 16 Dec 2012 02:43:21 -0800
+Message-Id: <1355654609-16800-3-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
 References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
@@ -31,120 +31,411 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Define interfaces load_ucode_bsp() and load_ucode_ap() to load ucode on BSP and
-AP in early boot time. These are generic interfaces. Internally they call
-vendor specific implementations.
+Define some functions and macros that will be used in early loading ucode. Some
+of them are moved from microcode_intel.c driver in order to be called in early
+boot phase before module can be called.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/include/asm/microcode.h       | 11 +++++
- arch/x86/kernel/microcode_core_early.c | 77 ++++++++++++++++++++++++++++++++++
- 2 files changed, 88 insertions(+)
- create mode 100644 arch/x86/kernel/microcode_core_early.c
+ arch/x86/include/asm/microcode_intel.h |  82 ++++++++++++++
+ arch/x86/kernel/Makefile               |   3 +
+ arch/x86/kernel/microcode_core.c       |   7 +-
+ arch/x86/kernel/microcode_intel.c      | 198 +++++----------------------------
+ 4 files changed, 119 insertions(+), 171 deletions(-)
+ create mode 100644 arch/x86/include/asm/microcode_intel.h
 
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index 43d921b..91ed643 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -57,4 +57,15 @@ static inline struct microcode_ops * __init init_amd_microcode(void)
- static inline void __exit exit_amd_microcode(void) {}
- #endif
- 
-+#ifdef CONFIG_MICROCODE_EARLY
-+#define MAX_UCODE_COUNT 128
-+extern void __init load_ucode_bsp(char *real_mode_data);
-+extern __init void load_ucode_ap(void);
-+extern int __init save_microcode_in_initrd(void);
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+new file mode 100644
+index 0000000..d1d517b
+--- /dev/null
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -0,0 +1,82 @@
++#ifndef _ASM_X86_MICROCODE_INTEL_H
++#define _ASM_X86_MICROCODE_INTEL_H
++
++#include <asm/microcode.h>
++
++struct microcode_header_intel {
++	unsigned int            hdrver;
++	unsigned int            rev;
++	unsigned int            date;
++	unsigned int            sig;
++	unsigned int            cksum;
++	unsigned int            ldrver;
++	unsigned int            pf;
++	unsigned int            datasize;
++	unsigned int            totalsize;
++	unsigned int            reserved[3];
++};
++
++struct microcode_intel {
++	struct microcode_header_intel hdr;
++	unsigned int            bits[0];
++};
++
++/* microcode format is extended from prescott processors */
++struct extended_signature {
++	unsigned int            sig;
++	unsigned int            pf;
++	unsigned int            cksum;
++};
++
++struct extended_sigtable {
++	unsigned int            count;
++	unsigned int            cksum;
++	unsigned int            reserved[3];
++	struct extended_signature sigs[0];
++};
++
++#define DEFAULT_UCODE_DATASIZE	(2000)
++#define MC_HEADER_SIZE		(sizeof(struct microcode_header_intel))
++#define DEFAULT_UCODE_TOTALSIZE (DEFAULT_UCODE_DATASIZE + MC_HEADER_SIZE)
++#define EXT_HEADER_SIZE		(sizeof(struct extended_sigtable))
++#define EXT_SIGNATURE_SIZE	(sizeof(struct extended_signature))
++#define DWSIZE			(sizeof(u32))
++
++#define get_totalsize(mc) \
++	(((struct microcode_intel *)mc)->hdr.totalsize ? \
++	 ((struct microcode_intel *)mc)->hdr.totalsize : \
++	 DEFAULT_UCODE_TOTALSIZE)
++
++#define get_datasize(mc) \
++	(((struct microcode_intel *)mc)->hdr.datasize ? \
++	 ((struct microcode_intel *)mc)->hdr.datasize : DEFAULT_UCODE_DATASIZE)
++
++#define sigmatch(s1, s2, p1, p2) \
++	(((s1) == (s2)) && (((p1) & (p2)) || (((p1) == 0) && ((p2) == 0))))
++
++#define exttable_size(et) ((et)->count * EXT_SIGNATURE_SIZE + EXT_HEADER_SIZE)
++
++extern int
++get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev);
++extern int microcode_sanity_check(void *mc, int print_err);
++extern int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev);
++extern int
++update_match_revision(struct microcode_header_intel *mc_header, int rev);
++
++#ifdef CONFIG_MICROCODE_INTEL_EARLY
++extern void __init load_ucode_intel_bsp(char *real_mode_data);
++extern void __cpuinit load_ucode_intel_ap(void);
++extern void show_ucode_info_early(void);
 +#else
-+static inline void __init load_ucode_bsp(char *real_mode_data) {}
-+static inline __init void load_ucode_ap(void) {}
-+static inline int __init save_microcode_in_initrd(void) {}
++static inline __init void load_ucode_intel_bsp(char *real_mode_data) {}
++static inline __cpuinit void load_ucode_intel_ap(void) {}
++static inline void show_ucode_info_early(void) {}
 +#endif
 +
- #endif /* _ASM_X86_MICROCODE_H */
-diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/microcode_core_early.c
-new file mode 100644
-index 0000000..458cf14
---- /dev/null
-+++ b/arch/x86/kernel/microcode_core_early.c
-@@ -0,0 +1,77 @@
-+/*
-+ *	X86 CPU microcode early update for Linux
-+ *
-+ *	Copyright (C) 2012 Fenghua Yu <fenghua.yu@intel.com>
-+ *			   H Peter Anvin" <hpa@zytor.com>
-+ *
-+ *	This driver allows to early upgrade microcode on Intel processors
-+ *	belonging to IA-32 family - PentiumPro, Pentium II,
-+ *	Pentium III, Xeon, Pentium 4, etc.
-+ *
-+ *	Reference: Section 9.11 of Volume 3, IA-32 Intel Architecture
-+ *	Software Developer's Manual.
-+ *
-+ *	This program is free software; you can redistribute it and/or
-+ *	modify it under the terms of the GNU General Public License
-+ *	as published by the Free Software Foundation; either version
-+ *	2 of the License, or (at your option) any later version.
-+ */
-+#include <linux/module.h>
-+#include <linux/mm.h>
++#if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
++extern int save_mc_for_early(u8 *mc);
++#else
++static inline int save_mc_for_early(u8 *mc) {}
++#endif
++
++#endif /* _ASM_X86_MICROCODE_INTEL_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 34e923a..052abee 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -88,6 +88,9 @@ obj-$(CONFIG_PARAVIRT_CLOCK)	+= pvclock.o
+ 
+ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
+ 
++obj-$(CONFIG_MICROCODE_EARLY)		+= microcode_core_early.o
++obj-$(CONFIG_MICROCODE_INTEL_EARLY)	+= microcode_intel_early.o
++obj-$(CONFIG_MICROCODE_INTEL_LIB)	+= microcode_intel_lib.o
+ microcode-y				:= microcode_core.o
+ microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
+ microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 3a04b22..22db92b 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -364,10 +364,7 @@ static struct attribute_group mc_attr_group = {
+ 
+ static void microcode_fini_cpu(int cpu)
+ {
+-	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+-
+ 	microcode_ops->microcode_fini_cpu(cpu);
+-	uci->valid = 0;
+ }
+ 
+ static enum ucode_state microcode_resume_cpu(int cpu)
+@@ -383,6 +380,10 @@ static enum ucode_state microcode_resume_cpu(int cpu)
+ static enum ucode_state microcode_init_cpu(int cpu, bool refresh_fw)
+ {
+ 	enum ucode_state ustate;
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++
++	if (uci && uci->valid)
++		return UCODE_OK;
+ 
+ 	if (collect_cpu_info(cpu))
+ 		return UCODE_ERROR;
+diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+index 3544aed..5fb2ceb 100644
+--- a/arch/x86/kernel/microcode_intel.c
++++ b/arch/x86/kernel/microcode_intel.c
+@@ -79,7 +79,7 @@
+ #include <linux/module.h>
+ #include <linux/vmalloc.h>
+ 
+-#include <asm/microcode.h>
 +#include <asm/microcode_intel.h>
-+#include <asm/processor.h>
-+#include <asm/page.h>
+ #include <asm/processor.h>
+ #include <asm/msr.h>
+ 
+@@ -87,59 +87,6 @@ MODULE_DESCRIPTION("Microcode Update Driver");
+ MODULE_AUTHOR("Tigran Aivazian <tigran@aivazian.fsnet.co.uk>");
+ MODULE_LICENSE("GPL");
+ 
+-struct microcode_header_intel {
+-	unsigned int            hdrver;
+-	unsigned int            rev;
+-	unsigned int            date;
+-	unsigned int            sig;
+-	unsigned int            cksum;
+-	unsigned int            ldrver;
+-	unsigned int            pf;
+-	unsigned int            datasize;
+-	unsigned int            totalsize;
+-	unsigned int            reserved[3];
+-};
+-
+-struct microcode_intel {
+-	struct microcode_header_intel hdr;
+-	unsigned int            bits[0];
+-};
+-
+-/* microcode format is extended from prescott processors */
+-struct extended_signature {
+-	unsigned int            sig;
+-	unsigned int            pf;
+-	unsigned int            cksum;
+-};
+-
+-struct extended_sigtable {
+-	unsigned int            count;
+-	unsigned int            cksum;
+-	unsigned int            reserved[3];
+-	struct extended_signature sigs[0];
+-};
+-
+-#define DEFAULT_UCODE_DATASIZE	(2000)
+-#define MC_HEADER_SIZE		(sizeof(struct microcode_header_intel))
+-#define DEFAULT_UCODE_TOTALSIZE (DEFAULT_UCODE_DATASIZE + MC_HEADER_SIZE)
+-#define EXT_HEADER_SIZE		(sizeof(struct extended_sigtable))
+-#define EXT_SIGNATURE_SIZE	(sizeof(struct extended_signature))
+-#define DWSIZE			(sizeof(u32))
+-
+-#define get_totalsize(mc) \
+-	(((struct microcode_intel *)mc)->hdr.totalsize ? \
+-	 ((struct microcode_intel *)mc)->hdr.totalsize : \
+-	 DEFAULT_UCODE_TOTALSIZE)
+-
+-#define get_datasize(mc) \
+-	(((struct microcode_intel *)mc)->hdr.datasize ? \
+-	 ((struct microcode_intel *)mc)->hdr.datasize : DEFAULT_UCODE_DATASIZE)
+-
+-#define sigmatch(s1, s2, p1, p2) \
+-	(((s1) == (s2)) && (((p1) & (p2)) || (((p1) == 0) && ((p2) == 0))))
+-
+-#define exttable_size(et) ((et)->count * EXT_SIGNATURE_SIZE + EXT_HEADER_SIZE)
+-
+ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
+@@ -162,128 +109,25 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
+ 	return 0;
+ }
+ 
+-static inline int update_match_cpu(struct cpu_signature *csig, int sig, int pf)
+-{
+-	return (!sigmatch(sig, csig->sig, pf, csig->pf)) ? 0 : 1;
+-}
+-
+-static inline int
+-update_match_revision(struct microcode_header_intel *mc_header, int rev)
+-{
+-	return (mc_header->rev <= rev) ? 0 : 1;
+-}
+-
+-static int microcode_sanity_check(void *mc)
+-{
+-	unsigned long total_size, data_size, ext_table_size;
+-	struct microcode_header_intel *mc_header = mc;
+-	struct extended_sigtable *ext_header = NULL;
+-	int sum, orig_sum, ext_sigcount = 0, i;
+-	struct extended_signature *ext_sig;
+-
+-	total_size = get_totalsize(mc_header);
+-	data_size = get_datasize(mc_header);
+-
+-	if (data_size + MC_HEADER_SIZE > total_size) {
+-		pr_err("error! Bad data size in microcode data file\n");
+-		return -EINVAL;
+-	}
+-
+-	if (mc_header->ldrver != 1 || mc_header->hdrver != 1) {
+-		pr_err("error! Unknown microcode update format\n");
+-		return -EINVAL;
+-	}
+-	ext_table_size = total_size - (MC_HEADER_SIZE + data_size);
+-	if (ext_table_size) {
+-		if ((ext_table_size < EXT_HEADER_SIZE)
+-		 || ((ext_table_size - EXT_HEADER_SIZE) % EXT_SIGNATURE_SIZE)) {
+-			pr_err("error! Small exttable size in microcode data file\n");
+-			return -EINVAL;
+-		}
+-		ext_header = mc + MC_HEADER_SIZE + data_size;
+-		if (ext_table_size != exttable_size(ext_header)) {
+-			pr_err("error! Bad exttable size in microcode data file\n");
+-			return -EFAULT;
+-		}
+-		ext_sigcount = ext_header->count;
+-	}
+-
+-	/* check extended table checksum */
+-	if (ext_table_size) {
+-		int ext_table_sum = 0;
+-		int *ext_tablep = (int *)ext_header;
+-
+-		i = ext_table_size / DWSIZE;
+-		while (i--)
+-			ext_table_sum += ext_tablep[i];
+-		if (ext_table_sum) {
+-			pr_warning("aborting, bad extended signature table checksum\n");
+-			return -EINVAL;
+-		}
+-	}
+-
+-	/* calculate the checksum */
+-	orig_sum = 0;
+-	i = (MC_HEADER_SIZE + data_size) / DWSIZE;
+-	while (i--)
+-		orig_sum += ((int *)mc)[i];
+-	if (orig_sum) {
+-		pr_err("aborting, bad checksum\n");
+-		return -EINVAL;
+-	}
+-	if (!ext_table_size)
+-		return 0;
+-	/* check extended signature checksum */
+-	for (i = 0; i < ext_sigcount; i++) {
+-		ext_sig = (void *)ext_header + EXT_HEADER_SIZE +
+-			  EXT_SIGNATURE_SIZE * i;
+-		sum = orig_sum
+-			- (mc_header->sig + mc_header->pf + mc_header->cksum)
+-			+ (ext_sig->sig + ext_sig->pf + ext_sig->cksum);
+-		if (sum) {
+-			pr_err("aborting, bad checksum\n");
+-			return -EINVAL;
+-		}
+-	}
+-	return 0;
+-}
+-
+ /*
+  * return 0 - no update found
+  * return 1 - found update
+  */
+-static int
+-get_matching_microcode(struct cpu_signature *cpu_sig, void *mc, int rev)
++static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
+ {
+-	struct microcode_header_intel *mc_header = mc;
+-	struct extended_sigtable *ext_header;
+-	unsigned long total_size = get_totalsize(mc_header);
+-	int ext_sigcount, i;
+-	struct extended_signature *ext_sig;
+-
+-	if (!update_match_revision(mc_header, rev))
+-		return 0;
+-
+-	if (update_match_cpu(cpu_sig, mc_header->sig, mc_header->pf))
+-		return 1;
++	struct cpu_signature cpu_sig;
++	unsigned int csig, cpf, crev;
+ 
+-	/* Look for ext. headers: */
+-	if (total_size <= get_datasize(mc_header) + MC_HEADER_SIZE)
+-		return 0;
++	collect_cpu_info(cpu, &cpu_sig);
+ 
+-	ext_header = mc + get_datasize(mc_header) + MC_HEADER_SIZE;
+-	ext_sigcount = ext_header->count;
+-	ext_sig = (void *)ext_header + EXT_HEADER_SIZE;
++	csig = cpu_sig.sig;
++	cpf = cpu_sig.pf;
++	crev = cpu_sig.rev;
+ 
+-	for (i = 0; i < ext_sigcount; i++) {
+-		if (update_match_cpu(cpu_sig, ext_sig->sig, ext_sig->pf))
+-			return 1;
+-		ext_sig++;
+-	}
+-	return 0;
++	return get_matching_microcode(csig, cpf, mc_intel, crev);
+ }
+ 
+-static int apply_microcode(int cpu)
++int apply_microcode(int cpu)
+ {
+ 	struct microcode_intel *mc_intel;
+ 	struct ucode_cpu_info *uci;
+@@ -300,6 +144,14 @@ static int apply_microcode(int cpu)
+ 	if (mc_intel == NULL)
+ 		return 0;
+ 
++	/*
++	 * Microcode on this CPU could be updated earlier. Only apply the
++	 * microcode patch in mc_intel when it is newer than the one on this
++	 * CPU.
++	 */
++	if (get_matching_mc(mc_intel, cpu) == 0)
++		return 0;
 +
-+#define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
-+#define CPUID_INTEL1 QCHAR('G', 'e', 'n', 'u')
-+#define CPUID_INTEL2 QCHAR('i', 'n', 'e', 'I')
-+#define CPUID_INTEL3 QCHAR('n', 't', 'e', 'l')
-+#define CPUID_AMD1 QCHAR('A', 'u', 't', 'h')
-+#define CPUID_AMD2 QCHAR('e', 'n', 't', 'i')
-+#define CPUID_AMD3 QCHAR('c', 'A', 'M', 'D')
+ 	/* write microcode via MSR 0x79 */
+ 	wrmsr(MSR_IA32_UCODE_WRITE,
+ 	      (unsigned long) mc_intel->bits,
+@@ -338,6 +190,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 	unsigned int leftover = size;
+ 	enum ucode_state state = UCODE_OK;
+ 	unsigned int curr_mc_size = 0;
++	unsigned int csig, cpf;
+ 
+ 	while (leftover) {
+ 		struct microcode_header_intel mc_header;
+@@ -362,11 +215,13 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 		}
+ 
+ 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
+-		    microcode_sanity_check(mc) < 0) {
++		    microcode_sanity_check(mc, 1) < 0) {
+ 			break;
+ 		}
+ 
+-		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
++		csig = uci->cpu_sig.sig;
++		cpf = uci->cpu_sig.pf;
++		if (get_matching_microcode(csig, cpf, mc, new_rev)) {
+ 			vfree(new_mc);
+ 			new_rev = mc_header.rev;
+ 			new_mc  = mc;
+@@ -393,6 +248,13 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 	vfree(uci->mc);
+ 	uci->mc = (struct microcode_intel *)new_mc;
+ 
++	/*
++	 * If early loading microcode is supported, save this mc into
++	 * permanent memory. So it will be loaded early when a CPU is hot added
++	 * or resumes.
++	 */
++	save_mc_for_early(new_mc);
 +
-+#define CPUID_IS(a, b, c) (!((ebx ^ (a))|(edx ^ (b))|(ecx ^ (c))))
-+
-+/*
-+ * In early loading microcode phase on BSP, boot_cpu_data is not set up yet.
-+ * x86_vendor() gets vendor id for BSP.
-+ *
-+ * In 32 bit AP case, accessing boot_cpu_data needs linear address. To simplify
-+ * coding, we still use x86_vendor() to get vendor id for AP.
-+ *
-+ * x86_vendor() gets vendor information directly through cpuid.
-+ */
-+static int __cpuinit x86_vendor(void)
-+{
-+	u32 eax = 0x00000000;
-+	u32 ebx, ecx = 0, edx;
-+
-+	if (!have_cpuid_p())
-+		return X86_VENDOR_UNKNOWN;
-+
-+	native_cpuid(&eax, &ebx, &ecx, &edx);
-+
-+	if (CPUID_IS(CPUID_INTEL1, CPUID_INTEL2, CPUID_INTEL3))
-+		return X86_VENDOR_INTEL;
-+
-+	if (CPUID_IS(CPUID_AMD1, CPUID_AMD2, CPUID_AMD3))
-+		return X86_VENDOR_AMD;
-+
-+	return X86_VENDOR_UNKNOWN;
-+}
-+
-+void __init load_ucode_bsp(char *real_mode_data)
-+{
-+	int vendor = x86_vendor();
-+
-+	if (vendor == X86_VENDOR_INTEL)
-+		load_ucode_intel_bsp(real_mode_data);
-+}
-+
-+void __cpuinit load_ucode_ap(void)
-+{
-+	int vendor = x86_vendor();
-+
-+	if (vendor == X86_VENDOR_INTEL)
-+		load_ucode_intel_ap();
-+}
+ 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
+ 		 cpu, new_rev, uci->cpu_sig.rev);
+ out:
 -- 
 1.8.0.1
 
