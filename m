@@ -1,13 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2LPR5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:57:25 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49994 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab2LPR5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:57:24 -0500
-Date: Sun, 16 Dec 2012 18:57:22 +0100
-From: Borislav Petkov <bp@alien8.de>
+	id S1753293Ab2LPR7E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:59:04 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64094 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab2LPR7C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:59:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
+References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
+Date: Sun, 16 Dec 2012 09:59:01 -0800
+X-Google-Sender-Auth: puXwE8xRrjXhCy5prq0AbTuSTXY
+Message-ID: <CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
+Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
+From: Yinghai Lu <yinghai@kernel.org>
 To: Fenghua Yu <fenghua.yu@intel.com>
 Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -15,55 +23,53 @@ Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Borislav Petkov <borislav.petkov@amd.com>,
-        Yinghai Lu <yinghai@kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v3 04/10] x86/microcode_core_early.c: Define interfaces
- for early loading ucode
-Message-ID: <20121216175722.GA14678@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Fenghua Yu <fenghua.yu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-	Asit K Mallick <asit.k.mallick@intel.com>,
-	Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>,
-	Borislav Petkov <borislav.petkov@amd.com>,
-	Yinghai Lu <yinghai@kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
- <1355654609-16800-5-git-send-email-fenghua.yu@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1355654609-16800-5-git-send-email-fenghua.yu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 02:43:23AM -0800, Fenghua Yu wrote:
-> +#define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
-> +#define CPUID_INTEL1 QCHAR('G', 'e', 'n', 'u')
-> +#define CPUID_INTEL2 QCHAR('i', 'n', 'e', 'I')
-> +#define CPUID_INTEL3 QCHAR('n', 't', 'e', 'l')
-> +#define CPUID_AMD1 QCHAR('A', 'u', 't', 'h')
-> +#define CPUID_AMD2 QCHAR('e', 'n', 't', 'i')
-> +#define CPUID_AMD3 QCHAR('c', 'A', 'M', 'D')
+On Sun, Dec 16, 2012 at 2:43 AM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+>
+> This updates ucode in 64-bit mode. Paging and virtual address are working now.
+>
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/kernel/head64.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> index 037df57..a512f56 100644
+> --- a/arch/x86/kernel/head64.c
+> +++ b/arch/x86/kernel/head64.c
+> @@ -25,6 +25,7 @@
+>  #include <asm/kdebug.h>
+>  #include <asm/e820.h>
+>  #include <asm/bios_ebda.h>
+> +#include <asm/microcode.h>
+>
+>  static void __init zap_identity_mappings(void)
+>  {
+> @@ -73,6 +74,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
+>         /* clear bss before set_intr_gate with early_idt_handler */
+>         clear_bss();
+>
+> +       /*
+> +        * Load microcode early on BSP.
+> +        */
+> +       load_ucode_bsp(real_mode_data);
 > +
-> +#define CPUID_IS(a, b, c) (!((ebx ^ (a))|(edx ^ (b))|(ecx ^ (c))))
+>         /* Make NULL pointers segfault */
+>         zap_identity_mappings();
+>
 
-What, this macro is relying on external variable names and doesn't have
-them as its own macro arguments? Why? This is really fragile and very
-much prone to errors.
+So this patchset is after #PF handler set early page table version?
 
-What's wrong with doing:
+then load_ucode_bsp() should be after
 
-#define CPUID_IS(a, b, c, ebx, ecx, edx) (!(((ebx) ^ (a))|((edx) ^ (b))|((ecx) ^ (c))))
+   load_idt((const struct desc_ptr *)&idt_descr);
 
-?
+otherwise it will not work.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yinghai
