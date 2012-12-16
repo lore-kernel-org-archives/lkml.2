@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2LPR2c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:28:32 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:43762 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab2LPRYy (ORCPT
+	id S1751952Ab2LPRgx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:36:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42168 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2LPRgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:24:54 -0500
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: Hideki EIRAKU <hdk@igel.co.jp>
-Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms@verge.net.au>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>
-Subject: [PATCH/WIP/RFC 02/14] shmobile-iommu: Move IPMMU driver to drivers/iommu
-Date: Sun, 16 Dec 2012 18:25:48 +0100
-Message-Id: <1355678760-27357-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1355678760-27357-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1350290093-998-1-git-send-email-hdk@igel.co.jp>
- <1355678760-27357-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Sun, 16 Dec 2012 12:36:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <4532917.9APhB4xTvi@vostro.rjw.lan>
+References: <4532917.9APhB4xTvi@vostro.rjw.lan>
+Date: Sun, 16 Dec 2012 09:36:49 -0800
+X-Google-Sender-Auth: iuY67a9fVoT4hi_f_NQHfYkeH5U
+Message-ID: <CAE9FiQUgEv0Ub8jAuuHzzOGqinbm0Nm5iiBs1ugRg5OT09h4+A@mail.gmail.com>
+Subject: Re: [PATCH 0/6] ACPI: Simplify namespace scanning for devices
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- arch/arm/mach-shmobile/Kconfig                     |    6 ------
- arch/arm/mach-shmobile/Makefile                    |    3 ---
- drivers/iommu/Kconfig                              |    6 ++++++
- drivers/iommu/Makefile                             |    1 +
- .../ipmmu.c => drivers/iommu/shmobile-ipmmu.c      |    0
- 5 files changed, 7 insertions(+), 9 deletions(-)
- rename arch/arm/mach-shmobile/ipmmu.c => drivers/iommu/shmobile-ipmmu.c (100%)
+On Sun, Dec 16, 2012 at 5:47 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi All,
+>
+> This series is on top of the one I sent on Thursday:
+>
+> https://lkml.org/lkml/2012/12/13/632
+>
+> It goes one step farther and makes some simplifications that become possible
+> after applying that patchset.
+>
+> [1/6] Fold acpi_pci_root_start() into acpi_pci_root_add()
+> [2/6] Remove acpi_start_single_object() and acpi_bus_start()
+> [3/6] Remove the arguments of acpi_bus_add() that are not used
+> [4/6] Drop the second argument of acpi_bus_scan()
+> [5/6] Replace ACPI device add_type field with a match_driver flag
+> [6/6] Make acpi_bus_scan() and acpi_bus_add() take only one argument
+>
+> It survives booting on Toshiba Portege R500 without any visible issues.
 
-diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
-index de69ab3..8ae100c 100644
---- a/arch/arm/mach-shmobile/Kconfig
-+++ b/arch/arm/mach-shmobile/Kconfig
-@@ -210,12 +210,6 @@ endmenu
- config SH_CLK_CPG
- 	bool
- 
--config SHMOBILE_IPMMU
--	bool
--
--config SHMOBILE_IPMMU_TLB
--	bool
--
- source "drivers/sh/Kconfig"
- 
- endif
-diff --git a/arch/arm/mach-shmobile/Makefile b/arch/arm/mach-shmobile/Makefile
-index 4ffba9d..fe2c97c 100644
---- a/arch/arm/mach-shmobile/Makefile
-+++ b/arch/arm/mach-shmobile/Makefile
-@@ -60,6 +60,3 @@ obj-$(CONFIG_MACH_KZM9G)	+= board-kzm9g.o
- # Framework support
- obj-$(CONFIG_SMP)		+= $(smp-y)
- obj-$(CONFIG_GENERIC_GPIO)	+= $(pfc-y)
--
--# IPMMU/IPMMUI
--obj-$(CONFIG_SHMOBILE_IPMMU)	+= ipmmu.o
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 265829f..cb2a3e8 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -187,6 +187,12 @@ config EXYNOS_IOMMU_DEBUG
- 
- 	  Say N unless you need kernel log message for IOMMU debugging
- 
-+config SHMOBILE_IPMMU
-+	bool
-+
-+config SHMOBILE_IPMMU_TLB
-+	bool
-+
- config SHMOBILE_IOMMU
- 	bool "IOMMU for Renesas IPMMU/IPMMUI"
- 	default n
-diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index 62cf917..e65384f 100644
---- a/drivers/iommu/Makefile
-+++ b/drivers/iommu/Makefile
-@@ -13,3 +13,4 @@ obj-$(CONFIG_TEGRA_IOMMU_GART) += tegra-gart.o
- obj-$(CONFIG_TEGRA_IOMMU_SMMU) += tegra-smmu.o
- obj-$(CONFIG_EXYNOS_IOMMU) += exynos-iommu.o
- obj-$(CONFIG_SHMOBILE_IOMMU) += shmobile-iommu.o
-+obj-$(CONFIG_SHMOBILE_IPMMU) += shmobile-ipmmu.o
-diff --git a/arch/arm/mach-shmobile/ipmmu.c b/drivers/iommu/shmobile-ipmmu.c
-similarity index 100%
-rename from arch/arm/mach-shmobile/ipmmu.c
-rename to drivers/iommu/shmobile-ipmmu.c
--- 
-1.7.8.6
+Do you have git branch that i could test?
 
+I'd like to rebase for-pci-root-bus-hotplug patches, so what should be base?
+
+It would be hard for me to base on your acpi tree and Bjorn's pci tree.
+
+Thanks
+
+Yinghai
