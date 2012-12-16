@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab2LPTmu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 14:42:50 -0500
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:51732
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2LPTmt (ORCPT
+	id S1751745Ab2LPTqL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 14:46:11 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:42539 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031Ab2LPTqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 14:42:49 -0500
-Date: Sun, 16 Dec 2012 20:42:44 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <315845667.20121216204244@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
-Subject: Re: 3.8.0-rc0 on xen-unstable: RCU Stall during boot as dom0 kernel after IOAPIC
-In-Reply-To: <20121216173824.GA4518@phenom.dumpdata.com>
-References: <1995613404.20121214165557@eikelenboom.it> <20121216173824.GA4518@phenom.dumpdata.com>
+	Sun, 16 Dec 2012 14:46:10 -0500
+X-Sasl-enc: dTqnFVLMg2fiq+V/hqX4PD7FZBHIF4jaybzqpwJAvIkd 1355687168
+Message-ID: <50CE24FE.3030409@itwm.fraunhofer.de>
+Date: Sun, 16 Dec 2012 20:46:06 +0100
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Weidong Han <weidong.han@intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: Re: [regression] 3.7 ends in APIC panic
+References: <50CB3EAB.309@itwm.fraunhofer.de> <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com> <CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com> <50CE0C82.20708@itwm.fraunhofer.de> <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com> <50CE12EB.1050804@itwm.fraunhofer.de> <20121216191347.GB14678@liondog.tnic>
+In-Reply-To: <20121216191347.GB14678@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/16/2012 08:13 PM, Borislav Petkov wrote:
+> On Sun, Dec 16, 2012 at 07:28:59PM +0100, Bernd Schubert wrote:
+>> CONFIG_X86_X2APIC depends on CONFIG_IRQ_REMAP, which I disabled as it
+>> is marked as experimental...
+> 
+> You shouldn't pay too much attention to CONFIG_EXPERIMENTAL because it
+> is on its way out from the kernel tree.
 
-Sunday, December 16, 2012, 6:38:24 PM, you wrote:
+I usually don't too much, if I understand what it is about and what are
+the consequences.
 
-> On Fri, Dec 14, 2012 at 04:55:57PM +0100, Sander Eikelenboom wrote:
->> Hi Konrad,
->> 
->> I just tried to boot a 3.8.0-rc0 kernel (last commit: 7313264b899bbf3988841296265a6e0e8a7b6521) as dom0 on my machine with current xen-unstable.
+> 
+> But if you don't want to have interrupt remapping on your system,
+> you can disable it nevertheless. Wait, you can't: according to
+> d0b03bd1c6725a3463290d7f9626e4b583518a5a, you can use x2apic without
+> interrupt remapping but interrupt remapping needs to be enabled before
+> x2apic.
 
-> Yeah, saw it over the Dec 11->Dec 12 merges and was out on
-> vacation during that time (just got back).
+Hmm, I read it the other way around - x2apic depends on interrupt
+remapping, but interrupt remapping can be used without x2apic.
 
-> Did you by any chance try to do a git bisect to narrow down
-> which merge it was?
-
-Hi Konrad,
-
-Nope haven't had the time, I only tried resetting to commit 189251705649bdfdf5e5850eb178f8cbfdac5480 as a "hunch"(just before a lot of x86 and rcu commits), but the result didn't boot ..
-
---
-Sander
-
-> Thanks!
->> The boot stalls:
->> 
->> [    0.000000] ACPI: PM-Timer IO Port: 0x808
->> [    0.000000] ACPI: Local APIC address 0xfee00000
->> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
->> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
->> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
->> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
->> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
->> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
->> [    0.000000] ACPI: IOAPIC (id[0x06] address[0xfec00000] gsi_base[0])
->> [    0.000000] IOAPIC[0]: apic_id 6, version 33, address 0xfec00000, GSI 0-23
->> [    0.000000] ACPI: IOAPIC (id[0x07] address[0xfec20000] gsi_base[24])
->> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
->> [   64.598628] INFO: rcu_preempt detected stalls on CPUs/tasks:
->> [   64.598676]  0: (1 GPs behind) idle=aed/140000000000000/0 drain=5 . timer not pending
->> [   64.598683]  (detected by 1, t=18004 jiffies, g=18446744073709551414, c=18446744073709551413, q=162)
->> [   64.598692] sending NMI to all CPUs:
->> [   64.598716] xen: vector 0x2 is not implemented
->> 
->> 
->> Perhaps an interesting line is the incomplete (no end of range, and it stalls there some time before the kernel reports the stall itself:
->> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
->> 
->> 
->> The exact seem config with 3.7.0 as kernel works fine.
->> Complete serial log is attached.
->> 
->> --
->> 
->> Sander
->> 
->> 
+The help text of CONFIG_IRQ_REMAP also says "x2APIC enhancements or to
+support platforms with CPU's having > 8 bit APIC ID, say Y." I guess may
+CPU has the latter? Can the kernel panic a bit improved to help user to
+understand what needs to be enabled?
 
 
-
-
+Thanks,
+Bernd
