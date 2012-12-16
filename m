@@ -1,130 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab2LPMKj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 07:10:39 -0500
-Received: from dnvwsmailout1.mcafee.com ([161.69.31.173]:24346 "EHLO
-	DNVWSMAILOUT1.mcafee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab2LPMKi (ORCPT
+	id S1752768Ab2LPMQR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 07:16:17 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57025 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab2LPMQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 07:10:38 -0500
-Date: Sun, 16 Dec 2012 22:18:44 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-Message-ID: <201212161218.qBGCIibN027429@goober.corp.nai.org>
-CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
-        <linux-m68k@vger.kernel.org>, <uclinux-dev@uclinux.org>,
-        <geert@linux-m68k.org>
-Subject: [git pull] m68knommu arch updates for 3.8
-To: <torvalds@linux-foundation.org>
-X-Mailer: mail (GNU Mailutils 2.1)
+	Sun, 16 Dec 2012 07:16:15 -0500
+Date: Sun, 16 Dec 2012 13:16:03 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+Message-ID: <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de>
+References: <50BF345A.8050201@nvidia.com>
+ <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
+ <50C5CAB5.3040000@nvidia.com>
+ <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de>
+ <50C99677.6090306@nvidia.com>
+ <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de>
+ <50CA175F.60002@wwwdotorg.org>
+ <50CAC2AC.1010704@nvidia.com>
+ <50CB5205.1030303@wwwdotorg.org>
+ <50CB850F.9090704@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <50CB850F.9090704@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:Ik3pX0hecNzTkXH863bbYrrBtqHEl7ClLQzd/oyc0W3
+ dN7EHu8lFGsi5aIsjZHGwlmD72PdDRc/QJeV+qiYRDwagZOs1z
+ rbpuZjvwGGgNG7ah6Iu7u81Gk1CUEW0oNGyyyi8mXyCcQlL5F0
+ pz+5SE48FHSYNUIkB2n5cD690uBPGYwmq8AOL7SwLj6GRoreup
+ 6ftn5g6KOVOkSb9gmDWdPjSdD4TMOkWib60ienLAPmJewoAEck
+ UyLYGMiozlosWbTA7IKq8c7/GkyeO62FmwLDpIn4ZD9Ik2ZcVd
+ mXUAlknyEPpZcyvd1BJWbp6W3T7zF6q/TWi8v5w+cyj3SOCb1U
+ 45w+Qz7HZfIvpAdjNsWM3vCb/SlnYlHyFKS92faiJvmA+VLLJg
+ xKu0o16GJF6a6lRcLx+5x9Umq5VC4HuZvg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Can you please pull the m68knommu git tree, for-next branch, at:
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+On Fri, Dec 14, 2012 at 09:59:11PM +0200, Terje Bergstr=C3=B6m wrote:
+> On 14.12.2012 18:21, Stephen Warren wrote:
+> > On 12/13/2012 11:09 PM, Terje Bergstr=C3=B6m wrote:
+> >> They want to get the global data by getting drvdata of their parent.
+> >=20
+> > There's no reason that /has/ to be so; they can get any information from
+> > wherever it is, rather than trying to require it to be somewhere it isn=
+'t.
+>=20
+> Exactly, this was also my solution.
+>=20
+> >> The dummy device is not their parent - host1x is. There's no
+> >> connection between the dummy and the real client devices.
+> >=20
+> > It's quite possible for the client devices to ask their actual parent
+> > (host1x) for the tegradrm struct device *, by calling a host1x API, and
+> > have host1x implement that API by returning the dummy/virtual device
+> > that it created. That should be just 1-2 lines of code to implement in
+> > host1x, plus maybe a couple more to correctly return -EPROBE_DEFERRED
+> > when appropriate.
+>=20
+> My solution was to just have one global, and an getter for the global.
+> Instead of drvdata, the pointer is retrieved with the getter. No need
+> for dummy device, or passing points between host1x and tegradrm.
 
-This one has a major restructuring of the non-mmu 68000 support. It merges
-all the related SoC types that use the original 68000 cpu core internally
-so they can share the same core code. It also allows for supporting the
-original stand alone 68000 cpu in its own right. There is also a
-generalization of the clock support of the ColdFire parts, some merging of
-common ColdFire code, and a couple of bug fixes as well.
+Okay, so we're back on the topic of using globals. I need to assert
+again that this is not an option. If we were to use globals, then we
+could just as well leave out the dummy device and just do all of that in
+the tegra-drm driver's initialization function.
 
-Regards
-Greg
+The whole point of all this is to link the host1x and it's particular
+tegra-drm instance. I will see if I can find the time to implement this
+in the existing driver, so that the host1x code that you want to remove
+registers the tegra-drm dummy device and the tegra-drm devices use the
+accessors as discussed previously to access host1x and the dummy device.
+Once that is implemented, removing the original host1x implementation
+should be much easier since you will only have to keep the dummy device
+instantiation along with the one or two accessor functions.
 
+Thierry
 
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature
 
-The following changes since commit b69f0859dc8e633c5d8c06845811588fe17e68b3:
-  Linus Torvalds (1):
-        Linux 3.7-rc8
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-are available in the git repository at:
+iQIcBAEBAgAGBQJQzbuDAAoJEN0jrNd/PrOhKAEP/2BL5yE+k5akcV/F8ezfTJPK
+7c06MaJMPsljqrYRdneieddpTNwEYP6eIUvJqr+0OEl6W7J3BUEAyy7V3cS8rnjs
+5NY+Y5cCHI3GTjmIDCnc4A335FhWEAcyFg5CAuJPA6avptYbOXtPZWCRH4QG/+Q8
+/jaXVYVk35fDkQY9SAANjz4PrF5JkIICCZYCgAnLaMuvpgJpDEJLJWY9bnCTJNnI
+WKn08gnoRTE1YRt0/It9+G2SqzZwWXaojx5/0jfN4CGcN6VS1EkKkJAvi4m+iX4w
+GyQcdn1FsIV/BDbKce/QJWElTpfYQAFvcPXHHcaHjGVLsl50zRusZ0203X16vFwj
+NPdRqaBMbGcrCxxYg0oc+eKHm6LogXf7m9IXtGbWjVTSjbtlSdgsWykrZxD2N8kO
+UyRPjuwDyX+wRnYy/9xdngXf3SJh1obnQsRznFH7XGKgCR7S2C1KvOIkNdk6sp5g
+JaBJ4J89dRisqLb6TByU88OxWXqV4u2Q4B2UgSjQgSNszDjjAFcmIkoaXPHZiPsc
+zPL5MF6CwIZwj6vJ7dw8ofGkLR7PHpgDraKY++bzIAP03TlKt0fJ+88zSRuLawRS
+LUG0D4L2UaJ23RFEu2HNj8xqV32PJ/Ml2/LoOOGQ0H0WsJK9M9dj3aVTvT7Z4cnr
+1dPZfR++hFyI/XAkgdoT
+=Wk0e
+-----END PGP SIGNATURE-----
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
-
-Greg Ungerer (15):
-      m68knommu: merge ColdFire 5249 and 525x definitions
-      m68knommu: make non-MMU page_to_virt() return a void *
-      m68k: fix unused variable warning in mempcy.c
-      m68knommu: add clock creation support macro for other ColdFire CPUs
-      m68knommu: add clock definitions for 5206 ColdFire CPU types
-      m68knommu: add clock definitions for 523x ColdFire CPU types
-      m68knommu: add clock definitions for 5249 ColdFire CPU types
-      m68knommu: add clock definitions for 525x ColdFire CPU types
-      m68knommu: add clock definitions for 5272 ColdFire CPU types
-      m68knommu: add clock definitions for 527x ColdFire CPU types
-      m68knommu: add clock definitions for 528x ColdFire CPU types
-      m68knommu: add clock definitions for 5307 ColdFire CPU types
-      m68knommu: add clock definitions for 5407 ColdFire CPU types
-      m68knommu: add clock definitions for 54xx ColdFire CPU types
-      m68knommu: modify clock code so it can be used by all ColdFire CPU types
-
-Luis Alves (3):
-      m68knommu: platform code merge for 68000 core cpus
-      m68knommu: allow for configuration of true 68000 based systems
-      m68knommu: disable MC68000 cpu target when MMU is selected
-
- arch/m68k/Kconfig.cpu                              |    3 +-
- arch/m68k/Makefile                                 |    6 +-
- arch/m68k/include/asm/m5249sim.h                   |  269 --------------------
- arch/m68k/include/asm/m525xsim.h                   |  116 +++++++++-
- arch/m68k/include/asm/mcfclk.h                     |    9 +-
- arch/m68k/include/asm/mcfsim.h                     |    5 +-
- arch/m68k/include/asm/page_no.h                    |    2 +-
- arch/m68k/lib/memcpy.c                             |    3 +-
- arch/m68k/platform/68000/Makefile                  |   18 ++
- .../{68VZ328/bootlogo.h => 68000/bootlogo-vz.h}    |    0
- arch/m68k/platform/{68328 => 68000}/bootlogo.h     |    0
- arch/m68k/platform/{68328 => 68000}/entry.S        |    0
- arch/m68k/platform/68000/head.S                    |  240 +++++++++++++++++
- arch/m68k/platform/{68328 => 68000}/ints.c         |    2 +-
- .../platform/{68328/config.c => 68000/m68328.c}    |    2 +-
- .../{68EZ328/config.c => 68000/m68EZ328.c}         |    2 +-
- .../{68VZ328/config.c => 68000/m68VZ328.c}         |    4 +-
- arch/m68k/platform/{68328 => 68000}/romvec.S       |    2 +-
- arch/m68k/platform/{68328 => 68000}/timers.c       |    2 +-
- arch/m68k/platform/68328/Makefile                  |   21 --
- arch/m68k/platform/68328/head-de2.S                |  128 ----------
- arch/m68k/platform/68328/head-pilot.S              |  207 ---------------
- arch/m68k/platform/68328/head-ram.S                |  141 ----------
- arch/m68k/platform/68328/head-rom.S                |  105 --------
- arch/m68k/platform/68EZ328/Makefile                |    5 -
- arch/m68k/platform/68VZ328/Makefile                |    5 -
- arch/m68k/platform/coldfire/clk.c                  |  100 +++-----
- arch/m68k/platform/coldfire/intc-5249.c            |    8 +-
- arch/m68k/platform/coldfire/m5206.c                |   20 ++
- arch/m68k/platform/coldfire/m523x.c                |   28 ++
- arch/m68k/platform/coldfire/m5249.c                |   28 ++-
- arch/m68k/platform/coldfire/m525x.c                |   20 ++
- arch/m68k/platform/coldfire/m5272.c                |   26 ++
- arch/m68k/platform/coldfire/m527x.c                |   30 +++
- arch/m68k/platform/coldfire/m528x.c                |   28 ++
- arch/m68k/platform/coldfire/m5307.c                |   20 ++
- arch/m68k/platform/coldfire/m5407.c                |   20 ++
- arch/m68k/platform/coldfire/m54xx.c                |   26 ++
- 38 files changed, 680 insertions(+), 971 deletions(-)
- delete mode 100644 arch/m68k/include/asm/m5249sim.h
- create mode 100644 arch/m68k/platform/68000/Makefile
- rename arch/m68k/platform/{68VZ328/bootlogo.h => 68000/bootlogo-vz.h} (100%)
- rename arch/m68k/platform/{68328 => 68000}/bootlogo.h (100%)
- rename arch/m68k/platform/{68328 => 68000}/entry.S (100%)
- create mode 100644 arch/m68k/platform/68000/head.S
- rename arch/m68k/platform/{68328 => 68000}/ints.c (98%)
- rename arch/m68k/platform/{68328/config.c => 68000/m68328.c} (97%)
- rename arch/m68k/platform/{68EZ328/config.c => 68000/m68EZ328.c} (97%)
- rename arch/m68k/platform/{68VZ328/config.c => 68000/m68VZ328.c} (98%)
- rename arch/m68k/platform/{68328 => 68000}/romvec.S (94%)
- rename arch/m68k/platform/{68328 => 68000}/timers.c (98%)
- delete mode 100644 arch/m68k/platform/68328/Makefile
- delete mode 100644 arch/m68k/platform/68328/head-de2.S
- delete mode 100644 arch/m68k/platform/68328/head-pilot.S
- delete mode 100644 arch/m68k/platform/68328/head-ram.S
- delete mode 100644 arch/m68k/platform/68328/head-rom.S
- delete mode 100644 arch/m68k/platform/68EZ328/Makefile
- delete mode 100644 arch/m68k/platform/68VZ328/Makefile
+--2oS5YaxWCcQjTEyO--
