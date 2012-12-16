@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab2LPIlx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 03:41:53 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34474 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab2LPIlw (ORCPT
+	id S1752435Ab2LPIux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 03:50:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34535 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab2LPIuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 03:41:52 -0500
-Date: Sun, 16 Dec 2012 09:41:46 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        J??rn Engel <joern@logfs.org>
-Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on
- mmap
-Message-ID: <20121216084146.GA21690@gmail.com>
-References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
- <20121214072755.GR4939@ZenIV.linux.org.uk>
- <CALCETrVw9Pc1sUZBL=wtLvsnBnkW5LAO5iu-i=T2oMOdwQfjHg@mail.gmail.com>
- <20121214144927.GS4939@ZenIV.linux.org.uk>
- <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
+	Sun, 16 Dec 2012 03:50:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQUSve-5zuD8JyOK-eeJwTu6-E7ZnYCvc74jPVWwxhLP4g@mail.gmail.com>
+References: <20121211170605.GD28827@liondog.tnic>
+	<CAE9FiQXOrH4POQESnGycSrf-7e5MhO9y1wfa7ZSEVr9TO_45ZA@mail.gmail.com>
+	<50C76F9E.4080001@zytor.com>
+	<CAE9FiQXS7HK-xzQN-zy3vMwpVm6=88OsKKem2NJSvJdE2KnwiQ@mail.gmail.com>
+	<50C7C859.60405@zytor.com>
+	<CAE9FiQXMiFWFu=Z9NqMLo_y_1nZE5dqoJURssKBeQgz9hybWgQ@mail.gmail.com>
+	<50C82ABF.3020907@zytor.com>
+	<20121212133853.GC8760@liondog.tnic>
+	<50C963B1.3040609@zytor.com>
+	<50C96717.3020407@zytor.com>
+	<20121213191317.GE31485@liondog.tnic>
+	<50CA4A7A.10104@zytor.com>
+	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
+	<50CB8213.9000908@zytor.com>
+	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
+	<CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
+	<CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
+	<50CCCFD0.7030704@linux.intel.com>
+	<CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
+	<50CCEE49.3080801@zytor.com>
+	<CAE9FiQV6tmHqnwOX8Rh3heaG1PQ9YQNN45esMQjqZP8Upw0Y-g@mail.gmail.com>
+	<CAE9FiQUSve-5zuD8JyOK-eeJwTu6-E7ZnYCvc74jPVWwxhLP4g@mail.gmail.com>
+Date: Sun, 16 Dec 2012 00:50:49 -0800
+X-Google-Sender-Auth: -OWWJ6pEyOqBVgUhbj7_jF41A_8
+Message-ID: <CAE9FiQUWFaOkLNc8fJw=bEUwOkusadriMn0Oajk+F64vo5Eysw@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Dec 15, 2012 at 9:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sat, Dec 15, 2012 at 6:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Sat, Dec 15, 2012 at 1:40 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 12/15/2012 12:55 PM, Yinghai Lu wrote:
+>>>>
+>>>> BTW, did you look at smp boot problem with early_level4_pgt version?
+>>>
+>>>
+>>> No, I have been busy with non-Linux stuff today.
+>>>
+>>
+>> ok, i sorted it out. I will split it to small pieces and post them.
+>
+> I updated for-x86-boot branch with it, and it is based on
+> linus:master
+> tip:x86/mm
+> tip:x86/urgent
+> tip:x86/mm2.
+>
+> also attach 7 new ones are just added to that branch.
+>
+just updated the branch to fix compiling problem that was found by
+Fengguang's kbuild test robot.
 
-* Andy Lutomirski <luto@amacapital.net> wrote:
-
-> On Fri, Dec 14, 2012 at 6:49 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Fri, Dec 14, 2012 at 03:14:50AM -0800, Andy Lutomirski wrote:
-> >
-> >> > Wait a minute.  get_user_pages() relies on ->mmap_sem being held.  Unless
-> >> > I'm seriously misreading your patch it removes that protection.  And yes,
-> >> > I'm aware of execve-related exception; it's in special circumstances -
-> >> > bprm->mm is guaranteed to be not shared (and we need to rearchitect that
-> >> > area anyway, but that's a separate story).
-> >>
-> >> Unless I completely screwed up the patch, ->mmap_sem is still held for
-> >> read (it's downgraded from write).  It's just not held for write
-> >> anymore.
-> >
-> > Huh?  I'm talking about the call of get_user_pages() in aio_setup_ring().
-> > With your patch it's done completely outside of ->mmap_sem, isn't it?
-> 
-> Oh, /that/ call to get_user_pages.  That would qualify as screwing up...
-> 
-> Since dropping and reacquiring mmap_sem there is probably a 
-> bad idea there, I'll rework this and post a v2.
-
-It probably does not matter much, as aio_setup() is an utter 
-slowpath, but I suspect you could still use the downgrading 
-variant of do_mmap_pgoff_unlock() here too:
-
-	int downgraded = 0;
-
-	...
-
-        down_write(&ctx->mm->mmap_sem);
-        /*
-         * XXX: If MCL_FUTURE is set, this will hold mmap_sem for write for
-         *      longer than necessary.
-         */
-        info->mmap_base = do_mmap_pgoff_helper(NULL, 0, info->mmap_size,
-                                        PROT_READ|PROT_WRITE,
-                                        MAP_ANONYMOUS|MAP_PRIVATE, 0, &downgraded);
-        if (IS_ERR((void *)info->mmap_base)) {
-		up_read_write(&ctx->mm->mmap_sem, downgraded);
-                info->mmap_size = 0;
-                aio_free_ring(ctx);
-                return -EAGAIN;
-        }
-
-        dprintk("mmap address: 0x%08lx\n", info->mmap_base);
-        info->nr_pages = get_user_pages(current, ctx->mm,
-                                        info->mmap_base, nr_pages,
-                                        1, 0, info->ring_pages, NULL);
-	up_read_write(&ctx->mm->mmap_sem, downgraded);
-
-Where up_read_write(lock, read) is a new primitive/wrapper that 
-does the up_read()/up_write() depending on the value of 
-'downgraded'.
-
-Thanks,
-
-	Ingo
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-boot
