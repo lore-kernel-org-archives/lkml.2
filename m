@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab2LPWZg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 17:25:36 -0500
-Received: from mga11.intel.com ([192.55.52.93]:24328 "EHLO mga11.intel.com"
+	id S1752227Ab2LPW0M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 17:26:12 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35706 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab2LPWZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 17:25:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
-   d="scan'208";a="265084546"
-Message-ID: <50CE4A5A.10508@linux.intel.com>
-Date: Sun, 16 Dec 2012 14:25:30 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751490Ab2LPW0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 17:26:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH 0/6] ACPI: Simplify namespace scanning for devices
+Date: Sun, 16 Dec 2012 23:31:19 +0100
+Message-ID: <1904613.1YuyTUQtm1@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAE9FiQUgEv0Ub8jAuuHzzOGqinbm0Nm5iiBs1ugRg5OT09h4+A@mail.gmail.com>
+References: <4532917.9APhB4xTvi@vostro.rjw.lan> <CAE9FiQUgEv0Ub8jAuuHzzOGqinbm0Nm5iiBs1ugRg5OT09h4+A@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Matt Fleming <matt.fleming@intel.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] x86/uapi for 3.8
-References: <201212122211.qBCMBRxl027895@terminus.zytor.com> <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com> <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com> <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com> <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com> <20121215163323.GA229@x4> <20121215163535.GB229@x4> <1355661820.2903.25.camel@mfleming-mobl1.ger.corp.intel.com> <20121216132521.GA251@x4> <1355669692.2903.33.camel@mfleming-mobl1.ger.corp.intel.com> <CA+55aFy_xU6FryKX+pJ697B3+jRjRTniEVxn4quCs-tB-Qz7rw@mail.gmail.com> <CA+55aFxJcyTdtO5SWQK0YZyO_tEqPmL17oa8t3pX2meu30HR+Q@mail.gmail.com>
-In-Reply-To: <CA+55aFxJcyTdtO5SWQK0YZyO_tEqPmL17oa8t3pX2meu30HR+Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2012 02:07 PM, Linus Torvalds wrote:
-> On Sun, Dec 16, 2012 at 12:12 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> So I'll test it and see, and hope for the best,
+On Sunday, December 16, 2012 09:36:49 AM Yinghai Lu wrote:
+> On Sun, Dec 16, 2012 at 5:47 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Hi All,
+> >
+> > This series is on top of the one I sent on Thursday:
+> >
+> > https://lkml.org/lkml/2012/12/13/632
+> >
+> > It goes one step farther and makes some simplifications that become possible
+> > after applying that patchset.
+> >
+> > [1/6] Fold acpi_pci_root_start() into acpi_pci_root_add()
+> > [2/6] Remove acpi_start_single_object() and acpi_bus_start()
+> > [3/6] Remove the arguments of acpi_bus_add() that are not used
+> > [4/6] Drop the second argument of acpi_bus_scan()
+> > [5/6] Replace ACPI device add_type field with a match_driver flag
+> > [6/6] Make acpi_bus_scan() and acpi_bus_add() take only one argument
+> >
+> > It survives booting on Toshiba Portege R500 without any visible issues.
 > 
-> No such luck. Applying your patch and the reverting the revert of the
-> EFI date thing results in the same oops in find_vma() from udev that I
-> had before.
-> 
-> So the patch is still scrogged, and it is *not* ready to even be put
-> in some "next merge window" pile.
-> 
+> Do you have git branch that i could test?
 
-No, we need to get to the bottom with the problem.
+There you go:
 
-	-hpa
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git acpi-scan-temp
+
+> I'd like to rebase for-pci-root-bus-hotplug patches, so what should be base?
+
+I'll need to talk about that with Bjorn.  Hopefully he'll be reachable tomorrow.
+
+> It would be hard for me to base on your acpi tree and Bjorn's pci tree.
+
+We'll work out something.
+
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
