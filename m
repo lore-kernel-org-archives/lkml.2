@@ -1,86 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab2LPRqV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:46:21 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13872 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752058Ab2LPRqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:46:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19+QARYxkOk7nKVU7YYTA/K
-Date: Sun, 16 Dec 2012 09:46:14 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [GIT PULL] fbdev changes for 3.8
-Message-ID: <20121216174613.GA18490@atomide.com>
-References: <50CAFDFF.3070802@ti.com>
- <CA+55aFz9+3mOZcjJ9C-izKkidT9mxeO7xUubJER0OTjcZjE=2A@mail.gmail.com>
- <20121215222431.GA7153@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121215222431.GA7153@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753493Ab2LPRrL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:47:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2923 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab2LPRpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:45:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
+   d="scan'208";a="234790711"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tigran Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        "Andreas Herrmann" <andreas.herrmann3@amd.com>,
+        "Borislav Petkov" <borislav.petkov@amd.com>,
+        "Yinghai Lu" <yinghai@kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v3 05/10] x86/microcode_intel_lib.c: Early update ucode on Intel's CPU
+Date: Sun, 16 Dec 2012 02:43:24 -0800
+Message-Id: <1355654609-16800-6-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dave Jones <davej@redhat.com> [121215 14:27]:
-> On Sat, Dec 15, 2012 at 01:11:04PM -0800, Linus Torvalds wrote:
->  > On Fri, Dec 14, 2012 at 2:22 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
->  > > Hi Linus,
->  > >
->  > > Florian, the fbdev maintainer, has been very busy lately, so I offered to send
->  > > the pull request for fbdev for this merge window.
->  > 
->  > Pulled. However, with this I get the Kconfig question
->  > 
->  >    OMAP2+ Display Subsystem support (OMAP2_DSS) [N/m/y/?] (NEW)
->  > 
->  > which doesn't make a whole lot of sense on x86-64, unless there's
->  > something about OMAP2 that I don't know.
->  > 
->  > So I'd suggest making that OMAP2_DSS be dependent on OMAP2. Or at
->  > least ARM. Because showing it to anybody else seems insane.
->  > 
->  > Same goes for FB_OMAP2 for that matter. I realize that it's likely
->  > nice to get compile testing for this on x86-64 too, but if that's the
->  > intent, we need to think about it some more. I don't think it's good
->  > to ask actual normal users questions like this just for compile
->  > coverage.
-> 
-> This OMAP stuff has been creeping into x86 builds for a while.
-> Grep from my current build config ..
-> 
-> # CONFIG_OMAP_OCP2SCP is not set
-> # CONFIG_KEYBOARD_OMAP4 is not set
-> # CONFIG_OMAP2_DSS is not set
-> # CONFIG_OMAP_USB2 is not set
-> 
-> There was some other arm-ism that does the same that I' currently forgetting,
-> or maybe that got fixed..
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Those are all omap internal devices and should be all marked with
-depends on ARCH_OMAP2PLUS.
+Define interfaces microcode_sanity_check() and get_matching_microcode(). They
+are called both in early boot time and in microcode Intel driver.
 
-It's a different story for external devices that may be used on other
-architectures.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/kernel/microcode_intel_lib.c | 174 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 174 insertions(+)
+ create mode 100644 arch/x86/kernel/microcode_intel_lib.c
 
-I only came up with one reason to compile internal devices for other
-architectures: In some cases the driver subsystem maintainer may want to
-be able to compile test subsystem wide changes without having to compile
-for each target separately. But for those cases it's trivial to carry a
-compile test patch that just drops the depends Kconfig entries.
+diff --git a/arch/x86/kernel/microcode_intel_lib.c b/arch/x86/kernel/microcode_intel_lib.c
+new file mode 100644
+index 0000000..ce69320
+--- /dev/null
++++ b/arch/x86/kernel/microcode_intel_lib.c
+@@ -0,0 +1,174 @@
++/*
++ *	Intel CPU Microcode Update Driver for Linux
++ *
++ *	Copyright (C) 2012 Fenghua Yu <fenghua.yu@intel.com>
++ *			   H Peter Anvin" <hpa@zytor.com>
++ *
++ *	This driver allows to upgrade microcode on Intel processors
++ *	belonging to IA-32 family - PentiumPro, Pentium II,
++ *	Pentium III, Xeon, Pentium 4, etc.
++ *
++ *	Reference: Section 8.11 of Volume 3a, IA-32 Intel? Architecture
++ *	Software Developer's Manual
++ *	Order Number 253668 or free download from:
++ *
++ *	http://developer.intel.com/Assets/PDF/manual/253668.pdf
++ *
++ *	For more information, go to http://www.urbanmyth.org/microcode
++ *
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; either version
++ *	2 of the License, or (at your option) any later version.
++ *
++ */
++#include <linux/firmware.h>
++#include <linux/uaccess.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++
++#include <asm/microcode_intel.h>
++#include <asm/processor.h>
++#include <asm/msr.h>
++
++static inline int
++update_match_cpu(unsigned int csig, unsigned int cpf,
++		 unsigned int sig, unsigned int pf)
++{
++	return (!sigmatch(sig, csig, pf, cpf)) ? 0 : 1;
++}
++
++int
++update_match_revision(struct microcode_header_intel *mc_header, int rev)
++{
++	return (mc_header->rev <= rev) ? 0 : 1;
++}
++
++int microcode_sanity_check(void *mc, int print_err)
++{
++	unsigned long total_size, data_size, ext_table_size;
++	struct microcode_header_intel *mc_header = mc;
++	struct extended_sigtable *ext_header = NULL;
++	int sum, orig_sum, ext_sigcount = 0, i;
++	struct extended_signature *ext_sig;
++
++	total_size = get_totalsize(mc_header);
++	data_size = get_datasize(mc_header);
++
++	if (data_size + MC_HEADER_SIZE > total_size) {
++		if (print_err)
++			pr_err("error! Bad data size in microcode data file\n");
++		return -EINVAL;
++	}
++
++	if (mc_header->ldrver != 1 || mc_header->hdrver != 1) {
++		if (print_err)
++			pr_err("error! Unknown microcode update format\n");
++		return -EINVAL;
++	}
++	ext_table_size = total_size - (MC_HEADER_SIZE + data_size);
++	if (ext_table_size) {
++		if ((ext_table_size < EXT_HEADER_SIZE)
++		 || ((ext_table_size - EXT_HEADER_SIZE) % EXT_SIGNATURE_SIZE)) {
++			if (print_err)
++				pr_err("error! Small exttable size in microcode data file\n");
++			return -EINVAL;
++		}
++		ext_header = mc + MC_HEADER_SIZE + data_size;
++		if (ext_table_size != exttable_size(ext_header)) {
++			if (print_err)
++				pr_err("error! Bad exttable size in microcode data file\n");
++			return -EFAULT;
++		}
++		ext_sigcount = ext_header->count;
++	}
++
++	/* check extended table checksum */
++	if (ext_table_size) {
++		int ext_table_sum = 0;
++		int *ext_tablep = (int *)ext_header;
++
++		i = ext_table_size / DWSIZE;
++		while (i--)
++			ext_table_sum += ext_tablep[i];
++		if (ext_table_sum) {
++			if (print_err)
++				pr_warn("aborting, bad extended signature table checksum\n");
++			return -EINVAL;
++		}
++	}
++
++	/* calculate the checksum */
++	orig_sum = 0;
++	i = (MC_HEADER_SIZE + data_size) / DWSIZE;
++	while (i--)
++		orig_sum += ((int *)mc)[i];
++	if (orig_sum) {
++		if (print_err)
++			pr_err("aborting, bad checksum\n");
++		return -EINVAL;
++	}
++	if (!ext_table_size)
++		return 0;
++	/* check extended signature checksum */
++	for (i = 0; i < ext_sigcount; i++) {
++		ext_sig = (void *)ext_header + EXT_HEADER_SIZE +
++			  EXT_SIGNATURE_SIZE * i;
++		sum = orig_sum
++			- (mc_header->sig + mc_header->pf + mc_header->cksum)
++			+ (ext_sig->sig + ext_sig->pf + ext_sig->cksum);
++		if (sum) {
++			if (print_err)
++				pr_err("aborting, bad checksum\n");
++			return -EINVAL;
++		}
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(microcode_sanity_check);
++
++/*
++ * return 0 - no update found
++ * return 1 - found update
++ */
++int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev)
++{
++	struct microcode_header_intel *mc_header = mc;
++	struct extended_sigtable *ext_header;
++	unsigned long total_size = get_totalsize(mc_header);
++	int ext_sigcount, i;
++	struct extended_signature *ext_sig;
++
++	if (update_match_cpu(csig, cpf, mc_header->sig, mc_header->pf))
++		return 1;
++
++	/* Look for ext. headers: */
++	if (total_size <= get_datasize(mc_header) + MC_HEADER_SIZE)
++		return 0;
++
++	ext_header = mc + get_datasize(mc_header) + MC_HEADER_SIZE;
++	ext_sigcount = ext_header->count;
++	ext_sig = (void *)ext_header + EXT_HEADER_SIZE;
++
++	for (i = 0; i < ext_sigcount; i++) {
++		if (update_match_cpu(csig, cpf, ext_sig->sig, ext_sig->pf))
++			return 1;
++		ext_sig++;
++	}
++	return 0;
++}
++
++/*
++ * return 0 - no update found
++ * return 1 - found update
++ */
++int get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev)
++{
++	struct microcode_header_intel *mc_header = mc;
++
++	if (!update_match_revision(mc_header, rev))
++		return 0;
++
++	return get_matching_sig(csig, cpf, mc, rev);
++}
++EXPORT_SYMBOL_GPL(get_matching_microcode);
+-- 
+1.8.0.1
 
-Regards,
-
-Tony
