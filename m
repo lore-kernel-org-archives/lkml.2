@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2LPRqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:46:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2911 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752980Ab2LPRpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:45:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
-   d="scan'208";a="234790731"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Tigran Aivazian" <tigran@aivazian.fsnet.co.uk>,
-        "Andreas Herrmann" <andreas.herrmann3@amd.com>,
-        "Borislav Petkov" <borislav.petkov@amd.com>,
-        "Yinghai Lu" <yinghai@kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
-Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v3 10/10] x86/Kconfig: Configurations to enable/disable the feature
-Date: Sun, 16 Dec 2012 02:43:29 -0800
-Message-Id: <1355654609-16800-11-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+	id S1753270Ab2LPRqV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:46:21 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13872 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752058Ab2LPRqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:46:19 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19+QARYxkOk7nKVU7YYTA/K
+Date: Sun, 16 Dec 2012 09:46:14 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [GIT PULL] fbdev changes for 3.8
+Message-ID: <20121216174613.GA18490@atomide.com>
+References: <50CAFDFF.3070802@ti.com>
+ <CA+55aFz9+3mOZcjJ9C-izKkidT9mxeO7xUubJER0OTjcZjE=2A@mail.gmail.com>
+ <20121215222431.GA7153@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121215222431.GA7153@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+* Dave Jones <davej@redhat.com> [121215 14:27]:
+> On Sat, Dec 15, 2012 at 01:11:04PM -0800, Linus Torvalds wrote:
+>  > On Fri, Dec 14, 2012 at 2:22 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>  > > Hi Linus,
+>  > >
+>  > > Florian, the fbdev maintainer, has been very busy lately, so I offered to send
+>  > > the pull request for fbdev for this merge window.
+>  > 
+>  > Pulled. However, with this I get the Kconfig question
+>  > 
+>  >    OMAP2+ Display Subsystem support (OMAP2_DSS) [N/m/y/?] (NEW)
+>  > 
+>  > which doesn't make a whole lot of sense on x86-64, unless there's
+>  > something about OMAP2 that I don't know.
+>  > 
+>  > So I'd suggest making that OMAP2_DSS be dependent on OMAP2. Or at
+>  > least ARM. Because showing it to anybody else seems insane.
+>  > 
+>  > Same goes for FB_OMAP2 for that matter. I realize that it's likely
+>  > nice to get compile testing for this on x86-64 too, but if that's the
+>  > intent, we need to think about it some more. I don't think it's good
+>  > to ask actual normal users questions like this just for compile
+>  > coverage.
+> 
+> This OMAP stuff has been creeping into x86 builds for a while.
+> Grep from my current build config ..
+> 
+> # CONFIG_OMAP_OCP2SCP is not set
+> # CONFIG_KEYBOARD_OMAP4 is not set
+> # CONFIG_OMAP2_DSS is not set
+> # CONFIG_OMAP_USB2 is not set
+> 
+> There was some other arm-ism that does the same that I' currently forgetting,
+> or maybe that got fixed..
 
-MICROCODE_INTEL_LIB, MICROCODE_INTEL_EARLY, and MICROCODE_EARLY are three new
-configurations to enable or disable the feature.
+Those are all omap internal devices and should be all marked with
+depends on ARCH_OMAP2PLUS.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/Kconfig | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+It's a different story for external devices that may be used on other
+architectures.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 65a872b..edf6fd2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1028,6 +1028,24 @@ config MICROCODE_OLD_INTERFACE
- 	def_bool y
- 	depends on MICROCODE
- 
-+config MICROCODE_INTEL_LIB
-+	def_bool y
-+	depends on MICROCODE_INTEL
-+
-+config MICROCODE_INTEL_EARLY
-+	bool "Early load microcode"
-+	depends on MICROCODE_INTEL && BLK_DEV_INITRD
-+	default y
-+	help
-+	  This option provides functionality to read additional microcode data
-+	  at the beginning of initrd image. The data tells kernel to load
-+	  microcode to CPU's as early as possible. No functional change if no
-+	  microcode data is glued to the initrd, therefore it's safe to say Y.
-+
-+config MICROCODE_EARLY
-+	def_bool y
-+	depends on MICROCODE_INTEL_EARLY
-+
- config X86_MSR
- 	tristate "/dev/cpu/*/msr - Model-specific register support"
- 	---help---
--- 
-1.8.0.1
+I only came up with one reason to compile internal devices for other
+architectures: In some cases the driver subsystem maintainer may want to
+be able to compile test subsystem wide changes without having to compile
+for each target separately. But for those cases it's trivial to carry a
+compile test patch that just drops the depends Kconfig entries.
 
+Regards,
+
+Tony
