@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2LPBZE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 20:25:04 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35042 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752033Ab2LPBZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 20:25:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jan-Matthias Braun <jan_braun@gmx.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late suspend/early resume
-Date: Sun, 16 Dec 2012 02:30:11 +0100
-Message-ID: <3558004.3QJ46yYCyI@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <alpine.LNX.2.00.1212152215300.3487@pobox.suse.cz>
-References: <1988667.JSHu2WyJuF@vostro.rjw.lan> <3307221.dy6xvn45xe@vostro.rjw.lan> <alpine.LNX.2.00.1212152215300.3487@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756208Ab2LPBZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 20:25:29 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36464 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab2LPBZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 20:25:27 -0500
+Subject: Re: [GIT PULL] target updates for v3.8-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+In-Reply-To: <CA+55aFzHGQX1KWPcRwiFqK3EifodAfN=NQ=OMQKww2qM57gYsA@mail.gmail.com>
+References: <1355529222.31680.143.camel@haakon2.linux-iscsi.org>
+	 <CA+55aFzHGQX1KWPcRwiFqK3EifodAfN=NQ=OMQKww2qM57gYsA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 Dec 2012 17:25:18 -0800
+Message-ID: <1355621118.7425.10.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 15, 2012 10:16:29 PM Jiri Kosina wrote:
-> On Sat, 15 Dec 2012, Rafael J. Wysocki wrote:
+On Sat, 2012-12-15 at 14:28 -0800, Linus Torvalds wrote:
+> On Fri, Dec 14, 2012 at 3:53 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> >
+> > Here are the target updates for v3.8-rc1 merge window code.  Please go
+> > ahead and pull from:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+> >
+> > Just a heads up that there is a minor merge conflict that you'll
+> > encounter in target_handle_task_attr() code, that sfr has been carrying
+> > a fix for recently within -next.  After dropping the HEAD section, the
+> > resolution should look like:
 > 
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Currently, the PM core disables runtime PM for all devices right
-> > after executing subsystem/driver .suspend() callbacks for them
-> > and re-enables it right before executing subsystem/driver .resume()
-> > callbacks for them.  This may lead to problems when there are
-> > two devices such that the .suspend() callback executed for one of
-> > them depends on runtime PM working for the other.  In that case,
-> > if runtime PM has already been disabled for the second device,
-> > the first one's .suspend() won't work correctly (and analogously
-> > for resume).
-> > 
-> > To make those issues go away, make the PM core disable runtime PM
-> > for devices right before executing subsystem/driver .suspend_late()
-> > callbacks for them and enable runtime PM for them right after
-> > executing subsystem/driver .resume_early() callbacks for them.  This
-> > way the potential conflitcs between .suspend_late()/.resume_early()
-> > and their runtime PM counterparts are still prevented from happening,
-> > but the subtle ordering issues related to disabling/enabling runtime
-> > PM for devices during system suspend/resume are much easier to avoid.
-> > 
-> > Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Hmm. This is *not* how I resolved that conflict - that seems to drop the new
 > 
-> Hi Rafael,
+>      complete(&cmd->t_transport_stop_comp);
 > 
-> just curious what is the reason for resend? Do you want to gather more 
-> Acks before pushing this upstream?
+> added by Roland in commit 3ea160b3e8f0 ("target: Fix handling of
+> aborted commands").
 
-Well, I thought that some people might actually look at it when they found it
-again in their mailboxes. :-)
+You are most certainly correct.
 
-Thanks,
-Rafael
+> 
+> So my conflict resolution looks different.
+> 
+> Which may be a bug, of course. Nicholas, Roland, please check my end result,
+> 
 
+Including the complete() from commit 3ea160b3e8f0 in the exception path
+for transport_check_aborted_status() within target_execute_cmd() code
+was/is the proper merge resolution.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thank you for taking care of this.
+
+--nab
+
