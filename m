@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab2LPL6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 06:58:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60610 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab2LPL6N (ORCPT
+	id S1752718Ab2LPMCL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 07:02:11 -0500
+Received: from web24.pochta.ru ([62.141.94.204]:63843 "EHLO web24.pochta.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375Ab2LPMCJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 06:58:13 -0500
-Date: Sun, 16 Dec 2012 11:57:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Turquette <mturquette@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] CLK: uninline clk_prepare_enable() and
-	clk_disable_unprepare()
-Message-ID: <20121216115756.GO14363@n2100.arm.linux.org.uk>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com> <1353403339-11679-3-git-send-email-dmitry.torokhov@gmail.com> <CAKohpomA=vSGuKfD-_zwiSnXGkqAQjtiVqxT2Po=D-LDA_FESg@mail.gmail.com>
+	Sun, 16 Dec 2012 07:02:09 -0500
+From: tux2002@front.ru
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: =?utf-8?Q?Re:=20Re:=20[PATCH]=20subsystem:=20pr=C2=ADoc=20filesystem?=
+In-Reply-To: <20121213162207.GP4939@ZenIV.linux.org.uk>
+References: <20121213162207.GP4939@ZenIV.linux.org.uk>
+Date: Sun, 16 Dec 2012 16:02:03 +0400
+Message-Id: <5dca9c1a0bb851ebaa08ffb05941f90454ea3d6a@mail.qip.ru>
+X-Priority: 3
+X-QIP-Sender: 109.161.123.35
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CAKohpomA=vSGuKfD-_zwiSnXGkqAQjtiVqxT2Po=D-LDA_FESg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-NoSpam-Exim-Host: 62.141.94.133
+X-NoSpam-Exim-Port: 8092
+X-NoSpam-Exim-Scanned: Yes
+X-NoSpam-Exim-Result: OK
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 05:10:36PM +0530, Viresh Kumar wrote:
-> On 20 November 2012 14:52, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > We'll need to invoke clk_disable_unprepare() via a pointer in our devm_*
-> > conversion so let's uninline the pair.
-> >
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> Mike, are you taking these patches?
+Not, this permissions saved for all users for later, check please.
 
-And what about my comments, some of which you've failed to reply to?
+
+
+Чтв 13 Дек 2012 20:22:10 +0400, Al Viro <viro@ZenIV.linux.org.uk> написал:
+
+> On Thu, Dec 13, 2012 at 05:15:44PM +0400, tux2002@front.ru wrote:
+
+> > 
+
+> > 
+
+> > This patch strengthens file permissions of pid record in proc filesystem. When pid and pidentry records created, his permissions strengthens by creator umask.
+
+> > 
+
+> 
+
+> NAK.  "Creator" in this case means "whoever had done lookup first".
