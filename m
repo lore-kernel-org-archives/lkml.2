@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab2LPRxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:53:09 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48467 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab2LPRxH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:53:07 -0500
+	id S1752785Ab2LPR5Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:57:25 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49994 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab2LPR5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:57:24 -0500
+Date: Sun, 16 Dec 2012 18:57:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v3 04/10] x86/microcode_core_early.c: Define interfaces
+ for early loading ucode
+Message-ID: <20121216175722.GA14678@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Fenghua Yu <fenghua.yu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+	Asit K Mallick <asit.k.mallick@intel.com>,
+	Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	Borislav Petkov <borislav.petkov@amd.com>,
+	Yinghai Lu <yinghai@kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+ <1355654609-16800-5-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20121216090026.GB21690@gmail.com>
-References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
- <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net> <20121216090026.GB21690@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 16 Dec 2012 09:52:44 -0800
-Message-ID: <CALCETrX=3oQMKMNF2L3K7ur35KpeiqUN12RMq3XvtRChh9OJkg@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        "J??rn Engel" <joern@logfs.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1355654609-16800-5-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 1:00 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andy Lutomirski <luto@amacapital.net> wrote:
->
->> This is a serious cause of mmap_sem contention.  MAP_POPULATE
->> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> Changes from v1:
->>
->> The non-unlocking versions of do_mmap_pgoff and mmap_region are still
->> available for aio_setup_ring's benefit.  In theory, aio_setup_ring
->> would do better with a lock-downgrading version, but that would be
->> somewhat ugly and doesn't help my workload.
->>
->>  arch/tile/mm/elf.c |  9 +++---
->>  fs/aio.c           |  4 +++
->>  include/linux/mm.h | 19 ++++++++++--
->>  ipc/shm.c          |  6 ++--
->>  mm/fremap.c        | 10 ++++--
->>  mm/mmap.c          | 89 ++++++++++++++++++++++++++++++++++++++++++++++++------
->>  mm/util.c          |  3 +-
->>  7 files changed, 117 insertions(+), 23 deletions(-)
->
->> +unsigned long mmap_region(struct file *file, unsigned long addr,
->> +                       unsigned long len, unsigned long flags,
->> +                       vm_flags_t vm_flags, unsigned long pgoff)
->> +{
->> +     return mmap_region_helper(file, addr, len, flags, vm_flags, pgoff, 0);
->> +}
->> +
->
-> That 0 really wants to be NULL ...
+On Sun, Dec 16, 2012 at 02:43:23AM -0800, Fenghua Yu wrote:
+> +#define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
+> +#define CPUID_INTEL1 QCHAR('G', 'e', 'n', 'u')
+> +#define CPUID_INTEL2 QCHAR('i', 'n', 'e', 'I')
+> +#define CPUID_INTEL3 QCHAR('n', 't', 'e', 'l')
+> +#define CPUID_AMD1 QCHAR('A', 'u', 't', 'h')
+> +#define CPUID_AMD2 QCHAR('e', 'n', 't', 'i')
+> +#define CPUID_AMD3 QCHAR('c', 'A', 'M', 'D')
+> +
+> +#define CPUID_IS(a, b, c) (!((ebx ^ (a))|(edx ^ (b))|(ecx ^ (c))))
 
-Sigh.  I blame C++11 -- I wanted to type nullptr, but that's no good :)
+What, this macro is relying on external variable names and doesn't have
+them as its own macro arguments? Why? This is really fragile and very
+much prone to errors.
 
->
-> Also, with your patch applied there's no user of mmap_region()
-> left anymore.
->
-> More fundamentally, while I agree with the optimization,
-> couldn't we de-uglify it a bit more?
->
-> In particular, instead of this wrappery:
->
->> +unsigned long mmap_region_unlock(struct file *file, unsigned long addr,
->> +                              unsigned long len, unsigned long flags,
->> +                              vm_flags_t vm_flags, unsigned long pgoff)
->> +{
->> +     int downgraded = 0;
->> +     unsigned long ret = mmap_region_helper(file, addr, len,
->> +             flags, vm_flags, pgoff, &downgraded);
->> +
->> +     if (downgraded)
->> +             up_read(&current->mm->mmap_sem);
->> +     else
->> +             up_write(&current->mm->mmap_sem);
->> +
->> +     return ret;
->> +}
->
-> 1)
->
-> We could at minimum wrap up the conditional unlocking as:
->
->         up_read_write(&mm->mmap_sem, read_locked);
->
-> With that I'd also suggest to rename 'downgraded' to
-> 'read_locked', which more clearly expresses the locking state.
->
-> 2)
->
-> More aggressively, we could just make it the _rule_ that the mm
-> lock gets downgraded to read in mmap_region_helper(), no matter
-> what.
->
-> From a quick look I *think* all the usage sites (including
-> sys_aio_setup()) are fine with that unlocking - but I could be
-> wrong.
+What's wrong with doing:
 
-They are.
+#define CPUID_IS(a, b, c, ebx, ecx, edx) (!(((ebx) ^ (a))|((edx) ^ (b))|((ecx) ^ (c))))
 
->
-> There's a couple of shorter codepaths that would now see an
-> extra op of downgrading:
->
->         down_write(&mm->mmap_sem);
->         ...
->         downgrade_write(&mm->mmap_sem);
->         ...
->         up_read(&mm->mmap_sem);
->
-> with not much work done with the lock read-locked - but I think
-> they are all fine and mostly affect error paths. So there's no
-> real value in keeping the conditional nature of the unlocking I
-> think.
+?
 
-There's also the normal (i.e. neither lock nor populate) success path.
- Does this matter?  Presumably downgrade_write + up_read isn't much
-slower than up_write.
+-- 
+Regards/Gruss,
+    Boris.
 
---Andy
+Sent from a fat crate under my desk. Formatting is fine.
+--
