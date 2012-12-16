@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2LPLJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 06:09:58 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58420 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab2LPLJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752858Ab2LPLJy (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 16 Dec 2012 06:09:54 -0500
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
-Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH 5/9] can: c_can: add LED trigger support
-Date: Sun, 16 Dec 2012 12:08:29 +0100
-Message-Id: <1355656113-9562-6-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
-References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:46274 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2LPLJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 06:09:50 -0500
+Message-ID: <50CDABF9.3030403@kernel.org>
+Date: Sun, 16 Dec 2012 11:09:45 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] iio: dac: ad5504: Don't set error code to voltage_uv
+References: <1355486789.3475.1.camel@phoenix>
+In-Reply-To: <1355486789.3475.1.camel@phoenix>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for canbus activity led indicators on c_can devices by
-calling appropriate can_led functions.
+On 12/14/2012 12:06 PM, Axel Lin wrote:
+> regulator_get_voltage() may return negative error code.
+> Add error checking to avoid setting error code to voltage_uv.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Axel,
 
-These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
-otherwise.
+I would definitely have prefered a resend of the whole series rather than
+just the ones you have fixed up.
 
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Cc: AnilKumar Ch <anilkumar@ti.com>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
----
- drivers/net/can/c_can/c_can.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+I assumed Lars would have no objection to Acking these as well!
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 5233b8f..57eb1e7 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -39,6 +39,7 @@
- #include <linux/can.h>
- #include <linux/can/dev.h>
- #include <linux/can/error.h>
-+#include <linux/can/led.h>
- 
- #include "c_can.h"
- 
-@@ -477,6 +478,8 @@ static int c_can_read_msg_object(struct net_device *dev, int iface, int ctrl)
- 	stats->rx_packets++;
- 	stats->rx_bytes += frame->can_dlc;
- 
-+	can_led_event(dev, CAN_LED_EVENT_RX);
-+
- 	return 0;
- }
- 
-@@ -751,6 +754,7 @@ static void c_can_do_tx(struct net_device *dev)
- 					C_CAN_IFACE(MSGCTRL_REG, 0))
- 					& IF_MCONT_DLC_MASK;
- 			stats->tx_packets++;
-+			can_led_event(dev, CAN_LED_EVENT_TX);
- 			c_can_inval_msg_object(dev, 0, msg_obj_no);
- 		} else {
- 			break;
-@@ -1115,6 +1119,8 @@ static int c_can_open(struct net_device *dev)
- 
- 	napi_enable(&priv->napi);
- 
-+	can_led_event(dev, CAN_LED_EVENT_OPEN);
-+
- 	/* start the c_can controller */
- 	c_can_start(dev);
- 
-@@ -1143,6 +1149,8 @@ static int c_can_close(struct net_device *dev)
- 	c_can_reset_ram(priv, false);
- 	c_can_pm_runtime_put_sync(priv);
- 
-+	can_led_event(dev, CAN_LED_EVENT_STOP);
-+
- 	return 0;
- }
- 
-@@ -1268,6 +1276,8 @@ int register_c_can_dev(struct net_device *dev)
- 	err = register_candev(dev);
- 	if (err)
- 		c_can_pm_runtime_disable(priv);
-+	else
-+		devm_can_led_init(dev);
- 
- 	return err;
- }
--- 
-1.7.12.1
+Anyhow 1,2,6 from v1 and 3,4,5 from v2 added to fixes-togreg branch of
+iio.git.
 
+Thanks for all these!
+
+Jonathan
+
+> ---
+> v2: check if ret is negative value
+>  drivers/iio/dac/ad5504.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iio/dac/ad5504.c b/drivers/iio/dac/ad5504.c
+> index 242bdc7..1e9a1f4 100644
+> --- a/drivers/iio/dac/ad5504.c
+> +++ b/drivers/iio/dac/ad5504.c
+> @@ -296,7 +296,11 @@ static int __devinit ad5504_probe(struct spi_device *spi)
+>  		if (ret)
+>  			goto error_put_reg;
+>  
+> -		voltage_uv = regulator_get_voltage(reg);
+> +		ret = regulator_get_voltage(reg);
+> +		if (ret < 0)
+> +			goto error_disable_reg;
+> +
+> +		voltage_uv = ret;
+>  	}
+>  
+>  	spi_set_drvdata(spi, indio_dev);
+> 
