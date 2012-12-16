@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab2LPRgx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:36:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42168 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab2LPRgv (ORCPT
+	id S1752006Ab2LPRih (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:38:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39719 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2LPRig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:36:51 -0500
+	Sun, 16 Dec 2012 12:38:36 -0500
+Date: Sun, 16 Dec 2012 12:38:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.8.0-rc0 on xen-unstable: RCU Stall during boot as dom0 kernel
+ after IOAPIC
+Message-ID: <20121216173824.GA4518@phenom.dumpdata.com>
+References: <1995613404.20121214165557@eikelenboom.it>
 MIME-Version: 1.0
-In-Reply-To: <4532917.9APhB4xTvi@vostro.rjw.lan>
-References: <4532917.9APhB4xTvi@vostro.rjw.lan>
-Date: Sun, 16 Dec 2012 09:36:49 -0800
-X-Google-Sender-Auth: iuY67a9fVoT4hi_f_NQHfYkeH5U
-Message-ID: <CAE9FiQUgEv0Ub8jAuuHzzOGqinbm0Nm5iiBs1ugRg5OT09h4+A@mail.gmail.com>
-Subject: Re: [PATCH 0/6] ACPI: Simplify namespace scanning for devices
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1995613404.20121214165557@eikelenboom.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 5:47 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi All,
->
-> This series is on top of the one I sent on Thursday:
->
-> https://lkml.org/lkml/2012/12/13/632
->
-> It goes one step farther and makes some simplifications that become possible
-> after applying that patchset.
->
-> [1/6] Fold acpi_pci_root_start() into acpi_pci_root_add()
-> [2/6] Remove acpi_start_single_object() and acpi_bus_start()
-> [3/6] Remove the arguments of acpi_bus_add() that are not used
-> [4/6] Drop the second argument of acpi_bus_scan()
-> [5/6] Replace ACPI device add_type field with a match_driver flag
-> [6/6] Make acpi_bus_scan() and acpi_bus_add() take only one argument
->
-> It survives booting on Toshiba Portege R500 without any visible issues.
+On Fri, Dec 14, 2012 at 04:55:57PM +0100, Sander Eikelenboom wrote:
+> Hi Konrad,
+> 
+> I just tried to boot a 3.8.0-rc0 kernel (last commit: 7313264b899bbf3988841296265a6e0e8a7b6521) as dom0 on my machine with current xen-unstable.
 
-Do you have git branch that i could test?
+Yeah, saw it over the Dec 11->Dec 12 merges and was out on
+vacation during that time (just got back).
 
-I'd like to rebase for-pci-root-bus-hotplug patches, so what should be base?
+Did you by any chance try to do a git bisect to narrow down
+which merge it was?
 
-It would be hard for me to base on your acpi tree and Bjorn's pci tree.
+Thanks!
+> The boot stalls:
+> 
+> [    0.000000] ACPI: PM-Timer IO Port: 0x808
+> [    0.000000] ACPI: Local APIC address 0xfee00000
+> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
+> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
+> [    0.000000] ACPI: IOAPIC (id[0x06] address[0xfec00000] gsi_base[0])
+> [    0.000000] IOAPIC[0]: apic_id 6, version 33, address 0xfec00000, GSI 0-23
+> [    0.000000] ACPI: IOAPIC (id[0x07] address[0xfec20000] gsi_base[24])
+> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
+> [   64.598628] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [   64.598676]  0: (1 GPs behind) idle=aed/140000000000000/0 drain=5 . timer not pending
+> [   64.598683]  (detected by 1, t=18004 jiffies, g=18446744073709551414, c=18446744073709551413, q=162)
+> [   64.598692] sending NMI to all CPUs:
+> [   64.598716] xen: vector 0x2 is not implemented
+> 
+> 
+> Perhaps an interesting line is the incomplete (no end of range, and it stalls there some time before the kernel reports the stall itself:
+> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
+> 
+> 
+> The exact seem config with 3.7.0 as kernel works fine.
+> Complete serial log is attached.
+> 
+> --
+> 
+> Sander
+> 
+> 
 
-Thanks
 
-Yinghai
