@@ -1,50 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab2LPVOX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 16:14:23 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34452 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab2LPVOW (ORCPT
+	id S1752289Ab2LPVbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 16:31:09 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:25074 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750798Ab2LPVbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 16:14:22 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] spi: devicetree: add support for loopback mode
-To: Felipe Balbi <balbi@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, spi-devel-general@lists.sourceforge.net,
-        rob@landley.net, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-In-Reply-To: <20121215145546.GA15606@arwen.pp.htv.fi>
-References: <1355301960-21523-1-git-send-email-balbi@ti.com> <1355301960-21523-2-git-send-email-balbi@ti.com> <20121215003224.CBFD93E0BEC@localhost> <20121215145546.GA15606@arwen.pp.htv.fi>
-Date: Sun, 16 Dec 2012 21:14:14 +0000
-Message-Id: <20121216211415.0DE793E0BDD@localhost>
+	Sun, 16 Dec 2012 16:31:08 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AigMAE08zlB5LIoV/2dsb2JhbABFhVKyaIYJF3OCHgEBBAE6HCMQCAMOCi4UJQMhE4gNBbhwFIxJhEMDlgmQSYMH
+Date: Mon, 17 Dec 2012 08:31:04 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fadvise: perform WILLNEED readahead in a workqueue
+Message-ID: <20121216213104.GO9806@dastard>
+References: <20121215005448.GA7698@dcvr.yhbt.net>
+ <20121215223448.08272fd5@pyramind.ukuu.org.uk>
+ <20121216002549.GA19402@dcvr.yhbt.net>
+ <20121216030302.GI9806@dastard>
+ <20121216033549.GA30446@dcvr.yhbt.net>
+ <20121216041549.GK9806@dastard>
+ <20121216052302.GA6680@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121216052302.GA6680@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Dec 2012 16:55:46 +0200, Felipe Balbi <balbi@ti.com> wrote:
-> On Sat, Dec 15, 2012 at 12:32:24AM +0000, Grant Likely wrote:
-> > On Wed, 12 Dec 2012 10:46:00 +0200, Felipe Balbi <balbi@ti.com> wrote:
-> > > there are a few spi master drivers which make
-> > > use of that flag but there is no way to pass it
-> > > through devicetree.
-> > > 
-> > > This patch just creates a way to pass SPI_LOOP
-> > > via devicetree.
+On Sun, Dec 16, 2012 at 05:23:02AM +0000, Eric Wong wrote:
+> Dave Chinner <david@fromorbit.com> wrote:
+> > On Sun, Dec 16, 2012 at 03:35:49AM +0000, Eric Wong wrote:
+> > > Dave Chinner <david@fromorbit.com> wrote:
+> > > > On Sun, Dec 16, 2012 at 12:25:49AM +0000, Eric Wong wrote:
+> > > > > Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > > > > > On Sat, 15 Dec 2012 00:54:48 +0000
+> > > > > > Eric Wong <normalperson@yhbt.net> wrote:
+> > > > > > 
+> > > > > > > Applications streaming large files may want to reduce disk spinups and
+> > > > > > > I/O latency by performing large amounts of readahead up front
 > > 
-> > I don't understand how this would be useful since loopback mode is
-> > really just a test feature. Is there any reason to do loopback for
-> > something other than test?
+> > > This could also be a use case for an audio/video player.
 > > 
-> > I think it would be better to add a sysfs or debugfs property to
-> > manipulate the SPI_LOOP flag from userspace. What do you think?
+> > Sure, but this can all be handled by a userspace application. If you
+> > want to avoid/batch IO to enable longer spindown times, then you
+> > have to load the file into RAM somewhere, and you don't need special
+> > kernel support for that.
 > 
-> might be nicer in the long run, indeed. Want me to look into it, or do
-> you wanna do it yourself ?
+> From userspace, I don't know when/if I'm caching too much and possibly
+> getting the userspace cache itself swapped out.
 
-Yes, please look into it. After all, you're the one who needs the feature/  :-)
+Which causes th disk to spin up. Now you start to see the complexity
+of what you are trying to acheive...
 
-g.
+> > > So no, there's no difference that matters between the approaches.
+> > > But I think doing this in the kernel is easier for userspace users.
+> > 
+> > The kernel provides mechanisms for applications to use. You have not
+> > mentioned anything new that requires a new kernel mechanism to
+> > acheive - you just need to have the knowledge to put the pieces
+> > together properly.  People have been solving this same problem for
+> > the last 20 years without needing to tweak fadvise(). Or even having
+> > an fadvise() syscall...
+> 
+> fadvise() is fairly new, and AFAIK few apps use it.  Perhaps if it
+> were improved, more people would use it and not have to reinvent
+> the wheel.
 
+fadvise() is not "fairly new". It's been around for many, many
+years - it was there whan the linux kernel moved to git in 2005, and
+I haven't bothered to look any further back in history...
+
+> > Nothing about low latency IO or streaming IO is simple or easy, and
+> > changing how readahead works doesn't change that fact. All it does
+> > is change the behaviour of every other application that uses
+> > fadvise() to minimise IO latency....
+> 
+> I don't want to introduce regressions, either.
+> 
+> Perhaps if part of the FADV_WILLNEED read-ahead were handled
+> synchronously (maybe 2M?) and humongous large readaheads (like mine)
+> went to the background, that would be a good trade off?
+
+Which you can already do in userspace yourself without changing the
+kernel. i.e:
+
+	main thread			background thread:
+
+	readahead(0, 2MB)
+	spawn background thread
+	read(0, len)
+					readahead(2MB,1GB);
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
