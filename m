@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab2LPUsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 15:48:10 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4071 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2LPUsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 15:48:08 -0500
-Date: Sun, 16 Dec 2012 21:48:00 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Finn Thain <fthain@telegraphics.com.au>
-Subject: Re: [PATCH] swim: Add missing spinlock init
-Message-ID: <20121216214800.3ad603b4@endymion.delvare>
-In-Reply-To: <CAMuHMdUXvB8P9J26KbMXeicv0BH=gdaCHaRq-ZAP=73hn+ThMw@mail.gmail.com>
-References: <20120906134830.52cbdfec@endymion.delvare>
-	<CAMuHMdUXvB8P9J26KbMXeicv0BH=gdaCHaRq-ZAP=73hn+ThMw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752362Ab2LPUtU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 15:49:20 -0500
+Received: from mout.gmx.net ([212.227.15.19]:51294 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751682Ab2LPUtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 15:49:19 -0500
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX18fdbt2lfkf7eekUzAEjjPZosQZ9aw1+64cGLZvyn
+	yP/CHlldAokaFk
+Message-ID: <50CE328C.2090406@gmx.net>
+Date: Sun, 16 Dec 2012 21:43:56 +0100
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PNP: Simplify setting of resources
+References: <4460434.rhV1bpKLo5@vostro.rjw.lan> <7930705.OcvDjiPjJD@vostro.rjw.lan> <50C8A391.3010900@gmx.net> <3252517.LSIXc8EikE@vostro.rjw.lan>
+In-Reply-To: <3252517.LSIXc8EikE@vostro.rjw.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On 15/12/12 01:17, Rafael J. Wysocki wrote:
 
-On Thu, 6 Sep 2012 14:03:27 +0200, Geert Uytterhoeven wrote:
-> On Thu, Sep 6, 2012 at 1:48 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> > It doesn't seem this spinlock was properly initialized.
+[snip]
+
+> Both patches queued up for submission as v3.8 material later in the cycle.
+
+Thanks! 
+
+--- Witold
+
 > 
-> Quiet possible. There's no SMP on m68k, so all spinlock ops expand to nothing.
+> Thanks,
+> Rafael
+> 
 
-Can we apply my patch still? Or were you suggesting you're fine with
-the code as it is?
-
-Certainly this isn't my area of expertise but I don't quite get the
-point of passing a custom lock to blk_init_queue() if locks resolve to
-nothing anyway.
-
-> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Finn Thain <fthain@telegraphics.com.au>
-> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> > ---
-> > I can't even build-test this.
-> >
-> >  drivers/block/swim.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > --- linux-3.6-rc4.orig/drivers/block/swim.c     2012-07-21 22:58:29.000000000 +0200
-> > +++ linux-3.6-rc4/drivers/block/swim.c  2012-09-06 13:09:26.713382169 +0200
-> > @@ -845,6 +845,7 @@ static int __devinit swim_floppy_init(st
-> >                 swd->unit[drive].swd = swd;
-> >         }
-> >
-> > +       spin_lock_init(&swd->lock);
-> >         swd->queue = blk_init_queue(do_fd_request, &swd->lock);
-> >         if (!swd->queue) {
-> >                 err = -ENOMEM;
-
--- 
-Jean Delvare
+[snip]
