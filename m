@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab2LPSFu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 13:05:50 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57510 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab2LPSFt (ORCPT
+	id S1751952Ab2LPSH3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 13:07:29 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46461 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab2LPSH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 13:05:49 -0500
+	Sun, 16 Dec 2012 13:07:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
-References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
- <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net> <CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 16 Dec 2012 10:05:27 -0800
-Message-ID: <CALCETrW58pb2w_r0gUDmMVSqi8PBQRdR1dRj2HX0ymq+qnz8XA@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <50CE0C82.20708@itwm.fraunhofer.de>
+References: <50CB3EAB.309@itwm.fraunhofer.de>
+	<CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com>
+	<CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com>
+	<50CE0C82.20708@itwm.fraunhofer.de>
+Date: Sun, 16 Dec 2012 10:07:27 -0800
+X-Google-Sender-Auth: 2T17rdv6iLaj83lzT38pxq0NGWY
+Message-ID: <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com>
+Subject: Re: [regression] 3.7 ends in APIC panic
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 4:39 AM, Michel Lespinasse <walken@google.com> wrote:
-> On Fri, Dec 14, 2012 at 6:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> This is a serious cause of mmap_sem contention.  MAP_POPULATE
->> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
+On Sun, Dec 16, 2012 at 10:01 AM, Bernd Schubert
+<bernd.schubert@itwm.fraunhofer.de> wrote:
+>> can you post your .config for v3.7 ?
 >>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> Changes from v1:
->>
->> The non-unlocking versions of do_mmap_pgoff and mmap_region are still
->> available for aio_setup_ring's benefit.  In theory, aio_setup_ring
->> would do better with a lock-downgrading version, but that would be
->> somewhat ugly and doesn't help my workload.
+>> wonder if you have x2apic in .config
 >
-> Hi Andy,
->
-> I agree that the long mmap_sem hold times when using MAP_POPULATE,
-> MAP_LOCKED or MCL_FUTURE are a problem. However, I'm not entirely
-> happy with your proposed solution.
->
-> My main concern is that just downgrading the mmap_sem only hides the
-> problem: as soon as a writer gets queued on that mmap_sem,
-> reader/writer fairness kicks in and blocks any new readers, which
-> makes the problem reappear. So in order to completely fix the issue,
-> we should look for a way that doesn't require holding the mmap_sem
-> (even in read mode) for the entire duration of the populate or mlock
-> operation.
+> Which setting is it? Config is attached.
 
-Ugh.
+your config does not have
 
-At least with my patch, mmap in MCL_FUTURE mode is no worse than mmap
-+ mlock.  I suspect I haven't hit this because all my mmaping is done
-by one thread, so it never ends up waiting for itself, and the other
-thread have very short mmap_sem hold times.
+CONFIG_X86_X2APIC=y
 
->
-> I think this could be done by extending the mlock work I did as part
-> of v2.6.38-rc1. The commit message for
-> c explains the idea; basically
-> mlock() was split into do_mlock() which just sets the VM_LOCKED flag
-> on vmas as needed, and do_mlock_pages() which goes through a range of
-> addresses and actually populates/mlocks each individual page that is
-> part of a VM_LOCKED vma.
->
+set.
 
-Doesn't this have the same problem?  It holds mmap_sem for read for a
-long time, and if another writer comes in then r/w starvation
-prevention will kick in.
+please enable that.
 
-> This could be easily extended for mlocks that happen in mmap_region()
-> due to MAP_LOCKED or MCL_FUTURE: mmap_region() would just set the
-> VM_LOCKED flag and defer the work of actually populating/mlocking the
-> individual pages. I think the only constraint here is that the pages
-> must be locked before returning to userspace, so we may be able to use
-> the task_work mechanism to achieve that. Later on (but before
-> returning to userspace) we would notice we have some mlock work to do
-> and call do_mlock_pages() to achieve that.
->
-> I think the benefits of this approach would be:
-> - no mmap_sem locking changes around mmap_region() - which also means
-> that all code paths to mmap_region() can instantly benefit
-> - do_mlock_pages() doesn't need to hold a read lock on mmap_sem for
-> the entire duration of the operation, so we can fully solve the
-> problem instead of just making it harder to trigger
->
-> Now for handling MAP_POPULATE, we would probably want to use a similar
-> mechanism as well, so that we don't need to hold the mmap_sem for the
-> entire duration of the populate. This is similar in principle to the
-> MAP_LOCKED case; however this may require the introduction of a new
-> VM_POPULATE vma flag in order to avoid the possibility of a race where
-> someone replaces our vma with another before we get a chance to
-> populate it.
->
-> I don't have an implementation for this idea yet; however I'm hoping
-> to come up with one before xmas. Before then, any comments on the idea
-> ?
+your BIOS pre-enable x2apic somehow, so you must have x2apic enabled in kernel.
 
-IMO this all sucks.  What we want is some way to lock a single vma or
-(better?) a range of virtual addresses.  mmap_region (or some
-equivalent) ought to be able to return a read-locked vma, and the
-caller can (while still holding that lock) do whatever they want and
-take their time at it.
+it x2apic really can not be re-enabled by kernel, kernel would disable
+x2apic automatically.
 
-If mmap_sem were only held while actually modifying the tree of vmas,
-hold times could be nice and short.
+Thanks
 
---Andy
+Yinghai
