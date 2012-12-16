@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab2LPW0b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 17:26:31 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:37834 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752050Ab2LPW03 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 17:26:29 -0500
-X-Greylist: delayed 632 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Dec 2012 17:26:29 EST
-Date: Sun, 16 Dec 2012 23:15:52 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        rtc-linux@googlegroups.com,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
-Message-ID: <20121216231552.4ced4d25@linux.lan.towertech.it>
-In-Reply-To: <50C6FF71.1010504@metafoo.de>
-References: <50C5DFCC.60203@ahsoftware.de>
-	<1355151119-2489-1-git-send-email-holler@ahsoftware.de>
-	<50C61675.2000407@metafoo.de>
-	<50C63BBD.3080202@ahsoftware.de>
-	<50C64484.4060306@metafoo.de>
-	<50C65381.8010609@ahsoftware.de>
-	<50C6567D.7080303@metafoo.de>
-	<50C65746.8030609@kernel.org>
-	<50C6674D.1000901@ahsoftware.de>
-	<50C6FD60.7080300@jic23.retrosnub.co.uk>
-	<50C6FF71.1010504@metafoo.de>
-Organization: Tower Technologies
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751758Ab2LPWcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 17:32:15 -0500
+Received: from mail.us.es ([193.147.175.20]:49139 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751093Ab2LPWcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 17:32:14 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.6/15854. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.2/7.5):. 
+ Processed in 1.86104 secs); 16 Dec 2012 22:32:11 -0000
+X-Envelope-From: pneira@us.es
+Date: Sun, 16 Dec 2012 23:32:08 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Mukund Jampala <jbmukund@gmail.com>
+Cc: netfilter-devel@vger.kernel.org, kadlec@blackhole.kfki.hu, kaber@trash.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: problem: [PATCH] iptable_REJECT doesn't constructs the tcp
+ reset packet cleanly
+Message-ID: <20121216223208.GA1304@1984>
+References: <CAAFTS2WV4PbnKREaNZNHMSezTPuG-QcUWONd_MnB54KQVks33w@mail.gmail.com>
+ <20121211005802.GA14525@1984>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121211005802.GA14525@1984>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Dec 2012 10:40:01 +0100
-Lars-Peter Clausen <lars@metafoo.de> wrote:
-  
-> > Yes, move the header or merge into existing one as makes sense.
-> > I'm not pulling this driver into the IIO tree (unless for some
-> > reason Alessandro wants me to and I can't think why he would...).
-> >   
+On Tue, Dec 11, 2012 at 01:58:02AM +0100, Pablo Neira Ayuso wrote:
+[...]
+> On Mon, Dec 10, 2012 at 12:48:49PM -0800, Mukund Jampala wrote:
+> > problem description:
+> > The problem occurs when iptables constructs the tcp reset packet.
+> > It doesn't initialize the pointer to the tcp header within the skb.
+> > When the skb is passed to the ixgbe driver for transmit, the ixgbe
+> > driver attempts to access the tcp header and crashes.
+> > Currently, other drivers (such as our 1G e1000e or igb drivers) don't
+> > access the tcp header on transmit unless the TSO option is turned on.
+[...]
+> > Solution: set the skb->trasport_header to a valid data offset in ipt
+> > reject module
+> > 
+> > diff -up net/ipv4/netfilter/ipt_REJECT.c{.orig,}
+> > --- net/ipv4/netfilter/ipt_REJECT.c.orig	2012-12-10 12:08:37.000000000 -0800
+> > +++ net/ipv4/netfilter/ipt_REJECT.c	2012-12-10 12:10:08.000000000 -0800
+> > @@ -79,6 +79,8 @@ static void send_reset(struct sk_buff *o
+> >  	niph->saddr	= oiph->daddr;
+> >  	niph->daddr	= oiph->saddr;
+> > 
+> > +
+> > +	skb_reset_transport_header(nskb);
+> >  	tcph = (struct tcphdr *)skb_put(nskb, sizeof(struct tcphdr));
+> >  	memset(tcph, 0, sizeof(*tcph));
+> >  	tcph->source	= oth->dest;
+> > 
+> > Please let me know if you have any concerns with the patch.
 > 
-> Alessandro has been pretty quiet for quite some time now. Luckily Andrew
-> Morton usually picks up the stuff for orphaned subsystems. So put him on Cc
-> for v4.
+> This is a good and extensive diagnosing, thanks a lot.
+> 
+> Regarding your patch format, please, use git format-patch for your
+> upcoming contributions and add the Signed-off-by tag to your patches.
+> It makes
+> 
+> But for this time, I'll do the formatting myself and will take this
+> into the nf tree.
 
- Still reading e-mails ;) Andrew monitors the rtc mailing list and picks up
- the patches that do not need to go in any arch's main tree, which is the suggested
- way as, with modern chipsets, the RTCs shares hw with many other drivers.
- 
+I have also made the same change for ip6t_REJECT.
 
--- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+Applied, thanks Mukund.
