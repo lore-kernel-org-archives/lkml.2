@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab2LPUEt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 15:04:49 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60389 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab2LPUEs (ORCPT
+	id S1752308Ab2LPUMt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 15:12:49 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38424 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab2LPUMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 15:04:48 -0500
-Date: Sun, 16 Dec 2012 20:04:46 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH] omap_vout: find_vma() needs ->mmap_sem held
-Message-ID: <20121216200446.GF4939@ZenIV.linux.org.uk>
-References: <20121215201237.GW4939@ZenIV.linux.org.uk>
- <1355688070.767.4.camel@x61.thuisdomein>
+	Sun, 16 Dec 2012 15:12:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355688070.767.4.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1355669692.2903.33.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
+ <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
+ <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+ <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
+ <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
+ <20121215163323.GA229@x4> <20121215163535.GB229@x4> <1355661820.2903.25.camel@mfleming-mobl1.ger.corp.intel.com>
+ <20121216132521.GA251@x4> <1355669692.2903.33.camel@mfleming-mobl1.ger.corp.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Dec 2012 12:12:21 -0800
+X-Google-Sender-Auth: 32gYRNm9QBFUeJdwohxzeOfSToA
+Message-ID: <CA+55aFy_xU6FryKX+pJ697B3+jRjRTniEVxn4quCs-tB-Qz7rw@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 09:01:10PM +0100, Paul Bolle wrote:
-> > +	vma = find_vma(mm, virtp);
-> >  	} else if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
-> 
-> Shouldn't that line become 
->     if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
-> 
-> so that this actually compiles?
+On Sun, Dec 16, 2012 at 6:54 AM, Matt Fleming <matt.fleming@intel.com> wrote:
+>
+> At least we now know the problem wasn't caused by a memory map issue,
+> just my buggy patch.
+>
+> Linus, Peter, how should we proceed from here? Since the commit and its
+> dependants have been reverted should we punt for now and try again next
+> merge window?
 
-*Do'h*
+Hmm. Since we're several days away from the merge window closing, I
+think I can apply your fixed patch and then undo the revert. But I'll
+need to feel confident that it works for me too, because I absolutely
+detest having kernels that I can't use for development myself (which
+is why I _very_ aggressively revert stuff that I notice myself: if
+it's a problem reported by some random user, I try to give developers
+time to fix it if they are responding to the problem report, but if
+it's a problem that means that I can't use the current -git tree
+myself, I tend to revert much more aggressively).
 
-Yes, it should.  Mea culpa...
+So I'll test it and see, and hope for the best,
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/drivers/media/platform/omap/omap_vout.c b/drivers/media/platform/omap/omap_vout.c
-index 9935040..cb564d0 100644
---- a/drivers/media/platform/omap/omap_vout.c
-+++ b/drivers/media/platform/omap/omap_vout.c
-@@ -207,19 +207,21 @@ static u32 omap_vout_uservirt_to_phys(u32 virtp)
- 	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 
--	vma = find_vma(mm, virtp);
- 	/* For kernel direct-mapped memory, take the easy way */
--	if (virtp >= PAGE_OFFSET) {
--		physp = virt_to_phys((void *) virtp);
--	} else if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
-+	if (virtp >= PAGE_OFFSET)
-+		return virt_to_phys((void *) virtp);
-+
-+	down_read(&current->mm->mmap_sem);
-+	vma = find_vma(mm, virtp);
-+	if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
- 		/* this will catch, kernel-allocated, mmaped-to-usermode
- 		   addresses */
- 		physp = (vma->vm_pgoff << PAGE_SHIFT) + (virtp - vma->vm_start);
-+		up_read(&current->mm->mmap_sem);
- 	} else {
- 		/* otherwise, use get_user_pages() for general userland pages */
- 		int res, nr_pages = 1;
- 		struct page *pages;
--		down_read(&current->mm->mmap_sem);
- 
- 		res = get_user_pages(current, current->mm, virtp, nr_pages, 1,
- 				0, &pages, NULL);
+           Linus
