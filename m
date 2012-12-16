@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab2LPKes (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 05:34:48 -0500
-Received: from home.kolivas.org ([59.167.196.135]:48399 "EHLO mine.kolivas.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752330Ab2LPKer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 05:34:47 -0500
-From: Con Kolivas <kernel@kolivas.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] 3.7-ck1, BFS 426 for linux-3.7
-Date: Sun, 16 Dec 2012 21:34:44 +1100
-Message-ID: <3073864.TyVduqceRg@hex>
-User-Agent: KMail/4.9.4 (Linux/3.7.0-ck1; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <CAJd=RBBo2hXsqgz=TbV7CBKsL_W1BNxAESA4OKPqRtQzyiL=uA@mail.gmail.com>
-References: <7369728.ymAnBsBeai@hex> <1911613.U2Pnzoqhvo@hex> <CAJd=RBBo2hXsqgz=TbV7CBKsL_W1BNxAESA4OKPqRtQzyiL=uA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752629Ab2LPLIu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 06:08:50 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:33077 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab2LPLIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 06:08:48 -0500
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
+Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH 0/9] tx/rx LED trigger support
+Date: Sun, 16 Dec 2012 12:08:24 +0100
+Message-Id: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Dec 2012 18:33:14 Hillf Danton wrote:
-> On Sun, Dec 16, 2012 at 5:54 PM, Con Kolivas <kernel@kolivas.org> wrote:
-> > On Sun, 16 Dec 2012 11:16:31 Con Kolivas wrote:
-> >> These are patches designed to improve system responsiveness and
-> >> interactivity with specific emphasis on the desktop, but suitable to
-> >> any commodity hardware workload.
-> >> 
-> >> Apply to 3.7.x:
-> >> -ck-ckhttp://ck.kolivas.org/patches/3.0/3.7/3.71/patch-3.71.bz2
-> >> or
-> >> -ck-ckhttp://ck.kolivas.org/patches/3.0/3.7/3.71/patch-3.71.lrz
-> >> 
-> >> Broken out tarball:
-> >> -ck-ckhttp://ck.kolivas.org/patches/3.0/3.7/3.71/3.71-broken-out.tar.bz2
-> >> or
-> >> -ck-ckhttp://ck.kolivas.org/patches/3.0/3.7/3.71/3.71-broken-out.tar.lrz
-> >> 
-> >> Discrete patches:
-> >> -ckhttp://ck.kolivas.org/patches/3.0/3.7/3.71/patches/
-> >> 
-> >> Latest BFS by itself:
-> >> http://ck.kolivas.org/patches/bfs/3.0/3.7/3.7-sched-bfs-426.patch
-> >> 
-> >> Web:
-> >> http://kernel.kolivas.org
-> >> 
-> >> Code blog when I feel like it:
-> >> http://ck-hack.blogspot.com/
-> > 
-> > Of course these links all got scrambled somehow, but I'm sure you can
-> > figure out where the patches are :p
-> 
-> Better if changes after 425 are directly attached?
-> 
-> Hillf
+Hi all,
 
-That's of not much use without all the merging changes as well. The 425 patch 
-for mainline 3.7 looks nothing like the 425 patch for 3.6. see my blog for 
-details.
+this is a resend of the patch series on tx/rx LEDs trigger.  The patch
+set was put on hold after the latest discussions on Kurt's rename patch
+due to a missing feature in the LED subsystem, which has been just
+merged in:
 
-Con
+a8df7b1 leds: add led_trigger_rename function
+
+So, as months passed since the latest developments, I'm reposting the
+whole set, rebased on current mainline.  The first patches are the same
+that were merged in can-next/led-trigger, but there was some (trivial)
+conflict in the rebase.
+
+As for the test, I've tried the patch on the current mainline kernel
+with my custom usb-can interface.  For the drivers, I don't have any
+SoC-enabled board anymore, so they have only been compile tested.
+
+Cheers,
+Fabio
+
+
+Fabio Baltieri (7):
+  can: add tx/rx LED trigger support
+  can: flexcan: add LED trigger support
+  can: at91_can: add LED trigger support
+  can: ti_hecc: add LED trigger support
+  can: c_can: add LED trigger support
+  can: mcp251x: add LED trigger support
+  can: sja1000: add LED trigger support
+
+Kurt Van Dijck (2):
+  can: export a safe netdev_priv wrapper for candev
+  can: rename LED trigger name on netdev renames
+
+ drivers/net/can/Kconfig           |  12 ++++
+ drivers/net/can/Makefile          |   2 +
+ drivers/net/can/at91_can.c        |  10 +++
+ drivers/net/can/c_can/c_can.c     |  10 +++
+ drivers/net/can/dev.c             |  18 ++++++
+ drivers/net/can/flexcan.c         |  11 ++++
+ drivers/net/can/led.c             | 129 ++++++++++++++++++++++++++++++++++++++
+ drivers/net/can/mcp251x.c         |  23 +++++--
+ drivers/net/can/sja1000/sja1000.c |  17 ++++-
+ drivers/net/can/ti_hecc.c         |  10 +++
+ include/linux/can/dev.h           |  11 ++++
+ include/linux/can/led.h           |  51 +++++++++++++++
+ 12 files changed, 299 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/net/can/led.c
+ create mode 100644 include/linux/can/led.h
+
 -- 
--ck
+1.7.12.1
+
