@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2LPMqL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 07:46:11 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:24102 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab2LPMqK (ORCPT
+	id S1752947Ab2LPMqT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 07:46:19 -0500
+Received: from mga05.intel.com ([192.55.52.89]:16836 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752890Ab2LPMqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 07:46:10 -0500
-X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8DFCng/+ALmLZYRFnZn15ELiOAuLr3NkII
-X-RZG-CLASS-ID: mo00
-Message-ID: <50CDC289.1030405@chronox.de>
-Date: Sun, 16 Dec 2012 13:46:01 +0100
-From: =?ISO-8859-1?Q?Stephan_M=FCller?= <smueller@chronox.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, Jeff Liu <jeff.liu@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] avoid entropy starvation due to stack protection
-References: <50C72800.20508@chronox.de> <20121212164321.a01c5641.akpm@linux-foundation.org> <50C98764.6050104@chronox.de> <50CB63A9.80409@chronox.de> <20121216003020.GC9016@thunk.org>
-In-Reply-To: <20121216003020.GC9016@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 16 Dec 2012 07:46:16 -0500
+Message-ID: <1355661970.2903.28.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+From: Matt Fleming <matt.fleming@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <jbeulich@suse.com>,
+        David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Sun, 16 Dec 2012 12:46:10 +0000
+In-Reply-To: <CA+55aFwxtt2Rs7dJt_icCsH5QUzrV_UaATQ3aJQY2KGH+anc3A@mail.gmail.com>
+References: <23916.1355356085@warthog.procyon.org.uk>
+	 <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
+	 <21507.1355528749@warthog.procyon.org.uk>
+	 <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+	 <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
+	 <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
+	 <20121215163323.GA229@x4>
+	 <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com>
+	 <50CCD24F.9090603@zytor.com>
+	 <CA+55aFxi5SnacGoHzHuth4PvTRQQWA5kWM+D2Mn+FgV4VGYADQ@mail.gmail.com>
+	 <20121215210411.GA228@x4>
+	 <CA+55aFznbC_FHyfGWaD6e6wNE88CiAYaPwjerBh1HfBpfPfNsg@mail.gmail.com>
+	 <CAE9FiQX=5=5-U3ix=LGJUOxFrbmYRG3h_qbe11t2Q-zE4pEV3A@mail.gmail.com>
+	 <CA+55aFwxtt2Rs7dJt_icCsH5QUzrV_UaATQ3aJQY2KGH+anc3A@mail.gmail.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.12.2012 01:30, schrieb Theodore Ts'o:
-> On Fri, Dec 14, 2012 at 06:36:41PM +0100, Stephan Mueller wrote:
->>>> That patch is about one week from a mainline merge, btw.
->>> Initially I was also thinking about get_random_int. But stack protection
->>> depends on non-predictable numbers to ensure it cannot be defeated. As
->>> get_random_int depends on MD5 which is assumed to be broken now, I
->>> discarded the idea of using get_random_int.
-> The original use of get_random_int() was for applications where the
-> speed impact of using a heavierweight cryptographic primitive was not
-> something which could be tolerated.
->
-> However, the strength of get_random_int() is actually pretty good.
-> Note that we never expose the full MD5 hash; we only export the first
-> 32-bits of the hash.   So even if you ignore the effects of:
->
-> 	hash[0] += current->pid + jiffies + get_cycles();
+On Sat, 2012-12-15 at 15:37 -0800, Linus Torvalds wrote:
+> And why do we have to call the get-time calls so early? Couldn't we
+> move them later and avoid all the crazy "let's create silly magical
+> page tables just for the idiotic EFI problems".
 
-I see that, but I consider that just getting some time stamps, where the 
-interesting high-resolution time stamp is not guaranteed to exist, 
-calculate a broken hash and take some parts of that hash as a random 
-value does not sound very promising, even for stack protection.
+Unfortunately not, because this patch series fixes the case where some
+ASUS EFI machines ignore parts of the memory map that we invalidate with
+SetVirtualAddressMap() - so the firmware is accessing mappings for
+devices after we explicitly tell it they're no longer valid.
 
-...
->
-> What I would do instead is use an AES-based cryptographic random
-> number generator.  That is, at boot time, grab enough randomness to
-> for an AES key, and then use that key to create a cryptographic random
-> number generator by encrypting a counter with said AES key.  This is a
-> cryptographic primitive which has been very carefully studied, and for
-> architectures where you have a hardware support for AES (including
-> ARMv8, Power 7, Sparc T4, as well as x86 processors with the AES-NI
-> instructions), this will be much faster and require much less memory
-> and CPU resources than replicating the /dev/urandom infrastructure.
+It's possible to trigger this broken behaviour at whatever point we
+interact with the firmware.
 
-Well, we already have such an RNG in the kernel: the ansi_cprng out of 
-the kernel crypto API. That RNG implements an ANSI X9.31 RNG with an AES 
-core.
-
-Maybe that RNG should be given more centerstage where it is seeded with 
-good entropy where the seed key and the seed is at least having each 256 
-bits of entropy? In this case we have a standard CSPRNG seeded with 
-hardware-based entropy.
-
->
-> Whether or not we really need this level of paranoia for hardening
-> stack randomization I'll leave for someone else to decide.
-> Personally, my philosophy is if someone has managed to get
-> unprivileged shell acess, trying to protect against a privilege
-> escalation attack is largely hopeless on most Linux systems.  The name
-
-I would not concur with that statement because it would render all 
-attempts to make the local system more secure irrelevant. ;-)
-
-But that is just my view.
-
-> of the game is to protect against someone who does not yet have the
-> ability to run arbitrary unprivileged code on the system of interest.
-> In that case, the attacker isn't going to be able to get access to the
-> output of get_random_int(), so even if there was a cryptographic
-> weakness where an attacker who had access to the get_random_int()
-> output stream could guess the internal state of the MD5-based RNG, in
-> the case of a remote attacker, they wouldn't have access to the output
-> of the RNG in the first place.
-
-Ciao
-Stephan
