@@ -1,129 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab2LPUei (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 15:34:38 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52435 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab2LPUef (ORCPT
+	id S1752527Ab2LPUfq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 15:35:46 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25015 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750983Ab2LPUfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 15:34:35 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 1/2] ARM: Exynos5250: Enabling ehci-s5p driver
-To: Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        kgene.kim@samsung.com, jg1.han@samsung.com, thomas.abraham@linaro.org
-In-Reply-To: <1355416562-25539-2-git-send-email-gautam.vivek@samsung.com>
-References: <1355416562-25539-1-git-send-email-gautam.vivek@samsung.com> <1355416562-25539-2-git-send-email-gautam.vivek@samsung.com>
-Date: Sat, 15 Dec 2012 07:23:12 +0000
-Message-Id: <20121215072312.EBCAA3E0C06@localhost>
+	Sun, 16 Dec 2012 15:35:43 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+1VV3V7P3p2QO14bzyLljU
+Date: Sun, 16 Dec 2012 12:35:37 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Evgeniy Polyakov <zbr@ioremap.net>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [GIT PULL] fbdev changes for 3.8
+Message-ID: <20121216203536.GR4989@atomide.com>
+References: <50CAFDFF.3070802@ti.com>
+ <CA+55aFz9+3mOZcjJ9C-izKkidT9mxeO7xUubJER0OTjcZjE=2A@mail.gmail.com>
+ <20121215222431.GA7153@redhat.com>
+ <20121216174613.GA18490@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121216174613.GA18490@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Dec 2012 22:06:01 +0530, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Adding EHCI device tree node for Exynos5250 along with
-> the device base adress and gpio line for vbus.
+* Tony Lindgren <tony@atomide.com> [121216 09:49]:
+> * Dave Jones <davej@redhat.com> [121215 14:27]:
+> > On Sat, Dec 15, 2012 at 01:11:04PM -0800, Linus Torvalds wrote:
+> >  > On Fri, Dec 14, 2012 at 2:22 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> >  > > Hi Linus,
+> >  > >
+> >  > > Florian, the fbdev maintainer, has been very busy lately, so I offered to send
+> >  > > the pull request for fbdev for this merge window.
+> >  > 
+> >  > Pulled. However, with this I get the Kconfig question
+> >  > 
+> >  >    OMAP2+ Display Subsystem support (OMAP2_DSS) [N/m/y/?] (NEW)
+> >  > 
+> >  > which doesn't make a whole lot of sense on x86-64, unless there's
+> >  > something about OMAP2 that I don't know.
+> >  > 
+> >  > So I'd suggest making that OMAP2_DSS be dependent on OMAP2. Or at
+> >  > least ARM. Because showing it to anybody else seems insane.
+> >  > 
+> >  > Same goes for FB_OMAP2 for that matter. I realize that it's likely
+> >  > nice to get compile testing for this on x86-64 too, but if that's the
+> >  > intent, we need to think about it some more. I don't think it's good
+> >  > to ask actual normal users questions like this just for compile
+> >  > coverage.
+> > 
+> > This OMAP stuff has been creeping into x86 builds for a while.
+> > Grep from my current build config ..
+> > 
+> > # CONFIG_OMAP_OCP2SCP is not set
+> > # CONFIG_KEYBOARD_OMAP4 is not set
+> > # CONFIG_OMAP2_DSS is not set
+> > # CONFIG_OMAP_USB2 is not set
+> > 
+> > There was some other arm-ism that does the same that I' currently forgetting,
+> > or maybe that got fixed..
 > 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  .../devicetree/bindings/usb/exynos-usb.txt         |   25 ++++++++++++++++++++
->  arch/arm/boot/dts/exynos5250-smdk5250.dts          |    4 +++
->  arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++
->  arch/arm/mach-exynos/include/mach/map.h            |    1 +
->  arch/arm/mach-exynos/mach-exynos5-dt.c             |    2 +
->  5 files changed, 38 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/usb/exynos-usb.txt
+> Those are all omap internal devices and should be all marked with
+> depends on ARCH_OMAP2PLUS.
 > 
-> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> new file mode 100644
-> index 0000000..e8bbb47
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> @@ -0,0 +1,25 @@
-> +Samsung Exynos SoC USB controller
-> +
-> +The USB devices interface with USB controllers on Exynos SOCs.
-> +The device node has following properties.
-> +
-> +EHCI
-> +Required properties:
-> + - compatible: should be "samsung,exynos4210-ehci" for USB 2.0
-> +   EHCI controller in host mode.
-> + - reg: physical base address of the controller and length of memory mapped
-> +   region.
-> + - interrupts: interrupt number to the cpu.
-> +
-> +Optional properties:
-> + - samsung,vbus-gpio:  if present, specifies the GPIO that
-> +   needs to be pulled up for the bus to be powered.
-> +
-> +Example:
-> +
-> +	usb@12110000 {
-> +		compatible = "samsung,exynos4210-ehci";
-> +		reg = <0x12110000 0x100>;
-> +		interrupts = <0 71 0>;
-> +		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-> +	};
-> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> index 711b55f..f990086 100644
-> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> @@ -218,4 +218,8 @@
->  	i2s_2: i2s@12D70000 {
->  		status = "disabled";
->  	};
-> +
-> +	usb@12110000 {
-> +		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-> +	};
->  };
-> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-> index 581e57a..584bb9a 100644
-> --- a/arch/arm/boot/dts/exynos5250.dtsi
-> +++ b/arch/arm/boot/dts/exynos5250.dtsi
-> @@ -299,6 +299,12 @@
->  		rx-dma-channel = <&pdma0 11>; /* preliminary */
->  	};
->  
-> +	usb@12110000 {
-> +		compatible = "samsung,exynos4210-ehci";
-> +		reg = <0x12110000 0x100>;
-> +		interrupts = <0 71 0>;
-> +	};
-> +
->  	amba {
->  		#address-cells = <1>;
->  		#size-cells = <1>;
-> diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-> index cbb2852..b2c662f 100644
-> --- a/arch/arm/mach-exynos/include/mach/map.h
-> +++ b/arch/arm/mach-exynos/include/mach/map.h
-> @@ -201,6 +201,7 @@
->  #define EXYNOS4_PA_EHCI			0x12580000
->  #define EXYNOS4_PA_OHCI			0x12590000
->  #define EXYNOS4_PA_HSPHY		0x125B0000
-> +#define EXYNOS5_PA_EHCI			0x12110000
->  #define EXYNOS4_PA_MFC			0x13400000
->  
->  #define EXYNOS4_PA_UART			0x13800000
-> diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-> index 462e5ac..b3b9af1 100644
-> --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-> +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-> @@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
->  				"samsung-i2s.1", NULL),
->  	OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
->  				"samsung-i2s.2", NULL),
-> +	OF_DEV_AUXDATA("samsung,exynos4210-ehci", EXYNOS5_PA_EHCI,
-> +				"s5p-ehci", NULL),
+> It's a different story for external devices that may be used on other
+> architectures.
+> 
+> I only came up with one reason to compile internal devices for other
+> architectures: In some cases the driver subsystem maintainer may want to
+> be able to compile test subsystem wide changes without having to compile
+> for each target separately. But for those cases it's trivial to carry a
+> compile test patch that just drops the depends Kconfig entries.
 
-I'm assuming the above change is temporary. What is left to be done to
-drop the auxdata in theses two patches?
+And here's a patch to limit the omap drivers above to omap only.
 
-Otherwise the patch looks fine.
+Regards,
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Tony
+
+
+From: Tony Lindgren <tony@atomide.com>
+Date: Sun, 16 Dec 2012 12:28:46 -0800
+Subject: [PATCH] ARM: OMAP: Fix drivers to depend on omap for internal devices
+
+These devices are not available on other architectures, so
+let's limit them to omap.
+
+If the driver subsystem maintainers want to build test
+system wide changes without building for each target,
+it's easy to carry a test patch that just strips out the
+depends entries from Kconfig files.
+
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+
+--- a/drivers/bus/Kconfig
++++ b/drivers/bus/Kconfig
+@@ -6,6 +6,7 @@ menu "Bus devices"
+ 
+ config OMAP_OCP2SCP
+ 	tristate "OMAP OCP2SCP DRIVER"
++	depends on ARCH_OMAP2PLUS
+ 	help
+ 	  Driver to enable ocp2scp module which transforms ocp interface
+ 	  protocol to scp protocol. In OMAP4, USB PHY is connected via
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -544,6 +544,7 @@ config KEYBOARD_OMAP
+ 
+ config KEYBOARD_OMAP4
+ 	tristate "TI OMAP4+ keypad support"
++	depends on ARCH_OMAP2PLUS
+ 	select INPUT_MATRIXKMAP
+ 	help
+ 	  Say Y here if you want to use the OMAP4+ keypad.
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -6,6 +6,7 @@ comment "USB Physical Layer drivers"
+ 
+ config OMAP_USB2
+ 	tristate "OMAP USB2 PHY Driver"
++	depends on ARCH_OMAP2PLUS
+ 	select USB_OTG_UTILS
+ 	help
+ 	  Enable this to support the transceiver that is part of SOC. This
+--- a/drivers/video/omap2/Kconfig
++++ b/drivers/video/omap2/Kconfig
+@@ -1,6 +1,10 @@
+ config OMAP2_VRFB
+ 	bool
+ 
++if ARCH_OMAP2PLUS
++
+ source "drivers/video/omap2/dss/Kconfig"
+ source "drivers/video/omap2/omapfb/Kconfig"
+ source "drivers/video/omap2/displays/Kconfig"
++
++endif
+--- a/drivers/w1/masters/Kconfig
++++ b/drivers/w1/masters/Kconfig
+@@ -60,6 +60,7 @@ config W1_MASTER_GPIO
+ 
+ config HDQ_MASTER_OMAP
+ 	tristate "OMAP HDQ driver"
++	depends on ARCH_OMAP
+ 	help
+ 	  Say Y here if you want support for the 1-wire or HDQ Interface
+ 	  on an OMAP processor.
