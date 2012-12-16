@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab2LPLU3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 06:20:29 -0500
-Received: from 8bytes.org ([85.214.48.195]:34124 "EHLO mail.8bytes.org"
+	id S1752604Ab2LPLXm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 06:23:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:46370 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab2LPLU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 06:20:28 -0500
-Date: Sun, 16 Dec 2012 12:20:24 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, iommu <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH] iommu: moving initialization earlier
-Message-ID: <20121216112024.GJ1806@8bytes.org>
-References: <1355365763.19932.75.camel@pasglop>
- <1355380115-4518-1-git-send-email-aik@ozlabs.ru>
- <1355413735.2229.1.camel@ul30vt.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355413735.2229.1.camel@ul30vt.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Dec 16 12:20:25 2012
-X-DSPAM-Confidence: 0.9985
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50cdae7922975456456348
+	id S1751811Ab2LPLXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 06:23:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
+   d="scan'208";a="232205103"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org, hdegoede@redhat.com, wim@iguana.be
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Subject: [char-misc for 3.8] mei: avoid oops in watchdog unregister code path
+Date: Sun, 16 Dec 2012 13:23:17 +0200
+Message-Id: <1355656997-30659-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey,
+With commit c7d3df3 "mei: use internal watchdog device registration
+tracking" will crash the kernel on shutdown path on systems
+where ME watchdog is not present.
+Since the watchdog was never initialized in such case
+the WDOG_UNREGISTERED bit is never set and the system
+crashes on access to uninitialized variables down the path.
 
-On Thu, Dec 13, 2012 at 08:48:55AM -0700, Alex Williamson wrote:
-> Probably a good idea to CC the iommu list and maintainer...
-> 
-> On Thu, 2012-12-13 at 17:28 +1100, Alexey Kardashevskiy wrote:
-> > Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+To solve the issue we query for NULL on watchdog driver driver_data
+to check whether the device is registered. This is handled in the
+driver and doesn't depend on watchdog core internals.
 
-Please resend the patch when the merge-window is closed.
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/wd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
-
-	Joerg
-
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index 636409f..9299a8c 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -370,7 +370,7 @@ void mei_watchdog_register(struct mei_device *dev)
+ 
+ void mei_watchdog_unregister(struct mei_device *dev)
+ {
+-	if (test_bit(WDOG_UNREGISTERED, &amt_wd_dev.status))
++	if (watchdog_get_drvdata(&amt_wd_dev) == NULL)
+ 		return;
+ 
+ 	watchdog_set_drvdata(&amt_wd_dev, NULL);
+-- 
+1.7.4.4
 
