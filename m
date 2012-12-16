@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2LPN1B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 08:27:01 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35378 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab2LPN05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 08:26:57 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] ACPI / PM: Do not apply ACPI_SUCCESS() to acpi_bus_get_device() result
-Date: Sun, 16 Dec 2012 14:32:06 +0100
-Message-ID: <1432424.eSUdEQ1VBT@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+	id S1753047Ab2LPNh5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 08:37:57 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57283 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab2LPNh4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 08:37:56 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <4137114.myBUIQvsg3@vostro.rjw.lan>
+References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org>
+	<4137114.myBUIQvsg3@vostro.rjw.lan>
+Date: Sun, 16 Dec 2012 19:07:55 +0530
+Message-ID: <CAKohpomfEHGrCdbZ-EakRN4=qF8epd5seX5TWRcErQj9BEFpNA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cpufreq: Manage only online cpus
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linaro-dev@lists.linaro.org, nicolas.pitre@linaro.org,
+        amit.kucheria@linaro.org, mathieu.poirier@linaro.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        pdsw-power-team@arm.com, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 16 December 2012 18:34, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Sunday, December 16, 2012 11:20:08 AM Viresh Kumar wrote:
+>> cpufreq core doesn't manage offline cpus and if driver->init() has returned
+>> mask including offline cpus, it may result in unwanted behavior by cpufreq core
+>> or governors.
+>>
+>> We need to get only online cpus in this mask. There are two places to fix this
+>> mask, cpufreq core and cpufreq driver. It makes sense to do this at common place
+>> and hence is done in core.
+>
+> Well, this series makes sense to me, but I'd like to hear what the other people
+> think.
 
-Since the return value of acpi_bus_get_device() is not of type
-acpi_status, ACPI_SUCCESS() should not be used for checking its
-return value.  Fix that.
+That sounds great :)
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Some more information for others about how i reached to these issues
+is present here:
 
-Index: linux/drivers/acpi/device_pm.c
-===================================================================
---- linux.orig/drivers/acpi/device_pm.c
-+++ linux/drivers/acpi/device_pm.c
-@@ -358,8 +358,7 @@ static struct acpi_device *acpi_dev_pm_g
- 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
- 	struct acpi_device *adev;
- 
--	return handle && ACPI_SUCCESS(acpi_bus_get_device(handle, &adev)) ?
--		adev : NULL;
-+	return handle && !acpi_bus_get_device(handle, &adev) ? adev : NULL;
- }
- 
- /**
-
+https://lkml.org/lkml/2012/12/10/44
