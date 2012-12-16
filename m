@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab2LPOzA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 09:55:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53565 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab2LPOy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 09:54:59 -0500
-Message-ID: <1355669692.2903.33.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [GIT PULL] x86/uapi for 3.8
-From: Matt Fleming <matt.fleming@intel.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 16 Dec 2012 14:54:52 +0000
-In-Reply-To: <20121216132521.GA251@x4>
-References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
-	 <23916.1355356085@warthog.procyon.org.uk>
-	 <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
-	 <21507.1355528749@warthog.procyon.org.uk>
-	 <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
-	 <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
-	 <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
-	 <20121215163323.GA229@x4> <20121215163535.GB229@x4>
-	 <1355661820.2903.25.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20121216132521.GA251@x4>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753179Ab2LPP3u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 10:29:50 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:46205 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753082Ab2LPP3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 10:29:48 -0500
+Date: Sun, 16 Dec 2012 10:29:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Jiri Kosina <jkosina@suse.cz>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jan-Matthias Braun <jan_braun@gmx.net>
+Subject: Re: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late
+ suspend/early resume
+In-Reply-To: <3558004.3QJ46yYCyI@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1212161028330.13850-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-12-16 at 14:25 +0100, Markus Trippelsdorf wrote:
-> Matt, your patch fixes the problem for me. Thanks.
+On Sun, 16 Dec 2012, Rafael J. Wysocki wrote:
 
-That's great! Thanks for testing so quickly.
+> On Saturday, December 15, 2012 10:16:29 PM Jiri Kosina wrote:
+> > On Sat, 15 Dec 2012, Rafael J. Wysocki wrote:
+> > 
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Currently, the PM core disables runtime PM for all devices right
+> > > after executing subsystem/driver .suspend() callbacks for them
+> > > and re-enables it right before executing subsystem/driver .resume()
+> > > callbacks for them.  This may lead to problems when there are
+> > > two devices such that the .suspend() callback executed for one of
+> > > them depends on runtime PM working for the other.  In that case,
+> > > if runtime PM has already been disabled for the second device,
+> > > the first one's .suspend() won't work correctly (and analogously
+> > > for resume).
+> > > 
+> > > To make those issues go away, make the PM core disable runtime PM
+> > > for devices right before executing subsystem/driver .suspend_late()
+> > > callbacks for them and enable runtime PM for them right after
+> > > executing subsystem/driver .resume_early() callbacks for them.  This
+> > > way the potential conflitcs between .suspend_late()/.resume_early()
+> > > and their runtime PM counterparts are still prevented from happening,
+> > > but the subtle ordering issues related to disabling/enabling runtime
+> > > PM for devices during system suspend/resume are much easier to avoid.
+> > > 
+> > > Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Hi Rafael,
+> > 
+> > just curious what is the reason for resend? Do you want to gather more 
+> > Acks before pushing this upstream?
+> 
+> Well, I thought that some people might actually look at it when they found it
+> again in their mailboxes. :-)
 
-At least we now know the problem wasn't caused by a memory map issue,
-just my buggy patch.
+I did look at it the first time it appeared.  It seemed to be okay, but 
+I haven't tried any testing.
 
-Linus, Peter, how should we proceed from here? Since the commit and its
-dependants have been reverted should we punt for now and try again next
-merge window?
+Alan Stern
 
