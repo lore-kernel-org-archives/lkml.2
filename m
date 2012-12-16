@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2LPTyA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 14:54:00 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60351 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2LPTx7 (ORCPT
+	id S1751932Ab2LPT6c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 14:58:32 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39296 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab2LPT6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 14:53:59 -0500
-Date: Sun, 16 Dec 2012 19:53:56 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, J??rn Engel <joern@logfs.org>
-Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on
- mmap
-Message-ID: <20121216195355.GE4939@ZenIV.linux.org.uk>
-References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
- <20121214072755.GR4939@ZenIV.linux.org.uk>
- <CALCETrVw9Pc1sUZBL=wtLvsnBnkW5LAO5iu-i=T2oMOdwQfjHg@mail.gmail.com>
- <20121214144927.GS4939@ZenIV.linux.org.uk>
- <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
- <20121216170403.GC4939@ZenIV.linux.org.uk>
+	Sun, 16 Dec 2012 14:58:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121216170403.GC4939@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+ <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Dec 2012 11:58:09 -0800
+X-Google-Sender-Auth: ElUi8B41cSHcKHAQZEN_eluHnOs
+Message-ID: <CA+55aFyzjvq=qQM1sNcyqt06u_05zyYv4RyCx+n8vZ4RLu7R5g@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 05:04:03PM +0000, Al Viro wrote:
+On Fri, Dec 14, 2012 at 6:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This is a serious cause of mmap_sem contention.  MAP_POPULATE
+> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-> FWIW, I've done some checking of ->mmap_sem uses yesterday.  Got further than
-> the last time; catch so far, just from find_vma() audit:
-> * arm swp_emulate.c - missing ->mmap_sem around find_vma().  Fix sent to
-> rmk.
-> * blackfin ptrace - find_vma() without any protection, definitely broken
-> * m68k sys_cacheflush() - ditto
-> * mips process_fpemu_return() - ditto
-> * mips octeon_flush_cache_sigtramp() - ditto
-> * omap_vout_uservirt_to_phys() - ditto, patch sent
-> * vb2_get_contig_userptr() - probaly a bug, unless I've misread the (very
-> twisty maze of) v4l2 code leading to it
-> * vb2_get_contig_userptr() - ditto
-> * gntdev_ioctl_get_offset_for_vaddr() - definitely broken
-> and there's a couple of dubious places in arch/* I hadn't finished with,
-> plus a lot in mm/* proper.
-> 
-> That's just from a couple of days of RTFS.  The locking in there is far too
-> convoluted as it is; worse, it's not localized code-wise, so rechecking
-> correctness is going to remain a big time-sink ;-/
-> 
-> Making it *more* complex doesn't look like a good idea, TBH...
+Ugh. This patch is just too ugly.
 
-While we are at it: fs/proc/task_nommu.c:m_stop() is fucked.  It assumes
-that the process in question hadn't done execve() since m_start().  And
-it doesn't hold anywhere near enough locks to guarantee that.  task_mmu.c
-counterpart avoids that fun by using ->vm_mm to get to mm_struct in question.
-Completely untested patch follows; if it works, that's -stable fodder.
+Conditional locking like this is just too disgusting for words. And
+this v2 is worse, with that whole disgusting 'downgraded' pointer
+thing.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-index 1ccfa53..dc26605 100644
---- a/fs/proc/task_nommu.c
-+++ b/fs/proc/task_nommu.c
-@@ -211,6 +211,14 @@ static int show_tid_map(struct seq_file *m, void *_p)
- 	return show_map(m, _p, 0);
- }
- 
-+static void stop_it(void *_p)
-+{
-+	struct vm_area_struct *vma = rb_entry(_p, struct vm_area_struct, vm_rb);
-+	struct mm_struct *mm = vma->vm_mm;
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+}
-+
- static void *m_start(struct seq_file *m, loff_t *pos)
- {
- 	struct proc_maps_private *priv = m->private;
-@@ -235,6 +243,8 @@ static void *m_start(struct seq_file *m, loff_t *pos)
- 	for (p = rb_first(&mm->mm_rb); p; p = rb_next(p))
- 		if (n-- == 0)
- 			return p;
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
- 	return NULL;
- }
- 
-@@ -243,9 +253,8 @@ static void m_stop(struct seq_file *m, void *_vml)
- 	struct proc_maps_private *priv = m->private;
- 
- 	if (priv->task) {
--		struct mm_struct *mm = priv->task->mm;
--		up_read(&mm->mmap_sem);
--		mmput(mm);
-+		if (_vml)
-+			stop_it(_vml);
- 		put_task_struct(priv->task);
- 	}
- }
-@@ -255,7 +264,12 @@ static void *m_next(struct seq_file *m, void *_p, loff_t *pos)
- 	struct rb_node *p = _p;
- 
- 	(*pos)++;
--	return p ? rb_next(p) : NULL;
-+	if (!p)
-+		return NULL;
-+	p = rb_next(p);
-+	if (!p)
-+		stop_it(_p);
-+	return p;
- }
- 
- static const struct seq_operations proc_pid_maps_ops = {
+I'm not applying disgusting hacks like this. I suspect you can clean
+it up by moving the mlock/populate logic into the (few) callers
+instead (first as a separate patch that doesn't do the downgrading)
+and then a separate patch that does the downgrade in the callers,
+possibly using a "finish_mmap" helper function that releases the lock.
+
+No "if (write) up_write() else up_read()" crap. Instead, make the
+finish_mmap helper do something like
+
+  if (!populate_r_mlock) {
+    up_write(mmap_sem);
+    return;
+  }
+  downgrade(mmap_sem);
+  .. populate and mlock ..
+  up_read(mmap_sem);
+
+and you never have any odd "now I'm holding it for writing" state
+variable with conditional locking rules etc.
+
+           Linus
