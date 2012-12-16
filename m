@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab2LPVo1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 16:44:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40498 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab2LPVo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 16:44:26 -0500
-Message-ID: <50CE4097.2020104@zytor.com>
-Date: Sun, 16 Dec 2012 13:43:51 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752598Ab2LPWIG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 17:08:06 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62978 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab2LPWIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 17:08:04 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com> <1355654609-16800-9-git-send-email-fenghua.yu@intel.com> <CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-In-Reply-To: <CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CA+55aFy_xU6FryKX+pJ697B3+jRjRTniEVxn4quCs-tB-Qz7rw@mail.gmail.com>
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
+ <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
+ <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+ <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
+ <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
+ <20121215163323.GA229@x4> <20121215163535.GB229@x4> <1355661820.2903.25.camel@mfleming-mobl1.ger.corp.intel.com>
+ <20121216132521.GA251@x4> <1355669692.2903.33.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CA+55aFy_xU6FryKX+pJ697B3+jRjRTniEVxn4quCs-tB-Qz7rw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Dec 2012 14:07:42 -0800
+X-Google-Sender-Auth: i66vj0BL6mSpiMjg8VJl_F2ummk
+Message-ID: <CA+55aFxJcyTdtO5SWQK0YZyO_tEqPmL17oa8t3pX2meu30HR+Q@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2012 09:59 AM, Yinghai Lu wrote:
->> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
->> index 037df57..a512f56 100644
->> --- a/arch/x86/kernel/head64.c
->> +++ b/arch/x86/kernel/head64.c
->> @@ -25,6 +25,7 @@
->>  #include <asm/kdebug.h>
->>  #include <asm/e820.h>
->>  #include <asm/bios_ebda.h>
->> +#include <asm/microcode.h>
->>
->>  static void __init zap_identity_mappings(void)
->>  {
->> @@ -73,6 +74,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
->>         /* clear bss before set_intr_gate with early_idt_handler */
->>         clear_bss();
->>
->> +       /*
->> +        * Load microcode early on BSP.
->> +        */
->> +       load_ucode_bsp(real_mode_data);
->> +
->>         /* Make NULL pointers segfault */
->>         zap_identity_mappings();
->>
-> 
-> So this patchset is after #PF handler set early page table version?
-> 
-> then load_ucode_bsp() should be after
-> 
->    load_idt((const struct desc_ptr *)&idt_descr);
-> 
+On Sun, Dec 16, 2012 at 12:12 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So I'll test it and see, and hope for the best,
 
-This patchset isn't before the #PF handler version (you can tell because
-it has zap_identity_mappings()), but it does make sense to load the IDT
-first.
+No such luck. Applying your patch and the reverting the revert of the
+EFI date thing results in the same oops in find_vma() from udev that I
+had before.
 
-	-hpa
+So the patch is still scrogged, and it is *not* ready to even be put
+in some "next merge window" pile.
 
-
+               Linus
