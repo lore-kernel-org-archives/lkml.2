@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab2LPRkZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:40:25 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23931 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab2LPRkY (ORCPT
+	id S1752189Ab2LPRnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:43:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57151 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab2LPRnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:40:24 -0500
-Date: Sun, 16 Dec 2012 12:40:15 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (swiotlb) stable/for-linus-3.8-rc0-tag
-Message-ID: <20121216172609.GA31701@localhost.localdomain>
+	Sun, 16 Dec 2012 12:43:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <50CB3EAB.309@itwm.fraunhofer.de>
+References: <50CB3EAB.309@itwm.fraunhofer.de>
+Date: Sun, 16 Dec 2012 09:43:40 -0800
+X-Google-Sender-Auth: _rfbqc8npEuZVWzDS0sJfX7bicw
+Message-ID: <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com>
+Subject: Re: [regression] 3.7 ends in APIC panic
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On Fri, Dec 14, 2012 at 6:58 AM, Bernd Schubert
+<bernd.schubert@itwm.fraunhofer.de> wrote:
+> On 12/13/2012 01:16 PM, Bernd Schubert wrote:
+>>
+>> Hello,
+>>
+>> I just tried to boot 3.7 and it ends in an APIC panic. I tried to use
+>> the recommended "apic=debug", but that does not change anything in the
+>> output, at least not in the visible part. The last known kernel to boot
+>> was 3.5. If it matters I can try to boot 3.6.
+>
+>
+> So linux-3.6 also boots. Any idea what is going on or do I really need to
+> bisect?
 
-Please git pull the following tag:
+interesting, your system have
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb.git stable/for-linus-3.8-rc0-tag
+x2apic enabled by BIOS, switching to x2apic ops
 
-which has one feature in the SWIOTLB code. That is to remove
-the multitude of phys_to_virt/virt_to_phys calls and instead
-operate on the physical addresses instead of virtual in many
-of the internal functions. This does provide a speed up in interrupt
-handlers that do DMA operations and use SWIOTLB.
+so can you try to append "nox2apic" to command line with v3.7, to see
+if we can get dmesg there?
 
-Please pull!
+Thanks
 
- drivers/xen/swiotlb-xen.c |   25 ++--
- include/linux/swiotlb.h   |   20 ++--
- lib/swiotlb.c             |  269 +++++++++++++++++++++++----------------------
- 3 files changed, 163 insertions(+), 151 deletions(-)
-
-Alexander Duyck (7):
-      swiotlb: Make io_tlb_end a physical address instead of a virtual one
-      swiotlb: Make io_tlb_start a physical address instead of a virtual one
-      swiotlb: Make io_tlb_overflow_buffer a physical address
-      swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
-      swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
-      swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
-      swiotlb: Do not export swiotlb_bounce since there are no external consumers
-
+Yinghai
