@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab2LPRpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:45:41 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52833 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab2LPRpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:45:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com>
-References: <50CB3EAB.309@itwm.fraunhofer.de>
-	<CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com>
-Date: Sun, 16 Dec 2012 09:45:38 -0800
-X-Google-Sender-Auth: h_NNt7-Am3MEvZ-n8c22lSVJYHE
-Message-ID: <CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com>
-Subject: Re: [regression] 3.7 ends in APIC panic
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752559Ab2LPRpx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:45:53 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2918 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab2LPRpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:45:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
+   d="scan'208";a="234790702"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tigran Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        "Andreas Herrmann" <andreas.herrmann3@amd.com>,
+        "Borislav Petkov" <borislav.petkov@amd.com>,
+        "Yinghai Lu" <yinghai@kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v3 03/10] x86/common.c: Make have_cpuid_p() a global function
+Date: Sun, 16 Dec 2012 02:43:22 -0800
+Message-Id: <1355654609-16800-4-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 9:43 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Dec 14, 2012 at 6:58 AM, Bernd Schubert
-> <bernd.schubert@itwm.fraunhofer.de> wrote:
->> On 12/13/2012 01:16 PM, Bernd Schubert wrote:
->>>
->>> Hello,
->>>
->>> I just tried to boot 3.7 and it ends in an APIC panic. I tried to use
->>> the recommended "apic=debug", but that does not change anything in the
->>> output, at least not in the visible part. The last known kernel to boot
->>> was 3.5. If it matters I can try to boot 3.6.
->>
->>
->> So linux-3.6 also boots. Any idea what is going on or do I really need to
->> bisect?
->
-> interesting, your system have
->
-> x2apic enabled by BIOS, switching to x2apic ops
->
-> so can you try to append "nox2apic" to command line with v3.7, to see
-> if we can get dmesg there?
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-can you post your .config for v3.7 ?
+Remove static declaration in have_cpuid_p() to make it a global function. The
+function will be called in early loading microcode.
 
-wonder if you have x2apic in .config
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/include/asm/processor.h |  8 ++++++++
+ arch/x86/kernel/cpu/common.c     | 17 +++++++++++------
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
-Thanks
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 888184b..3d722fd 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -190,6 +190,14 @@ extern void init_amd_cacheinfo(struct cpuinfo_x86 *c);
+ extern void detect_extended_topology(struct cpuinfo_x86 *c);
+ extern void detect_ht(struct cpuinfo_x86 *c);
+ 
++#ifdef CONFIG_X86_32
++extern int have_cpuid_p(void);
++#else
++static inline int have_cpuid_p(void)
++{
++	return 1;
++}
++#endif
+ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+ 				unsigned int *ecx, unsigned int *edx)
+ {
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 9c3ab43..d814772 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -37,6 +37,8 @@
+ #include <asm/mce.h>
+ #include <asm/msr.h>
+ #include <asm/pat.h>
++#include <asm/microcode.h>
++#include <asm/microcode_intel.h>
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ #include <asm/uv/uv.h>
+@@ -213,7 +215,7 @@ static inline int flag_is_changeable_p(u32 flag)
+ }
+ 
+ /* Probe for the CPUID instruction */
+-static int __cpuinit have_cpuid_p(void)
++int __cpuinit have_cpuid_p(void)
+ {
+ 	return flag_is_changeable_p(X86_EFLAGS_ID);
+ }
+@@ -249,11 +251,6 @@ static inline int flag_is_changeable_p(u32 flag)
+ {
+ 	return 1;
+ }
+-/* Probe for the CPUID instruction */
+-static inline int have_cpuid_p(void)
+-{
+-	return 1;
+-}
+ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
+ {
+ }
+@@ -1223,6 +1220,12 @@ void __cpuinit cpu_init(void)
+ 	int cpu;
+ 	int i;
+ 
++	/*
++	 * Load microcode on this cpu if a valid microcode is available.
++	 * This is early microcode loading procedure.
++	 */
++	load_ucode_ap();
++
+ 	cpu = stack_smp_processor_id();
+ 	t = &per_cpu(init_tss, cpu);
+ 	oist = &per_cpu(orig_ist, cpu);
+@@ -1314,6 +1317,8 @@ void __cpuinit cpu_init(void)
+ 	struct tss_struct *t = &per_cpu(init_tss, cpu);
+ 	struct thread_struct *thread = &curr->thread;
+ 
++	show_ucode_info_early();
++
+ 	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+ 		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+ 		for (;;)
+-- 
+1.8.0.1
 
-Yinghai
