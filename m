@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab2LPREI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:04:08 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59956 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2LPREG (ORCPT
+	id S1751962Ab2LPRRv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:17:51 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40734 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2LPRRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:04:06 -0500
-Date: Sun, 16 Dec 2012 17:04:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, J??rn Engel <joern@logfs.org>
-Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on
- mmap
-Message-ID: <20121216170403.GC4939@ZenIV.linux.org.uk>
-References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
- <20121214072755.GR4939@ZenIV.linux.org.uk>
- <CALCETrVw9Pc1sUZBL=wtLvsnBnkW5LAO5iu-i=T2oMOdwQfjHg@mail.gmail.com>
- <20121214144927.GS4939@ZenIV.linux.org.uk>
- <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Dec 2012 12:17:49 -0500
+Date: Sun, 16 Dec 2012 09:17:47 -0800 (PST)
+Message-Id: <20121216.091747.271269648244929827.davem@davemloft.net>
+To: simon@fire.lp0.eu
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, vyasevic@redhat.com
+Subject: Re: [PATCH] ipv6: Fix Makefile offload objects
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <50CDFB36.1020604@simon.arlott.org.uk>
+References: <50CDFB36.1020604@simon.arlott.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 08:12:45AM -0800, Andy Lutomirski wrote:
-> On Fri, Dec 14, 2012 at 6:49 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Fri, Dec 14, 2012 at 03:14:50AM -0800, Andy Lutomirski wrote:
-> >
-> >> > Wait a minute.  get_user_pages() relies on ->mmap_sem being held.  Unless
-> >> > I'm seriously misreading your patch it removes that protection.  And yes,
-> >> > I'm aware of execve-related exception; it's in special circumstances -
-> >> > bprm->mm is guaranteed to be not shared (and we need to rearchitect that
-> >> > area anyway, but that's a separate story).
-> >>
-> >> Unless I completely screwed up the patch, ->mmap_sem is still held for
-> >> read (it's downgraded from write).  It's just not held for write
-> >> anymore.
-> >
-> > Huh?  I'm talking about the call of get_user_pages() in aio_setup_ring().
-> > With your patch it's done completely outside of ->mmap_sem, isn't it?
+From: Simon Arlott <simon@fire.lp0.eu>
+Date: Sun, 16 Dec 2012 16:47:50 +0000
+
+> The following commit breaks IPv6 TCP transmission for me:
+> 	Commit 75fe83c32248d99e6d5fe64155e519b78bb90481
+> 	Author: Vlad Yasevich <vyasevic@redhat.com>
+> 	Date:   Fri Nov 16 09:41:21 2012 +0000
+> 	ipv6: Preserve ipv6 functionality needed by NET
 > 
-> Oh, /that/ call to get_user_pages.  That would qualify as screwing up...
+> This patch fixes the typo "ipv6_offload" which should be
+> "ipv6-offload".
 > 
-> Since dropping and reacquiring mmap_sem there is probably a bad idea
-> there, I'll rework this and post a v2.
+> I don't know why not including the offload modules should
+> break TCP. Disabling all offload options on the NIC didn't
+> help. Outgoing pulseaudio traffic kept stalling.
+> 
+> Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
 
-FWIW, I've done some checking of ->mmap_sem uses yesterday.  Got further than
-the last time; catch so far, just from find_vma() audit:
-* arm swp_emulate.c - missing ->mmap_sem around find_vma().  Fix sent to
-rmk.
-* blackfin ptrace - find_vma() without any protection, definitely broken
-* m68k sys_cacheflush() - ditto
-* mips process_fpemu_return() - ditto
-* mips octeon_flush_cache_sigtramp() - ditto
-* omap_vout_uservirt_to_phys() - ditto, patch sent
-* vb2_get_contig_userptr() - probaly a bug, unless I've misread the (very
-twisty maze of) v4l2 code leading to it
-* vb2_get_contig_userptr() - ditto
-* gntdev_ioctl_get_offset_for_vaddr() - definitely broken
-and there's a couple of dubious places in arch/* I hadn't finished with,
-plus a lot in mm/* proper.
+Applied, since the fix is so obvious.
 
-That's just from a couple of days of RTFS.  The locking in there is far too
-convoluted as it is; worse, it's not localized code-wise, so rechecking
-correctness is going to remain a big time-sink ;-/
+I'll let Vlad explain why it has such an unexpected
+effect.
 
-Making it *more* complex doesn't look like a good idea, TBH...
-
-BTW, the __get_user_pages()/find_extend_vma()/mlock_vma_pages_range() pile is
-really asking for trouble; sure, the recursion there is limited, but it
-deserves a comment.  Moreover, the damn thing is reachable from coredump
-path and there we do *not* have ->mmap_sem held.  We don't reach the
-VM_BUG_ON() in __mlock_vma_pages_range(), but the reason for that also
-deserves a comment, IMO.
-
-Moreover, I'm not quite convinced that huge_memory.c and ksm.c can't run
-into all kinds of interesting races with ongoing coredump.  Looking into
-it...
+Thanks.
