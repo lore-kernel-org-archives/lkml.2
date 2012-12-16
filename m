@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab2LPM2r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 07:28:47 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:34783 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab2LPM2p (ORCPT
+	id S1752827Ab2LPMj4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 07:39:56 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39891 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab2LPMjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 07:28:45 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] staging: wlan-ng: Update get_tx_power()/set_tx_power() signature
-Date: Sun, 16 Dec 2012 13:28:42 +0100
-Message-Id: <1355660922-12833-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 16 Dec 2012 07:39:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+	<2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net>
+Date: Sun, 16 Dec 2012 04:39:54 -0800
+Message-ID: <CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
+From: Michel Lespinasse <walken@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In file included from drivers/staging/wlan-ng/p80211netdev.c:92:
-drivers/staging/wlan-ng/cfg80211.c:735: warning: initialization from incompatible pointer type
-drivers/staging/wlan-ng/cfg80211.c:736: warning: initialization from incompatible pointer type
+On Fri, Dec 14, 2012 at 6:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This is a serious cause of mmap_sem contention.  MAP_POPULATE
+> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>
+> Changes from v1:
+>
+> The non-unlocking versions of do_mmap_pgoff and mmap_region are still
+> available for aio_setup_ring's benefit.  In theory, aio_setup_ring
+> would do better with a lock-downgrading version, but that would be
+> somewhat ugly and doesn't help my workload.
 
-Cfr. commit c8442118ad9cd05cfe3b993f058e70ab25b1009a ("cfg80211: allow per
-interface TX power setting"), which added a new parameter.
+Hi Andy,
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/staging/wlan-ng/cfg80211.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+I agree that the long mmap_sem hold times when using MAP_POPULATE,
+MAP_LOCKED or MCL_FUTURE are a problem. However, I'm not entirely
+happy with your proposed solution.
 
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index 18c06a5..1d31eab 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -638,8 +638,8 @@ int prism2_leave_ibss(struct wiphy *wiphy, struct net_device *dev)
- }
- 
- 
--int prism2_set_tx_power(struct wiphy *wiphy, enum nl80211_tx_power_setting type,
--			int mbm)
-+int prism2_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
-+			enum nl80211_tx_power_setting type, int mbm)
- {
- 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
- 	wlandevice_t *wlandev = priv->wlandev;
-@@ -665,7 +665,8 @@ exit:
- 	return err;
- }
- 
--int prism2_get_tx_power(struct wiphy *wiphy, int *dbm)
-+int prism2_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
-+			int *dbm)
- {
- 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
- 	wlandevice_t *wlandev = priv->wlandev;
+My main concern is that just downgrading the mmap_sem only hides the
+problem: as soon as a writer gets queued on that mmap_sem,
+reader/writer fairness kicks in and blocks any new readers, which
+makes the problem reappear. So in order to completely fix the issue,
+we should look for a way that doesn't require holding the mmap_sem
+(even in read mode) for the entire duration of the populate or mlock
+operation.
+
+I think this could be done by extending the mlock work I did as part
+of v2.6.38-rc1. The commit message for
+fed067da46ad3b9acedaf794a5f05d0bc153280b explains the idea; basically
+mlock() was split into do_mlock() which just sets the VM_LOCKED flag
+on vmas as needed, and do_mlock_pages() which goes through a range of
+addresses and actually populates/mlocks each individual page that is
+part of a VM_LOCKED vma.
+
+This could be easily extended for mlocks that happen in mmap_region()
+due to MAP_LOCKED or MCL_FUTURE: mmap_region() would just set the
+VM_LOCKED flag and defer the work of actually populating/mlocking the
+individual pages. I think the only constraint here is that the pages
+must be locked before returning to userspace, so we may be able to use
+the task_work mechanism to achieve that. Later on (but before
+returning to userspace) we would notice we have some mlock work to do
+and call do_mlock_pages() to achieve that.
+
+I think the benefits of this approach would be:
+- no mmap_sem locking changes around mmap_region() - which also means
+that all code paths to mmap_region() can instantly benefit
+- do_mlock_pages() doesn't need to hold a read lock on mmap_sem for
+the entire duration of the operation, so we can fully solve the
+problem instead of just making it harder to trigger
+
+Now for handling MAP_POPULATE, we would probably want to use a similar
+mechanism as well, so that we don't need to hold the mmap_sem for the
+entire duration of the populate. This is similar in principle to the
+MAP_LOCKED case; however this may require the introduction of a new
+VM_POPULATE vma flag in order to avoid the possibility of a race where
+someone replaces our vma with another before we get a chance to
+populate it.
+
+I don't have an implementation for this idea yet; however I'm hoping
+to come up with one before xmas. Before then, any comments on the idea
+?
+
 -- 
-1.7.0.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
