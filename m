@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2LPRpx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 12:45:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2918 "EHLO mga02.intel.com"
+	id S1753228Ab2LPRpz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 12:45:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2911 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab2LPRpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 12:45:50 -0500
+	id S1752478Ab2LPRpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 12:45:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
-   d="scan'208";a="234790702"
+   d="scan'208";a="234790675"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Thomas Gleixner" <tglx@linutronix.de>,
@@ -19,102 +19,77 @@ To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Yinghai Lu" <yinghai@kernel.org>,
         "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v3 03/10] x86/common.c: Make have_cpuid_p() a global function
-Date: Sun, 16 Dec 2012 02:43:22 -0800
-Message-Id: <1355654609-16800-4-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v3 00/10] x86/microcode: Early load microcode
+Date: Sun, 16 Dec 2012 02:43:19 -0800
+Message-Id: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Remove static declaration in have_cpuid_p() to make it a global function. The
-function will be called in early loading microcode.
+The problem in current microcode loading method is that we load a microcode way,
+way too late; ideally we should load it before turning paging on.  This may only
+be practical on 32 bits since we can't get to 64-bit mode without paging on,
+but we should still do it as early as at all possible.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/include/asm/processor.h |  8 ++++++++
- arch/x86/kernel/cpu/common.c     | 17 +++++++++++------
- 2 files changed, 19 insertions(+), 6 deletions(-)
+Similarly, we should load the microcode update as early as possible during AP
+bringup and when processors are brought back online after hotplug or S3/S4.
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 888184b..3d722fd 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -190,6 +190,14 @@ extern void init_amd_cacheinfo(struct cpuinfo_x86 *c);
- extern void detect_extended_topology(struct cpuinfo_x86 *c);
- extern void detect_ht(struct cpuinfo_x86 *c);
- 
-+#ifdef CONFIG_X86_32
-+extern int have_cpuid_p(void);
-+#else
-+static inline int have_cpuid_p(void)
-+{
-+	return 1;
-+}
-+#endif
- static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
- 				unsigned int *ecx, unsigned int *edx)
- {
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 9c3ab43..d814772 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -37,6 +37,8 @@
- #include <asm/mce.h>
- #include <asm/msr.h>
- #include <asm/pat.h>
-+#include <asm/microcode.h>
-+#include <asm/microcode_intel.h>
- 
- #ifdef CONFIG_X86_LOCAL_APIC
- #include <asm/uv/uv.h>
-@@ -213,7 +215,7 @@ static inline int flag_is_changeable_p(u32 flag)
- }
- 
- /* Probe for the CPUID instruction */
--static int __cpuinit have_cpuid_p(void)
-+int __cpuinit have_cpuid_p(void)
- {
- 	return flag_is_changeable_p(X86_EFLAGS_ID);
- }
-@@ -249,11 +251,6 @@ static inline int flag_is_changeable_p(u32 flag)
- {
- 	return 1;
- }
--/* Probe for the CPUID instruction */
--static inline int have_cpuid_p(void)
--{
--	return 1;
--}
- static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
- {
- }
-@@ -1223,6 +1220,12 @@ void __cpuinit cpu_init(void)
- 	int cpu;
- 	int i;
- 
-+	/*
-+	 * Load microcode on this cpu if a valid microcode is available.
-+	 * This is early microcode loading procedure.
-+	 */
-+	load_ucode_ap();
-+
- 	cpu = stack_smp_processor_id();
- 	t = &per_cpu(init_tss, cpu);
- 	oist = &per_cpu(orig_ist, cpu);
-@@ -1314,6 +1317,8 @@ void __cpuinit cpu_init(void)
- 	struct tss_struct *t = &per_cpu(init_tss, cpu);
- 	struct thread_struct *thread = &curr->thread;
- 
-+	show_ucode_info_early();
-+
- 	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
- 		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
- 		for (;;)
+In order to do that, the microcode patch needs to be permanently present in
+kernel memory.  Each individual patch is fairly small, so that is OK, but the
+entire blob with support for each CPU is too big. Since only CPU's with same
+model can be in the same platform, we store microcode with the same model as
+BSP. Later on APs can upload microcode from the saved microcodep patches.
+
+Note, however, that Linux users have gotten used to being able to install a
+microcode patch in the field without having a reboot; we support that model too.
+
+v3: Change .hex to .bin in 01/10 and 05/10 patches. Fix some compilation
+warnings. In x86_32 mode, access global varialbes by __pa_symobl() and fix
+static string issue in x86_vendor(). Call load_ucode_ap() in real mode as well.
+Add debug info.
+
+v2: Detect vendor before loading microcode. Move some functions from
+microcode_intel_early.c to microcode_intel_lib.c. Change some early loading
+microcode dependencies in Kconfig. Reword doc.
+
+Fenghua Yu (10):
+  Documentation/x86: Early load microcode
+  x86/microcode_intel.h: Define functions and macros for early loading
+    ucode
+  x86/common.c: Make have_cpuid_p() a global function
+  x86/microcode_core_early.c: Define interfaces for early loading ucode
+  x86/microcode_intel_lib.c: Early update ucode on Intel's CPU
+  x86/microcode_intel_early.c: Early update ucode on Intel's CPU
+  x86/head_32.S: Early update ucode in 32-bit
+  x86/head64.c: Early update ucode in 64-bit
+  x86/mm/init.c: Copy ucode from initrd image to memory
+  x86/Kconfig: Configurations to enable/disable the feature
+
+ Documentation/x86/early-microcode.txt   |  43 ++
+ arch/x86/Kconfig                        |  18 +
+ arch/x86/include/asm/microcode.h        |  11 +
+ arch/x86/include/asm/microcode_intel.h  |  82 ++++
+ arch/x86/include/asm/processor.h        |   8 +
+ arch/x86/kernel/Makefile                |   3 +
+ arch/x86/kernel/cpu/common.c            |  17 +-
+ arch/x86/kernel/head64.c                |   6 +
+ arch/x86/kernel/head_32.S               |  12 +
+ arch/x86/kernel/microcode_core.c        |   7 +-
+ arch/x86/kernel/microcode_core_early.c  |  77 ++++
+ arch/x86/kernel/microcode_intel.c       | 198 ++------
+ arch/x86/kernel/microcode_intel_early.c | 775 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/microcode_intel_lib.c   | 174 +++++++
+ arch/x86/mm/init.c                      |  10 +
+ 15 files changed, 1264 insertions(+), 177 deletions(-)
+ create mode 100644 Documentation/x86/early-microcode.txt
+ create mode 100644 arch/x86/include/asm/microcode_intel.h
+ create mode 100644 arch/x86/kernel/microcode_core_early.c
+ create mode 100644 arch/x86/kernel/microcode_intel_early.c
+ create mode 100644 arch/x86/kernel/microcode_intel_lib.c
+
 -- 
 1.8.0.1
 
