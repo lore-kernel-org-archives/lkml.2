@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2LPBkN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 20:40:13 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50910 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab2LPBkL (ORCPT
+	id S1756252Ab2LPBoG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 20:44:06 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52797 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab2LPBoF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 20:40:11 -0500
+	Sat, 15 Dec 2012 20:44:05 -0500
+Date: Sat, 15 Dec 2012 18:21:57 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 21/21] documentation: drop vmtruncate
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <50CC5856.6080704@gmail.com> (from marco.stornelli@gmail.com on
+	Sat Dec 15 05:00:38 2012)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1355617317.24099.10@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <CAAJw_ZsM+nWJc8nu7GiXrbOMftwwVvyYDczO6yBuCEGyoCrT8g@mail.gmail.com>
-References: <CAAJw_ZueeeNwCGnQD75=AcNwLxWBM3hEvq3LYXEiMcz4Sibk-w@mail.gmail.com>
-	<20121216012816.GZ4939@ZenIV.linux.org.uk>
-	<CAAJw_ZsM+nWJc8nu7GiXrbOMftwwVvyYDczO6yBuCEGyoCrT8g@mail.gmail.com>
-Date: Sun, 16 Dec 2012 09:40:11 +0800
-Message-ID: <CAAJw_ZuN-Spw5Ga+0EZiz1Oz0v1A5oz_O3_g9pUZr6Txe3wiNw@mail.gmail.com>
-Subject: Re: /usr/include/linux/errno.h:1:23: fatal error: asm/errno.h: No
- such file or directory
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 9:39 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Sun, Dec 16, 2012 at 9:28 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> On Sun, Dec 16, 2012 at 09:23:38AM +0800, Jeff Chua wrote:
->>> How should the symbolic links be setup to compile the latest kernel?
->>>
->>>
->>> Currently I had these links and kernels compiled fine until 2 days ago.
->>>
->>>          asm -> /usr/src/linux/include/uapi/asm-generic/
->>>          asm-generic -> /usr/src/linux/include/uapi/asm-generic
->>>          linux -> /usr/src/linux/include/uapi/linux
->>
->> What symlinks?  /usr/include/* should not contain any symlinks into
->> the kernel source.  At all.
->
-> Al,
->
-> Oh, perhaps I'm having the right setup. Where should I get the kernel
-> headers. After removing the links to the kernel source, here what I
-> got ...
->
-> make[1]: Nothing to be done for `all'.
->   HOSTCC  scripts/basic/fixdep
-> In file included from /usr/include/bits/posix1_lim.h:160:0,
->                  from /usr/include/limits.h:144,
->                  from scripts/basic/fixdep.c:114:
-> /usr/include/bits/local_lim.h:38:26: fatal error: linux/limits.h: No
-> such file or directory
-> compilation terminated.
+On 12/15/2012 05:00:38 AM, Marco Stornelli wrote:
+> Removed vmtruncate
+> 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 
-> Oh, perhaps I'm having the right setup. Where should I get the kernel
+Acked-by: Rob Landley <rob@landley.net>
 
-NOT having the right setup.
+(I can't help thinking there should have been some sort of  
+feature-removal-schedule entry for this. Is there any sort of trailing  
+record of major stuff that happened and when? The kernelnewbies  
+http://kernelnewbies.org/LinuxVersions page is the best I've found, but  
+it's a bit clumsy to use as a reference to find which version a change  
+happened in. The https://lwn.net/Articles/2.6-kernel-api/ page was  
+great but it stalled in 2009. Maybe I just miss kernel-traffic...)
 
-
-Jeff.
+Rob
