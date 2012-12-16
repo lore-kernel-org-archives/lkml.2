@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2LPSil (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 13:38:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8397 "EHLO mga01.intel.com"
+	id S1752792Ab2LPStn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 13:49:43 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36458 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab2LPSik convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 13:38:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,294,1355126400"; 
-   d="scan'208";a="265020985"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-Thread-Topic: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-Thread-Index: AQHN27U5Cxm9cfLkVkqEiPpUYGHzQJgcPMCA//+DPpA=
-Date: Sun, 16 Dec 2012 18:38:37 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220470F8166@ORSMSX105.amr.corp.intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
- <CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-In-Reply-To: <CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750798Ab2LPStm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 13:49:42 -0500
+Date: Sun, 16 Dec 2012 13:49:33 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, J??rn Engel <joern@logfs.org>
+Subject: Re: [PATCH] mm: Downgrade mmap_sem before locking or populating on
+ mmap
+Message-ID: <20121216184933.GA912@cmpxchg.org>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+ <20121214072755.GR4939@ZenIV.linux.org.uk>
+ <CALCETrVw9Pc1sUZBL=wtLvsnBnkW5LAO5iu-i=T2oMOdwQfjHg@mail.gmail.com>
+ <20121214144927.GS4939@ZenIV.linux.org.uk>
+ <CALCETrUS7baKF7cdbrqX-o2qdeo1Uk=7Z4MHcxHMA3Luh+Obdw@mail.gmail.com>
+ <20121216170403.GC4939@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121216170403.GC4939@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
-> Yinghai Lu
-> Sent: Sunday, December 16, 2012 9:59 AM
-> To: Yu, Fenghua
-> Cc: H Peter Anvin; Ingo Molnar; Thomas Gleixner; Mallick, Asit K;
-> Tigran Aivazian; Andreas Herrmann; Borislav Petkov; linux-kernel; x86
-> Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-
-> bit
-> 
-> On Sun, Dec 16, 2012 at 2:43 AM, Fenghua Yu <fenghua.yu@intel.com>
-> wrote:
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> >
-> > This updates ucode in 64-bit mode. Paging and virtual address are
-> working now.
-> >
-> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> > ---
-> >  arch/x86/kernel/head64.c | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> >
-> > diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> > index 037df57..a512f56 100644
-> > --- a/arch/x86/kernel/head64.c
-> > +++ b/arch/x86/kernel/head64.c
-> > @@ -25,6 +25,7 @@
-> >  #include <asm/kdebug.h>
-> >  #include <asm/e820.h>
-> >  #include <asm/bios_ebda.h>
-> > +#include <asm/microcode.h>
-> >
-> >  static void __init zap_identity_mappings(void)
-> >  {
-> > @@ -73,6 +74,11 @@ void __init x86_64_start_kernel(char *
-> real_mode_data)
-> >         /* clear bss before set_intr_gate with early_idt_handler */
-> >         clear_bss();
-> >
-> > +       /*
-> > +        * Load microcode early on BSP.
-> > +        */
-> > +       load_ucode_bsp(real_mode_data);
-> > +
-> >         /* Make NULL pointers segfault */
-> >         zap_identity_mappings();
-> >
-> 
-> So this patchset is after #PF handler set early page table version?
-> 
-> then load_ucode_bsp() should be after
-> 
->    load_idt((const struct desc_ptr *)&idt_descr);
-> 
-> otherwise it will not work.
-> 
-> Yinghai
+On Sun, Dec 16, 2012 at 05:04:03PM +0000, Al Viro wrote:
+> BTW, the __get_user_pages()/find_extend_vma()/mlock_vma_pages_range() pile is
+> really asking for trouble; sure, the recursion there is limited, but it
+> deserves a comment.
 
-load_ucode_bsp() only accesses initrd image, a few global variables. It doesn't call any other kernel functions (e.g. printk or kmalloc()). It is like this mainly because it works on both 32 and 64 bit.
+Agreed, how about this?
 
-So there is no PF and idt should not impact the function, right?
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: mlock: document scary-looking stack expansion mlock
+ chain
 
-Thanks.
+The fact that mlock calls get_user_pages, and get_user_pages might
+call mlock when expanding a stack looks like a potential recursion.
 
--Fenghua
+However, mlock makes sure the requested range is already contained
+within a vma, so no stack expansion will actually happen from mlock.
+
+Should this ever change: the stack expansion mlocks only the newly
+expanded range and so will not result in recursive expansion.
+
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/mlock.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/mm/mlock.c b/mm/mlock.c
+index f0b9ce5..17cf905 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -186,6 +186,10 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 	if (vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC))
+ 		gup_flags |= FOLL_FORCE;
+ 
++	/*
++	 * We made sure addr is within a VMA, so the following will
++	 * not result in a stack expansion that recurses back here.
++	 */
+ 	return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
+ 				NULL, NULL, nonblocking);
+ }
+-- 
+1.7.11.7
+
