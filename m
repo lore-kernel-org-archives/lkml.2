@@ -1,57 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab2LOXsD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 18:48:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60829 "EHLO mail.zytor.com"
+	id S1752259Ab2LPAZv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 19:25:51 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:58601 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab2LOXsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 18:48:01 -0500
-Message-ID: <50CD0C0F.4070107@zytor.com>
-Date: Sat, 15 Dec 2012 15:47:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751595Ab2LPAZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Dec 2012 19:25:50 -0500
+Date: Sun, 16 Dec 2012 00:25:49 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fadvise: perform WILLNEED readahead in a workqueue
+Message-ID: <20121216002549.GA19402@dcvr.yhbt.net>
+References: <20121215005448.GA7698@dcvr.yhbt.net>
+ <20121215223448.08272fd5@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jan Beulich <jbeulich@suse.com>, Matt Fleming <matt.fleming@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] x86/uapi for 3.8
-References: <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com> <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com> <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com> <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com> <20121215163323.GA229@x4> <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com> <50CCD24F.9090603@zytor.com> <CA+55aFxi5SnacGoHzHuth4PvTRQQWA5kWM+D2Mn+FgV4VGYADQ@mail.gmail.com> <20121215213747.GA2783@redhat.com>
-In-Reply-To: <20121215213747.GA2783@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121215223448.08272fd5@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2012 01:37 PM, Dave Jones wrote:
-> On Sat, Dec 15, 2012 at 11:58:00AM -0800, Linus Torvalds wrote:
->
->   > It might also be that it causes some massive corruption at boot time,
->   > but it then requires that that particular memory is actually used. So
->   > maybe it's not so much about the memory map except indirectly.
->
-> I wonder if this might explain the XFS corruption I've been seeing
-> the last couple days.  Won't be able to get at the affected laptop
-> until Monday to find out..
->
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Sat, 15 Dec 2012 00:54:48 +0000
+> Eric Wong <normalperson@yhbt.net> wrote:
+> 
+> > Applications streaming large files may want to reduce disk spinups and
+> > I/O latency by performing large amounts of readahead up front
+> 
+> How does it compare benchmark wise with a user thread or using the
+> readahead() call ?
 
-It seems somewhat unlikely, but not implausible, since the trampoline 
-page table is only in use for very brief moments and usually not very 
-often at all, but if it is just completely screwed and we do fandango on 
-memory... yes we could have problems.
+Very well.
 
-	-hpa
+My main concern is for the speed of the initial pread()/read() call
+after open().
+
+Setting EARLY_EXIT means my test program _exit()s immediately after the
+first pread().  In my test program (below), I wait for the background
+thread to become ready before open() so I would not take overhead from
+pthread_create() into account.
+
+RA=1 uses a pthread + readahead()
+Not setting RA uses fadvise (with my patch)
+
+# readahead + pthread.
+$ EARLY_EXIT=1 RA=1 time  ./first_read 1G
+0.00user 0.05system 0:01.37elapsed 3%CPU (0avgtext+0avgdata 600maxresident)k
+0inputs+0outputs (1major+187minor)pagefaults 0swaps
+
+# patched fadvise
+$ EARLY_EXIT=1 time ./first_read 1G
+0.00user 0.00system 0:00.01elapsed 0%CPU (0avgtext+0avgdata 564maxresident)k
+0inputs+0outputs (1major+178minor)pagefaults 0swaps
+
+Perhaps I screwed up my readahead() + threads path badly, but there
+seems to be a huge benefit in using fadvise with my patch.  I'm not sure
+why readahead() + thread does so badly, even...
+
+Even if I badly screwed up my use of readahead(), the benefit of my
+patch spares others from screwing up when using threads+readahead() :)
+
+FULL_READ
+---------
+While full, fast reads are not my target use case, there's no noticeable
+regression here, either.  Results for doing a full, fast read on the file
+are closer and fluctuate more between runs.
+
+# readahead + pthread.
+$ FULL_READ=1 EARLY_EXIT=1 RA=1 time ./first_read 1G
+0.01user 1.10system 0:09.24elapsed 12%CPU (0avgtext+0avgdata 596maxresident)k
+0inputs+0outputs (1major+186minor)pagefaults 0swaps
+
+# patched fadvise
+FULL_READ=1 EARLY_EXIT=1 time ./first_read 1G
+0.01user 1.04system 0:09.22elapsed 11%CPU (0avgtext+0avgdata 564maxresident)k
+0inputs+0outputs (1major+178minor)pagefaults 0swaps
+
+--------------------------------- 8< ------------------------------
+/* gcc -O2 -Wall -lpthread -o first_read first_read.c */
+#define _GNU_SOURCE
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <assert.h>
+#include <sched.h>
+#include <sys/eventfd.h>
+
+static int efd1;
+static int efd2;
+
+static void * start_ra(void *unused)
+{
+	struct stat st;
+	eventfd_t val;
+	int fd;
+
+	/* tell parent to open() */
+	assert(eventfd_write(efd1, 1) == 0);
+
+	/* wait for parent to tell us fd is ready */
+	assert(eventfd_read(efd2, &val) == 0);
+	fd = (int)val;
+
+	assert(fstat(fd, &st) == 0);
+	assert(readahead(fd, 0, st.st_size) == 0);
+
+	return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+	char buf[16384];
+	pthread_t thr;
+	int fd;
+	char *do_ra = getenv("RA");
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: strace -T %s LARGE_FILE\n", argv[0]);
+		return 1;
+	}
+
+	if (do_ra) {
+		eventfd_t val;
+		efd1 = eventfd(0, 0);
+		efd2 = eventfd(0, 0);
+		assert(efd1 >= 0 && efd2 >= 0 && "eventfd failed");
+		assert(pthread_create(&thr, NULL, start_ra, NULL) == 0);
+
+		/* wait for child thread to spawn */
+		assert(eventfd_read(efd1, &val) == 0);
+	}
+
+	fd = open(argv[1], O_RDONLY);
+	assert(fd >= 0 && "open failed");
+
+	if (do_ra) {
+		/* wake up the child thread, give it a chance to run */
+		assert(eventfd_write(efd2, fd) == 0);
+		sched_yield();
+	} else
+		assert(posix_fadvise(fd, 0, 0, POSIX_FADV_WILLNEED) == 0);
+
+	assert(pread(fd, buf, sizeof(buf), 0) == sizeof(buf));
+
+	if (getenv("FULL_READ")) {
+		ssize_t r;
+		do {
+			r = read(fd, buf, sizeof(buf));
+		} while (r > 0);
+		assert(r == 0 && "EOF not reached");
+	}
+
+	if (getenv("EXIT_EARLY"))
+		_exit(0);
+
+	if (do_ra) {
+		assert(pthread_join(thr, NULL) == 0);
+		assert(close(efd1) == 0);
+		assert(close(efd2) == 0);
+	}
+
+	assert(close(fd) == 0);
+
+	return 0;
+}
+--------------------------------- 8< ------------------------------
+
+Thanks for your interest in this!
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Eric Wong
