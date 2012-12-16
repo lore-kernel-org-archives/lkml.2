@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2LPLKD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 06:10:03 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40100 "EHLO
+	id S1753011Ab2LPLKJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 06:10:09 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57247 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab2LPLKA (ORCPT
+	with ESMTP id S1752933Ab2LPLKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 06:10:00 -0500
+	Sun, 16 Dec 2012 06:10:03 -0500
 From: Fabio Baltieri <fabio.baltieri@gmail.com>
 To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
 Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
         Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>
-Subject: [PATCH 7/9] can: sja1000: add LED trigger support
-Date: Sun, 16 Dec 2012 12:08:31 +0100
-Message-Id: <1355656113-9562-8-git-send-email-fabio.baltieri@gmail.com>
+        Oliver Hartkopp <socketcan@hartkopp.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 8/9] can: export a safe netdev_priv wrapper for candev
+Date: Sun, 16 Dec 2012 12:08:32 +0100
+Message-Id: <1355656113-9562-9-git-send-email-fabio.baltieri@gmail.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
 References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
@@ -23,89 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for canbus activity led indicators on sja1000 devices by
-calling appropriate can_led functions.
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
 
-These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
-otherwise.
+In net_device notifier calls, it was impossible to determine
+if a CAN device is based on candev in a safe way.
+This patch adds such test in order to access candev storage
+from within those notifiers.
 
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 ---
- drivers/net/can/sja1000/sja1000.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/net/can/dev.c   | 13 +++++++++++++
+ include/linux/can/dev.h |  3 +++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/net/can/sja1000/sja1000.c b/drivers/net/can/sja1000/sja1000.c
-index 83ee11e..daf4013 100644
---- a/drivers/net/can/sja1000/sja1000.c
-+++ b/drivers/net/can/sja1000/sja1000.c
-@@ -60,6 +60,7 @@
- 
- #include <linux/can/dev.h>
- #include <linux/can/error.h>
-+#include <linux/can/led.h>
- 
- #include "sja1000.h"
- 
-@@ -368,6 +369,8 @@ static void sja1000_rx(struct net_device *dev)
- 
- 	stats->rx_packets++;
- 	stats->rx_bytes += cf->can_dlc;
-+
-+	can_led_event(dev, CAN_LED_EVENT_RX);
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index 8233e5e..13e7380 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -794,6 +794,19 @@ void unregister_candev(struct net_device *dev)
  }
+ EXPORT_SYMBOL_GPL(unregister_candev);
  
- static int sja1000_err(struct net_device *dev, uint8_t isrc, uint8_t status)
-@@ -521,6 +524,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
- 				can_get_echo_skb(dev, 0);
- 			}
- 			netif_wake_queue(dev);
-+			can_led_event(dev, CAN_LED_EVENT_TX);
- 		}
- 		if (isrc & IRQ_RI) {
- 			/* receive interrupt */
-@@ -575,6 +579,8 @@ static int sja1000_open(struct net_device *dev)
- 	/* init and start chi */
- 	sja1000_start(dev);
- 
-+	can_led_event(dev, CAN_LED_EVENT_OPEN);
++/*
++ * Test if a network device is a candev based device
++ * and return the can_priv* if so.
++ */
++struct can_priv *safe_candev_priv(struct net_device *dev)
++{
++	if ((dev->type != ARPHRD_CAN) || (dev->rtnl_link_ops != &can_link_ops))
++		return NULL;
 +
- 	netif_start_queue(dev);
- 
- 	return 0;
-@@ -592,6 +598,8 @@ static int sja1000_close(struct net_device *dev)
- 
- 	close_candev(dev);
- 
-+	can_led_event(dev, CAN_LED_EVENT_STOP);
++	return netdev_priv(dev);
++}
++EXPORT_SYMBOL_GPL(safe_candev_priv);
 +
- 	return 0;
- }
- 
-@@ -639,6 +647,8 @@ static const struct net_device_ops sja1000_netdev_ops = {
- 
- int register_sja1000dev(struct net_device *dev)
+ static __init int can_dev_init(void)
  {
-+	int ret;
-+
- 	if (!sja1000_probe_chip(dev))
- 		return -ENODEV;
+ 	int err;
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 7747d9b..fb0ab65 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -106,6 +106,9 @@ u8 can_len2dlc(u8 len);
+ struct net_device *alloc_candev(int sizeof_priv, unsigned int echo_skb_max);
+ void free_candev(struct net_device *dev);
  
-@@ -648,7 +658,12 @@ int register_sja1000dev(struct net_device *dev)
- 	set_reset_mode(dev);
- 	chipset_init(dev);
- 
--	return register_candev(dev);
-+	ret =  register_candev(dev);
++/* a candev safe wrapper around netdev_priv */
++struct can_priv *safe_candev_priv(struct net_device *dev);
 +
-+	if (!ret)
-+		devm_can_led_init(dev);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(register_sja1000dev);
+ int open_candev(struct net_device *dev);
+ void close_candev(struct net_device *dev);
  
 -- 
 1.7.12.1
