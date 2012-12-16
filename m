@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab2LPBZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Dec 2012 20:25:29 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36464 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab2LPBZ1 (ORCPT
+	id S1752295Ab2LPB2T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Dec 2012 20:28:19 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57443 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab2LPB2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Dec 2012 20:25:27 -0500
-Subject: Re: [GIT PULL] target updates for v3.8-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-In-Reply-To: <CA+55aFzHGQX1KWPcRwiFqK3EifodAfN=NQ=OMQKww2qM57gYsA@mail.gmail.com>
-References: <1355529222.31680.143.camel@haakon2.linux-iscsi.org>
-	 <CA+55aFzHGQX1KWPcRwiFqK3EifodAfN=NQ=OMQKww2qM57gYsA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 Dec 2012 17:25:18 -0800
-Message-ID: <1355621118.7425.10.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Dec 2012 20:28:18 -0500
+Date: Sun, 16 Dec 2012 01:28:16 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: /usr/include/linux/errno.h:1:23: fatal error: asm/errno.h: No
+ such file or directory
+Message-ID: <20121216012816.GZ4939@ZenIV.linux.org.uk>
+References: <CAAJw_ZueeeNwCGnQD75=AcNwLxWBM3hEvq3LYXEiMcz4Sibk-w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAJw_ZueeeNwCGnQD75=AcNwLxWBM3hEvq3LYXEiMcz4Sibk-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-15 at 14:28 -0800, Linus Torvalds wrote:
-> On Fri, Dec 14, 2012 at 3:53 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> >
-> > Here are the target updates for v3.8-rc1 merge window code.  Please go
-> > ahead and pull from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
-> >
-> > Just a heads up that there is a minor merge conflict that you'll
-> > encounter in target_handle_task_attr() code, that sfr has been carrying
-> > a fix for recently within -next.  After dropping the HEAD section, the
-> > resolution should look like:
+On Sun, Dec 16, 2012 at 09:23:38AM +0800, Jeff Chua wrote:
+> How should the symbolic links be setup to compile the latest kernel?
 > 
-> Hmm. This is *not* how I resolved that conflict - that seems to drop the new
 > 
->      complete(&cmd->t_transport_stop_comp);
+> Currently I had these links and kernels compiled fine until 2 days ago.
 > 
-> added by Roland in commit 3ea160b3e8f0 ("target: Fix handling of
-> aborted commands").
+>          asm -> /usr/src/linux/include/uapi/asm-generic/
+>          asm-generic -> /usr/src/linux/include/uapi/asm-generic
+>          linux -> /usr/src/linux/include/uapi/linux
 
-You are most certainly correct.
-
-> 
-> So my conflict resolution looks different.
-> 
-> Which may be a bug, of course. Nicholas, Roland, please check my end result,
-> 
-
-Including the complete() from commit 3ea160b3e8f0 in the exception path
-for transport_check_aborted_status() within target_execute_cmd() code
-was/is the proper merge resolution.
-
-Thank you for taking care of this.
-
---nab
-
+What symlinks?  /usr/include/* should not contain any symlinks into
+the kernel source.  At all.
