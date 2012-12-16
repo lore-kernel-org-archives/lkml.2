@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab2LPSEE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 13:04:04 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51733 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab2LPSEC (ORCPT
+	id S1752001Ab2LPSFu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 13:05:50 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57510 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2LPSFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 13:04:02 -0500
+	Sun, 16 Dec 2012 13:05:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121216174943.GB20393@liondog.tnic>
-References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-	<1355436141-8668-6-git-send-email-yinghai@kernel.org>
-	<20121216174943.GB20393@liondog.tnic>
-Date: Sun, 16 Dec 2012 10:04:01 -0800
-X-Google-Sender-Auth: GY4o2u3Js3-c0565_FA0gy_6NG4
-Message-ID: <CAE9FiQXksVZ-7qVZNw8W-be1J7sDCeciotd-_LxKkjBYVmSRDg@mail.gmail.com>
-Subject: Re: [PATCH v6 05/27] x86, 64bit: clear ident mapping when kernel is
- above 512G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+In-Reply-To: <CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+ <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net> <CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 16 Dec 2012 10:05:27 -0800
+Message-ID: <CALCETrW58pb2w_r0gUDmMVSqi8PBQRdR1dRj2HX0ymq+qnz8XA@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 9:49 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Dec 13, 2012 at 02:01:59PM -0800, Yinghai Lu wrote:
->> After following patch:
->>       x86, 64bit: Set extra ident mapping for whole kernel range
+On Sun, Dec 16, 2012 at 4:39 AM, Michel Lespinasse <walken@google.com> wrote:
+> On Fri, Dec 14, 2012 at 6:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> This is a serious cause of mmap_sem contention.  MAP_POPULATE
+>> and MCL_FUTURE, in particular, are disastrous in multithreaded programs.
 >>
->> We have extra ident mapping for kernel that is loaded above 1G.
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>
+>> Changes from v1:
+>>
+>> The non-unlocking versions of do_mmap_pgoff and mmap_region are still
+>> available for aio_setup_ring's benefit.  In theory, aio_setup_ring
+>> would do better with a lock-downgrading version, but that would be
+>> somewhat ugly and doesn't help my workload.
 >
-> What?
+> Hi Andy,
 >
-> /me looks at next patch
+> I agree that the long mmap_sem hold times when using MAP_POPULATE,
+> MAP_LOCKED or MCL_FUTURE are a problem. However, I'm not entirely
+> happy with your proposed solution.
 >
-> Aaah, the *next* patch adds an extra ident mapping. Why don't you say
-> so?
+> My main concern is that just downgrading the mmap_sem only hides the
+> problem: as soon as a writer gets queued on that mmap_sem,
+> reader/writer fairness kicks in and blocks any new readers, which
+> makes the problem reappear. So in order to completely fix the issue,
+> we should look for a way that doesn't require holding the mmap_sem
+> (even in read mode) for the entire duration of the populate or mlock
+> operation.
+
+Ugh.
+
+At least with my patch, mmap in MCL_FUTURE mode is no worse than mmap
++ mlock.  I suspect I haven't hit this because all my mmaping is done
+by one thread, so it never ends up waiting for itself, and the other
+thread have very short mmap_sem hold times.
+
 >
->> So need to clear extra pgd entry when kernel is loaded above 512g.
+> I think this could be done by extending the mlock work I did as part
+> of v2.6.38-rc1. The commit message for
+> c explains the idea; basically
+> mlock() was split into do_mlock() which just sets the VM_LOCKED flag
+> on vmas as needed, and do_mlock_pages() which goes through a range of
+> addresses and actually populates/mlocks each individual page that is
+> part of a VM_LOCKED vma.
 >
-> Why then isn't that patch following the next patch instead of coming
-> before it?
+
+Doesn't this have the same problem?  It holds mmap_sem for read for a
+long time, and if another writer comes in then r/w starvation
+prevention will kick in.
+
+> This could be easily extended for mlocks that happen in mmap_region()
+> due to MAP_LOCKED or MCL_FUTURE: mmap_region() would just set the
+> VM_LOCKED flag and defer the work of actually populating/mlocking the
+> individual pages. I think the only constraint here is that the pages
+> must be locked before returning to userspace, so we may be able to use
+> the task_work mechanism to achieve that. Later on (but before
+> returning to userspace) we would notice we have some mlock work to do
+> and call do_mlock_pages() to achieve that.
 >
+> I think the benefits of this approach would be:
+> - no mmap_sem locking changes around mmap_region() - which also means
+> that all code paths to mmap_region() can instantly benefit
+> - do_mlock_pages() doesn't need to hold a read lock on mmap_sem for
+> the entire duration of the operation, so we can fully solve the
+> problem instead of just making it harder to trigger
+>
+> Now for handling MAP_POPULATE, we would probably want to use a similar
+> mechanism as well, so that we don't need to hold the mmap_sem for the
+> entire duration of the populate. This is similar in principle to the
+> MAP_LOCKED case; however this may require the introduction of a new
+> VM_POPULATE vma flag in order to avoid the possibility of a race where
+> someone replaces our vma with another before we get a chance to
+> populate it.
+>
+> I don't have an implementation for this idea yet; however I'm hoping
+> to come up with one before xmas. Before then, any comments on the idea
+> ?
 
-thanks a lot for checking the patch.
-this patch is obsolete by #PF handler version.
+IMO this all sucks.  What we want is some way to lock a single vma or
+(better?) a range of virtual addresses.  mmap_region (or some
+equivalent) ought to be able to return a read-locked vma, and the
+caller can (while still holding that lock) do whatever they want and
+take their time at it.
 
-so if possible, you can check my for-x86-boot branch instead.
-   http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-x86-boot
+If mmap_sem were only held while actually modifying the tree of vmas,
+hold times could be nice and short.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-boot
-
-will repost them after HPA is ok with my changes to his #PF handler patch.
-
-
-Thanks
-
-Yinghai
+--Andy
