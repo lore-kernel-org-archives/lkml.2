@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab2LPQLq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 11:11:46 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59801 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab2LPQLp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 11:11:45 -0500
-Message-ID: <50CDF2A2.3090405@gmail.com>
-Date: Sun, 16 Dec 2012 17:11:14 +0100
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1751523Ab2LPQTh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 11:19:37 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:44467 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990Ab2LPQTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 11:19:35 -0500
+Date: Sun, 16 Dec 2012 08:19:21 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121216161921.GO2542@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121002195042.GA16087@www.outflux.net>
+ <20121003132538.GE13192@linux.vnet.ibm.com>
+ <20121003161702.GA22008@kroah.com>
+ <alpine.LNX.2.01.1212160527210.17128@nerf07.vanv.qr>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: rjw@sisk.pl, jwerner@chromium.org, linux-pm@vger.kernel.org,
-        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com,
-        linaro-dev@lists.linaro.org, len.brown@intel.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        snanda@chromium.org
-Subject: Re: [PATCH 2/2][V2] cpuidle - optimize the select function for the
- 'menu' governor
-References: <1355493455-30665-1-git-send-email-daniel.lezcano@linaro.org> <1355493455-30665-3-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1355493455-30665-3-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.01.1212160527210.17128@nerf07.vanv.qr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121616-9360-0000-0000-00000E035BCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On 12/14/2012 02:57 PM, Daniel Lezcano wrote:
-> As the power is backward sorted in the states array and we are looking for
-> the state consuming the little power as possible, instead of looking from
-> the beginning of the array, we look from the end. That should save us some
-> iterations in the loop each time we select a state at idle time.
+On Sun, Dec 16, 2012 at 05:29:21AM +0100, Jan Engelhardt wrote:
 > 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  drivers/cpuidle/governors/menu.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
+> On Wednesday 2012-10-03 18:17, Greg Kroah-Hartman wrote:
+> >> 
+> >> OK, I will bite...  How should I flag an option that is initially only
+> >> intended for those willing to take some level of risk?
+> >
+> >In the text say "You really don't want to enable this option, use at
+> >your own risk!"  Or something like that :)
 > 
-> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-> index fe343a0..05b8998 100644
-> --- a/drivers/cpuidle/governors/menu.c
-> +++ b/drivers/cpuidle/governors/menu.c
-> @@ -367,24 +367,24 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->  	 * Find the idle state with the lowest power while satisfying
->  	 * our constraints.
->  	 */
-> -	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
-> +	for (i = drv->state_count - 1; i >= CPUIDLE_DRIVER_STATE_START; i--) {
->  		struct cpuidle_state *s = &drv->states[i];
->  		struct cpuidle_state_usage *su = &dev->states_usage[i];
->  
->  		if (s->disabled || su->disable)
->  			continue;
-> -		if (s->target_residency > data->predicted_us) {
-> -			low_predicted = 1;
-> -			continue;
-> -		}
->  		if (s->exit_latency > latency_req)
->  			continue;
-> +		if (s->target_residency > data->predicted_us)
-> +			continue;
->  		if (s->exit_latency * multiplier > data->predicted_us)
->  			continue;
->  
-> +		low_predicted = i - CPUIDLE_DRIVER_STATE_START;
+> You know that won't not work, just like "everybody is encouraged
+> to upgrade" for -stable. It needs to say "All users must disable this!"
 
-You are altering the semantics of low_predicted, which is supposed to be
-non-zero when the deepest C-state has not been chosen because its target
-residency is more than the predicted residency.
-It seems to me that the if block where target_residency is compared with
-the predicted residency should be left as is.
+The thought expressed earlier in this thread of unconditionally splatting
+during boot seemed pretty compelling to me.  ;-)
 
->  		data->last_state_idx = i;
->  		data->exit_us = s->exit_latency;
-> -	}
-> +		break;
-> +       }
->  
->  	/* not deepest C-state chosen for low predicted residency */
->  	if (low_predicted) {
+							Thanx, Paul
 
---
-Francesco
