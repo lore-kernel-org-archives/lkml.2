@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab2LQRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:21:58 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:57621 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753052Ab2LQRV5 (ORCPT
+	id S1753620Ab2LQRWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:22:04 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:20446 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753052Ab2LQRV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:21:57 -0500
-Message-ID: <50CF548C.2080500@st.com>
-Date: Mon, 17 Dec 2012 18:21:16 +0100
-From: Armando Visconti <armando.visconti@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	Mon, 17 Dec 2012 12:21:59 -0500
+X-IronPort-AV: E=Sophos;i="4.84,303,1355126400"; 
+   d="scan'208";a="1214163"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] usb: gadget zero: avoid unnecessary reinit of data in
- f_sourcesink
-References: <1355407879-11784-1-git-send-email-armando.visconti@st.com> <20121217154545.GB5931@breakpoint.cc>
-In-Reply-To: <20121217154545.GB5931@breakpoint.cc>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] SUNRPC: continue run over clients list on PipeFS event
+ instead of break
+Thread-Topic: [PATCH] SUNRPC: continue run over clients list on PipeFS event
+ instead of break
+Thread-Index: AQHN3HsEPXm8eu/yOEqrT2MN0cGCTQ==
+Date: Mon, 17 Dec 2012 17:21:57 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91194E28F@sacexcmbx05-prd.hq.netapp.com>
+References: <20121217171852.26922.37774.stgit@localhost.localdomain>
+In-Reply-To: <20121217171852.26922.37774.stgit@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <9970DD716517EB4B955A35BCB2789F25@tahoe.netapp.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 04:45 PM, Sebastian Andrzej Siewior wrote:
-> On Thu, Dec 13, 2012 at 03:11:19PM +0100, Armando Visconti wrote:
->> In the IN case, since the USB request is allocated only when
->> the source/sink function is started and never freed, the USB ept
->> buffer needs to be inited only at the beginning. This change
->                       ^^^^^^
->> results into a more performant g_zero module, especially when
->> 'pattern=1' is selected.
->
-> Besides that the patch looks fine :)
+On Mon, 2012-12-17 at 20:18 +-0300, Stanislav Kinsbursky wrote:
++AD4- There are SUNRPC clients, which program doesn't have pipe+AF8-dir+AF8-name. These
++AD4- clients can be skipped on PipeFS events, because nothing have to be created or
++AD4- destroyed. But instead of breaking in case of such a client was found, search
++AD4- for suitable client over clients list have to be continued. Otherwise some
++AD4- clients could not be covered by PipeFS event handler.
++AD4- 
++AD4- Signed-off-by: Stanislav Kinsbursky +ADw-skinsbursky+AEA-parallels.com+AD4-
++AD4- Cc: stable+AEA-vger.kernel.org +AFsAPgA9- v3.4+AF0-
++AD4- ---
++AD4-  net/sunrpc/clnt.c +AHw-    2 +--
++AD4-  1 files changed, 1 insertions(+-), 1 deletions(-)
++AD4- 
++AD4- diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
++AD4- index cdc7564..10b18b2 100644
++AD4- --- a/net/sunrpc/clnt.c
++AD4- +-+-+- b/net/sunrpc/clnt.c
++AD4- +AEAAQA- -234,7 +-234,7 +AEAAQA- static struct rpc+AF8-clnt +ACo-rpc+AF8-get+AF8-client+AF8-for+AF8-event(struct net +ACo-net, int event)
++AD4-  	spin+AF8-lock(+ACY-sn-+AD4-rpc+AF8-client+AF8-lock)+ADs-
++AD4-  	list+AF8-for+AF8-each+AF8-entry(clnt, +ACY-sn-+AD4-all+AF8-clients, cl+AF8-clients) +AHs-
++AD4-  		if (clnt-+AD4-cl+AF8-program-+AD4-pipe+AF8-dir+AF8-name +AD0APQ- NULL)
++AD4- -			break+ADs-
++AD4- +-			continue+ADs-
++AD4-  		if (rpc+AF8-clnt+AF8-skip+AF8-event(clnt, event))
++AD4-  			continue+ADs-
++AD4-  		if (atomic+AF8-inc+AF8-not+AF8-zero(+ACY-clnt-+AD4-cl+AF8-count) +AD0APQ- 0)
++AD4- 
 
-Do you mean that 'inited' should be changed with 'initialized'?
-Oh ... my poor english... :(
+Thanks Stanislav+ACE- Applied.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Rgds,
-Arm
-
+NetApp
+Trond.Myklebust+AEA-netapp.com
+www.netapp.com
