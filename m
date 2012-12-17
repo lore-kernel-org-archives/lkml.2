@@ -1,213 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2LQPwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:52:00 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49208 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab2LQPv7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:51:59 -0500
-Date: Mon, 17 Dec 2012 15:51:53 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "jbe@pengutronix.de" <jbe@pengutronix.de>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "highguy@gmail.com" <highguy@gmail.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "daniel-gl@gmx.net" <daniel-gl@gmx.net>,
-        "rmallon@gmail.com" <rmallon@gmail.com>, "sr@denx.de" <sr@denx.de>,
-        "wg@grandegger.com" <wg@grandegger.com>
-Subject: Re: [PATCH RESEND 5/6 v10] gpio: Add device tree support to block
- GPIO API
-Message-ID: <20121217155153.GD16561@e106331-lin.cambridge.arm.com>
-References: <1355495185-24220-1-git-send-email-stigge@antcom.de>
- <1355495185-24220-6-git-send-email-stigge@antcom.de>
+	id S1752974Ab2LQPyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:54:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34582 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab2LQPyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:54:18 -0500
+Date: Mon, 17 Dec 2012 16:54:16 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
+Message-ID: <20121217155416.GC25432@dhcp22.suse.cz>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+ <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
+ <50C8FCE0.1060408@redhat.com>
+ <20121212222844.GA10257@cmpxchg.org>
+ <20121213145514.GD21644@dhcp22.suse.cz>
+ <50CD2232.8020909@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1355495185-24220-6-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 17 Dec 2012 15:51:54.0828 (UTC) FILETIME=[7010E0C0:01CDDC6E]
-X-MC-Unique: 112121715515607301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <50CD2232.8020909@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I have a few comments on the parsing code.
-
-On Fri, Dec 14, 2012 at 02:26:24PM +0000, Roland Stigge wrote:
-> This patch adds device tree support to the block GPIO API.
+On Sun 16-12-12 09:21:54, Simon Jeons wrote:
+> On 12/13/2012 10:55 PM, Michal Hocko wrote:
+> >On Wed 12-12-12 17:28:44, Johannes Weiner wrote:
+> >>On Wed, Dec 12, 2012 at 04:53:36PM -0500, Rik van Riel wrote:
+> >>>On 12/12/2012 04:43 PM, Johannes Weiner wrote:
+> >>>>dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
+> >>>>a point of not going for anonymous memory while there is still enough
+> >>>>inactive cache around.
+> >>>>
+> >>>>The check was added only for global reclaim, but it is just as useful
+> >>>>for memory cgroup reclaim.
+> >>>>
+> >>>>Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> >>>>---
+> >>>>  mm/vmscan.c | 19 ++++++++++---------
+> >>>>  1 file changed, 10 insertions(+), 9 deletions(-)
+> >>>>
+> >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >>>>index 157bb11..3874dcb 100644
+> >>>>--- a/mm/vmscan.c
+> >>>>+++ b/mm/vmscan.c
+> >>>>@@ -1671,6 +1671,16 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+> >>>>  		denominator = 1;
+> >>>>  		goto out;
+> >>>>  	}
+> >>>>+	/*
+> >>>>+	 * There is enough inactive page cache, do not reclaim
+> >>>>+	 * anything from the anonymous working set right now.
+> >>>>+	 */
+> >>>>+	if (!inactive_file_is_low(lruvec)) {
+> >>>>+		fraction[0] = 0;
+> >>>>+		fraction[1] = 1;
+> >>>>+		denominator = 1;
+> >>>>+		goto out;
+> >>>>+	}
+> >>>>
+> >>>>  	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
+> >>>>  		get_lru_size(lruvec, LRU_INACTIVE_ANON);
+> >>>>@@ -1688,15 +1698,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+> >>>>  			fraction[1] = 0;
+> >>>>  			denominator = 1;
+> >>>>  			goto out;
+> >>>>-		} else if (!inactive_file_is_low_global(zone)) {
+> >>>>-			/*
+> >>>>-			 * There is enough inactive page cache, do not
+> >>>>-			 * reclaim anything from the working set right now.
+> >>>>-			 */
+> >>>>-			fraction[0] = 0;
+> >>>>-			fraction[1] = 1;
+> >>>>-			denominator = 1;
+> >>>>-			goto out;
+> >>>>  		}
+> >>>>  	}
+> >>>>
+> >>>>
+> >>>I believe the if() block should be moved to AFTER
+> >>>the check where we make sure we actually have enough
+> >>>file pages.
+> >>You are absolutely right, this makes more sense.  Although I'd figure
+> >>the impact would be small because if there actually is that little
+> >>file cache, it won't be there for long with force-file scanning... :-)
+> >Yes, I think that the result would be worse (more swapping) so the
+> >change can only help.
+> >
+> >>I moved the condition, but it throws conflicts in the rest of the
+> >>series.  Will re-run tests, wait for Michal and Mel, then resend.
+> >Yes the patch makes sense for memcg as well. I guess you have tested
+> >this primarily with memcg. Do you have any numbers? Would be nice to put
+> >them into the changelog if you have (it should help to reduce swapping
+> >with heavy streaming IO load).
+> >
+> >Acked-by: Michal Hocko <mhocko@suse.cz>
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Hi Michal,
 > 
-> ---
->  Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +++++++
->  drivers/gpio/Makefile                                 |    1 
->  drivers/gpio/gpioblock-of.c                           |   84 ++++++++++++++++++
->  3 files changed, 121 insertions(+)
-> 
-> --- /dev/null
-> +++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio-block.txt
-> @@ -0,0 +1,36 @@
-> +Block GPIO definition
-> +=====================
-> +
-> +This binding specifies arbitrary blocks of gpios, combining gpios from one or
-> +more GPIO controllers together, to form a word for r/w access.
-> +
-> +Required property:
-> +- compatible: must be "linux,gpio-block"
-> +
-> +Required subnodes:
-> +- the name will be the registered name of the block
-> +- property "gpios" is a list of gpios for the respective block
-> +
-> +Example:
-> +
-> +        blockgpio {
-> +                compatible = "linux,gpio-block";
-> +
-> +                block0 {
-> +                        gpios = <&gpio 3 0 0>,
-> +                                <&gpio 3 1 0>;
-> +                };
-> +                block1 {
-> +                        gpios = <&gpio 4 1 0>,
-> +                                <&gpio 4 3 0>,
-> +                                <&gpio 4 2 0>,
-> +                                <&gpio 4 4 0>,
-> +                                <&gpio 4 5 0>,
-> +                                <&gpio 4 6 0>,
-> +                                <&gpio 4 7 0>,
-> +                                <&gpio 4 8 0>,
-> +                                <&gpio 4 9 0>,
-> +                                <&gpio 4 10 0>,
-> +                                <&gpio 4 19 0>;
-> +                };
-> +        };
-> --- linux-2.6.orig/drivers/gpio/Makefile
-> +++ linux-2.6/drivers/gpio/Makefile
-> @@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
->  
->  obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
->  obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-> +obj-$(CONFIG_OF_GPIO)		+= gpioblock-of.o
->  
->  # Device drivers. Generally keep list sorted alphabetically
->  obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
-> --- /dev/null
-> +++ linux-2.6/drivers/gpio/gpioblock-of.c
-> @@ -0,0 +1,84 @@
-> +/*
-> + * OF implementation for Block GPIO
-> + *
-> + * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +
-> +static int __devinit gpioblock_of_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *block;
-> +	unsigned *gpios;
-> +	int ngpio;
-> +	int ret;
-> +	struct gpio_block *gb;
-> +
-> +	for_each_available_child_of_node(pdev->dev.of_node, block) {
-> +		int i;
-> +
-> +		ngpio = of_gpio_count(block);
-> +		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
+> I still can't understand why "The goto out means that it should be
+> fine either way.",
 
-What if the block node is malformed? ngpio might be -ENOENT or -EINVAL.
+Not sure I understand your question. goto out just says that either page
+cache is low or inactive file LRU is too small. And it works for both
+memcg and global because the page cache is low condition is evaluated
+only for the global reclaim and always before inactive file is small.
+Makes more sense?
 
-> +		if (!gpios)
-> +			return -ENOMEM;
-> +		for (i = 0; i < ngpio; i++) {
-> +			ret = of_get_gpio(block, i);
-> +			if (ret < 0)
-> +				return ret; /* expect -EPROBE_DEFER */
-> +			gpios[i] = ret;
-> +		}
-> +		gb = gpio_block_create(gpios, ngpio, block->name);
-> +		if (IS_ERR(gb)) {
-> +			dev_err(&pdev->dev,
-> +				"Error creating GPIO block from device tree\n");
-> +			return PTR_ERR(gb);
+> could you explain to me, sorry for my stupid. :-)
 
-Won't this leak the memory for the gpios object we kzalloc'd earlier?
-
-> +		}
-> +		ret = gpio_block_register(gb);
-> +		if (ret < 0) {
-> +			gpio_block_free(gb);
-> +			return ret;
-
-Same here.
-
-> +		}
-> +		kfree(gpios);
-> +		dev_info(&pdev->dev, "Registered gpio block %s: %d gpios\n",
-> +			 block->name, ngpio);
-
-Any of the returns in this block will leave the block node's refcount
-incremented.
-
-> +	}
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_OF
-> +static struct of_device_id gpioblock_of_match[] __devinitdata = {
-> +	{ .compatible = "linux,gpio-block", },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, gpioblock_of_match);
-> +#endif
-> +
-> +static struct platform_driver gpioblock_of_driver = {
-> +	.driver	= {
-> +		.name = "gpio-block",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(gpioblock_of_match),
-> +
-> +	},
-> +	.probe	= gpioblock_of_probe,
-> +};
-> +
-> +module_platform_driver(gpioblock_of_driver);
-> +
-> +MODULE_DESCRIPTION("GPIO Block driver");
-> +MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:gpioblock-of");
-> 
-
-Thanks,
-Mark.
-
+-- 
+Michal Hocko
+SUSE Labs
