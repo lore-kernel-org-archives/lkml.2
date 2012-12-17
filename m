@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab2LQO5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 09:57:55 -0500
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:60568 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab2LQO5x (ORCPT
+	id S1752986Ab2LQO6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 09:58:37 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:54150
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab2LQO6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 09:57:53 -0500
-X-manitu-Original-Sender-IP: 93.104.18.146
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <50CF32E3.90305@grandegger.com>
-Date: Mon, 17 Dec 2012 15:57:39 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 17 Dec 2012 09:58:36 -0500
+Date: Mon, 17 Dec 2012 15:58:30 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <357884620.20121217155830@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.8.0-rc0 on xen-unstable: RCU Stall during boot as dom0 kernel after IOAPIC
+In-Reply-To: <20121216173824.GA4518@phenom.dumpdata.com>
+References: <1995613404.20121214165557@eikelenboom.it> <20121216173824.GA4518@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Roland Stigge <stigge@antcom.de>, rmallon@gmail.com,
-        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        broonie@opensource.wolfsonmicro.com, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        daniel-gl@gmx.net, sr@denx.de, plagnioj@jcrosoft.com,
-        linux-arm-kernel@lists.infradead.org, highguy@gmail.com
-Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
-References: <1355495185-24220-1-git-send-email-stigge@antcom.de> <50CB68AB.5070806@grandegger.com> <50CBBB25.20002@antcom.de> <50CF03FB.2030100@grandegger.com> <50CF0744.7040404@grandegger.com> <20121217121026.GR14363@n2100.arm.linux.org.uk>
-In-Reply-To: <20121217121026.GR14363@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 01:10 PM, Russell King - ARM Linux wrote:
-> On Mon, Dec 17, 2012 at 12:51:32PM +0100, Wolfgang Grandegger wrote:
->> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
->> +{
->> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
->> +	void __iomem *pio = at91_gpio->regbase;
->> +	u32 set_bits = val & mask;
->> +	u32 clr_bits = ~val & mask;
->> +
->> +	/* GPIO outputs can only be set at once or cleared at once */
->> +	if (set_bits)
->> +		__raw_writel(set_bits, pio + PIO_SODR);
->> +	if (clr_bits)
->> +		__raw_writel(clr_bits, pio + PIO_CODR);
->> +}
-> 
-> You obviously didn't see my email...
 
-Well, I did read you mail but it was not obvious to me how to maintain
-compatibility with the existing "set" method... at a first glance.
-But the synchronous data output is important and it's even simpler than
-I thought. The block-set callback can directly write to ODSR because
-"at91_set_gpio_output()" already has set OWER. Will give that a try
-later today.
+Sunday, December 16, 2012, 6:38:24 PM, you wrote:
 
-Wolfgang.
+> On Fri, Dec 14, 2012 at 04:55:57PM +0100, Sander Eikelenboom wrote:
+>> Hi Konrad,
+>> 
+>> I just tried to boot a 3.8.0-rc0 kernel (last commit: 7313264b899bbf3988841296265a6e0e8a7b6521) as dom0 on my machine with current xen-unstable.
+
+> Yeah, saw it over the Dec 11->Dec 12 merges and was out on
+> vacation during that time (just got back).
+
+> Did you by any chance try to do a git bisect to narrow down
+> which merge it was?
+
+Hi Konrad,
+
+I tried to bisect, but did not succeed so far. But somehow i have the feeling it is at least partly .config related.
+After make a new clone, and by hand trying to bisecting down, i came back to v3.7, but that also didn't boot.
+So i will see if i can do it the other way around :S
+
+--
+Sander
+
+> Thanks!
+>> The boot stalls:
+>> 
+>> [    0.000000] ACPI: PM-Timer IO Port: 0x808
+>> [    0.000000] ACPI: Local APIC address 0xfee00000
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x01] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x03] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
+>> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
+>> [    0.000000] ACPI: IOAPIC (id[0x06] address[0xfec00000] gsi_base[0])
+>> [    0.000000] IOAPIC[0]: apic_id 6, version 33, address 0xfec00000, GSI 0-23
+>> [    0.000000] ACPI: IOAPIC (id[0x07] address[0xfec20000] gsi_base[24])
+>> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
+>> [   64.598628] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>> [   64.598676]  0: (1 GPs behind) idle=aed/140000000000000/0 drain=5 . timer not pending
+>> [   64.598683]  (detected by 1, t=18004 jiffies, g=18446744073709551414, c=18446744073709551413, q=162)
+>> [   64.598692] sending NMI to all CPUs:
+>> [   64.598716] xen: vector 0x2 is not implemented
+>> 
+>> 
+>> Perhaps an interesting line is the incomplete (no end of range, and it stalls there some time before the kernel reports the stall itself:
+>> [    0.000000] IOAPIC[1]: apic_id 7, version 33, address 0xfec20000, GSI 24-
+>> 
+>> 
+>> The exact seem config with 3.7.0 as kernel works fine.
+>> Complete serial log is attached.
+>> 
+>> --
+>> 
+>> Sander
+>> 
+>> 
+
+
+
 
