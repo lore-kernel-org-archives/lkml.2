@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab2LQXaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 18:30:22 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36443 "EHLO hydra.sisk.pl"
+	id S1753927Ab2LQXac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 18:30:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:17920 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab2LQXaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 18:30:20 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jan-Matthias Braun <jan_braun@gmx.net>
-Subject: Re: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late suspend/early resume
-Date: Tue, 18 Dec 2012 00:35:31 +0100
-Message-ID: <1689510.lSH9oXFSB8@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <CAPDyKFpXAokEr-ktU9=R+SWnfJvhRNhYPbmz-pw8-YpJiuNSSA@mail.gmail.com>
-References: <3558004.3QJ46yYCyI@vostro.rjw.lan> <Pine.LNX.4.44L0.1212161028330.13850-100000@netrider.rowland.org> <CAPDyKFpXAokEr-ktU9=R+SWnfJvhRNhYPbmz-pw8-YpJiuNSSA@mail.gmail.com>
+	id S1753750Ab2LQXaa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 18:30:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,305,1355126400"; 
+   d="scan'208";a="258582333"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
+Thread-Topic: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
+Thread-Index: AQHN27U5Cxm9cfLkVkqEiPpUYGHzQJgcPMCAgAA+0YCAAB9DAP//gCswgACSdoCAAPdAkA==
+Date: Mon, 17 Dec 2012 23:30:28 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220470F8584@ORSMSX105.amr.corp.intel.com>
+References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
+	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
+	<50CE4097.2020104@zytor.com>
+	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
+	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
+ <CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 17, 2012 10:18:14 PM Ulf Hansson wrote:
-> On 16 December 2012 16:29, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Sun, 16 Dec 2012, Rafael J. Wysocki wrote:
+
+
+> -----Original Message-----
+> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+> Yinghai Lu
+> Sent: Sunday, December 16, 2012 4:42 PM
+> To: Yu, Fenghua
+> Cc: H. Peter Anvin; Ingo Molnar; Thomas Gleixner; Mallick, Asit K;
+> Tigran Aivazian; Andreas Herrmann; Borislav Petkov; linux-kernel; x86
+> Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-
+> bit
+> 
+> On Sun, Dec 16, 2012 at 3:59 PM, Yu, Fenghua <fenghua.yu@intel.com>
+> wrote:
 > >
-> >> On Saturday, December 15, 2012 10:16:29 PM Jiri Kosina wrote:
-> >> > On Sat, 15 Dec 2012, Rafael J. Wysocki wrote:
-> >> >
-> >> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> > >
-> >> > > Currently, the PM core disables runtime PM for all devices right
-> >> > > after executing subsystem/driver .suspend() callbacks for them
-> >> > > and re-enables it right before executing subsystem/driver .resume()
-> >> > > callbacks for them.  This may lead to problems when there are
-> >> > > two devices such that the .suspend() callback executed for one of
-> >> > > them depends on runtime PM working for the other.  In that case,
-> >> > > if runtime PM has already been disabled for the second device,
-> >> > > the first one's .suspend() won't work correctly (and analogously
-> >> > > for resume).
-> >> > >
-> >> > > To make those issues go away, make the PM core disable runtime PM
-> >> > > for devices right before executing subsystem/driver .suspend_late()
-> >> > > callbacks for them and enable runtime PM for them right after
-> >> > > executing subsystem/driver .resume_early() callbacks for them.  This
-> >> > > way the potential conflitcs between .suspend_late()/.resume_early()
-> >> > > and their runtime PM counterparts are still prevented from happening,
-> >> > > but the subtle ordering issues related to disabling/enabling runtime
-> >> > > PM for devices during system suspend/resume are much easier to avoid.
-> >> > >
-> >> > > Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
-> >> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >
-> >> > Hi Rafael,
-> >> >
-> >> > just curious what is the reason for resend? Do you want to gather more
-> >> > Acks before pushing this upstream?
+> >> it has to be rebased after #PF handler version. otherwise it can not
+> >> handle for framdisk
+> >> that is loaded after 1G.
 > >>
-> >> Well, I thought that some people might actually look at it when they found it
-> >> again in their mailboxes. :-)
+> >> Fenghua,
+> >>
+> >> can you post your boot log with 64bit with your patch?
+> >>
+> >> Yinghai
 > >
-> > I did look at it the first time it appeared.  It seemed to be okay, but
-> > I haven't tried any testing.
+> > Attached is dmesg with the patches.
 > >
-> > Alan Stern
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> I believe this should work fine for ux500 platforms, so:
+> yes, your laptop only have 1G ram, and
 > 
-> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+> [    0.000000] e820: BIOS-provided physical RAM map:
+> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009d7ff]
+> usable
+> [    0.000000] BIOS-e820: [mem 0x000000000009d800-0x000000000009ffff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000000d2000-0x00000000000d3fff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000fffff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000003e6affff]
+> usable
+> [    0.000000] BIOS-e820: [mem 0x000000003e6b0000-0x000000003e6ccfff]
+> ACPI data
+> [    0.000000] BIOS-e820: [mem 0x000000003e6cd000-0x000000003e6fffff]
+> ACPI NVS
+> [    0.000000] BIOS-e820: [mem 0x000000003e700000-0x000000003effffff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000f0000000-0x00000000f3ffffff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed003ff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fed14000-0x00000000fed19fff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fed1c000-0x00000000fed8ffff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff]
+> reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff]
+> reserved
+> 
+> ramdisk is at
+>      RAMDISK: [mem 0x27608000-0x2fafbfff]
+> 
+> and current kernel default set 1G to kernel mapping. so it happens to
+> work with your patchset.
+> 
+> please find one sytem with 4G or more to test it.
+> 
+> and you may need to rebase your patches on top of my for-x86-boot
+> branch with working
+> #PF handler set page table patch.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> for-x86-boot
+> 
+> Thanks
+> 
+> Yinghai
 
-Thanks!
+OSV may need the patchset based on old kernel. So I'll have the patchset ready. Is this the right place to call load_ucode_bsp() in the upstream kernel?
 
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index a512f56..e94b90e 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -93,6 +88,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
+        }
+        load_idt((const struct desc_ptr *)&idt_descr);
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
++       /*
++        * Load microcode early on BSP.
++        */
++       load_ucode_bsp(__va(real_mode_data));
++
+        if (console_loglevel == 10)
+                early_printk("Kernel alive\n");
+
