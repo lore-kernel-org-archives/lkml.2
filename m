@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab2LQLXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 06:23:30 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43403 "EHLO
+	id S1752504Ab2LQLXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 06:23:36 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:43443 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab2LQLX3 (ORCPT
+	with ESMTP id S1752418Ab2LQLXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 06:23:29 -0500
+	Mon, 17 Dec 2012 06:23:34 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <broonie@opensource.wolfsonmicro.com>, <voice.shen@atmel.com>
 CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
@@ -14,52 +14,87 @@ CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 0/3] at91/ssc: fixes on ASoC tree for 3.8
-Date: Mon, 17 Dec 2012 12:23:23 +0100
-Message-ID: <cover.1355742707.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 1/3] ARM: at91/dts: fix typo in SSC status property
+Date: Mon, 17 Dec 2012 12:23:24 +0100
+Message-ID: <10c033465336fc6cc82b6006153b0c456021589e.1355742707.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <cover.1355742707.git.nicolas.ferre@atmel.com>
+References: <cover.1355742707.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Bo Shen <voice.shen@atmel.com>
 
-This series goes on top of current Linus' git tree and fixes an error that
-we have while compiling DTBs for AT91:
-ERROR (phandle_references): Reference to non-existent node or label
-"pinctrl_ssc0_tx"
+Change the value of status to "disabled" to conform with
+property requirement.
 
-ERROR: Input tree has errors, aborting (use -f to force output)
-make[3]: *** [arch/arm/boot/dts/at91sam9g20ek.dtb] Error 2
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+[nicolas.ferre@atmel.com: commit subject line and typos]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/boot/dts/at91sam9263.dtsi | 4 ++--
+ arch/arm/boot/dts/at91sam9g45.dtsi | 4 ++--
+ arch/arm/boot/dts/at91sam9x5.dtsi  | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-I have included pending material that is dealing with SSC and pinctrl. The
-pinctrl part can be merged more easily now that the big pinctrl update for AT91
-has been merged upstream.
-I have also included a typo patch that you have already taken as 315656b (ASoC:
-atmel-ssc: change disable to disable in dts node) in your topic/atmel branch
-but that was not described properly.
-
-If you find it easier, I can provide you a git tree for this material: just
-tell me...
-
-Thanks for your help, best regards,
-
-
-Bo Shen (3):
-  ARM: at91/dts: fix typo in SSC status property
-  ARM: at91/dts: add pinctrl support for SSC peripheral
-  ASoC: atmel-ssc: add pinctrl selection to driver
-
- arch/arm/boot/dts/at91sam9260.dtsi | 18 +++++++++++++++++
- arch/arm/boot/dts/at91sam9263.dtsi | 40 ++++++++++++++++++++++++++++++++++++--
- arch/arm/boot/dts/at91sam9g45.dtsi | 40 ++++++++++++++++++++++++++++++++++++--
- arch/arm/boot/dts/at91sam9n12.dtsi | 26 +++++++++++++++++++++++++
- arch/arm/boot/dts/at91sam9x5.dtsi  | 32 +++++++++++++++++++++++-------
- drivers/misc/atmel-ssc.c           |  8 ++++++++
- 6 files changed, 153 insertions(+), 11 deletions(-)
-
+diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+index 8e6251f..32ec62c 100644
+--- a/arch/arm/boot/dts/at91sam9263.dtsi
++++ b/arch/arm/boot/dts/at91sam9263.dtsi
+@@ -368,14 +368,14 @@
+ 				compatible = "atmel,at91rm9200-ssc";
+ 				reg = <0xfff98000 0x4000>;
+ 				interrupts = <16 4 5>;
+-				status = "disable";
++				status = "disabled";
+ 			};
+ 
+ 			ssc1: ssc@fff9c000 {
+ 				compatible = "atmel,at91rm9200-ssc";
+ 				reg = <0xfff9c000 0x4000>;
+ 				interrupts = <17 4 5>;
+-				status = "disable";
++				status = "disabled";
+ 			};
+ 
+ 			macb0: ethernet@fffbc000 {
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index fa1ae0c..231858f 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -425,14 +425,14 @@
+ 				compatible = "atmel,at91sam9g45-ssc";
+ 				reg = <0xfff9c000 0x4000>;
+ 				interrupts = <16 4 5>;
+-				status = "disable";
++				status = "disabled";
+ 			};
+ 
+ 			ssc1: ssc@fffa0000 {
+ 				compatible = "atmel,at91sam9g45-ssc";
+ 				reg = <0xfffa0000 0x4000>;
+ 				interrupts = <17 4 5>;
+-				status = "disable";
++				status = "disabled";
+ 			};
+ 
+ 			adc0: adc@fffb0000 {
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index 617ede5..40ac3a4 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -92,7 +92,7 @@
+ 				compatible = "atmel,at91sam9g45-ssc";
+ 				reg = <0xf0010000 0x4000>;
+ 				interrupts = <28 4 5>;
+-				status = "disable";
++				status = "disabled";
+ 			};
+ 
+ 			tcb0: timer@f8008000 {
 -- 
 1.8.0
 
