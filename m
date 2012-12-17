@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab2LQVSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:18:17 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52476 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2LQVSP (ORCPT
+	id S1753632Ab2LQVS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:18:26 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61047 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LQVSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:18:15 -0500
+	Mon, 17 Dec 2012 16:18:23 -0500
+Date: Mon, 17 Dec 2012 13:18:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>, stern@rowland.harvard.edu,
+        Felipe Balbi <balbi@ti.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
+        sjg@chromium.org, olof@lixom.net, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] arm: tegra: Add new DT property to USB node.
+Message-ID: <20121217211818.GA20835@kroah.com>
+References: <1355468348-8821-1-git-send-email-vbyravarasu@nvidia.com>
+ <1355468348-8821-2-git-send-email-vbyravarasu@nvidia.com>
+ <50CF89AF.3000308@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1212161028330.13850-100000@netrider.rowland.org>
-References: <3558004.3QJ46yYCyI@vostro.rjw.lan>
-	<Pine.LNX.4.44L0.1212161028330.13850-100000@netrider.rowland.org>
-Date: Mon, 17 Dec 2012 22:18:14 +0100
-Message-ID: <CAPDyKFpXAokEr-ktU9=R+SWnfJvhRNhYPbmz-pw8-YpJiuNSSA@mail.gmail.com>
-Subject: Re: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late
- suspend/early resume
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Kosina <jkosina@suse.cz>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jan-Matthias Braun <jan_braun@gmx.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CF89AF.3000308@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 December 2012 16:29, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sun, 16 Dec 2012, Rafael J. Wysocki wrote:
->
->> On Saturday, December 15, 2012 10:16:29 PM Jiri Kosina wrote:
->> > On Sat, 15 Dec 2012, Rafael J. Wysocki wrote:
->> >
->> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> > >
->> > > Currently, the PM core disables runtime PM for all devices right
->> > > after executing subsystem/driver .suspend() callbacks for them
->> > > and re-enables it right before executing subsystem/driver .resume()
->> > > callbacks for them.  This may lead to problems when there are
->> > > two devices such that the .suspend() callback executed for one of
->> > > them depends on runtime PM working for the other.  In that case,
->> > > if runtime PM has already been disabled for the second device,
->> > > the first one's .suspend() won't work correctly (and analogously
->> > > for resume).
->> > >
->> > > To make those issues go away, make the PM core disable runtime PM
->> > > for devices right before executing subsystem/driver .suspend_late()
->> > > callbacks for them and enable runtime PM for them right after
->> > > executing subsystem/driver .resume_early() callbacks for them.  This
->> > > way the potential conflitcs between .suspend_late()/.resume_early()
->> > > and their runtime PM counterparts are still prevented from happening,
->> > > but the subtle ordering issues related to disabling/enabling runtime
->> > > PM for devices during system suspend/resume are much easier to avoid.
->> > >
->> > > Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
->> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> > Hi Rafael,
->> >
->> > just curious what is the reason for resend? Do you want to gather more
->> > Acks before pushing this upstream?
->>
->> Well, I thought that some people might actually look at it when they found it
->> again in their mailboxes. :-)
->
-> I did look at it the first time it appeared.  It seemed to be okay, but
-> I haven't tried any testing.
->
-> Alan Stern
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Mon, Dec 17, 2012 at 02:07:59PM -0700, Stephen Warren wrote:
+> On 12/13/2012 11:59 PM, Venu Byravarasu wrote:
+> > As Tegra USB host driver is using instance number for resetting
+> > PORT0 twice, adding a new DT property for handling this.
+> 
+> Alan, Greg, Felip,e
+> 
+> This series looks fine to me.
+> 
+> I'd like to take all the Tegra-related USB patches through the Tegra
+> tree for 3.9 if possible (so I'm looking for your acks here). I believe
+> Venu plans to significantly clean up the EHCI/PHY driver split for
+> Tegra, rework the drivers, and add support for Tegra30 in addition to
+> Tegra20. Some of this requires changes to some Tegra board files and
+> device trees to maintain "git bisect" I don't know for sure yet, but I
+> believe that rework may also end up conflicting with other clock-related
+> rework that will show up for Tegra in 3.9. Are you OK with this? I'll
+> certainly look for your review/acks on the patches before picking them
+> up though.
 
-I believe this should work fine for ux500 platforms, so:
+You can't pick anything up for 3.9 until after 3.8-rc1 is out, according
+to the rules of linux-next, so please wait until that kernel is out
+before doing anything.  Given the timing of 3.8-rc1, and my current
+vacation schedule, I'm not going to be able to do _any_ code review for
+the rest of the year, sorry.
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+After that, I'll be glad to review this.
 
-Kind regards
-Ulf Hansson
+greg k-h
