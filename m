@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab2LQOHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 09:07:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:30892 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab2LQOHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 09:07:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,300,1355126400"; 
-   d="scan'208";a="232609353"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 1/2] dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
-Date: Mon, 17 Dec 2012 16:07:02 +0200
-Message-Id: <1355753223-3705-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752839Ab2LQOKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 09:10:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22821 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab2LQOKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 09:10:47 -0500
+Date: Mon, 17 Dec 2012 17:08:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sebastian Wankerl <sisewank@cip.cs.fau.de>
+Cc: linux-kernel@i4.informatik.uni-erlangen.de,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sebastian Wankerl 
+	<sisewank@faui49man10.informatik.uni-erlangen.de>,
+        Sebastian Ehrenfels <qi50dube@cip.cs.fau.de>
+Subject: Re: [PATCH 2/3] wlan-ng/prism2mgmt.c: formated too long lines
+Message-ID: <20121217140851.GR5083@mwanda>
+References: <1355751483-7059-1-git-send-email-sisewank@cip.cs.fau.de>
+ <1355751483-7059-2-git-send-email-sisewank@cip.cs.fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355751483-7059-2-git-send-email-sisewank@cip.cs.fau.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will use at least the dwc_chan_resume() later.
+On Mon, Dec 17, 2012 at 02:38:02PM +0100, Sebastian Wankerl wrote:
+> From: Sebastian Wankerl <sisewank@faui49man10.informatik.uni-erlangen.de>
+> 
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |   31 ++++++++++++++++++++++---------
- 1 file changed, 22 insertions(+), 9 deletions(-)
+We allow long lines for string literals actually.  Or you can break
+it up.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 4413f69..687af2a 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1008,6 +1008,26 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- 	return 0;
- }
- 
-+static inline void dwc_chan_pause(struct dw_dma_chan *dwc)
-+{
-+	u32 cfglo = channel_readl(dwc, CFG_LO);
-+
-+	channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
-+	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY))
-+		cpu_relax();
-+
-+	dwc->paused = true;
-+}
-+
-+static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
-+{
-+	u32 cfglo = channel_readl(dwc, CFG_LO);
-+
-+	channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
-+
-+	dwc->paused = false;
-+}
-+
- static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		       unsigned long arg)
- {
-@@ -1015,18 +1035,13 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	struct dw_dma		*dw = to_dw_dma(chan->device);
- 	struct dw_desc		*desc, *_desc;
- 	unsigned long		flags;
--	u32			cfglo;
- 	LIST_HEAD(list);
- 
- 	if (cmd == DMA_PAUSE) {
- 		spin_lock_irqsave(&dwc->lock, flags);
- 
--		cfglo = channel_readl(dwc, CFG_LO);
--		channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
--		while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY))
--			cpu_relax();
-+		dwc_chan_pause(dwc);
- 
--		dwc->paused = true;
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 	} else if (cmd == DMA_RESUME) {
- 		if (!dwc->paused)
-@@ -1034,9 +1049,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 
- 		spin_lock_irqsave(&dwc->lock, flags);
- 
--		cfglo = channel_readl(dwc, CFG_LO);
--		channel_writel(dwc, CFG_LO, cfglo & ~DWC_CFGL_CH_SUSP);
--		dwc->paused = false;
-+		dwc_chan_resume(dwc);
- 
- 		spin_unlock_irqrestore(&dwc->lock, flags);
- 	} else if (cmd == DMA_TERMINATE_ALL) {
--- 
-1.7.10.4
+> Signed-off-by: Sebastian Wankerl <sisewank@cip.cs.fau.de> 
+> Signed-off-by: Sebastian Ehrenfels <qi50dube@cip.cs.fau.de>
+> 
+> ---
+>  drivers/staging/wlan-ng/prism2mgmt.c |   20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/prism2mgmt.c b/drivers/staging/wlan-ng/prism2mgmt.c
+> index 62b94b0..4b3db73 100644
+> --- a/drivers/staging/wlan-ng/prism2mgmt.c
+> +++ b/drivers/staging/wlan-ng/prism2mgmt.c
+> @@ -1144,9 +1144,9 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
+>  			/* Enable the port */
+>  			result = hfa384x_drvr_enable(hw, 0);
+>  			if (result) {
+> -				pr_debug
+> -				("failed to enable port to presniff setting, result=%d\n",
+> -				     result);
+> +				pr_debug(
+> +					"failed to enable port to presniff setting,"
+                                                                                   ^
+Space needed.
 
+You may as well put the string on the same line as the pr_debug().
+It only costs you one char.
+
+				pr_debug("failed to enable port for sniffing, "
+					 "result = %d", result);
+
+> +					"result=%d\n", result);
+>  				goto failed;
+>  			}
+
+	[ snip ]
+
+>  				/* Disable the port */
+>  				result = hfa384x_drvr_disable(hw, 0);
+>  				if (result) {
+> -					pr_debug
+> -					    ("failed to enable port for sniffing, result=%d\n",
+> -					     result);
+> +					pr_debug(
+> +						"failed to enable port for "
+                                                           ^^^^^^
+Disable.
+
+> +						"sniffing, result=%d\n",
+> +						result);
+>  					goto failed;
+>  				}
+>  			}
+
+regards,
+dan carpenter
