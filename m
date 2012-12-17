@@ -1,50 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab2LQEze (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 23:55:34 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65262 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab2LQEzd (ORCPT
+	id S1750936Ab2LQF1x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 00:27:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63786 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab2LQF1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 23:55:33 -0500
-X-AuditID: 9c930197-b7c5bae000000e31-22-50cea5c3aa62
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/14] perf, diff: multiple perf.data file support
-References: <1355404152-16523-1-git-send-email-jolsa@redhat.com>
-Date: Mon, 17 Dec 2012 13:55:31 +0900
-In-Reply-To: <1355404152-16523-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Thu, 13 Dec 2012 14:08:58 +0100")
-Message-ID: <87sj75l1ks.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 17 Dec 2012 00:27:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1558789.gX8cmBgyDV@vostro.rjw.lan>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan>
+Date: Sun, 16 Dec 2012 21:27:49 -0800
+X-Google-Sender-Auth: GSm3rnp5X0wJgMPgpPh5H8qGPKs
+Message-ID: <CAE9FiQWejZEj35okrHfuw6QQJNKNj2b+67yg+iGKEqYhgsaHCg@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, tony.luck@intel.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Thu, 13 Dec 2012 14:08:58 +0100, Jiri Olsa wrote:
-> hi,
-> adding support to display diff for more than 2 perf.data files.
+On Sun, Dec 16, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> The basic idea is describe in the initial RFC in here:
-> https://lkml.org/lkml/2012/11/28/200
+> The ACPI handles of PCI root bridges need to be known to
+> acpi_bind_one(), so that it can create the appropriate
+> "firmware_node" and "physical_node" files for them, but currently
+> the way it gets to know those handles is not exactly straightforward
+> (to put it lightly).
 >
-> It's rebased on current Arnaldo's perf core with Namhyung's
-> changes.
+> This is how it works, roughly:
+>
+>   1. acpi_bus_scan() finds the handle of a PCI root bridge,
+>      creates a struct acpi_device object for it and passes that
+>      object to acpi_pci_root_add().
+>
+>   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
+>      populates its "device" field with its argument's address
+>      (device->handle is the ACPI handle found in step 1).
+>
+>   3. The struct acpi_pci_root object created in step 2 is passed
+>      to pci_acpi_scan_root() and used to get resources that are
+>      passed to pci_create_root_bus().
+>
+>   4. pci_create_root_bus() creates a struct pci_host_bridge object
+>      and passes its "dev" member to device_register().
+>
+>   5. platform_notify(), which for systems with ACPI is set to
+>      acpi_platform_notify(), is called.
+>
+> So far, so good.  Now it starts to be "interesting".
+>
+>   6. acpi_find_bridge_device() is used to find the ACPI handle of
+>      the given device (which is the PCI root bridge) and executes
+>      acpi_pci_find_root_bridge(), among other things, for the
+>      given device object.
+>
+>   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
+>      device object to extract the segment and bus numbers of the PCI
+>      root bridge and passes them to acpi_get_pci_rootbridge_handle().
+>
+>   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
+>      root bridges and finds the one that matches the given segment
+>      and bus numbers.  Its handle is then used to initialize the
+>      ACPI handle of the PCI root bridge's device object by
+>      acpi_bind_one().  However, this is *exactly* the ACPI handle we
+>      started with in step 1.
+>
+> Needless to say, this is quite embarassing, but it may be avoided
+> thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
+> initialized in advance), which makes it possible to initialize the
+> ACPI handle of a device before passing it to device_register().
+> Namely, if pci_acpi_scan_root() could easily pass the root bridge's
+> ACPI handle to pci_create_root_bus(), the latter could set the ACPI
+> handle in its struct pci_host_bridge object's "dev" member before
+> passing it to device_register() and steps 6-8 above wouldn't be
+> necessary any more.
+>
+> To make that happen I decided to repurpose the 4th argument of
+> pci_create_root_bus(), because that allowed me to avoid defining
+> additional callbacks or similar things and didn't seem to impact
+> architectures without ACPI substantially.
+>
+> Only x86 and ia64 are affected directly, there should be no
+> functional changes resulting from this on other architectures.
 
-For the whole series:
+that is good one to avoid that find_root_bridge...
 
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>
+> Should apply to the current Linus' tree, boots correctly on x86(-64).
 
-Thanks,
-Namhyung
+
+
+>
+> Thanks,
+> Rafael
+>
+> ---
+>  arch/ia64/pci/pci.c              |    5 ++++-
+>  arch/powerpc/kernel/pci-common.c |    3 ++-
+>  arch/sparc/kernel/pci.c          |    3 ++-
+>  arch/x86/pci/acpi.c              |    5 ++++-
+>  drivers/acpi/pci_root.c          |   18 ------------------
+>  drivers/pci/pci-acpi.c           |   19 -------------------
+>  drivers/pci/probe.c              |   16 +++++++++++-----
+>  include/acpi/acpi_bus.h          |    1 -
+>  include/linux/pci.h              |    9 ++++++++-
+>  9 files changed, 31 insertions(+), 48 deletions(-)
+
+you need to update other arch for pci_create_root_bus
+
+arch/powerpc/kernel/pci-common.c:       bus =
+pci_create_root_bus(hose->parent, hose->first_busno,
+arch/s390/pci/pci.c:    zdev->bus = pci_create_root_bus(NULL,
+ZPCI_BUS_NR, &pci_root_ops,
+arch/sparc/kernel/pci.c:        bus = pci_create_root_bus(parent,
+pbm->pci_first_busno, pbm->pci_ops,
+drivers/parisc/dino.c:  dino_dev->hba.hba_bus = bus =
+pci_create_root_bus(&dev->dev,
+drivers/parisc/lba_pci.c:               pci_create_root_bus(&dev->dev,
+lba_dev->hba.bus_num.start,
+
+
+>
+> Index: linux/arch/x86/pci/acpi.c
+> ===================================================================
+> --- linux.orig/arch/x86/pci/acpi.c
+> +++ linux/arch/x86/pci/acpi.c
+> @@ -450,6 +450,7 @@ struct pci_bus * __devinit pci_acpi_scan
+>         LIST_HEAD(resources);
+>         struct pci_bus *bus = NULL;
+>         struct pci_sysdata *sd;
+> +       struct pci_root_sys_info si;
+>         int node;
+>  #ifdef CONFIG_ACPI_NUMA
+>         int pxm;
+> @@ -486,6 +487,8 @@ struct pci_bus * __devinit pci_acpi_scan
+>         sd = &info->sd;
+>         sd->domain = domain;
+>         sd->node = node;
+> +       si.acpi_node.handle = device->handle;
+> +       si.sysdata = sd;
+
+maybe you can try to have si.acpi_handle directly ?
+
+Yinghai
