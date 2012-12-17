@@ -1,318 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab2LQPCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:02:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18173 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab2LQPCq (ORCPT
+	id S1753563Ab2LQPFD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:05:03 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33507 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347Ab2LQPCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:02:46 -0500
+	Mon, 17 Dec 2012 10:02:48 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
-To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, rds-devel@oss.oracle.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 13/15] net,rds: use new hashtable implementation
-Date: Mon, 17 Dec 2012 10:01:33 -0500
-Message-Id: <1355756497-15834-13-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH 12/15] lockd: use new hashtable implementation
+Date: Mon, 17 Dec 2012 10:01:32 -0500
+Message-Id: <1355756497-15834-12-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
 References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch rds to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in rds.
+Switch lockd to use the new hashtable implementation. This reduces the amount
+of generic unrelated code in lockd.
 
 This patch depends on d9b482c ("hashtable: introduce a small and naive
 hashtable") which was merged in v3.6.
 
+Tested-by: J. Bruce Fields <bfields@fieldses.org>
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- net/rds/bind.c       |  20 +++++------
- net/rds/connection.c | 100 ++++++++++++++++++++++-----------------------------
- 2 files changed, 53 insertions(+), 67 deletions(-)
+ fs/lockd/svcsubs.c | 58 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 28 insertions(+), 30 deletions(-)
 
-diff --git a/net/rds/bind.c b/net/rds/bind.c
-index 637bde5..a99e524 100644
---- a/net/rds/bind.c
-+++ b/net/rds/bind.c
-@@ -36,16 +36,16 @@
- #include <linux/if_arp.h>
- #include <linux/jhash.h>
- #include <linux/ratelimit.h>
+diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
+index 0deb5f6..26c90c8 100644
+--- a/fs/lockd/svcsubs.c
++++ b/fs/lockd/svcsubs.c
+@@ -20,6 +20,7 @@
+ #include <linux/lockd/share.h>
+ #include <linux/module.h>
+ #include <linux/mount.h>
 +#include <linux/hashtable.h>
- #include "rds.h"
  
--#define BIND_HASH_SIZE 1024
--static struct hlist_head bind_hash_table[BIND_HASH_SIZE];
-+#define BIND_HASH_BITS 10
-+static DEFINE_HASHTABLE(bind_hash_table, BIND_HASH_BITS);
- static DEFINE_SPINLOCK(rds_bind_lock);
+ #define NLMDBG_FACILITY		NLMDBG_SVCSUBS
  
--static struct hlist_head *hash_to_bucket(__be32 addr, __be16 port)
-+static u32 rds_hash(__be32 addr, __be16 port)
- {
--	return bind_hash_table + (jhash_2words((u32)addr, (u32)port, 0) &
--				  (BIND_HASH_SIZE - 1));
-+	return jhash_2words((u32)addr, (u32)port, 0);
+@@ -28,8 +29,7 @@
+  * Global file hash table
+  */
+ #define FILE_HASH_BITS		7
+-#define FILE_NRHASH		(1<<FILE_HASH_BITS)
+-static struct hlist_head	nlm_files[FILE_NRHASH];
++static DEFINE_HASHTABLE(nlm_files, FILE_HASH_BITS);
+ static DEFINE_MUTEX(nlm_file_mutex);
+ 
+ #ifdef NFSD_DEBUG
+@@ -68,7 +68,7 @@ static inline unsigned int file_hash(struct nfs_fh *f)
+ 	int i;
+ 	for (i=0; i<NFS2_FHSIZE;i++)
+ 		tmp += f->data[i];
+-	return tmp & (FILE_NRHASH - 1);
++	return tmp;
  }
  
- static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
-@@ -53,12 +53,12 @@ static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
+ /*
+@@ -86,17 +86,17 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
  {
- 	struct rds_sock *rs;
- 	struct hlist_node *node;
--	struct hlist_head *head = hash_to_bucket(addr, port);
-+	u32 key = rds_hash(addr, port);
- 	u64 cmp;
- 	u64 needle = ((u64)be32_to_cpu(addr) << 32) | be16_to_cpu(port);
- 
- 	rcu_read_lock();
--	hlist_for_each_entry_rcu(rs, node, head, rs_bound_node) {
-+	hash_for_each_possible_rcu(bind_hash_table, rs, node, rs_bound_node, key) {
- 		cmp = ((u64)be32_to_cpu(rs->rs_bound_addr) << 32) |
- 		      be16_to_cpu(rs->rs_bound_port);
- 
-@@ -74,13 +74,13 @@ static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
- 		 * make sure our addr and port are set before
- 		 * we are added to the list, other people
- 		 * in rcu will find us as soon as the
--		 * hlist_add_head_rcu is done
-+		 * hash_add_rcu is done
- 		 */
- 		insert->rs_bound_addr = addr;
- 		insert->rs_bound_port = port;
- 		rds_sock_addref(insert);
- 
--		hlist_add_head_rcu(&insert->rs_bound_node, head);
-+		hash_add_rcu(bind_hash_table, &insert->rs_bound_node, key);
- 	}
- 	return NULL;
- }
-@@ -152,7 +152,7 @@ void rds_remove_bound(struct rds_sock *rs)
- 		  rs, &rs->rs_bound_addr,
- 		  ntohs(rs->rs_bound_port));
- 
--		hlist_del_init_rcu(&rs->rs_bound_node);
-+		hash_del_rcu(&rs->rs_bound_node);
- 		rds_sock_put(rs);
- 		rs->rs_bound_addr = 0;
- 	}
-diff --git a/net/rds/connection.c b/net/rds/connection.c
-index 9e07c75..a9afcb8 100644
---- a/net/rds/connection.c
-+++ b/net/rds/connection.c
-@@ -34,28 +34,24 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <linux/export.h>
-+#include <linux/hashtable.h>
- #include <net/inet_hashtables.h>
- 
- #include "rds.h"
- #include "loop.h"
- 
- #define RDS_CONNECTION_HASH_BITS 12
--#define RDS_CONNECTION_HASH_ENTRIES (1 << RDS_CONNECTION_HASH_BITS)
--#define RDS_CONNECTION_HASH_MASK (RDS_CONNECTION_HASH_ENTRIES - 1)
- 
- /* converting this to RCU is a chore for another day.. */
- static DEFINE_SPINLOCK(rds_conn_lock);
- static unsigned long rds_conn_count;
--static struct hlist_head rds_conn_hash[RDS_CONNECTION_HASH_ENTRIES];
-+static DEFINE_HASHTABLE(rds_conn_hash, RDS_CONNECTION_HASH_BITS);
- static struct kmem_cache *rds_conn_slab;
- 
--static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
-+static unsigned long rds_conn_hashfn(__be32 laddr, __be32 faddr)
- {
- 	/* Pass NULL, don't need struct net for hash */
--	unsigned long hash = inet_ehashfn(NULL,
--					  be32_to_cpu(laddr), 0,
--					  be32_to_cpu(faddr), 0);
--	return &rds_conn_hash[hash & RDS_CONNECTION_HASH_MASK];
-+	return inet_ehashfn(NULL,  be32_to_cpu(laddr), 0,  be32_to_cpu(faddr), 0);
- }
- 
- #define rds_conn_info_set(var, test, suffix) do {		\
-@@ -64,14 +60,14 @@ static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
- } while (0)
- 
- /* rcu read lock must be held or the connection spinlock */
--static struct rds_connection *rds_conn_lookup(struct hlist_head *head,
--					      __be32 laddr, __be32 faddr,
-+static struct rds_connection *rds_conn_lookup(__be32 laddr, __be32 faddr,
- 					      struct rds_transport *trans)
- {
- 	struct rds_connection *conn, *ret = NULL;
  	struct hlist_node *pos;
-+	unsigned long key = rds_conn_hashfn(laddr, faddr);
+ 	struct nlm_file	*file;
+-	unsigned int	hash;
++	unsigned int	key;
+ 	__be32		nfserr;
  
--	hlist_for_each_entry_rcu(conn, pos, head, c_hash_node) {
-+	hash_for_each_possible_rcu(rds_conn_hash, conn, pos, c_hash_node, key) {
- 		if (conn->c_faddr == faddr && conn->c_laddr == laddr &&
- 				conn->c_trans == trans) {
- 			ret = conn;
-@@ -117,13 +113,12 @@ static struct rds_connection *__rds_conn_create(__be32 laddr, __be32 faddr,
- 				       int is_outgoing)
+ 	nlm_debug_print_fh("nlm_lookup_file", f);
+ 
+-	hash = file_hash(f);
++	key = file_hash(f);
+ 
+ 	/* Lock file table */
+ 	mutex_lock(&nlm_file_mutex);
+ 
+-	hlist_for_each_entry(file, pos, &nlm_files[hash], f_list)
++	hash_for_each_possible(nlm_files, file, pos, f_list, file_hash(f))
+ 		if (!nfs_compare_fh(&file->f_handle, f))
+ 			goto found;
+ 
+@@ -123,7 +123,7 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
+ 		goto out_free;
+ 	}
+ 
+-	hlist_add_head(&file->f_list, &nlm_files[hash]);
++	hash_add(nlm_files, &file->f_list, key);
+ 
+ found:
+ 	dprintk("lockd: found file %p (count %d)\n", file, file->f_count);
+@@ -147,8 +147,8 @@ static inline void
+ nlm_delete_file(struct nlm_file *file)
  {
- 	struct rds_connection *conn, *parent = NULL;
--	struct hlist_head *head = rds_conn_bucket(laddr, faddr);
- 	struct rds_transport *loop_trans;
- 	unsigned long flags;
- 	int ret;
- 
- 	rcu_read_lock();
--	conn = rds_conn_lookup(head, laddr, faddr, trans);
-+	conn = rds_conn_lookup(laddr, faddr, trans);
- 	if (conn && conn->c_loopback && conn->c_trans != &rds_loop_transport &&
- 	    !is_outgoing) {
- 		/* This is a looped back IB connection, and we're
-@@ -224,13 +219,15 @@ static struct rds_connection *__rds_conn_create(__be32 laddr, __be32 faddr,
- 		/* Creating normal conn */
- 		struct rds_connection *found;
- 
--		found = rds_conn_lookup(head, laddr, faddr, trans);
-+		found = rds_conn_lookup(laddr, faddr, trans);
- 		if (found) {
- 			trans->conn_free(conn->c_transport_data);
- 			kmem_cache_free(rds_conn_slab, conn);
- 			conn = found;
- 		} else {
--			hlist_add_head_rcu(&conn->c_hash_node, head);
-+			unsigned long key = rds_conn_hashfn(laddr, faddr);
-+
-+			hash_add_rcu(rds_conn_hash, &conn->c_hash_node, key);
- 			rds_cong_add_conn(conn);
- 			rds_conn_count++;
- 		}
-@@ -303,7 +300,7 @@ void rds_conn_shutdown(struct rds_connection *conn)
- 	 * conn - the reconnect is always triggered by the active peer. */
- 	cancel_delayed_work_sync(&conn->c_conn_w);
- 	rcu_read_lock();
--	if (!hlist_unhashed(&conn->c_hash_node)) {
-+	if (hash_hashed(&conn->c_hash_node)) {
- 		rcu_read_unlock();
- 		rds_queue_reconnect(conn);
+ 	nlm_debug_print_file("closing file", file);
+-	if (!hlist_unhashed(&file->f_list)) {
+-		hlist_del(&file->f_list);
++	if (hash_hashed(&file->f_list)) {
++		hash_del(&file->f_list);
+ 		nlmsvc_ops->fclose(file->f_file);
+ 		kfree(file);
  	} else {
-@@ -329,7 +326,7 @@ void rds_conn_destroy(struct rds_connection *conn)
+@@ -253,27 +253,25 @@ nlm_traverse_files(void *data, nlm_host_match_fn_t match,
+ 	int i, ret = 0;
  
- 	/* Ensure conn will not be scheduled for reconnect */
- 	spin_lock_irq(&rds_conn_lock);
--	hlist_del_init_rcu(&conn->c_hash_node);
-+	hash_del(&conn->c_hash_node);
- 	spin_unlock_irq(&rds_conn_lock);
- 	synchronize_rcu();
- 
-@@ -375,7 +372,6 @@ static void rds_conn_message_info(struct socket *sock, unsigned int len,
- 				  struct rds_info_lengths *lens,
- 				  int want_send)
- {
--	struct hlist_head *head;
- 	struct hlist_node *pos;
- 	struct list_head *list;
- 	struct rds_connection *conn;
-@@ -388,27 +384,24 @@ static void rds_conn_message_info(struct socket *sock, unsigned int len,
- 
- 	rcu_read_lock();
- 
--	for (i = 0, head = rds_conn_hash; i < ARRAY_SIZE(rds_conn_hash);
--	     i++, head++) {
--		hlist_for_each_entry_rcu(conn, pos, head, c_hash_node) {
--			if (want_send)
--				list = &conn->c_send_queue;
--			else
--				list = &conn->c_retrans;
--
--			spin_lock_irqsave(&conn->c_lock, flags);
--
--			/* XXX too lazy to maintain counts.. */
--			list_for_each_entry(rm, list, m_conn_item) {
--				total++;
--				if (total <= len)
--					rds_inc_info_copy(&rm->m_inc, iter,
--							  conn->c_laddr,
--							  conn->c_faddr, 0);
--			}
--
--			spin_unlock_irqrestore(&conn->c_lock, flags);
-+	hash_for_each_rcu(rds_conn_hash, i, pos, conn, c_hash_node) {
-+		if (want_send)
-+			list = &conn->c_send_queue;
-+		else
-+			list = &conn->c_retrans;
-+
-+		spin_lock_irqsave(&conn->c_lock, flags);
-+
-+		/* XXX too lazy to maintain counts.. */
-+		list_for_each_entry(rm, list, m_conn_item) {
-+			total++;
-+			if (total <= len)
-+				rds_inc_info_copy(&rm->m_inc, iter,
-+						  conn->c_laddr,
-+						  conn->c_faddr, 0);
- 		}
-+
-+		spin_unlock_irqrestore(&conn->c_lock, flags);
- 	}
- 	rcu_read_unlock();
- 
-@@ -438,7 +431,6 @@ void rds_for_each_conn_info(struct socket *sock, unsigned int len,
- 			  size_t item_len)
- {
- 	uint64_t buffer[(item_len + 7) / 8];
--	struct hlist_head *head;
- 	struct hlist_node *pos;
- 	struct rds_connection *conn;
- 	size_t i;
-@@ -448,23 +440,19 @@ void rds_for_each_conn_info(struct socket *sock, unsigned int len,
- 	lens->nr = 0;
- 	lens->each = item_len;
- 
--	for (i = 0, head = rds_conn_hash; i < ARRAY_SIZE(rds_conn_hash);
--	     i++, head++) {
--		hlist_for_each_entry_rcu(conn, pos, head, c_hash_node) {
--
--			/* XXX no c_lock usage.. */
--			if (!visitor(conn, buffer))
+ 	mutex_lock(&nlm_file_mutex);
+-	for (i = 0; i < FILE_NRHASH; i++) {
+-		hlist_for_each_entry_safe(file, pos, next, &nlm_files[i], f_list) {
+-			if (is_failover_file && !is_failover_file(data, file))
 -				continue;
+-			file->f_count++;
+-			mutex_unlock(&nlm_file_mutex);
 -
--			/* We copy as much as we can fit in the buffer,
--			 * but we count all items so that the caller
--			 * can resize the buffer. */
--			if (len >= item_len) {
--				rds_info_copy(iter, buffer, item_len);
--				len -= item_len;
+-			/* Traverse locks, blocks and shares of this file
+-			 * and update file->f_locks count */
+-			if (nlm_inspect_file(data, file, match))
+-				ret = 1;
+-
+-			mutex_lock(&nlm_file_mutex);
+-			file->f_count--;
+-			/* No more references to this file. Let go of it. */
+-			if (list_empty(&file->f_blocks) && !file->f_locks
+-			 && !file->f_shares && !file->f_count) {
+-				hlist_del(&file->f_list);
+-				nlmsvc_ops->fclose(file->f_file);
+-				kfree(file);
 -			}
--			lens->nr++;
-+	hash_for_each_rcu(rds_conn_hash, i, pos, conn, c_hash_node) {
-+		/* XXX no c_lock usage.. */
-+		if (!visitor(conn, buffer))
++	hash_for_each_safe(nlm_files, i, pos, next, file, f_list) {
++		if (is_failover_file && !is_failover_file(data, file))
 +			continue;
++		file->f_count++;
++		mutex_unlock(&nlm_file_mutex);
 +
-+		/* We copy as much as we can fit in the buffer,
-+		 * but we count all items so that the caller
-+		 * can resize the buffer. */
-+		if (len >= item_len) {
-+			rds_info_copy(iter, buffer, item_len);
-+			len -= item_len;
++		/* Traverse locks, blocks and shares of this file
++		 * and update file->f_locks count */
++		if (nlm_inspect_file(data, file, match))
++			ret = 1;
++
++		mutex_lock(&nlm_file_mutex);
++		file->f_count--;
++		/* No more references to this file. Let go of it. */
++		if (list_empty(&file->f_blocks) && !file->f_locks
++		 && !file->f_shares && !file->f_count) {
++			hash_del(&file->f_list);
++			nlmsvc_ops->fclose(file->f_file);
++			kfree(file);
  		}
-+		lens->nr++;
  	}
- 	rcu_read_unlock();
- }
-@@ -525,8 +513,6 @@ void rds_conn_exit(void)
- {
- 	rds_loop_exit();
- 
--	WARN_ON(!hlist_empty(rds_conn_hash));
--
- 	kmem_cache_destroy(rds_conn_slab);
- 
- 	rds_info_deregister_func(RDS_INFO_CONNECTIONS, rds_conn_info);
+ 	mutex_unlock(&nlm_file_mutex);
 -- 
 1.8.0
 
