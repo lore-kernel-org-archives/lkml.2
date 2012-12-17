@@ -1,115 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2LQPCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:02:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab2LQPCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:02:40 -0500
-Date: Mon, 17 Dec 2012 10:02:31 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Cc: kexec@lists.infradead.org, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] Add the values related to buddy system for filtering
- free pages.
-Message-ID: <20121217150231.GA7235@redhat.com>
-References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
- <20121210131705.GC26447@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121210131705.GC26447@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753435Ab2LQPCy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:02:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33533 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab2LQPCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:02:51 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: Jesse Gross <jesse@nicira.com>, "David S. Miller" <davem@davemloft.net>,
+        dev@openvswitch.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH 14/15] openvswitch: use new hashtable implementation
+Date: Mon, 17 Dec 2012 10:01:34 -0500
+Message-Id: <1355756497-15834-14-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
+References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CCing Andrew Morton. I think he picks kexec patches.
+Switch openvswitch to use the new hashtable implementation. This reduces the
+amount of generic unrelated code in openvswitch.
 
+This patch depends on d9b482c ("hashtable: introduce a small and naive
+hashtable") which was merged in v3.6.
 
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ net/openvswitch/vport.c | 35 ++++++++++++-----------------------
+ 1 file changed, 12 insertions(+), 23 deletions(-)
 
-On Mon, Dec 10, 2012 at 08:17:05AM -0500, Vivek Goyal wrote:
-> On Mon, Dec 10, 2012 at 10:39:13AM +0900, Atsushi Kumagai wrote:
-> > This patch adds the values related to buddy system to vmcoreinfo data
-> > so that makedumpfile (dump filtering command) can filter out all free
-> > pages with the new logic.
-> > It's faster than the current logic because it can distinguish free page
-> > by analyzing page structure at the same time as filtering for other
-> > unnecessary pages (e.g. anonymous page).
-> > OTOH, the current logic has to trace free_list to distinguish free 
-> > pages while analyzing page structure to filter out other unnecessary
-> > pages.
-> > 
-> > The new logic uses the fact that buddy page is marked by _mapcount == 
-> > PAGE_BUDDY_MAPCOUNT_VALUE. But, _mapcount shares its memory with other
-> > fields for SLAB/SLUB when PG_slab is set, so we need to check if PG_slab
-> > is set or not before looking up _mapcount value.
-> > And we can get the order of buddy system from private field.
-> > To sum it up, the values below are required for this logic.
-> > 
-> > Required values:
-> >   - OFFSET(page._mapcount)
-> >   - OFFSET(page.private)
-> >   - NUMBER(PG_slab)
-> >   - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
-> > 
-> > Changelog from v1 to v2:
-> > 1. remove SIZE(pageflags)
-> >   The new logic was changed after I sent v1 patch.  
-> >   Accordingly, SIZE(pageflags) has been unnecessary for makedumpfile.
-> > 
-> > What's makedumpfile:
-> >   makedumpfile creates a small dumpfile by excluding unnecessary pages
-> >   for the analysis. To distinguish unnecessary pages, makedumpfile gets
-> >   the vmcoreinfo data which has the minimum debugging information only
-> >   for dump filtering.
-> > 
-> > Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-> 
-> Looks good to me.
-> 
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> 
-> Thanks
-> Vivek
-> 
-> > ---
-> >  kernel/kexec.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/kernel/kexec.c b/kernel/kexec.c
-> > index 5e4bd78..b27efe4 100644
-> > --- a/kernel/kexec.c
-> > +++ b/kernel/kexec.c
-> > @@ -1490,6 +1490,8 @@ static int __init crash_save_vmcoreinfo_init(void)
-> > 	VMCOREINFO_OFFSET(page, _count);
-> > 	VMCOREINFO_OFFSET(page, mapping);
-> > 	VMCOREINFO_OFFSET(page, lru);
-> > +	VMCOREINFO_OFFSET(page, _mapcount);
-> > +	VMCOREINFO_OFFSET(page, private);
-> > 	VMCOREINFO_OFFSET(pglist_data, node_zones);
-> > 	VMCOREINFO_OFFSET(pglist_data, nr_zones);
-> >  #ifdef CONFIG_FLAT_NODE_MEM_MAP
-> > @@ -1512,6 +1514,8 @@ static int __init crash_save_vmcoreinfo_init(void)
-> > 	VMCOREINFO_NUMBER(PG_lru);
-> > 	VMCOREINFO_NUMBER(PG_private);
-> > 	VMCOREINFO_NUMBER(PG_swapcache);
-> > +	VMCOREINFO_NUMBER(PG_slab);
-> > +	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
-> > 
-> > 	arch_crash_save_vmcoreinfo();
-> > 	update_vmcoreinfo_note();
-> > --
-> > 1.7.9.2
-> > 
-> > _______________________________________________
-> > kexec mailing list
-> > kexec@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/kexec
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
+index 70af0be..a946529 100644
+--- a/net/openvswitch/vport.c
++++ b/net/openvswitch/vport.c
+@@ -28,6 +28,7 @@
+ #include <linux/rtnetlink.h>
+ #include <linux/compat.h>
+ #include <net/net_namespace.h>
++#include <linux/hashtable.h>
+ 
+ #include "datapath.h"
+ #include "vport.h"
+@@ -41,8 +42,8 @@ static const struct vport_ops *vport_ops_list[] = {
+ };
+ 
+ /* Protected by RCU read lock for reading, RTNL lock for writing. */
+-static struct hlist_head *dev_table;
+-#define VPORT_HASH_BUCKETS 1024
++#define VPORT_HASH_BITS 10
++static DEFINE_HASHTABLE(dev_table, VPORT_HASH_BITS);
+ 
+ /**
+  *	ovs_vport_init - initialize vport subsystem
+@@ -51,11 +52,6 @@ static struct hlist_head *dev_table;
+  */
+ int ovs_vport_init(void)
+ {
+-	dev_table = kzalloc(VPORT_HASH_BUCKETS * sizeof(struct hlist_head),
+-			    GFP_KERNEL);
+-	if (!dev_table)
+-		return -ENOMEM;
+-
+ 	return 0;
+ }
+ 
+@@ -66,13 +62,6 @@ int ovs_vport_init(void)
+  */
+ void ovs_vport_exit(void)
+ {
+-	kfree(dev_table);
+-}
+-
+-static struct hlist_head *hash_bucket(struct net *net, const char *name)
+-{
+-	unsigned int hash = jhash(name, strlen(name), (unsigned long) net);
+-	return &dev_table[hash & (VPORT_HASH_BUCKETS - 1)];
+ }
+ 
+ /**
+@@ -84,13 +73,12 @@ static struct hlist_head *hash_bucket(struct net *net, const char *name)
+  */
+ struct vport *ovs_vport_locate(struct net *net, const char *name)
+ {
+-	struct hlist_head *bucket = hash_bucket(net, name);
+ 	struct vport *vport;
+ 	struct hlist_node *node;
++	int key = full_name_hash(name, strlen(name));
+ 
+-	hlist_for_each_entry_rcu(vport, node, bucket, hash_node)
+-		if (!strcmp(name, vport->ops->get_name(vport)) &&
+-		    net_eq(ovs_dp_get_net(vport->dp), net))
++	hash_for_each_possible_rcu(dev_table, vport, node, hash_node, key)
++		if (!strcmp(name, vport->ops->get_name(vport)))
+ 			return vport;
+ 
+ 	return NULL;
+@@ -174,7 +162,8 @@ struct vport *ovs_vport_add(const struct vport_parms *parms)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(vport_ops_list); i++) {
+ 		if (vport_ops_list[i]->type == parms->type) {
+-			struct hlist_head *bucket;
++			int key;
++			const char *name;
+ 
+ 			vport = vport_ops_list[i]->create(parms);
+ 			if (IS_ERR(vport)) {
+@@ -182,9 +171,9 @@ struct vport *ovs_vport_add(const struct vport_parms *parms)
+ 				goto out;
+ 			}
+ 
+-			bucket = hash_bucket(ovs_dp_get_net(vport->dp),
+-					     vport->ops->get_name(vport));
+-			hlist_add_head_rcu(&vport->hash_node, bucket);
++			name = vport->ops->get_name(vport);
++			key = full_name_hash(name, strlen(name));
++			hash_add_rcu(dev_table, &vport->hash_node, key);
+ 			return vport;
+ 		}
+ 	}
+@@ -225,7 +214,7 @@ void ovs_vport_del(struct vport *vport)
+ {
+ 	ASSERT_RTNL();
+ 
+-	hlist_del_rcu(&vport->hash_node);
++	hash_del_rcu(&vport->hash_node);
+ 
+ 	vport->ops->destroy(vport);
+ }
+-- 
+1.8.0
+
