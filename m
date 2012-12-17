@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2LQJfB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:35:01 -0500
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:37575 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab2LQJfA (ORCPT
+	id S1752125Ab2LQJfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:35:23 -0500
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:47229 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751397Ab2LQJfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:35:00 -0500
-Message-ID: <50CEE736.8020000@itwm.fraunhofer.de>
-Date: Mon, 17 Dec 2012 10:34:46 +0100
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 17 Dec 2012 04:35:21 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAKrlzlBthYXF/2dsb2JhbABFhju3dhdzgh4BAQUjMyMQCxgCAiYCAhQlJIgqpz6SFYEiizuDMDJhA5YJkEmCdA
+Date: Mon, 17 Dec 2012 10:35:16 +0100
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] tx/rx LED trigger support
+Message-ID: <20121217093516.GB17341@vandijck-laurijssen.be>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Weidong Han <weidong.han@intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: Re: [regression] 3.7 ends in APIC panic
-References: <50CB3EAB.309@itwm.fraunhofer.de> <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com> <CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com> <50CE0C82.20708@itwm.fraunhofer.de> <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com> <50CE12EB.1050804@itwm.fraunhofer.de> <20121216191347.GB14678@liondog.tnic> <50CE24FE.3030409@itwm.fraunhofer.de> <20121216203913.GB14643@liondog.tnic>
-In-Reply-To: <20121216203913.GB14643@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: UTF-8
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2012 09:39 PM, Borislav Petkov wrote:
-> On Sun, Dec 16, 2012 at 08:46:06PM +0100, Bernd Schubert wrote:
->> Hmm, I read it the other way around - x2apic depends on interrupt
->> remapping, but interrupt remapping can be used without x2apic.
->
-> Ok, you're right. X2APIC should depend on IRQ_REMAP:
-> https://lwn.net/Articles/289881/
->
->> The help text of CONFIG_IRQ_REMAP also says "x2APIC enhancements or to
->> support platforms with CPU's having > 8 bit APIC ID, say Y." I guess
->> may CPU has the latter?
->
-> I think it is what Yinghai said - you obviously need x2apic kernel
-> support if you have IRQ_REMAP on.
->
->> Can the kernel panic a bit improved to help user to understand what
->> needs to be enabled?
->
-> Well, your kernel enables IRQ_REMAP properly:
->
-> [    0.031115] Enabled IRQ remapping in x2apic mode
->
-> I guess at that stage we could probably check for x2apic support and
-> scream loudly if it is not present... IMHO.
->
+Fabio,
 
-Hmm, I think that would the wrong place, as the initial 3.7.0 
-configuration didn't have IRQ_REMAP enabled. And that was the reason why 
-x2apic got disabled during the "make oldconfig" process...
+Nice work to repackage this :-) !
 
-Is this message an indication for missing x2apic?
+Kurt
 
-"smpboot: weird, boot (#255) not listed by the BIOS"
-
-
-Thanks,
-Bernd
-
+On Sun, Dec 16, 2012 at 12:08:24PM +0100, Fabio Baltieri wrote:
+> Hi all,
+> 
+> this is a resend of the patch series on tx/rx LEDs trigger.  The patch
+> set was put on hold after the latest discussions on Kurt's rename patch
+> due to a missing feature in the LED subsystem, which has been just
+> merged in:
+> 
+> a8df7b1 leds: add led_trigger_rename function
+> 
+> So, as months passed since the latest developments, I'm reposting the
+> whole set, rebased on current mainline.  The first patches are the same
+> that were merged in can-next/led-trigger, but there was some (trivial)
+> conflict in the rebase.
+> 
+> As for the test, I've tried the patch on the current mainline kernel
+> with my custom usb-can interface.  For the drivers, I don't have any
+> SoC-enabled board anymore, so they have only been compile tested.
+> 
+> Cheers,
+> Fabio
+> 
+> 
+> Fabio Baltieri (7):
+>   can: add tx/rx LED trigger support
+>   can: flexcan: add LED trigger support
+>   can: at91_can: add LED trigger support
+>   can: ti_hecc: add LED trigger support
+>   can: c_can: add LED trigger support
+>   can: mcp251x: add LED trigger support
+>   can: sja1000: add LED trigger support
+> 
+> Kurt Van Dijck (2):
+>   can: export a safe netdev_priv wrapper for candev
+>   can: rename LED trigger name on netdev renames
+> 
+>  drivers/net/can/Kconfig           |  12 ++++
+>  drivers/net/can/Makefile          |   2 +
+>  drivers/net/can/at91_can.c        |  10 +++
+>  drivers/net/can/c_can/c_can.c     |  10 +++
+>  drivers/net/can/dev.c             |  18 ++++++
+>  drivers/net/can/flexcan.c         |  11 ++++
+>  drivers/net/can/led.c             | 129 ++++++++++++++++++++++++++++++++++++++
+>  drivers/net/can/mcp251x.c         |  23 +++++--
+>  drivers/net/can/sja1000/sja1000.c |  17 ++++-
+>  drivers/net/can/ti_hecc.c         |  10 +++
+>  include/linux/can/dev.h           |  11 ++++
+>  include/linux/can/led.h           |  51 +++++++++++++++
+>  12 files changed, 299 insertions(+), 5 deletions(-)
+>  create mode 100644 drivers/net/can/led.c
+>  create mode 100644 include/linux/can/led.h
+> 
+> -- 
+> 1.7.12.1
+> 
