@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2LQSXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 13:23:23 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45519 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753807Ab2LQSXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 13:23:19 -0500
-Subject: [PATCH 1/7] move debugfs to filesystems menu (fs/Kconfig)
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-arch@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 17 Dec 2012 13:22:07 -0500
-References: <20121217182206.91AA150A@kernel.stglabs.ibm.com>
-In-Reply-To: <20121217182206.91AA150A@kernel.stglabs.ibm.com>
-Message-Id: <20121217182207.4CF51258@kernel.stglabs.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121718-5806-0000-0000-00001D179972
+	id S1753782Ab2LQSXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 13:23:09 -0500
+Received: from mail-we0-f194.google.com ([74.125.82.194]:57502 "EHLO
+	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab2LQSXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 13:23:05 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: Wang YanQing <udknight@gmail.com>
+Subject: Re: [PATCH] menuconfig:inputbox: support navigate input position
+Date: Mon, 17 Dec 2012 19:22:59 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.10-treguer; KDE/4.4.5; x86_64; ; )
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, bp@alien8.de, sakiwit@gmail.com,
+        lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
+        paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
+References: <20121217143802.GB16993@udknight>
+In-Reply-To: <20121217143802.GB16993@udknight>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212171922.59669.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Wang, All,
 
-debugfs may have started out as a kernel hacking kind of option.  But,
-today, it is an integral part of lots of facilities like tracing that
-are far from kernel hacking.  Let's move it out of the very cluttered
-"Kernel Hacking" menu and but it next to its real family: other
-filesystems like sysfs, configfs, or /proc.
+On Monday 17 December 2012 Wang YanQing wrote:
+> This patch add support navigate input position *inside* the input
+> field with LEFT/RIGHT, so it is possible to modify the text in place.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
 
-Also, "Debug filesystem" sounds like a debugging option _for_
-filesystems code, not a filesystem for debugging.  We also never call
-it "the debug filesystem."  We always say "debugfs", so reflect the
-fact that we _call_ it debugfs in the menu text.
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
+I am not knowledgeable enough in ncurses and the dialog code-base
+to add any reviewed-by tag. All I can say, is that it works as
+advertised.
 
- linux-2.6.git-dave/fs/Kconfig        |   12 ++++++++++++
- linux-2.6.git-dave/lib/Kconfig.debug |   12 ------------
- 2 files changed, 12 insertions(+), 12 deletions(-)
+Regards,
+Yann E. MORIN.
 
-diff -puN fs/Kconfig~be-clear-about-debugfs fs/Kconfig
---- linux-2.6.git/fs/Kconfig~be-clear-about-debugfs	2012-12-17 12:34:03.955929278 -0500
-+++ linux-2.6.git-dave/fs/Kconfig	2012-12-17 12:34:03.963929345 -0500
-@@ -176,6 +176,18 @@ config HUGETLBFS
- config HUGETLB_PAGE
- 	def_bool HUGETLBFS
- 
-+config DEBUG_FS
-+	bool "Debug Filesystem (debugfs)"
-+	help
-+	  debugfs is a virtual file system that kernel developers use to put
-+	  debugging files into.  Enable this option to be able to read and
-+	  write to these files.
-+
-+	  For detailed documentation on the debugfs API, see
-+	  Documentation/DocBook/filesystems.
-+
-+	  If unsure, say N.
-+
- source "fs/configfs/Kconfig"
- 
- endmenu
-diff -puN lib/Kconfig.debug~be-clear-about-debugfs lib/Kconfig.debug
---- linux-2.6.git/lib/Kconfig.debug~be-clear-about-debugfs	2012-12-17 12:34:03.959929312 -0500
-+++ linux-2.6.git-dave/lib/Kconfig.debug	2012-12-17 12:34:03.963929345 -0500
-@@ -99,18 +99,6 @@ config UNUSED_SYMBOLS
- 	  you really need it, and what the merge plan to the mainline kernel for
- 	  your module is.
- 
--config DEBUG_FS
--	bool "Debug Filesystem"
--	help
--	  debugfs is a virtual file system that kernel developers use to put
--	  debugging files into.  Enable this option to be able to read and
--	  write to these files.
--
--	  For detailed documentation on the debugfs API, see
--	  Documentation/DocBook/filesystems.
--
--	  If unsure, say N.
--
- config HEADERS_CHECK
- 	bool "Run 'make headers_check' when building vmlinux"
- 	depends on !UML
-_
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
 
