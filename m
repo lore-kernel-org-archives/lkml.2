@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab2LQPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:35:29 -0500
-Received: from tex.lwn.net ([70.33.254.29]:36863 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab2LQPf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:35:28 -0500
-Date: Mon, 17 Dec 2012 08:37:59 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Marcos Lois =?UTF-8?B?QmVybcO6ZGV6?= <marcos.discalis@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question about using new request_threaded_irq
-Message-ID: <20121217083759.0cbed418@lwn.net>
-In-Reply-To: <50CF361A.1030203@gmail.com>
-References: <50CF361A.1030203@gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1753389Ab2LQPfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:35:47 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:52346 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752175Ab2LQPfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:35:44 -0500
+Message-ID: <1355758544.13361.14.camel@joe-AO722>
+Subject: Re: [PATCH] scripts: add checkmaintainers.py
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 17 Dec 2012 07:35:44 -0800
+In-Reply-To: <20121217102714.GB31947@liondog.tnic>
+References: <1355523576-7596-1-git-send-email-cesarb@cesarb.net>
+	 <50CEF080.8010208@suse.cz> <20121217102714.GB31947@liondog.tnic>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012 16:11:22 +0100
-Marcos Lois Bermúdez <marcos.discalis@gmail.com> wrote:
-
-> For my understand if i call for example:
+On Mon, 2012-12-17 at 11:27 +0100, Borislav Petkov wrote:
+> On Mon, Dec 17, 2012 at 11:14:24AM +0100, Michal Marek wrote:
+> > On 14.12.2012 23:19, Cesar Eduardo Barros wrote:
+> > > This small script checks the file patterns in the MAINTAINERS file.
+> > > 
+> > > For every file pattern, it checks if the pattern matches any file or
+> > > directory in the kernel tree, printing the patterns which do not have a
+> > > match.
+> > 
+> > Can't this be added as a warning to scripts/get_maintainer.pl instead?
 > 
-> request_threaded_irq(irqmum, NULL, irq_handle, IRQF_TRIGGER_FALLING, 
-> DEVICE_NAME, priv);
-> 
-> This seem to make a old Hard IRQ handler, and inside of this handler 
-> sleep APIs can't be used, but i see some SPI drivers that seem to 
-> register a IRQ of this form and make API calls that can sleep in the 
-> handler.
+> Yep, it definitely makes more sense than having a standalone script.
 
-Not quite.  The prototype for request_threaded_irq() is:
+I'm not so sure of that myself.
 
-int request_threaded_irq(unsigned int irq, irq_handler_t handler,
-			 irq_handler_t thread_fn, unsigned long irqflags,
-			 const char *devname, void *dev_id)
+I think maybe it should go into checkpatch.
 
-Note the presents of *two* handlers, called "handler" and "thread_fn".
-The first, "handler", is called in interrupt context; it's job is usually
-to quiet the device and return; it cannot sleep.  If it's return value is
-IRQ_WAKE_THREAD, the thread_fn() will be called in process context; it
-*can* sleep.  In the example you cite, there is no immediate handler, only
-the thread_fn(); the call to a blocking function from within the
-thread_fn() is correct.
+I do have a similar script as a get_maintainers variant.
 
-Hope that helps,
+Adding a --verify-patterns option seems off-topic to
+the generic tool use of get_maintainers.
 
-jon
+There's a fair amount of tedium for people to do more
+than determine there is a pattern that doesn't match
+files in git.
 
-Jonathan Corbet / LWN.net / corbet@lwn.net
+Doing the work that Cesar did to find the commit that
+makes a pattern valid/invalid when renames or deletions
+occur is the chore that could be automated.
+
+Perhaps Cesar can use his script as a starting point
+to find those pattern invalidating commits or maybe
+add the capability (or a --strict check) to checkpatch.
+
+
