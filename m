@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2LQVz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:55:27 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43225 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab2LQVzZ (ORCPT
+	id S1753833Ab2LQV7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:59:13 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:41247 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2LQV7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:55:25 -0500
-Message-ID: <50CF94C9.2050907@wwwdotorg.org>
-Date: Mon, 17 Dec 2012 14:55:21 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 17 Dec 2012 16:59:11 -0500
+Message-ID: <50CF95AD.8030406@linaro.org>
+Date: Mon, 17 Dec 2012 22:59:09 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: alan@linux.intel.com, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] serial: tegra: add serial driver
-References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Russ Anderson <rja@sgi.com>
+CC: "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        Sivaram Nair <sivaramn@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "shuox.liu@intel.com" <shuox.liu@intel.com>,
+        "yanmin_zhang@intel.com" <yanmin_zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [regression] cpuidle_get_cpu_driver livelocks idle system
+References: <20121217193612.GA28600@sgi.com>
+In-Reply-To: <20121217193612.GA28600@sgi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 05:10 AM, Laxman Dewangan wrote:
-> Nvidia's Tegra has multiple uart controller which supports:
-> - APB dma based controller fifo read/write.
-> - End Of Data interrupt in incoming data to know whether end
->   of frame achieve or not.
-> - Hw controlled RTS and CTS flow control to reduce SW overhead.
+On 12/17/2012 08:36 PM, Russ Anderson wrote:
+> The 3.7 kernel grinds to a halt on boot of a system with
+> 2048 cpus.  NMI showed most of the cpus in
+> _raw_spin_lock in cpuidle_get_cpu_driver().  (backtrace below)
 > 
-> Add serial driver to use all above feature.
+> A quick look at cpuidle_get_cpu_driver() shows the hot lock.
+> 
+> In drivers/cpuidle/driver.c:
+> --------------------------------------------------------
+> /**
+>  * cpuidle_get_cpu_driver - return the driver tied with a cpu
+>  */
+> struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
+> {
+>         struct cpuidle_driver *drv;
+> 
+>         if (!dev)
+>                 return NULL;
+> 
+>         spin_lock(&cpuidle_driver_lock);
+>         drv = __cpuidle_get_cpu_driver(dev->cpu);
+>         spin_unlock(&cpuidle_driver_lock);
+> 
+>         return drv;
+> }
+> --------------------------------------------------------
 
-> diff --git a/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt b/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt
+Hi Russ,
 
-> +Required properties:
-> +- compatible : should be "nvidia,tegra20-hsuart", "nvidia,tegra30-hsuart".
+thanks for investigating the problem. You are right, there is a
+bottleneck here.
 
-I think you want ", or" not just "," there. If both are specified,
-"tegra30" should come before "tegra20", so you might want to re-order
-that. That said, other bindings say something like
-"nvidia,tegra<chip>-hsuart" so avoid having to spell out all the
-supported Tegra versions.
+Regarding how is used the cpuidle code, I think it is safe to remove the
+locks.
 
-> diff --git a/drivers/tty/serial/serial_tegra.c b/drivers/tty/serial/serial_tegra.c
 
-> +struct tegra_uart_chip_data tegra20_uart_chip_data = {
-> +	.tx_fifo_full_status		= false,
-> +	.allow_txfifo_reset_fifo_mode	= true,
-> +	.support_clk_src_div		= false,
-> +};
-> +
-> +struct tegra_uart_chip_data tegra30_uart_chip_data = {
-> +	.tx_fifo_full_status		= true,
-> +	.allow_txfifo_reset_fifo_mode	= false,
-> +	.support_clk_src_div		= true,
-> +};
 
-Nit: Perhaps it'd be nice to move those right before
-tegra_uart_of_match[] - i.e. right where they're used.
+> This change was added in on Nov 14th, 2012.
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
+> 
+> The patch says it adds support for cpus with different characteristics,
+> but adds a big global lock.  The comment claims "no impact for the other
+> platforms if the option is disabled", which leads me to believe the
+> spin_lock was added inadvertently.  CPU_IDLE_MULTIPLE_DRIVERS is off
+> in my config file.
+> 
+> linux$ grep CPU_IDLE_MULTIPLE_DRIVERS .config
+> # CONFIG_CPU_IDLE_MULTIPLE_DRIVERS is not set
+> 
+> As more cpus become idle, more cpus fight over the lock until
+> the system livelocks on the crushing weight of idle.
+> 
+> The fix may be to move the spin_lock into __cpuidle_get_cpu_driver,
+> which has different versions for CONFIG_CPU_IDLE_MULTIPLE_DRIVERS,
+> to avoid impacting the disabled case, or get rid of the spin_lock
+> all together.
+> 
+> 
+> --------------------------------------------------------
+> == UV NMI process trace cpu 12: ==
+> CPU 12
+> Pid: 0, comm: swapper/12 Tainted: G           O 3.7.0.rja-sgi+ #38
+> RIP: 0010:[<ffffffff81614e45>]  [<ffffffff81614e45>] _raw_spin_lock+0x25/0x30
+> [...]
+> Call Trace:
+>  [<ffffffff814c891c>] cpuidle_get_cpu_driver+0x1c/0x30
+>  [<ffffffff814c871d>] cpuidle_idle_call+0x7d/0x1b0
+>  [<ffffffff8101d08d>] cpu_idle+0xdd/0x130
+>  [<ffffffff8160a3ea>] start_secondary+0xc6/0xcc
+> --------------------------------------------------------
+> 
 
-> +static struct tegra_uart_platform_data *tegra_uart_parse_dt(
 
-> +	if (of_get_property(np, "nvidia,enable-modem-interrupt", NULL))
-> +		pdata->enable_modem_interrupt = 1;
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-That should use of_property_read_bool().
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-> +static int __devinit tegra_uart_probe(struct platform_device *pdev)
-
-> +	if (pdev->dev.of_node) {
-
-That will always be true these days.
-
-I didn't review the body of the UART implementation since I'm not
-familiar with drivers/tty/serial nor too much about our UART HW beyond
-basic 8250 usage.
