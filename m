@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab2LQG7C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 01:59:02 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39327 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab2LQG67 (ORCPT
+	id S1751884Ab2LQG7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 01:59:30 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42213 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2LQG73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 01:58:59 -0500
-Date: Sun, 16 Dec 2012 22:55:34 -0800
+	Mon, 17 Dec 2012 01:59:29 -0500
+Date: Sun, 16 Dec 2012 22:56:03 -0800
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v2] New Nokia RX-51 power supply battery driver
-Message-ID: <20121217065135.GA18301@lizard.gateway.2wire.net>
-References: <19040462.WFXWijAIDd@pali>
- <2562836.SjVVyiPAk1@pali>
- <20121118231239.GC29066@lizard.sbx05977.paloaca.wayport.net>
- <5320319.2WmO5VDT8j@pali>
- <20121119182002.GA2670@lizard>
- <20121121192042.GG18567@atomide.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] charger-manager: Fix bug related to checking
+ fully charged state of battery
+Message-ID: <20121217065603.GB9027@lizard.gateway.2wire.net>
+References: <1353570826-19404-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121121192042.GG18567@atomide.com>
+In-Reply-To: <1353570826-19404-1-git-send-email-cw00.choi@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 11:20:43AM -0800, Tony Lindgren wrote:
-> * Anton Vorontsov <cbouatmailru@gmail.com> [121119 10:25]:
-> > On Mon, Nov 19, 2012 at 01:18:29PM +0100, Pali Rohár wrote:
-> > [...] 
-> > > Ok. Here is missing patch which register this driver in Nokia N900 board code. Without it driver is not loaded.
-> > 
-> > Cc'ing OMAP folks.
+On Thu, Nov 22, 2012 at 04:53:46PM +0900, Chanwoo Choi wrote:
+> This patch fix bug related to checking fully charged state of battery
+> when charger-manager call is_full_charged() function. After reading
+> property of charger/fuel-gauge through power_supply API, val.intval is
+> more than 1. So, is_full_charged() function always return true. If true,
+> battery means fully charged state.
 > 
-> Looks OK to me queue with the other patches in the series:
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
 
 Applied, thanks!
-
-(I'll make a second pull request for this window, but no sure if it will
-make it. We will see.)
-
-Thanks,
-Anton
