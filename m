@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2LQV7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:59:53 -0500
-Received: from smtp-01.mandic.com.br ([200.225.81.132]:37612 "EHLO
-	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab2LQV7w (ORCPT
+	id S1753698Ab2LQWB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:01:27 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37993 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab2LQWB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:59:52 -0500
-Message-ID: <50CF95D2.3040900@cesarb.net>
-Date: Mon, 17 Dec 2012 19:59:46 -0200
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 17 Dec 2012 17:01:26 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org,
+In-Reply-To: <CANN689GKp-9Bfn6HENeSXe=PZ0Qy5uOP6ju5gosMFKFDPC0D8w@mail.gmail.com>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+ <2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net>
+ <CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
+ <CALCETrW58pb2w_r0gUDmMVSqi8PBQRdR1dRj2HX0ymq+qnz8XA@mail.gmail.com> <CANN689GKp-9Bfn6HENeSXe=PZ0Qy5uOP6ju5gosMFKFDPC0D8w@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 17 Dec 2012 14:01:05 -0800
+Message-ID: <CALCETrV_t109YwEA_ue8jYOFXLzDL55zwguKHVL09WDEJTJfRg@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] scripts: add checkmaintainers.py
-References: <1355523576-7596-1-git-send-email-cesarb@cesarb.net> <50CEF080.8010208@suse.cz> <20121217102714.GB31947@liondog.tnic> <1355758544.13361.14.camel@joe-AO722> <20121217170011.GC31866@liondog.tnic>
-In-Reply-To: <20121217170011.GC31866@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 17-12-2012 15:00, Borislav Petkov escreveu:
-> On Mon, Dec 17, 2012 at 07:35:44AM -0800, Joe Perches wrote:
->> Perhaps Cesar can use his script as a starting point to find those
->> pattern invalidating commits or maybe add the capability (or a
->> --strict check) to checkpatch.
+On Sun, Dec 16, 2012 at 7:29 PM, Michel Lespinasse <walken@google.com> wrote:
+> On Sun, Dec 16, 2012 at 10:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Sun, Dec 16, 2012 at 4:39 AM, Michel Lespinasse <walken@google.com> wrote:
+>>> I think this could be done by extending the mlock work I did as part
+>>> of v2.6.38-rc1. The commit message for
+>>> c explains the idea; basically
+>>> mlock() was split into do_mlock() which just sets the VM_LOCKED flag
+>>> on vmas as needed, and do_mlock_pages() which goes through a range of
+>>> addresses and actually populates/mlocks each individual page that is
+>>> part of a VM_LOCKED vma.
+>>
+>> Doesn't this have the same problem?  It holds mmap_sem for read for a
+>> long time, and if another writer comes in then r/w starvation
+>> prevention will kick in.
 >
-> Or that, I don't have a strict preference.
->
-> So, yeah, I can see how checkpatch saying: "you've just renamed a
-> file and thusly invalidated a pattern in MAINTAINERS. Pls, consider
-> correcting the pattern" could make sense. And I would even add it to
-> default functionality since the MAINTAINERS patterns are something we
-> want to always have up-to-date, IMO.
+> Well, my point is that do_mlock_pages() doesn't need to hold the
+> mmap_sem read side for a long time. It currently releases it when
+> faulting a page requires a disk read, and could conceptually release
+> it more often if needed.
 
-Good idea, but a standalone MAINTAINERS checker is still useful, to 
-check for things checkpatch did not catch, either because it was not 
-run, or because it did not have enough information.
+I can't find this code.  It looks like do_mlock_pages calls
+__mlock_vma_pages_range, which calls __get_user_pages, which makes its
+way to __do_fault, which doesn't seem to drop mmap_sem.
 
-For instance, consider the case of a patch removing the last file in a 
-directory going in via one branch, while a patch adding a file pattern 
-for that same directory goes in via a separate branch. There is no way 
-checkpatch can catch that.
-
-As for finding the pattern invalidating commits, it is usually not that 
-hard, a simple "git log -- <pattern>" or similar usually does the trick, 
-except in the cases where the pattern addition itself was wrong. The 
-hard part can be interpreting it and the surrounding commits to find out 
-the committer's intention, how it should affect the MAINTAINERS entry, 
-and who should get a Cc: of the fix.
-
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+--Andy
