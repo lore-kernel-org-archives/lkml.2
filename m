@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab2LQRIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:08:44 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50909 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab2LQRIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:08:41 -0500
-Date: Mon, 17 Dec 2012 18:08:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Arvind R <arvino55@gmail.com>, linux-edac@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-Subject: Re: [PATCH 3.7.0 3/9] i82975x_edac.c: cleanup debug code
-Message-ID: <20121217170839.GA5194@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	Arvind R <arvino55@gmail.com>, linux-edac@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-References: <CAA_L+UNa-C0XvzMbXMf9GchtfacfwJMYt2uuXkWVntWPWANLsA@mail.gmail.com>
- <20121217124511.66825216@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121217124511.66825216@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753479Ab2LQRJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:09:41 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:55931 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab2LQRJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 12:09:39 -0500
+Message-ID: <1355764176.11540.19.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.6.9-rt21
+From: Mike Galbraith <bitbucket@online.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Mon, 17 Dec 2012 18:09:36 +0100
+In-Reply-To: <alpine.LFD.2.02.1212171634070.3148@ionos>
+References: <alpine.LFD.2.02.1212051659160.2701@ionos>
+	 <1355543529.20987.6.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1212171634070.3148@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:c8wncz/YCczQJTsgqzh25SsbQN3egkHlJ8dd66I/XhK
+ N4YgR+xBNIae3wjaEOzWo82yXmWi41zRecJEeKY/vCJExLX4cb
+ cZB23EKBIQKjM8HqkXQltcIetF8T+iUFSEr4o89L75Z8hVDVXJ
+ L8xFZVRZuHu1aoTA9VPXWhwcmAuWAEGWhTp3ia1rVizF5NR1eq
+ SMqegV55WJxtkilO4X+QpErzkVjTAW1hrKBe+nBMaTblzhNtxf
+ g4IfquAtBYnWGWzLBRpofjZGOIXmpdtz6boflJ/fpyLv3eLrSz
+ VbLxt0IihpPbqnsiWgJjfcaO9JV4U15xYtk8KKpkeaviSPE2n0
+ vldvjJuXQAcTe3Lo78gUQAVhaKAVFYaNl4rHomMqhizxDje+QY
+ TPCllnMEpPsmw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 12:45:11PM -0200, Mauro Carvalho Chehab wrote:
-> Em Sun, 16 Dec 2012 02:10:39 +0530
-> Arvind R <arvino55@gmail.com> escreveu:
-> 
-> > Subject: [PATCH 3.7.0 3/9] i82975x_edac.c: cleanup debug code
+On Mon, 2012-12-17 at 16:35 +0100, Thomas Gleixner wrote: 
+> On Sat, 15 Dec 2012, Mike Galbraith wrote:
+> > On Wed, 2012-12-05 at 17:05 +0100, Thomas Gleixner wrote: 
+> > > Dear RT Folks,
+> > > 
+> > > I'm pleased to announce the 3.6.9-rt21 release. 3.6.7-rt18, 3.6.8-rt19
+> > > and 3.6.9-rt20 are not announced updates to the respective 3.6.y
+> > > stable releases without any RT changes
+> > > 
+> > > Changes since 3.6.9-rt20:
+> > > 
+> > >    * Fix the PREEMPT_LAZY implementation on ARM
+> > > 
+> > >    * Fix the RCUTINY issues
+> > > 
+> > >    * Fix a long standing scheduler bug (See commit log of
+> > >      sched-enqueue-to-head.patch)
 > > 
-> > modify debug levels to sane levels. Also move random debug code
-> > into CONFIG_EDAC_DEBUG sections.
-> > Signed-off-by: Arvind R. <arvino55@gmail.com>
+> > That last has an oversight buglet.
+> > 
+> > sched: add missing userspace->kernel struct sched_param.sched_priority inversion
+> > 
+> > Signed-off-by: Mike Galbraith <bitbucket@online.de>
 > > ---
-> >  i82975x_edac.c |  171 +++++++++++++++++++++++-------------------
-> >  1 file changed, 97 insertions(+), 74 deletions(-)
+> >  kernel/sched/core.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > > 
-> > --- a/drivers/edac/i82975x_edac.c	2012-12-15 20:18:24 +0530
-> > +++ b/drivers/edac/i82975x_edac.c	2012-12-15 20:17:58 +0530
-> ...
-> > @@ -551,11 +583,11 @@ static int i82975x_probe1(struct pci_dev
-> >  	layers[1].is_virt_csrow = false;
-> >  	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
-> >  	if (!mci) {
-> > +		edac_dbg(0, "MC%d failed mc_alloc\n", dev_idx);
-> >  		rc = -ENOMEM;
-> >  		goto fail1;
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -4624,7 +4624,7 @@ static int __sched_setscheduler(struct t
+> >  	p->sched_reset_on_fork = reset_on_fork;
+> >  
+> >  	oldprio = p->prio;
+> > -	if (oldprio == param->sched_priority)
+> > +	if (oldprio == (MAX_RT_PRIO - 1) - param->sched_priority)
+> >  		goto out;
+> >  
+> >  	on_rq = p->on_rq;
 > 
-> Please remove the two last lines. There's no reason why it a driver 
-> should bail out just because debug is enabled.
+> Duh, yes. But there is another one here:
+> 
+> +               enqueue_task(rq, p, oldprio < param->sched_priority ?
+> +                            ENQUEUE_HEAD : 0);
+> 
+> Bah. This reverse user/kernel priority nonsense really should go away!
 
-Huh? He's adding a debug line to say that edac_mc_alloc() failed.
+Snort, I looked right at it too, looked perfectly fine :)
 
--- 
-Regards/Gruss,
-    Boris.
+-Mike
 
-Sent from a fat crate under my desk. Formatting is fine.
---
