@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2LQMet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 07:34:49 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50560 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab2LQMeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 07:34:36 -0500
-From: Laurent Navet <laurent.navet@gmail.com>
-To: ibm-acpi@hmh.eng.br
-Cc: mjg@redhat.com, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] driver thinkpad acpi : semantic patch (bool usage)
-Date: Mon, 17 Dec 2012 13:35:13 +0100
-Message-Id: <1355747714-2843-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752701Ab2LQMwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 07:52:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52725 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752254Ab2LQMwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 07:52:10 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFxxC8xpG9KQtqxRfcJzCu58Fv711bTwtKFq3HHAvRhYBA@mail.gmail.com>
+References: <CA+55aFxxC8xpG9KQtqxRfcJzCu58Fv711bTwtKFq3HHAvRhYBA@mail.gmail.com> <alpine.LRH.2.02.1212151925410.27388@tundra.namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [GIT] Security subsystem updates for 3.8
+Date: Mon, 17 Dec 2012 12:52:05 +0000
+Message-ID: <2569.1355748725@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bool initializations should use true and false.  Bool tests don't need
-comparisons.  Based on contributions from Joe Perches, Rusty Russell
-and Bruce W Allan.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-The semantic patch that makes this output is available
-in scripts/coccinelle/misc/boolinit.cocci.
+> > A quiet cycle for the security subsystem with just a few maintenance
+> > updates.
+> 
+> Ok, pulled. There were a few trivial conflicts (mostly due to some of
+> the key allocation patches having already been merged, and some of the
+> kuid/kgid changes due to the userns changes).
+> 
+> I'd like you to double-check the end result, but it *looks* fine.
+> Adding both EricB and DavidH to the participants since the conflicts
+> were generally due to intetractions with their patches.
 
-More information about semantic patching is available at
-http://coccinelle.lip6.fr/
+There seemed to be a couple of minor bits that got lost.  I'm not sure where,
+though.  I'll send them to you as additional patches.  Other than that,
+everything appears to have merged okay.
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/platform/x86/thinkpad_acpi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 75dd651..cb46b6a 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -3728,7 +3728,7 @@ static void hotkey_notify(struct ibm_struct *ibm, u32 event)
- 			if (tp_features.hotkey_wlsw &&
- 					hkey == TP_HKEY_EV_RFKILL_CHANGED) {
- 				tpacpi_send_radiosw_update();
--				send_acpi_ev = 0;
-+				send_acpi_ev = false;
- 				known_ev = true;
- 				break;
- 			}
--- 
-1.7.10.4
-
+David
