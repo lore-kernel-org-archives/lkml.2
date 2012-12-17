@@ -1,39 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab2LQI05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 03:26:57 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:58006 "EHLO
+	id S1751884Ab2LQI1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 03:27:12 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:35578 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab2LQI04 (ORCPT
+	with ESMTP id S1751269Ab2LQI1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 03:26:56 -0500
+	Mon, 17 Dec 2012 03:27:11 -0500
 From: Guangliang Zhao <gzhao@suse.com>
 To: linux-kernel@vger.kernel.org, dm-devel@redhat.com
 Cc: lucienchao@gmail.com
-Subject: [PATCH 0/3 v2] add resync speed control for dm-raid1
-Date: Mon, 17 Dec 2012 16:26:34 +0800
-Message-Id: <1355732797-7233-1-git-send-email-gzhao@suse.com>
+Subject: [PATCH 1/3 v2] dm raid1: add resync speed control for dm-raid1
+Date: Mon, 17 Dec 2012 16:26:35 +0800
+Message-Id: <1355732797-7233-2-git-send-email-gzhao@suse.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355732797-7233-1-git-send-email-gzhao@suse.com>
+References: <1355732797-7233-1-git-send-email-gzhao@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The IO Performance on the already available lv is very bad
+during the initial sync when we create a mirror lv. This
+patch add the rate limit for every mirror target to control
+resync speed.
 
-These patches are used to add resync speed control for dm-raid1. The
-second and third patch provide support for user-space tool dmsetup.
-I have made some modifications by the comments. This is the second
-version.
+Signed-off-by: Guangliang Zhao <gzhao@suse.com>
+---
+ drivers/md/dm-raid1.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-
-Guangliang Zhao (3):
-  dm raid1: add resync speed control for dm-raid1
-  dm raid1: add interface to set resync speed
-  dm raid1: add interface to get resync speed
-
- drivers/md/dm-raid1.c |   93 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 90 insertions(+), 3 deletions(-)
-
+diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
+index 9bfd057..43e428a 100644
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -13,6 +13,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
++#include <linux/ratelimit.h>
+ #include <linux/device-mapper.h>
+ #include <linux/dm-io.h>
+ #include <linux/dm-dirty-log.h>
+@@ -26,6 +27,11 @@
+ #define DM_RAID1_HANDLE_ERRORS 0x01
+ #define errors_handled(p)	((p)->features & DM_RAID1_HANDLE_ERRORS)
+ 
++/* Default resync interval*/
++#define RESYNC_JIFFIES	HZ
++/* Default max resync speed in KB/s */
++#define DEFAULT_RESYNC_SPEED		(0xFFFFFFF)
++
+ static DECLARE_WAIT_QUEUE_HEAD(_kmirrord_recovery_stopped);
+ 
+ /*-----------------------------------------------------------------
+@@ -69,6 +75,9 @@ struct mirror_set {
+ 	int log_failure;
+ 	int leg_failure;
+ 	atomic_t suspend;
++	/* recovery speed control */
++	struct ratelimit_state ms_rlimit;
++	struct delayed_work resync_waker;
+ 
+ 	atomic_t default_mirror;	/* Default mirror */
+ 
+@@ -383,12 +392,18 @@ static void do_recovery(struct mirror_set *ms)
+ 	/*
+ 	 * Copy any already quiesced regions.
+ 	 */
+-	while ((reg = dm_rh_recovery_start(ms->rh))) {
++	while (__ratelimit(&ms->ms_rlimit) &&
++			(reg = dm_rh_recovery_start(ms->rh))) {
+ 		r = recover(ms, reg);
+ 		if (r)
+ 			dm_rh_recovery_end(reg, 0);
+ 	}
+ 
++	/* Broke off the resync process, so wake up kmirrord later on */
++	if (!ms->in_sync)
++		schedule_delayed_work(&ms->resync_waker,
++				      ms->ms_rlimit.interval);
++
+ 	/*
+ 	 * Update the in sync flag.
+ 	 */
+@@ -842,6 +857,14 @@ static void do_mirror(struct work_struct *work)
+ 	do_failures(ms, &failures);
+ }
+ 
++static void do_resync_wake(struct work_struct *work)
++{
++	struct mirror_set *ms =
++		container_of(work, struct mirror_set, resync_waker.work);
++
++	wakeup_mirrord(ms);
++}
++
+ /*-----------------------------------------------------------------
+  * Target functions
+  *---------------------------------------------------------------*/
+@@ -852,6 +875,7 @@ static struct mirror_set *alloc_context(unsigned int nr_mirrors,
+ {
+ 	size_t len;
+ 	struct mirror_set *ms = NULL;
++	int burst;
+ 
+ 	len = sizeof(*ms) + (sizeof(ms->mirror[0]) * nr_mirrors);
+ 
+@@ -875,6 +899,10 @@ static struct mirror_set *alloc_context(unsigned int nr_mirrors,
+ 	ms->leg_failure = 0;
+ 	atomic_set(&ms->suspend, 0);
+ 	atomic_set(&ms->default_mirror, DEFAULT_MIRROR);
++	burst = (DEFAULT_RESYNC_SPEED * (RESYNC_JIFFIES / HZ)) << 1;
++	burst = DIV_ROUND_UP(burst, region_size);
++	ratelimit_state_init(&ms->ms_rlimit, RESYNC_JIFFIES, burst);
++	INIT_DELAYED_WORK(&ms->resync_waker, do_resync_wake);
+ 
+ 	ms->read_record_pool = mempool_create_slab_pool(MIN_READ_RECORDS,
+ 						_dm_raid1_read_record_cache);
 -- 
 1.7.10.4
 
