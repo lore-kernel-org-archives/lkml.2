@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab2LQNPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 08:15:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab2LQNPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 08:15:37 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 2/2] KEYS: Use keyring_alloc() to create module signing
- keyring
-To: torvalds@linux-foundation.com
-From: David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, jmorris@namei.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Dec 2012 13:15:31 +0000
-Message-ID: <20121217131531.2974.66791.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121217131523.2974.74337.stgit@warthog.procyon.org.uk>
-References: <20121217131523.2974.74337.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1752779Ab2LQNVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 08:21:23 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52522 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab2LQNVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 08:21:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAHdPZaNOK=isKPZtxYaBFsGvcpN0261wExaXgRYjg5N3Y7qJZg@mail.gmail.com>
+References: <20686.63778.840426.61474@pilspetsen.it.uu.se>
+	<CAHdPZaPQNQ1WS5Qkb4FpmmOX7mXL10HsdaXf5dctp2hd2T0Sow@mail.gmail.com>
+	<20687.3736.365327.811519@pilspetsen.it.uu.se>
+	<CAHdPZaNOK=isKPZtxYaBFsGvcpN0261wExaXgRYjg5N3Y7qJZg@mail.gmail.com>
+Date: Mon, 17 Dec 2012 14:21:21 +0100
+Message-ID: <CAL1gcdMyx4y0TeSRi+5oG6cpULPXGu+i8E0ej3-6+n9pt8qPSw@mail.gmail.com>
+Subject: Re: [3.7.0 regression] rt2x00lib_probe_dev: Error - Failed to
+ initialize hw
+From: Gertjan van Wingerde <gwingerde@gmail.com>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use keyring_alloc() to create special keyrings now that it has a permissions
-parameter rather than using key_alloc() + key_instantiate_and_link().
+Mikael, Devendra,
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>
+On Mon, Dec 17, 2012 at 1:59 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+> On Mon, Dec 17, 2012 at 7:22 AM, Mikael Pettersson <mikpe@it.uu.se> wrote:
+>> devendra.aaru writes:
+>>  > On Mon, Dec 17, 2012 at 5:51 AM, Mikael Pettersson <mikpe@it.uu.se> wrote:
+>>  > > I just updated an old 1st gen AMD64 laptop from kernel 3.6.0 to 3.7.0,
+>>  > > Fedora 15 user-space, and was greeted by the following kernel warning:
+>>  > >
+>>  > > WARNING: at net/wireless/core.c:389 wiphy_register+0x5c3/0x600 [cfg80211]()
+>>  >
+>>  > I am seeing this line actually when i do vim +389 net/wireless/core.c.
+>>  >
+>>  >                 u16 all_iftypes = 0;
+>>  >
+>>  > its good if you tell us the top sha1 of yours?
+>>
+>> It's the plain linux-3.7.tar.xz from kernel.org, no git involved.
+>> Lines 389-390 of net/wireless/core.c are:
+>>
+>>                 if (WARN_ON(c->max_interfaces < 2))
+>>                         return -EINVAL;
+>>
+>
+> so its v3.7 tag hash 29594404d7fe73cd80eaa4ee8c43dcc53970c60e.
+>
+> i see that code line :). thanks
+>
+> i traced a while and looked at the rt2500pci.c code and there we are
+> assigning the max_ap_intf variable to 1. the same go with the
+> rt2800pci.c
+>
+> here's the part of the ops structure
+>
+> static const struct rt2x00_ops rt2500pci_ops = {
+>         .name                   = KBUILD_MODNAME,
+>         .max_ap_intf            = 1,
+>         .eeprom_size            = EEPROM_SIZE,
+>         .rf_size                = RF_SIZE,
+>         .tx_queues              = NUM_TX_QUEUES,
+>         .extra_tx_headroom      = 0,
+>         .rx                     = &rt2500pci_queue_rx,
+>         .tx                     = &rt2500pci_queue_tx,
+>         .bcn                    = &rt2500pci_queue_bcn,
+>         .atim                   = &rt2500pci_queue_atim,
+>         .lib                    = &rt2500pci_rt2x00_ops,
+>         .hw                     = &rt2500pci_mac80211_ops,
+> #ifdef CONFIG_RT2X00_LIB_DEBUGFS
+>         .debugfs                = &rt2500pci_rt2x00debug,
+> #endif /* CONFIG_RT2X00_LIB_DEBUGFS */
+> };
+>
+> i really dont know why is that max_ap_intf is 1. may be some wireless
+> dev's know about this?
+>
+>
+>> /Mikael
+
+This is caused by the introduction of interface combinations. Helmut
+Schaa has already submitted a patch to fix this, but this has
+unfortunately not ended up in 3.7. I'm confident it will end up in one
+of the upcoming 3.7.x stable releases.
+
+See http://marc.info/?l=linux-wireless&m=135478723823922&w=2 for the
+patch submitted by Helmut.
 ---
-
- kernel/modsign_pubkey.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
-index 767e559..524a56f 100644
---- a/kernel/modsign_pubkey.c
-+++ b/kernel/modsign_pubkey.c
-@@ -40,18 +40,15 @@ static __init int module_verify_init(void)
- {
- 	pr_notice("Initialise module verification\n");
- 
--	modsign_keyring = key_alloc(&key_type_keyring, ".module_sign",
--				    KUIDT_INIT(0), KGIDT_INIT(0),
--				    current_cred(),
--				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
--				    KEY_USR_VIEW | KEY_USR_READ,
--				    KEY_ALLOC_NOT_IN_QUOTA);
-+	modsign_keyring = keyring_alloc(".module_sign",
-+					KUIDT_INIT(0), KGIDT_INIT(0),
-+					current_cred(),
-+					((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+					 KEY_USR_VIEW | KEY_USR_READ),
-+					KEY_ALLOC_NOT_IN_QUOTA, NULL);
- 	if (IS_ERR(modsign_keyring))
- 		panic("Can't allocate module signing keyring\n");
- 
--	if (key_instantiate_and_link(modsign_keyring, NULL, 0, NULL, NULL) < 0)
--		panic("Can't instantiate module signing keyring\n");
--
- 	return 0;
- }
- 
-
+Gertjan
