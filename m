@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2LQMeg (ORCPT <rfc822;w@1wt.eu>);
+	id S1752647Ab2LQMet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 07:34:49 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:50560 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab2LQMeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Dec 2012 07:34:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab2LQMef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 07:34:35 -0500
-Date: Mon, 17 Dec 2012 13:34:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Daniel Berrange <berrange@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re:  +
-	core_pattern-set-core-helpers-root-and-namespace-to-crashing-process
-	.patch added to -mm tree
-Message-ID: <20121217123428.GA1957@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Laurent Navet <laurent.navet@gmail.com>
+To: ibm-acpi@hmh.eng.br
+Cc: mjg@redhat.com, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] driver thinkpad acpi : semantic patch (bool usage)
+Date: Mon, 17 Dec 2012 13:35:13 +0100
+Message-Id: <1355747714-2843-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@@ -455,6 +468,14 @@ static int umh_pipe_setup(struct subproc
- 	/* and disallow core files too */
- 	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
- 
-+
-+	if (cp->switch_ns) {
-+		get_fs_root(cp->cprocess->fs, &root);
-+		set_fs_root(current->fs, &root);
-+		switch_task_namespaces(current, cp->cprocess->nsproxy);
+Bool initializations should use true and false.  Bool tests don't need
+comparisons.  Based on contributions from Joe Perches, Rusty Russell
+and Bruce W Allan.
 
-How? You can't simply change ->nsproxy this way.
+The semantic patch that makes this output is available
+in scripts/coccinelle/misc/boolinit.cocci.
 
-If nothing else this breaks sys_getpid(), no?
+More information about semantic patching is available at
+http://coccinelle.lip6.fr/
 
-And a lot more problems, afaics. For example, this thread can continue
-to run after, say, this cprocess->nsproxy->pid_ns was already destroyed.
-zap_pid_ns_processes() obviously won't see this thread.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/platform/x86/thinkpad_acpi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Even ->nsproxy itself can go away. Just suppose that the coredumping
-task is the only process in this namespace (sub-init).
-
-Oleg.
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 75dd651..cb46b6a 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -3728,7 +3728,7 @@ static void hotkey_notify(struct ibm_struct *ibm, u32 event)
+ 			if (tp_features.hotkey_wlsw &&
+ 					hkey == TP_HKEY_EV_RFKILL_CHANGED) {
+ 				tpacpi_send_radiosw_update();
+-				send_acpi_ev = 0;
++				send_acpi_ev = false;
+ 				known_ev = true;
+ 				break;
+ 			}
+-- 
+1.7.10.4
 
