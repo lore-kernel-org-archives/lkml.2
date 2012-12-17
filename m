@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab2LQHj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 02:39:27 -0500
-Received: from mail.snarked.org ([67.43.172.250]:1275 "EHLO mail.snarked.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab2LQHj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 02:39:26 -0500
-X-Greylist: delayed 932 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 02:39:26 EST
-X-Envelope-From: <newsserv> (mail.snarked.org)
-To: linux-kernel@vger.kernel.org
-From: "D. Stussy" <spam+newsgroups@bde-arc.ampr.org>
-Newsgroups: linux.kernel
-Subject: Help or bug?  RTL8192CU driver.
-Date: Sun, 16 Dec 2012 23:24:19 -0800
-Message-ID: <kamhai$a0r$1@snarked.org>
-Reply-To: "D. Stussy" <replies+newsgroups@kd6lvw.ampr.org>
-NNTP-Posting-Host: mdt.bde-arc.ampr.org
-Mime-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="utf-8";
-	reply-type=original
+	id S1751749Ab2LQHkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 02:40:07 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:49682 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab2LQHkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 02:40:05 -0500
+Message-ID: <50CECBFC.2030807@ahsoftware.de>
+Date: Mon, 17 Dec 2012 08:38:36 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alessandro Zummo <a.zummo@towertech.it>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@jic23.retrosnub.co.uk>,
+        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+        rtc-linux@googlegroups.com,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 3/3 v2] iio: add rtc-driver for HID sensors of type time
+References: <50C5DFCC.60203@ahsoftware.de> <1355151119-2489-1-git-send-email-holler@ahsoftware.de> <50C61675.2000407@metafoo.de> <50C63BBD.3080202@ahsoftware.de> <50C64484.4060306@metafoo.de> <50C65381.8010609@ahsoftware.de> <50C6567D.7080303@metafoo.de> <50C65746.8030609@kernel.org> <50C6674D.1000901@ahsoftware.de> <50C6FD60.7080300@jic23.retrosnub.co.uk> <50C6FF71.1010504@metafoo.de> <20121216231552.4ced4d25@linux.lan.towertech.it>
+In-Reply-To: <20121216231552.4ced4d25@linux.lan.towertech.it>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Trace: snarked.org 1355729042 10267 2001:470:d:468:7455:7a:1c17:3db4 (17 Dec 2012 07:24:02 GMT)
-X-Complaints-To: newsmaster+complaints@snarked.org
-NNTP-Posting-Date: Mon, 17 Dec 2012 07:24:02 +0000 (UTC)
-X-No-Archive: Yes
-X-MimeOLE: Produced By Microsoft MimeOLE V15.4.3555.308
-X-Newsreader: Microsoft Windows Live Mail 15.4.3555.308
-Importance: Normal
-X-Priority: 3
-X-MSMail-Priority: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am having trouble with using the RTL8192CU 802.11n USB network chip.  I have 
-verified that I have the correct firmware (the size is 16014 bytes and the MD5 
-signature matches the one posted in various forums as correct).  The kernel 
-tries to load it, but after about 20 seconds, a message indicating that it was 
-not available appears in my kernel log.  No other reason is given.
+Am 16.12.2012 23:15, schrieb Alessandro Zummo:
+> On Tue, 11 Dec 2012 10:40:01 +0100
+> Lars-Peter Clausen <lars@metafoo.de> wrote:
+>
+>>> Yes, move the header or merge into existing one as makes sense.
+>>> I'm not pulling this driver into the IIO tree (unless for some
+>>> reason Alessandro wants me to and I can't think why he would...).
+>>>
+>>
+>> Alessandro has been pretty quiet for quite some time now. Luckily Andrew
+>> Morton usually picks up the stuff for orphaned subsystems. So put him on Cc
+>> for v4.
+>
+>   Still reading e-mails ;) Andrew monitors the rtc mailing list and picks up
+>   the patches that do not need to go in any arch's main tree, which is the suggested
+>   way as, with modern chipsets, the RTCs shares hw with many other drivers.
 
-As the problem occurs on a x86-64-bit system, is there a problem with loading 
-firmware into the device on those systems?  Or might I have a buggy network 
-device?
+Reading just the latest patch (v5) might be faster. ;)
 
+It basically doesn't do much. On call of read_time() a so called report 
+with the time values (year, month, ...) is requested from the device, 
+rtc_time is filled with them, done.
 
-USB:  Bus 001 Device 003: ID 0bda:8176 Realtek Semiconductor Corp. RTL8188CUS 
-802.11n WLAN
+Regards,
 
-syslog/dmesg:
-cfg80211: Calling CRDA to update world regulatory domain
-rtl8192cu 1-2:1.0: usb_probe_interface
-rtl8192cu 1-2:1.0: usb_probe_interface - got id
-rtl8192cu: Chip version 0x10
-rtl8192cu: MAC address: 48:02:2a:8f:de:0b
-rtl8192cu: Board Type 0
-rtlwifi: rx_max_size 15360, rx_urb_num 8, in_ep 1
-
-...  [regulatory messages indicating available frequencies] ...
-
-rtl8192cu: Loading firmware rtlwifi/rtl8192cufw.bin
-cfg80211: Pending regulatory request, waiting for it to be processed...
-usbcore: registered new interface driver rtl8192cu
-   [pause for about 20 seconds]
-rtlwifi: Firmware rtlwifi/rtl8192cufw.bin not available
-
-Yet, the file is there:
--rw-r--r-- 2 root root 16014 Apr  1  2012 /lib/firmware/rtlwifi/rtl8192cufw.bin
-
-What else should I look for or do?
-
-
+Alexander
