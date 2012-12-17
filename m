@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2LQP1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:27:17 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39427 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab2LQP1Q convert rfc822-to-8bit (ORCPT
+	id S1753313Ab2LQPah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:30:37 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:45847 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab2LQPaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:27:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,302,1355126400"; 
-   d="scan'208";a="265483437"
-Message-ID: <1355758017.31620.110.camel@smile>
-Subject: Re: [PATCH 2/2] dma: dw_dmac: clear suspend during termination
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
-        linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Date: Mon, 17 Dec 2012 17:26:57 +0200
-In-Reply-To: <CAKohpom-C-VYnyHHu8hVVpvDWrkLUAFVs9f9Qu+74XtiFVRZvg@mail.gmail.com>
-References: <1355753223-3705-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1355753223-3705-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAKohpom-C-VYnyHHu8hVVpvDWrkLUAFVs9f9Qu+74XtiFVRZvg@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Mon, 17 Dec 2012 10:30:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <1355737085-6671-1-git-send-email-bp@alien8.de>
+References: <1355737085-6671-1-git-send-email-bp@alien8.de>
+Date: Mon, 17 Dec 2012 09:30:33 -0600
+Message-ID: <CAH2r5mt=4ZoGR_4hP52uHsZabXpPfh1sa1X0GSg6W4=fawNFnA@mail.gmail.com>
+Subject: Re: [PATCH] cifs: Do not enable debugging code by default
+From: Steve French <smfrench@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-17 at 20:42 +0530, Viresh Kumar wrote: 
-> On 17 December 2012 19:37, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >
-> > Clear DWC_CFGL_CH_SUSP bit during termination if the channel
-> > was paused.
-> >
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> 
-> Insufficient commit log :(
-> You don't have to say here, what you are doing, but why you are doing it.
+I don't think taking out debugging makes sense - we need debugging a
+lot more often than expected even to diagnose user errors (usually
+relating to session establishment failures, since we are very limited
+in how much information can be passed back in mount).   If we had
+dynamic trace points for cifs and for common vfs entry points, or if
+the distros shipped dual cifs modules (one with debugging and one
+without), I wouldn't mind disabling it - but multiple times a month we
+have to diagnose user problems (sometimes user errors, sometimes
+server bugs etc.) by enabling debugging.
 
-Fighting against bug. The workflow in our case is to a) pause the dma,
-b) do something in the slave driver, c) terminate all transfers, d)
-submit new transfer. But d) doesn't happen because the channel is still
-paused.
+On Mon, Dec 17, 2012 at 3:38 AM, Borislav Petkov <bp@alien8.de> wrote:
+> Debugging code is generally disabled in the configurator since it is
+> only for devs and testers and not for the majority of the installations.
+>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Jeff Layton <jlayton@redhat.com>
+> Cc: Steve French <sfrench@samba.org>
+> Cc: linux-cifs@vger.kernel.org
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> ---
+>  fs/cifs/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
+> index 21ff76c22a17..241a0e2853c5 100644
+> --- a/fs/cifs/Kconfig
+> +++ b/fs/cifs/Kconfig
+> @@ -124,7 +124,6 @@ config CIFS_ACL
+>
+>  config CIFS_DEBUG
+>         bool "Enable CIFS debugging routines"
+> -       default y
+>         depends on CIFS
+>         help
+>            Enabling this option adds helpful debugging messages to
+> --
+> 1.8.1.rc2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> Please mention the reason here first, then repost the series after getting my
-> comments
 
-Okay.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Thanks,
+
+Steve
