@@ -1,221 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab2LQCCX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 21:02:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49160 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab2LQCCW (ORCPT
+	id S1751604Ab2LQCCs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 21:02:48 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:53902 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab2LQCCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 21:02:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
-	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-	<50CE4097.2020104@zytor.com>
-	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
-	<CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
-Date: Sun, 16 Dec 2012 18:02:20 -0800
-X-Google-Sender-Auth: bhhiN48f3ZfwzHdcmh1v84Ut-j4
-Message-ID: <CAE9FiQXqXh9OQvu2a-atm3Ydhi+LOLw1pLJ-tCavmSnAohXmkQ@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Content-Type: multipart/mixed; boundary=00151747821683fac104d102c54d
+	Sun, 16 Dec 2012 21:02:47 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-b4-50ce7d450e05
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+References: 
+In-reply-to: 
+Subject: [PATCH 1/2] pinctrl: samsung: Fix compile error in
+ pinctrl-exynos5440/samsung.c
+Date: Mon, 17 Dec 2012 11:02:45 +0900
+Message-id: <001b01cddbfa$9b306740$d19135c0$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3UU7Eg1il1ze7QRMSoT4lj3ZIiNgCUy8QQAVS0fuA=
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t8zQ13X2nMBBs8m6Flc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MRzPPsxR8Ya1ob3nC2sD4n6WLkZ1DQsBEYq9DFyMnkCUmceHe
+	erYuRi4OIYFljBLfri9hgUiYSEydcwIqsYhRouvaNiYIZx6TxKrmR2wgVWwCuhLH1m9hBbFF
+	BBQkNvc+A7OZBdoYJTavCO5i5ABq4JZY3RwEEuYU4JFY96eTGcQWFoiSmPdqBxOIzSKgKjHx
+	1lVGEJtXwE7i78I9bBC2oMSPyfdYIEZqSazfeZwJwpaX2LzmLTPIeAkBdYlHf3UhLrCSuPj0
+	MCNEiYjEvhfvGCHGC0h8m3yIBaJcVmLTAWaQTyQEFrFLfNvczArxr6TEwRU3WCYwSsxCsnkW
+	ks2zkGyehWTFAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxghUSW1g3Flg8UhRgEORiUe
+	XqPUcwFCrIllxZW5hxglOJiVRHj53YFCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M+LyS
+	eENjYxMzE1MTc0tTc1McwkrivM0eKQFCAumJJanZqakFqUUw45g4OKUaGE/xGT/c+NPowosW
+	y7CJeue5T0btnjNz8d731yuLStZPX7/qgu7XtyIfGKy794v8nPTtspH6r+8Hju8sZ0jrqaxY
+	/X5rc9+XhlcODhtLlGuniAT8ihA0eLgpa5bBjI3vY57nFYVGBp1u6mvV2DT9vOWj9YsP6Stv
+	6s8Nt6hwSjg0+xMzb9epI/5KLMUZiYZazEXFiQBDD4a21wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jAV3X2nMBBi+ualpc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjEczz7MUfGGtaG95wtrA
+	+J+li5GTQ0LARGLqnBNsELaYxIV764FsLg4hgUWMEl3XtjFBOPOYJFY1PwKrYhPQlTi2fgsr
+	iC0ioCCxufcZmM0s0MYosXlFcBcjB1ADt8Tq5iCQMKcAj8S6P53MILawQJTEvFc7mEBsFgFV
+	iYm3rjKC2LwCdhJ/F+5hg7AFJX5MvscCMVJLYv3O40wQtrzE5jVvmUHGSwioSzz6qwtxgZXE
+	xaeHGSFKRCT2vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl
+	5+duYgTH7TOpHYwrGywOMQpwMCrx8BqlngsQYk0sK67MPcQowcGsJMLL7w4U4k1JrKxKLcqP
+	LyrNSS0+xOgD9OhEZinR5HxgSskriTc0NjEzsjQyszAyMTfHIawkztvskRIgJJCeWJKanZpa
+	kFoEM46Jg1OqgVGyY8m5l4efFu++eDuQccW8o8x2y5YxSBnN7HoSqb5I+aOZV359t9n2k2dy
+	kprq9j6+mWvn+DDqgNcE2cUr4/tlQueIpzBLeRy6dfhtekjui7JQtVOar79823tg97PtU2/y
+	P5dlet0n6nOe+XhxKntQcQ3PheuVDfNyTTxj1OSc9ZiPmH+T61RiKc5INNRiLipOBAB+dgbG
+	CAMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151747821683fac104d102c54d
-Content-Type: text/plain; charset=ISO-8859-1
+error: drivers/pinctrl/pinctrl-exynos5440.o: multiple definition of 'pcfgs'
+drivers/pinctrl/pinctrl-samsung.o: previous definition here
 
-On Sun, Dec 16, 2012 at 4:42 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sun, Dec 16, 2012 at 3:59 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->>
->>> it has to be rebased after #PF handler version. otherwise it can not
->>> handle for framdisk
->>> that is loaded after 1G.
->>>
->>> Fenghua,
->>>
->>> can you post your boot log with 64bit with your patch?
->>>
->>> Yinghai
->>
->> Attached is dmesg with the patches.
->>
->
-> yes, your laptop only have 1G ram, and
->
-> [    0.000000] e820: BIOS-provided physical RAM map:
-> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009d7ff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000000009d800-0x000000000009ffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000000d2000-0x00000000000d3fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000fffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000003e6affff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000003e6b0000-0x000000003e6ccfff] ACPI data
-> [    0.000000] BIOS-e820: [mem 0x000000003e6cd000-0x000000003e6fffff] ACPI NVS
-> [    0.000000] BIOS-e820: [mem 0x000000003e700000-0x000000003effffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000f0000000-0x00000000f3ffffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed003ff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fed14000-0x00000000fed19fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fed1c000-0x00000000fed8ffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff] reserved
->
-> ramdisk is at
->      RAMDISK: [mem 0x27608000-0x2fafbfff]
->
-> and current kernel default set 1G to kernel mapping. so it happens to
-> work with your patchset.
->
-> please find one sytem with 4G or more to test it.
->
-> and you may need to rebase your patches on top of my for-x86-boot
-> branch with working
-> #PF handler set page table patch.
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-x86-boot
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/pinctrl/pinctrl-samsung.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-also you did not consider initrd relocating....
+diff --git a/drivers/pinctrl/pinctrl-samsung.c
+b/drivers/pinctrl/pinctrl-samsung.c
+index 8f31b65..fc98b38 100644
+--- a/drivers/pinctrl/pinctrl-samsung.c
++++ b/drivers/pinctrl/pinctrl-samsung.c
+@@ -37,7 +37,7 @@
+ #define FSUFFIX_LEN		sizeof(FUNCTION_SUFFIX)
+ 
+ /* list of all possible config options supported */
+-struct pin_config {
++static const struct pin_config {
+ 	char		*prop_cfg;
+ 	unsigned int	cfg_type;
+ } pcfgs[] = {
+-- 
+1.7.4.1
 
-please check attached fix, and see if you can fold in into you next posting.
-
-Thanks
-
-Yinghai
-
---00151747821683fac104d102c54d
-Content-Type: application/octet-stream; name="fix_microcode_v4.patch"
-Content-Disposition: attachment; filename="fix_microcode_v4.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hasykiy90
-
-LS0tCiBhcmNoL3g4Ni9rZXJuZWwvbWljcm9jb2RlX2ludGVsX2Vhcmx5LmMgfCAgMTAxICsrKysr
-KysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tCiBhcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYyAgICAg
-ICAgICAgICAgICAgfCAgIDExICsrKwogMiBmaWxlcyBjaGFuZ2VkLCA2NCBpbnNlcnRpb25zKCsp
-LCA0OCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL21pY3Jv
-Y29kZV9pbnRlbF9lYXJseS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2
-L2tlcm5lbC9taWNyb2NvZGVfaW50ZWxfZWFybHkuYworKysgbGludXgtMi42L2FyY2gveDg2L2tl
-cm5lbC9taWNyb2NvZGVfaW50ZWxfZWFybHkuYwpAQCAtMjAsOSArMjAsMTEgQEAKICNpbmNsdWRl
-IDxsaW51eC92bWFsbG9jLmg+CiAjaW5jbHVkZSA8bGludXgvbW0uaD4KICNpbmNsdWRlIDxsaW51
-eC9lYXJseWNwaW8uaD4KKwogI2luY2x1ZGUgPGFzbS9tc3IuaD4KICNpbmNsdWRlIDxhc20vbWlj
-cm9jb2RlX2ludGVsLmg+CiAjaW5jbHVkZSA8YXNtL3Byb2Nlc3Nvci5oPgorI2luY2x1ZGUgPGFz
-bS9zZXR1cC5oPgogCiBzdHJ1Y3QgbWljcm9jb2RlX2ludGVsIF9faW5pdGRhdGEgKm1jX3NhdmVk
-X2luX2luaXRyZFtNQVhfVUNPREVfQ09VTlRdOwogc3RydWN0IG1jX3NhdmVkX2RhdGEgbWNfc2F2
-ZWRfZGF0YTsKQEAgLTI5MCwxMiArMjkyLDQ0IEBAIHN0YXRpYyBpbnQgX19jcHVpbml0IGNvbGxl
-Y3RfY3B1X2luZm9fZWEKIAlyZXR1cm4gMDsKIH0KIAorI2lmZGVmIENPTkZJR19YODZfNjQKK3Zv
-aWQgX19pbml0IHVwZGF0ZV9tY19zYXZlZF9kYXRhKHVuc2lnbmVkIGxvbmcgcGFfb2Zmc2V0KQor
-eworCWludCBpOworCXVuc2lnbmVkIGxvbmcgYWRkcjsKKworCWlmICghcGFfb2Zmc2V0IHx8ICFt
-Y19zYXZlZF9kYXRhLm1jX3NhdmVkKQorCQlyZXR1cm47CisKKwlmb3IgKGkgPSAwOyBpPCBtY19z
-YXZlZF9kYXRhLm1jX3NhdmVkX2NvdW50OyBpKyspCisJCW1jX3NhdmVkX2RhdGEubWNfc2F2ZWRb
-aV0gKz0gcGFfb2Zmc2V0OworfQorI2Vsc2UKK3ZvaWQgX19pbml0IHVwZGF0ZV9tY19zYXZlZF9k
-YXRhKHVuc2lnbmVkIGxvbmcgcGFfb2Zmc2V0KQoreworCWludCBpOworCisJaWYgKG1jX3NhdmVk
-X2RhdGEubWNfc2F2ZWQpIHsKKwkJbWNfc2F2ZWRfZGF0YS5tY19zYXZlZCA9IF9fdmEobWNfc2F2
-ZWRfZGF0YS5tY19zYXZlZCk7CisJCWZvciAoaSA9IDA7IGkgPCBtY19zYXZlZF9kYXRhLm1jX3Nh
-dmVkX2NvdW50OyBpKyspCisJCQltY19zYXZlZF9kYXRhLm1jX3NhdmVkW2ldID0KKwkJCQkJIF9f
-dmEobWNfc2F2ZWRfZGF0YS5tY19zYXZlZFtpXSArIHBhX29mZnNldCk7CisKKwl9CisKKwltY19z
-YXZlZF9kYXRhLnVjb2RlX2NwdV9pbmZvID0gX192YShtY19zYXZlZF9kYXRhLnVjb2RlX2NwdV9p
-bmZvKTsKKwlpZiAobWNfc2F2ZWRfZGF0YS51Y29kZV9jcHVfaW5mby0+bWMpCisJCW1jX3NhdmVk
-X2RhdGEudWNvZGVfY3B1X2luZm8tPm1jID0KKwkJCQkgX192YShtY19zYXZlZF9kYXRhLnVjb2Rl
-X2NwdV9pbmZvLT5tYyk7Cit9CisKKyNlbmRpZgorCiBzdGF0aWMgX19pbml0IGVudW0gdWNvZGVf
-c3RhdGUKLXNjYW5fbWljcm9jb2RlKHVuc2lnbmVkIGxvbmcgc3RhcnQsIHVuc2lnbmVkIGxvbmcg
-ZW5kLAorc2Nhbl9taWNyb2NvZGUodW5zaWduZWQgbG9uZyBzdGFydCwgdW5zaWduZWQgbG9uZyBz
-aXplLAogCQlzdHJ1Y3QgbWNfc2F2ZWRfZGF0YSAqbWNfc2F2ZWRfZGF0YSwKIAkJc3RydWN0IG1p
-Y3JvY29kZV9pbnRlbCAqKm1jX3NhdmVkX2luX2luaXRyZCkKIHsKLQl1bnNpZ25lZCBpbnQgc2l6
-ZSA9IGVuZCAtIHN0YXJ0ICsgMTsKIAlzdHJ1Y3QgY3Bpb19kYXRhIGNkID0geyAwLCAwIH07CiAJ
-Y2hhciB1Y29kZV9uYW1lW10gPSAia2VybmVsL3g4Ni9taWNyb2NvZGUvR2VudWluZUludGVsLmJp
-biI7CiAJbG9uZyBvZmZzZXQgPSAwOwpAQCAtMzA4LDcgKzM0Miw3IEBAIHNjYW5fbWljcm9jb2Rl
-KHVuc2lnbmVkIGxvbmcgc3RhcnQsIHVuc2kKIAkJCQkJIG1jX3NhdmVkX2luX2luaXRyZCwgU1lT
-VEVNX0JPT1RJTkcpOwogfQogCi1zdGF0aWMgaW50IF9faW5pdAorc3RhdGljIGludCBfX2NwdWlu
-aXQKIGFwcGx5X21pY3JvY29kZV9lYXJseShzdHJ1Y3QgbWNfc2F2ZWRfZGF0YSAqbWNfc2F2ZWRf
-ZGF0YSwgaW50IGNwdSkKIHsKIAlzdHJ1Y3QgdWNvZGVfY3B1X2luZm8gKnVjaSA9IG1jX3NhdmVk
-X2RhdGEtPnVjb2RlX2NwdV9pbmZvICsgY3B1OwpAQCAtMzM5LDMyICszNzMsNiBAQCBhcHBseV9t
-aWNyb2NvZGVfZWFybHkoc3RydWN0IG1jX3NhdmVkX2RhCiAJcmV0dXJuIDA7CiB9CiAKLSNpZmRl
-ZiBDT05GSUdfWDg2XzMyCi1zdGF0aWMgdm9pZCBfX2luaXQgbWFwX21jX3NhdmVkKHN0cnVjdCBt
-Y19zYXZlZF9kYXRhICptY19zYXZlZF9kYXRhLAotCQkJCXN0cnVjdCBtaWNyb2NvZGVfaW50ZWwg
-KiptY19zYXZlZF9pbl9pbml0cmQpCi17Ci0JaW50IGk7Ci0KLQlpZiAobWNfc2F2ZWRfZGF0YS0+
-bWNfc2F2ZWQpIHsKLQkJZm9yIChpID0gMDsgaSA8IG1jX3NhdmVkX2RhdGEtPm1jX3NhdmVkX2Nv
-dW50OyBpKyspCi0JCQltY19zYXZlZF9kYXRhLT5tY19zYXZlZFtpXSA9Ci0JCQkJCSBfX3ZhKG1j
-X3NhdmVkX2RhdGEtPm1jX3NhdmVkW2ldKTsKLQotCQltY19zYXZlZF9kYXRhLT5tY19zYXZlZCA9
-IF9fdmEobWNfc2F2ZWRfZGF0YS0+bWNfc2F2ZWQpOwotCX0KLQotCWlmIChtY19zYXZlZF9kYXRh
-LT51Y29kZV9jcHVfaW5mby0+bWMpCi0JCW1jX3NhdmVkX2RhdGEtPnVjb2RlX2NwdV9pbmZvLT5t
-YyA9Ci0JCQkJIF9fdmEobWNfc2F2ZWRfZGF0YS0+dWNvZGVfY3B1X2luZm8tPm1jKTsKLQltY19z
-YXZlZF9kYXRhLT51Y29kZV9jcHVfaW5mbyA9IF9fdmEobWNfc2F2ZWRfZGF0YS0+dWNvZGVfY3B1
-X2luZm8pOwotfQotI2Vsc2UKLXN0YXRpYyBpbmxpbmUgdm9pZCBfX2luaXQgbWFwX21jX3NhdmVk
-KHN0cnVjdCBtY19zYXZlZF9kYXRhICptY19zYXZlZF9kYXRhLAotCQkJCXN0cnVjdCBtaWNyb2Nv
-ZGVfaW50ZWwgKiptY19zYXZlZF9pbl9pbml0cmQpCi17Ci19Ci0jZW5kaWYKLQogdm9pZCBfX2lu
-aXQgc2F2ZV9taWNyb2NvZGVfaW5faW5pdHJkKHN0cnVjdCBtY19zYXZlZF9kYXRhICptY19zYXZl
-ZF9kYXRhLAogCQkgc3RydWN0IG1pY3JvY29kZV9pbnRlbCAqKm1jX3NhdmVkX2luX2luaXRyZCkK
-IHsKQEAgLTM3Niw3ICszODQsNyBAQCB2b2lkIF9faW5pdCBzYXZlX21pY3JvY29kZV9pbl9pbml0
-cmQoc3RyCiBzdGF0aWMgdm9pZCBfX2luaXQKIF9sb2FkX3Vjb2RlX2ludGVsX2JzcChzdHJ1Y3Qg
-bWNfc2F2ZWRfZGF0YSAqbWNfc2F2ZWRfZGF0YSwKIAkJICAgICAgc3RydWN0IG1pY3JvY29kZV9p
-bnRlbCAqKm1jX3NhdmVkX2luX2luaXRyZCwKLQkJICAgICAgdW5zaWduZWQgbG9uZyBpbml0cmRf
-c3RhcnQsIHVuc2lnbmVkIGxvbmcgaW5pdHJkX2VuZCkKKwkJICAgICAgdW5zaWduZWQgbG9uZyBp
-bml0cmRfc3RhcnQsIHVuc2lnbmVkIGxvbmcgaW5pdHJkX3NpemUpCiB7CiAJaW50IGNwdSA9IDA7
-CiAKQEAgLTM4NywzNyArMzk1LDM0IEBAIF9sb2FkX3Vjb2RlX2ludGVsX2JzcChzdHJ1Y3QgbWNf
-c2F2ZWRfZGEKIAkJCShzdHJ1Y3QgdWNvZGVfY3B1X2luZm8gKilfX3BhKHVjb2RlX2NwdV9pbmZv
-X2Vhcmx5KTsKICNlbmRpZgogCWNvbGxlY3RfY3B1X2luZm9fZWFybHkobWNfc2F2ZWRfZGF0YS0+
-dWNvZGVfY3B1X2luZm8gKyBjcHUpOwotCXNjYW5fbWljcm9jb2RlKGluaXRyZF9zdGFydCwgaW5p
-dHJkX2VuZCwgbWNfc2F2ZWRfZGF0YSwKKwlzY2FuX21pY3JvY29kZShpbml0cmRfc3RhcnQsIGlu
-aXRyZF9zaXplLCBtY19zYXZlZF9kYXRhLAogCQkgICAgICAgbWNfc2F2ZWRfaW5faW5pdHJkKTsK
-IAlsb2FkX21pY3JvY29kZShtY19zYXZlZF9kYXRhLCBjcHUpOwogCWFwcGx5X21pY3JvY29kZV9l
-YXJseShtY19zYXZlZF9kYXRhLCBjcHUpOwotCW1hcF9tY19zYXZlZChtY19zYXZlZF9kYXRhLCBt
-Y19zYXZlZF9pbl9pbml0cmQpOwogfQogCiB2b2lkIF9faW5pdAogbG9hZF91Y29kZV9pbnRlbF9i
-c3AoY2hhciAqcmVhbF9tb2RlX2RhdGEpCiB7Ci0JdTY0IHJhbWRpc2tfaW1hZ2UsIHJhbWRpc2tf
-c2l6ZSwgcmFtZGlza19lbmQ7Ci0JdW5zaWduZWQgbG9uZyBpbml0cmRfc3RhcnQsIGluaXRyZF9l
-bmQ7Ci0Jc3RydWN0IGJvb3RfcGFyYW1zICpib290X3BhcmFtczsKLQotCWJvb3RfcGFyYW1zID0g
-KHN0cnVjdCBib290X3BhcmFtcyAqKXJlYWxfbW9kZV9kYXRhOwotCXJhbWRpc2tfaW1hZ2UgPSBi
-b290X3BhcmFtcy0+aGRyLnJhbWRpc2tfaW1hZ2U7Ci0JcmFtZGlza19zaXplICA9IGJvb3RfcGFy
-YW1zLT5oZHIucmFtZGlza19zaXplOworCXU2NCByYW1kaXNrX2ltYWdlLCByYW1kaXNrX3NpemU7
-CiAKICNpZmRlZiBDT05GSUdfWDg2XzY0Ci0JcmFtZGlza19lbmQgID0gUEFHRV9BTElHTihyYW1k
-aXNrX2ltYWdlICsgcmFtZGlza19zaXplKTsKLQlpbml0cmRfc3RhcnQgPSByYW1kaXNrX2ltYWdl
-ICsgUEFHRV9PRkZTRVQ7Ci0JaW5pdHJkX2VuZCA9IGluaXRyZF9zdGFydCArIHJhbWRpc2tfc2l6
-ZTsKKwlyYW1kaXNrX2ltYWdlID0gYm9vdF9wYXJhbXMuaGRyLnJhbWRpc2tfaW1hZ2U7CisJcmFt
-ZGlza19zaXplICA9IGJvb3RfcGFyYW1zLmhkci5yYW1kaXNrX3NpemU7CisJaWYgKCFyYW1kaXNr
-X2ltYWdlIHx8ICFyYW1kaXNrX3NpemUpCisJCXJldHVybjsKIAlfbG9hZF91Y29kZV9pbnRlbF9i
-c3AoJm1jX3NhdmVkX2RhdGEsIG1jX3NhdmVkX2luX2luaXRyZCwKLQkJCSAgICAgIGluaXRyZF9z
-dGFydCwgaW5pdHJkX2VuZCk7CisJCQkgICAgICByYW1kaXNrX2ltYWdlLCByYW1kaXNrX3NpemUp
-OwogI2Vsc2UKLQlyYW1kaXNrX2VuZCAgPSByYW1kaXNrX2ltYWdlICsgcmFtZGlza19zaXplOwot
-CWluaXRyZF9zdGFydCA9IHJhbWRpc2tfaW1hZ2U7Ci0JaW5pdHJkX2VuZCA9IGluaXRyZF9zdGFy
-dCArIHJhbWRpc2tfc2l6ZTsKKwlzdHJ1Y3QgYm9vdF9wYXJhbXMgKmJvb3RfcGFyYW1zID0gKHN0
-cnVjdCBib290X3BhcmFtcyAqKXJlYWxfbW9kZV9kYXRhOworCisJcmFtZGlza19pbWFnZSA9IGJv
-b3RfcGFyYW1zLT5oZHIucmFtZGlza19pbWFnZTsKKwlyYW1kaXNrX3NpemUgID0gYm9vdF9wYXJh
-bXMtPmhkci5yYW1kaXNrX3NpemU7CisJaWYgKCFyYW1kaXNrX2ltYWdlIHx8ICFyYW1kaXNrX3Np
-emUpCisJCXJldHVybjsKIAlfbG9hZF91Y29kZV9pbnRlbF9ic3AoKHN0cnVjdCBtY19zYXZlZF9k
-YXRhICopX19wYSgmbWNfc2F2ZWRfZGF0YSksCi0JCQkoc3RydWN0IG1pY3JvY29kZV9pbnRlbCAq
-KilfX3BhKG1jX3NhdmVkX2luX2luaXRyZCksCi0JCQlpbml0cmRfc3RhcnQsIGluaXRyZF9lbmQp
-OworCQkJICAgICAgKHN0cnVjdCBtaWNyb2NvZGVfaW50ZWwgKiopX19wYShtY19zYXZlZF9pbl9p
-bml0cmQpLAorCQkJICAgICAgcmFtZGlza19pbWFnZSwgcmFtZGlza19zaXplKTsKICNlbmRpZgog
-fQogCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3NldHVwLmMKPT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQot
-LS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL3NldHVwLmMKKysrIGxpbnV4LTIuNi9h
-cmNoL3g4Ni9rZXJuZWwvc2V0dXAuYwpAQCAtMzA5LDYgKzMwOSwxNCBAQCBzdGF0aWMgdTY0IF9f
-aW5pdCBnZXRfbWVtX3NpemUodW5zaWduZWQKIAogI2lmZGVmIENPTkZJR19CTEtfREVWX0lOSVRS
-RAogCisjaWZkZWYgQ09ORklHX01JQ1JPQ09ERV9JTlRFTF9FQVJMWQordm9pZCB1cGRhdGVfbWNf
-c2F2ZWRfZGF0YSh1bnNpZ25lZCBsb25nIHBhX29mZnNldCk7CisjZWxzZQorc3RhdGljIGlubGlu
-ZSB2b2lkIHVwZGF0ZV9tY19zYXZlZF9kYXRhKHVuc2lnbmVkIGxvbmcgcGFfb2Zmc2V0KQorewor
-fQorI2VuZGlmCisKIHN0YXRpYyB1NjQgX19pbml0IGdldF9yYW1kaXNrX2ltYWdlKHZvaWQpCiB7
-CiAJdTY0IHJhbWRpc2tfaW1hZ2UgPSBib290X3BhcmFtcy5oZHIucmFtZGlza19pbWFnZTsKQEAg
-LTM3Niw2ICszODQsOCBAQCBzdGF0aWMgdm9pZCBfX2luaXQgcmVsb2NhdGVfaW5pdHJkKHZvaWQp
-CiAJCSIgW21lbSAlIzAxMGxseC0lIzAxMGxseF1cbiIsCiAJCXJhbWRpc2tfaW1hZ2UsIHJhbWRp
-c2tfaW1hZ2UgKyByYW1kaXNrX3NpemUgLSAxLAogCQlyYW1kaXNrX2hlcmUsIHJhbWRpc2tfaGVy
-ZSArIHJhbWRpc2tfc2l6ZSAtIDEpOworCisJdXBkYXRlX21jX3NhdmVkX2RhdGEocmFtZGlza19o
-ZXJlIC0gcmFtZGlza19pbWFnZSk7CiB9CiAKIHN0YXRpYyB2b2lkIF9faW5pdCBlYXJseV9yZXNl
-cnZlX2luaXRyZCh2b2lkKQpAQCAtNDE5LDYgKzQyOSw3IEBAIHN0YXRpYyB2b2lkIF9faW5pdCBy
-ZXNlcnZlX2luaXRyZCh2b2lkKQogCQkvKiBBbGwgYXJlIG1hcHBlZCwgZWFzeSBjYXNlICovCiAJ
-CWluaXRyZF9zdGFydCA9IHJhbWRpc2tfaW1hZ2UgKyBQQUdFX09GRlNFVDsKIAkJaW5pdHJkX2Vu
-ZCA9IGluaXRyZF9zdGFydCArIHJhbWRpc2tfc2l6ZTsKKwkJdXBkYXRlX21jX3NhdmVkX2RhdGEo
-MCk7CiAJCXJldHVybjsKIAl9CiAK
---00151747821683fac104d102c54d--
