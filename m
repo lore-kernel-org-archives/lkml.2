@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2LQPKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:10:24 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63317 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2LQPKW (ORCPT
+	id S1753117Ab2LQPL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:11:28 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44850 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab2LQPL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:10:22 -0500
-Date: Mon, 17 Dec 2012 07:13:09 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: alan@linux.intel.com, jslaby@suse.cz, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-tegra@vger.kernel.org,
-        swarren@wwwdotorg.org
-Subject: Re: [PATCH] serial: tegra: add serial driver
-Message-ID: <20121217151309.GA15665@kroah.com>
-References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 17 Dec 2012 10:11:27 -0500
+Message-ID: <50CF361A.1030203@gmail.com>
+Date: Mon, 17 Dec 2012 16:11:22 +0100
+From: =?ISO-8859-1?Q?Marcos_Lois_Berm=FAdez?= <marcos.discalis@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Question about using new request_threaded_irq
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 05:40:49PM +0530, Laxman Dewangan wrote:
-> Nvidia's Tegra has multiple uart controller which supports:
-> - APB dma based controller fifo read/write.
-> - End Of Data interrupt in incoming data to know whether end
->   of frame achieve or not.
-> - Hw controlled RTS and CTS flow control to reduce SW overhead.
-> 
-> Add serial driver to use all above feature.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  .../bindings/serial/nvidia,serial-tegra.txt        |   26 +
->  drivers/tty/serial/Kconfig                         |   14 +
->  drivers/tty/serial/Makefile                        |    1 +
->  drivers/tty/serial/serial_tegra.c                  | 1398 ++++++++++++++++++++
->  include/linux/serial_tegra.h                       |   33 +
+Hi,
 
-This file should be in include/linux/platform_data/, right?
+I'm downloaded kernel sources 3.2.27, and now I'm writing a device 
+driver for a SPI device, i make some kernel drivers in the past, so now 
+I'm surfing the source tree to see the new mode to make things.
 
-thanks,
+My driver need handle hardware interrupts, in the past i use 
+request_irq, but now there is a request_threaded_irq that makes more 
+easy to have a top / bottom processing. But I'm confuse, after read the 
+inner implementation of request_threaded_irq and see some drivers that 
+use it. For my understand if i call for example:
 
-greg k-h
+request_threaded_irq(irqmum, NULL, irq_handle, IRQF_TRIGGER_FALLING, 
+DEVICE_NAME, priv);
+
+This seem to make a old Hard IRQ handler, and inside of this handler 
+sleep APIs can't be used, but i see some SPI drivers that seem to 
+register a IRQ of this form and make API calls that can sleep in the 
+handler. Ex: drivers/input/touchscreen/ad7877.c it register the IRQ as:
+
+err = request_threaded_irq(spi->irq, NULL, ad7877_irq,
+                    IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+                    spi->dev.driver->name, ts);
+
+And inside of ad7877_irq make a block call:
+
+static irqreturn_t ad7877_irq(int irq, void *handle)
+{
+..
+error = spi_sync(ts->spi, &ts->msg);
+..
+}
+
+Is this ok?
+With the new interface 'request_threaded_irq' all the IRQ are 
+implemented on a thread?
+Do i need to create a handler for thread and pass it to 
+'request_threaded_irq', and if yes, why a lot of drivers, only pass 
+quick_check_handler and make hard processing on it?
+
+Excuse my poor English.
+
+Regards.
