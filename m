@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab2LQGlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 01:41:39 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56269 "EHLO
+	id S1752199Ab2LQGl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 01:41:56 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54977 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab2LQGjN (ORCPT
+	with ESMTP id S1751822Ab2LQGjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Dec 2012 01:39:13 -0500
-X-AuditID: 9c930179-b7becae000000e51-8a-50cebe0ebb5d
+X-AuditID: 9c930179-b7becae000000e51-84-50cebe0e4bc7
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 11/14] perf report: Bypass non-leader events when event group is enabled
-Date: Mon, 17 Dec 2012 15:39:02 +0900
-Message-Id: <1355726345-29553-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 09/14] perf gtk/browser: Add support for event group view
+Date: Mon, 17 Dec 2012 15:39:00 +0900
+Message-Id: <1355726345-29553-10-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
 References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
@@ -27,128 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Since we have all necessary information in the leader events and
-other members don't, bypass members.  Member events will be shown
-along with the leaders if event group is enabled.
+Show group members' overhead also when showing the leader's if event
+group is enabled.  Use macro for defining hpp functions which looks
+almost identical.
+
+Unlike other hpp backend, GTK+ needs to print dummy 0.00% output since
+it's displayed with variable width fonts.  So that simply skipping
+with %*s trick won't work well here.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Pekka Enberg <penberg@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c    |  4 ++++
- tools/perf/ui/browsers/hists.c | 41 +++++++++++++++++++++++++++++++++++------
- tools/perf/ui/gtk/browser.c    |  4 ++++
- 3 files changed, 43 insertions(+), 6 deletions(-)
+ tools/perf/ui/gtk/browser.c | 117 +++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 94 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index a7b4cbe429b0..a1082d547150 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -319,6 +319,10 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		struct hists *hists = &pos->hists;
- 		const char *evname = perf_evsel__name(pos);
- 
-+		if (symbol_conf.event_group &&
-+		    !perf_evsel__is_group_leader(pos))
-+			continue;
-+
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
- 		hists__fprintf(hists, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b467546ce7d4..69278b53667c 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1701,8 +1701,19 @@ out:
- 	return key;
- }
- 
-+static bool filter_group_entries(struct ui_browser *self __maybe_unused,
-+				 void *entry)
-+{
-+	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
-+
-+	if (symbol_conf.event_group && !perf_evsel__is_group_leader(evsel))
-+		return true;
-+
-+	return false;
-+}
-+
- static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
--					   const char *help,
-+					   int nr_entries, const char *help,
- 					   struct hist_browser_timer *hbt,
- 					   struct perf_session_env *env)
- {
-@@ -1713,7 +1724,8 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 			.refresh    = ui_browser__list_head_refresh,
- 			.seek	    = ui_browser__list_head_seek,
- 			.write	    = perf_evsel_menu__write,
--			.nr_entries = evlist->nr_entries,
-+			.filter	    = filter_group_entries,
-+			.nr_entries = nr_entries,
- 			.priv	    = evlist,
- 		},
- 		.env = env,
-@@ -1729,20 +1741,37 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 			menu.b.width = line_len;
- 	}
- 
--	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, hbt);
-+	return perf_evsel_menu__run(&menu, nr_entries, help, hbt);
- }
- 
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
- 				  struct hist_browser_timer *hbt,
- 				  struct perf_session_env *env)
- {
--	if (evlist->nr_entries == 1) {
-+	int nr_entries = evlist->nr_entries;
-+
-+single_entry:
-+	if (nr_entries == 1) {
- 		struct perf_evsel *first = list_entry(evlist->entries.next,
- 						      struct perf_evsel, node);
- 		const char *ev_name = perf_evsel__name(first);
--		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
-+
-+		return perf_evsel__hists_browse(first, nr_entries, help,
- 						ev_name, false, hbt, env);
- 	}
- 
--	return __perf_evlist__tui_browse_hists(evlist, help, hbt, env);
-+	if (symbol_conf.event_group) {
-+		struct perf_evsel *pos;
-+
-+		nr_entries = 0;
-+		list_for_each_entry(pos, &evlist->entries, node)
-+			if (perf_evsel__is_group_leader(pos))
-+				nr_entries++;
-+
-+		if (nr_entries == 1)
-+			goto single_entry;
-+	}
-+
-+	return __perf_evlist__tui_browse_hists(evlist, nr_entries, help,
-+					       hbt, env);
- }
 diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 8de928848f79..2f1652b1bc05 100644
+index 0d94b3ba054a..a82e903703b4 100644
 --- a/tools/perf/ui/gtk/browser.c
 +++ b/tools/perf/ui/gtk/browser.c
-@@ -335,6 +335,10 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 		GtkWidget *scrolled_window;
- 		GtkWidget *tab_label;
+@@ -45,34 +45,104 @@ static const char *perf_gtk__get_percent_color(double percent)
+ 	return NULL;
+ }
  
-+		if (symbol_conf.event_group &&
-+		    !perf_evsel__is_group_leader(pos))
-+			continue;
+-#define HPP__COLOR_FN(_name, _field)						\
+-static int									\
+-perf_gtk__hpp_color_ ## _name(struct perf_hpp_fmt *fmt __maybe_unused,		\
+-					 struct perf_hpp *hpp,			\
+-					 struct hist_entry *he)			\
++static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
++					    double percent)
++{
++	int ret = 0;
++	const char *markup;
 +
- 		scrolled_window = gtk_scrolled_window_new(NULL, NULL);
++	markup = perf_gtk__get_percent_color(percent);
++	if (markup)
++		ret += scnprintf(buf, size, markup);
++
++	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
++
++	if (markup)
++		ret += scnprintf(buf + ret, size - ret, "</span>");
++
++	return ret;
++}
++
++
++static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
++			    u64 (*get_field)(struct hist_entry *))
++{
++	int ret;
++	double percent = 0.0;
++	struct hists *hists = he->hists;
++
++	if (hists->stats.total_period)
++		percent = 100.0 * get_field(he) / hists->stats.total_period;
++
++	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, percent);
++
++	if (symbol_conf.event_group) {
++		int prev_idx, idx_delta;
++		struct perf_evsel *evsel = hists_to_evsel(hists);
++		struct hist_entry *pair;
++		int nr_members = evsel->nr_members;
++
++		if (nr_members <= 1)
++			return ret;
++
++		prev_idx = perf_evsel__group_idx(evsel);
++
++		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
++			u64 period = get_field(pair);
++			u64 total = pair->hists->stats.total_period;
++
++			evsel = hists_to_evsel(pair->hists);
++			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
++
++			while (idx_delta--) {
++				ret += scnprintf(hpp->buf + ret, hpp->size -ret, " ");
++				ret += perf_gtk__percent_color_snprintf(hpp->buf + ret,
++									hpp->size - ret,
++									0.0);
++			}
++
++			percent = 100.0 * period / total;
++			ret += scnprintf(hpp->buf + ret, hpp->size -ret, " ");
++			ret += perf_gtk__percent_color_snprintf(hpp->buf + ret,
++								hpp->size - ret,
++								percent);
++
++			prev_idx = perf_evsel__group_idx(evsel);
++		}
++
++		idx_delta = nr_members - prev_idx - 1;
++
++		while (idx_delta--) {
++			ret += scnprintf(hpp->buf + ret, hpp->size -ret, " ");
++			ret += perf_gtk__percent_color_snprintf(hpp->buf + ret,
++								hpp->size - ret,
++								0.0);
++		}
++	}
++	return ret;
++}
++
++#define __HPP_COLOR_PERCENT_FN(_type, _field)					\
++static u64 he_get_##_field(struct hist_entry *he)				\
+ {										\
+-	struct hists *hists = he->hists;					\
+-	double percent = 100.0 * he->stat._field / hists->stats.total_period;	\
+-	const char *markup;							\
+-	int ret = 0;								\
++	return he->stat._field;							\
++}										\
+ 										\
+-	markup = perf_gtk__get_percent_color(percent);				\
+-	if (markup)								\
+-		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
+-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
+-	if (markup)								\
+-		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
+-										\
+-	return ret;								\
++static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *phf __maybe_unused,	\
++				       struct perf_hpp *hpp,			\
++				       struct hist_entry *he)			\
++{										\
++	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
+ }
  
- 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+-HPP__COLOR_FN(overhead, period)
+-HPP__COLOR_FN(overhead_sys, period_sys)
+-HPP__COLOR_FN(overhead_us, period_us)
+-HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
+-HPP__COLOR_FN(overhead_guest_us, period_guest_us)
++__HPP_COLOR_PERCENT_FN(overhead, period)
++__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
++__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
++__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
++__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
++
++#undef __HPP_COLOR_PERCENT_FN
+ 
+-#undef HPP__COLOR_FN
+ 
+ void perf_gtk__init_hpp(void)
+ {
+@@ -106,6 +176,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 	struct perf_hpp hpp = {
+ 		.buf		= s,
+ 		.size		= sizeof(s),
++		.ptr		= hists_to_evsel(hists),
+ 	};
+ 
+ 	nr_cols = 0;
 -- 
 1.7.11.7
 
