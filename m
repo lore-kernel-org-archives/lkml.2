@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab2LQRDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:03:09 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53458 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab2LQRDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:03:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <50CF4EBB.6060602@zytor.com>
-References: <50CB3EAB.309@itwm.fraunhofer.de>
-	<CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com>
-	<CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com>
-	<50CE0C82.20708@itwm.fraunhofer.de>
-	<CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com>
-	<50CEE586.10800@itwm.fraunhofer.de>
-	<20121217140238.GA626@gmail.com>
-	<CAE9FiQWHMMCSdrSAyf-aBKV5xmj4XAcyD0R7Mi1qN40XqE3ROQ@mail.gmail.com>
-	<50CF4EBB.6060602@zytor.com>
-Date: Mon, 17 Dec 2012 09:03:06 -0800
-X-Google-Sender-Auth: gxPhzRgDaYC8O6Damwe1pj4Pt_s
-Message-ID: <CAE9FiQX=7R8MWo9iUPdi8tt4b7yozEcjNnSh8RvsmAduAbP+LA@mail.gmail.com>
-Subject: Re: [regression] 3.7 ends in APIC panic
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753294Ab2LQRD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:03:58 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:52915 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab2LQRD5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:13:1>);
+	Mon, 17 Dec 2012 12:03:57 -0500
+Message-Id: <50CF5E8602000078000B0D2C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 17 Dec 2012 17:03:50 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "Ingo Molnar" <mingo@elte.hu>,
+        "Michael Kerrisk" <mtk.manpages@gmail.com>,
+        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>,
+        "Matt Fleming" <matt.fleming@intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Dave Jones" <davej@redhat.com>, "David Howells" <dhowells@redhat.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Markus Trippelsdorf" <markus@trippelsdorf.de>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
+ <23916.1355356085@warthog.procyon.org.uk>
+ <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
+ <21507.1355528749@warthog.procyon.org.uk>
+ <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+ <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
+ <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
+ <20121215163323.GA229@x4>
+ <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com>
+ <50CEEE3302000078000B0AC0@nat28.tlf.novell.com>
+ <CA+55aFzhgW=GBwGtxufqhX+ykNCRqek=iyVszvkpCTw=-MXSyA@mail.gmail.com>
+ <50CF4FC502000078000B0CB6@nat28.tlf.novell.com>
+ <50CF4ACD.80701@linux.intel.com>
+In-Reply-To: <50CF4ACD.80701@linux.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 8:56 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/17/2012 08:53 AM, Yinghai Lu wrote:
->> On Mon, Dec 17, 2012 at 6:02 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>>
->>> I suspect this needs to be fixed/improved: currently it's way
->>> too easy to disable x2apic support accidentally.
->>>
->>
->> We can just enable x2apic by default when CONFIG_EMBEDDED is not set.
->>
->
-> Yes, although we should expect to have to blacklist hosts more aggressively.
->
-> Unfortunately we still don't have a good distinction between the
-> ThinkPads that have broken BIOSes when x2apic is on and those that don't.
+>>> On 17.12.12 at 17:39, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
+> Right, I think you nailed this one.  This patch copies PTEs from the
+> kernel PTEs and thus they will have the global bit set.  It obviously
+> makes no sense to *copy* PTEs from the kernel and yet leaving the global
+> bit set, which means there are two ways of fixing it: either sharing
+> page tables and use the cr4.pge off/on trick that Jan mentioned -- this
+> would also be my preference -- and the other is to copy the PTEs but
+> strip the global bit, which has the advantage that the actual kernel
+> mappings will survive.
 
-last version for that blacklist patch in the bugster should be ok for
-thinkpad now.
+PTE copying is only one half of it. I think additionally L4 entries
+get copied for the 1:1 mapping, and you can't strip the global
+bits there without allocating separate page tables.
 
-BTW, when can we have ioapic id > 255 ?
+Jan
 
-system with more than 256 sockets and IIO in it, should need that
-support, right?
-
-Yinghai
