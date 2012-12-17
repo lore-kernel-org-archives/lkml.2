@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2LQSNt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 13:13:49 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:36579 "EHLO zene.cmpxchg.org"
+	id S1753551Ab2LQSO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 13:14:26 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36583 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067Ab2LQSNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 13:13:45 -0500
+	id S1753407Ab2LQSNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 13:13:48 -0500
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
         Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Satoru Moriya <satoru.moriya@hds.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 4/7] mm: vmscan: improve comment on low-page cache handling
-Date: Mon, 17 Dec 2012 13:12:34 -0500
-Message-Id: <1355767957-4913-5-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 7/7] mm: reduce rmap overhead for ex-KSM page copies created on swap faults
+Date: Mon, 17 Dec 2012 13:12:37 -0500
+Message-Id: <1355767957-4913-8-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
 References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
@@ -22,42 +22,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix comment style and elaborate on why anonymous memory is
-force-scanned when file cache runs low.
+When ex-KSM pages are faulted from swap cache, the fault handler is
+not capable of re-establishing anon_vma-spanning KSM pages.  In this
+case, a copy of the page is created instead, just like during a COW
+break.
+
+These freshly made copies are known to be exclusive to the faulting
+VMA and there is no reason to go look for this page in parent and
+sibling processes during rmap operations.
+
+Use page_add_new_anon_rmap() for these copies.  This also puts them on
+the proper LRU lists and marks them SwapBacked, so we can get rid of
+doing this ad-hoc in the KSM copy code.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/vmscan.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ mm/ksm.c    | 6 ------
+ mm/memory.c | 5 ++++-
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c37deaf..510c0d3 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1701,13 +1701,15 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
- 	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
- 		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 382d930..7275c74 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1590,13 +1590,7 @@ struct page *ksm_does_need_to_copy(struct page *page,
  
-+	/*
-+	 * If it's foreseeable that reclaiming the file cache won't be
-+	 * enough to get the zone back into a desirable shape, we have
-+	 * to swap.  Better start now and leave the - probably heavily
-+	 * thrashing - remaining file pages alone.
-+	 */
- 	if (global_reclaim(sc)) {
--		free  = zone_page_state(zone, NR_FREE_PAGES);
-+		free = zone_page_state(zone, NR_FREE_PAGES);
- 		if (unlikely(file + free <= high_wmark_pages(zone))) {
--			/*
--			 * If we have very few page cache pages, force-scan
--			 * anon pages.
--			 */
- 			fraction[0] = 1;
- 			fraction[1] = 0;
- 			denominator = 1;
+ 		SetPageDirty(new_page);
+ 		__SetPageUptodate(new_page);
+-		SetPageSwapBacked(new_page);
+ 		__set_page_locked(new_page);
+-
+-		if (!mlocked_vma_newpage(vma, new_page))
+-			lru_cache_add_lru(new_page, LRU_ACTIVE_ANON);
+-		else
+-			add_page_to_unevictable_list(new_page);
+ 	}
+ 
+ 	return new_page;
+diff --git a/mm/memory.c b/mm/memory.c
+index db2e9e7..7e17eb0 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3020,7 +3020,10 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 	flush_icache_page(vma, page);
+ 	set_pte_at(mm, address, page_table, pte);
+-	do_page_add_anon_rmap(page, vma, address, exclusive);
++	if (swapcache) /* ksm created a completely new copy */
++		page_add_new_anon_rmap(page, vma, address);
++	else
++		do_page_add_anon_rmap(page, vma, address, exclusive);
+ 	/* It's better to call commit-charge after rmap is established */
+ 	mem_cgroup_commit_charge_swapin(page, ptr);
+ 
 -- 
 1.7.11.7
 
