@@ -1,33 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab2LQNAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 08:00:51 -0500
-Received: from bay0-omc3-s1.bay0.hotmail.com ([65.54.190.139]:49751 "EHLO
-	bay0-omc3-s1.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752535Ab2LQNAu (ORCPT
+	id S1752759Ab2LQNCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 08:02:09 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:42141 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab2LQNCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 08:00:50 -0500
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 08:00:50 EST
-X-EIP: [cL/hQCKtPV74fV8AY9oQdam9ESjQGbyQ]
-X-Originating-Email: [conrad.decosta@live.com]
-Message-ID: <BAY156-W124415C4DA09A7A29FBE8CF3320@phx.gbl>
-From: Conrad Decosta <conrad.decosta@live.com>
-To: <linka1608@gmail.com>
-Subject: This may be either beginning or end of everything,
-Date: Mon, 17 Dec 2012 12:54:40 +0000
-Importance: Normal
-Content-Type: text/plain; charset="utf-8"
+	Mon, 17 Dec 2012 08:02:07 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 0/3 v2] net/macb: RX path enhancement
+Date: Mon, 17 Dec 2012 14:01:56 +0100
+Message-ID: <cover.1355748676.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 17 Dec 2012 12:54:40.0660 (UTC) FILETIME=[AD9B9D40:01CDDC55]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBHD0rVP012793
+
+Hi,
+
+Here is the patch series for modifying the RX path in macb driver.
+This change applies on GEM variant of the Cadence IP and introduces
+function pointers to match the path to the proper adapter. The move
+to RX buffers adapted to MTU and that can be DMAed directly in SKB
+is done in two steps but can be merged in a single patch.
+
+v2: - gave up the idea of using non-coherent memory for
+      rx buffers
+    - addition of the struct macb layout optimization
 
 
-Two men were paltry for this ton.
+Havard Skinnemoen (1):
+  net/macb: Try to optimize struct macb layout
 
-á¼ eÉ¦âˆ¨á¸‰*á¸ƒá¹‹Ï²á½µ?Æ«Æ«á¸Ä‹
+Nicolas Ferre (2):
+  net/macb: increase RX buffer size for GEM
+  net/macb: change RX path for GEM
 
-He is weak, no warmth, that youll derail before me as my outbreak. 		 	   		  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ drivers/net/ethernet/cadence/macb.c | 323 +++++++++++++++++++++++++++++++-----
+ drivers/net/ethernet/cadence/macb.h |  35 ++--
+ 2 files changed, 306 insertions(+), 52 deletions(-)
+
+-- 
+1.8.0
+
