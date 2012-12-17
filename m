@@ -1,45 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab2LQJQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:16:06 -0500
-Received: from mout.perfora.net ([74.208.4.194]:50183 "EHLO mout.perfora.net"
+	id S1752099Ab2LQJRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:17:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44417 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab2LQJQF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:16:05 -0500
-From: Mickey Penick <e446457625@exchange.1and1.com>
-Date: Mon, 17 Dec 2012 04:10:31 -0500
-Subject: ($2,811,041.00 USD)
-Thread-Topic: ($2,811,041.00 USD)
-Thread-Index: AQHN3DZdu1VA+qyth02VsWn3lPtaeA==
-Message-ID: <B353BE0D877992409CB2153398733B81635793AA@winxbeus26.exchange.xchg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-X-Provags-ID: V02:K0:IaOpFlVcDyTz3yQtX3xL8Kho4OoGuMykFcoNGwP5zE+
- jKpzWBy7vKDQarbDfl20jBZSU10oYwwN71hXHT8FlMtmplZ+dy
- /4NOJKo7RPEXPRLcpe/y5OUpLQvlX++shV1lEdykDCkSNPARN7
- WXzlKNom4x/QpkXYGjS1e5H9ohp4ceC+5ppTDf588PXv/3LCEL
- gjDb+C7F6LT2Dnfh5V+7Ce/6LXdLRbvCukTDvHtuam3fwl9t/v
- cQEB2OZ11PYp6DPryOGNovkgnB3LpxWC2QR/uB2jlR65RzcHRE
- nK/ZA944rK72UwhejdBAazBHhOArqhIySuqMIjPzJVJEx4xPoW
- 1+7RvH/55S9EMJA33Tf74m1h4F0mUC+LIzfgZAu+vTytgHA1hL
- 2D5MqfH1ldwFzhWV0VZxHUMGqpVRfuZxWQ=
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751242Ab2LQJQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:16:59 -0500
+Date: Mon, 17 Dec 2012 10:16:46 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm: Only enforce stable page writes if the backing
+ device requires it
+Message-ID: <20121217091646.GF5133@quack.suse.cz>
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+ <20121213080755.23360.31463.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
-To: Undisclosed recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121213080755.23360.31463.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are eligible to receive a compensation payment of $2,811,041.00 USD.This compensation is being made to all of you by the United Nation for all that have suffered losses as a result of fraud, accident or illness. For more information, contact the below agent for the delivery of your cashier check ($2,811,041.00 USD). Send all your details to below info.
- 
-Contact Name: Jack Phelps
- Tel: +447010071639
- E-mail:unclaimsdptt@hotmail.com
- 
-Please take note that you will pay a shipping/handling fee of $500.00 USD
- 
+On Thu 13-12-12 00:07:55, Darrick J. Wong wrote:
+> Create a helper function to check if a backing device requires stable page
+> writes and, if so, performs the necessary wait.  Then, make it so that all
+> points in the memory manager that handle making pages writable use the helper
+> function.  This should provide stable page write support to most filesystems,
+> while eliminating unnecessary waiting for devices that don't require the
+> feature.
+  There are two more places that would seem to need conversion from
+wait_on_page_writeback() to wait_for_stable_page():
+  gfs2_page_mkwrite()
+  nilfs_page_mkwrite()
+
+Otherwise the patch looks OK.
+
+								Honza
+
+
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> ---
+>  fs/buffer.c             |    2 +-
+>  fs/ext4/inode.c         |    2 +-
+>  include/linux/pagemap.h |    1 +
+>  mm/filemap.c            |    3 ++-
+>  mm/page-writeback.c     |   20 ++++++++++++++++++++
+>  5 files changed, 25 insertions(+), 3 deletions(-)
+> 
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index ec0aca8..c562136 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -2363,7 +2363,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+>  	if (unlikely(ret < 0))
+>  		goto out_unlock;
+>  	set_page_dirty(page);
+> -	wait_on_page_writeback(page);
+> +	wait_for_stable_page(page);
+>  	return 0;
+>  out_unlock:
+>  	unlock_page(page);
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index b3c243b..1bfc79f 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -4814,7 +4814,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+>  					ext4_bh_unmapped)) {
+>  			/* Wait so that we don't change page under IO */
+> -			wait_on_page_writeback(page);
+> +			wait_for_stable_page(page);
+>  			ret = VM_FAULT_LOCKED;
+>  			goto out;
+>  		}
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index e42c762..ea631ee 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -398,6 +398,7 @@ static inline void wait_on_page_writeback(struct page *page)
+>  }
+>  
+>  extern void end_page_writeback(struct page *page);
+> +void wait_for_stable_page(struct page *page);
+>  
+>  /*
+>   * Add an arbitrary waiter to a page's wait queue
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 83efee7..5577dc8 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1728,6 +1728,7 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  	 * see the dirty page and writeprotect it again.
+>  	 */
+>  	set_page_dirty(page);
+> +	wait_for_stable_page(page);
+>  out:
+>  	sb_end_pagefault(inode->i_sb);
+>  	return ret;
+> @@ -2274,7 +2275,7 @@ repeat:
+>  		return NULL;
+>  	}
+>  found:
+> -	wait_on_page_writeback(page);
+> +	wait_for_stable_page(page);
+>  	return page;
+>  }
+>  EXPORT_SYMBOL(grab_cache_page_write_begin);
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 830893b..3e4a8cc 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -2275,3 +2275,23 @@ int mapping_tagged(struct address_space *mapping, int tag)
+>  	return radix_tree_tagged(&mapping->page_tree, tag);
+>  }
+>  EXPORT_SYMBOL(mapping_tagged);
+> +
+> +/**
+> + * wait_for_stable_page() - wait for writeback to finish, if necessary.
+> + * @page:	The page to wait on.
+> + *
+> + * This function determines if the given page is related to a backing device
+> + * that requires page contents to be held stable during writeback.  If so, then
+> + * it will wait for any pending writeback to complete.
+> + */
+> +void wait_for_stable_page(struct page *page)
+> +{
+> +	struct address_space *mapping = page_mapping(page);
+> +	struct backing_dev_info *bdi = mapping->backing_dev_info;
+> +
+> +	if (!bdi_cap_stable_pages_required(bdi))
+> +		return;
+> +
+> +	wait_on_page_writeback(page);
+> +}
+> +EXPORT_SYMBOL_GPL(wait_for_stable_page);
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
