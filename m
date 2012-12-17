@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab2LQHi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 02:38:26 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6918 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2LQHiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 02:38:25 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 16 Dec 2012 23:36:11 -0800
-Date: Mon, 17 Dec 2012 09:38:15 +0200
-From: Sivaram Nair <sivaramn@nvidia.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "shuox.liu@intel.com" <shuox.liu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "yanmin_zhang@intel.com" <yanmin_zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpuidle: fix sysfs output for power_usage
-Message-ID: <20121217073815.GM10090@sivaramn-lnx>
-References: <1355491060-970-1-git-send-email-sivaramn@nvidia.com>
- <1355491060-970-2-git-send-email-sivaramn@nvidia.com>
- <39891276.jhMMUpZpil@vostro.rjw.lan>
-MIME-Version: 1.0
-In-Reply-To: <39891276.jhMMUpZpil@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+	id S1751617Ab2LQHj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 02:39:27 -0500
+Received: from mail.snarked.org ([67.43.172.250]:1275 "EHLO mail.snarked.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813Ab2LQHj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 02:39:26 -0500
+X-Greylist: delayed 932 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 02:39:26 EST
+X-Envelope-From: <newsserv> (mail.snarked.org)
+To: linux-kernel@vger.kernel.org
+From: "D. Stussy" <spam+newsgroups@bde-arc.ampr.org>
+Newsgroups: linux.kernel
+Subject: Help or bug?  RTL8192CU driver.
+Date: Sun, 16 Dec 2012 23:24:19 -0800
+Message-ID: <kamhai$a0r$1@snarked.org>
+Reply-To: "D. Stussy" <replies+newsgroups@kd6lvw.ampr.org>
+NNTP-Posting-Host: mdt.bde-arc.ampr.org
+Mime-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="utf-8";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Trace: snarked.org 1355729042 10267 2001:470:d:468:7455:7a:1c17:3db4 (17 Dec 2012 07:24:02 GMT)
+X-Complaints-To: newsmaster+complaints@snarked.org
+NNTP-Posting-Date: Mon, 17 Dec 2012 07:24:02 +0000 (UTC)
+X-No-Archive: Yes
+X-MimeOLE: Produced By Microsoft MimeOLE V15.4.3555.308
+X-Newsreader: Microsoft Windows Live Mail 15.4.3555.308
+Importance: Normal
+X-Priority: 3
+X-MSMail-Priority: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 01:03:02AM +0100, Rafael J. Wysocki wrote:
-> On Friday, December 14, 2012 03:17:37 PM Sivaram Nair wrote:
-> > cpuidle_state->power_usage is signed; so change the corresponding sysfs
-> > ops to output signed value instead of unsigned.
-> 
-> What's actually wrong with printing it as an unsigned int?
+I am having trouble with using the RTL8192CU 802.11n USB network chip.  I have 
+verified that I have the correct firmware (the size is 16014 bytes and the MD5 
+signature matches the one posted in various forums as correct).  The kernel 
+tries to load it, but after about 20 seconds, a message indicating that it was 
+not available appears in my kernel log.  No other reason is given.
 
-power_usage could have negative values (for example cpuidle/driver.c
-inits this value to -1, -2 etc. when drv->power_specified is not set) and
-these shows up badly in the sysfs output.
+As the problem occurs on a x86-64-bit system, is there a problem with loading 
+firmware into the device on those systems?  Or might I have a buggy network 
+device?
 
-regards,
-Sivaram
+
+USB:  Bus 001 Device 003: ID 0bda:8176 Realtek Semiconductor Corp. RTL8188CUS 
+802.11n WLAN
+
+syslog/dmesg:
+cfg80211: Calling CRDA to update world regulatory domain
+rtl8192cu 1-2:1.0: usb_probe_interface
+rtl8192cu 1-2:1.0: usb_probe_interface - got id
+rtl8192cu: Chip version 0x10
+rtl8192cu: MAC address: 48:02:2a:8f:de:0b
+rtl8192cu: Board Type 0
+rtlwifi: rx_max_size 15360, rx_urb_num 8, in_ep 1
+
+...  [regulatory messages indicating available frequencies] ...
+
+rtl8192cu: Loading firmware rtlwifi/rtl8192cufw.bin
+cfg80211: Pending regulatory request, waiting for it to be processed...
+usbcore: registered new interface driver rtl8192cu
+   [pause for about 20 seconds]
+rtlwifi: Firmware rtlwifi/rtl8192cufw.bin not available
+
+Yet, the file is there:
+-rw-r--r-- 2 root root 16014 Apr  1  2012 /lib/firmware/rtlwifi/rtl8192cufw.bin
+
+What else should I look for or do?
+
+
