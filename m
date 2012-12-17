@@ -1,129 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab2LQLvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 06:51:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58054 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271Ab2LQLvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 06:51:17 -0500
-Date: Mon, 17 Dec 2012 12:51:04 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH RFC -tip 0/6] IRQ-bound performance events
-Message-ID: <cover.1355744680.git.agordeev@redhat.com>
+	id S1752590Ab2LQLvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 06:51:38 -0500
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:41812 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab2LQLvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 06:51:37 -0500
+X-manitu-Original-Sender-IP: 93.104.18.146
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <50CF0744.7040404@grandegger.com>
+Date: Mon, 17 Dec 2012 12:51:32 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roland Stigge <stigge@antcom.de>
+CC: rmallon@gmail.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca, daniel-gl@gmx.net,
+        sr@denx.de, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, highguy@gmail.com
+Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
+References: <1355495185-24220-1-git-send-email-stigge@antcom.de> <50CB68AB.5070806@grandegger.com> <50CBBB25.20002@antcom.de> <50CF03FB.2030100@grandegger.com>
+In-Reply-To: <50CF03FB.2030100@grandegger.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 12/17/2012 12:37 PM, Wolfgang Grandegger wrote:
+> Hi Roland,
+> 
+> On 12/15/2012 12:49 AM, Roland Stigge wrote:
+>> Hi Wolfgang,
+>>
+>> thank you for the patch!
+>>
+>> On 14/12/12 18:58, Wolfgang Grandegger wrote:
+>>> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
+>>> +{
+>>> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+>>> +	void __iomem *pio = at91_gpio->regbase;
+>>> +
+>>> +	__raw_writel(mask, pio + (val ? PIO_SODR : PIO_CODR));
+>>> +}
+>>> +
+>>
+>> Without having an AT91 available right now, I guess the hardware
+>> interface of this GPIO chip is different from the GPIO block API. While
+>> the hardware has clear and set registers, the val parameter of
+>> at91_gpiolib_set_block() should be interpreted as the actual output
+>> values. See lpc32xx_gpo_set_block() for an example for handling set and
+>> clear registers like this: First, set_bits and clear_bits words are
+>> calculated from mask and val parameters, and finally written to the
+>> respective hardware registers.
+>>
+>> Note that one .set_block() can result in writing both the set and clear
+>> registers of the hardware when val contains both 0s and 1s in
+>> respectively masked positions.
+> 
+> Oops, I obviously did not test GPIO block write. The patch below does
+> work now. Feel free to add it to the next version of your series.
 
-This patchset is against perf/core branch.
+The patch lacks an important fix, sorry. Please consider the updated
+patch below.
 
-This is an an attempt to introduce IRQ-bound performance events -
-ones that only count in a context of a hardware interrupt handler.
-The aim is to measure events which can not be measured using
-existing task-bound or CPU-bound counters (i.e. L1 cache-misses
-of a particular hardware handler or its durability).
+Wolfgang.
 
-The implementation is pretty straightforward: an IRQ-bound event
-is registered with the IRQ descriptor and gets enabled/disabled
-using new PMU callbacks: pmu_enable_irq() and pmu_disable_irq().
 
-The series has not been tested thoroughly and is a concept proof
-rather than a decent implementation: no group events could be be
-loaded, inappropriate (i.e. software) events are not rejected,
-only Intel and AMD PMUs were tried for 'perf stat', only Intel
-PMU works with precise events. Perf tool changes are just a hack.
+>From a1f93ddea9c6c9c6a80d7a02d3c8d9902823fe47 Mon Sep 17 00:00:00 2001
+From: Wolfgang Grandegger <wg@grandegger.com>
+Date: Mon, 3 Dec 2012 08:31:55 +0100
+Subject: [PATCH 1/2] gpio: add GPIO block callback functions for AT91
 
-Yet, I want first ensure if the taken approach is not screwed and
-I did not miss anything vital.
+Signed-off-by: Wolfgang Grandegger <wg@grandegger.com>
+---
+ arch/arm/mach-at91/gpio.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-Below is a sample session on a machine with x2apic in cluster mode.
-IRQ number is passed using new argument -I <irq> (please nevermind
-'...process id '8'...' in the output):
-
-# cat /proc/irq/8/smp_affinity_list
-0,4,8,12,16,20,24,28,32,36,40,44
-# ./tools/perf/perf stat -a -e L1-dcache-load-misses:k sleep 1
-
- Performance counter stats for 'sleep 1':
-
-           124,078 L1-dcache-load-misses                                       
-
-       1.001464219 seconds time elapsed
-
-# ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k sleep 1
-
- Performance counter stats for process id '8':
-
-                 0 L1-dcache-load-misses                                       
-
-       1.001466384 seconds time elapsed
-
-# ./tools/perf/perf stat -I 8 -a -e L1-dcache-load-misses:k hwclock --test
-Mon 17 Dec 2012 03:24:05 AM EST  -0.500690 seconds
-
- Performance counter stats for process id '8':
-
-               317 L1-dcache-load-misses                                       
-
-       0.502153382 seconds time elapsed
-
-# ./tools/perf/perf stat -I 8 -C 0 -e L1-dcache-load-misses:k hwclock --test
-Mon 17 Dec 2012 03:30:36 AM EST  -0.078717 seconds
-
- Performance counter stats for process id '8':
-
-                72 L1-dcache-load-misses                                       
-
-       0.079948468 seconds time elapsed
-
-Alexander Gordeev (6):
-  perf/core: IRQ-bound performance events
-  perf/x86: IRQ-bound performance events
-  perf/x86/AMD PMU: IRQ-bound performance events
-  perf/x86/Core PMU: IRQ-bound performance events
-  perf/x86/Intel PMU: IRQ-bound performance events
-  perf/tool: Hack 'pid' as 'irq' for sys_perf_event_open()
-
- arch/x86/kernel/cpu/perf_event.c          |   71 ++++++++++++++++++---
- arch/x86/kernel/cpu/perf_event.h          |   19 ++++++
- arch/x86/kernel/cpu/perf_event_amd.c      |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c    |   93 +++++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    5 +-
- arch/x86/kernel/cpu/perf_event_knc.c      |    2 +
- arch/x86/kernel/cpu/perf_event_p4.c       |    2 +
- arch/x86/kernel/cpu/perf_event_p6.c       |    2 +
- include/linux/irq.h                       |    8 ++
- include/linux/irqdesc.h                   |    3 +
- include/linux/perf_event.h                |   16 +++++
- include/uapi/linux/perf_event.h           |    1 +
- kernel/events/core.c                      |   69 +++++++++++++++----
- kernel/irq/Makefile                       |    1 +
- kernel/irq/handle.c                       |    4 +
- kernel/irq/irqdesc.c                      |   14 ++++
- kernel/irq/perf_event.c                   |  100 +++++++++++++++++++++++++++++
- tools/perf/builtin-record.c               |    9 +++
- tools/perf/builtin-stat.c                 |   11 +++
- tools/perf/util/evlist.c                  |    4 +-
- tools/perf/util/evsel.c                   |    3 +
- tools/perf/util/evsel.h                   |    1 +
- tools/perf/util/target.c                  |    4 +
- tools/perf/util/thread_map.c              |   16 +++++
- 24 files changed, 426 insertions(+), 34 deletions(-)
- create mode 100644 kernel/irq/perf_event.c
-
+diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
+index be42cf0..77c6f91 100644
+--- a/arch/arm/mach-at91/gpio.c
++++ b/arch/arm/mach-at91/gpio.c
+@@ -48,7 +48,9 @@ struct at91_gpio_chip {
+ 
+ static void at91_gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip);
+ static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val);
++static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val);
+ static int at91_gpiolib_get(struct gpio_chip *chip, unsigned offset);
++static unsigned long at91_gpiolib_get_block(struct gpio_chip *chip, unsigned long mask);
+ static int at91_gpiolib_direction_output(struct gpio_chip *chip,
+ 					 unsigned offset, int val);
+ static int at91_gpiolib_direction_input(struct gpio_chip *chip,
+@@ -62,7 +64,9 @@ static int at91_gpiolib_to_irq(struct gpio_chip *chip, unsigned offset);
+ 			.direction_input  = at91_gpiolib_direction_input, \
+ 			.direction_output = at91_gpiolib_direction_output, \
+ 			.get		  = at91_gpiolib_get,		\
++			.get_block	  = at91_gpiolib_get_block,	\
+ 			.set		  = at91_gpiolib_set,		\
++			.set_block	  = at91_gpiolib_set_block,	\
+ 			.dbg_show	  = at91_gpiolib_dbg_show,	\
+ 			.to_irq		  = at91_gpiolib_to_irq,	\
+ 			.ngpio		  = nr_gpio,			\
+@@ -896,6 +900,16 @@ static int at91_gpiolib_get(struct gpio_chip *chip, unsigned offset)
+ 	return (pdsr & mask) != 0;
+ }
+ 
++static unsigned long at91_gpiolib_get_block(struct gpio_chip *chip, unsigned long mask)
++{
++	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
++	void __iomem *pio = at91_gpio->regbase;
++	u32 pdsr;
++
++	pdsr = __raw_readl(pio + PIO_PDSR);
++	return pdsr & mask;
++}
++
+ static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val)
+ {
+ 	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+@@ -905,6 +919,20 @@ static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val)
+ 	__raw_writel(mask, pio + (val ? PIO_SODR : PIO_CODR));
+ }
+ 
++static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
++{
++	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
++	void __iomem *pio = at91_gpio->regbase;
++	u32 set_bits = val & mask;
++	u32 clr_bits = ~val & mask;
++
++	/* GPIO outputs can only be set at once or cleared at once */
++	if (set_bits)
++		__raw_writel(set_bits, pio + PIO_SODR);
++	if (clr_bits)
++		__raw_writel(clr_bits, pio + PIO_CODR);
++}
++
+ static void at91_gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ {
+ 	int i;
 -- 
-1.7.7.6
+1.7.9.5
 
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+
