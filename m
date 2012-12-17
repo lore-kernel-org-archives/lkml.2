@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab2LQTLf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 14:11:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51534 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab2LQTLd (ORCPT
+	id S1753107Ab2LQTRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 14:17:31 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:38848 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab2LQTR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 14:11:33 -0500
-Date: Mon, 17 Dec 2012 11:11:30 -0800 (PST)
-Message-Id: <20121217.111130.2269537365220391186.davem@davemloft.net>
-To: james.hogan@imgtec.com
-Cc: geert@linux-m68k.org, hpa@zytor.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, bsingharora@gmail.com,
-        mingo@kernel.org, akpm@linux-foundation.org, eparis@redhat.com,
-        wad@chromium.org, james.l.morris@oracle.com, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 03/44] Add CONFIG_HAVE_64BIT_ALIGNED_STRUCT for
- taskstats
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50CEEB08.1080707@imgtec.com>
-References: <50C5B7E3.2080909@imgtec.com>
-	<CAMuHMdXpw+hWgcqDiFVdDTsFBEThjvB_Y0jcoZZHS-JGTBvYRg@mail.gmail.com>
-	<50CEEB08.1080707@imgtec.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 17 Dec 2012 14:17:29 -0500
+Message-ID: <50CF6FC5.20005@kernel.org>
+Date: Mon, 17 Dec 2012 14:17:25 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] power tools for Linux-3.8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
-Date: Mon, 17 Dec 2012 09:51:04 +0000
+Hi Linus,
 
-> On 10/12/12 12:55, Geert Uytterhoeven wrote:
->> On Mon, Dec 10, 2012 at 11:22 AM, James Hogan <james.hogan@imgtec.com> wrote:
->>> On 08/12/12 03:43, H. Peter Anvin wrote:
->>>> On 12/05/2012 08:08 AM, James Hogan wrote:
->>>>> On 64 bit architectures with no efficient unaligned access, taskstats
->>>>> has to add some padding to a reply to prevent unaligned access warnings.
->>>>> However this also needs to apply to 32 bit architectures with 64 bit
->>>>> struct alignment such as metag (which has 64 bit memory accesses).
->>>>
->>>> Wait... 64-bit struct alignment on structures with only 32-bit members?
->>>>  That might be... interesting... in a number of places...
->>>
->>> I'll rewrite the description as it's a bit misleading. On metag 64bit
->>> struct alignment is required when it contains 64bit members, not if it
->>> only contains 32bit members. Although metag is a 32bit arch, it can do
->>> 64bit memory accesses which must be aligned.
->> 
->> The C alignment rules should take care of this automatically (struct alignment
->> is the maximum alignment of its members).
-> 
-> Hi Geert,
-> 
-> Please see the comment in mk_reply in kernel/taskstats.c. The structure
-> is being serialised after 2 NLA headers and a pid which is why the extra
-> padding needs to be added manually.
+Please pull these power tools patches.
+This updates the tree w/ the latest version of turbostat,
+which reports temperature and - on SNB and later - Watts.
 
-Please solve netlink attribute 64-bit alignment issues fundamentally
-rather on a case-by-case basis.
+There will be a logical conflict with the uapi changes
+which breaks the turbostat build.  It can be fixed this way:
 
-We were just discussing this very issue on the netdev list recently,
-CC:'d
+diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
+index e48ef07..f09641d 100644
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -5,7 +5,7 @@ DESTDIR         :=
+ 
+ turbostat : turbostat.c
+ CFLAGS +=      -Wall
+-CFLAGS +=      -I../../../../arch/x86/include/
++CFLAGS +=      -I../../../../arch/x86/include/uapi/
+
+
+thanks!
+Len Brown, Intel Open Source Technology Center
+
+
+The following changes since commit d91bb17c2a874493603c4d99db305d8caf2d180c:
+
+  tools/power turbostat: graceful fail on garbage input (2012-11-01 00:22:00 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git next
+
+for you to fetch changes up to 55f1f545f709a6023371848028a3029118855576:
+
+  tools: Allow tools to be installed in a user specified location (2012-11-30 01:09:45 -0500)
+
+----------------------------------------------------------------
+Colin Ian King (1):
+      tools/power x86_energy_perf_policy: close /proc/stat in for_every_cpu()
+
+Josh Boyer (1):
+      tools: Allow tools to be installed in a user specified location
+
+Len Brown (5):
+      tools/power/x86/turbostat: share kernel MSR #defines
+      x86 power: define RAPL MSRs
+      tools/power turbostat: prevent infinite loop on migration error path
+      tools/power turbostat: fix output buffering issue
+      tools/power turbostat: v3.0: monitor Watts and Temperature
+
+Mark Asselstine (1):
+      tools/power: turbostat: make Makefile a bit more capable
+
+ arch/x86/include/asm/msr-index.h                   |  37 ++
+ tools/power/x86/turbostat/Makefile                 |  21 +-
+ tools/power/x86/turbostat/turbostat.8              | 103 ++--
+ tools/power/x86/turbostat/turbostat.c              | 677 +++++++++++++++++++--
+ tools/power/x86/x86_energy_perf_policy/Makefile    |   6 +-
+ .../x86_energy_perf_policy.c                       |   2 +-
+ 6 files changed, 765 insertions(+), 81 deletions(-)
