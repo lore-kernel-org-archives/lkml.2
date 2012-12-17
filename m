@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2LQJoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:44:12 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:39806 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab2LQJoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:44:11 -0500
-Date: Mon, 17 Dec 2012 10:44:03 +0100
-From: Robert Richter <rric@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: suravee.suthikulpanit@amd.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@ghostprotocols.net, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        jacob.shin@amd.com
-Subject: Re: [PATCH 1/1] Change IBS PMU to use perf_hw_context
-Message-ID: <20121217094403.GF1893@rric.localhost>
-References: <1355518662-32071-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20121216090410.GC21690@gmail.com>
+	id S1752142Ab2LQJvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:51:15 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56768 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab2LQJvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:51:12 -0500
+Message-ID: <50CEEB08.1080707@imgtec.com>
+Date: Mon, 17 Dec 2012 09:51:04 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121216090410.GC21690@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Balbir Singh <bsingharora@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Will Drewry <wad@chromium.org>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH v2 03/44] Add CONFIG_HAVE_64BIT_ALIGNED_STRUCT for taskstats
+References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-4-git-send-email-james.hogan@imgtec.com> <50C2B751.5000507@zytor.com> <50C5B7E3.2080909@imgtec.com> <CAMuHMdXpw+hWgcqDiFVdDTsFBEThjvB_Y0jcoZZHS-JGTBvYRg@mail.gmail.com>
+In-Reply-To: <CAMuHMdXpw+hWgcqDiFVdDTsFBEThjvB_Y0jcoZZHS-JGTBvYRg@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_12_17_09_51_08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.12.12 10:04:10, Ingo Molnar wrote:
+On 10/12/12 12:55, Geert Uytterhoeven wrote:
+> On Mon, Dec 10, 2012 at 11:22 AM, James Hogan <james.hogan@imgtec.com> wrote:
+>> On 08/12/12 03:43, H. Peter Anvin wrote:
+>>> On 12/05/2012 08:08 AM, James Hogan wrote:
+>>>> On 64 bit architectures with no efficient unaligned access, taskstats
+>>>> has to add some padding to a reply to prevent unaligned access warnings.
+>>>> However this also needs to apply to 32 bit architectures with 64 bit
+>>>> struct alignment such as metag (which has 64 bit memory accesses).
+>>>
+>>> Wait... 64-bit struct alignment on structures with only 32-bit members?
+>>>  That might be... interesting... in a number of places...
+>>
+>> I'll rewrite the description as it's a bit misleading. On metag 64bit
+>> struct alignment is required when it contains 64bit members, not if it
+>> only contains 32bit members. Although metag is a 32bit arch, it can do
+>> 64bit memory accesses which must be aligned.
 > 
-> * suravee.suthikulpanit@amd.com <suravee.suthikulpanit@amd.com> wrote:
+> The C alignment rules should take care of this automatically (struct alignment
+> is the maximum alignment of its members).
+
+Hi Geert,
+
+Please see the comment in mk_reply in kernel/taskstats.c. The structure
+is being serialised after 2 NLA headers and a pid which is why the extra
+padding needs to be added manually.
+
+Cheers
+James
+
 > 
-> > From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> > 
-> > Currently, the AMD IBS PMU initialize pmu.task_ctx_nr to 
-> > perf_invalid_context which only allows IBS to be running only 
-> > in system-wide mode (e.g. perf record -a). IBS hardware is 
-> > available in each core and should be per-context.  This patch 
-> > modifies the task_ctx_nr to use the perf_hw_context (default) 
-> > instead.
+> You only have to override this manually in cases like this, where
+> 64-bit quantities
+> are stored in char arrays:
 > 
-> I'm wondering how extensively was it tested/verified that it's 
-> safe to enable IBS in per context mode as well, and that the 
-> profiling results are precise and accurate?
+>  struct buffer_data_page {
+>         u64              time_stamp;    /* page time stamp */
+>         local_t          commit;        /* write committed index */
+> -       unsigned char    data[];        /* data of buffer page */
+> +       unsigned char    data[] RB_ALIGN_DATA;  /* data of buffer page */
+>  };
+> 
+> (cfr. your other patch).
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
 
->From the implementation's point of view this is very similar to hw
-perf counters. I wouldn't expect any issues here. Since IBS can be
-immediatly started/stopped and there is no caching, there won't be any
-incomming sample that is not related to that context.
-
-The only potential problem I see could be a security risk in a way
-that an IBS sample might expose data related to other contexts such as
-cache information. This is similar to uncore/northbridge events so I
-don't think this is an issue, but we might want to evaluate this.
-
-> We never used the IBS hardware in this fashion before, so some 
-> extra care is prudent - and traces of that extra care should be 
-> visible in the changelog as well.
-
-Yeah, a comparison of numbers for IBS and hw counter (-e r076:p,r076
-and -e r0C1:p,r0C1) in per-context mode would be useful here.
-
--Robert
