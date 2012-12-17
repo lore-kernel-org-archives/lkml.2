@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab2LQVDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:03:41 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:39462 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab2LQVDk (ORCPT
+	id S1753703Ab2LQVEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:04:39 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47248 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab2LQVEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:03:40 -0500
-Date: Mon, 17 Dec 2012 21:03:39 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Benoit Cousson <b-cousson@ti.com>
-cc: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
-        balbi@ti.com, sameo@linux.intel.com, keshava_mgowda@ti.com,
-        sshtylyov@mvista.com, bjorn@mork.no, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
-        Mike Turquette <mturquette@gmail.com>
-Subject: Re: [PATCH v4 16/23] ARM: OMAP2+: clock data: Merge utmi_px_gfclk
- into usb_host_hs_utmi_px_clk
-In-Reply-To: <50CF47FF.2010002@ti.com>
-Message-ID: <alpine.DEB.2.00.1212172102010.29833@utopia.booyaka.com>
-References: <1355134833-5199-1-git-send-email-rogerq@ti.com> <1355134833-5199-17-git-send-email-rogerq@ti.com> <20121214182855.GB4989@atomide.com> <alpine.DEB.2.00.1212141838130.5915@utopia.booyaka.com> <50CED412.7060407@ti.com> <50CF449F.7090708@ti.com>
- <50CF47FF.2010002@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 17 Dec 2012 16:04:37 -0500
+From: Laurent Navet <laurent.navet@gmail.com>
+To: khali@linux-fr.org
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] driver i2c-nforce2: fix pointer CodingStyle issues
+Date: Mon, 17 Dec 2012 22:04:19 +0100
+Message-Id: <1355778259-8445-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012, Benoit Cousson wrote:
+fix these errors reported by checkpatch.pl
+- drivers/i2c/busses/i2c-nforce2.c:191
+- drivers/i2c/busses/i2c-nforce2.c:193
+ERROR: "foo * bar" should be "foo *bar"
 
-> It was done for legacy reason but should disappear once the modulemode
-> will be be removed from the clock nodes.
+- drivers/i2c/busses/i2c-nforce2.c:302:
+ERROR: "(foo*)" should be "(foo *)"
 
-Here's a start at taking care of the low-hanging fruit:
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/i2c/busses/i2c-nforce2.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-http://marc.info/?l=linux-omap&m=135577685007813&w=2
+diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+index 392303b..9db5ff5 100644
+--- a/drivers/i2c/busses/i2c-nforce2.c
++++ b/drivers/i2c/busses/i2c-nforce2.c
+@@ -188,9 +188,9 @@ static int nforce2_check_status(struct i2c_adapter *adap)
+ }
+ 
+ /* Return negative errno on error */
+-static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
++static s32 nforce2_access(struct i2c_adapter *adap, u16 addr,
+ 		unsigned short flags, char read_write,
+-		u8 command, int size, union i2c_smbus_data * data)
++		u8 command, int size, union i2c_smbus_data *data)
+ {
+ 	struct nforce2_smbus *smbus = adap->algo_data;
+ 	unsigned char protocol, pec;
+@@ -299,7 +299,7 @@ static u32 nforce2_func(struct i2c_adapter *adapter)
+ 	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
+ 	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
+ 	       I2C_FUNC_SMBUS_PEC |
+-	       (((struct nforce2_smbus*)adapter->algo_data)->blockops ?
++	       (((struct nforce2_smbus *)adapter->algo_data)->blockops ?
+ 		I2C_FUNC_SMBUS_BLOCK_DATA : 0);
+ }
+ 
+-- 
+1.7.10.4
 
-Only lightly tested, so tests with Kconfigs with lots of OMAP drivers 
-enabled would be appreciated.
-
-
-- Paul
