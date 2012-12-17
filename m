@@ -1,149 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab2LQPCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:02:10 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:17775 "EHLO
+	id S1753134Ab2LQPCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:02:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17812 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab2LQPCI (ORCPT
+	with ESMTP id S1752631Ab2LQPCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:02:08 -0500
+	Mon, 17 Dec 2012 10:02:12 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 01/15] userns: use new hashtable implementation
-Date: Mon, 17 Dec 2012 10:01:21 -0500
-Message-Id: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH 03/15] workqueue: use new hashtable implementation
+Date: Mon, 17 Dec 2012 10:01:23 -0500
+Message-Id: <1355756497-15834-3-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.0
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
+References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to using the new hashtable implementation to store user structs.
-This reduces the amount of generic unrelated code in kernel/user.c.
+Switch workqueues to use the new hashtable implementation. This reduces the
+amount of generic unrelated code in the workqueues.
 
 This patch depends on d9b482c ("hashtable: introduce a small and naive
 hashtable") which was merged in v3.6.
 
+Acked-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- kernel/user.c | 33 ++++++++++++---------------------
- 1 file changed, 12 insertions(+), 21 deletions(-)
+ kernel/workqueue.c | 86 ++++++++++--------------------------------------------
+ 1 file changed, 15 insertions(+), 71 deletions(-)
 
-diff --git a/kernel/user.c b/kernel/user.c
-index 33acb5e..5333a16 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -17,6 +17,7 @@
- #include <linux/export.h>
- #include <linux/user_namespace.h>
- #include <linux/proc_fs.h>
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index fbc6576..acd417b 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -41,6 +41,7 @@
+ #include <linux/debug_locks.h>
+ #include <linux/lockdep.h>
+ #include <linux/idr.h>
 +#include <linux/hashtable.h>
  
- /*
-  * userns count is 1 for root user, 1 for init_uts_ns,
-@@ -62,13 +63,9 @@ EXPORT_SYMBOL_GPL(init_user_ns);
-  */
+ #include "workqueue_sched.h"
  
- #define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
--#define UIDHASH_SZ	(1 << UIDHASH_BITS)
--#define UIDHASH_MASK		(UIDHASH_SZ - 1)
--#define __uidhashfn(uid)	(((uid >> UIDHASH_BITS) + uid) & UIDHASH_MASK)
--#define uidhashentry(uid)	(uidhash_table + __uidhashfn((__kuid_val(uid))))
+@@ -82,8 +83,6 @@ enum {
+ 	NR_WORKER_POOLS		= 2,		/* # worker pools per gcwq */
  
- static struct kmem_cache *uid_cachep;
--struct hlist_head uidhash_table[UIDHASH_SZ];
-+static DEFINE_HASHTABLE(uidhash_table, UIDHASH_BITS);
+ 	BUSY_WORKER_HASH_ORDER	= 6,		/* 64 pointers */
+-	BUSY_WORKER_HASH_SIZE	= 1 << BUSY_WORKER_HASH_ORDER,
+-	BUSY_WORKER_HASH_MASK	= BUSY_WORKER_HASH_SIZE - 1,
  
- /*
-  * The uidhash_lock is mostly taken from process context, but it is
-@@ -94,22 +91,22 @@ struct user_struct root_user = {
- /*
-  * These routines must be called with the uidhash spinlock held!
-  */
--static void uid_hash_insert(struct user_struct *up, struct hlist_head *hashent)
-+static void uid_hash_insert(struct user_struct *up)
- {
--	hlist_add_head(&up->uidhash_node, hashent);
-+	hash_add(uidhash_table, &up->uidhash_node, __kuid_val(up->uid));
+ 	MAX_IDLE_WORKERS_RATIO	= 4,		/* 1/4 of busy can be idle */
+ 	IDLE_WORKER_TIMEOUT	= 300 * HZ,	/* keep idle ones for 5 mins */
+@@ -180,7 +179,7 @@ struct global_cwq {
+ 	unsigned int		flags;		/* L: GCWQ_* flags */
+ 
+ 	/* workers are chained either in busy_hash or pool idle_list */
+-	struct hlist_head	busy_hash[BUSY_WORKER_HASH_SIZE];
++	DECLARE_HASHTABLE(busy_hash, BUSY_WORKER_HASH_ORDER);
+ 						/* L: hash of busy workers */
+ 
+ 	struct worker_pool	pools[NR_WORKER_POOLS];
+@@ -285,8 +284,7 @@ EXPORT_SYMBOL_GPL(system_freezable_wq);
+ 	     (pool) < &(gcwq)->pools[NR_WORKER_POOLS]; (pool)++)
+ 
+ #define for_each_busy_worker(worker, i, pos, gcwq)			\
+-	for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)			\
+-		hlist_for_each_entry(worker, pos, &gcwq->busy_hash[i], hentry)
++	hash_for_each(gcwq->busy_hash, i, pos, worker, hentry)
+ 
+ static inline int __next_gcwq_cpu(int cpu, const struct cpumask *mask,
+ 				  unsigned int sw)
+@@ -859,63 +857,6 @@ static inline void worker_clr_flags(struct worker *worker, unsigned int flags)
  }
  
- static void uid_hash_remove(struct user_struct *up)
- {
--	hlist_del_init(&up->uidhash_node);
-+	hash_del(&up->uidhash_node);
- }
- 
--static struct user_struct *uid_hash_find(kuid_t uid, struct hlist_head *hashent)
-+static struct user_struct *uid_hash_find(kuid_t uid)
- {
- 	struct user_struct *user;
- 	struct hlist_node *h;
- 
--	hlist_for_each_entry(user, h, hashent, uidhash_node) {
-+	hash_for_each_possible(uidhash_table, user, h, uidhash_node, __kuid_val(uid)) {
- 		if (uid_eq(user->uid, uid)) {
- 			atomic_inc(&user->__count);
- 			return user;
-@@ -145,7 +142,7 @@ struct user_struct *find_user(kuid_t uid)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&uidhash_lock, flags);
--	ret = uid_hash_find(uid, uidhashentry(uid));
-+	ret = uid_hash_find(uid);
- 	spin_unlock_irqrestore(&uidhash_lock, flags);
- 	return ret;
- }
-@@ -166,11 +163,10 @@ void free_uid(struct user_struct *up)
- 
- struct user_struct *alloc_uid(kuid_t uid)
- {
--	struct hlist_head *hashent = uidhashentry(uid);
- 	struct user_struct *up, *new;
- 
- 	spin_lock_irq(&uidhash_lock);
--	up = uid_hash_find(uid, hashent);
-+	up = uid_hash_find(uid);
- 	spin_unlock_irq(&uidhash_lock);
- 
- 	if (!up) {
-@@ -186,13 +182,13 @@ struct user_struct *alloc_uid(kuid_t uid)
- 		 * on adding the same user already..
- 		 */
- 		spin_lock_irq(&uidhash_lock);
--		up = uid_hash_find(uid, hashent);
-+		up = uid_hash_find(uid);
- 		if (up) {
- 			key_put(new->uid_keyring);
- 			key_put(new->session_keyring);
- 			kmem_cache_free(uid_cachep, new);
- 		} else {
--			uid_hash_insert(new, hashent);
-+			uid_hash_insert(new);
- 			up = new;
- 		}
- 		spin_unlock_irq(&uidhash_lock);
-@@ -206,17 +202,12 @@ out_unlock:
- 
- static int __init uid_cache_init(void)
- {
--	int n;
+ /**
+- * busy_worker_head - return the busy hash head for a work
+- * @gcwq: gcwq of interest
+- * @work: work to be hashed
+- *
+- * Return hash head of @gcwq for @work.
+- *
+- * CONTEXT:
+- * spin_lock_irq(gcwq->lock).
+- *
+- * RETURNS:
+- * Pointer to the hash head.
+- */
+-static struct hlist_head *busy_worker_head(struct global_cwq *gcwq,
+-					   struct work_struct *work)
+-{
+-	const int base_shift = ilog2(sizeof(struct work_struct));
+-	unsigned long v = (unsigned long)work;
 -
- 	uid_cachep = kmem_cache_create("uid_cache", sizeof(struct user_struct),
- 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
- 
--	for(n = 0; n < UIDHASH_SZ; ++n)
--		INIT_HLIST_HEAD(uidhash_table + n);
+-	/* simple shift and fold hash, do we need something better? */
+-	v >>= base_shift;
+-	v += v >> BUSY_WORKER_HASH_ORDER;
+-	v &= BUSY_WORKER_HASH_MASK;
 -
- 	/* Insert the root user immediately (init already runs as root) */
- 	spin_lock_irq(&uidhash_lock);
--	uid_hash_insert(&root_user, uidhashentry(GLOBAL_ROOT_UID));
-+	uid_hash_insert(&root_user);
- 	spin_unlock_irq(&uidhash_lock);
+-	return &gcwq->busy_hash[v];
+-}
+-
+-/**
+- * __find_worker_executing_work - find worker which is executing a work
+- * @gcwq: gcwq of interest
+- * @bwh: hash head as returned by busy_worker_head()
+- * @work: work to find worker for
+- *
+- * Find a worker which is executing @work on @gcwq.  @bwh should be
+- * the hash head obtained by calling busy_worker_head() with the same
+- * work.
+- *
+- * CONTEXT:
+- * spin_lock_irq(gcwq->lock).
+- *
+- * RETURNS:
+- * Pointer to worker which is executing @work if found, NULL
+- * otherwise.
+- */
+-static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
+-						   struct hlist_head *bwh,
+-						   struct work_struct *work)
+-{
+-	struct worker *worker;
+-	struct hlist_node *tmp;
+-
+-	hlist_for_each_entry(worker, tmp, bwh, hentry)
+-		if (worker->current_work == work)
+-			return worker;
+-	return NULL;
+-}
+-
+-/**
+  * find_worker_executing_work - find worker which is executing a work
+  * @gcwq: gcwq of interest
+  * @work: work to find worker for
+@@ -934,8 +875,14 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
+ static struct worker *find_worker_executing_work(struct global_cwq *gcwq,
+ 						 struct work_struct *work)
+ {
+-	return __find_worker_executing_work(gcwq, busy_worker_head(gcwq, work),
+-					    work);
++	struct worker *worker;
++	struct hlist_node *tmp;
++
++	hash_for_each_possible(gcwq->busy_hash, worker, tmp, hentry, (unsigned long)work)
++		if (worker->current_work == work)
++			return worker;
++
++	return NULL;
+ }
  
- 	return 0;
+ /**
+@@ -2166,7 +2113,6 @@ __acquires(&gcwq->lock)
+ 	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
+ 	struct worker_pool *pool = worker->pool;
+ 	struct global_cwq *gcwq = pool->gcwq;
+-	struct hlist_head *bwh = busy_worker_head(gcwq, work);
+ 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
+ 	work_func_t f = work->func;
+ 	int work_color;
+@@ -2198,7 +2144,7 @@ __acquires(&gcwq->lock)
+ 	 * already processing the work.  If so, defer the work to the
+ 	 * currently executing one.
+ 	 */
+-	collision = __find_worker_executing_work(gcwq, bwh, work);
++	collision = find_worker_executing_work(gcwq, work);
+ 	if (unlikely(collision)) {
+ 		move_linked_works(work, &collision->scheduled, NULL);
+ 		return;
+@@ -2206,7 +2152,7 @@ __acquires(&gcwq->lock)
+ 
+ 	/* claim and dequeue */
+ 	debug_work_deactivate(work);
+-	hlist_add_head(&worker->hentry, bwh);
++	hash_add(gcwq->busy_hash, &worker->hentry, (unsigned long)worker);
+ 	worker->current_work = work;
+ 	worker->current_cwq = cwq;
+ 	work_color = get_work_color(work);
+@@ -2264,7 +2210,7 @@ __acquires(&gcwq->lock)
+ 		worker_clr_flags(worker, WORKER_CPU_INTENSIVE);
+ 
+ 	/* we're done with it, release */
+-	hlist_del_init(&worker->hentry);
++	hash_del(&worker->hentry);
+ 	worker->current_work = NULL;
+ 	worker->current_cwq = NULL;
+ 	cwq_dec_nr_in_flight(cwq, work_color);
+@@ -3831,7 +3777,6 @@ out_unlock:
+ static int __init init_workqueues(void)
+ {
+ 	unsigned int cpu;
+-	int i;
+ 
+ 	/* make sure we have enough bits for OFFQ CPU number */
+ 	BUILD_BUG_ON((1LU << (BITS_PER_LONG - WORK_OFFQ_CPU_SHIFT)) <
+@@ -3849,8 +3794,7 @@ static int __init init_workqueues(void)
+ 		gcwq->cpu = cpu;
+ 		gcwq->flags |= GCWQ_DISASSOCIATED;
+ 
+-		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
+-			INIT_HLIST_HEAD(&gcwq->busy_hash[i]);
++		hash_init(gcwq->busy_hash);
+ 
+ 		for_each_worker_pool(pool, gcwq) {
+ 			pool->gcwq = gcwq;
 -- 
 1.8.0
 
