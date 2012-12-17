@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2LQGjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 01:39:20 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45648 "EHLO
+	id S1752078Ab2LQGjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 01:39:19 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54977 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab2LQGjM (ORCPT
+	with ESMTP id S1751805Ab2LQGjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Dec 2012 01:39:12 -0500
-X-AuditID: 9c930179-b7becae000000e51-7b-50cebe0dc2fc
+X-AuditID: 9c930179-b7becae000000e51-6a-50cebe0c63a6
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 07/14] perf ui/hist: Add support for event group view
-Date: Mon, 17 Dec 2012 15:38:58 +0900
-Message-Id: <1355726345-29553-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/14] perf header: Add HEADER_GROUP_DESC feature
+Date: Mon, 17 Dec 2012 15:38:55 +0900
+Message-Id: <1355726345-29553-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
 References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
@@ -27,444 +27,249 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Show group members' overhead also when showing the leader's if event
-group is enabled.  Use macro for defining hpp functions which looks
-almost identical.
-
-Thanks to Arnaldo for suggesting a better way to print group members
-without allocating temporary array.
+Save group relationship information so that it can be restored when
+perf report is running.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c       | 348 +++++++++++++++++++++------------------------
- tools/perf/ui/stdio/hist.c |   2 +
- 2 files changed, 167 insertions(+), 183 deletions(-)
+ tools/perf/builtin-record.c |   3 +
+ tools/perf/util/header.c    | 164 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h    |   2 +
+ 3 files changed, 169 insertions(+)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 0db3b4480604..ea605be78a29 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -3,223 +3,194 @@
- #include "../util/hist.h"
- #include "../util/util.h"
- #include "../util/sort.h"
--
-+#include "../util/evsel.h"
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 028de726b832..7e1d67dc8ef9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -585,6 +585,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
+ 	}
  
- /* hist period print (hpp) functions */
--static int hpp__header_overhead(struct perf_hpp_fmt *fmt __maybe_unused,
--				struct perf_hpp *hpp)
--{
--	return scnprintf(hpp->buf, hpp->size, "Overhead");
--}
--
--static int hpp__width_overhead(struct perf_hpp_fmt *fmt __maybe_unused,
--			       struct perf_hpp *hpp __maybe_unused)
--{
--	return 8;
--}
--
--static int hpp__color_overhead(struct perf_hpp_fmt *fmt __maybe_unused,
--			       struct perf_hpp *hpp, struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period / hists->stats.total_period;
--
--	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
--}
- 
--static int hpp__entry_overhead(struct perf_hpp_fmt *_fmt __maybe_unused,
--			       struct perf_hpp *hpp, struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period / hists->stats.total_period;
--	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
--
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
--}
--
--static int hpp__header_overhead_sys(struct perf_hpp_fmt *_fmt __maybe_unused,
--				    struct perf_hpp *hpp)
--{
--	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
--
--	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
--}
--
--static int hpp__width_overhead_sys(struct perf_hpp_fmt *fmt __maybe_unused,
--				   struct perf_hpp *hpp __maybe_unused)
--{
--	return 7;
--}
-+typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
- 
--static int hpp__color_overhead_sys(struct perf_hpp_fmt *fmt __maybe_unused,
--				   struct perf_hpp *hpp, struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
--
--	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
--}
--
--static int hpp__entry_overhead_sys(struct perf_hpp_fmt *_fmt __maybe_unused,
--				   struct perf_hpp *hpp, struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
--	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
--
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
--}
--
--static int hpp__header_overhead_us(struct perf_hpp_fmt *_fmt __maybe_unused,
--				   struct perf_hpp *hpp)
--{
--	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
--
--	return scnprintf(hpp->buf, hpp->size, fmt, "user");
--}
--
--static int hpp__width_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
--				  struct perf_hpp *hpp __maybe_unused)
--{
--	return 7;
--}
--
--static int hpp__color_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
--				  struct perf_hpp *hpp, struct hist_entry *he)
-+static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-+			      u64 (*get_field)(struct hist_entry *),
-+			      const char *fmt, hpp_snprint_fn print_fn)
- {
-+	int ret;
-+	double percent = 0.0;
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
- 
--	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
--}
-+	if (hists->stats.total_period)
-+		percent = 100.0 * get_field(he) / hists->stats.total_period;
- 
--static int hpp__entry_overhead_us(struct perf_hpp_fmt *_fmt __maybe_unused,
--				  struct perf_hpp *hpp, struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
--	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
-+	ret = print_fn(hpp->buf, hpp->size, fmt, percent);
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
--}
-+	if (symbol_conf.event_group) {
-+		int prev_idx, idx_delta, i;
-+		struct perf_evsel *evsel = hists_to_evsel(hists);
-+		struct hist_entry *pair;
-+		int nr_members = evsel->nr_members;
- 
--static int
--hpp__header_overhead_guest_sys(struct perf_hpp_fmt *fmt __maybe_unused,
--			       struct perf_hpp *hpp)
--{
--	return scnprintf(hpp->buf, hpp->size, "guest sys");
--}
-+		if (nr_members <= 1)
-+			return ret;
- 
--static int
--hpp__width_overhead_guest_sys(struct perf_hpp_fmt *fmt __maybe_unused,
--			      struct perf_hpp *hpp __maybe_unused)
--{
--	return 9;
--}
-+		prev_idx = perf_evsel__group_idx(evsel);
- 
--static int
--hpp__color_overhead_guest_sys(struct perf_hpp_fmt *fmt __maybe_unused,
--			      struct perf_hpp *hpp,
--			      struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-+			u64 period = get_field(pair);
-+			u64 total = pair->hists->stats.total_period;
- 
--	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
--}
-+			if (!total)
-+				continue;
- 
--static int
--hpp__entry_overhead_guest_sys(struct perf_hpp_fmt *_fmt __maybe_unused,
--			      struct perf_hpp *hpp,
--			      struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
--	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
-+			evsel = hists_to_evsel(pair->hists);
-+			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
--}
-+			for (i = 0; i < idx_delta; i++) {
-+				ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+						fmt, 0.0);
-+			}
- 
--static int
--hpp__header_overhead_guest_us(struct perf_hpp_fmt *fmt __maybe_unused,
--			      struct perf_hpp *hpp)
--{
--	return scnprintf(hpp->buf, hpp->size, "guest usr");
--}
-+			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+					fmt, 100.0 * period / total);
- 
--static int
--hpp__width_overhead_guest_us(struct perf_hpp_fmt *fmt __maybe_unused,
--			     struct perf_hpp *hpp __maybe_unused)
--{
--	return 9;
--}
-+			prev_idx += 1 + idx_delta;
-+		}
- 
--static int
--hpp__color_overhead_guest_us(struct perf_hpp_fmt *fmt __maybe_unused,
--			     struct perf_hpp *hpp,
--			     struct hist_entry *he)
--{
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
-+		idx_delta = nr_members - prev_idx - 1;
- 
--	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
-+		for (i = 0; i < idx_delta; i++) {
-+			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+					fmt, 0.0);
-+		}
-+	}
-+	return ret;
++	if (!evsel_list->nr_groups)
++		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
++
+ 	/*
+ 	 * perf_session__delete(session) will be called at perf_record__exit()
+ 	 */
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index bb578d2d10f9..f7ecbb796008 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1082,6 +1082,52 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
  }
  
--static int
--hpp__entry_overhead_guest_us(struct perf_hpp_fmt *_fmt __maybe_unused,
--			     struct perf_hpp *hpp,
--			     struct hist_entry *he)
-+static int __hpp__raw_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-+			  u64 (*get_field)(struct hist_entry *),
-+			  const char *fmt, hpp_snprint_fn print_fn)
- {
--	struct hists *hists = he->hists;
--	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
--	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ /*
++ * File format:
++ *
++ * struct group_descs {
++ *	u32	nr_groups;
++ *	struct group_desc {
++ *		char	name[];
++ *		u32	leader_idx;
++ *		u32	nr_members;
++ *	}[nr_groups];
++ * };
++ */
++static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
++			    struct perf_evlist *evlist)
++{
++	u32 nr_groups = evlist->nr_groups;
++	struct perf_evsel *evsel;
 +	int ret;
-+	ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
--}
-+	if (symbol_conf.event_group) {
-+		int prev_idx, idx_delta, i;
-+		struct perf_evsel *evsel = hists_to_evsel(he->hists);
-+		struct hist_entry *pair;
-+		int nr_members = evsel->nr_members;
- 
--static int hpp__header_samples(struct perf_hpp_fmt *_fmt __maybe_unused,
--			       struct perf_hpp *hpp)
--{
--	const char *fmt = symbol_conf.field_sep ? "%s" : "%11s";
-+		if (nr_members <= 1)
-+			return ret;
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, "Samples");
--}
-+		prev_idx = perf_evsel__group_idx(evsel);
- 
--static int hpp__width_samples(struct perf_hpp_fmt *fmt __maybe_unused,
--			      struct perf_hpp *hpp __maybe_unused)
--{
--	return 11;
--}
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-+			evsel = hists_to_evsel(pair->hists);
-+			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
- 
--static int hpp__entry_samples(struct perf_hpp_fmt *_fmt __maybe_unused,
--			      struct perf_hpp *hpp, struct hist_entry *he)
--{
--	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%11" PRIu64;
-+			for (i = 0; i < idx_delta; i++) {
-+				ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+						fmt, 0.0);
-+			}
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.nr_events);
--}
-+			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+					fmt, get_field(pair));
- 
--static int hpp__header_period(struct perf_hpp_fmt *_fmt __maybe_unused,
--			      struct perf_hpp *hpp)
--{
--	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
-+			prev_idx += 1 + idx_delta;
-+		}
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, "Period");
--}
-+		idx_delta = nr_members - prev_idx - 1;
- 
--static int hpp__width_period(struct perf_hpp_fmt *fmt __maybe_unused,
--			     struct perf_hpp *hpp __maybe_unused)
--{
--	return 12;
-+		for (i = 0; i < idx_delta; i++) {
-+			ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+					fmt, 0.0);
++
++	ret = do_write(fd, &nr_groups, sizeof(nr_groups));
++	if (ret < 0)
++		return ret;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			const char *name = evsel->group_name ?: "{anon_group}";
++			u32 leader_idx = evsel->idx;
++			u32 nr_members = evsel->nr_members;
++
++			ret = do_write_string(fd, name);
++			if (ret < 0)
++				return ret;
++
++			ret = do_write(fd, &leader_idx, sizeof(leader_idx));
++			if (ret < 0)
++				return ret;
++
++			ret = do_write(fd, &nr_members, sizeof(nr_members));
++			if (ret < 0)
++				return ret;
 +		}
 +	}
-+	return ret;
++	return 0;
++}
++
++/*
+  * default get_cpuid(): nothing gets recorded
+  * actual implementation must be in arch/$(ARCH)/util/header.c
+  */
+@@ -1444,6 +1490,31 @@ error:
+ 	fprintf(fp, "# pmu mappings: unable to read\n");
  }
  
--static int hpp__entry_period(struct perf_hpp_fmt *_fmt __maybe_unused,
--			     struct perf_hpp *hpp, struct hist_entry *he)
--{
--	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.period);
--}
-+#define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
-+static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+			       struct perf_hpp *hpp)			\
-+{									\
-+	int len = _min_width;						\
-+									\
-+	if (symbol_conf.event_group) {					\
-+		struct perf_evsel *evsel = hpp->ptr;			\
-+									\
-+		len = max(len, evsel->nr_members * _unit_width);	\
-+	}								\
-+	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
++static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
++			     FILE *fp)
++{
++	struct perf_session *session;
++	struct perf_evsel *evsel;
++	u32 nr = 0;
++
++	session = container_of(ph, struct perf_session, header);
++
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
++				perf_evsel__name(evsel));
++
++			nr = evsel->nr_members - 1;
++		} else if (nr) {
++			fprintf(fp, ",%s", perf_evsel__name(evsel));
++
++			if (--nr == 0)
++				fprintf(fp, "}\n");
++		}
++	}
 +}
 +
-+#define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
-+static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+			      struct perf_hpp *hpp)			\
-+{									\
-+	int len = _min_width;						\
-+									\
-+	if (symbol_conf.event_group) {					\
-+		struct perf_evsel *evsel = hpp->ptr;			\
-+									\
-+		len = max(len, evsel->nr_members * _unit_width);	\
-+	}								\
-+	return len;							\
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1958,6 +2029,98 @@ error:
+ 	return -1;
+ }
+ 
++static int process_group_desc(struct perf_file_section *section __maybe_unused,
++			      struct perf_header *ph, int fd,
++			      void *data __maybe_unused)
++{
++	size_t ret = -1;
++	u32 i, nr, nr_groups;
++	struct perf_session *session;
++	struct perf_evsel *evsel, *leader = NULL;
++	struct group_desc {
++		char *name;
++		u32 leader_idx;
++		u32 nr_members;
++	} *desc;
++
++	if (readn(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
++		return -1;
++
++	if (ph->needs_swap)
++		nr_groups = bswap_32(nr_groups);
++
++	ph->env.nr_groups = nr_groups;
++	if (!nr_groups) {
++		pr_debug("group desc not available\n");
++		return 0;
++	}
++
++	desc = calloc(nr_groups, sizeof(*desc));
++	if (!desc)
++		return -1;
++
++	for (i = 0; i < nr_groups; i++) {
++		desc[i].name = do_read_string(fd, ph);
++		if (!desc[i].name)
++			goto out_free;
++
++		if (readn(fd, &desc[i].leader_idx, sizeof(u32)) != sizeof(u32))
++			goto out_free;
++
++		if (readn(fd, &desc[i].nr_members, sizeof(u32)) != sizeof(u32))
++			goto out_free;
++
++		if (ph->needs_swap) {
++			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
++			desc[i].nr_members = bswap_32(desc[i].nr_members);
++		}
++	}
++
++	/*
++	 * Rebuild group relationship based on the group_desc
++	 */
++	session = container_of(ph, struct perf_session, header);
++	session->evlist->nr_groups = nr_groups;
++
++	i = nr = 0;
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (evsel->idx == (int) desc[i].leader_idx) {
++			evsel->leader = evsel;
++			/* {anon_group} is a dummy name */
++			if (strcmp(desc[i].name, "{anon_group}"))
++				evsel->group_name = desc[i].name;
++			evsel->nr_members = desc[i].nr_members;
++
++			if (i >= nr_groups || nr > 0) {
++				pr_debug("invalid group desc\n");
++				goto out_free;
++			}
++
++			leader = evsel;
++			nr = evsel->nr_members - 1;
++			i++;
++		} else if (nr) {
++			/* This is a group member */
++			evsel->leader = leader;
++
++			nr--;
++		}
++	}
++
++	if (i != nr_groups || nr != 0) {
++		pr_debug("invalid group desc\n");
++		goto out_free;
++	}
++
++	ret = 0;
++out_free:
++	while ((int) --i >= 0)
++		free(desc[i].name);
++	free(desc);
++
++	return ret;
 +}
 +
-+#define __HPP_COLOR_PERCENT_FN(_type, _field)					\
-+static u64 he_get_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat._field;							\
-+}										\
-+										\
-+static int hpp__color_##_type(struct perf_hpp_fmt *phf __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	return __hpp__percent_fmt(hpp, he, he_get_##_field, " %6.2f%%",		\
-+				  (hpp_snprint_fn)percent_color_snprintf); 	\
-+}
-+
-+#define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
-+static int hpp__entry_##_type(struct perf_hpp_fmt *phf __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-+	return __hpp__percent_fmt(hpp, he, he_get_##_field, fmt,		\
-+				  scnprintf);					\
-+}
-+
-+#define __HPP_ENTRY_RAW_FN(_type, _field)					\
-+static u64 he_get_raw_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat._field;							\
-+}										\
-+										\
-+static int hpp__entry_##_type(struct perf_hpp_fmt *phf __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
-+	return __hpp__raw_fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf);	\
-+}
-+
-+#define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_COLOR_PERCENT_FN(_type, _field)					\
-+__HPP_ENTRY_PERCENT_FN(_type, _field)
-+
-+#define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_ENTRY_RAW_FN(_type, _field)
-+
-+
-+HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
-+HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
-+HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
-+HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
-+HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-+
-+HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
-+HPP_RAW_FNS(period, "Period", period, 12, 12)
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -1997,6 +2160,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+ 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
++	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
+ };
  
- #define HPP__COLOR_PRINT_FNS(_name)			\
- 	{						\
-@@ -248,9 +219,20 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 20f0344accb1..c9fc55cada6d 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -29,6 +29,7 @@ enum {
+ 	HEADER_NUMA_TOPOLOGY,
+ 	HEADER_BRANCH_STACK,
+ 	HEADER_PMU_MAPPINGS,
++	HEADER_GROUP_DESC,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
+ };
+@@ -79,6 +80,7 @@ struct perf_session_env {
+ 	char			*numa_nodes;
+ 	int			nr_pmu_mappings;
+ 	char			*pmu_mappings;
++	int			nr_groups;
+ };
  
- LIST_HEAD(perf_hpp__list);
- 
-+
- #undef HPP__COLOR_PRINT_FNS
- #undef HPP__PRINT_FNS
- 
-+#undef HPP_PERCENT_FNS
-+#undef HPP_RAW_FNS
-+
-+#undef __HPP_HEADER_FN
-+#undef __HPP_WIDTH_FN
-+#undef __HPP_COLOR_PERCENT_FN
-+#undef __HPP_ENTRY_PERCENT_FN
-+#undef __HPP_ENTRY_RAW_FN
-+
-+
- void perf_hpp__init(void)
- {
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 531bc7aca772..2fc218a36ba1 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -3,6 +3,7 @@
- #include "../../util/util.h"
- #include "../../util/hist.h"
- #include "../../util/sort.h"
-+#include "../../util/evsel.h"
- 
- 
- static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
-@@ -347,6 +348,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
-+		.ptr	= hists_to_evsel(hists),
- 	};
- 	bool first = true;
- 
+ struct perf_header {
 -- 
 1.7.11.7
 
