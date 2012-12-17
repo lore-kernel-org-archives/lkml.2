@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab2LQJ2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:28:08 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53147 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab2LQJ2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:28:07 -0500
-Date: Mon, 17 Dec 2012 10:28:02 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ACPI: Overriding ACPI tables via initrd only works
- with an initrd
-Message-ID: <20121217092802.GA31947@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-References: <1351694147-10904-1-git-send-email-trenn@suse.de>
- <1351694147-10904-4-git-send-email-trenn@suse.de>
+	id S1751935Ab2LQJei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:34:38 -0500
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:23149 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751269Ab2LQJeh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:34:37 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgEFAOrmzlBthYXF/2dsb2JhbABFhju0LINKF3OCHgEBBSMzIxALGAICJgICFCUkiCqnPZIVgSKLO4MwMmEDlgmQSYJ0
+Date: Mon, 17 Dec 2012 10:34:14 +0100
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Bernd Krumboeck <krumboeck@universalnet.at>
+Cc: Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] can: add tx/rx LED trigger support
+Message-ID: <20121217093414.GA17341@vandijck-laurijssen.be>
+Mail-Followup-To: Bernd Krumboeck <krumboeck@universalnet.at>,
+	Fabio Baltieri <fabio.baltieri@gmail.com>,
+	Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+	Wolfgang Grandegger <wg@grandegger.com>,
+	Oliver Hartkopp <socketcan@hartkopp.net>,
+	linux-kernel@vger.kernel.org
+References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
+ <1355656113-9562-2-git-send-email-fabio.baltieri@gmail.com>
+ <50CEC9B0.3040503@universalnet.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1351694147-10904-4-git-send-email-trenn@suse.de>
+In-Reply-To: <50CEC9B0.3040503@universalnet.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
-
-this one sanitizes the Kconfig entry prompt so can we pick it up for
--rc1 or later, please?
-
-Thanks.
-
-On Wed, Oct 31, 2012 at 03:35:47PM +0100, Thomas Renninger wrote:
-> Reflect this dependency in Kconfig.
-> Shorten the config description as suggested by Borislav Petkov
+On Mon, Dec 17, 2012 at 08:28:48AM +0100, Bernd Krumboeck wrote:
+> Hello Fabio!
 > 
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> ---
->  drivers/acpi/Kconfig |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> Am 2012-12-16 12:08, schrieb Fabio Baltieri:
+> >This patch implements the functions to add two LED triggers, named
+> ><ifname>-tx and <ifname>-rx, to a canbus device driver.
+> >
+> >Triggers are called from specific handlers by each CAN device driver and
+> >can be disabled altogether with a Kconfig option.
+> >
+> >The implementation keeps the LED on when the interface is UP and blinks
+> >the LED on network activity at a configurable rate.
+> >
+> >This only supports can-dev based drivers, as it uses some support field
+> >in the can_priv structure.
+> >
+> >Supported drivers should call devm_can_led_init() and can_led_event() as
+> >needed.
+> >
+> >Cleanup is handled automatically by devres, so no *_exit function is
+> >needed.
+> >
+> >Supported events are:
+> >- CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
+> >- CAN_LED_EVENT_STOP: turn off tx/rx LEDs
+> >- CAN_LED_EVENT_TX: trigger tx LED blink
+> >- CAN_LED_EVENT_RX: trigger tx LED blink
 > 
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 44cea5d..ca939b4 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -262,7 +262,8 @@ config ACPI_CUSTOM_DSDT
->  	default ACPI_CUSTOM_DSDT_FILE != ""
->  
->  config ACPI_INITRD_TABLE_OVERRIDE
-> -	bool "ACPI tables can be passed via uncompressed cpio in initrd"
-> +	bool "ACPI tables override via initrd"
-> +	depends on BLK_DEV_INITRD
->  	default n
->  	help
->  	  This option provides functionality to override arbitrary ACPI tables
-> -- 
-> 1.7.6.1
+> Why there is no patch for any usb can device?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Can this be done in a more general way, except patching every driver?
 
--- 
-Regards/Gruss,
-    Boris.
+There must be a way.
+Up to this series, there were a few minor problems:
+* determine if a CAN device is can_dev based
+* led trigger calls.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+After this series, I think it's possible to make this functionality generic.
+But up to then, this per-driver code is a working model.
+
+Kind regards,
+Kurt
