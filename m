@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2LQVRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:17:48 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45112 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2LQVRq (ORCPT
+	id S1753407Ab2LQVSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:18:17 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52476 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LQVSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:17:46 -0500
-Date: Mon, 17 Dec 2012 13:17:38 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 07/12] cfq-iosched: implement hierarchy-ready cfq_group
- charge scaling
-Message-ID: <20121217211738.GD1844@htj.dyndns.org>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
- <1355524885-22719-8-git-send-email-tj@kernel.org>
- <20121217205317.GI7235@redhat.com>
+	Mon, 17 Dec 2012 16:18:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121217205317.GI7235@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1212161028330.13850-100000@netrider.rowland.org>
+References: <3558004.3QJ46yYCyI@vostro.rjw.lan>
+	<Pine.LNX.4.44L0.1212161028330.13850-100000@netrider.rowland.org>
+Date: Mon, 17 Dec 2012 22:18:14 +0100
+Message-ID: <CAPDyKFpXAokEr-ktU9=R+SWnfJvhRNhYPbmz-pw8-YpJiuNSSA@mail.gmail.com>
+Subject: Re: [Resend][PATCH] PM: Move disabling/enabling runtime PM to late
+ suspend/early resume
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Kosina <jkosina@suse.cz>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jan-Matthias Braun <jan_braun@gmx.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 16 December 2012 16:29, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sun, 16 Dec 2012, Rafael J. Wysocki wrote:
+>
+>> On Saturday, December 15, 2012 10:16:29 PM Jiri Kosina wrote:
+>> > On Sat, 15 Dec 2012, Rafael J. Wysocki wrote:
+>> >
+>> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> > >
+>> > > Currently, the PM core disables runtime PM for all devices right
+>> > > after executing subsystem/driver .suspend() callbacks for them
+>> > > and re-enables it right before executing subsystem/driver .resume()
+>> > > callbacks for them.  This may lead to problems when there are
+>> > > two devices such that the .suspend() callback executed for one of
+>> > > them depends on runtime PM working for the other.  In that case,
+>> > > if runtime PM has already been disabled for the second device,
+>> > > the first one's .suspend() won't work correctly (and analogously
+>> > > for resume).
+>> > >
+>> > > To make those issues go away, make the PM core disable runtime PM
+>> > > for devices right before executing subsystem/driver .suspend_late()
+>> > > callbacks for them and enable runtime PM for them right after
+>> > > executing subsystem/driver .resume_early() callbacks for them.  This
+>> > > way the potential conflitcs between .suspend_late()/.resume_early()
+>> > > and their runtime PM counterparts are still prevented from happening,
+>> > > but the subtle ordering issues related to disabling/enabling runtime
+>> > > PM for devices during system suspend/resume are much easier to avoid.
+>> > >
+>> > > Reported-and-tested-by: Jan-Matthias Braun <jan_braun@gmx.net>
+>> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> >
+>> > Hi Rafael,
+>> >
+>> > just curious what is the reason for resend? Do you want to gather more
+>> > Acks before pushing this upstream?
+>>
+>> Well, I thought that some people might actually look at it when they found it
+>> again in their mailboxes. :-)
+>
+> I did look at it the first time it appeared.  It seemed to be okay, but
+> I haven't tried any testing.
+>
+> Alan Stern
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On Mon, Dec 17, 2012 at 03:53:18PM -0500, Vivek Goyal wrote:
-> On Fri, Dec 14, 2012 at 02:41:20PM -0800, Tejun Heo wrote:
-> > Currently, cfqg charges are scaled directly according to cfqg->weight.
-> > Regardless of the number of active cfqgs or the amount of active
-> > weights, a given weight value always scales charge the same way.  This
-> > works fine as long as all cfqgs are treated equally regardless of
-> > their positions in the hierarchy, which is what cfq currently
-> > implements.  It can't work in hierarchical settings because the
-> > interpretation of a given weight value depends on where the weight is
-> > located in the hierarchy.
-> 
-> I did not understand this. Why the current scheme will not work with
-> hierarchy?
+I believe this should work fine for ux500 platforms, so:
 
-Because the meaning of a weight changes depending on where the weight
-exists in the hierarchy?
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-> While we calculate the vdisktime, this is calculated with the help
-> of CFQ_DEFAULT_WEIGHT and cfqg->weight. So we scale used time slice
-> in proportion to CFQ_DEFAULT_WEIGTH/cfqg->weight. So higher the weight
-> lesser the charge and cfqg gets scheduled again faster and lower the
-> weight, higher the vdisktime and cfqg gets scheduled less  frequently.
-> 
-> As every cfqg does the same thing on service tree, they automatically
-> get fair share w.r.t their weight.
-> 
-> And this mechanism should not be impacted by the hierarchy because we
-> have a separate service tree at separate level. This will not work
-> only if you come up with one compressed tree and then weights will
-> have to be adjusted. If we have a separate service tree in each group
-> then it should work just fine.
-
-Why would you create N service trees when you can almost trivially use
-one by calcualting the effective weight?  You would have to be
-adjusting all trees above whenever something changes in a child.
-
-Thanks.
-
--- 
-tejun
+Kind regards
+Ulf Hansson
