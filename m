@@ -1,104 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab2LQPC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:02:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18255 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab2LQPCz (ORCPT
+	id S1753523Ab2LQPDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:03:23 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33643 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab2LQPDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:02:55 -0500
+	Mon, 17 Dec 2012 10:03:02 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
 Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 15/15] tracing output: use new hashtable implementation
-Date: Mon, 17 Dec 2012 10:01:35 -0500
-Message-Id: <1355756497-15834-15-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH 02/15] mm,ksm: use new hashtable implementation
+Date: Mon, 17 Dec 2012 10:01:22 -0500
+Message-Id: <1355756497-15834-2-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
 References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch tracing to use the new hashtable implementation. This reduces the
-amount of generic unrelated code in the tracing module.
+Switch ksm to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the ksm module.
 
 This patch depends on d9b482c ("hashtable: introduce a small and naive
 hashtable") which was merged in v3.6.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- kernel/trace/trace_output.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ mm/ksm.c | 31 +++++++++++++------------------
+ 1 file changed, 13 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 194d796..d102d26 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -8,15 +8,15 @@
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/ftrace.h>
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 382d930..e888f54 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -33,7 +33,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/swap.h>
+ #include <linux/ksm.h>
+-#include <linux/hash.h>
 +#include <linux/hashtable.h>
+ #include <linux/freezer.h>
+ #include <linux/oom.h>
  
- #include "trace_output.h"
+@@ -156,9 +156,8 @@ struct rmap_item {
+ static struct rb_root root_stable_tree = RB_ROOT;
+ static struct rb_root root_unstable_tree = RB_ROOT;
  
--/* must be a power of 2 */
--#define EVENT_HASHSIZE	128
-+#define EVENT_HASH_BITS	7
+-#define MM_SLOTS_HASH_SHIFT 10
+-#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
+-static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
++#define MM_SLOTS_HASH_BITS 10
++static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
  
- DECLARE_RWSEM(trace_event_mutex);
+ static struct mm_slot ksm_mm_head = {
+ 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
+@@ -275,26 +274,21 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
  
--static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
-+static DEFINE_HASHTABLE(event_hash, EVENT_HASH_BITS);
- 
- static int next_event_type = __TRACE_LAST_TYPE + 1;
- 
-@@ -740,11 +740,8 @@ struct trace_event *ftrace_find_event(int type)
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
  {
- 	struct trace_event *event;
- 	struct hlist_node *n;
--	unsigned key;
+-	struct mm_slot *mm_slot;
+-	struct hlist_head *bucket;
+ 	struct hlist_node *node;
++	struct mm_slot *slot;
++
++	hash_for_each_possible(mm_slots_hash, slot, node, link, (unsigned long)mm) 
++		if (slot->mm == mm)
++			return slot;
  
--	key = type & (EVENT_HASHSIZE - 1);
--
--	hlist_for_each_entry(event, n, &event_hash[key], node) {
-+	hash_for_each_possible(event_hash, event, n, node, type) {
- 		if (event->type == type)
- 			return event;
- 	}
-@@ -809,7 +806,6 @@ void trace_event_read_unlock(void)
-  */
- int register_ftrace_event(struct trace_event *event)
- {
--	unsigned key;
- 	int ret = 0;
- 
- 	down_write(&trace_event_mutex);
-@@ -861,9 +857,7 @@ int register_ftrace_event(struct trace_event *event)
- 	if (event->funcs->binary == NULL)
- 		event->funcs->binary = trace_nop_print;
- 
--	key = event->type & (EVENT_HASHSIZE - 1);
--
--	hlist_add_head(&event->node, &event_hash[key]);
-+	hash_add(event_hash, &event->node, event->type);
- 
- 	ret = event->type;
-  out:
-@@ -878,7 +872,7 @@ EXPORT_SYMBOL_GPL(register_ftrace_event);
-  */
- int __unregister_ftrace_event(struct trace_event *event)
- {
--	hlist_del(&event->node);
-+	hash_del(&event->node);
- 	list_del(&event->list);
- 	return 0;
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+-	hlist_for_each_entry(mm_slot, node, bucket, link) {
+-		if (mm == mm_slot->mm)
+-			return mm_slot;
+-	}
+ 	return NULL;
  }
+ 
+ static void insert_to_mm_slots_hash(struct mm_struct *mm,
+ 				    struct mm_slot *mm_slot)
+ {
+-	struct hlist_head *bucket;
+-
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+ 	mm_slot->mm = mm;
+-	hlist_add_head(&mm_slot->link, bucket);
++	hash_add(mm_slots_hash, &mm_slot->link, (unsigned long)mm);
+ }
+ 
+ static inline int in_stable_tree(struct rmap_item *rmap_item)
+@@ -647,7 +641,7 @@ static int unmerge_and_remove_all_rmap_items(void)
+ 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
+ 						struct mm_slot, mm_list);
+ 		if (ksm_test_exit(mm)) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1392,7 +1386,7 @@ next_mm:
+ 		 * or when all VM_MERGEABLE areas have been unmapped (and
+ 		 * mmap_sem then protects against race with MADV_MERGEABLE).
+ 		 */
+-		hlist_del(&slot->link);
++		hash_del(&slot->link);
+ 		list_del(&slot->mm_list);
+ 		spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1559,7 +1553,7 @@ void __ksm_exit(struct mm_struct *mm)
+ 	mm_slot = get_mm_slot(mm);
+ 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
+ 		if (!mm_slot->rmap_list) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			easy_to_free = 1;
+ 		} else {
+@@ -2035,6 +2029,7 @@ static int __init ksm_init(void)
+ 	 */
+ 	hotplug_memory_notifier(ksm_memory_callback, 100);
+ #endif
++
+ 	return 0;
+ 
+ out_free:
 -- 
 1.8.0
 
