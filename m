@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2LQUTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 15:19:49 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52475 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab2LQUTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 15:19:48 -0500
-Date: Mon, 17 Dec 2012 21:19:45 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, haojian.zhuang@gmail.com
-Subject: Re: common clock framwork: clk_set_rate issue
-Message-ID: <20121217201945.GA19651@pengutronix.de>
-References: <CADApbej+f9P1sgLMR8_McoCCSLDjJt_qitWdNd8X1v6PwZqsnQ@mail.gmail.com>
+	id S1753525Ab2LQUVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 15:21:10 -0500
+Received: from smtp.xy24.at ([85.126.109.136]:37947 "EHLO renate.xy24.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753141Ab2LQUVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 15:21:08 -0500
+Message-ID: <86fd45485e2016d2c5ad27f28669195e.squirrel@webmail.universalnet.at>
+In-Reply-To: <20121217174121.GA16327@balto.lan>
+References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
+    <1355656113-9562-2-git-send-email-fabio.baltieri@gmail.com>
+    <50CEC9B0.3040503@universalnet.at> <20121217174121.GA16327@balto.lan>
+Date: Mon, 17 Dec 2012 21:20:57 +0100
+Subject: Re: [PATCH 1/9] can: add tx/rx LED trigger support
+From: =?iso-8859-1?Q?=22Bernd_Krumb=F6ck=22?= <krumboeck@universalnet.at>
+To: "Fabio Baltieri" <fabio.baltieri@gmail.com>,
+        "Bernd Krumboeck" <krumboeck@universalnet.at>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        "Kurt Van Dijck" <kurt.van.dijck@eia.be>,
+        "Wolfgang Grandegger" <wg@grandegger.com>,
+        "Oliver Hartkopp" <socketcan@hartkopp.net>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADApbej+f9P1sgLMR8_McoCCSLDjJt_qitWdNd8X1v6PwZqsnQ@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:14:27 up 177 days, 11:26, 28 users,  load average: 0.31, 0.45,
- 0.42
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.4 (renate.xy24.at [127.0.0.1]); Mon, 17 Dec 2012 21:20:58 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 10:52:03AM +0800, Chao Xie wrote:
-> hi
-> When develop the clk drivers for SOCs based on common clock framework.
-> I met a issue.
-> For example there is a uart device, it's function clock comes from a
-> divider, and the divider's parent is a mux. It means
-> 
-> MUX --> DIV --> UART
-> 
-> As we know that UART can work at low baudrate for a terminal, while it
-> can also connect to GPS module which needs a high rate. So the MUX
-> will provide two clock source, a low clock rate and high clock rate.
-> 
-> The MUX clk driver clk-mux.c does not implement a ->round_rate callbacks.
-> It means that when uart driver is used for a GPS and it want to change
-> it clock, the driver will call clk_set_rate(); clk_set_rate will loop
-> upward to DIV, and DIV will try to set its divider, and it need loop
-> upward to MUX.
-> In fact the current clk drivers have some issue.
-> MUX clk driver should provide the round_rate callback, it then can
-> provide a new_rate. It means that in clk_calc_subtree MUX can switch
-> the clock source.
+> Hi Bernd,
+>
+> On Mon, Dec 17, 2012 at 08:28:48AM +0100, Bernd Krumboeck wrote:
+>> Why there is no patch for any usb can device?
+>
+> Because USB canbus interfaces usually already has some dedicated
+> activity LED on the device itself, while this patch is meant to give an
+> equivalent functionality for Embedded SoC with GPIO based LEDs, so I
+> just started by modifying some Embedded CAN drivers.
+>
+> If you think it's useful for USB controller, just tell me or modify the
+> driver by yourself!  As you see the patch is really easy.
 
-It's not that simple. The input clocks to a mux may not only differ in
-their rate but can also have other different properties, like for
-example one input may be always present whereas another input only runs
-when the CPU is in run mode.
+At least it is useful for the usb_8dev driver. I'll write a patch.
 
-It may be a possibility to add a flag to the mux to explicitely
-allow reparenting on a rate change.
+Photo of the device:
+http://www.8devices.com/product/2/usb2can
 
-Sascha
+>> Can this be done in a more general way, except patching every driver?
+>
+> Actually this started as a generic patch bolted to the CAN stack, but
+> the implementation was too invasive and a bit too hacky.  A generic
+> implementation at can-dev level is hard to obtain because the can-dev
+> layer is not used in all the device operation, as the most of the driver
+> calls generick network API directly.
+>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Thanks!
+
+regards,
+Bernd
