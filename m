@@ -1,36 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab2LQToe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 14:44:34 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37264 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863Ab2LQToc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 14:44:32 -0500
-Date: Mon, 17 Dec 2012 20:44:31 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.6.9-rt21
-In-Reply-To: <1355764176.11540.19.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1212172043390.3148@ionos>
-References: <alpine.LFD.2.02.1212051659160.2701@ionos>  <1355543529.20987.6.camel@marge.simpson.net>  <alpine.LFD.2.02.1212171634070.3148@ionos> <1355764176.11540.19.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753537Ab2LQTrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 14:47:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35783 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752559Ab2LQTrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 14:47:07 -0500
+Date: Mon, 17 Dec 2012 17:41:05 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Nickolai Zeldovich <nickolai@csail.mit.edu>
+Cc: Gleb Natapov <gleb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix i8254 counter 0 wraparound
+Message-ID: <20121217194104.GA24959@amt.cnet>
+References: <1355571277-6096-1-git-send-email-nickolai@csail.mit.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355571277-6096-1-git-send-email-nickolai@csail.mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012, Mike Galbraith wrote:
-> On Mon, 2012-12-17 at 16:35 +0100, Thomas Gleixner wrote: 
-> > Bah. This reverse user/kernel priority nonsense really should go away!
+On Sat, Dec 15, 2012 at 06:34:37AM -0500, Nickolai Zeldovich wrote:
+> The kvm i8254 emulation for counter 0 (but not for counters 1 and 2)
+> has at least two bugs in mode 0:
 > 
-> Snort, I looked right at it too, looked perfectly fine :)
+> 1. The OUT bit, computed by pit_get_out(), is never set high.
+> 
+> 2. The counter value, computed by pit_get_count(), wraps back around to
+>    the initial counter value, rather than wrapping back to 0xFFFF
+>    (which is the behavior described in the comment in __kpit_elapsed,
+>    the behavior implemented by qemu, and the behavior observed on AMD
+>    hardware).
+> 
+> The bug stems from __kpit_elapsed computing the elapsed time mod the
+> initial counter value (stored as nanoseconds in ps->period).  This is both
+> unnecessary (none of the callers of kpit_elapsed expect the value to be
+> at most the initial counter value) and incorrect (it causes pit_get_count
+> to appear to wrap around to the initial counter value rather than 0xFFFF).
+> Removing this mod from __kpit_elapsed fixes both of the above bugs.
+> 
+> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+> ---
+>  arch/x86/kvm/i8254.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
+> index 11300d2..c1d30b2 100644
+> --- a/arch/x86/kvm/i8254.c
+> +++ b/arch/x86/kvm/i8254.c
+> @@ -122,7 +122,6 @@ static s64 __kpit_elapsed(struct kvm *kvm)
+>  	 */
+>  	remaining = hrtimer_get_remaining(&ps->timer);
+>  	elapsed = ps->period - ktime_to_ns(remaining);
+> -	elapsed = mod_64(elapsed, ps->period);
+>  
+>  	return elapsed;
+>  }
 
-The real bad news is, that I talked to someone about that reverse prio
-issue just a few hours before I committed that crime. Blergh!
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
