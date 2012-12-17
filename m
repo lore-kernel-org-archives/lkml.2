@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab2LQHP0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 02:15:26 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:61146 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab2LQHPZ (ORCPT
+	id S1751513Ab2LQHZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 02:25:18 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64820 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab2LQHZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 02:15:25 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-bd-50cec68a3e54
-Message-id: <50CEC689.4070607@samsung.com>
-Date: Mon, 17 Dec 2012 16:15:21 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] charger-manager: Fix bug when check dropped voltage
- after fullbatt event
-References: <1353570831-19439-1-git-send-email-cw00.choi@samsung.com>
- <20121217064902.GA9027@lizard.gateway.2wire.net>
-In-reply-to: <20121217064902.GA9027@lizard.gateway.2wire.net>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t8zLd2uY+cCDBoabC0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG5Ks/WQvm81TcWzSRvYFxMlcXIyeHhICJxO3nK9ghbDGJC/fW
-	s3UxcnEICSxjlLhwdQsbTFFX6wtmiMR0Ron7a1YxQThdTBLth/pYQap4BbQkPpw9xARiswio
-	Spy99wQszgYU3//iBtAkDg5RgQiJX/0cEOWCEj8m32MBsUUEDCQOPlwK1sosEC5xufk52EXC
-	AmkSZ982gx0hJFAhMf/ba7AaTgFbiZ+/tjNC1KtLTJq3iBnClpfYvOYtM8QJAhLfJh9iAVkr
-	ISArsekA2P0SAs3sEh/OfWKCeExS4uCKGywTGMVmITlpFpKxs5CMXcDIvIpRNLUguaA4KT3X
-	UK84Mbe4NC9dLzk/dxMjJCakdjCubLA4xCjAwajEw2uUei5AiDWxrLgy9xCjBAezkggvvztQ
-	iDclsbIqtSg/vqg0J7X4EKMP0LUTmaVEk/OB8ZpXEm9obGBsaGhpaGZqaWqAQ1hJnLfZIyVA
-	SCA9sSQ1OzW1ILUIZhwTB6dUA2MDdx2DqqvDHYPml7vUU6ds/+1QJvfVr6s1b3XM9Pemr2/Y
-	zO5wqHvn61hX/mD+oa9btAr3n1GLUw/epXaU0ZvBMlSx4cavNs4vM6eXSaVO/yHQt+Iez4uV
-	tR17cvzO2Bltn1G6zWFZad6eU3dPPeGbenU9b+7OJza7uv/8YsiO/ninKog/NlmJpTgj0VCL
-	uag4EQDBqSh/tgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jQd2uY+cCDE7tNre4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGZOv/mQtmM9TcW/RRPYG
-	xslcXYycHBICJhJdrS+YIWwxiQv31rN1MXJxCAlMZ5S4v2YVE4TTxSTRfqiPFaSKV0BL4sPZ
-	Q0wgNouAqsTZe0/A4mxA8f0vbgB1c3CICkRI/OrngCgXlPgx+R4LiC0iYCBx8OFSsFZmgXCJ
-	y83P2UFsYYE0ibNvm9lAbCGBCon5316D1XAK2Er8/LWdEaJeXWLSvEXMELa8xOY1b5knMArM
-	QrJiFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjrhnUjsYVzZYHGIU4GBU
-	4uE1Sj0XIMSaWFZcmXuIUYKDWUmEl98dKMSbklhZlVqUH19UmpNafIjRBxgAE5mlRJPzgckg
-	ryTe0NjEzMjSyMzYxNzYGIewkjhvs0dKgJBAemJJanZqakFqEcw4Jg5OqQbGPA8P7SbuhLeV
-	L4ROhDVO4l75/29hPafp2RqOVO2nZ6xYFwvZ77q0cGv/kagbqy40L+VLmf/rqPiKXbkFi/aK
-	PIhLXvtOUKH1rIfHrqssXpWbxLuOah8J29eo+PV6oeuJdPOzU6/s0t6x0PpZ7rfyyct63l5r
-	ve4h+OJIdaW13bk//Tpxkf+tlFiKMxINtZiLihMBnXtvteUCAAA=
-X-CFilter-Loop: Reflected
+	Mon, 17 Dec 2012 02:25:17 -0500
+X-AuditID: 9c930197-b7c5bae000000e31-17-50cec8db663c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf test: Check python path on attr test
+Date: Mon, 17 Dec 2012 16:25:01 +0900
+Message-Id: <1355729101-31317-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 03:53 PM, Anton Vorontsov wrote:
-> On Thu, Nov 22, 2012 at 04:53:51PM +0900, Chanwoo Choi wrote:
->> This patch check difference value between current voltage of battery
->> and desc->fullbatt_uV whether positve or negative number. If difference
->> value is negative number when current voltage of battery is larger than
->> desc->fullbatt_uV, charger-manager return immediately because battery
->> is fully charged.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  drivers/power/charger-manager.c |    9 ++++++---
->>  1 files changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
->> index ee039b9..17130c7 100644
->> --- a/drivers/power/charger-manager.c
->> +++ b/drivers/power/charger-manager.c
->> @@ -468,7 +468,9 @@ static void fullbatt_vchk(struct work_struct *work)
->>  	struct charger_manager *cm = container_of(dwork,
->>  			struct charger_manager, fullbatt_vchk_work);
->>  	struct charger_desc *desc = cm->desc;
->> -	int batt_uV, err, diff;
->> +	int batt_uV;
->> +	int err;
->> +	int diff;
-> 
-> I applied the patch, but dropped this part. This is an unrelated style
-> fix, and, if anything, it desires a separate patch (possibly 'fixing' the
-> whole file/driver).
-> 
-> Thanks!
-> 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Thanks for your comment and applied it.
-I will re-send other patch for fixing coding style.
+Current perf test code tries to execute python version 2 in order to
+test attributes on perf_event_open syscall.  However it's not default
+python version anymore a system can have python v3 only or v2 with a
+different name (e.g. python2).  So if there's no such python
+interpreter with the name 'python', the test would fail like this
+(yes, it's happened on my new archlinux laptop :).
 
-Best Regards,
-Chanwoo Choi
+13: struct perf_event_attr setup                 :sh: python: command not found
+ FAILED!
+
+As we can pass name of the python interpreter on make, use it for
+the attr test also.
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile     | 2 +-
+ tools/perf/tests/attr.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7d6d2846477b..2e9a287b3a23 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -952,7 +952,7 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 
+ $(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+-		'-DBINDIR="$(bindir_SQ)"' \
++		'-DBINDIR="$(bindir_SQ)"' -DPYTHON='"$(PYTHON_WORD)"' \
+ 		$<
+ 
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
+index 25638a986257..6a6be5ea1311 100644
+--- a/tools/perf/tests/attr.c
++++ b/tools/perf/tests/attr.c
+@@ -146,7 +146,7 @@ static int run_dir(const char *d, const char *perf)
+ {
+ 	char cmd[3*PATH_MAX];
+ 
+-	snprintf(cmd, 3*PATH_MAX, "python %s/attr.py -d %s/attr/ -p %s %s",
++	snprintf(cmd, 3*PATH_MAX, PYTHON " %s/attr.py -d %s/attr/ -p %s %s",
+ 		 d, d, perf, verbose ? "-v" : "");
+ 
+ 	return system(cmd);
+-- 
+1.7.11.7
+
