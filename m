@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab2LQRAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:00:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44518 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752646Ab2LQRAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:00:14 -0500
-Date: Mon, 17 Dec 2012 18:00:11 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] scripts: add checkmaintainers.py
-Message-ID: <20121217170011.GC31866@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Joe Perches <joe@perches.com>, Michal Marek <mmarek@suse.cz>,
-	Cesar Eduardo Barros <cesarb@cesarb.net>,
-	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>
-References: <1355523576-7596-1-git-send-email-cesarb@cesarb.net>
- <50CEF080.8010208@suse.cz>
- <20121217102714.GB31947@liondog.tnic>
- <1355758544.13361.14.camel@joe-AO722>
+	id S1753187Ab2LQRA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:00:26 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49972 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab2LQRAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 12:00:23 -0500
+Date: Mon, 17 Dec 2012 09:00:16 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] core block IO bits for 3.8
+Message-ID: <20121217170016.GA2592@htj.dyndns.org>
+References: <50CF3B82.9000904@kernel.dk>
+ <x49licwwtm8.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355758544.13361.14.camel@joe-AO722>
+In-Reply-To: <x49licwwtm8.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 07:35:44AM -0800, Joe Perches wrote:
-> Perhaps Cesar can use his script as a starting point to find those
-> pattern invalidating commits or maybe add the capability (or a
-> --strict check) to checkpatch.
+On Mon, Dec 17, 2012 at 11:06:39AM -0500, Jeff Moyer wrote:
+> Jens Axboe <axboe@kernel.dk> writes:
+> 
+> > - Export control of bdi flusher thread CPU mask and default to using the
+> >   home node (if known) from Jeff.
+> 
+> I certainly wouldn't mind this going in, but I think Tejun NACKed this
+> patch.  Tejun?
 
-Or that, I don't have a strict preference.
-
-So, yeah, I can see how checkpatch saying: "you've just renamed a
-file and thusly invalidated a pattern in MAINTAINERS. Pls, consider
-correcting the pattern" could make sense. And I would even add it to
-default functionality since the MAINTAINERS patterns are something we
-want to always have up-to-date, IMO.
+Hmm... yeah, I would much prefer if this doesn't go in this time.  I
+think we need something more generic for threadpools w/ scheduling
+restrictions.  It would be possible to retrofit so that the interface
+eventually matches but given that this feature isn't an immediate
+must-have thing, I think it would be better to not do this right now.
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
