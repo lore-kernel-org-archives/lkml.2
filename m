@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab2LQAm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 19:42:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44712 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab2LQAm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 19:42:26 -0500
+	id S1752289Ab2LQApR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 19:45:17 -0500
+Received: from mail.us.es ([193.147.175.20]:57969 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751594Ab2LQApL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 19:45:11 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.6/15856. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.2/7.5):. 
+ Processed in 11.732339 secs); 17 Dec 2012 00:45:10 -0000
+X-Envelope-From: pneira@us.es
+Date: Mon, 17 Dec 2012 01:44:57 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Kevin Cernekee <cernekee@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945
+ IP phones
+Message-ID: <20121217004457.GA12234@1984>
+References: <f0955e6c2110044fa058d0f3ecf945ca@localhost>
+ <1290412334.2756.141.camel@edumazet-laptop>
+ <1355703441.18919.6.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
-	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-	<50CE4097.2020104@zytor.com>
-	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
-Date: Sun, 16 Dec 2012 16:42:25 -0800
-X-Google-Sender-Auth: TUf10I3RXS-BownaubPudr_-Ug0
-Message-ID: <CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1355703441.18919.6.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 3:59 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->
->> it has to be rebased after #PF handler version. otherwise it can not
->> handle for framdisk
->> that is loaded after 1G.
->>
->> Fenghua,
->>
->> can you post your boot log with 64bit with your patch?
->>
->> Yinghai
->
-> Attached is dmesg with the patches.
->
+Hi David,
 
-yes, your laptop only have 1G ram, and
+On Mon, Dec 17, 2012 at 12:17:21AM +0000, David Woodhouse wrote:
+> On Mon, 2010-11-22 at 08:52 +0100, Eric Dumazet wrote:
+> > Le dimanche 21 novembre 2010 à 18:40 -0800, Kevin Cernekee a écrit :
+> > > [v3:
+> > >   Only activate the new forced_dport logic if the IP matches, but the
+> > >   port does not. ]
+> > > 
+> > > Most SIP devices use a source port of 5060/udp on SIP requests, so the
+> > > response automatically comes back to port 5060:
+> > > 
+> > > phone_ip:5060 -> proxy_ip:5060   REGISTER
+> > > proxy_ip:5060 -> phone_ip:5060   100 Trying
+> > > 
+> > > The newer Cisco IP phones, however, use a randomly chosen high source
+> > > port for the SIP request but expect the response on port 5060:
+> > > 
+> > > phone_ip:49173 -> proxy_ip:5060  REGISTER
+> > > proxy_ip:5060 -> phone_ip:5060   100 Trying
+> > > 
+> > > Standard Linux NAT, with or without nf_nat_sip, will send the reply back
+> > > to port 49173, not 5060:
+> > > 
+> > > phone_ip:49173 -> proxy_ip:5060  REGISTER
+> > > proxy_ip:5060 -> phone_ip:49173  100 Trying
+> > > 
+> > > But the phone is not listening on 49173, so it will never see the reply.
+> > > 
+> > > This patch modifies nf_*_sip to work around this quirk by extracting
+> > > the SIP response port from the Via: header, iff the source IP in the
+> > > packet header matches the source IP in the SIP request.
+> > > 
+> > > Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> > > ---
+> > 
+> > Thanks for doing this work Keven !
+> > 
+> > Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> 
+> What happened to this? OpenWRT is still carrying it, and it broke in
+> 3.7. Here's a completely untested update...
 
-[    0.000000] e820: BIOS-provided physical RAM map:
-[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009d7ff] usable
-[    0.000000] BIOS-e820: [mem 0x000000000009d800-0x000000000009ffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000000d2000-0x00000000000d3fff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000fffff] reserved
-[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000003e6affff] usable
-[    0.000000] BIOS-e820: [mem 0x000000003e6b0000-0x000000003e6ccfff] ACPI data
-[    0.000000] BIOS-e820: [mem 0x000000003e6cd000-0x000000003e6fffff] ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000003e700000-0x000000003effffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000f0000000-0x00000000f3ffffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed003ff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed14000-0x00000000fed19fff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed1c000-0x00000000fed8ffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff] reserved
+I requested Kevin to resend a new version based on the current kernel
+tree while spinning on old pending patches since I have no access to
+that hardware, but no luck.
 
-ramdisk is at
-     RAMDISK: [mem 0x27608000-0x2fafbfff]
+So I'll review this and, since OpenWRT is carrying, I guess we can get
+this into net-next merge window.
 
-and current kernel default set 1G to kernel mapping. so it happens to
-work with your patchset.
-
-please find one sytem with 4G or more to test it.
-
-and you may need to rebase your patches on top of my for-x86-boot
-branch with working
-#PF handler set page table patch.
-
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-boot
-
-Thanks
-
-Yinghai
+Thanks for the reminder.
