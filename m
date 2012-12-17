@@ -1,197 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab2LQXVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 18:21:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50108 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab2LQXVm (ORCPT
+	id S1753830Ab2LQXX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 18:23:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34925 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab2LQXXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 18:21:42 -0500
-Date: Mon, 17 Dec 2012 15:20:24 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: axboe@kernel.dk, lucho@ionkov.net, ericvh@gmail.com,
-        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
- stable pages during write
-Message-ID: <20121217232024.GC10874@blackbox.djwong.org>
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
- <20121213080811.23360.98131.stgit@blackbox.djwong.org>
- <20121217102359.GH5133@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121217102359.GH5133@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 17 Dec 2012 18:23:54 -0500
+From: Paolo Pisati <paolo.pisati@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paolo Pisati <paolo.pisati@canonical.com>, stable@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] [stable-resend] regulator: core: if voltage scaling fails, restore original voltage values
+Date: Tue, 18 Dec 2012 00:23:38 +0100
+Message-Id: <1355786618-12691-1-git-send-email-paolo.pisati@canonical.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20121217154512.GI4985@opensource.wolfsonmicro.com>
+References: <20121217154512.GI4985@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 11:23:59AM +0100, Jan Kara wrote:
-> On Thu 13-12-12 00:08:11, Darrick J. Wong wrote:
-> > Several complaints have been received regarding long file write latencies when
-> > memory pages must be held stable during writeback.  Since it might not be
-> > acceptable to stall programs for the entire duration of a page write (which may
-> > take many milliseconds even on good hardware), enable a second strategy wherein
-> > pages are snapshotted as part of submit_bio; the snapshot can be held stable
-> > while writes continue.
-> > 
-> > This provides a band-aid to provide stable page writes on jbd without needing
-> > to backport the fixed locking scheme in jbd2.  A mount option is added to ext4
-> > to allow administrators to enable it there.
-> > 
-> > For those wondering about the ext3 bandage -- fixing the jbd locking (which was
-> > done as part of ext4dev years ago) is a lot of surgery, and setting
-> > PG_writeback on data pages when we actually hold the page lock dropped ext3
-> > performance by nearly an order of magnitude.  If we're going to migrate iscsi
-> > and raid to use stable page writes, the complaints about high latency will
-> > likely return.  We might as well centralize their page snapshotting thing to
-> > one place.
->   Umm, I kind of like this solution for ext3...
+Cc: stable@vger.kernel.org
+Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+Tested-by: Robert Nelson <robertcnelson@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-:)
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index e872c8b..c347fd0 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2250,6 +2250,7 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+ {
+ 	struct regulator_dev *rdev = regulator->rdev;
+ 	int ret = 0;
++	int old_min_uV, old_max_uV;
+ 
+ 	mutex_lock(&rdev->mutex);
+ 
+@@ -2271,18 +2272,29 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+ 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
+ 	if (ret < 0)
+ 		goto out;
++	
++	/* restore original values in case of error */
++	old_min_uV = regulator->min_uV;
++	old_max_uV = regulator->max_uV;
+ 	regulator->min_uV = min_uV;
+ 	regulator->max_uV = max_uV;
+ 
+ 	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
+ 	if (ret < 0)
+-		goto out;
++		goto out2;
+ 
+ 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
+-
++	if (ret < 0)
++		goto out2;
++	
+ out:
+ 	mutex_unlock(&rdev->mutex);
+ 	return ret;
++out2:
++	regulator->min_uV = old_min_uV;
++	regulator->max_uV = old_max_uV;
++	mutex_unlock(&rdev->mutex);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regulator_set_voltage);
+ 
+-- 
+1.7.10.4
 
-> > diff --git a/mm/Kconfig b/mm/Kconfig
-> > index a3f8ddd..78db0e1 100644
-> > --- a/mm/Kconfig
-> > +++ b/mm/Kconfig
-> > @@ -224,6 +224,16 @@ config BOUNCE
-> >  	def_bool y
-> >  	depends on BLOCK && MMU && (ZONE_DMA || HIGHMEM)
-> >  
-> > +# On the 'tile' arch, USB OHCI needs the bounce pool since tilegx will often
-> > +# have more than 4GB of memory, but we don't currently use the IOTLB to present
-> > +# a 32-bit address to OHCI.  So we need to use a bounce pool instead.
-> > +#
-> > +# We also use the bounce pool to provide stable page writes for users that
-> > +# don't (or can't) afford the wait latency.
-> > +config NEED_BOUNCE_POOL
-> > +	bool
-> > +	default y if (TILE && USB_OHCI_HCD) || (BLK_DEV_INTEGRITY && (EXT3_FS || EXT4_FS))
-> > +
->   This means that NEED_BOUNCE_POOL is going to be enabled on pretty much
-> any distro kernel...
-
-I want to drop EXT4_FS from that default line.  Then we only need it in the
-case where EXT4_USE_FOR_EXT23=y hasn't taken the place of EXT3_FS=y.
-
-<shrug> Has anyone actually done that?
-
-Heh, even *I* haven't done that.
-
-> >  config NR_QUICK
-> >  	int
-> >  	depends on QUICKLIST
-> > diff --git a/mm/bounce.c b/mm/bounce.c
-> > index 0420867..fa11935 100644
-> > --- a/mm/bounce.c
-> > +++ b/mm/bounce.c
-> > @@ -178,6 +178,38 @@ static void bounce_end_io_read_isa(struct bio *bio, int err)
-> >  	__bounce_end_io_read(bio, isa_page_pool, err);
-> >  }
-> >  
-> > +#ifdef CONFIG_NEED_BOUNCE_POOL
-> > +static int might_snapshot_stable_page_write(struct bio **bio_orig)
-> > +{
-> > +	return bio_data_dir(*bio_orig) == WRITE;
-> > +}
-> ... so might might_snapshot_stable_page_write() will be true for each
-> write. And thus blk_queue_bounce() becomes considerably more expensive?
-> Also calling should_snapshot_stable_pages() for every page seems to be
-> stupid since its result is going to be the same for all the pages in the
-> bio (well, I could imagine setups where it won't be but do we want to
-> support them?).
-> 
-> So cannot we just make a function like should_snapshot_stable_pages() to
-> test whether we really need the bouncing, use it in blk_queue_bounce() and
-> then pass the information to __blk_queue_bounce() if needed?
-
-Yes.  I'd actually considered simply calling should_snapshot() on the first
-bio_vec page and passing that information through, but thought I should play it
-safe for the first revision.
-
-However, a bio targets a single block device, so this seems like a safe
-optimization.
-
---D
-> 
-> 								Honza
-> 
-> > +static int should_snapshot_stable_pages(struct page *page, int rw)
-> > +{
-> > +	struct backing_dev_info *bdi;
-> > +	struct address_space *mapping = page_mapping(page);
-> > +
-> > +	if (!mapping)
-> > +		return 0;
-> > +	bdi = mapping->backing_dev_info;
-> > +	if (!bdi_cap_stable_pages_required(bdi))
-> > +		return 0;
-> > +
-> > +	return mapping->host->i_sb->s_flags & MS_SNAP_STABLE &&
-> > +	       rw == WRITE;
-> > +}
-> > +#else
-> > +static int might_snapshot_stable_page_write(struct bio **bio_orig)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static int should_snapshot_static_pages(struct page *page, int rw)
-> > +{
-> > +	return 0;
-> > +}
-> > +#endif /* CONFIG_NEED_BOUNCE_POOL */
-> > +
-> >  static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
-> >  			       mempool_t *pool)
-> >  {
-> > @@ -192,7 +224,8 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
-> >  		/*
-> >  		 * is destination page below bounce pfn?
-> >  		 */
-> > -		if (page_to_pfn(page) <= queue_bounce_pfn(q))
-> > +		if (page_to_pfn(page) <= queue_bounce_pfn(q) &&
-> > +		    !should_snapshot_stable_pages(page, rw))
-> >  			continue;
-> >  
-> >  		/*
-> > @@ -284,7 +317,8 @@ void blk_queue_bounce(struct request_queue *q, struct bio **bio_orig)
-> >  	 * don't waste time iterating over bio segments
-> >  	 */
-> >  	if (!(q->bounce_gfp & GFP_DMA)) {
-> > -		if (queue_bounce_pfn(q) >= blk_max_pfn)
-> > +		if (queue_bounce_pfn(q) >= blk_max_pfn &&
-> > +		    !might_snapshot_stable_page_write(bio_orig))
-> >  			return;
-> >  		pool = page_pool;
-> >  	} else {
-> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> > index 3e4a8cc..fbd8efb 100644
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -2291,6 +2291,10 @@ void wait_for_stable_page(struct page *page)
-> >  
-> >  	if (!bdi_cap_stable_pages_required(bdi))
-> >  		return;
-> > +#ifdef CONFIG_NEED_BOUNCE_POOL
-> > +	if (mapping->host->i_sb->s_flags & MS_SNAP_STABLE)
-> > +		return;
-> > +#endif /* CONFIG_NEED_BOUNCE_POOL */
-> >  
-> >  	wait_on_page_writeback(page);
-> >  }
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
