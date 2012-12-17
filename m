@@ -1,141 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab2LQJFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:05:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43946 "EHLO mx2.suse.de"
+	id S1752012Ab2LQJGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:06:50 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:47096 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab2LQJFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:05:12 -0500
-Date: Mon, 17 Dec 2012 10:04:56 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
-        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/4] bdi: Allow block devices to say that they require
- stable page writes
-Message-ID: <20121217090456.GE5133@quack.suse.cz>
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
- <20121213080747.23360.24302.stgit@blackbox.djwong.org>
+	id S1751798Ab2LQJGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:06:48 -0500
+Message-ID: <50CEE06B.9040508@parallels.com>
+Date: Mon, 17 Dec 2012 13:05:47 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121213080747.23360.24302.stgit@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, aarcange@redhat.com, ak@linux.intel.com,
+        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
+        john.stultz@linaro.org, tglx@linutronix.de
+Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
+ kernel
+References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
+In-Reply-To: <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-12-12 00:07:47, Darrick J. Wong wrote:
-> This creates a per-backing-device flag that tracks whether or not pages must be
-> held immutable during writeout.  Eventually it will be used to waive
-> wait_for_page_writeback() if nobody requires stable pages.
+On 12/14/2012 10:44 PM, Andy Lutomirski wrote:
+> On Fri, Dec 14, 2012 at 10:35 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
+>>> On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
+>>>> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
+>>>> really need more control I'd almost push for a device/filesystem node
+>>>> that could be mmapped the usual way.
+>>>>
+>>>> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
+>>>> criu is stable enough yet that we should care.  Criu people?
+>>>
+>>> It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
+>>>
+>>>> (In brief summary: how annoying would it be if the vdso was no longer
+>>>> just a bunch of constant bytes that lived somewhere?)
+>>>
+>>> It depends on what vdso is going to be. In the perfect case it should
+>>> a) be mremap-able to any address (or be at fixed address _forever_, but
+>>>    I assume this is not feasible);
+>>> b) have entry points at fixed (or somehow movable) places.
+>>>
+>>> I admit that I didn't understand your question properly, if I did,
+>>> please correct me.
+>>>
+>>
+>> mremap() should work.  At the same time, the code itself is not going to
+>> have any stability guarantees between kernel versions -- it obviously
+>> cannot.
 > 
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> We could guarantee that the symbols in the vdso resolve to particular
+> offsets within the vdso.  (Yes, this is ugly.)
+> 
+> Does criu support checkpointing with one version of a shared library
+> and restoring with another?
 
-									Honza
-> ---
->  Documentation/ABI/testing/sysfs-class-bdi |    5 +++++
->  block/blk-integrity.c                     |    4 ++++
->  include/linux/backing-dev.h               |    6 ++++++
->  mm/backing-dev.c                          |   11 +++++++++++
->  4 files changed, 26 insertions(+)
-> 
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
-> index 5f50097..d773d56 100644
-> --- a/Documentation/ABI/testing/sysfs-class-bdi
-> +++ b/Documentation/ABI/testing/sysfs-class-bdi
-> @@ -48,3 +48,8 @@ max_ratio (read-write)
->  	most of the write-back cache.  For example in case of an NFS
->  	mount that is prone to get stuck, or a FUSE mount which cannot
->  	be trusted to play fair.
-> +
-> +stable_pages_required (read-only)
-> +
-> +	If set, the backing device requires that all pages comprising a write
-> +	request must not be changed until writeout is complete.
-> diff --git a/block/blk-integrity.c b/block/blk-integrity.c
-> index da2a818..dabd221 100644
-> --- a/block/blk-integrity.c
-> +++ b/block/blk-integrity.c
-> @@ -420,6 +420,8 @@ int blk_integrity_register(struct gendisk *disk, struct blk_integrity *template)
->  	} else
->  		bi->name = bi_unsupported_name;
->  
-> +	disk->queue->backing_dev_info.capabilities |= BDI_CAP_STABLE_WRITES;
-> +
->  	return 0;
->  }
->  EXPORT_SYMBOL(blk_integrity_register);
-> @@ -438,6 +440,8 @@ void blk_integrity_unregister(struct gendisk *disk)
->  	if (!disk || !disk->integrity)
->  		return;
->  
-> +	disk->queue->backing_dev_info.capabilities &= ~BDI_CAP_STABLE_WRITES;
-> +
->  	bi = disk->integrity;
->  
->  	kobject_uevent(&bi->kobj, KOBJ_REMOVE);
-> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-> index 2a9a9ab..085501f 100644
-> --- a/include/linux/backing-dev.h
-> +++ b/include/linux/backing-dev.h
-> @@ -253,6 +253,7 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned int max_ratio);
->  #define BDI_CAP_EXEC_MAP	0x00000040
->  #define BDI_CAP_NO_ACCT_WB	0x00000080
->  #define BDI_CAP_SWAP_BACKED	0x00000100
-> +#define BDI_CAP_STABLE_WRITES	0x00000200
->  
->  #define BDI_CAP_VMFLAGS \
->  	(BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP)
-> @@ -307,6 +308,11 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout);
->  int pdflush_proc_obsolete(struct ctl_table *table, int write,
->  		void __user *buffer, size_t *lenp, loff_t *ppos);
->  
-> +static inline bool bdi_cap_stable_pages_required(struct backing_dev_info *bdi)
-> +{
-> +	return bdi->capabilities & BDI_CAP_STABLE_WRITES;
-> +}
-> +
->  static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
->  {
->  	return !(bdi->capabilities & BDI_CAP_NO_WRITEBACK);
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index d3ca2b3..41733c5 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -221,12 +221,23 @@ static ssize_t max_ratio_store(struct device *dev,
->  }
->  BDI_SHOW(max_ratio, bdi->max_ratio)
->  
-> +static ssize_t stable_pages_required_show(struct device *dev,
-> +					  struct device_attribute *attr,
-> +					  char *page)
-> +{
-> +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-> +
-> +	return snprintf(page, PAGE_SIZE-1, "%d\n",
-> +			bdi_cap_stable_pages_required(bdi) ? 1 : 0);
-> +}
-> +
->  #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
->  
->  static struct device_attribute bdi_dev_attrs[] = {
->  	__ATTR_RW(read_ahead_kb),
->  	__ATTR_RW(min_ratio),
->  	__ATTR_RW(max_ratio),
-> +	__ATTR_RO(stable_pages_required),
->  	__ATTR_NULL,
->  };
->  
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+No, neither we have this in plans.
+However, if somebody needs this and implements -- why not?!
+
+Thanks,
+Pavel
