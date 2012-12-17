@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2LQVtU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:49:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab2LQVtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:49:18 -0500
-Date: Mon, 17 Dec 2012 16:49:11 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 07/12] cfq-iosched: implement hierarchy-ready cfq_group
- charge scaling
-Message-ID: <20121217214911.GC13691@redhat.com>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
- <1355524885-22719-8-git-send-email-tj@kernel.org>
- <20121217205317.GI7235@redhat.com>
- <20121217211738.GD1844@htj.dyndns.org>
- <20121217212736.GB13691@redhat.com>
- <20121217213314.GF1844@htj.dyndns.org>
+	id S1753950Ab2LQVz1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:55:27 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43225 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768Ab2LQVzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 16:55:25 -0500
+Message-ID: <50CF94C9.2050907@wwwdotorg.org>
+Date: Mon, 17 Dec 2012 14:55:21 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121217213314.GF1844@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: alan@linux.intel.com, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] serial: tegra: add serial driver
+References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 01:33:14PM -0800, Tejun Heo wrote:
-> Hello,
+On 12/17/2012 05:10 AM, Laxman Dewangan wrote:
+> Nvidia's Tegra has multiple uart controller which supports:
+> - APB dma based controller fifo read/write.
+> - End Of Data interrupt in incoming data to know whether end
+>   of frame achieve or not.
+> - Hw controlled RTS and CTS flow control to reduce SW overhead.
 > 
-> On Mon, Dec 17, 2012 at 04:27:36PM -0500, Vivek Goyal wrote:
-> > What I do care about is atleast being able to read and understand the
-> > code easily. Right now, it is hard to understand. I am still struggling
-> > to wrap my head around it.
-> 
-> Hmm... I thought it was really simple.  Maybe I'm just too familiar
-> with it.  You just walk up the tree multiplying the fraction you have
-> at each level.  It really doesn't get much simpler than that.
-> 
-> > For example, while adding a group to service tree we calculate
-> > cfqg->vfaction as follows.
-> > 
-> > vfr = vfr * pos->leaf_weight / pos->level_weight;
-> > 
-> > and then 
-> > 
-> > vfr = vfr * pos->weight / parent->level_weight;
-> > 
-> > cfqg->vfraction = max_t(unsigned, vfr, 1)
-> > 
-> > If cfqg->vfraction is about cfqg then why should we take into account
-> > leaf_weight and level_weight. We should be just worried about pos->weight
-> > and parent->level_weight and that should determine vfaction of cfqg.
-> 
-> Eh?  Then how would it compete with the children cfqgs?  You can
-> consider it as the hidden leaf node competing with the children cfqgs,
-> right?  So, you take the leaf weight and divide it by the total active
-> weight of all the children (including the hidden leaf node).  It isn't
-> different from the rest of the calculation.  It just looks different
-> because leaf_weight is stored elsewhere and we look down there and
-> then walke up.  The calculation being done is exactly the same one.
+> Add serial driver to use all above feature.
 
-Again it is coming from multiplexing cfqg and cfqg->task_group. So
-effectively we are calculating the vfraction of task_group inside cfqg.
-Once you say cfqg->vfraction, I immediately think of total share of
-group (including task_group and all children cgroups).
+> diff --git a/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt b/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt
 
-May be cfqg->task_group_vfraction (or cfqg->tg_fraction) is a better name.
+> +Required properties:
+> +- compatible : should be "nvidia,tegra20-hsuart", "nvidia,tegra30-hsuart".
 
-Also descrition says.
+I think you want ", or" not just "," there. If both are specified,
+"tegra30" should come before "tegra20", so you might want to re-order
+that. That said, other bindings say something like
+"nvidia,tegra<chip>-hsuart" so avoid having to spell out all the
+supported Tegra versions.
 
-/* vfraction  the fraction of vdisktime that a cfqg is entitled to */
+> diff --git a/drivers/tty/serial/serial_tegra.c b/drivers/tty/serial/serial_tegra.c
 
-May be we can clarify it that it is share of task_group of cfqg.
+> +struct tegra_uart_chip_data tegra20_uart_chip_data = {
+> +	.tx_fifo_full_status		= false,
+> +	.allow_txfifo_reset_fifo_mode	= true,
+> +	.support_clk_src_div		= false,
+> +};
+> +
+> +struct tegra_uart_chip_data tegra30_uart_chip_data = {
+> +	.tx_fifo_full_status		= true,
+> +	.allow_txfifo_reset_fifo_mode	= false,
+> +	.support_clk_src_div		= true,
+> +};
 
-I guess i am too familiar with how cpu has done it. I think I am getting
-confused with properties which belong to cfqg and properties which
-belong to cfqg->task_group.
+Nit: Perhaps it'd be nice to move those right before
+tegra_uart_of_match[] - i.e. right where they're used.
 
-I guess if we prefix fields belong to task_group with somete suitable
-string, it might become little easier to understand.
+> +static struct tegra_uart_platform_data *tegra_uart_parse_dt(
 
-Thanks
-Vivek
+> +	if (of_get_property(np, "nvidia,enable-modem-interrupt", NULL))
+> +		pdata->enable_modem_interrupt = 1;
+
+That should use of_property_read_bool().
+
+> +static int __devinit tegra_uart_probe(struct platform_device *pdev)
+
+> +	if (pdev->dev.of_node) {
+
+That will always be true these days.
+
+I didn't review the body of the UART implementation since I'm not
+familiar with drivers/tty/serial nor too much about our UART HW beyond
+basic 8250 usage.
