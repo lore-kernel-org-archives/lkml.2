@@ -1,123 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2LQT6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 14:58:19 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43197 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab2LQT6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 14:58:17 -0500
-Date: Mon, 17 Dec 2012 20:58:13 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Satoru Moriya <satoru.moriya@hds.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
- going OOM
-Message-ID: <20121217195813.GB16375@dhcp22.suse.cz>
-References: <20121213152959.GE21644@dhcp22.suse.cz>
- <20121213160521.GG21644@dhcp22.suse.cz>
- <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
- <20121214045030.GE6317@cmpxchg.org>
- <20121214083738.GA6898@dhcp22.suse.cz>
- <50CB493B.8000900@redhat.com>
- <20121214161345.GA18780@dhcp22.suse.cz>
- <20121215001850.GA21353@cmpxchg.org>
- <20121217163735.GE25432@dhcp22.suse.cz>
- <20121217175415.GA7147@cmpxchg.org>
+	id S1753577Ab2LQUEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 15:04:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276Ab2LQUEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 15:04:33 -0500
+Date: Mon, 17 Dec 2012 15:04:23 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 04/12] blkcg: make blkcg_gq's hierarchical
+Message-ID: <20121217200423.GG7235@redhat.com>
+References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+ <1355524885-22719-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121217175415.GA7147@cmpxchg.org>
+In-Reply-To: <1355524885-22719-5-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 17-12-12 12:54:15, Johannes Weiner wrote:
-> On Mon, Dec 17, 2012 at 05:37:35PM +0100, Michal Hocko wrote:
-> > On Fri 14-12-12 19:18:51, Johannes Weiner wrote:
-> > > On Fri, Dec 14, 2012 at 05:13:45PM +0100, Michal Hocko wrote:
-> > > > On Fri 14-12-12 10:43:55, Rik van Riel wrote:
-> > > > > On 12/14/2012 03:37 AM, Michal Hocko wrote:
-> > > > > 
-> > > > > >I can answer the later. Because memsw comes with its price and
-> > > > > >swappiness is much cheaper. On the other hand it makes sense that
-> > > > > >swappiness==0 doesn't swap at all. Or do you think we should get back to
-> > > > > >_almost_ doesn't swap at all?
-> > > > > 
-> > > > > swappiness==0 will swap in emergencies, specifically when we have
-> > > > > almost no page cache left, we will still swap things out:
-> > > > > 
-> > > > >         if (global_reclaim(sc)) {
-> > > > >                 free  = zone_page_state(zone, NR_FREE_PAGES);
-> > > > >                 if (unlikely(file + free <= high_wmark_pages(zone))) {
-> > > > >                         /*
-> > > > >                          * If we have very few page cache pages, force-scan
-> > > > >                          * anon pages.
-> > > > >                          */
-> > > > >                         fraction[0] = 1;
-> > > > >                         fraction[1] = 0;
-> > > > >                         denominator = 1;
-> > > > >                         goto out;
-> > > > > 
-> > > > > This makes sense, because people who set swappiness==0 but
-> > > > > do have swap space available would probably prefer some
-> > > > > emergency swapping over an OOM kill.
-> > > > 
-> > > > Yes, but this is the global reclaim path. I was arguing about
-> > > > swappiness==0 & memcg. As this patch doesn't make a big difference for
-> > > > the global case (as both the changelog and you mentioned) then we should
-> > > > focus on whether this is desirable change for the memcg path. I think it
-> > > > makes sense to keep "no swapping at all for memcg semantic" as we have
-> > > > it currently.
-> > > 
-> > > I would prefer we could agree on one thing, though.  Having global
-> > > reclaim behave different from memcg reclaim violates the principle of
-> > > least surprise. 
-> > 
-> > Hmm, I think that no swapping at all with swappiness==0 makes some sense
-> > with the global reclaim as well. Why should we swap if admin told us not
-> > to do that?
-> > I am not so strong in that though because the global swappiness has been
-> > more relaxed in the past and people got used to that. We have seen bug
-> > reports already where users were surprised by a high io wait times when
-> > it turned out that they had swappiness set to 0 because that prevented
-> > swapping most of the time in the past but fe35004f changed that.
-> > 
-> > Usecases for memcg are more natural because memcg allows much better
-> > control over OOM and also requirements for (not) swapping are per group
-> > rather than on swap availability. We shouldn't push users into using
-> > memcg swap accounting to accomplish the same IMHO because the accounting
-> > has some costs and its primary usage is not to disable swapping but
-> > rather to keep it on the leash. The two approaches are also different
-> > from semantic point of view. Swappiness is proportional while the limit
-> > is an absolute number.
+On Fri, Dec 14, 2012 at 02:41:17PM -0800, Tejun Heo wrote:
+> Currently a child blkg (blkcg_gq) can be created even if its parent
+> doesn't exist.  ie. Given a blkg, it's not guaranteed that its
+> ancestors will exist.  This makes it difficult to implement proper
+> hierarchy support for blkcg policies.
 > 
-> I agree with the usecase that Rik described, though: it makes sense to
-> go for file cache exclusively as long as the VM can make progress, but
-> once we are getting close to OOM, we may as well swap.  swappiness is
-> describing an eagerness to swap, not a limit.  Not swapping ever with
-> !swappiness does not allow you to do this, even with very low
-> swappiness settings, you can end up swapping with just little VM load.
+> Always create blkgs recursively and make a child blkg hold a reference
+> to its parent.  blkg->parent is added so that finding the parent is
+> easy.  blkcg_parent() is also added in the process.
 > 
-> They way swappiness works for memcg gives you TWO options to prevent
-> swapping entirely for individual groups, but no option to swap only in
-> case of emergency, which I think is the broader usecase.
+> This change can be visible to userland.  e.g. while issuing IO in a
+> nested cgroup didn't affect the ancestors at all, now it will
+> initialize all ancestor blkgs and zero stats for the request_queue
+> will always appear on them.  While this is userland visible, this
+> shouldn't cause any functional difference.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-I think this is for a longer discussion.
+Looks good to me.
 
-> But I also won't fight this in this last-minute submission so I
-> dropped this change of behaviour for now, it'll just be a cleanup.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Yes, this is reasonable. This is in no way a cleanup so it would just
-delay otherwise very nice cleanup.
+Vivek
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+> ---
+>  block/blk-cgroup.c | 42 +++++++++++++++++++++++++++++++++++++-----
+>  block/blk-cgroup.h | 18 ++++++++++++++++++
+>  2 files changed, 55 insertions(+), 5 deletions(-)
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index fde2286..c858628 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -201,7 +201,16 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
+>  	}
+>  	blkg = new_blkg;
+>  
+> -	/* insert */
+> +	/* link parent and insert */
+> +	if (blkcg_parent(blkcg)) {
+> +		blkg->parent = __blkg_lookup(blkcg_parent(blkcg), q, false);
+> +		if (WARN_ON_ONCE(!blkg->parent)) {
+> +			blkg = ERR_PTR(-EINVAL);
+> +			goto err_put_css;
+> +		}
+> +		blkg_get(blkg->parent);
+> +	}
+> +
+>  	spin_lock(&blkcg->lock);
+>  	ret = radix_tree_insert(&blkcg->blkg_tree, q->id, blkg);
+>  	if (likely(!ret)) {
+> @@ -213,6 +222,10 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
+>  	if (!ret)
+>  		return blkg;
+>  
+> +	/* @blkg failed fully initialized, use the usual release path */
+> +	blkg_put(blkg);
+> +	return ERR_PTR(ret);
+> +
+>  err_put_css:
+>  	css_put(&blkcg->css);
+>  err_free_blkg:
+> @@ -226,8 +239,9 @@ err_free_blkg:
+>   * @q: request_queue of interest
+>   *
+>   * Lookup blkg for the @blkcg - @q pair.  If it doesn't exist, try to
+> - * create one.  This function should be called under RCU read lock and
+> - * @q->queue_lock.
+> + * create one.  blkg creation is performed recursively from blkcg_root such
+> + * that all non-root blkg's have access to the parent blkg.  This function
+> + * should be called under RCU read lock and @q->queue_lock.
+>   *
+>   * Returns pointer to the looked up or created blkg on success, ERR_PTR()
+>   * value on error.  If @q is dead, returns ERR_PTR(-EINVAL).  If @q is not
+> @@ -252,7 +266,23 @@ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
+>  	if (blkg)
+>  		return blkg;
+>  
+> -	return blkg_create(blkcg, q, NULL);
+> +	/*
+> +	 * Create blkgs walking down from blkcg_root to @blkcg, so that all
+> +	 * non-root blkgs have access to their parents.
+> +	 */
+> +	while (true) {
+> +		struct blkcg *pos = blkcg;
+> +		struct blkcg *parent = blkcg_parent(blkcg);
+> +
+> +		while (parent && !__blkg_lookup(parent, q, false)) {
+> +			pos = parent;
+> +			parent = blkcg_parent(parent);
+> +		}
+> +
+> +		blkg = blkg_create(pos, q, NULL);
+> +		if (pos == blkcg || IS_ERR(blkg))
+> +			return blkg;
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(blkg_lookup_create);
+>  
+> @@ -321,8 +351,10 @@ static void blkg_rcu_free(struct rcu_head *rcu_head)
+>  
+>  void __blkg_release(struct blkcg_gq *blkg)
+>  {
+> -	/* release the extra blkcg reference this blkg has been holding */
+> +	/* release the blkcg and parent blkg refs this blkg has been holding */
+>  	css_put(&blkg->blkcg->css);
+> +	if (blkg->parent)
+> +		blkg_put(blkg->parent);
+>  
+>  	/*
+>  	 * A group is freed in rcu manner. But having an rcu lock does not
+> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+> index 2459730..b26ed58 100644
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -94,8 +94,13 @@ struct blkcg_gq {
+>  	struct list_head		q_node;
+>  	struct hlist_node		blkcg_node;
+>  	struct blkcg			*blkcg;
+> +
+> +	/* all non-root blkcg_gq's are guaranteed to have access to parent */
+> +	struct blkcg_gq			*parent;
+> +
+>  	/* request allocation list for this blkcg-q pair */
+>  	struct request_list		rl;
+> +
+>  	/* reference count */
+>  	int				refcnt;
+>  
+> @@ -181,6 +186,19 @@ static inline struct blkcg *bio_blkcg(struct bio *bio)
+>  }
+>  
+>  /**
+> + * blkcg_parent - get the parent of a blkcg
+> + * @blkcg: blkcg of interest
+> + *
+> + * Return the parent blkcg of @blkcg.  Can be called anytime.
+> + */
+> +static inline struct blkcg *blkcg_parent(struct blkcg *blkcg)
+> +{
+> +	struct cgroup *pcg = blkcg->css.cgroup->parent;
+> +
+> +	return pcg ? cgroup_to_blkcg(pcg) : NULL;
+> +}
+> +
+> +/**
+>   * blkg_to_pdata - get policy private data
+>   * @blkg: blkg of interest
+>   * @pol: policy of interest
+> -- 
+> 1.7.11.7
