@@ -1,148 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab2LQU6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 15:58:13 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:55710 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2LQU6M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 15:58:12 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-Subject: [PATCH v2 2/2] efi_pstore: Avoid deadlock in non-blocking paths
-Thread-Topic: [PATCH v2 2/2] efi_pstore: Avoid deadlock in non-blocking paths
-Thread-Index: Ac3cmR/1ASCEV/5GQgGdx063vyHRBg==
-Date: Mon, 17 Dec 2012 20:57:52 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A22F28@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-17_04:2012-12-17,2012-12-17,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1212170193
+	id S1753265Ab2LQU7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 15:59:03 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:54056 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752571Ab2LQU7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 15:59:01 -0500
+Message-ID: <1355777940.19706.11.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] MCE, AMD: Make MC2 decoding part of amd_decoder_ops
+ as well
+From: Joe Perches <joe@perches.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Borislav Petkov <bp@alien8.de>, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 17 Dec 2012 12:59:00 -0800
+In-Reply-To: <20121217204317.GA32760@jshin-Toonie>
+References: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>
+	 <1355774221.13361.48.camel@joe-AO722> <20121217200535.GF31866@liondog.tnic>
+	 <1355775376.19706.1.camel@joe-AO722> <20121217202214.GG31866@liondog.tnic>
+	 <1355776475.19706.6.camel@joe-AO722> <20121217204011.GH31866@liondog.tnic>
+	 <20121217204317.GA32760@jshin-Toonie>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Issue]
+On Mon, 2012-12-17 at 14:43 -0600, Jacob Shin wrote:
+> On Mon, Dec 17, 2012 at 09:40:11PM +0100, Borislav Petkov wrote:
+> > On Mon, Dec 17, 2012 at 12:34:35PM -0800, Joe Perches wrote:
+> > > decode_mc2_mce does
+> > > 
+> > > 	pr_emerg(HW_ERR "MC2 Error: ");
+> > > calls
+> > > 	fam_ops->mc2_mce()
+> > > which may not emit anything
+> > > and if it doesn't, does
+> > > 	pr_emerg(HW_ERR "Corrupted ...");
+> > > on another line leaving a trailing colon without
+> > > newline from the pr_emerg above.
+> > 
+> > Ok, this is in Jacob's patch AFAICT, I'll review those tomorrow but
+> > thanks for the heads-up.
+> 
+> Okay, I'll wait until your feedback before sending V2
+> 
+> > 
+> > > I believe the second pr_emerg should be pr_cont
+> > 
+> > Actually, it should be
+> > 
+> > pr_emerg(HW_ERR "\nCorrupted...\n");
+> > 
+> > to finish the initial pr_emerg.
+> 
+> Okay, all of the other decode_mc*_mce functions needs to change then.
 
-There is a scenario which efi_pstore may hang up:
+Hi Jacob.
 
- - cpuA grabs efivars->lock
- - cpuB panics and calls smp_send_stop
- - smp_send_stop sends IRQ to cpuA
- - after 1 second, cpuB gives up on cpuA and sends an NMI instead
- - cpuA is now in an NMI handler while still holding efivars->lock
- - cpuB is deadlocked
+I don't think that's necessary.
 
-This case may happen if a firmware has a bug and 
-cpuA is stuck talking with it.
+Using any pr_<level>("\n...") is just not good form.
+I think the pr_cont would be fine, it's the same
+form as all the other decoded continuations.
 
-[Solution]
+The new pr_emerg is effectively a termination of the
+previous one.  There's no need for 2 consecutive uses
+of pr_emerg(HW_ERR ...) here.
 
-This patch changes a spin_lock to a spin_trylock in non-blocking paths.
-and if the spin_lock has already taken by another cpu,
-it returns without accessing to a firmware to avoid the deadlock.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
----
- drivers/firmware/efivars.c |   11 ++++++++++-
- fs/pstore/platform.c       |    6 +++---
- include/linux/pstore.h     |    6 ++++++
- 3 files changed, 19 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 52c5d89..25d464e 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1210,7 +1210,16 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	u64 storage_space, remaining_space, max_variable_size;
- 	efi_status_t status = EFI_NOT_FOUND;
- 
--	spin_lock(&efivars->lock);
-+	if (pstore_is_non_blocking_path(reason)) {
-+		/*
-+		 * If the lock is taken by another cpu in non-blocking path,
-+		 * this driver returns without entering firmware to avoid
-+		 * hanging up.
-+		 */
-+		if (!spin_trylock(&efivars->lock))
-+			return -EBUSY;
-+	} else
-+		spin_lock(&efivars->lock);
- 
- 	/*
- 	 * Check if there is a space enough to log.
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index b87d1de..f959eba 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -96,7 +96,7 @@ static const char *get_reason_str(enum kmsg_dump_reason reason)
- 	}
- }
- 
--static bool is_non_blocking_path(enum kmsg_dump_reason reason)
-+bool pstore_is_non_blocking_path(enum kmsg_dump_reason reason)
- {
- 	/*
- 	 * In case of NMI path, pstore shouldn't be blocked
-@@ -134,7 +134,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 
- 	why = get_reason_str(reason);
- 
--	if (is_non_blocking_path(reason)) {
-+	if (pstore_is_non_blocking_path(reason)) {
- 		is_locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
- 		if (!is_locked) {
- 			pr_err("pstore dump routine blocked in %s path, may corrupt error record\n"
-@@ -165,7 +165,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		total += hsize + len;
- 		part++;
- 	}
--	if (is_non_blocking_path(reason)) {
-+	if (pstore_is_non_blocking_path(reason)) {
- 		if (is_locked)
- 			spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 	} else
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 1788909..595a040 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -68,12 +68,18 @@ struct pstore_info {
- 
- #ifdef CONFIG_PSTORE
- extern int pstore_register(struct pstore_info *);
-+extern bool pstore_is_non_blocking_path(enum kmsg_dump_reason reason);
- #else
- static inline int
- pstore_register(struct pstore_info *psi)
- {
- 	return -ENODEV;
- }
-+static inline bool
-+pstore_is_non_blocking_path(enum kmsg_dump_reason reason)
-+{
-+	return false;
-+}
- #endif
- 
- #endif /*_LINUX_PSTORE_H*/
--- 
-1.7.1
+cheers, Joe
 
