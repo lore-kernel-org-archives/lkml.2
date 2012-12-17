@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab2LQWtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:49:45 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37944 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab2LQWto (ORCPT
+	id S1754077Ab2LQWz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:55:56 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40342 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab2LQWzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:49:44 -0500
-Date: Mon, 17 Dec 2012 14:49:40 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, ltsi-dev@lists.linuxfoundation.org
-Subject: Re: LTSI 3.4.24-rc2 kernel now released
-Message-ID: <20121217224940.GA18939@kroah.com>
-References: <20121217223853.GA18238@kroah.com>
+	Mon, 17 Dec 2012 17:55:54 -0500
+Date: Mon, 17 Dec 2012 14:54:35 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
+ stable pages during write
+Message-ID: <20121217225435.GA10874@blackbox.djwong.org>
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+ <20121213080811.23360.98131.stgit@blackbox.djwong.org>
+ <50CA8556.7030905@mit.edu>
+ <20121214021048.GF9453@blackbox.djwong.org>
+ <CALCETrWRqFmTpYNyDwUyzQpSVZjVEOCCZfHHohVR5uvHzS+s0Q@mail.gmail.com>
+ <20121215020113.GK9453@blackbox.djwong.org>
+ <CALCETrVJd86oD=p6vnRVp=0g8JDbhfZTH2G-ZCCOHzrMMiembw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121217223853.GA18238@kroah.com>
+In-Reply-To: <CALCETrVJd86oD=p6vnRVp=0g8JDbhfZTH2G-ZCCOHzrMMiembw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 02:38:53PM -0800, Greg KH wrote:
-> Hi all,
+On Fri, Dec 14, 2012 at 06:06:50PM -0800, Andy Lutomirski wrote:
+> On Fri, Dec 14, 2012 at 6:01 PM, Darrick J. Wong
+> <darrick.wong@oracle.com> wrote:
+> > On Fri, Dec 14, 2012 at 05:12:37PM -0800, Andy Lutomirski wrote:
+> >> It survived.  I hit at least one mm bug, but I really don't think it's
+> >> a problem with your code.  (I have not tried this workload on Linux
+> >> 3.7 at all before.  It normally runs on 3.5.)  The box in question is
+> >
+> > Would you mind sending along the bug report so I can make sure?
 > 
-> I'd like to announce the LTSI 3.4.24-rc2 kernel.  It's the second -rc
-> release for the LTSI 3.4 kernel, and if there's no complaints about this
-> one, odds are it will be the release version.
+> http://marc.info/?l=linux-mm&m=135553342803210&w=2
+
+Hm, this looks like a hugepages thing, which (afaik) doesn't touch fs code at
+all.  Looks like this patchset is in the clear.
+
+> >
+> >> ext4 on LVM on dm-crypt on (hardware) RAID 5 on hpsa, which should not
+> >> need stable pages.
+> >>
+> >> The majority of the data written (that wasn't unlinked before it was
+> >> dropped from cache) was checksummed when written and verified later.
+> >> Most of this data was written using mmap.  This workload hammers the
+> >> vm concurrently in several threads, and it frequently stalls when
+> >> stable pages are enabled, so it's probably exercising the code
+> >> decently well.
+> >
+> > Did you observe any change in performance?
 > 
-> Differences from the -rc1 release are:
-> 	- refreshed to be based on 3.4.24
-> 	- minor bugs fixed
-> 	- pramfs now builds properly
-> 	- CODEL support patches added
+> No.  But I'm comparing to 3.5 + butchery to remove stable pages.  With
+> stable pages on, this workload performs terribly.  (It's a soft
+> real-time thing, as you can possibly guess from my domain name, and
+> various latency monitoring things go nuts when stable pages are
+> active.)
+
+Well, I guess that's good. :)
+
+> Actually, performance appears to be improved, probably due to
+> https://lkml.org/lkml/2012/12/14/14, which I tested concurrently.
 > 
-> I'll respond to the LTSI mailing list with the patch itself attached to
-> the email, hopefully I'll figure out how to upload it to the ltsi web
-> site one of these days to make it easier for people to download.
+> >
+> >> Feel free to add Tested-by: Andy Lutomirski <luto@amacapital.net>
+> >
+> > Will do!  Thanks for the testing!
+> 
+> My pleasure.  When these changes go in to an upstream kernel, they'll
+> represent a significant reduction in how much our kernel differs from
+> kernel.org's :)  Thanks for fixing this.
 
-The link is now working, it can be found at:
-	http://ltsi.linuxfoundation.org/sites/default/files/patch-3.4.24-ltsi-rc2.gz
+No problem!
 
-thanks,
-
-greg k-h
+--D
