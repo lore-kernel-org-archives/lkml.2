@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab2LQXeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 18:34:13 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:47332 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab2LQXeL (ORCPT
+	id S1753989Ab2LQXey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 18:34:54 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:38513 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2LQXew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 18:34:11 -0500
-X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 18:34:10 EST
+	Mon, 17 Dec 2012 18:34:52 -0500
+X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 18:34:52 EST
 MIME-Version: 1.0
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220470F8584@ORSMSX105.amr.corp.intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
-	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-	<50CE4097.2020104@zytor.com>
-	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
-	<CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F8584@ORSMSX105.amr.corp.intel.com>
-Date: Mon, 17 Dec 2012 15:34:09 -0800
-X-Google-Sender-Auth: zTXFSK9NSi3JCxmPLhgQ3cF0Sr8
-Message-ID: <CAE9FiQVQMumUSgJ91rT5Zr2_Q=Wk=jBy+MEA3Li0Y215OHQT_Q@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
+In-Reply-To: <50CFA6A4.7010805@zytor.com>
+References: <20121211170605.GD28827@liondog.tnic>
+	<50C82ABF.3020907@zytor.com>
+	<20121212133853.GC8760@liondog.tnic>
+	<50C963B1.3040609@zytor.com>
+	<50C96717.3020407@zytor.com>
+	<20121213191317.GE31485@liondog.tnic>
+	<50CA4A7A.10104@zytor.com>
+	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
+	<50CB8213.9000908@zytor.com>
+	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
+	<CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
+	<CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
+	<50CCCFD0.7030704@linux.intel.com>
+	<CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
+	<50CCEE49.3080801@zytor.com>
+	<CAE9FiQV6tmHqnwOX8Rh3heaG1PQ9YQNN45esMQjqZP8Upw0Y-g@mail.gmail.com>
+	<CAE9FiQUSve-5zuD8JyOK-eeJwTu6-E7ZnYCvc74jPVWwxhLP4g@mail.gmail.com>
+	<CAE9FiQUWFaOkLNc8fJw=bEUwOkusadriMn0Oajk+F64vo5Eysw@mail.gmail.com>
+	<CAE9FiQVG1WvtoUNK3ecfmSCocJZt694yrm7=iaOciD47GN=9EA@mail.gmail.com>
+	<50CFA6A4.7010805@zytor.com>
+Date: Mon, 17 Dec 2012 15:26:44 -0800
+X-Google-Sender-Auth: qtgDQ6530csAG1FduXuqKdYG3g4
+Message-ID: <CAE9FiQUx-T2ZFyBtrdLjzkUO50LObMv_nOEUNPwU+wPQscD1_A@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
 From: Yinghai Lu <yinghai@kernel.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 3:30 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
+On Mon, Dec 17, 2012 at 3:11 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/17/2012 02:47 PM, Yinghai Lu wrote:
+>>
+>>
+>> Peter, can you check that branch again?
+>>
+>> I moved the early_trap_init after init_mem_mapping.
+>> so for 64bit native, init_mem_mapping will setup page table for ram from
+>> blank.
+>>
 >
-> OSV may need the patchset based on old kernel. So I'll have the patchset ready. Is this the right place to call load_ucode_bsp() in the upstream kernel?
->
-> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> index a512f56..e94b90e 100644
-> --- a/arch/x86/kernel/head64.c
-> +++ b/arch/x86/kernel/head64.c
-> @@ -93,6 +88,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
->         }
->         load_idt((const struct desc_ptr *)&idt_descr);
->
-> +       /*
-> +        * Load microcode early on BSP.
-> +        */
-> +       load_ucode_bsp(__va(real_mode_data));
-> +
->         if (console_loglevel == 10)
->                 early_printk("Kernel alive\n");
->
-it has to be after #PF handler set page table patch...
+> Looks better, at first glance at least.  There are a couple of unnecessary
+> changes (the counter in head_64.S cannot exceed 32 bits once computed, so
+> the change from %rcx to %ecx change is pointless.)
 
-otherwise when ramdisk is above 1G, customer will get early PF exception.
+ok,  return to use %ecx
+
+>
+> There is another bug in my patch: it either needs to mask off the NX bit if
+> we are running on non-NX-enabled hardware, or it needs to not set the NX bit
+> (which is mostly okay that early on, I suspect.)
+
+i test that in kvm guest, and westmere, current version seem ok.
+
+will repost the patchset to list to get more review.
+
+:
