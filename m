@@ -1,304 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2LQGqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 01:46:49 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:49558 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2LQGqr (ORCPT
+	id S1751791Ab2LQG4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 01:56:36 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45798 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab2LQG4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 01:46:47 -0500
-Date: Mon, 17 Dec 2012 01:46:45 -0500 (EST)
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pmoore@redhat.com
-Cc: wkevils@gmail.com, mprivozn@redhat.com
-Message-ID: <446577270.19079895.1355726805489.JavaMail.root@redhat.com>
-In-Reply-To: <1355478810-10144-1-git-send-email-jasowang@redhat.com>
-Subject: Re: [PATCH] tuntap: fix ambigious multiqueue API
+	Mon, 17 Dec 2012 01:56:35 -0500
+Date: Sun, 16 Dec 2012 22:53:06 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] charger-manager: Fix bug when check dropped
+ voltage after fullbatt event
+Message-ID: <20121217064902.GA9027@lizard.gateway.2wire.net>
+References: <1353570831-19439-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.15.180]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC22 (Linux)/7.2.0_GA_2669)
+Content-Disposition: inline
+In-Reply-To: <1353570831-19439-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> The current multiqueue API is ambigious which may confuse both user
-> and LSM to
-> do things correctly:
+On Thu, Nov 22, 2012 at 04:53:51PM +0900, Chanwoo Choi wrote:
+> This patch check difference value between current voltage of battery
+> and desc->fullbatt_uV whether positve or negative number. If difference
+> value is negative number when current voltage of battery is larger than
+> desc->fullbatt_uV, charger-manager return immediately because battery
+> is fully charged.
 > 
-> - Both TUNSETIFF and TUNSETQUEUE could be used to create the queues
-> of a tuntap
->   device.
-> - TUNSETQUEUE were used to disable and enable a specific queue of the
->   device. But since the state of tuntap were completely removed from
->   the queue,
->   it could be used to attach to another device (there's no such kind
->   of
->   requirement currently, and it needs new kind of LSM policy.
-> - TUNSETQUEUE could be used to attach to a persistent device without
-> any
->   queues. This kind of attching bypass the necessary checking during
->   TUNSETIFF
->   and may lead unexpected result.
-> 
-> So this patch tries to make a cleaner and simpler API by:
-> 
-> - Only allow TUNSETIFF to create queues.
-> - TUNSETQUEUE could be only used to disable and enabled the queues of
-> a device,
->   and the state of the tuntap device were not detachd from the queues
->   when it
->   was disabled, so TUNSETQUEUE could be only used after TUNSETIFF and
->   with the
->    same device.
-> 
-> This is done by introducing a list which keeps track of all queues
-> which were
-> disabled. The queue would be moved between this list and tfiles[]
-> array when it
-> was enabled/disabled. A pointer of the tun_struct were also introdued
-> to track
-> the device it belongs to when it was disabled.
-> 
-> After the change, the isolation between management and application
-> could be done
-> through: TUNSETIFF were only called by management software and
-> TUNSETQUEUE were
-> only called by application.For LSM/SELinux, the things left is to do
-> proper
-> check during tun_set_queue() if needed.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  drivers/net/tun.c |   86
->  ++++++++++++++++++++++++++++++++++++++--------------
->  1 files changed, 63 insertions(+), 23 deletions(-)
+>  drivers/power/charger-manager.c |    9 ++++++---
+>  1 files changed, 6 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 2ac2164..6f2053d 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -138,6 +138,8 @@ struct tun_file {
->  	/* only used for fasnyc */
->  	unsigned int flags;
->  	u16 queue_index;
-> +	struct list_head next;
-> +	struct tun_struct *detached;
->  };
->  
->  struct tun_flow_entry {
-> @@ -182,6 +184,8 @@ struct tun_struct {
->  	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
->  	struct timer_list flow_gc_timer;
->  	unsigned long ageing_time;
-> +	unsigned int numdisabled;
-> +	struct list_head disabled;
->  };
->  
->  static inline u32 tun_hashfn(u32 rxhash)
-> @@ -386,6 +390,23 @@ static void tun_set_real_num_queues(struct
-> tun_struct *tun)
->  	netif_set_real_num_rx_queues(tun->dev, tun->numqueues);
->  }
->  
-> +static void tun_disable_queue(struct tun_struct *tun, struct
-> tun_file *tfile)
-> +{
-> +	tfile->detached = tun;
-> +	list_add_tail(&tfile->next, &tun->disabled);
-> +	++tun->numdisabled;
-> +}
-> +
-> +struct tun_struct *tun_enable_queue(struct tun_file *tfile)
-> +{
-> +	struct tun_struct *tun = tfile->detached;
-> +
-> +	tfile->detached = NULL;
-> +	list_del_init(&tfile->next);
-> +	--tun->numdisabled;
-> +	return tun;
-> +}
-> +
->  static void __tun_detach(struct tun_file *tfile, bool clean)
->  {
->  	struct tun_file *ntfile;
-> @@ -407,20 +428,25 @@ static void __tun_detach(struct tun_file
-> *tfile, bool clean)
->  		ntfile->queue_index = index;
->  
->  		--tun->numqueues;
-> -		sock_put(&tfile->sk);
-> +		if (clean)
-> +			sock_put(&tfile->sk);
-> +		else
-> +			tun_disable_queue(tun, tfile);
->  
->  		synchronize_net();
->  		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
->  		/* Drop read queue */
->  		skb_queue_purge(&tfile->sk.sk_receive_queue);
->  		tun_set_real_num_queues(tun);
-> -
-> -		if (tun->numqueues == 0 && !(tun->flags & TUN_PERSIST))
-> -			if (dev->reg_state == NETREG_REGISTERED)
-> -				unregister_netdevice(dev);
-> -	}
-> +	} else if (tfile->detached && clean)
-> +		tun = tun_enable_queue(tfile);
->  
->  	if (clean) {
-> +		if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&
-> +		    !(tun->flags & TUN_PERSIST))
-> +			if (tun->dev->reg_state == NETREG_REGISTERED)
-> +				unregister_netdevice(tun->dev);
-> +
->  		BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED,
->  				 &tfile->socket.flags));
->  		sk_release_kernel(&tfile->sk);
-> @@ -437,7 +463,7 @@ static void tun_detach(struct tun_file *tfile,
-> bool clean)
->  static void tun_detach_all(struct net_device *dev)
->  {
->  	struct tun_struct *tun = netdev_priv(dev);
-> -	struct tun_file *tfile;
-> +	struct tun_file *tfile, *tmp;
->  	int i, n = tun->numqueues;
->  
->  	for (i = 0; i < n; i++) {
-> @@ -458,6 +484,12 @@ static void tun_detach_all(struct net_device
-> *dev)
->  		skb_queue_purge(&tfile->sk.sk_receive_queue);
->  		sock_put(&tfile->sk);
+> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+> index ee039b9..17130c7 100644
+> --- a/drivers/power/charger-manager.c
+> +++ b/drivers/power/charger-manager.c
+> @@ -468,7 +468,9 @@ static void fullbatt_vchk(struct work_struct *work)
+>  	struct charger_manager *cm = container_of(dwork,
+>  			struct charger_manager, fullbatt_vchk_work);
+>  	struct charger_desc *desc = cm->desc;
+> -	int batt_uV, err, diff;
+> +	int batt_uV;
+> +	int err;
+> +	int diff;
+
+I applied the patch, but dropped this part. This is an unrelated style
+fix, and, if anything, it desires a separate patch (possibly 'fixing' the
+whole file/driver).
+
+Thanks!
+
+>  	/* remove the appointment for fullbatt_vchk */
+>  	cm->fullbatt_vchk_jiffies_at = 0;
+> @@ -482,8 +484,9 @@ static void fullbatt_vchk(struct work_struct *work)
+>  		return;
 >  	}
-> +	list_for_each_entry_safe(tfile, tmp, &tun->disabled, next) {
-> +		tun_enable_queue(tfile);
-> +		skb_queue_purge(&tfile->sk.sk_receive_queue);
-> +		sock_put(&tfile->sk);
-> +	}
-> +	BUG_ON(tun->numdisabled != 0);
->  }
 >  
->  static int tun_attach(struct tun_struct *tun, struct file *file)
-> @@ -474,7 +506,8 @@ static int tun_attach(struct tun_struct *tun,
-> struct file *file)
->  		goto out;
+> -	diff = desc->fullbatt_uV;
+> -	diff -= batt_uV;
+> +	diff = desc->fullbatt_uV - batt_uV;
+> +	if (diff < 0)
+> +		return;
 >  
->  	err = -E2BIG;
-> -	if (tun->numqueues == MAX_TAP_QUEUES)
-> +	if (!tfile->detached &&
-> +	    tun->numqueues + tun->numdisabled == MAX_TAP_QUEUES)
->  		goto out;
+>  	dev_info(cm->dev, "VBATT dropped %duV after full-batt.\n", diff);
 >  
->  	err = 0;
-> @@ -488,9 +521,13 @@ static int tun_attach(struct tun_struct *tun,
-> struct file *file)
->  	tfile->queue_index = tun->numqueues;
->  	rcu_assign_pointer(tfile->tun, tun);
->  	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
-> -	sock_hold(&tfile->sk);
->  	tun->numqueues++;
->  
-> +	if (tfile->detached)
-> +		tun_enable_queue(tfile);
-> +	else
-> +		sock_hold(&tfile->sk);
-> +
->  	tun_set_real_num_queues(tun);
->  
->  	/* device is allowed to go away first, so no need to hold extra
-> @@ -1348,6 +1385,7 @@ static void tun_free_netdev(struct net_device
-> *dev)
->  {
->  	struct tun_struct *tun = netdev_priv(dev);
->  
-> +	BUG_ON(!(list_empty(&tun->disabled)));
->  	tun_flow_uninit(tun);
->  	free_netdev(dev);
->  }
-> @@ -1542,6 +1580,10 @@ static int tun_set_iff(struct net *net, struct
-> file *file, struct ifreq *ifr)
->  		err = tun_attach(tun, file);
->  		if (err < 0)
->  			return err;
-> +
-> +		if (tun->flags & TUN_TAP_MQ &&
-> +		    (tun->numqueues + tun->numdisabled > 1))
-> +			return err;
->  	}
->  	else {
->  		char *name;
-> @@ -1600,6 +1642,7 @@ static int tun_set_iff(struct net *net, struct
-> file *file, struct ifreq *ifr)
->  			TUN_USER_FEATURES;
->  		dev->features = dev->hw_features;
->  
-> +		INIT_LIST_HEAD(&tun->disabled);
->  		err = tun_attach(tun, file);
->  		if (err < 0)
->  			goto err_free_dev;
-> @@ -1754,32 +1797,28 @@ static int tun_set_queue(struct file *file,
-> struct ifreq *ifr)
->  {
->  	struct tun_file *tfile = file->private_data;
->  	struct tun_struct *tun;
-> -	struct net_device *dev;
->  	int ret = 0;
->  
->  	rtnl_lock();
->  
->  	if (ifr->ifr_flags & IFF_ATTACH_QUEUE) {
-> -		dev = __dev_get_by_name(tfile->net, ifr->ifr_name);
-> -		if (!dev) {
-> -			ret = -EINVAL;
-> -			goto unlock;
-> -		}
-> -
-> -		tun = netdev_priv(dev);
-> -		if (dev->netdev_ops != &tap_netdev_ops &&
-> -			dev->netdev_ops != &tun_netdev_ops)
-> +		tun = tfile->detached;
-> +		if (!tun)
->  			ret = -EINVAL;
->  		else if (tun_not_capable(tun))
->  			ret = -EPERM;
->  		else
->  			ret = tun_attach(tun, file);
-> -	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE)
-> -		__tun_detach(tfile, false);
-> -	else
-> +	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
-> +		tun = rcu_dereference_protected(tfile->tun,
-> +						lockdep_rtnl_is_held());
-> +		if (!tun || !(tun->flags & TUN_TAP_MQ))
-> +			ret = -EINVAL;
-> +		else
-> +			__tun_detach(tfile, false);
-> +	} else
->  		ret = -EINVAL;
->  
-> -unlock:
->  	rtnl_unlock();
->  	return ret;
->  }
-> @@ -2091,6 +2130,7 @@ static int tun_chr_open(struct inode *inode,
-> struct file * file)
->  
->  	file->private_data = tfile;
->  	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
-> +	INIT_LIST_HEAD(&tfile->next);
->  
->  	return 0;
->  }
-> --
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> -- 
+> 1.7.0.4
