@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab2LQVbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:31:39 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48467 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab2LQVbh (ORCPT
+	id S1753764Ab2LQVdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:33:22 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62181 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab2LQVdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:31:37 -0500
-Message-ID: <50CF8F36.2030309@wwwdotorg.org>
-Date: Mon, 17 Dec 2012 14:31:34 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 17 Dec 2012 16:33:20 -0500
+Date: Mon, 17 Dec 2012 13:33:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 07/12] cfq-iosched: implement hierarchy-ready cfq_group
+ charge scaling
+Message-ID: <20121217213314.GF1844@htj.dyndns.org>
+References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+ <1355524885-22719-8-git-send-email-tj@kernel.org>
+ <20121217205317.GI7235@redhat.com>
+ <20121217211738.GD1844@htj.dyndns.org>
+ <20121217212736.GB13691@redhat.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, alan@linux.intel.com,
-        gregkh@linuxfoundation.org, jslaby@suse.cz, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] serial: tegra: add serial driver
-References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com> <20121217171027.6AE573E0BDD@localhost>
-In-Reply-To: <20121217171027.6AE573E0BDD@localhost>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217212736.GB13691@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 10:10 AM, Grant Likely wrote:
-> On Mon, 17 Dec 2012 17:40:49 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
->> Nvidia's Tegra has multiple uart controller which supports:
->> - APB dma based controller fifo read/write.
->> - End Of Data interrupt in incoming data to know whether end
->>   of frame achieve or not.
->> - Hw controlled RTS and CTS flow control to reduce SW overhead.
+Hello,
 
->> +static int __devinit tegra_uart_probe(struct platform_device *pdev)
->> +{
->> +	struct tegra_uart_port *tup;
->> +	struct uart_port *u;
->> +	struct tegra_uart_platform_data *pdata = pdev->dev.platform_data;
+On Mon, Dec 17, 2012 at 04:27:36PM -0500, Vivek Goyal wrote:
+> What I do care about is atleast being able to read and understand the
+> code easily. Right now, it is hard to understand. I am still struggling
+> to wrap my head around it.
+
+Hmm... I thought it was really simple.  Maybe I'm just too familiar
+with it.  You just walk up the tree multiplying the fraction you have
+at each level.  It really doesn't get much simpler than that.
+
+> For example, while adding a group to service tree we calculate
+> cfqg->vfaction as follows.
 > 
-> Since this is a new driver, and all new board support will use device
-> tree, when would this platform_data pointer get set? Can you drop the
-> platform_data support code entirely?
+> vfr = vfr * pos->leaf_weight / pos->level_weight;
+> 
+> and then 
+> 
+> vfr = vfr * pos->weight / parent->level_weight;
+> 
+> cfqg->vfraction = max_t(unsigned, vfr, 1)
+> 
+> If cfqg->vfraction is about cfqg then why should we take into account
+> leaf_weight and level_weight. We should be just worried about pos->weight
+> and parent->level_weight and that should determine vfaction of cfqg.
 
-Aren't we still supposed to support platform data so that it can
-override what's in DT in order to fix up bad DTs? Or, has that
-requirement been dropped. If it has, we can drop a bunch of code from a
-variety of Tegra-specific drivers, I expect.
+Eh?  Then how would it compete with the children cfqgs?  You can
+consider it as the hidden leaf node competing with the children cfqgs,
+right?  So, you take the leaf weight and divide it by the total active
+weight of all the children (including the hidden leaf node).  It isn't
+different from the rest of the calculation.  It just looks different
+because leaf_weight is stored elsewhere and we look down there and
+then walke up.  The calculation being done is exactly the same one.
+
+Thanks.
+
+-- 
+tejun
