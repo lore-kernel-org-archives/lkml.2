@@ -1,172 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab2LQPCj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:02:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33387 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab2LQPCh (ORCPT
+	id S1753342Ab2LQPG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:06:56 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:37188 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab2LQPGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:02:37 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+	Mon, 17 Dec 2012 10:06:54 -0500
+Date: Mon, 17 Dec 2012 10:05:59 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Daniel Berrange <berrange@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 09/15] dlm: use new hashtable implementation
-Date: Mon, 17 Dec 2012 10:01:29 -0500
-Message-Id: <1355756497-15834-9-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
-References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Subject: Re: +
+ core_pattern-set-core-helpers-root-and-namespace-to-crashing-process .patch
+ added to -mm tree
+Message-ID: <20121217150559.GD25322@hmsreliant.think-freely.org>
+References: <20121217123428.GA1957@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217123428.GA1957@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch dlm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the dlm.
+On Mon, Dec 17, 2012 at 01:34:28PM +0100, Oleg Nesterov wrote:
+> @@ -455,6 +468,14 @@ static int umh_pipe_setup(struct subproc
+>  	/* and disallow core files too */
+>  	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
+>  
+> +
+> +	if (cp->switch_ns) {
+> +		get_fs_root(cp->cprocess->fs, &root);
+> +		set_fs_root(current->fs, &root);
+> +		switch_task_namespaces(current, cp->cprocess->nsproxy);
+> 
+> How? You can't simply change ->nsproxy this way.
+> 
+Why not?  This is exactly how fork, exit, and setns use this call.
 
-This patch depends on d9b482c ("hashtable: introduce a small and naive
-hashtable") which was merged in v3.6.
+> If nothing else this breaks sys_getpid(), no?
+> 
+hmm, I think you're inferring here that there is a chance that a pid allocated
+in the init namespace might conflict with another process who holds the same pid
+in another namespace?  Yes, hand't thought about that.  What do you propose we
+do about this?  Is there a way to switch all namespaces, except for the pid
+namespace?  Or do we need to modify the kthread and umh apis to allow for
+namespace inheritance through the fork call?
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- fs/dlm/lowcomms.c | 53 ++++++++++++++++++-----------------------------------
- 1 file changed, 18 insertions(+), 35 deletions(-)
+> And a lot more problems, afaics. For example, this thread can continue
+> to run after, say, this cprocess->nsproxy->pid_ns was already destroyed.
+> zap_pid_ns_processes() obviously won't see this thread.
+> 
+Hmm, I don't think so.  The crashing process won't exit until the pipe reader is
+done, so the reference on the namespace should never decrement to zero.
 
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index dd87a31..822887c 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -55,6 +55,7 @@
- #include <net/sctp/sctp.h>
- #include <net/sctp/user.h>
- #include <net/ipv6.h>
-+#include <linux/hashtable.h>
- 
- #include "dlm_internal.h"
- #include "lowcomms.h"
-@@ -62,7 +63,7 @@
- #include "config.h"
- 
- #define NEEDED_RMEM (4*1024*1024)
--#define CONN_HASH_SIZE 32
-+#define CONN_HASH_BITS 5
- 
- /* Number of messages to send before rescheduling */
- #define MAX_SEND_MSG_COUNT 25
-@@ -158,34 +159,27 @@ static int dlm_allow_conn;
- static struct workqueue_struct *recv_workqueue;
- static struct workqueue_struct *send_workqueue;
- 
--static struct hlist_head connection_hash[CONN_HASH_SIZE];
-+/*
-+ * On a sidenote, hash function could be very simple because most clusters
-+ * have simple sequential nodeids, so we should be able to go straight to
-+ * a connection struct in the array. We don't utilize it at the moment,
-+ * but it's something work to keep in mind.
-+ */
-+static DEFINE_HASHTABLE(connection_hash, CONN_HASH_BITS);
- static DEFINE_MUTEX(connections_lock);
- static struct kmem_cache *con_cache;
- 
- static void process_recv_sockets(struct work_struct *work);
- static void process_send_sockets(struct work_struct *work);
- 
--
--/* This is deliberately very simple because most clusters have simple
--   sequential nodeids, so we should be able to go straight to a connection
--   struct in the array */
--static inline int nodeid_hash(int nodeid)
--{
--	return nodeid & (CONN_HASH_SIZE-1);
--}
--
- static struct connection *__find_con(int nodeid)
- {
--	int r;
- 	struct hlist_node *h;
- 	struct connection *con;
- 
--	r = nodeid_hash(nodeid);
--
--	hlist_for_each_entry(con, h, &connection_hash[r], list) {
-+	hash_for_each_possible(connection_hash, con, h, list, nodeid)
- 		if (con->nodeid == nodeid)
- 			return con;
--	}
- 	return NULL;
- }
- 
-@@ -196,7 +190,6 @@ static struct connection *__find_con(int nodeid)
- static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
- {
- 	struct connection *con = NULL;
--	int r;
- 
- 	con = __find_con(nodeid);
- 	if (con || !alloc)
-@@ -206,8 +199,7 @@ static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
- 	if (!con)
- 		return NULL;
- 
--	r = nodeid_hash(nodeid);
--	hlist_add_head(&con->list, &connection_hash[r]);
-+	hash_add(connection_hash, &con->list, nodeid);
- 
- 	con->nodeid = nodeid;
- 	mutex_init(&con->sock_mutex);
-@@ -235,11 +227,8 @@ static void foreach_conn(void (*conn_func)(struct connection *c))
- 	struct hlist_node *h, *n;
- 	struct connection *con;
- 
--	for (i = 0; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry_safe(con, h, n, &connection_hash[i], list){
--			conn_func(con);
--		}
--	}
-+	hash_for_each_safe(connection_hash, i, h, n, con, list)
-+		conn_func(con);
- }
- 
- static struct connection *nodeid2con(int nodeid, gfp_t allocation)
-@@ -262,12 +251,10 @@ static struct connection *assoc2con(int assoc_id)
- 
- 	mutex_lock(&connections_lock);
- 
--	for (i = 0 ; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry(con, h, &connection_hash[i], list) {
--			if (con->sctp_assoc == assoc_id) {
--				mutex_unlock(&connections_lock);
--				return con;
--			}
-+	hash_for_each(connection_hash, i, h, con, list) {
-+		if (con->sctp_assoc == assoc_id) {
-+			mutex_unlock(&connections_lock);
-+			return con;
- 		}
- 	}
- 	mutex_unlock(&connections_lock);
-@@ -1637,7 +1624,7 @@ static void free_conn(struct connection *con)
- 	close_connection(con, true);
- 	if (con->othercon)
- 		kmem_cache_free(con_cache, con->othercon);
--	hlist_del(&con->list);
-+	hash_del(&con->list);
- 	kmem_cache_free(con_cache, con);
- }
- 
-@@ -1666,10 +1653,6 @@ int dlm_lowcomms_start(void)
- {
- 	int error = -EINVAL;
- 	struct connection *con;
--	int i;
--
--	for (i = 0; i < CONN_HASH_SIZE; i++)
--		INIT_HLIST_HEAD(&connection_hash[i]);
- 
- 	init_local();
- 	if (!dlm_local_count) {
--- 
-1.8.0
+Actually I take that back.  switch_task_namespaces doesn't add a ref count to
+the name space being switched to.  So if the pipe reader doesn't exit
+immediately after closing the pipe, it may live on after the namespace is
+destroyed.  It would seem a get_nsproxy call is needed here to hold an
+additional reference.  Or do you think more is necessecary?
+
+> Even ->nsproxy itself can go away. Just suppose that the coredumping
+> task is the only process in this namespace (sub-init).
+> 
+Again, that shouldn't be a problem, should it?  As that process won't exit until
+the pipe reader is done, save the condition above.
+
+Neil
 
