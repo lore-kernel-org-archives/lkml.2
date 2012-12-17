@@ -1,121 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab2LQPyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:54:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34582 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab2LQPyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:54:18 -0500
-Date: Mon, 17 Dec 2012 16:54:16 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
-Message-ID: <20121217155416.GC25432@dhcp22.suse.cz>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
- <50C8FCE0.1060408@redhat.com>
- <20121212222844.GA10257@cmpxchg.org>
- <20121213145514.GD21644@dhcp22.suse.cz>
- <50CD2232.8020909@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753040Ab2LQQBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 11:01:03 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36720 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab2LQQBB convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:13:1>);
+	Mon, 17 Dec 2012 11:01:01 -0500
+Message-Id: <50CF4FC502000078000B0CB6@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 17 Dec 2012 16:00:53 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "Ingo Molnar" <mingo@elte.hu>,
+        "Michael Kerrisk" <mtk.manpages@gmail.com>,
+        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>,
+        "Matt Fleming" <matt.fleming@intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Dave Jones" <davej@redhat.com>, "David Howells" <dhowells@redhat.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Markus Trippelsdorf" <markus@trippelsdorf.de>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com>
+ <23916.1355356085@warthog.procyon.org.uk>
+ <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com>
+ <21507.1355528749@warthog.procyon.org.uk>
+ <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com>
+ <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com>
+ <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com>
+ <20121215163323.GA229@x4>
+ <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com>
+ <50CEEE3302000078000B0AC0@nat28.tlf.novell.com>
+ <CA+55aFzhgW=GBwGtxufqhX+ykNCRqek=iyVszvkpCTw=-MXSyA@mail.gmail.com>
+In-Reply-To: <CA+55aFzhgW=GBwGtxufqhX+ykNCRqek=iyVszvkpCTw=-MXSyA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <50CD2232.8020909@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 16-12-12 09:21:54, Simon Jeons wrote:
-> On 12/13/2012 10:55 PM, Michal Hocko wrote:
-> >On Wed 12-12-12 17:28:44, Johannes Weiner wrote:
-> >>On Wed, Dec 12, 2012 at 04:53:36PM -0500, Rik van Riel wrote:
-> >>>On 12/12/2012 04:43 PM, Johannes Weiner wrote:
-> >>>>dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
-> >>>>a point of not going for anonymous memory while there is still enough
-> >>>>inactive cache around.
-> >>>>
-> >>>>The check was added only for global reclaim, but it is just as useful
-> >>>>for memory cgroup reclaim.
-> >>>>
-> >>>>Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> >>>>---
-> >>>>  mm/vmscan.c | 19 ++++++++++---------
-> >>>>  1 file changed, 10 insertions(+), 9 deletions(-)
-> >>>>
-> >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >>>>index 157bb11..3874dcb 100644
-> >>>>--- a/mm/vmscan.c
-> >>>>+++ b/mm/vmscan.c
-> >>>>@@ -1671,6 +1671,16 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> >>>>  		denominator = 1;
-> >>>>  		goto out;
-> >>>>  	}
-> >>>>+	/*
-> >>>>+	 * There is enough inactive page cache, do not reclaim
-> >>>>+	 * anything from the anonymous working set right now.
-> >>>>+	 */
-> >>>>+	if (!inactive_file_is_low(lruvec)) {
-> >>>>+		fraction[0] = 0;
-> >>>>+		fraction[1] = 1;
-> >>>>+		denominator = 1;
-> >>>>+		goto out;
-> >>>>+	}
-> >>>>
-> >>>>  	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
-> >>>>  		get_lru_size(lruvec, LRU_INACTIVE_ANON);
-> >>>>@@ -1688,15 +1698,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> >>>>  			fraction[1] = 0;
-> >>>>  			denominator = 1;
-> >>>>  			goto out;
-> >>>>-		} else if (!inactive_file_is_low_global(zone)) {
-> >>>>-			/*
-> >>>>-			 * There is enough inactive page cache, do not
-> >>>>-			 * reclaim anything from the working set right now.
-> >>>>-			 */
-> >>>>-			fraction[0] = 0;
-> >>>>-			fraction[1] = 1;
-> >>>>-			denominator = 1;
-> >>>>-			goto out;
-> >>>>  		}
-> >>>>  	}
-> >>>>
-> >>>>
-> >>>I believe the if() block should be moved to AFTER
-> >>>the check where we make sure we actually have enough
-> >>>file pages.
-> >>You are absolutely right, this makes more sense.  Although I'd figure
-> >>the impact would be small because if there actually is that little
-> >>file cache, it won't be there for long with force-file scanning... :-)
-> >Yes, I think that the result would be worse (more swapping) so the
-> >change can only help.
-> >
-> >>I moved the condition, but it throws conflicts in the rest of the
-> >>series.  Will re-run tests, wait for Michal and Mel, then resend.
-> >Yes the patch makes sense for memcg as well. I guess you have tested
-> >this primarily with memcg. Do you have any numbers? Would be nice to put
-> >them into the changelog if you have (it should help to reduce swapping
-> >with heavy streaming IO load).
-> >
-> >Acked-by: Michal Hocko <mhocko@suse.cz>
+>>> On 17.12.12 at 16:44, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Mon, Dec 17, 2012 at 1:04 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>>
+>> How about this being caused by using the same lower level
+>> page table entries that swapper_pg_dir uses, namely including
+>> the _PAGE_GLOBAL bits? efi_call_virt_{pre,epi}log() only write
+>> CR3 (see 185034e72d591f9465e5e18f937ed642e7ea0070), but
+>> would need to also flip CR4.PGE afaict.
 > 
-> Hi Michal,
+> Now *this* is the kind of issue that I could easily see causing major
+> corruption, but be subtle enough to not happen reliably. Coming back
+> from the EFI calls (or going into them) with stale TLB contents due to
+> global pages could explain things.
 > 
-> I still can't understand why "The goto out means that it should be
-> fine either way.",
+> Good thinking. That efi call code should use flush_tlb_kernel() (or
+> __flush_tlb_global() if it wants to avoid any paravirtualization
+> stuff) if it has global pages in different places from the normal
+> kernel map. Does it really have that?
 
-Not sure I understand your question. goto out just says that either page
-cache is low or inactive file LRU is too small. And it works for both
-memcg and global because the page cache is low condition is evaluated
-only for the global reclaim and always before inactive file is small.
-Makes more sense?
+I don't see it having such. But I also don't think flush_tlb_kernel()
+is the right mechanism here. I'd rather suggest clearing CR4.PGE in
+the "prelog", an restore it in the epilog. Para-virtual environments
+shouldn't be directly interfacing with EFI runtime code anyway.
 
-> could you explain to me, sorry for my stupid. :-)
+Jan
 
--- 
-Michal Hocko
-SUSE Labs
