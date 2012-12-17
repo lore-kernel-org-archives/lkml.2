@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2LQXlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 18:41:39 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46033 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab2LQXli (ORCPT
+	id S1753214Ab2LRAPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 19:15:06 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:42959 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab2LRAPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 18:41:38 -0500
+	Mon, 17 Dec 2012 19:15:04 -0500
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 19:15:03 EST
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 To: DRI Development <dri-devel@lists.freedesktop.org>,
         linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org
@@ -14,9 +15,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Aaron Plattner <aplattner@nvidia.com>
 Subject: [PATCH] [RFC] dma-buf: implement vmap refcounting in the interface logic
-Date: Tue, 18 Dec 2012 00:31:50 +0100
-Message-Id: <1355787110-19968-1-git-send-email-daniel.vetter@ffwll.ch>
+Date: Tue, 18 Dec 2012 00:58:35 +0100
+Message-Id: <1355788715-22177-1-git-send-email-daniel.vetter@ffwll.ch>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1355787110-19968-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1355787110-19968-1-git-send-email-daniel.vetter@ffwll.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,6 +40,11 @@ Suggested by Aaron Plattner. We might want to do similar checks for
 attachments, but that's for another patch. Also fix up ERR_PTR return
 for vmap.
 
+v3: Check whether the passed-in vmap address matches with the cached
+one for vunmap. Eventually we might want to remove that parameter -
+compared to the kmap functions there's no need for the vaddr for
+unmapping.  Suggested by Chris Wilson.
+
 Cc: Aaron Plattner <aplattner@nvidia.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
@@ -46,9 +54,9 @@ about this on irc.
 Cheers, Daniel
 ---
  Documentation/dma-buf-sharing.txt |  6 +++++-
- drivers/base/dma-buf.c            | 42 ++++++++++++++++++++++++++++++++++-----
+ drivers/base/dma-buf.c            | 43 ++++++++++++++++++++++++++++++++++-----
  include/linux/dma-buf.h           |  4 +++-
- 3 files changed, 45 insertions(+), 7 deletions(-)
+ 3 files changed, 46 insertions(+), 7 deletions(-)
 
 diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
 index 0188903..4966b1b 100644
@@ -68,7 +76,7 @@ index 0188903..4966b1b 100644
  3. Finish access
  
 diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-index a3f79c4..36af5de 100644
+index a3f79c4..67d3cd5 100644
 --- a/drivers/base/dma-buf.c
 +++ b/drivers/base/dma-buf.c
 @@ -39,6 +39,8 @@ static int dma_buf_release(struct inode *inode, struct file *file)
@@ -118,7 +126,7 @@ index a3f79c4..36af5de 100644
  }
  EXPORT_SYMBOL_GPL(dma_buf_vmap);
  
-@@ -501,7 +525,15 @@ void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
+@@ -501,7 +525,16 @@ void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
  	if (WARN_ON(!dmabuf))
  		return;
  
@@ -126,6 +134,7 @@ index a3f79c4..36af5de 100644
 -		dmabuf->ops->vunmap(dmabuf, vaddr);
 +	BUG_ON(!dmabuf->vmap_ptr);
 +	BUG_ON(dmabuf->vmapping_counter > 0);
++	BUG_ON(dmabuf->vmap_ptr != vaddr);
 +
 +	mutex_lock(&dmabuf->lock);
 +	if (--dmabuf->vmapping_counter == 0) {
