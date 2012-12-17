@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab2LQWND (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:13:03 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35303 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab2LQWNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:13:00 -0500
-Date: Mon, 17 Dec 2012 14:12:54 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 07/12] cfq-iosched: implement hierarchy-ready cfq_group
- charge scaling
-Message-ID: <20121217221254.GH1844@htj.dyndns.org>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
- <1355524885-22719-8-git-send-email-tj@kernel.org>
- <20121217205317.GI7235@redhat.com>
- <20121217211738.GD1844@htj.dyndns.org>
- <20121217212736.GB13691@redhat.com>
- <20121217213314.GF1844@htj.dyndns.org>
- <20121217214911.GC13691@redhat.com>
+	id S1754807Ab2LQWSQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:18:16 -0500
+Received: from rs130.luxsci.com ([72.32.115.17]:41568 "EHLO rs130.luxsci.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754439Ab2LQWSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 17:18:13 -0500
+Message-ID: <50CF99EC.1050509@firmworks.com>
+Date: Mon, 17 Dec 2012 12:17:16 -1000
+From: Mitch Bradley <wmb@firmworks.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121217214911.GC13691@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-doc@vger.kernel.org,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-tegra@vger.kernel.org, jslaby@suse.cz, alan@linux.intel.com
+Subject: Re: [PATCH] serial: tegra: add serial driver
+References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com> <50CF9043.8030308@wwwdotorg.org> <50CF9580.4050300@firmworks.com> <50CF96D4.6010705@wwwdotorg.org>
+In-Reply-To: <50CF96D4.6010705@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Lux-Comment: Message qBHMHF6N003711 sent by user #11875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Vivek.
-
-On Mon, Dec 17, 2012 at 04:49:11PM -0500, Vivek Goyal wrote:
-> > Eh?  Then how would it compete with the children cfqgs?  You can
-> > consider it as the hidden leaf node competing with the children cfqgs,
-> > right?  So, you take the leaf weight and divide it by the total active
-> > weight of all the children (including the hidden leaf node).  It isn't
-> > different from the rest of the calculation.  It just looks different
-> > because leaf_weight is stored elsewhere and we look down there and
-> > then walke up.  The calculation being done is exactly the same one.
+On 12/17/2012 12:04 PM, Stephen Warren wrote:
+> On 12/17/2012 02:58 PM, Mitch Bradley wrote:
+>> On 12/17/2012 11:36 AM, Stephen Warren wrote:
+>>> On 12/17/2012 05:10 AM, Laxman Dewangan wrote:
+>>>> Nvidia's Tegra has multiple uart controller which supports:
+>>>> - APB dma based controller fifo read/write.
+>>>> - End Of Data interrupt in incoming data to know whether end
+>>>>   of frame achieve or not.
+>>>> - Hw controlled RTS and CTS flow control to reduce SW overhead.
+>>>
+>>>> diff --git a/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt b/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt
+>>>
+>>>> +NVIDIA Tegra20/Tegra30 high speed (dma based) UART controller driver.
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible : should be "nvidia,tegra20-hsuart", "nvidia,tegra30-hsuart".
+>>>
+>>> One question that isn't addressed here is:
+>>>
+>>> Tegra has 5 UARTs. All of them can use the existing 8250.c by specifying
+>>> compatible = "nvidia,tegra20-uart".
+>>
+>> The way it is supposed to work is that the compatible property should
+>> list "nvidia,tegra30-hsuart" first, followed by a fallback name that
+>> refers to the generic 8250 compatibility.  Having the 8250.c driver bind
+>> to the more-specific tegra30-hsuart name is wrong.
 > 
-> Again it is coming from multiplexing cfqg and cfqg->task_group. So
-> effectively we are calculating the vfraction of task_group inside cfqg.
-
-Or calculating the fraction of the hidden leaf node.
-
-> Once you say cfqg->vfraction, I immediately think of total share of
-> group (including task_group and all children cgroups).
-
-Any tasks should be treated as member of the hidden leaf node, so...
-
-> May be cfqg->task_group_vfraction (or cfqg->tg_fraction) is a better name.
-
-I don't know.  Wouldn't just explaining clearly in the comment e
-enough?  I think the name "vfraction" is already weird enough to
-indicate that it's something which you need to read explanation about.
-If that explanation is readily available as comment, I think it should
-be okay.
-
-> Also descrition says.
+> 8250.c binds to nvidia,tegra20-uart, so that aspect is fine.
 > 
-> /* vfraction  the fraction of vdisktime that a cfqg is entitled to */
-> 
-> May be we can clarify it that it is share of task_group of cfqg.
+> However, the real issue is that we probably want 4 of the 5 ports to use
+> the plain old 8250.c (so as not to use up too many DMA channels), but
+> just 1 of the ports to use the DMA-capable high-performance driver (e.g.
+> the one that a particular board has hooked up to a Bluetooth radio). The
+> only way to do that with DT that I know of would be to specify different
+> subsets of legal compatible values for each UART in the per-board .dts file.
 
-Yeah, no objection.  Let's beef up the explanation there.
 
-> I guess i am too familiar with how cpu has done it. I think I am getting
-> confused with properties which belong to cfqg and properties which
-> belong to cfqg->task_group.
-> 
-> I guess if we prefix fields belong to task_group with somete suitable
-> string, it might become little easier to understand.
+That's an okay way to do it.  The whole purpose of the compatible
+property is to support driver binding.  The mantra to "describe the
+hardware" is good, but shouldn't be taken to extremes.
 
-I usually am not a big fan of adding wordy prefixes.  I think they
-tend to obfuscate/frustrate more than help.  Let's stick a weird (that
-is, non-generic) name to something weird and explain it well in the
-comment.
+It would be a good idea to comment the .dts file to explain why the
+compatible property differs between the otherwise-identical nodes.
 
-Thanks.
-
--- 
-tejun
