@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2LQPgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:36:15 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35224 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab2LQPgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:36:11 -0500
-Message-ID: <50CF3BE7.7080509@lwfinger.net>
-Date: Mon, 17 Dec 2012 09:36:07 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753458Ab2LQPg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:36:57 -0500
+Received: from fieldses.org ([174.143.236.118]:60265 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab2LQPgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:36:54 -0500
+Date: Mon, 17 Dec 2012 10:36:44 -0500
+To: Steve French <smfrench@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Pavel Shilovsky <piastry@etersoft.ru>,
+        David Laight <david@l8s.co.uk>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wine-devel@winehq.org
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121217153644.GD23546@fieldses.org>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+ <20121207161602.GA17710@infradead.org>
+ <495d17310e0a687d446afc86def0f058@office.etersoft.ru>
+ <20121212083401.GW5010@snowdrop.l8s.co.uk>
+ <CAKywueSN++ZCNJ1zbET_axuwXd2ZujvSof9H82E3AdeZWY_BgQ@mail.gmail.com>
+ <20121214153000.62af6cbc@pyramind.ukuu.org.uk>
+ <CAH2r5muRyB2529EcQXFysrSDpMKe0m3JfiEc5929O6oTmG-ThQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Unable to enumerate USB device messages back in 3.7-gitX
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH2r5muRyB2529EcQXFysrSDpMKe0m3JfiEc5929O6oTmG-ThQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan,
+On Fri, Dec 14, 2012 at 01:19:18PM -0600, Steve French wrote:
+> On Fri, Dec 14, 2012 at 9:30 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >> We can make this feature (passing O_DENY* flags received from clients
+> >> to filesystem) can be turned on/off on Samba/NFS server to let this
+> >> particular use case work. In general, I think we really need to be
+> >> sure that nobody has a read access for files that a Windows process
+> >> opened with O_DENYREAD (because there can be important reasons for the
+> >> Windows process to do so).
+> >
+> > It should only affect windows emulated tasks, nothing else
+> 
+> yes, but not just wine - there is probably a case for Samba server and
+> NFSv4 to optionally request such behafvior).
 
-Unfortunately, those pesky messages have returned since the 3.8 merge has 
-started. Using 'git describe', my system is v3.7-8805-ga4f1de1. The USB-related 
-messages logged are as follows:
+Agreed, but:
 
-  usbcore: registered new interface driver usbfs
-  usbcore: registered new interface driver hub
-  usbcore: registered new device driver usb
-  ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-  ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-  ohci_hcd 0000:00:02.0: setting latency timer to 64
-  ohci_hcd 0000:00:02.0: OHCI Host Controller
-  ohci_hcd 0000:00:02.0: new USB bus registered, assigned bus number 1
-  ohci_hcd 0000:00:02.0: irq 17, io mem 0xfc486000
-  hub 1-0:1.0: USB hub found
-  hub 1-0:1.0: 5 ports detected
-  ohci_hcd 0000:00:04.0: setting latency timer to 64
-  ohci_hcd 0000:00:04.0: OHCI Host Controller
-  ohci_hcd 0000:00:04.0: new USB bus registered, assigned bus number 2
-  ohci_hcd 0000:00:04.0: irq 16, io mem 0xfc487000
-  hub 2-0:1.0: USB hub found
-  hub 2-0:1.0: 5 ports detected
-  usb 1-4: new full-speed USB device number 2 using ohci_hcd
-  usb 2-2: new full-speed USB device number 2 using ohci_hcd
-  hub 2-0:1.0: unable to enumerate USB device on port 5
-  hub 2-0:1.0: unable to enumerate USB device on port 5
-  <plus a lot more of the above>
+> Also we are likely to
+> see more cases where users want to run Samba over an NFS mount and
+> vice versa.
 
-I have not yet had time to bisect the problem, but I will do so ASAP. I mostly 
-want you to have a heads-up that the problem has returned.
+I don't personally see the interest in this case.
 
-Thanks,
+(And in fact I'd rather we removed the nfs export code for cifs; I seem
+to recall from the last discussion that filehandle lookups get ESTALE
+for inodes that have gone out of cache, and that that wasn't really
+fixable.)
 
-Larry
+--b.
