@@ -1,55 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab2LQNhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 08:37:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50781 "EHLO mx1.redhat.com"
+	id S1752859Ab2LQNhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 08:37:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab2LQNha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 08:37:30 -0500
+	id S1752125Ab2LQNhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 08:37:33 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC 0/3] perf tool: Add non-architectural event aliases
-Date: Mon, 17 Dec 2012 14:37:02 +0100
-Message-Id: <1355751425-7993-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 2/3] perf tool: Add support to include non architectural event aliases
+Date: Mon, 17 Dec 2012 14:37:04 +0100
+Message-Id: <1355751425-7993-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1355751425-7993-1-git-send-email-jolsa@redhat.com>
+References: <1355751425-7993-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-adding support to use non-architectural events in perf via name.
+Adding support to parse non architectural event aliases
+for given cpu. These aliases will be provided as 'events'
+directory like architectural ones provided by kernel.
 
-Attached patches:
-  1/3 perf tool: Add '.' as part of the event 'name' token
-  2/3 perf tool: Add support to include non architectural event aliases
-  3/3 perf tool: Add non arch events for SandyBridge microarchitecture
-
-Basically, the pmu alias code detects the architecture and tries
-to find 'events' directory with non-architectural aliases.
-
-For each non-architectural event there needs to be special file
-containig the event definition using pmu 'format' style, like:
-
-  $ cat arch/x86/events/intel/SandyBridge/DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK 
-  event=0x8,umask=0x1
-
-Patch 3 contains part (not whole!) of aliases for SandyBridge microarch
-(Intel naming style is used) and can be used like:
-
-  $ perf record -e 'cpu/DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK/' ls
-
-The non-architectural event aliases could be part of the kernel
-as well as architectural events, under some other 'events' sysfs
-attribute.. I wasn't sure though.. looks like lot of perf data ;-)
-
-any comments are welcome,
-jirka
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -59,115 +37,191 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- tools/perf/arch/x86/Makefile                       | 11 +++
- .../x86/events/intel/SandyBridge/ARITH.FPU_DIV_ACT |  1 +
- .../intel/SandyBridge/BR_INST_EXEC.ALL_BRANCHES    |  1 +
- .../x86/events/intel/SandyBridge/BR_INST_EXEC.COND |  1 +
- .../intel/SandyBridge/BR_INST_EXEC.DIRECT_JMP      |  1 +
- .../SandyBridge/BR_INST_EXEC.DIRECT_NEAR_CALL      |  1 +
- .../BR_INST_EXEC.INDIRECT_JMP_NON_CALL_RET         |  1 +
- .../SandyBridge/BR_INST_EXEC.INDIRECT_NEAR_CALL    |  1 +
- .../events/intel/SandyBridge/BR_INST_EXEC.NONTAKEN |  1 +
- .../intel/SandyBridge/BR_INST_EXEC.RETURN_NEAR     |  1 +
- .../events/intel/SandyBridge/BR_INST_EXEC.TAKEN    |  1 +
- .../intel/SandyBridge/BR_MISP_EXEC.ALL_BRANCHES    |  1 +
- .../x86/events/intel/SandyBridge/BR_MISP_EXEC.COND |  1 +
- .../SandyBridge/BR_MISP_EXEC.DIRECT_NEAR_CALL      |  1 +
- .../BR_MISP_EXEC.INDIRECT_JMP_NON_CALL_RET         |  1 +
- .../SandyBridge/BR_MISP_EXEC.INDIRECT_NEAR_CALL    |  1 +
- .../events/intel/SandyBridge/BR_MISP_EXEC.NONTAKEN |  1 +
- .../intel/SandyBridge/BR_MISP_EXEC.RETURN_NEAR     |  1 +
- .../events/intel/SandyBridge/BR_MISP_EXEC.TAKEN    |  1 +
- .../x86/events/intel/SandyBridge/CPL_CYCLES.RING0  |  1 +
- .../events/intel/SandyBridge/CPL_CYCLES.RING123    |  1 +
- .../SandyBridge/CPU_CLK_THREAD_UNHALTED.REF_XCLK   |  1 +
- .../intel/SandyBridge/CPU_CLK_UNHALTED.THREAD_P    |  1 +
- .../DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK            |  1 +
- .../intel/SandyBridge/DTLB_LOAD_MISSES.STLB_HIT    |  1 +
- .../SandyBridge/DTLB_LOAD_MISSES.WALK_COMPLETED    |  1 +
- .../SandyBridge/DTLB_LOAD_MISSES.WALK_DURATION     |  1 +
- .../DTLB_STORE_MISSES.MISS_CAUSES_A_WALK           |  1 +
- .../intel/SandyBridge/DTLB_STORE_MISSES.STLB_HIT   |  1 +
- .../SandyBridge/DTLB_STORE_MISSES.WALK_COMPLETED   |  1 +
- .../SandyBridge/DTLB_STORE_MISSES.WALK_DURATION    |  1 +
- .../FP_COMP_OPS_EXE.SSE_FP_PACKED_DOUBLE           |  1 +
- .../FP_COMP_OPS_EXE.SSE_FP_SCALAR_SINGLE           |  1 +
- .../SandyBridge/FP_COMP_OPS_EXE.SSE_PACKED_SINGLE  |  1 +
- .../SandyBridge/FP_COMP_OPS_EXE.SSE_SCALAR_DOUBLE  |  1 +
- .../events/intel/SandyBridge/FP_COMP_OPS_EXE.X87   |  1 +
- .../events/intel/SandyBridge/HW_PRE_REQ.DL1_MISS   |  1 +
- .../x86/events/intel/SandyBridge/ICACHE.MISSES     |  1 +
- .../arch/x86/events/intel/SandyBridge/IDQ.DSB_UOPS |  1 +
- .../arch/x86/events/intel/SandyBridge/IDQ.EMPTY    |  1 +
- .../x86/events/intel/SandyBridge/IDQ.MITE_UOPS     |  1 +
- .../x86/events/intel/SandyBridge/IDQ.MS_DSB_UOPS   |  1 +
- .../x86/events/intel/SandyBridge/IDQ.MS_MITE_UOPS  |  1 +
- .../arch/x86/events/intel/SandyBridge/IDQ.MS_UOPS  |  1 +
- .../intel/SandyBridge/IDQ_UOPS_NOT_DELIVERED.CORE  |  1 +
- .../x86/events/intel/SandyBridge/ILD_STALL.IQ_FULL |  1 +
- .../x86/events/intel/SandyBridge/ILD_STALL.LCP     |  1 +
- .../intel/SandyBridge/INSTS_WRITTEN_TO_IQ.INSTS    |  1 +
- .../intel/SandyBridge/INT_MISC.RAT_STALL_CYCLES    |  1 +
- .../intel/SandyBridge/INT_MISC.RECOVERY_CYCLES     |  1 +
- .../SandyBridge/ITLB_MISSES.MISS_CAUSES_A_WALK     |  1 +
- .../events/intel/SandyBridge/ITLB_MISSES.STLB_HIT  |  1 +
- .../intel/SandyBridge/ITLB_MISSES.WALK_COMPLETED   |  1 +
- .../intel/SandyBridge/ITLB_MISSES.WALK_DURATION    |  1 +
- .../events/intel/SandyBridge/L1D.ALLOCATED_IN_M    |  1 +
- .../events/intel/SandyBridge/L1D.ALL_M_REPLACEMENT |  1 +
- .../arch/x86/events/intel/SandyBridge/L1D.EVICTION |  1 +
- .../x86/events/intel/SandyBridge/L1D.REPLACEMENT   |  1 +
- .../events/intel/SandyBridge/L1D_PEND_MISS.PENDING |  1 +
- .../events/intel/SandyBridge/L2_L1D_WB_RQSTS.ALL   |  1 +
- .../events/intel/SandyBridge/L2_L1D_WB_RQSTS.HIT_E |  1 +
- .../events/intel/SandyBridge/L2_L1D_WB_RQSTS.HIT_M |  1 +
- .../events/intel/SandyBridge/L2_L1D_WB_RQSTS.HIT_S |  1 +
- .../events/intel/SandyBridge/L2_L1D_WB_RQSTS.MISS  |  1 +
- .../events/intel/SandyBridge/L2_RQSTS.ALL_CODE_RD  |  1 +
- .../intel/SandyBridge/L2_RQSTS.ALL_DEMAND_DATA_RD  |  1 +
- .../x86/events/intel/SandyBridge/L2_RQSTS.ALL_PF   |  1 +
- .../x86/events/intel/SandyBridge/L2_RQSTS.ALL_RFO  |  1 +
- .../events/intel/SandyBridge/L2_RQSTS.CODE_RD_HIT  |  1 +
- .../events/intel/SandyBridge/L2_RQSTS.CODE_RD_MISS |  1 +
- .../intel/SandyBridge/L2_RQSTS.DEMAND_DATA_RD_HIT  |  1 +
- .../x86/events/intel/SandyBridge/L2_RQSTS.PF_HIT   |  1 +
- .../x86/events/intel/SandyBridge/L2_RQSTS.PF_MISS  |  1 +
- .../x86/events/intel/SandyBridge/L2_RQSTS.RFO_HITS |  1 +
- .../x86/events/intel/SandyBridge/L2_RQSTS.RFO_MISS |  1 +
- .../intel/SandyBridge/L2_STORE_LOCK_RQSTS.ALL      |  1 +
- .../intel/SandyBridge/L2_STORE_LOCK_RQSTS.HIT_E    |  1 +
- .../intel/SandyBridge/L2_STORE_LOCK_RQSTS.HIT_M    |  1 +
- .../intel/SandyBridge/L2_STORE_LOCK_RQSTS.MISS     |  1 +
- .../events/intel/SandyBridge/LD_BLOCKS.ALL_BLOCK   |  1 +
- .../intel/SandyBridge/LD_BLOCKS.DATA_UNKNOWN       |  1 +
- .../x86/events/intel/SandyBridge/LD_BLOCKS.NO_SR   |  1 +
- .../intel/SandyBridge/LD_BLOCKS.STORE_FORWARD      |  1 +
- .../SandyBridge/LD_BLOCKS_PARTIAL.ADDRESS_ALIAS    |  1 +
- .../SandyBridge/LD_BLOCKS_PARTIAL.ALL_STA_BLOCK    |  1 +
- .../events/intel/SandyBridge/LOAD_HIT_PRE.HW_PF    |  1 +
- .../events/intel/SandyBridge/LOAD_HIT_PRE.SW_PF    |  1 +
- .../SandyBridge/LOCK_CYCLES.CACHE_LOCK_DURATION    |  1 +
- .../LOCK_CYCLES.SPLIT_LOCK_UC_LOCK_DURATION        |  1 +
- .../intel/SandyBridge/LONGEST_LAT_CACHE.MISS       |  1 +
- .../intel/SandyBridge/LONGEST_LAT_CACHE.REFERENCE  |  1 +
- .../intel/SandyBridge/MISALIGN_MEM_REF.LOADS       |  1 +
- .../intel/SandyBridge/MISALIGN_MEM_REF.STORES      |  1 +
- .../OFFCORE_REQUESTS_OUTSTANDING.ALL_DATA_RD       |  1 +
- .../OFFCORE_REQUESTS_OUTSTANDING.DEMAND_DATA_RD    |  1 +
- .../OFFCORE_REQUESTS_OUTSTANDING.DEMAND_RFO        |  1 +
- .../SandyBridge/PARTIAL_RAT_STALLS.FLAGS_MERGE_UOP |  1 +
- .../SandyBridge/PARTIAL_RAT_STALLS.MUL_SINGLE_UOP  |  1 +
- .../SandyBridge/PARTIAL_RAT_STALLS.SLOW_LEA_WINDOW |  1 +
- .../SandyBridge/RESOURCE_STALLS2.ALL_FL_EMPTY      |  1 +
- .../SandyBridge/RESOURCE_STALLS2.ALL_PRF_CONTROL   |  1 +
- .../intel/SandyBridge/RESOURCE_STALLS2.BOB_FULL    |  1 +
- .../intel/SandyBridge/RESOURCE_STALLS2.OOO_RSRC    |  1 +
- .../intel/SandyBridge/RS_EVENTS.EMPTY_CYCLES       |  1 +
- .../intel/SandyBridge/SIMD_FP_256.PACKED_DOUBLE    |  1 +
- .../intel/SandyBridge/SIMD_FP_256.PACKED_SINGLE    |  1 +
- .../x86/events/intel/SandyBridge/UOPS_ISSUED.ANY   |  1 +
- tools/perf/arch/x86/util/pmu.c                     | 98 ++++++++++++++++++++++
- tools/perf/util/parse-events.l                     |  4 +-
- tools/perf/util/pmu.c                              | 18 ++--
- tools/perf/util/pmu.h                              |  4 +
- 111 files changed, 233 insertions(+), 8 deletions(-)
+ tools/perf/arch/x86/Makefile   |  7 +++
+ tools/perf/arch/x86/util/pmu.c | 98 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.c          | 18 +++++---
+ tools/perf/util/pmu.h          |  4 ++
+ 4 files changed, 121 insertions(+), 6 deletions(-)
+ create mode 100644 tools/perf/arch/x86/util/pmu.c
+
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 815841c..c175f65 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -6,3 +6,10 @@ ifndef NO_LIBUNWIND
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/pmu.o
++
++$(OUTPUT)$(OUTPUT)arch/$(ARCH)/util/pmu.o: $(OUTPUT)arch/$(ARCH)/util/pmu.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
++	 '-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
++	 '-DPREFIX="$(prefix_SQ)"' \
++	 $<
+diff --git a/tools/perf/arch/x86/util/pmu.c b/tools/perf/arch/x86/util/pmu.c
+new file mode 100644
+index 0000000..0938c70
+--- /dev/null
++++ b/tools/perf/arch/x86/util/pmu.c
+@@ -0,0 +1,98 @@
++
++#include <linux/compiler.h>
++#include <linux/kernel.h>
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include "pmu.h"
++#include "util.h"
++#include "sysfs.h"
++
++static int intel_aliases(struct list_head *head, unsigned model)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	const char *model_str;
++
++	switch (model) {
++	case 42:
++		model_str = "SandyBridge";
++		break;
++	default:
++		/* unknown model.. plenty to cover ;-) */
++		return 0;
++	}
++
++	/* try local one first */
++	scnprintf(path, PATH_MAX, "./arch/x86/events/intel/%s/", model_str);
++
++	if (stat(path, &st) < 0) {
++		scnprintf(path, PATH_MAX, "%s/%s/events/x86/intel/%s/",
++			  PREFIX, PERF_EXEC_PATH, model_str);
++
++		if (stat(path, &st) < 0)
++			return -1;
++	}
++
++	if (pmu_aliases_parse(path, head))
++		return -1;
++
++	return 0;
++}
++
++static int cpu_specs(unsigned *vendor, unsigned *model)
++{
++	FILE *file;
++	struct stat st;
++	char path[PATH_MAX];
++	int ret = 0;
++
++	scnprintf(path, PATH_MAX, "%s/devices/system/cpu/modalias",
++		  sysfs_find_mountpoint());
++
++	if (stat(path, &st) < 0)
++		return -ENOENT;
++
++	file = fopen(path, "r");
++	if (!file)
++		return -errno;
++
++	if (2 != fscanf(file, "x86cpu:vendor:%X:family:%*X:model:%X:",
++			vendor, model))
++		ret = -1;
++
++	fclose(file);
++	return ret;
++}
++
++static int cpu_aliases(struct list_head *head)
++{
++	unsigned vendol, model;
++	int ret;
++
++	ret = cpu_specs(&vendol, &model);
++	if (ret) {
++		pr_info("failed to get cpu aliases");
++		return 0;
++	}
++
++	switch (vendol) {
++	/* Intel */
++	case 0:
++		return intel_aliases(head, model);
++	default:
++		/* unknown vendor.. plenty to cover ;-) */
++		return 0;
++	}
++
++	return 0;
++}
++
++int arch_pmu_aliases(char *name, struct list_head *head)
++{
++	if (!strcmp(name, "cpu"))
++		return cpu_aliases(head);
++
++	return 0;
++}
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9bdc60c..626d9d7 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -114,7 +114,7 @@ static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
+  * Process all the sysfs attributes located under the directory
+  * specified in 'dir' parameter.
+  */
+-static int pmu_aliases_parse(char *dir, struct list_head *head)
++int pmu_aliases_parse(char *dir, struct list_head *head)
+ {
+ 	struct dirent *evt_ent;
+ 	DIR *event_dir;
+@@ -146,6 +146,13 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
+ 	return ret;
+ }
+ 
++__attribute__((weak))
++int arch_pmu_aliases(char *name __maybe_unused,
++		     struct list_head *head __maybe_unused)
++{
++	return 0;
++}
++
+ /*
+  * Reading the pmu event aliases definition, which should be located at:
+  * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
+@@ -163,13 +170,12 @@ static int pmu_aliases(char *name, struct list_head *head)
+ 	snprintf(path, PATH_MAX,
+ 		 "%s/bus/event_source/devices/%s/events", sysfs, name);
+ 
+-	if (stat(path, &st) < 0)
+-		return 0;	 /* no error if 'events' does not exist */
+-
+-	if (pmu_aliases_parse(path, head))
++	/* no error if 'events' does not exist */
++	if (!stat(path, &st) &&
++	    pmu_aliases_parse(path, head))
+ 		return -1;
+ 
+-	return 0;
++	return arch_pmu_aliases(name, head);
+ }
+ 
+ static int pmu_alias_terms(struct perf_pmu__alias *alias,
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index a313ed7..62da834 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -53,5 +53,9 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+ 
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
++int pmu_aliases_parse(char *dir, struct list_head *head);
++
++int arch_pmu_aliases(char *name, struct list_head *head);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
+-- 
+1.7.11.7
+
