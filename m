@@ -1,38 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2LQQGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 11:06:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752678Ab2LQQGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 11:06:46 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>, tj@kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] core block IO bits for 3.8
-References: <50CF3B82.9000904@kernel.dk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 17 Dec 2012 11:06:39 -0500
-In-Reply-To: <50CF3B82.9000904@kernel.dk> (Jens Axboe's message of "Mon, 17
-	Dec 2012 16:34:26 +0100")
-Message-ID: <x49licwwtm8.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753265Ab2LQQGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 11:06:51 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55979 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab2LQQGs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 11:06:48 -0500
+Message-ID: <50CF4313.1010706@gmail.com>
+Date: Mon, 17 Dec 2012 17:06:43 +0100
+From: =?UTF-8?B?TWFyY29zIExvaXMgQmVybcO6ZGV6?= 
+	<marcos.discalis@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Question about using new request_threaded_irq
+References: <50CF361A.1030203@gmail.com> <20121217083759.0cbed418@lwn.net>
+In-Reply-To: <20121217083759.0cbed418@lwn.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
+Hi,
 
-> - Export control of bdi flusher thread CPU mask and default to using the
->   home node (if known) from Jeff.
+I lot of thanks for you fast reply. It seem that i swap the mean of 
+handler parameters, so i now see it correct. :).
 
-I certainly wouldn't mind this going in, but I think Tejun NACKed this
-patch.  Tejun?
+Excuse for my newbie question.
 
-Cheers,
-Jeff
+handler is the primary handler, and if NULL a default primary handler is 
+installed, and thread_fn is the thread handler.
+
+I'm a bit confusing because i see a outdated page that talks about this 
+new IRQ API, but now i see that it's very outdated:
+
+http://lwn.net/Articles/302043/
+
+Regards.
+
+
+El 17/12/2012 16:37, Jonathan Corbet escribió:
+> On Mon, 17 Dec 2012 16:11:22 +0100
+> Marcos Lois Bermúdez <marcos.discalis@gmail.com> wrote:
+>
+>> For my understand if i call for example:
+>>
+>> request_threaded_irq(irqmum, NULL, irq_handle, IRQF_TRIGGER_FALLING,
+>> DEVICE_NAME, priv);
+>>
+>> This seem to make a old Hard IRQ handler, and inside of this handler
+>> sleep APIs can't be used, but i see some SPI drivers that seem to
+>> register a IRQ of this form and make API calls that can sleep in the
+>> handler.
+>
+> Not quite.  The prototype for request_threaded_irq() is:
+>
+> int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+> 			 irq_handler_t thread_fn, unsigned long irqflags,
+> 			 const char *devname, void *dev_id)
+>
+> Note the presents of *two* handlers, called "handler" and "thread_fn".
+> The first, "handler", is called in interrupt context; it's job is usually
+> to quiet the device and return; it cannot sleep.  If it's return value is
+> IRQ_WAKE_THREAD, the thread_fn() will be called in process context; it
+> *can* sleep.  In the example you cite, there is no immediate handler, only
+> the thread_fn(); the call to a blocking function from within the
+> thread_fn() is correct.
+>
+> Hope that helps,
+>
+> jon
+>
+> Jonathan Corbet / LWN.net / corbet@lwn.net
+>
+
