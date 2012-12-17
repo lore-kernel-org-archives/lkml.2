@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2LQWID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:08:03 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41934 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab2LQWIB convert rfc822-to-8bit (ORCPT
+	id S1753783Ab2LQWND (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:13:03 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35303 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2LQWNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:08:01 -0500
+	Mon, 17 Dec 2012 17:13:00 -0500
+Date: Mon, 17 Dec 2012 14:12:54 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 07/12] cfq-iosched: implement hierarchy-ready cfq_group
+ charge scaling
+Message-ID: <20121217221254.GH1844@htj.dyndns.org>
+References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+ <1355524885-22719-8-git-send-email-tj@kernel.org>
+ <20121217205317.GI7235@redhat.com>
+ <20121217211738.GD1844@htj.dyndns.org>
+ <20121217212736.GB13691@redhat.com>
+ <20121217213314.GF1844@htj.dyndns.org>
+ <20121217214911.GC13691@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <50CF510E.6050406@tilera.com>
-References: <1355546091-32537-1-git-send-email-simon.marchi@polymtl.ca> <50CF510E.6050406@tilera.com>
-From: Simon Marchi <simon.marchi@polymtl.ca>
-Date: Mon, 17 Dec 2012 17:07:30 -0500
-X-Google-Sender-Auth: eufAo8fwrpXQ3zCkQfncj1L0bxg
-Message-ID: <CAFXXi0m3rHg7P+GetLKv_cwp5+c5xsmbJ8LM5CTLGT39JhBmzA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] arch/tile: implement user_regset interface on tilegx
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217214911.GC13691@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 12:06 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 12/14/2012 11:34 PM, Simon Marchi wrote:
->> This is an implementation of user_regset for the tilegx architecture. It
->> reuses the basic blocks that were already there.
->
-> Thanks, Simon!  A couple of comments:
->
-> I encourage you to respin this for tilepro as well as tilegx, since it's going to be trivial to make it happen.  Just take away all yours ifdefs, and use #include <arch/chip.h> and CHIP_ARCH_NAME instead of the string "tilegx".  It's worth it just to avoid the ifdefs in the code :-)
+Hey, Vivek.
 
-Ok, I will send a v2 with this soon.
+On Mon, Dec 17, 2012 at 04:49:11PM -0500, Vivek Goyal wrote:
+> > Eh?  Then how would it compete with the children cfqgs?  You can
+> > consider it as the hidden leaf node competing with the children cfqgs,
+> > right?  So, you take the leaf weight and divide it by the total active
+> > weight of all the children (including the hidden leaf node).  It isn't
+> > different from the rest of the calculation.  It just looks different
+> > because leaf_weight is stored elsewhere and we look down there and
+> > then walke up.  The calculation being done is exactly the same one.
+> 
+> Again it is coming from multiplexing cfqg and cfqg->task_group. So
+> effectively we are calculating the vfraction of task_group inside cfqg.
 
-> I think with this support added, we have all the prerequisites to add "select HAVE_ARCH_TRACEHOOK" under "config TILE" in arch/tile/Kconfig, so we might as well do that too.  That will enable PTRACE_GETREGSET and PTRACE_SETREGSET, as well as /proc/PID/syscall, so why not?
+Or calculating the fraction of the hidden leaf node.
 
-This is indeed my objective ;), and it is an intermediate objective to
-add support for HAVE_SYSCALL_TRACEPOINTS. If we look at arch/Kconfig,
-just above HAVE_ARCH_TRACEHOOK, we still have
+> Once you say cfqg->vfraction, I immediately think of total share of
+> group (including task_group and all children cgroups).
 
-TIF_SYSCALL_TRACE       calls tracehook_report_syscall_{entry,exit}
-TIF_NOTIFY_RESUME       calls tracehook_notify_resume()
-signal delivery         calls tracehook_signal_handler()
+Any tasks should be treated as member of the hidden leaf node, so...
 
-that we need to implement.
+> May be cfqg->task_group_vfraction (or cfqg->tg_fraction) is a better name.
 
-> --
-> Chris Metcalf, Tilera Corp.
-> http://www.tilera.com
->
+I don't know.  Wouldn't just explaining clearly in the comment e
+enough?  I think the name "vfraction" is already weird enough to
+indicate that it's something which you need to read explanation about.
+If that explanation is readily available as comment, I think it should
+be okay.
+
+> Also descrition says.
+> 
+> /* vfraction  the fraction of vdisktime that a cfqg is entitled to */
+> 
+> May be we can clarify it that it is share of task_group of cfqg.
+
+Yeah, no objection.  Let's beef up the explanation there.
+
+> I guess i am too familiar with how cpu has done it. I think I am getting
+> confused with properties which belong to cfqg and properties which
+> belong to cfqg->task_group.
+> 
+> I guess if we prefix fields belong to task_group with somete suitable
+> string, it might become little easier to understand.
+
+I usually am not a big fan of adding wordy prefixes.  I think they
+tend to obfuscate/frustrate more than help.  Let's stick a weird (that
+is, non-generic) name to something weird and explain it well in the
+comment.
+
+Thanks.
+
+-- 
+tejun
