@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2LQRQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:16:06 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24182 "EHLO mga01.intel.com"
+	id S1753255Ab2LQRSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:18:23 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:24825 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab2LQRQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:16:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,303,1355126400"; 
-   d="scan'208";a="265545263"
-Message-ID: <50CF5348.2000606@linux.intel.com>
-Date: Mon, 17 Dec 2012 09:15:52 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752432Ab2LQRSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 12:18:22 -0500
+Subject: [PATCH] SUNRPC: continue run over clients list on PipeFS event
+	instead of break
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 17 Dec 2012 20:18:52 +0300
+Message-ID: <20121217171852.26922.37774.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>, David Howells <dhowells@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] x86/uapi for 3.8
-References: <201212122211.qBCMBRxl027895@terminus.zytor.com> <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com> <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com> <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com> <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com> <20121215163323.GA229@x4> <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com> <50CEEE3302000078000B0AC0@nat28.tlf.novell.com> <CA+55aFzhgW=GBwGtxufqhX+ykNCRqek=iyVszvkpCTw=-MXSyA@mail.gmail.com> <50CF4FC502000078000B0CB6@nat28.tlf.novell.com> <50CF4ACD.80701@linux.intel.com> <50CF5E8602000078000B0D2C@nat28.tlf.novell.com>
-In-Reply-To: <50CF5E8602000078000B0D2C@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 09:03 AM, Jan Beulich wrote:
->>>> On 17.12.12 at 17:39, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
->> Right, I think you nailed this one.  This patch copies PTEs from the
->> kernel PTEs and thus they will have the global bit set.  It obviously
->> makes no sense to *copy* PTEs from the kernel and yet leaving the global
->> bit set, which means there are two ways of fixing it: either sharing
->> page tables and use the cr4.pge off/on trick that Jan mentioned -- this
->> would also be my preference -- and the other is to copy the PTEs but
->> strip the global bit, which has the advantage that the actual kernel
->> mappings will survive.
-> 
-> PTE copying is only one half of it. I think additionally L4 entries
-> get copied for the 1:1 mapping, and you can't strip the global
-> bits there without allocating separate page tables.
-> 
+There are SUNRPC clients, which program doesn't have pipe_dir_name. These
+clients can be skipped on PipeFS events, because nothing have to be created or
+destroyed. But instead of breaking in case of such a client was found, search
+for suitable client over clients list have to be continued. Otherwise some
+clients could not be covered by PipeFS event handler.
 
-The point right now is that it *does* allocate separate page tables, but
-doesn't take advantage of it.  What I say is I think we should take the
-flush for the advantage of sharing page tables.  If we are allocating
-new page tables then we should of course make them non-global.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: stable@vger.kernel.org [>= v3.4]
+---
+ net/sunrpc/clnt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Do we know how often this gets called?  I presume the most common case
-is when we have an EFI RTC?  Unless there is a use case where this
-happens a lot sharing seems much easier...
-
-	-hpa
-
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index cdc7564..10b18b2 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -234,7 +234,7 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+ 	spin_lock(&sn->rpc_client_lock);
+ 	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
+ 		if (clnt->cl_program->pipe_dir_name == NULL)
+-			break;
++			continue;
+ 		if (rpc_clnt_skip_event(clnt, event))
+ 			continue;
+ 		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
 
