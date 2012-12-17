@@ -1,47 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab2LQSOn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 13:14:43 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34079 "EHLO mail.skyhub.de"
+	id S1753385Ab2LQSNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 13:13:47 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36580 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753563Ab2LQSOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 13:14:41 -0500
-Date: Mon, 17 Dec 2012 19:14:36 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ACPI: Overriding ACPI tables via initrd only works
- with an initrd
-Message-ID: <20121217181435.GD31866@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-References: <1351694147-10904-1-git-send-email-trenn@suse.de>
- <1351694147-10904-4-git-send-email-trenn@suse.de>
- <20121217092802.GA31947@liondog.tnic>
- <50CF5FB4.8090305@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50CF5FB4.8090305@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752863Ab2LQSNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 13:13:45 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Satoru Moriya <satoru.moriya@hds.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 5/7] mm: vmscan: clean up get_scan_count()
+Date: Mon, 17 Dec 2012 13:12:35 -0500
+Message-Id: <1355767957-4913-6-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
+References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 10:08:52AM -0800, H. Peter Anvin wrote:
-> Hm... all these are actually cleanups or fixes for the stuff that is
-> now upstream, I believe... as minor fixes I think these can be pushed
-> post-rc1 if we don't get to them sooner but it looks like they are all
-> needed.
+Reclaim pressure balance between anon and file pages is calculated
+through a tuple of numerators and a shared denominator.
 
-/me is nodding in an agreeing manner after a quick glance over them.
+Exceptional cases that want to force-scan anon or file pages configure
+the numerators and denominator such that one list is preferred, which
+is not necessarily the most obvious way:
 
+    fraction[0] = 1;
+    fraction[1] = 0;
+    denominator = 1;
+    goto out;
+
+Make this easier by making the force-scan cases explicit and use the
+fractionals only in case they are calculated from reclaim history.
+
+And bring the variable declarations/definitions in order.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/vmscan.c | 64 +++++++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 43 insertions(+), 21 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 510c0d3..785f4cd 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1626,6 +1626,13 @@ static int vmscan_swappiness(struct scan_control *sc)
+ 	return mem_cgroup_swappiness(sc->target_mem_cgroup);
+ }
+ 
++enum scan_balance {
++	SCAN_EQUAL,
++	SCAN_FRACT,
++	SCAN_ANON,
++	SCAN_FILE,
++};
++
+ /*
+  * Determine how aggressively the anon and file LRU lists should be
+  * scanned.  The relative value of each set of LRU lists is determined
+@@ -1638,14 +1645,15 @@ static int vmscan_swappiness(struct scan_control *sc)
+ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 			   unsigned long *nr)
+ {
+-	unsigned long anon, file, free;
++	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
++	u64 fraction[2], uninitialized_var(denominator);
++	struct zone *zone = lruvec_zone(lruvec);
+ 	unsigned long anon_prio, file_prio;
++	enum scan_balance scan_balance;
++	unsigned long anon, file, free;
++	bool force_scan = false;
+ 	unsigned long ap, fp;
+-	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
+-	u64 fraction[2], denominator;
+ 	enum lru_list lru;
+-	bool force_scan = false;
+-	struct zone *zone = lruvec_zone(lruvec);
+ 
+ 	/*
+ 	 * If the zone or memcg is small, nr[l] can be 0.  This
+@@ -1664,9 +1672,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 
+ 	/* If we have no swap space, do not bother scanning anon pages. */
+ 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
+-		fraction[0] = 0;
+-		fraction[1] = 1;
+-		denominator = 1;
++		scan_balance = SCAN_FILE;
+ 		goto out;
+ 	}
+ 
+@@ -1678,9 +1684,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	 * too expensive.
+ 	 */
+ 	if (!global_reclaim(sc) && !vmscan_swappiness(sc)) {
+-		fraction[0] = 0;
+-		fraction[1] = 1;
+-		denominator = 1;
++		scan_balance = SCAN_FILE;
+ 		goto out;
+ 	}
+ 
+@@ -1690,9 +1694,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	 * (unless the swappiness setting disagrees with swapping).
+ 	 */
+ 	if (!sc->priority && vmscan_swappiness(sc)) {
+-		fraction[0] = 1;
+-		fraction[1] = 1;
+-		denominator = 1;
++		scan_balance = SCAN_EQUAL;
+ 		goto out;
+ 	}
+ 
+@@ -1710,9 +1712,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	if (global_reclaim(sc)) {
+ 		free = zone_page_state(zone, NR_FREE_PAGES);
+ 		if (unlikely(file + free <= high_wmark_pages(zone))) {
+-			fraction[0] = 1;
+-			fraction[1] = 0;
+-			denominator = 1;
++			scan_balance = SCAN_ANON;
+ 			goto out;
+ 		}
+ 	}
+@@ -1722,12 +1722,12 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	 * anything from the anonymous working set right now.
+ 	 */
+ 	if (!inactive_file_is_low(lruvec)) {
+-		fraction[0] = 0;
+-		fraction[1] = 1;
+-		denominator = 1;
++		scan_balance = SCAN_FILE;
+ 		goto out;
+ 	}
+ 
++	scan_balance = SCAN_FRACT;
++
+ 	/*
+ 	 * With swappiness at 100, anonymous and file have the same priority.
+ 	 * This scanning priority is essentially the inverse of IO cost.
+@@ -1780,9 +1780,31 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 
+ 		size = get_lru_size(lruvec, lru);
+ 		scan = size >> sc->priority;
++
+ 		if (!scan && force_scan)
+ 			scan = min(size, SWAP_CLUSTER_MAX);
+-		scan = div64_u64(scan * fraction[file], denominator);
++
++		switch (scan_balance) {
++		case SCAN_EQUAL:
++			/* Scan lists relative to size */
++			break;
++		case SCAN_FRACT:
++			/*
++			 * Scan types proportional to swappiness and
++			 * their relative recent reclaim efficiency.
++			 */
++			scan = div64_u64(scan * fraction[file], denominator);
++			break;
++		case SCAN_FILE:
++		case SCAN_ANON:
++			/* Scan one type exclusively */
++			if ((scan_balance == SCAN_FILE) != file)
++				scan = 0;
++			break;
++		default:
++			/* Look ma, no brain */
++			BUG();
++		}
+ 		nr[lru] = scan;
+ 	}
+ }
 -- 
-Regards/Gruss,
-    Boris.
+1.7.11.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
