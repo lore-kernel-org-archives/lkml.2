@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab2LQWdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:33:52 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:34938 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab2LQWdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:33:51 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 17:33:51 EST
-Date: Mon, 17 Dec 2012 23:26:38 +0100
-From: "Dae S. Kim" <dae@velatum.com>
-To: arnd@arndb.de
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] char/misc.c: misc_register: Do not loop on misc_list
- unconditionally
-Message-ID: <20121217222638.GA3747@Delta>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753187Ab2LQWfO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:35:14 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:42112 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751199Ab2LQWfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 17:35:13 -0500
+From: Simon Marchi <simon.marchi@polymtl.ca>
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org, Simon Marchi <simon.marchi@polymtl.ca>
+Subject: [PATCH v2 1/3] arch/tile: implement user_regset interface on tile
+Date: Mon, 17 Dec 2012 17:35:04 -0500
+Message-Id: <1355783706-11507-1-git-send-email-simon.marchi@polymtl.ca>
+X-Mailer: git-send-email 1.7.1
+X-Poly-FromMTA: ([132.207.72.18]) at Mon, 17 Dec 2012 22:35:08 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the minor number is assigned dynamically, there is no need to
-search for misc->minor in misc_list, since misc->minor == 
-MISC_DYNAMIC_MINOR.
+This is a basic implementation of user_regset for the tile
+architecture. It reuses the basic blocks that were already there.
 
-Signed-off-by: Dae S. Kim <dae@velatum.com>
+Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
 ---
- drivers/char/misc.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/tile/kernel/ptrace.c |   62 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 62 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/misc.c b/drivers/char/misc.c
-index 522136d..7b262b6 100644
---- a/drivers/char/misc.c
-+++ b/drivers/char/misc.c
-@@ -190,12 +190,6 @@ int misc_register(struct miscdevice * misc)
- 	INIT_LIST_HEAD(&misc->list);
+diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+index b32bc3f..222d9fc 100644
+--- a/arch/tile/kernel/ptrace.c
++++ b/arch/tile/kernel/ptrace.c
+@@ -19,7 +19,10 @@
+ #include <linux/kprobes.h>
+ #include <linux/compat.h>
+ #include <linux/uaccess.h>
++#include <linux/regset.h>
++#include <linux/elf.h>
+ #include <asm/traps.h>
++#include <uapi/arch/chip.h>
  
- 	mutex_lock(&misc_mtx);
--	list_for_each_entry(c, &misc_list, list) {
--		if (c->minor == misc->minor) {
--			mutex_unlock(&misc_mtx);
--			return -EBUSY;
--		}
--	}
+ void user_enable_single_step(struct task_struct *child)
+ {
+@@ -80,6 +83,65 @@ static void putregs(struct task_struct *child, struct pt_regs *uregs)
+ 	*regs = *uregs;
+ }
  
- 	if (misc->minor == MISC_DYNAMIC_MINOR) {
- 		int i = find_first_zero_bit(misc_minors, DYNAMIC_MINORS);
-@@ -205,6 +199,13 @@ int misc_register(struct miscdevice * misc)
- 		}
- 		misc->minor = DYNAMIC_MINORS - i - 1;
- 		set_bit(i, misc_minors);
-+	} else {
-+		list_for_each_entry(c, &misc_list, list) {
-+			if (c->minor == misc->minor) {
-+				mutex_unlock(&misc_mtx);
-+				return -EBUSY;
-+			}
-+		}
- 	}
- 
- 	dev = MKDEV(MISC_MAJOR, misc->minor);
++enum tile_regset {
++	REGSET_GPR,
++};
++
++static int tile_gpr_get(struct task_struct *target,
++			  const struct user_regset *regset,
++			  unsigned int pos, unsigned int count,
++			  void *kbuf, void __user *ubuf)
++{
++	struct pt_regs regs;
++
++	getregs(target, &regs);
++
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, &regs, 0,
++				   sizeof(regs));
++}
++
++static int tile_gpr_set(struct task_struct *target,
++			  const struct user_regset *regset,
++			  unsigned int pos, unsigned int count,
++			  const void *kbuf, const void __user *ubuf)
++{
++	int ret;
++	struct pt_regs regs;
++
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &regs, 0,
++				 sizeof(regs));
++	if (ret)
++		return ret;
++
++	putregs(target, &regs);
++
++	return 0;
++}
++
++static const struct user_regset tile_user_regset[] = {
++	[REGSET_GPR] = {
++		.core_note_type = NT_PRSTATUS,
++		.n = ELF_NGREG,
++		.size = sizeof(elf_greg_t),
++		.align = sizeof(elf_greg_t),
++		.get = tile_gpr_get,
++		.set = tile_gpr_set,
++	},
++};
++
++static const struct user_regset_view tile_user_regset_view = {
++	.name = CHIP_ARCH_NAME,
++	.e_machine = ELF_ARCH,
++	.ei_osabi = ELF_OSABI,
++	.regsets = tile_user_regset,
++	.n = ARRAY_SIZE(tile_user_regset),
++};
++
++const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++{
++	return &tile_user_regset_view;
++}
++
+ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
 -- 
-1.7.9.5
+1.7.1
 
