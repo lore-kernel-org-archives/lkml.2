@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2LQJ1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:27:44 -0500
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:36897 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab2LQJ1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:27:43 -0500
-Message-ID: <50CEE586.10800@itwm.fraunhofer.de>
-Date: Mon, 17 Dec 2012 10:27:34 +0100
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752142Ab2LQJ2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:28:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53147 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab2LQJ2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:28:07 -0500
+Date: Mon, 17 Dec 2012 10:28:02 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ACPI: Overriding ACPI tables via initrd only works
+ with an initrd
+Message-ID: <20121217092802.GA31947@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+References: <1351694147-10904-1-git-send-email-trenn@suse.de>
+ <1351694147-10904-4-git-send-email-trenn@suse.de>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [regression] 3.7 ends in APIC panic
-References: <50CB3EAB.309@itwm.fraunhofer.de> <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com> <CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com> <50CE0C82.20708@itwm.fraunhofer.de> <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com>
-In-Reply-To: <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: ISO-8859-1
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1351694147-10904-4-git-send-email-trenn@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2012 07:07 PM, Yinghai Lu wrote:
-> On Sun, Dec 16, 2012 at 10:01 AM, Bernd Schubert
-> <bernd.schubert@itwm.fraunhofer.de> wrote:
->>> can you post your .config for v3.7 ?
->>>
->>> wonder if you have x2apic in .config
->>
->> Which setting is it? Config is attached.
->
-> your config does not have
->
-> CONFIG_X86_X2APIC=y
->
-> set.
->
-> please enable that.
->
-> your BIOS pre-enable x2apic somehow, so you must have x2apic enabled in kernel.
->
-> it x2apic really can not be re-enabled by kernel, kernel would disable
-> x2apic automatically.
+Hi guys,
 
-The system boots fine with x2apic enabled.
+this one sanitizes the Kconfig entry prompt so can we pick it up for
+-rc1 or later, please?
 
+Thanks.
 
-Thanks a bunch for your help,
-Bernd
+On Wed, Oct 31, 2012 at 03:35:47PM +0100, Thomas Renninger wrote:
+> Reflect this dependency in Kconfig.
+> Shorten the config description as suggested by Borislav Petkov
+> 
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> ---
+>  drivers/acpi/Kconfig |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 44cea5d..ca939b4 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -262,7 +262,8 @@ config ACPI_CUSTOM_DSDT
+>  	default ACPI_CUSTOM_DSDT_FILE != ""
+>  
+>  config ACPI_INITRD_TABLE_OVERRIDE
+> -	bool "ACPI tables can be passed via uncompressed cpio in initrd"
+> +	bool "ACPI tables override via initrd"
+> +	depends on BLK_DEV_INITRD
+>  	default n
+>  	help
+>  	  This option provides functionality to override arbitrary ACPI tables
+> -- 
+> 1.7.6.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
