@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab2LQDWn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 22:22:43 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46934 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab2LQDWl (ORCPT
+	id S1751362Ab2LQD3Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 22:29:24 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48867 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2LQD3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 22:22:41 -0500
-Date: Mon, 17 Dec 2012 14:22:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the final tree
-Message-Id: <20121217142238.a0840563304419bb345ac25f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Dec_2012_14_22_38_+1100_85E9_IajO6cS+Kl3"
+	Sun, 16 Dec 2012 22:29:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrW58pb2w_r0gUDmMVSqi8PBQRdR1dRj2HX0ymq+qnz8XA@mail.gmail.com>
+References: <3b624af48f4ba4affd78466b73b6afe0e2f66549.1355463438.git.luto@amacapital.net>
+	<2e91ea19fbd30fa17718cb293473ae207ee8fd0f.1355536006.git.luto@amacapital.net>
+	<CANN689HG3tYAjijoeU0fMZW+sxGFyKFtzgycLMubT-rEPQhrRw@mail.gmail.com>
+	<CALCETrW58pb2w_r0gUDmMVSqi8PBQRdR1dRj2HX0ymq+qnz8XA@mail.gmail.com>
+Date: Sun, 16 Dec 2012 19:29:22 -0800
+Message-ID: <CANN689GKp-9Bfn6HENeSXe=PZ0Qy5uOP6ju5gosMFKFDPC0D8w@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: Downgrade mmap_sem before locking or populating on mmap
+From: Michel Lespinasse <walken@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Dec_2012_14_22_38_+1100_85E9_IajO6cS+Kl3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Dec 16, 2012 at 10:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Sun, Dec 16, 2012 at 4:39 AM, Michel Lespinasse <walken@google.com> wrote:
+>> My main concern is that just downgrading the mmap_sem only hides the
+>> problem: as soon as a writer gets queued on that mmap_sem,
+>> reader/writer fairness kicks in and blocks any new readers, which
+>> makes the problem reappear. So in order to completely fix the issue,
+>> we should look for a way that doesn't require holding the mmap_sem
+>> (even in read mode) for the entire duration of the populate or mlock
+>> operation.
+>
+> Ugh.
+>
+> At least with my patch, mmap in MCL_FUTURE mode is no worse than mmap
+> + mlock.  I suspect I haven't hit this because all my mmaping is done
+> by one thread, so it never ends up waiting for itself, and the other
+> thread have very short mmap_sem hold times.
 
-Hi all,
+Yes, you won't hit the problems with long read-side mmap_sem hold
+times if you don't have other threads blocking for the write side.
 
-After merging the final tree, today's linux-next build (powerpc allnoconfig)
-produced this warning:
+>> I think this could be done by extending the mlock work I did as part
+>> of v2.6.38-rc1. The commit message for
+>> c explains the idea; basically
+>> mlock() was split into do_mlock() which just sets the VM_LOCKED flag
+>> on vmas as needed, and do_mlock_pages() which goes through a range of
+>> addresses and actually populates/mlocks each individual page that is
+>> part of a VM_LOCKED vma.
+>
+> Doesn't this have the same problem?  It holds mmap_sem for read for a
+> long time, and if another writer comes in then r/w starvation
+> prevention will kick in.
 
-warning: (PPC) selects SPARSE_IRQ which has unmet direct dependencies (HAVE=
-_GENERIC_HARDIRQS && (IRQ_DOMAIN && DEBUG_FS || MAY_HAVE_SPARSE_IRQ))
+Well, my point is that do_mlock_pages() doesn't need to hold the
+mmap_sem read side for a long time. It currently releases it when
+faulting a page requires a disk read, and could conceptually release
+it more often if needed.
 
-I don't know what introduced that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+We can't easily release mmap_sem from within mmap_region() since
+mmap_region's callers don't expect it; however we can defer the page
+mlocking and we don't have to hold mmap_sem continuously until then.
+The only constraints are the new VM_LOCKED region's pages must be
+mlocked before we return to userspace, and that if a concurrent thread
+modifies the mappings while we don't hold mmap_sem, and creates a new
+non-mlocked region, we shouldn't mlock those pages in
+do_mlock_pages().
 
---Signature=_Mon__17_Dec_2012_14_22_38_+1100_85E9_IajO6cS+Kl3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQzo/+AAoJEECxmPOUX5FE0P4P/3zQxSNb+bPM8E7yin12ZsIF
-Soc/tN4SGO7nMJYud64ar5yhk3POPwhy6jsLm97eNzHofVaFJBc9YmkBF+XY1RYR
-+vi5JLeSDhx1RR/GlUY4lXTrN2fCZqlBDLb9b2QXzT/mCp/d0jDP5gMBqh98vzcc
-fIF1lOBW4wYhjBh2YVXdT3x3CZham826j2U0YMABxf6xdqoZYSGxF+hcUHxvl/IJ
-3QN2KDtXrnceufvkNCmnxYystu+++++dZK7KtiFD1Ug31Pfgka/PPwPT6QpN42t4
-mxszJnDOCLc5YtlZWf/XV2+nUrHtpM0Cb6V2M6z5/Ugq3QgYzYYGbQnHLggA1ZKl
-QZL4CckogOTxre16r9XBTIDSp4kIAo5ek+WcKiHajLCOz5ZsBO1zIZEgPVTpF4XR
-aRdzGUq1SEBSMjMygtevkj6EcnNj3Dmgnz1IlCSf8F8aFQoRmVRhyCDavlNUExf0
-Tl0Oj7rcImPwux30RcyanzBvBZGRkbABMq/NUJLzHS1mWZbg8EJvIhz4J1i0NiSO
-g+GNOZ3J1qnkdiHN12Wmq5fZ73UwkLb/bQ7bWfNxo3qZ8QLo35KIvxwWrWgm6aue
-pZ7Ahr9bvWfWpMSFWceg9qu6rq6s0X6dDMpgJfbMTl5u9ij1sKXN0B2mhM3vyO99
-MZW4QkGeDh9UtWT9V09o
-=DDnX
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Dec_2012_14_22_38_+1100_85E9_IajO6cS+Kl3--
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
