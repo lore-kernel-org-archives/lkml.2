@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab2LQRPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:15:22 -0500
-Received: from antcom.de ([188.40.178.216]:58377 "EHLO chuck.antcom.de"
+	id S1753493Ab2LQRQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:16:06 -0500
+Received: from mga01.intel.com ([192.55.52.88]:24182 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab2LQRPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:15:21 -0500
-Message-ID: <50CF5327.6070205@antcom.de>
-Date: Mon, 17 Dec 2012 18:15:19 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.11) Gecko/20121123 Icedove/10.0.11
+	id S1752590Ab2LQRQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 12:16:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,303,1355126400"; 
+   d="scan'208";a="265545263"
+Message-ID: <50CF5348.2000606@linux.intel.com>
+Date: Mon, 17 Dec 2012 09:15:52 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>
-CC: rmallon@gmail.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, grant.likely@secretlab.ca, daniel-gl@gmx.net,
-        sr@denx.de, plagnioj@jcrosoft.com,
-        linux-arm-kernel@lists.infradead.org, highguy@gmail.com
-Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
-References: <1355495185-24220-1-git-send-email-stigge@antcom.de> <50CB68AB.5070806@grandegger.com> <50CBBB25.20002@antcom.de> <50CF03FB.2030100@grandegger.com> <50CF0744.7040404@grandegger.com> <50CF1EF1.2070601@antcom.de> <50CF237E.5020409@antcom.de> <50CF4838.9000401@grandegger.com>
-In-Reply-To: <50CF4838.9000401@grandegger.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+To: Jan Beulich <JBeulich@suse.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com> <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com> <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com> <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com> <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com> <20121215163323.GA229@x4> <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com> <50CEEE3302000078000B0AC0@nat28.tlf.novell.com> <CA+55aFzhgW=GBwGtxufqhX+ykNCRqek=iyVszvkpCTw=-MXSyA@mail.gmail.com> <50CF4FC502000078000B0CB6@nat28.tlf.novell.com> <50CF4ACD.80701@linux.intel.com> <50CF5E8602000078000B0D2C@nat28.tlf.novell.com>
+In-Reply-To: <50CF5E8602000078000B0D2C@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 05:28 PM, Wolfgang Grandegger wrote:
-> On 12/17/2012 02:51 PM, Roland Stigge wrote:
->> Hi Wolfgang,
->>> And I guess Russell is right: If possible, we should write outputs
->>> simultaneously via ODSR (plus OWER/OWDR/OWSR) instead of separate set/clear.
->>>
->>> I wonder if we need to save/restore the state of OWSR at every write
->>> operation or if we need/can cache it. Assuming that block GPIO are the
->>> only code in the kernel that manipulates ODSR.
->>
->> Can you please test the following:
->>
->> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
->> +{
->> +       struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
->> +       void __iomem *pio = at91_gpio->regbase;
->> +
->> +       __raw_writel(~mask, pio + PIO_OWDR);
+On 12/17/2012 09:03 AM, Jan Beulich wrote:
+>>>> On 17.12.12 at 17:39, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
+>> Right, I think you nailed this one.  This patch copies PTEs from the
+>> kernel PTEs and thus they will have the global bit set.  It obviously
+>> makes no sense to *copy* PTEs from the kernel and yet leaving the global
+>> bit set, which means there are two ways of fixing it: either sharing
+>> page tables and use the cr4.pge off/on trick that Jan mentioned -- this
+>> would also be my preference -- and the other is to copy the PTEs but
+>> strip the global bit, which has the advantage that the actual kernel
+>> mappings will survive.
 > 
-> This would also disable normal GPIOs configured for output! From the
-> manual I understand that if the pin is configured for output, we could
-> either use PIO_SODR/PIO_CODR to set/clear the bits individually or
-> PIO_ODSR for synchronous data output. But than we need to care about the
-> non-block GPIO outputs as well... requiring a read-modify-write cycle :(.
+> PTE copying is only one half of it. I think additionally L4 entries
+> get copied for the 1:1 mapping, and you can't strip the global
+> bits there without allocating separate page tables.
+> 
 
->From the manual, I read about OWER: "Enables writing PIO_ODSR for the
-I/O line" (analogous for OWDR). Would interpret this as affecting ODSR
-(for block GPIO) but not SODR/CODR (as currently with single GPIOs).
+The point right now is that it *does* allocate separate page tables, but
+doesn't take advantage of it.  What I say is I think we should take the
+flush for the advantage of sharing page tables.  If we are allocating
+new page tables then we should of course make them non-global.
 
-Have you tried? ;-)
+Do we know how often this gets called?  I presume the most common case
+is when we have an EFI RTC?  Unless there is a use case where this
+happens a lot sharing seems much easier...
 
-Thanks in advance,
+	-hpa
 
-Roland
+
