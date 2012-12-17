@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab2LQSO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 13:14:26 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:36583 "EHLO zene.cmpxchg.org"
+	id S1753597Ab2LQSOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 13:14:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34079 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753407Ab2LQSNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 13:13:48 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Satoru Moriya <satoru.moriya@hds.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 7/7] mm: reduce rmap overhead for ex-KSM page copies created on swap faults
-Date: Mon, 17 Dec 2012 13:12:37 -0500
-Message-Id: <1355767957-4913-8-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
-References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
+	id S1753563Ab2LQSOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 13:14:41 -0500
+Date: Mon, 17 Dec 2012 19:14:36 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ACPI: Overriding ACPI tables via initrd only works
+ with an initrd
+Message-ID: <20121217181435.GD31866@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+References: <1351694147-10904-1-git-send-email-trenn@suse.de>
+ <1351694147-10904-4-git-send-email-trenn@suse.de>
+ <20121217092802.GA31947@liondog.tnic>
+ <50CF5FB4.8090305@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50CF5FB4.8090305@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ex-KSM pages are faulted from swap cache, the fault handler is
-not capable of re-establishing anon_vma-spanning KSM pages.  In this
-case, a copy of the page is created instead, just like during a COW
-break.
+On Mon, Dec 17, 2012 at 10:08:52AM -0800, H. Peter Anvin wrote:
+> Hm... all these are actually cleanups or fixes for the stuff that is
+> now upstream, I believe... as minor fixes I think these can be pushed
+> post-rc1 if we don't get to them sooner but it looks like they are all
+> needed.
 
-These freshly made copies are known to be exclusive to the faulting
-VMA and there is no reason to go look for this page in parent and
-sibling processes during rmap operations.
+/me is nodding in an agreeing manner after a quick glance over them.
 
-Use page_add_new_anon_rmap() for these copies.  This also puts them on
-the proper LRU lists and marks them SwapBacked, so we can get rid of
-doing this ad-hoc in the KSM copy code.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/ksm.c    | 6 ------
- mm/memory.c | 5 ++++-
- 2 files changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 382d930..7275c74 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1590,13 +1590,7 @@ struct page *ksm_does_need_to_copy(struct page *page,
- 
- 		SetPageDirty(new_page);
- 		__SetPageUptodate(new_page);
--		SetPageSwapBacked(new_page);
- 		__set_page_locked(new_page);
--
--		if (!mlocked_vma_newpage(vma, new_page))
--			lru_cache_add_lru(new_page, LRU_ACTIVE_ANON);
--		else
--			add_page_to_unevictable_list(new_page);
- 	}
- 
- 	return new_page;
-diff --git a/mm/memory.c b/mm/memory.c
-index db2e9e7..7e17eb0 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3020,7 +3020,10 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	}
- 	flush_icache_page(vma, page);
- 	set_pte_at(mm, address, page_table, pte);
--	do_page_add_anon_rmap(page, vma, address, exclusive);
-+	if (swapcache) /* ksm created a completely new copy */
-+		page_add_new_anon_rmap(page, vma, address);
-+	else
-+		do_page_add_anon_rmap(page, vma, address, exclusive);
- 	/* It's better to call commit-charge after rmap is established */
- 	mem_cgroup_commit_charge_swapin(page, ptr);
- 
 -- 
-1.7.11.7
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
