@@ -1,87 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab2LQPWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:22:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46997 "EHLO mail.zytor.com"
+	id S1753265Ab2LQPYX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:24:23 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12734 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab2LQPWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:22:35 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <50CEE06B.9040508@parallels.com>
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com> <50CEE06B.9040508@parallels.com>
+	id S1752393Ab2LQPYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:24:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,302,1355126400"; 
+   d="scan'208";a="258380930"
+Message-ID: <50CF3916.4010001@intel.com>
+Date: Mon, 17 Dec 2012 23:24:06 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit kernel
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 17 Dec 2012 07:21:45 -0800
-To: Pavel Emelyanov <xemul@parallels.com>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: aarcange@redhat.com, ak@linux.intel.com,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        john.stultz@linaro.org, tglx@linutronix.de
-Message-ID: <fb2e871b-3e2a-4e96-9eb9-cb2dd4f66eaa@email.android.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, preeti@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
+        arjan@linux.intel.com, amit.kucheria@linaro.org,
+        viresh.kumar@linaro.org
+Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
+References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org> <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org> <50C93AC1.1060202@intel.com> <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com> <50C9E552.1010600@intel.com> <CAKfTPtCUDEC50xexmLQ1d9qvBz1iJnf4aGSGjN==jqZwpxrwiQ@mail.gmail.com> <CAKfTPtAhFtGKOtwumuav+pndoAZiKjHvYoE2NZxtgP+qHuHY3g@mail.gmail.com> <50CA84FF.5070907@intel.com> <CAKfTPtCarhT3J3xOD6jOh_91Pm5FK4V_DAk5QLs_=8rVF+-fsQ@mail.gmail.com> <50CD746E.7010807@intel.com> <CAKfTPtAt-TUoJpXbL+dAQ2zGTYtewdXpFDN_mSeu4MnuC-2Xjg@mail.gmail.com>
+In-Reply-To: <CAKfTPtAt-TUoJpXbL+dAQ2zGTYtewdXpFDN_mSeu4MnuC-2Xjg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because it is almost impossible to do right?
-
-Pavel Emelyanov <xemul@parallels.com> wrote:
-
->On 12/14/2012 10:44 PM, Andy Lutomirski wrote:
->> On Fri, Dec 14, 2012 at 10:35 AM, H. Peter Anvin <hpa@zytor.com>
->wrote:
->>> On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
->>>> On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
->>>>> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com>
->wrote:
->>>>>> Wouldn't the vdso get mapped already and could be mremap()'d.  If
->we
->>>>> really need more control I'd almost push for a device/filesystem
->node
->>>>> that could be mmapped the usual way.
+>>>>>> The scheme below tries to summaries the idea:
+>>>>>>
+>>>>>> Socket      | socket 0 | socket 1   | socket 2   | socket 3   |
+>>>>>> LCPU        | 0 | 1-15 | 16 | 17-31 | 32 | 33-47 | 48 | 49-63 |
+>>>>>> buddy conf0 | 0 | 0    | 1  | 16    | 2  | 32    | 3  | 48    |
+>>>>>> buddy conf1 | 0 | 0    | 0  | 16    | 16 | 32    | 32 | 48    |
+>>>>>> buddy conf2 | 0 | 0    | 16 | 16    | 32 | 32    | 48 | 48    |
+>>>>>>
+>>>>>> But, I don't know how this can interact with NUMA load balance and the
+>>>>>> better might be to use conf3.
 >>>>>
->>>>> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
->>>>> criu is stable enough yet that we should care.  Criu people?
+>>>>> I mean conf2 not conf3
 >>>>
->>>> It's not yet, but we'd still appreciate the criu-friendly vdso
->redesign.
->>>>
->>>>> (In brief summary: how annoying would it be if the vdso was no
->longer
->>>>> just a bunch of constant bytes that lived somewhere?)
->>>>
->>>> It depends on what vdso is going to be. In the perfect case it
->should
->>>> a) be mremap-able to any address (or be at fixed address _forever_,
->but
->>>>    I assume this is not feasible);
->>>> b) have entry points at fixed (or somehow movable) places.
->>>>
->>>> I admit that I didn't understand your question properly, if I did,
->>>> please correct me.
->>>>
+>>>> So, it has 4 levels 0/16/32/ for socket 3 and 0 level for socket 0, it
+>>>> is unbalanced for different socket.
 >>>
->>> mremap() should work.  At the same time, the code itself is not
->going to
->>> have any stability guarantees between kernel versions -- it
->obviously
->>> cannot.
->> 
->> We could guarantee that the symbols in the vdso resolve to particular
->> offsets within the vdso.  (Yes, this is ugly.)
->> 
->> Does criu support checkpointing with one version of a shared library
->> and restoring with another?
->
->No, neither we have this in plans.
->However, if somebody needs this and implements -- why not?!
->
->Thanks,
->Pavel
+>>> That the target because we have decided to pack the small tasks in
+>>> socket 0 when we have parsed the topology at boot.
+>>> We don't have to loop into sched_domain or sched_group anymore to find
+>>> the best LCPU when a small tasks wake up.
+>>
+>> iteration on domain and group is a advantage feature for power efficient
+>> requirement, not shortage. If some CPU are already idle before forking,
+>> let another waking CPU check their load/util and then decide which one
+>> is best CPU can reduce late migrations, that save both the performance
+>> and power.
+> 
+> In fact, we have already done this job once at boot and we consider
+> that moving small tasks in the buddy CPU is always benefit so we don't
+> need to waste time looping sched_domain and sched_group to compute
+> current capacity of each LCPU for each wake up of each small tasks. We
+> want all small tasks and background activity waking up on the same
+> buddy CPU and let the default behavior of the scheduler choosing the
+> best CPU for heavy tasks or loaded CPUs.
+
+IMHO, the design should be very good for your scenario and your machine,
+but when the code move to general scheduler, we do want it can handle
+more general scenarios. like sometime the 'small task' is not as small
+as tasks in cyclictest which even hardly can run longer than migration
+granularity or one tick, thus we really don't need to consider task
+migration cost. But when the task are not too small, migration is more
+heavier than domain/group walking, that is the common sense in
+fork/exec/waking balance.
+
+> 
+>>
+>> On the contrary, move task walking on each level buddies is not only bad
+>> on performance but also bad on power. Consider the quite big latency of
+>> waking a deep idle CPU. we lose too much..
+> 
+> My result have shown different conclusion.
+
+That should be due to your tasks are too small to need consider
+migration cost.
+> In fact, there is much more chance that the buddy will not be in a
+> deep idle as all the small tasks and background activity are already
+> waking on this CPU.
+
+powertop is helpful to tune your system for more idle time. Another
+reason is current kernel just try to spread tasks on more cpu for
+performance consideration. My power scheduling patch should helpful on this.
+> 
+>>
+>>>
+>>>>
+>>>> And the ground level has just one buddy for 16 LCPUs - 8 cores, that's
+>>>> not a good design, consider my previous examples: if there are 4 or 8
+>>>> tasks in one socket, you just has 2 choices: spread them into all cores,
+>>>> or pack them into one LCPU. Actually, moving them just into 2 or 4 cores
+>>>> maybe a better solution. but the design missed this.
+>>>
+>>> You speak about tasks without any notion of load. This patch only care
+>>> of small tasks and light LCPU load, but it falls back to default
+>>> behavior for other situation. So if there are 4 or 8 small tasks, they
+>>> will migrate to the socket 0 after 1 or up to 3 migration (it depends
+>>> of the conf and the LCPU they come from).
+>>
+>> According to your patch, what your mean 'notion of load' is the
+>> utilization of cpu, not the load weight of tasks, right?
+> 
+> Yes but not only. The number of tasks that run simultaneously, is
+> another important input
+> 
+>>
+>> Yes, I just talked about tasks numbers, but it naturally extends to the
+>> task utilization on cpu. like 8 tasks with 25% util, that just can full
+>> fill 2 CPUs. but clearly beyond the capacity of the buddy, so you need
+>> to wake up another CPU socket while local socket has some LCPU idle...
+> 
+> 8 tasks with a running period of 25ms per 100ms that wake up
+> simultaneously should probably run on 8 different LCPU in order to
+> race to idle
+
+nope, it's a rare probability of 8 tasks wakeuping simultaneously. And
+even so they should run in the same socket for power saving
+consideration(my power scheduling patch can do this), instead of spread
+to all sockets.
+> 
+> 
+> Regards,
+> Vincent
+> 
+>>>
+>>> Then, if too much small tasks wake up simultaneously on the same LCPU,
+>>> the default load balance will spread them in the core/cluster/socket
+>>>
+>>>>
+>>>> Obviously, more and more cores is the trend on any kinds of CPU, the
+>>>> buddy system seems hard to catch up this.
+>>>>
+>>>>
+>>
+>>
+>> --
+>> Thanks
+>>     Alex
+
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Thanks
+    Alex
