@@ -1,82 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2LQMIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 07:08:39 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16211 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab2LQMIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 07:08:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 17 Dec 2012 04:08:35 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/4] ARM: tegra: add connection name for uart clock table
-Date: Mon, 17 Dec 2012 17:38:19 +0530
-Message-ID: <1355746101-15291-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1355746101-15291-1-git-send-email-ldewangan@nvidia.com>
-References: <1355746101-15291-1-git-send-email-ldewangan@nvidia.com>
+	id S1752716Ab2LQMIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 07:08:50 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36112 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752154Ab2LQMIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 07:08:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, tony.luck@intel.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Mon, 17 Dec 2012 13:13:53 +0100
+Message-ID: <2258104.vJbqqOpvLA@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAE9FiQWLU9GjHaTi8eyuRFTp=agADhROAzHJkDfOiWvUAE6U0A@mail.gmail.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <6849411.jDP7VSUtXm@vostro.rjw.lan> <CAE9FiQWLU9GjHaTi8eyuRFTp=agADhROAzHJkDfOiWvUAE6U0A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add connection name "uart-clk" for the uart clock information.
+On Monday, December 17, 2012 12:09:46 AM Yinghai Lu wrote:
+> On Sun, Dec 16, 2012 at 11:51 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, December 16, 2012 09:27:49 PM Yinghai Lu wrote:
+> >> On Sun, Dec 16, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> >
+> >> > The ACPI handles of PCI root bridges need to be known to
+> >> > acpi_bind_one(), so that it can create the appropriate
+> >> > "firmware_node" and "physical_node" files for them, but currently
+> >> > the way it gets to know those handles is not exactly straightforward
+> >> > (to put it lightly).
+> >> >
+> >> > This is how it works, roughly:
+> >> >
+> >> >   1. acpi_bus_scan() finds the handle of a PCI root bridge,
+> >> >      creates a struct acpi_device object for it and passes that
+> >> >      object to acpi_pci_root_add().
+> >> >
+> >> >   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
+> >> >      populates its "device" field with its argument's address
+> >> >      (device->handle is the ACPI handle found in step 1).
+> >> >
+> >> >   3. The struct acpi_pci_root object created in step 2 is passed
+> >> >      to pci_acpi_scan_root() and used to get resources that are
+> >> >      passed to pci_create_root_bus().
+> >> >
+> >> >   4. pci_create_root_bus() creates a struct pci_host_bridge object
+> >> >      and passes its "dev" member to device_register().
+> >> >
+> >> >   5. platform_notify(), which for systems with ACPI is set to
+> >> >      acpi_platform_notify(), is called.
+> >> >
+> >> > So far, so good.  Now it starts to be "interesting".
+> >> >
+> >> >   6. acpi_find_bridge_device() is used to find the ACPI handle of
+> >> >      the given device (which is the PCI root bridge) and executes
+> >> >      acpi_pci_find_root_bridge(), among other things, for the
+> >> >      given device object.
+> >> >
+> >> >   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
+> >> >      device object to extract the segment and bus numbers of the PCI
+> >> >      root bridge and passes them to acpi_get_pci_rootbridge_handle().
+> >> >
+> >> >   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
+> >> >      root bridges and finds the one that matches the given segment
+> >> >      and bus numbers.  Its handle is then used to initialize the
+> >> >      ACPI handle of the PCI root bridge's device object by
+> >> >      acpi_bind_one().  However, this is *exactly* the ACPI handle we
+> >> >      started with in step 1.
+> >> >
+> >> > Needless to say, this is quite embarassing, but it may be avoided
+> >> > thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
+> >> > initialized in advance), which makes it possible to initialize the
+> >> > ACPI handle of a device before passing it to device_register().
+> >> > Namely, if pci_acpi_scan_root() could easily pass the root bridge's
+> >> > ACPI handle to pci_create_root_bus(), the latter could set the ACPI
+> >> > handle in its struct pci_host_bridge object's "dev" member before
+> >> > passing it to device_register() and steps 6-8 above wouldn't be
+> >> > necessary any more.
+> >> >
+> >> > To make that happen I decided to repurpose the 4th argument of
+> >> > pci_create_root_bus(), because that allowed me to avoid defining
+> >> > additional callbacks or similar things and didn't seem to impact
+> >> > architectures without ACPI substantially.
+> >> >
+> >> > Only x86 and ia64 are affected directly, there should be no
+> >> > functional changes resulting from this on other architectures.
+> >>
+> >> that is good one to avoid that find_root_bridge...
+> >>
+> >> >
+> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> > ---
+> >> >
+> >> > Should apply to the current Linus' tree, boots correctly on x86(-64).
+> >
+> >> >
+> >> > ---
+> >> >  arch/ia64/pci/pci.c              |    5 ++++-
+> >> >  arch/powerpc/kernel/pci-common.c |    3 ++-
+> >> >  arch/sparc/kernel/pci.c          |    3 ++-
+> >> >  arch/x86/pci/acpi.c              |    5 ++++-
+> >> >  drivers/acpi/pci_root.c          |   18 ------------------
+> >> >  drivers/pci/pci-acpi.c           |   19 -------------------
+> >> >  drivers/pci/probe.c              |   16 +++++++++++-----
+> >> >  include/acpi/acpi_bus.h          |    1 -
+> >> >  include/linux/pci.h              |    9 ++++++++-
+> >> >  9 files changed, 31 insertions(+), 48 deletions(-)
+> >>
+> >> you need to update other arch for pci_create_root_bus
+> >>
+> >> arch/powerpc/kernel/pci-common.c:       bus =
+> >> pci_create_root_bus(hose->parent, hose->first_busno,
+> >
+> > I thought I addressed this one, didn't I?
+> >
+> >> arch/s390/pci/pci.c:    zdev->bus = pci_create_root_bus(NULL,
+> >> ZPCI_BUS_NR, &pci_root_ops,
+> >
+> > This one appears to have been removed.  There's no pci_create_root_bus()
+> > in all arch/s390, as far as I can say.
+> 
+> at least it is there on linus tree today.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=arch/s390/pci/pci.c;h=7ed38e5e3028689543c8c6356ef49b3a45546cd6;hb=HEAD
+> 
+> line 890
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/mach-tegra/tegra20_clocks_data.c |   12 ++++++------
- arch/arm/mach-tegra/tegra30_clocks_data.c |   10 +++++-----
- 2 files changed, 11 insertions(+), 11 deletions(-)
+Ah, it's been added rather than removed. :-)
 
-diff --git a/arch/arm/mach-tegra/tegra20_clocks_data.c b/arch/arm/mach-tegra/tegra20_clocks_data.c
-index a23a073..a7f03c7 100644
---- a/arch/arm/mach-tegra/tegra20_clocks_data.c
-+++ b/arch/arm/mach-tegra/tegra20_clocks_data.c
-@@ -924,12 +924,12 @@ PERIPH_CLK(i2c1,	"tegra-i2c.0",		"div-clk", 12,	0x124,	26000000,  mux_pllp_pllc_
- PERIPH_CLK(i2c2,	"tegra-i2c.1",		"div-clk", 54,	0x198,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
- PERIPH_CLK(i2c3,	"tegra-i2c.2",		"div-clk", 67,	0x1b8,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
- PERIPH_CLK(dvc,		"tegra-i2c.3",		"div-clk", 47,	0x128,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
--PERIPH_CLK(uarta,	"tegra-uart.0",		NULL,	6,	0x178,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
--PERIPH_CLK(uartb,	"tegra-uart.1",		NULL,	7,	0x17c,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
--PERIPH_CLK(uartc,	"tegra-uart.2",		NULL,	55,	0x1a0,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
--PERIPH_CLK(uartd,	"tegra-uart.3",		NULL,	65,	0x1c0,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
--PERIPH_CLK(uarte,	"tegra-uart.4",		NULL,	66,	0x1c4,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
--PERIPH_CLK(3d,		"3d",			NULL,	24,	0x158,	300000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | PERIPH_MANUAL_RESET); /* scales with voltage and process_id */
-+PERIPH_CLK(uarta,	"tegra-uart.0",		"uart-clk",	6,	0x178,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
-+PERIPH_CLK(uartb,	"tegra-uart.1",		"uart-clk",	7,	0x17c,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
-+PERIPH_CLK(uartc,	"tegra-uart.2",		"uart-clk",	55,	0x1a0,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
-+PERIPH_CLK(uartd,	"tegra-uart.3",		"uart-clk",	65,	0x1c0,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
-+PERIPH_CLK(uarte,	"tegra-uart.4",		"uart-clk",	66,	0x1c4,	600000000, mux_pllp_pllc_pllm_clkm,	MUX);
-+PERIPH_CLK(3d,		"3d",			"uart-clk",	24,	0x158,	300000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | PERIPH_MANUAL_RESET); /* scales with voltage and process_id */
- PERIPH_CLK(2d,		"2d",			NULL,	21,	0x15c,	300000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71); /* scales with voltage and process_id */
- PERIPH_CLK(vi,		"tegra_camera",		"vi",	20,	0x148,	150000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71); /* scales with voltage and process_id */
- PERIPH_CLK(vi_sensor,	"tegra_camera",		"vi_sensor",	20,	0x1a8,	150000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | PERIPH_NO_RESET); /* scales with voltage and process_id */
-diff --git a/arch/arm/mach-tegra/tegra30_clocks_data.c b/arch/arm/mach-tegra/tegra30_clocks_data.c
-index e2e6022..4edcf60 100644
---- a/arch/arm/mach-tegra/tegra30_clocks_data.c
-+++ b/arch/arm/mach-tegra/tegra30_clocks_data.c
-@@ -1120,11 +1120,11 @@ PERIPH_CLK(i2c2,	"tegra-i2c.1",		"div-clk", 54,	0x198,	26000000,  mux_pllp_clkm,
- PERIPH_CLK(i2c3,	"tegra-i2c.2",		"div-clk", 67,	0x1b8,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
- PERIPH_CLK(i2c4,	"tegra-i2c.3",		"div-clk", 103,	0x3c4,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
- PERIPH_CLK(i2c5,	"tegra-i2c.4",		"div-clk", 47,	0x128,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
--PERIPH_CLK(uarta,	"tegra-uart.0",		NULL,	6,	0x178,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
--PERIPH_CLK(uartb,	"tegra-uart.1",		NULL,	7,	0x17c,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
--PERIPH_CLK(uartc,	"tegra-uart.2",		NULL,	55,	0x1a0,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
--PERIPH_CLK(uartd,	"tegra-uart.3",		NULL,	65,	0x1c0,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
--PERIPH_CLK(uarte,	"tegra-uart.4",		NULL,	66,	0x1c4,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
-+PERIPH_CLK(uarta,	"tegra-uart.0",		"uart-clk",	6,	0x178,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
-+PERIPH_CLK(uartb,	"tegra-uart.1",		"uart-clk",	7,	0x17c,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
-+PERIPH_CLK(uartc,	"tegra-uart.2",		"uart-clk",	55,	0x1a0,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
-+PERIPH_CLK(uartd,	"tegra-uart.3",		"uart-clk",	65,	0x1c0,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
-+PERIPH_CLK(uarte,	"tegra-uart.4",		"uart-clk",	66,	0x1c4,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U151 | DIV_U151_UART | PERIPH_ON_APB);
- PERIPH_CLK(vi,		"tegra_camera",		"vi",	20,	0x148,	425000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | DIV_U71_INT);
- PERIPH_CLK(3d,		"3d",			NULL,	24,	0x158,	520000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | DIV_U71_INT | DIV_U71_IDLE | PERIPH_MANUAL_RESET);
- PERIPH_CLK(3d2,		"3d2",			NULL,	98,	0x3b0,	520000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | DIV_U71_INT | DIV_U71_IDLE | PERIPH_MANUAL_RESET);
+OK, will address.
+
+> >> arch/sparc/kernel/pci.c:        bus = pci_create_root_bus(parent,
+> >> pbm->pci_first_busno, pbm->pci_ops,
+> >
+> > I modified this one too, is that not sufficient?
+> >
+> >> drivers/parisc/dino.c:  dino_dev->hba.hba_bus = bus =
+> >> pci_create_root_bus(&dev->dev,
+> >> drivers/parisc/lba_pci.c:               pci_create_root_bus(&dev->dev,
+> >> lba_dev->hba.bus_num.start,
+> >
+> > These two pass NULL as the 4th argument to pci_create_root_bus() and don't
+> > need to be updated, AFAICS.
+> 
+> then how could
+> -       b->sysdata = sysdata;
+> +       b->sysdata = sys_info->sysdata;
+> 
+> be survived ? need to change to
+> 
+> +       b->sysdata = sys_info?sys_info->sysdata : NULL;
+> 
+
+Good point, I didn't think about that.  Thanks!
+
+> >> >
+> >> > Index: linux/arch/x86/pci/acpi.c
+> >> > ===================================================================
+> >> > --- linux.orig/arch/x86/pci/acpi.c
+> >> > +++ linux/arch/x86/pci/acpi.c
+> >> > @@ -450,6 +450,7 @@ struct pci_bus * __devinit pci_acpi_scan
+> >> >         LIST_HEAD(resources);
+> >> >         struct pci_bus *bus = NULL;
+> >> >         struct pci_sysdata *sd;
+> >> > +       struct pci_root_sys_info si;
+> >> >         int node;
+> >> >  #ifdef CONFIG_ACPI_NUMA
+> >> >         int pxm;
+> >> > @@ -486,6 +487,8 @@ struct pci_bus * __devinit pci_acpi_scan
+> >> >         sd = &info->sd;
+> >> >         sd->domain = domain;
+> >> >         sd->node = node;
+> >> > +       si.acpi_node.handle = device->handle;
+> >> > +       si.sysdata = sd;
+> >>
+> >> maybe you can try to have si.acpi_handle directly ?
+> >
+> > I did it this way for handle to be compiled out when CONFIG_ACPI is not set
+> > (struct acpi_dev_node is an empty structure in that case).
+> 
+> ok.
+
+Thanks for the review!
+
+Rafael
+
+
 -- 
-1.7.1.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
