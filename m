@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab2LQVLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:11:34 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:17900
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750889Ab2LQVLc (ORCPT
+	id S1752491Ab2LQVM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:12:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43084 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab2LQVM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:11:32 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI103dK1432Izz1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
-X-WSS-ID: 0MF71J2-01-9K8-02
-X-M-MSG: 
-Date: Mon, 17 Dec 2012 15:11:24 -0600
-From: Jacob Shin <jacob.shin@amd.com>
-To: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] MCE, AMD: Make MC2 decoding part of amd_decoder_ops
- as well
-Message-ID: <20121217211124.GB3012@jshin-Toonie>
-References: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>
- <1355774221.13361.48.camel@joe-AO722>
- <20121217200535.GF31866@liondog.tnic>
- <1355775376.19706.1.camel@joe-AO722>
- <20121217202214.GG31866@liondog.tnic>
- <1355776475.19706.6.camel@joe-AO722>
- <20121217204011.GH31866@liondog.tnic>
- <20121217204317.GA32760@jshin-Toonie>
- <1355777940.19706.11.camel@joe-AO722>
- <20121217210802.GI31866@liondog.tnic>
+	Mon, 17 Dec 2012 16:12:57 -0500
+Date: Mon, 17 Dec 2012 16:12:40 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>, fenghua.yu@intel.com
+Cc: xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org,
+        hpa@linux.intel.com
+Subject: Re: 3.8.0-rc0 on xen-unstable: RCU Stall during boot as dom0 kernel
+ after IOAPIC
+Message-ID: <20121217211240.GA13412@konrad-lan.dumpdata.com>
+References: <1995613404.20121214165557@eikelenboom.it>
+ <20121216173824.GA4518@phenom.dumpdata.com>
+ <1782021524.20121217213217@eikelenboom.it>
+ <20121217204634.GA13181@konrad-lan.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121217210802.GI31866@liondog.tnic>
+In-Reply-To: <20121217204634.GA13181@konrad-lan.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 10:08:02PM +0100, Borislav Petkov wrote:
-> On Mon, Dec 17, 2012 at 12:59:00PM -0800, Joe Perches wrote:
-> > The new pr_emerg is effectively a termination of the
-> > previous one.  There's no need for 2 consecutive uses
-> > of pr_emerg(HW_ERR ...) here.
+On Mon, Dec 17, 2012 at 03:46:34PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Dec 17, 2012 at 09:32:17PM +0100, Sander Eikelenboom wrote:
+> > 
+> > Sunday, December 16, 2012, 6:38:24 PM, you wrote:
+> > 
+> > > On Fri, Dec 14, 2012 at 04:55:57PM +0100, Sander Eikelenboom wrote:
+> > >> Hi Konrad,
+> > >> 
+> > >> I just tried to boot a 3.8.0-rc0 kernel (last commit: 7313264b899bbf3988841296265a6e0e8a7b6521) as dom0 on my machine with current xen-unstable.
+> > 
+> > > Yeah, saw it over the Dec 11->Dec 12 merges and was out on
+> > > vacation during that time (just got back).
+> > 
+> > > Did you by any chance try to do a git bisect to narrow down
+> > > which merge it was?
+> > 
+> > Hi Konrad,
 > 
-> Actually, in decode_mc5_mce(), the second pr_emerg needs to stay like
-> what it is now.
+> Hey Sander,
 > 
-> So Jacob, please leave those changes out, I'll sort them out later.
+> Thank you for doing the bisection.
+> 
+> Fenghua - any ideas what might be amiss in the Xen subsystem?
+> I hadn't looked at the patchset of the CPU0 offlining/onlining
+> so I am not completly up to speed on the particulars of the patches.
 
-Okay, will do, I'll change fix it in my changes then. But I'll wait
-for your feedback tomorrow, before sending out V2.
+> > 30106c174311b8cfaaa3186c7f6f9c36c62d17da is the first bad commit
+> > commit 30106c174311b8cfaaa3186c7f6f9c36c62d17da
+> > Author: Fenghua Yu <fenghua.yu@intel.com>
+> > Date:   Tue Nov 13 11:32:41 2012 -0800
+> > 
+> >     x86, hotplug: Support functions for CPU0 online/offline
+> > 
+> >     Add smp_store_boot_cpu_info() to store cpu info for BSP during boot time.
+> > 
+> >     Now smp_store_cpu_info() stores cpu info for bringing up BSP or AP after
+> >     it's offline.
+> > 
+> >     Continue to online CPU0 in native_cpu_up().
+> > 
+> >     Continue to offline CPU0 in native_cpu_disable().
+> > 
+> >     Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> >     Link: http://lkml.kernel.org/r/1352835171-3958-5-git-send-email-fenghua.yu@intel.com
+> >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > 
 
-Thanks!
+This patch:
 
--Jacob
 
-> 
-> Thanks.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-> 
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 353c50f..4f7d259 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -254,7 +254,7 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ 	xen_init_lock_cpu(0);
+ 
+-	smp_store_cpu_info(0);
++	smp_store_boot_cpu_info();
+ 	cpu_data(0).x86_max_cores = 1;
+ 
+ 	for_each_possible_cpu(i) {
+
+Would do the corresponding change in the Xen subsystem that the above
+mentioned commit did. Perhaps that is all that is needed? I am going to
+be able to test this and look in more details tomorrow.
 
