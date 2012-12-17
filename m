@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab2LQSJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 13:09:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48941 "EHLO mail.zytor.com"
+	id S1752956Ab2LQSNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 13:13:37 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36555 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab2LQSJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 13:09:53 -0500
-Message-ID: <50CF5FB4.8090305@zytor.com>
-Date: Mon, 17 Dec 2012 10:08:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Thomas Renninger <trenn@suse.de>,
+	id S1752478Ab2LQSNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 13:13:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Satoru Moriya <satoru.moriya@hds.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ACPI: Overriding ACPI tables via initrd only works
- with an initrd
-References: <1351694147-10904-1-git-send-email-trenn@suse.de> <1351694147-10904-4-git-send-email-trenn@suse.de> <20121217092802.GA31947@liondog.tnic>
-In-Reply-To: <20121217092802.GA31947@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [patch 0/8] page reclaim bits v2
+Date: Mon, 17 Dec 2012 13:12:30 -0500
+Message-Id: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 01:28 AM, Borislav Petkov wrote:
-> Hi guys,
->
-> this one sanitizes the Kconfig entry prompt so can we pick it up for
-> -rc1 or later, please?
->
+Hello,
 
-Hm... all these are actually cleanups or fixes for the stuff that is now 
-upstream, I believe... as minor fixes I think these can be pushed 
-post-rc1 if we don't get to them sooner but it looks like they are all 
-needed.
+I dropped the controversial change of the meaning of !swappiness for
+memcg and instead made the two changes into one cleanup patch to spell
+out the conditions in get_scan_count() more explicitely.
 
-	-hpa
+Aside from that, I expanded the changelogs with statistics and numbers
+where there was confusion about the benefits and added the review tags
+to the patches that didn't otherwise change.  Let me know if I missed
+any review feedback, but I think I have it all addressed.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Thanks!
 
