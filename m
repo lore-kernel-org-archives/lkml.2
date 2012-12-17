@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2LQVje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:39:34 -0500
-Received: from bs1.fjl.org.uk ([84.45.41.196]:62015 "EHLO bs1.fjl.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab2LQVjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:39:33 -0500
-X-Greylist: delayed 1531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 16:39:33 EST
-Message-ID: <50CF8B03.1070102@avoncliff.com>
-Date: Mon, 17 Dec 2012 21:13:39 +0000
-From: david <david@avoncliff.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1753766Ab2LQVkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:40:40 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36130 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab2LQVki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 16:40:38 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ODROID-X: dts: Add mshc node for ODROID-X board
+Date: Mon, 17 Dec 2012 22:40:35 +0100
+Message-ID: <2216925.ElgEB0zitR@flatron>
+User-Agent: KMail/4.9.4 (Linux/3.7.0-gentoo; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <1355774107-364-5-git-send-email-tobetter@gmail.com>
+References: <1355774107-364-1-git-send-email-tobetter@gmail.com> <1355774107-364-5-git-send-email-tobetter@gmail.com>
 MIME-Version: 1.0
-To: Evgeniy Polyakov <zbr@ioremap.net>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] w1_therm:Retries:remove old code add CRC
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-w1_therm includes some obsolete code to detect bad_roms, this is no
-longer relevant.
-The retry code is only used for this bad_rom test, however there is a
-CRC check that detects a bad read, but does not trigger a retry. This
-patch removes all the bad_rom code and uses the CRC check to trigger
-retries.
+Hi Dongjin,
 
-Patch is against Raspberry 3.2.27 ( my test hardware) but has also been
-tested against 3.7.
+On Tuesday 18 of December 2012 04:55:07 Dongjin Kim wrote:
+> Adding the device node to support eMMC storage on SDCARD4 ports,
+> controlled by Mobile Storage Host Controller.
+> 
+> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+> ---
+>  arch/arm/boot/dts/exynos4412-odroidx.dts |   21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts
+> b/arch/arm/boot/dts/exynos4412-odroidx.dts index 3943011..fbd0b51
+> 100644
+> --- a/arch/arm/boot/dts/exynos4412-odroidx.dts
+> +++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
+> @@ -73,4 +73,25 @@
+>  			linux,default-trigger = "mmc0";
+>  		};
+>  	};
+> +
+> +	mshc@12550000 {
+> +		num-slots = <1>;
+> +		supports-highspeed;
+> +		broken-cd;
+> +		fifo-depth = <0x80>;
+> +		card-detect-delay = <200>;
+> +		samsung,dw-mshc-ciu-div = <3>;
+> +		samsung,dw-mshc-sdr-timing = <2 3 3>;
+> +		samsung,dw-mshc-ddr-timing = <1 2 3>;
+> +
+> +		slot@0 {
+> +			reg = <0>;
+> +			bus-width = <8>;
+> +			gpios = <&gpk0 0 3>, <&gpk0 1 3>,
+> +				<&gpk0 3 3>, <&gpk0 4 3>,
+> +				<&gpk0 5 3>, <&gpk0 6 3>,
+> +				<&gpk1 3 4>, <&gpk1 4 4>,
+> +				<&gpk1 5 4>, <&gpk1 6 4>;
 
-David Stevenson   david at avoncliff.com
+What is the gpios property for in this node? Pin configuration using 
+legacy GPIO bindings is not supported anymore on Exynos4. Pin control 
+bindings must be used.
 
-diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
-index 016dd7d..8166075 100644
---- a/drivers/w1/slaves/w1_therm.c
-+++ b/drivers/w1/slaves/w1_therm.c
-@@ -45,10 +45,6 @@ MODULE_DESCRIPTION("Driver for 1-wire Dallas network
-protocol, temperature famil
- static int w1_strong_pullup = 1;
- module_param_named(strong_pullup, w1_strong_pullup, int, 0);
-
--static u8 bad_roms[][9] = {
--				{0xaa, 0x00, 0x4b, 0x46, 0xff, 0xff, 0x0c, 0x10, 0x87},
--				{}
--			};
-
- static ssize_t w1_therm_read(struct device *device,
- 	struct device_attribute *attr, char *buf);
-@@ -159,16 +155,6 @@ static inline int w1_convert_temp(u8 rom[9], u8 fid)
- 	return 0;
- }
-
--static int w1_therm_check_rom(u8 rom[9])
--{
--	int i;
--
--	for (i=0; i<sizeof(bad_roms)/9; ++i)
--		if (!memcmp(bad_roms[i], rom, 9))
--			return 1;
--
--	return 0;
--}
-
- static ssize_t w1_therm_read(struct device *device,
- 	struct device_attribute *attr, char *buf)
-@@ -183,10 +169,11 @@ static ssize_t w1_therm_read(struct device *device,
-
- 	memset(rom, 0, sizeof(rom));
-
--	verdict = 0;
--	crc = 0;
--
- 	while (max_trying--) {
-+
-+		verdict = 0;
-+		crc = 0;
-+		
- 		if (!w1_reset_select_slave(sl)) {
- 			int count = 0;
- 			unsigned int tm = 750;
-@@ -214,7 +201,7 @@ static ssize_t w1_therm_read(struct device *device,
- 			}
- 		}
-
--		if (!w1_therm_check_rom(rom))
-+		if (verdict)
- 			break;
- 	}
+Best regards,
+Tomasz Figa
 
