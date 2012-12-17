@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab2LQST2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 13:19:28 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39867 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab2LQSTZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 13:19:25 -0500
-Date: Mon, 17 Dec 2012 18:23:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>
-Subject: Re: [PATCH] serial: tegra: add serial driver
-Message-ID: <20121217182343.37324522@pyramind.ukuu.org.uk>
-In-Reply-To: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753229Ab2LQSWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 13:22:14 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:57887 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179Ab2LQSWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 13:22:13 -0500
+Date: Mon, 17 Dec 2012 11:22:02 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        alek.du@intel.com
+Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
+Message-ID: <20121217182202.GA10368@obsidianresearch.com>
+References: <1355364328-19550-1-git-send-email-feng.tang@intel.com>
+ <50CA7EE4.3000306@linaro.org>
+ <20121214013725.GA11276@feng-snb>
+ <50CA8837.5010800@linaro.org>
+ <20121214023826.GA31613@obsidianresearch.com>
+ <20121214031330.GC11276@feng-snb>
+ <20121214041024.GA1040@obsidianresearch.com>
+ <50CB98AA.5090600@linaro.org>
+ <20121214215651.GA31384@obsidianresearch.com>
+ <20121217161433.GB4762@feng-snb>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217161433.GB4762@feng-snb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 18, 2012 at 12:14:33AM +0800, Feng Tang wrote:
 
+> > Sure, but my view on this is that it has nothing to do with
+> > read_persistent_clock. If the RTC driver can run with IRQs off is a
+> > property of the RTC driver and RTC hardware - it has nothing to do
+> > with the platform. ARM platforms will vary on a machine by machine
+> > basis. The rtc-mv driver used on my ARM system is perfectly
+> > re-entrant, lots of rtc on SOC drivers will be the same.
+> > 
+> > If this is the only thing keeping you on read_persistent_clock, for
+> > real RTCs, then how about a RTC_DEV_SAFE_READ flag (or whatever) in
+> > rtc_device.flags?
+> > 
+> > Reserve read_persistent_clock for things like that very specialized
+> > non-RTC ARM counter.
+> 
+> Yes, these non-RTC device is one reason for keeping read_persistent_clock,
+> one other reason I can think of is the CONFIG_RTC_LIB is not always on by
+> default for all Archs, and some platforms may chose to disable it on purpose. 
+> When CONFIG_RTC_LIB is not set, we need the read_persistent_clock for
+> time init/suspend/resume.
 
-> +
-> +static void tegra_uart_copy_rx_to_tty(struct tegra_uart_port *tup, int count)
-> +{
-> +	int copied;
-> +
-> +	tup->uport.icount.rx += count;
-> +	dma_sync_single_for_cpu(tup->uport.dev, tup->rx_dma_buf_phys,
-> +				TEGRA_UART_RX_DMA_BUFFER_SIZE, DMA_FROM_DEVICE);
-> +	copied = tty_insert_flip_string(tup->uport.state->port.tty,
+I thought your concern was the case where the RTC was turned on and
+read_persistent_clock was also turned on. Having a flag in the RTC and
+disabling read_persistent_clock for that situation would help you
+avoid the double code path to the same hardware.
 
-Reference needed and port.tty can go to NULL
-(good rule of thumb - any use of port.tty directly is probably wrong)
+What is motivating having a RTC but not using RTC lib? Embedded
+doesn't seem to the be the case, nearly all the interesting rtcs are
+under class rtc....
 
-‎
-> +	tty_flip_buffer_push(u->state->port.tty);
-
-Ditto (and elsewhere)
-
-> +	if ((c_cflag & PARENB) == PARENB) {
-> +		symb_bit++;
-> +		if ((c_cflag & CMSPAR) == CMSPAR) {
-> +			dev_err(tup->uport.dev, "Space parity not supported\n");
-> +			return;
-
-No - this is out of spec and lets user tasks spam the log. Just clear the
-flag if not supported.
-
-
-> +	/* Baud rate. */
-> +	baud = uart_get_baud_rate(u, termios, oldtermios, 200, 4000000);
-> +	spin_unlock_irqrestore(&u->lock, flags);
-> +	tegra_set_baudrate(tup, baud);
-> +	spin_lock_irqsave(&u->lock, flags);
-
-I think you need to use the helpers to put the actual baud it got into the
-termios if not B0 - see 8250.c ?
-
-Alan
+Jason
