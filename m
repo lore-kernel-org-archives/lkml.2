@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab2LQTz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 14:55:26 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54643 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab2LQTzY (ORCPT
+	id S1753469Ab2LQT5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 14:57:03 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44334 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab2LQT5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 14:55:24 -0500
-Date: Mon, 17 Dec 2012 20:55:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121217195510.GA16375@dhcp22.suse.cz>
-References: <20121205141722.GA9714@dhcp22.suse.cz>
- <20121206012924.FE077FD7@pobox.sk>
- <20121206095423.GB10931@dhcp22.suse.cz>
- <20121210022038.E6570D37@pobox.sk>
- <20121210094318.GA6777@dhcp22.suse.cz>
- <20121210111817.F697F53E@pobox.sk>
- <20121210155205.GB6777@dhcp22.suse.cz>
- <20121217023430.5A390FD7@pobox.sk>
- <20121217163203.GD25432@dhcp22.suse.cz>
- <20121217192301.829A7020@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121217192301.829A7020@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Dec 2012 14:57:00 -0500
+From: Dongjin Kim <tobetter@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        Dongjin Kim <tobetter@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Jason Cooper <jason@lakedaemon.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] ODROID-X: dts: Add board dts file for ODROID-X
+Date: Tue, 18 Dec 2012 04:55:04 +0900
+Message-Id: <1355774107-364-2-git-send-email-tobetter@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355774107-364-1-git-send-email-tobetter@gmail.com>
+References: <1355774107-364-1-git-send-email-tobetter@gmail.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 17-12-12 19:23:01, azurIt wrote:
-> >[Ohh, I am really an idiot. I screwed the first patch]
-> >-       bool oom = true;
-> >+       bool oom = !(gfp_mask | GFP_MEMCG_NO_OOM);
-> >
-> >Which obviously doesn't work. It should read !(gfp_mask &GFP_MEMCG_NO_OOM).
-> >  No idea how I could have missed that. I am really sorry about that.
-> 
-> 
-> :D no problem :) so, now it should really work as expected and
-> completely fix my original problem?
+Add initial dtb file for Hardkernel's ODROID-X board based on EXYNOS4412 SoC.
 
-It should mitigate the problem. The real fix shouldn't be that specific
-(as per discussion in other thread). The chance this will get upstream
-is not big and that means that it will not get to the stable tree
-either.
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+---
+ arch/arm/boot/dts/Makefile               |    1 +
+ arch/arm/boot/dts/exynos4412-odroidx.dts |   52 ++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+ create mode 100644 arch/arm/boot/dts/exynos4412-odroidx.dts
 
-> is it safe to apply it on 3.2.35?
-
-I didn't check what are the differences but I do not think there is
-anything to conflict with it.
-
-> Thank you very much!
-
-HTH
-
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index ca6fb8e..3355af9 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -45,6 +45,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+ 	exynos5250-smdk5250.dtb \
+ 	exynos5440-ssdk5440.dtb \
+ 	exynos4412-smdk4412.dtb \
++	exynos4412-odroidx.dtb \
+ 	exynos5250-smdk5250.dtb \
+ 	exynos5250-snow.dtb
+ dtb-$(CONFIG_ARCH_HIGHBANK) += highbank.dtb \
+diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
+new file mode 100644
+index 0000000..786ddd7
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
+@@ -0,0 +1,52 @@
++/*
++ * Hardkernel's Exynos4412 based ODROID-X board device tree source
++ *
++ * Copyright (c) 2012-2013 Dongjin Kim <tobetter@gmail.com>
++ *
++ * Device tree source file for Hardkernel's ODROID-X board which is based on
++ * Samsung's Exynos4412 SoC.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++/dts-v1/;
++/include/ "exynos4412.dtsi"
++
++/ {
++	model = "Hardkernel ODROID-X board based on Exynos4412";
++	compatible = "samsung,exynos4412";
++
++	memory {
++		reg = <0x40000000 0x40000000>;
++	};
++
++	chosen {
++		bootargs ="root=/dev/mmcblk0p3 rw console=ttySAC1,115200 init=/sbin/init delay=2";
++	};
++
++	serial@13800000 {
++		status = "okay";
++	};
++
++	serial@13810000 {
++		status = "okay";
++	};
++
++	serial@13820000 {
++		status = "okay";
++	};
++
++	serial@13830000 {
++		status = "okay";
++	};
++
++	sdhci@12530000 {
++		bus-width = <4>;
++		samsung,cd-pinmux-gpio = <&gpk2 2 2 3 3>;
++		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_bus4>;
++		pinctrl-names = "default";
++		status = "okay";
++	};
++};
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
