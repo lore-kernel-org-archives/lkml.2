@@ -1,207 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab2LQXTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 18:19:09 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:41967 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2LQXTH (ORCPT
+	id S1753646Ab2LQXVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 18:21:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50108 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab2LQXVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 18:19:07 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 17 Dec 2012 15:18:57 -0800
-Message-ID: <87wqwggtcu.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 17 Dec 2012 18:21:42 -0500
+Date: Mon, 17 Dec 2012 15:20:24 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Jan Kara <jack@suse.cz>
+Cc: axboe@kernel.dk, lucho@ionkov.net, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
+ stable pages during write
+Message-ID: <20121217232024.GC10874@blackbox.djwong.org>
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+ <20121213080811.23360.98131.stgit@blackbox.djwong.org>
+ <20121217102359.GH5133@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19tmL5N2xMPdnt6vfVJWsDwaM9IzEesyAA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4997]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [GIT PULL] user namespace and namespace infrastructure changes for 3.8
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217102359.GH5133@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 17, 2012 at 11:23:59AM +0100, Jan Kara wrote:
+> On Thu 13-12-12 00:08:11, Darrick J. Wong wrote:
+> > Several complaints have been received regarding long file write latencies when
+> > memory pages must be held stable during writeback.  Since it might not be
+> > acceptable to stall programs for the entire duration of a page write (which may
+> > take many milliseconds even on good hardware), enable a second strategy wherein
+> > pages are snapshotted as part of submit_bio; the snapshot can be held stable
+> > while writes continue.
+> > 
+> > This provides a band-aid to provide stable page writes on jbd without needing
+> > to backport the fixed locking scheme in jbd2.  A mount option is added to ext4
+> > to allow administrators to enable it there.
+> > 
+> > For those wondering about the ext3 bandage -- fixing the jbd locking (which was
+> > done as part of ext4dev years ago) is a lot of surgery, and setting
+> > PG_writeback on data pages when we actually hold the page lock dropped ext3
+> > performance by nearly an order of magnitude.  If we're going to migrate iscsi
+> > and raid to use stable page writes, the complaints about high latency will
+> > likely return.  We might as well centralize their page snapshotting thing to
+> > one place.
+>   Umm, I kind of like this solution for ext3...
 
-Linus,
+:)
 
-Please pull the for-linus git tree from:
+> > diff --git a/mm/Kconfig b/mm/Kconfig
+> > index a3f8ddd..78db0e1 100644
+> > --- a/mm/Kconfig
+> > +++ b/mm/Kconfig
+> > @@ -224,6 +224,16 @@ config BOUNCE
+> >  	def_bool y
+> >  	depends on BLOCK && MMU && (ZONE_DMA || HIGHMEM)
+> >  
+> > +# On the 'tile' arch, USB OHCI needs the bounce pool since tilegx will often
+> > +# have more than 4GB of memory, but we don't currently use the IOTLB to present
+> > +# a 32-bit address to OHCI.  So we need to use a bounce pool instead.
+> > +#
+> > +# We also use the bounce pool to provide stable page writes for users that
+> > +# don't (or can't) afford the wait latency.
+> > +config NEED_BOUNCE_POOL
+> > +	bool
+> > +	default y if (TILE && USB_OHCI_HCD) || (BLK_DEV_INTEGRITY && (EXT3_FS || EXT4_FS))
+> > +
+>   This means that NEED_BOUNCE_POOL is going to be enabled on pretty much
+> any distro kernel...
 
-   git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
+I want to drop EXT4_FS from that default line.  Then we only need it in the
+case where EXT4_USE_FOR_EXT23=y hasn't taken the place of EXT3_FS=y.
 
-   HEAD: 5155040ed349950e16c093ba8e65ad534994df2a userns: Fix typo in description of the limitation of userns_install
+<shrug> Has anyone actually done that?
 
-   This tree is against v3.7-rc3
+Heh, even *I* haven't done that.
 
-The embarrasing oversights that Andy found have been corrected.
+> >  config NR_QUICK
+> >  	int
+> >  	depends on QUICKLIST
+> > diff --git a/mm/bounce.c b/mm/bounce.c
+> > index 0420867..fa11935 100644
+> > --- a/mm/bounce.c
+> > +++ b/mm/bounce.c
+> > @@ -178,6 +178,38 @@ static void bounce_end_io_read_isa(struct bio *bio, int err)
+> >  	__bounce_end_io_read(bio, isa_page_pool, err);
+> >  }
+> >  
+> > +#ifdef CONFIG_NEED_BOUNCE_POOL
+> > +static int might_snapshot_stable_page_write(struct bio **bio_orig)
+> > +{
+> > +	return bio_data_dir(*bio_orig) == WRITE;
+> > +}
+> ... so might might_snapshot_stable_page_write() will be true for each
+> write. And thus blk_queue_bounce() becomes considerably more expensive?
+> Also calling should_snapshot_stable_pages() for every page seems to be
+> stupid since its result is going to be the same for all the pages in the
+> bio (well, I could imagine setups where it won't be but do we want to
+> support them?).
+> 
+> So cannot we just make a function like should_snapshot_stable_pages() to
+> test whether we really need the bouncing, use it in blk_queue_bounce() and
+> then pass the information to __blk_queue_bounce() if needed?
 
-While small this set of changes is very significant with respect to
-containers in general and user namespaces in particular.  The user space
-interface is now complete.
+Yes.  I'd actually considered simply calling should_snapshot() on the first
+bio_vec page and passing that information through, but thought I should play it
+safe for the first revision.
 
-This set of changes adds support for unprivileged users to create user
-namespaces and as a user namespace root to create other namespaces.  The
-tyrrany of supporting suid root preventing unprivileged users from using
-cool new kernel features is broken.
+However, a bio targets a single block device, so this seems like a safe
+optimization.
 
-This set of changes completes the work on setns, adding support for
-the pid, user, mount namespaces.
-
-This set of changes includes a bunch of basic pid namespace
-cleanups/simplifications.  Of particular significance is the rework of
-the pid namespace cleanup so it no longer requires sending out tendrils
-into all kinds of unexpected cleanup paths for operation.  At least one
-case of broken error handling is fixed by this cleanup.
-
-The files under /proc/<pid>/ns/ have been converted from regular files
-to magic symlinks which prevents incorrect caching by the VFS, ensuring
-the files always refer to the namespace the process is currently using
-and ensuring that the ptrace_mayaccess permission checks are always
-applied.
-
-The files under /proc/<pid>/ns/ have been given stable inode numbers so
-it is now possible to see if different processes share the same
-namespaces.
-
-Through the David Miller's net tree are changes to relax many of the
-permission checks in the networking stack to allowing the user namespace
-root to usefully use the networking stack.  Similar changes for the
-mount namespace and the pid namespace are coming through my tree.
-
-Two small changes to add user namespace support were commited here
-adn in David Miller's -net tree so that I could complete the work on the
-/proc/<pid>/ns/ files in this tree.  
-
-Work remains to make it safe to build user namespaces and 9p, afs,
-ceph, cifs, coda, gfs2, ncpfs, nfs, nfsd, ocfs2, and xfs so the Kconfig
-guard remains in place preventing that user namespaces from being built
-when any of those filesystems are enabled.
-
-Future design work remains to allow root users outside of the initial
-user namespace to mount more than just /proc and /sys.
-
-Eric W. Biederman (41):
-      userns: Support autofs4 interacing with multiple user namespaces
-      userns: Support fuse interacting with multiple user namespaces
-      netns: Deduplicate and fix copy_net_ns when !CONFIG_NET_NS
-      userns: make each net (net_ns) belong to a user_ns
-      userns: On mips modify check_same_owner to use uid_eq
-      procfs: Use the proc generic infrastructure for proc/self.
-      procfs: Don't cache a pid in the root inode.
-      pidns: Capture the user namespace and filter ns_last_pid
-      pidns: Use task_active_pid_ns where appropriate
-      pidns: Make the pidns proc mount/umount logic obvious.
-      pidns: Don't allow new processes in a dead pid namespace.
-      pidns: Wait in zap_pid_ns_processes until pid_ns->nr_hashed == 1
-      pidns: Deny strange cases when creating pid namespaces.
-      pidns: Add setns support
-      pidns: Consolidate initialzation of special init task state
-      pidns: Support unsharing the pid namespace.
-      vfs: Allow chroot if you have CAP_SYS_CHROOT in your user namespace
-      vfs: Add setns support for the mount namespace
-      vfs: Add a user namespace reference from struct mnt_namespace
-      vfs: Only support slave subtrees across different user namespaces
-      vfs: Allow unprivileged manipulation of the mount namespace.
-      userns: Ignore suid and sgid on binaries if the uid or gid can not be mapped
-      userns: Allow unprivileged users to create user namespaces.
-      userns: Allow chown and setgid preservation
-      userns: Allow setting a userns mapping to your current uid.
-      userns: Allow unprivileged users to create new namespaces
-      userns: Allow unprivileged use of setns.
-      userns: Make create_new_namespaces take a user_ns parameter
-      userns: Kill task_user_ns
-      userns: Implent proc namespace operations
-      userns: Implement unshare of the user namespace
-      procfs: Print task uids and gids in the userns that opened the proc file
-      userns: For /proc/self/{uid,gid}_map derive the lower userns from the struct file
-      userns: Allow unprivilged mounts of proc and sysfs
-      proc: Generalize proc inode allocation
-      proc: Fix the namespace inode permission checks.
-      proc: Usable inode numbers for the namespace file descriptors.
-      Fix cap_capable to only allow owners in the parent user namespace to have caps.
-      userns: Require CAP_SYS_ADMIN for most uses of setns.
-      userns: Add a more complete capability subset test to commit_creds
-      userns: Fix typo in description of the limitation of userns_install
-
-Zhao Hongjiang (1):
-      userns: fix return value on mntns_install() failure
-
- arch/mips/kernel/mips-mt-fpaff.c          |    4 +-
- arch/powerpc/platforms/cell/spufs/sched.c |    2 +-
- arch/um/drivers/mconsole_kern.c           |    2 +-
- drivers/staging/android/binder.c          |    3 +-
- fs/attr.c                                 |   11 +-
- fs/autofs4/autofs_i.h                     |    8 +-
- fs/autofs4/dev-ioctl.c                    |    4 +-
- fs/autofs4/inode.c                        |   24 ++--
- fs/autofs4/waitq.c                        |    5 +-
- fs/exec.c                                 |    9 +-
- fs/fuse/dev.c                             |    4 +-
- fs/fuse/dir.c                             |   20 ++--
- fs/fuse/fuse_i.h                          |    4 +-
- fs/fuse/inode.c                           |   23 ++--
- fs/hppfs/hppfs.c                          |    2 +-
- fs/mount.h                                |    3 +
- fs/namespace.c                            |  212 ++++++++++++++++++++++++-----
- fs/open.c                                 |    2 +-
- fs/pnode.h                                |    1 +
- fs/proc/Makefile                          |    1 +
- fs/proc/array.c                           |    2 +-
- fs/proc/base.c                            |  169 +----------------------
- fs/proc/generic.c                         |   26 ++--
- fs/proc/inode.c                           |    6 +-
- fs/proc/internal.h                        |    1 +
- fs/proc/namespaces.c                      |  185 ++++++++++++++++++++++---
- fs/proc/root.c                            |   17 +--
- fs/proc/self.c                            |   59 ++++++++
- fs/sysfs/mount.c                          |    1 +
- include/linux/cred.h                      |    2 -
- include/linux/fs.h                        |    2 +
- include/linux/ipc_namespace.h             |    9 +-
- include/linux/mnt_namespace.h             |    3 +-
- include/linux/nsproxy.h                   |    2 +-
- include/linux/pid_namespace.h             |   11 +-
- include/linux/proc_fs.h                   |   26 ++++-
- include/linux/user_namespace.h            |   10 ++
- include/linux/utsname.h                   |    7 +-
- include/net/net_namespace.h               |   26 +++-
- init/Kconfig                              |    2 -
- init/main.c                               |    1 -
- init/version.c                            |    2 +
- ipc/msgutil.c                             |    2 +
- ipc/namespace.c                           |   33 ++++-
- kernel/cgroup.c                           |    2 +-
- kernel/cred.c                             |   27 ++++-
- kernel/events/core.c                      |    2 +-
- kernel/exit.c                             |   12 --
- kernel/fork.c                             |   69 +++++++---
- kernel/nsproxy.c                          |   36 +++---
- kernel/pid.c                              |   47 ++++++-
- kernel/pid_namespace.c                    |  113 ++++++++++++---
- kernel/ptrace.c                           |   10 +-
- kernel/sched/core.c                       |   10 +-
- kernel/signal.c                           |    2 +-
- kernel/sysctl_binary.c                    |    2 +-
- kernel/user.c                             |    2 +
- kernel/user_namespace.c                   |  147 +++++++++++++++++---
- kernel/utsname.c                          |   34 ++++-
- net/core/net_namespace.c                  |   55 ++++++--
- security/commoncap.c                      |   25 +++-
- security/yama/yama_lsm.c                  |   12 ++-
- 62 files changed, 1074 insertions(+), 481 deletions(-)
+--D
+> 
+> 								Honza
+> 
+> > +static int should_snapshot_stable_pages(struct page *page, int rw)
+> > +{
+> > +	struct backing_dev_info *bdi;
+> > +	struct address_space *mapping = page_mapping(page);
+> > +
+> > +	if (!mapping)
+> > +		return 0;
+> > +	bdi = mapping->backing_dev_info;
+> > +	if (!bdi_cap_stable_pages_required(bdi))
+> > +		return 0;
+> > +
+> > +	return mapping->host->i_sb->s_flags & MS_SNAP_STABLE &&
+> > +	       rw == WRITE;
+> > +}
+> > +#else
+> > +static int might_snapshot_stable_page_write(struct bio **bio_orig)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static int should_snapshot_static_pages(struct page *page, int rw)
+> > +{
+> > +	return 0;
+> > +}
+> > +#endif /* CONFIG_NEED_BOUNCE_POOL */
+> > +
+> >  static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
+> >  			       mempool_t *pool)
+> >  {
+> > @@ -192,7 +224,8 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
+> >  		/*
+> >  		 * is destination page below bounce pfn?
+> >  		 */
+> > -		if (page_to_pfn(page) <= queue_bounce_pfn(q))
+> > +		if (page_to_pfn(page) <= queue_bounce_pfn(q) &&
+> > +		    !should_snapshot_stable_pages(page, rw))
+> >  			continue;
+> >  
+> >  		/*
+> > @@ -284,7 +317,8 @@ void blk_queue_bounce(struct request_queue *q, struct bio **bio_orig)
+> >  	 * don't waste time iterating over bio segments
+> >  	 */
+> >  	if (!(q->bounce_gfp & GFP_DMA)) {
+> > -		if (queue_bounce_pfn(q) >= blk_max_pfn)
+> > +		if (queue_bounce_pfn(q) >= blk_max_pfn &&
+> > +		    !might_snapshot_stable_page_write(bio_orig))
+> >  			return;
+> >  		pool = page_pool;
+> >  	} else {
+> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> > index 3e4a8cc..fbd8efb 100644
+> > --- a/mm/page-writeback.c
+> > +++ b/mm/page-writeback.c
+> > @@ -2291,6 +2291,10 @@ void wait_for_stable_page(struct page *page)
+> >  
+> >  	if (!bdi_cap_stable_pages_required(bdi))
+> >  		return;
+> > +#ifdef CONFIG_NEED_BOUNCE_POOL
+> > +	if (mapping->host->i_sb->s_flags & MS_SNAP_STABLE)
+> > +		return;
+> > +#endif /* CONFIG_NEED_BOUNCE_POOL */
+> >  
+> >  	wait_on_page_writeback(page);
+> >  }
+> > 
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
