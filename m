@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab2LQJGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 04:06:50 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:47096 "EHLO relay.sw.ru"
+	id S1752066Ab2LQJQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:16:06 -0500
+Received: from mout.perfora.net ([74.208.4.194]:50183 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab2LQJGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 04:06:48 -0500
-Message-ID: <50CEE06B.9040508@parallels.com>
-Date: Mon, 17 Dec 2012 13:05:47 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751682Ab2LQJQF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:16:05 -0500
+From: Mickey Penick <e446457625@exchange.1and1.com>
+Date: Mon, 17 Dec 2012 04:10:31 -0500
+Subject: ($2,811,041.00 USD)
+Thread-Topic: ($2,811,041.00 USD)
+Thread-Index: AQHN3DZdu1VA+qyth02VsWn3lPtaeA==
+Message-ID: <B353BE0D877992409CB2153398733B81635793AA@winxbeus26.exchange.xchg>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+X-Provags-ID: V02:K0:IaOpFlVcDyTz3yQtX3xL8Kho4OoGuMykFcoNGwP5zE+
+ jKpzWBy7vKDQarbDfl20jBZSU10oYwwN71hXHT8FlMtmplZ+dy
+ /4NOJKo7RPEXPRLcpe/y5OUpLQvlX++shV1lEdykDCkSNPARN7
+ WXzlKNom4x/QpkXYGjS1e5H9ohp4ceC+5ppTDf588PXv/3LCEL
+ gjDb+C7F6LT2Dnfh5V+7Ce/6LXdLRbvCukTDvHtuam3fwl9t/v
+ cQEB2OZ11PYp6DPryOGNovkgnB3LpxWC2QR/uB2jlR65RzcHRE
+ nK/ZA944rK72UwhejdBAazBHhOArqhIySuqMIjPzJVJEx4xPoW
+ 1+7RvH/55S9EMJA33Tf74m1h4F0mUC+LIzfgZAu+vTytgHA1hL
+ 2D5MqfH1ldwFzhWV0VZxHUMGqpVRfuZxWQ=
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, aarcange@redhat.com, ak@linux.intel.com,
-        Stefani Seibold <stefani@seibold.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, criu@openvz.org, mingo@redhat.com,
-        john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [CRIU] [PATCH] Add VDSO time function support for x86 32-bit
- kernel
-References: <1355343572-23074-1-git-send-email-stefani@seibold.net> <50C9148C.4040308@zytor.com> <1355378005.24283.11.camel@wall-e> <1d3061cb-76d0-4e42-9b75-a975b05384ec@email.android.com> <1355379433.24701.1.camel@wall-e> <f984cb31-baa5-4176-8e85-37266e2cfb8d@email.android.com> <1355383038.18653.2.camel@wall-e> <CALCETrWmYpEh9pLiohF+yu9FnrVfSNdHB_TQOKL6+LkdTF+cVw@mail.gmail.com> <50CA6E4C.6000305@zytor.com> <CALCETrV1kvhOvDpzTavGb1X9HT+PdEPXJ0H8afs7jzxpcF7Kjg@mail.gmail.com> <50CA81A4.9040702@zytor.com> <CALCETrWCMQys5MCbd6E_7c+Bsvph5cfkrDDm5tNpyBdgVE-YeQ@mail.gmail.com> <50CA85BD.7070502@zytor.com> <CALCETrWKDJd1T_VCRNAzD-KTtYBbmvgE_ZYvb8uN4nBUYQvkgA@mail.gmail.com> <8c3585bc-fc7d-4826-913c-f4581494d91d@email.android.com> <CALCETrX5KUiQaV7dsAFa1SYyWPjUVwh43HvbPwqPStMxqE0ctQ@mail.gmail.com> <50CAE485.5020608@parallels.com> <50CB716D.6020501@zytor.com> <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
-In-Reply-To: <CALCETrWazriQVbQPc8u+KFyNUaa=kJUc=jdh9w7z6rS+kWEX1w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2012 10:44 PM, Andy Lutomirski wrote:
-> On Fri, Dec 14, 2012 at 10:35 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/14/2012 12:34 AM, Pavel Emelyanov wrote:
->>> On 12/14/2012 06:20 AM, Andy Lutomirski wrote:
->>>> On Thu, Dec 13, 2012 at 6:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>> Wouldn't the vdso get mapped already and could be mremap()'d.  If we
->>>> really need more control I'd almost push for a device/filesystem node
->>>> that could be mmapped the usual way.
->>>>
->>>> Hmm.  That may work, but it'll still break ABI.  I'm not sure that
->>>> criu is stable enough yet that we should care.  Criu people?
->>>
->>> It's not yet, but we'd still appreciate the criu-friendly vdso redesign.
->>>
->>>> (In brief summary: how annoying would it be if the vdso was no longer
->>>> just a bunch of constant bytes that lived somewhere?)
->>>
->>> It depends on what vdso is going to be. In the perfect case it should
->>> a) be mremap-able to any address (or be at fixed address _forever_, but
->>>    I assume this is not feasible);
->>> b) have entry points at fixed (or somehow movable) places.
->>>
->>> I admit that I didn't understand your question properly, if I did,
->>> please correct me.
->>>
->>
->> mremap() should work.  At the same time, the code itself is not going to
->> have any stability guarantees between kernel versions -- it obviously
->> cannot.
-> 
-> We could guarantee that the symbols in the vdso resolve to particular
-> offsets within the vdso.  (Yes, this is ugly.)
-> 
-> Does criu support checkpointing with one version of a shared library
-> and restoring with another?
-
-No, neither we have this in plans.
-However, if somebody needs this and implements -- why not?!
-
-Thanks,
-Pavel
+You are eligible to receive a compensation payment of $2,811,041.00 USD.This compensation is being made to all of you by the United Nation for all that have suffered losses as a result of fraud, accident or illness. For more information, contact the below agent for the delivery of your cashier check ($2,811,041.00 USD). Send all your details to below info.
+ 
+Contact Name: Jack Phelps
+ Tel: +447010071639
+ E-mail:unclaimsdptt@hotmail.com
+ 
+Please take note that you will pay a shipping/handling fee of $500.00 USD
+ 
