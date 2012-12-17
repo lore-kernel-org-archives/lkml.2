@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2LQI6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 03:58:13 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:55199 "EHLO mx3.cyfra.ua"
+	id S1751844Ab2LQJEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 04:04:10 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37253 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab2LQI6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 03:58:11 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH 1/2 v3] Fix memory freeing issues
-Date: Mon, 17 Dec 2012 10:58:02 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Cong Ding <dinggnu@gmail.com>
-References: <201212101118.08463.vitas@nppfactor.kiev.ua> <201212141133.50312.vitas@nppfactor.kiev.ua> <20121215172540.GB2589@local>
-In-Reply-To: <20121215172540.GB2589@local>
+	id S1750813Ab2LQJEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 04:04:06 -0500
+Message-ID: <50CEDFEB.2030600@ti.com>
+Date: Mon, 17 Dec 2012 11:03:39 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212171058.03013.vitas@nppfactor.kiev.ua>
+To: Tony Lindgren <tony@atomide.com>
+CC: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [GIT PULL] fbdev changes for 3.8
+References: <50CAFDFF.3070802@ti.com> <CA+55aFz9+3mOZcjJ9C-izKkidT9mxeO7xUubJER0OTjcZjE=2A@mail.gmail.com> <20121215222431.GA7153@redhat.com> <20121216174613.GA18490@atomide.com> <20121216203536.GR4989@atomide.com>
+In-Reply-To: <20121216203536.GR4989@atomide.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig4415ECD25A05695994E9C486"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 15 December 2012 19:25:40 Hans J. Koch wrote:
-> On Fri, Dec 14, 2012 at 11:33:50AM +0200, Vitalii Demianets wrote:
-> > Hans, why do you want to put in this patch, which is dealing with
-> > memory-freeing issues only, completely unrelated functional changes?
->
-> Because during review of your patch we happened to find another issue
-> a few lines up and down. Why not fix it on the way?
->
+--------------enig4415ECD25A05695994E9C486
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Because my heart is not with your solution of irq-related problem. I can't do 
-it.
+On 2012-12-16 22:35, Tony Lindgren wrote:
 
-> If you like, make it two patches, one with your memory-freeing issue
-> and one "Remove irq tracking" or something like that.
+>> Those are all omap internal devices and should be all marked with
+>> depends on ARCH_OMAP2PLUS.
+>>
+>> It's a different story for external devices that may be used on other
+>> architectures.
+>>
+>> I only came up with one reason to compile internal devices for other
+>> architectures: In some cases the driver subsystem maintainer may want =
+to
+>> be able to compile test subsystem wide changes without having to compi=
+le
+>> for each target separately. But for those cases it's trivial to carry =
+a
+>> compile test patch that just drops the depends Kconfig entries.
+>=20
+> And here's a patch to limit the omap drivers above to omap only.
 
-I've done exactly that. The series of two patches. First [patch 1/2] - deals 
-exclusively with memory freeing issues and you have no objections to it. 
-Second [patch 2/2] which we disagreed upon - deals with irq-related issues.
+The patch looks good to me.
 
-> That's just 
-> three or four lines difference, I'd even accept it if it were only
-> one patch.
->
-> I don't want to fix one thing now and leave the other one unresolved.
-> That would just be a waste of time.
+The reason I removed the OMAP dependency from OMAP DSS was not (only)
+because of the compile testing, but also because I thought it was right:
+a driver for an IP block shouldn't presume that the IP is used only on
+particular SoC.
 
-Me too. But we have different vision of the solution to the irq-related issue. 
-That's why I won't write the irq-related part.
-Also, I don't understand, why do you want two unrelated fixes in one patch? 
-When they are separated, they are easier to discuss, study and revert if 
-needed.
+But perhaps that's a bit too academic approach for an IP that's in real
+world only used for OMAP.
 
->
-> To be clear, I have no objections regarding your memory freeing ideas.
+ Tomi
 
-So, why not to stop here and accept this one patch? I won't write the 
-irq-related part anyway, as my heart is with the solution in [patch 2/2] and 
-you disagree with it.
-So, the irq-related part should be done by someone else. Maybe by you, why 
-not?
+
+
+--------------enig4415ECD25A05695994E9C486
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJQzt/rAAoJEPo9qoy8lh715wEP/iob+vHJ27lTH6dK7ebRG8ZG
+KpkZJmcjwL7GTAdpyvaMhT+Fk5eiqHnoa+6BWRscPzkq+ar/RULns5JAtTxKWsic
+xXM8A3xsLrOd+ildwwCL5cnQgBMWHxLcpIOh8UKTqzzC4xtdhLE8z1l/buBSryLV
+5WcE0+iC2T4TcG6AFafDcJLTE01YrDYRfrlvF2aM2iW8z0iqqSh+0NHaACGfr971
+NrWP5Mzr4lbtFo/sZOmgfsyZdCmZbirwCh18CTYqH1f8C32SFPdYVfAAiKVA6ena
+PULqsKlCUSbRCWXI3fOL12gxSGmM/V7JGdpNYS/t7OY/nI+17k+c68gEKphQBYzN
+U3wBp4jOPRx6RdVGmMB0RF8o7yotZC14v4n+u6C56psCc/ToTwOxsliQfVCVsTAA
+m+7ddCCIjk594qfAv0RPd6u4sY77F5i2pZycWShbN6Dzf0Bt9gMA3u3Snj8Hvprq
+HhRlH30Ozj/Hp1JewVAW9iBP+DWM2+ZdWeWjh3f5Y+jv/xkovXOJ4SqwC7syCod2
+ahoJNVca0JZef+UVPF3CXgDekP5Sz88+mBO9CqYyTA7XpSMjGycUD8IkZVZdNhPW
+KvfHBUtJUBY8c7Pv9Vol3f3UvGh5OOeciEjN1KppS/NQIcnMLa2T9yG8zz4EKfb9
+l/qM8vUCySg0L9prVq70
+=7pYX
+-----END PGP SIGNATURE-----
+
+--------------enig4415ECD25A05695994E9C486--
