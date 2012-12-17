@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab2LQWHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:07:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48683 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab2LQWHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:07:42 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ACPI: Overriding ACPI tables via initrd only works with an initrd
-Date: Mon, 17 Dec 2012 23:07:29 +0100
-Message-ID: <1609943.YuhLsJhEU0@hammer82.arch.suse.de>
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <50CF5FB4.8090305@zytor.com>
-References: <1351694147-10904-1-git-send-email-trenn@suse.de> <20121217092802.GA31947@liondog.tnic> <50CF5FB4.8090305@zytor.com>
+	id S1753816Ab2LQWID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:08:03 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41934 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab2LQWIB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 17:08:01 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <50CF510E.6050406@tilera.com>
+References: <1355546091-32537-1-git-send-email-simon.marchi@polymtl.ca> <50CF510E.6050406@tilera.com>
+From: Simon Marchi <simon.marchi@polymtl.ca>
+Date: Mon, 17 Dec 2012 17:07:30 -0500
+X-Google-Sender-Auth: eufAo8fwrpXQ3zCkQfncj1L0bxg
+Message-ID: <CAFXXi0m3rHg7P+GetLKv_cwp5+c5xsmbJ8LM5CTLGT39JhBmzA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] arch/tile: implement user_regset interface on tilegx
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 17, 2012 10:08:52 AM H. Peter Anvin wrote:
-> On 12/17/2012 01:28 AM, Borislav Petkov wrote:
-> > Hi guys,
-> > 
-> > this one sanitizes the Kconfig entry prompt so can we pick it up for
-> > -rc1 or later, please?
-> 
-> Hm... all these are actually cleanups or fixes for the stuff that is now
-> upstream, I believe... as minor fixes I think these can be pushed
-> post-rc1 if we don't get to them sooner but it looks like they are all
-> needed.
-This and another one are more or less minor cleanups, not
-urgently needed.
-I can repost them the next days.
+On Mon, Dec 17, 2012 at 12:06 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 12/14/2012 11:34 PM, Simon Marchi wrote:
+>> This is an implementation of user_regset for the tilegx architecture. It
+>> reuses the basic blocks that were already there.
+>
+> Thanks, Simon!  A couple of comments:
+>
+> I encourage you to respin this for tilepro as well as tilegx, since it's going to be trivial to make it happen.  Just take away all yours ifdefs, and use #include <arch/chip.h> and CHIP_ARCH_NAME instead of the string "tilegx".  It's worth it just to avoid the ifdefs in the code :-)
 
-Thanks hpa for helping to finally get this feature mainline.
-It's a huge enhancement for developing and debugging
-ACPI related stuff on Linux.
+Ok, I will send a v2 with this soon.
 
-   Thomas
+> I think with this support added, we have all the prerequisites to add "select HAVE_ARCH_TRACEHOOK" under "config TILE" in arch/tile/Kconfig, so we might as well do that too.  That will enable PTRACE_GETREGSET and PTRACE_SETREGSET, as well as /proc/PID/syscall, so why not?
+
+This is indeed my objective ;), and it is an intermediate objective to
+add support for HAVE_SYSCALL_TRACEPOINTS. If we look at arch/Kconfig,
+just above HAVE_ARCH_TRACEHOOK, we still have
+
+TIF_SYSCALL_TRACE       calls tracehook_report_syscall_{entry,exit}
+TIF_NOTIFY_RESUME       calls tracehook_notify_resume()
+signal delivery         calls tracehook_signal_handler()
+
+that we need to implement.
+
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
