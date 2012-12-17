@@ -1,310 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab2LQQuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 11:50:50 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52214 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2LQQut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 11:50:49 -0500
+	id S1753189Ab2LQQwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 11:52:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752819Ab2LQQwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 11:52:40 -0500
+Date: Mon, 17 Dec 2012 11:52:28 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com,
+        Peter Zijlstra <pzijlstr@redhat.com>, peterz@infradead.org
+Subject: Re: [PATCHSET] block: implement blkcg hierarchy support in cfq
+Message-ID: <20121217165228.GB7235@redhat.com>
+References: <1355524885-22719-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <000001cddc2f$a2b2e8a0$e818b9e0$%han@samsung.com>
-References: <000001cddc2f$a2b2e8a0$e818b9e0$%han@samsung.com>
-Date: Mon, 17 Dec 2012 11:50:48 -0500
-Message-ID: <CAHdPZaOCy8uOHmoKEiLqZg8RmM10FDSapJitJgWX1ebhRyvkXw@mail.gmail.com>
-Subject: Re: PATCH] backlight: add lms501kf03 LCD driver
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355524885-22719-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Dec 14, 2012 at 02:41:13PM -0800, Tejun Heo wrote:
+> Hello,
+> 
+> cfq-iosched is currently utterly broken in how it handles cgroup
+> hierarchy.  It ignores the hierarchy structure and just treats every
+> blkcgs equally.  This is simply broken.  This breakage makes blkcg
+> behave very differently from other properly-hierarchical controllers
+> and makes it impossible to give any uniform interpretation to the
+> hierarchy, which in turn makes it impossible to implement unified
+> hierarchy.
+> 
+> Given the relative simplicity of cfqg scheduling, implementing proper
+> hierarchy support isn't that difficult.  All that's necessary is
+> determining how much fraction each cfqg on the service tree has claim
+> to considering the hierarchy.  The calculation can be done by
+> maintaining the sum of active weights at each level and compounding
+> the ratios from the cfqg in question to root.  The overhead isn't
+> significant.  Tree traversals happen only when cfqgs are added or
+> removed from the service tree and they are from the cfqg being
+> modified to the root.
+> 
+> There are some design choices which are worth mentioning.
+> 
+> * Internal (non-leaf) cfqgs w/ tasks treat the tasks as a single unit
+>   competeting against the children cfqgs.  New config knobs -
+>   blkio.leaf_weight[_device] - are added to configure the weight of
 
-> +static int lms501kf03_spi_write(struct lms501kf03 *lcd, unsigned char address,
-> +                               unsigned char command)
-> +{
-> +       int ret;
-> +
-> +       ret = lms501kf03_spi_write_byte(lcd, address, command);
-> +
-> +       return ret;
+[ CC peterz ]
 
-there is redundancy here,
-you can do just removing the ret and do return.
+Hi Tejun,
 
-> +}
-> +
-> +static int lms501kf03_panel_send_sequence(struct lms501kf03 *lcd,
-> +                                       const unsigned short *wbuf)
-> +{
-> +       int ret = 0, i = 0;
-> +
-> +       while (wbuf[i] != ENDDEF) {
-> +               if (i == 0)
-> +                       ret = lms501kf03_spi_write(lcd, COMMAND_ONLY, wbuf[i]);
-> +               else
-> +                       ret = lms501kf03_spi_write(lcd, DATA_ONLY, wbuf[i]);
-> +               if (ret)
-> +                       break;
-> +               i += 1;
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +static int lms501kf03_ldi_init(struct lms501kf03 *lcd)
-> +{
-> +       int ret, i;
-> +       static const unsigned short *init_seq[] = {
-> +               seq_password,
-> +               seq_power,
-> +               seq_display,
-> +               seq_rgb_if,
-> +               seq_display_inv,
-> +               seq_vcom,
-> +               seq_gate,
-> +               seq_panel,
-> +               seq_col_mod,
-> +               seq_w_gamma,
-> +               seq_rgb_gamma,
-> +               seq_sleep_out,
-> +       };
-> +
-> +       for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
-> +               ret = lms501kf03_panel_send_sequence(lcd, init_seq[i]);
-> +               if (ret)
-> +                       break;
-> +       }
-> +       /* according to the datasheet, 120ms delay time is required. */
-why the 120ms delay required would be good to specify as comment. or
-you can put the link to datasheet if available.
+I am wondering if blkio.task_group_weight[_device] will more sense. It
+is easier to think in terms of hidden task group of a cfqg instead of
+whether it is a leaf node or not.
 
-> +       msleep(120);
-> +
-> +       return ret;
-> +}
-> +
-> +static int lms501kf03_ldi_enable(struct lms501kf03 *lcd)
-> +{
-> +       return lms501kf03_panel_send_sequence(lcd, seq_display_on);
-> +}
-> +
-> +static int lms501kf03_ldi_disable(struct lms501kf03 *lcd)
-> +{
-> +       return lms501kf03_panel_send_sequence(lcd, seq_display_off);
-> +}
-> +
-> +static int lms501kf03_power_is_on(int power)
-> +{
-> +       return (power) <= FB_BLANK_NORMAL;
-> +}
-> +
-> +static int lms501kf03_power_on(struct lms501kf03 *lcd)
-> +{
-> +       int ret = 0;
-> +       struct lcd_platform_data *pd;
-> +
-> +       pd = lcd->lcd_pd;
-> +
-> +       if (!pd->power_on) {
-> +               dev_err(lcd->dev, "power_on is NULL.\n");
-> +               return -EFAULT;
-we may need to do -EINVAL instead of EFAULT as EFAULT tends to be for
-the invalid memory addresses.
+>   these tasks.  Another way to look at it is that each cfqg has a
+>   hidden leaf child node attached to it which hosts all tasks and
+>   leaf_weight controls the weight of that hidden node.
+> 
+>   Treating cfqqs and cfqgs as equals doesn't make much sense to me and
+>   is hairy - we need to establish ioprio to weight mapping and the
+>   weights fluctuate as processes fork and exit.
 
-> +       } else {
-> +               pd->power_on(lcd->ld, 1);
-> +               msleep(pd->power_on_delay);
-> +       }
-> +
-> +       if (!pd->reset) {
-> +               dev_err(lcd->dev, "reset is NULL.\n");
-> +               return -EFAULT;
+So weights of task (io_context) or blkcg weights don't fluctuate with
+task fork/exit. It is just the weight on service tree, which fluctuates.
 
-may be here too..
+> This becomes hairier
+>   when considering multiple controllers, Such mappings can't be
+>   established consistently across different controllers and the
+>   weights are given out differently - ie. blkcg give weights out to
+>   io_contexts while cpu to tasks, which may share io_contexts.  It's
+>   difficult to make sense of what's going on.
 
-> +       } else {
-> +               pd->reset(lcd->ld);
-> +               msleep(pd->reset_delay);
-> +       }
-> +
-> +       ret = lms501kf03_ldi_init(lcd);
-> +       if (ret) {
-> +               dev_err(lcd->dev, "failed to initialize ldi.\n");
-> +               return ret;
-> +       }
-> +
-> +       ret = lms501kf03_ldi_enable(lcd);
-> +       if (ret) {
-> +               dev_err(lcd->dev, "failed to enable ldi.\n");
-> +               return ret;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int lms501kf03_power_off(struct lms501kf03 *lcd)
-> +{
-> +       int ret = 0;
-> +       struct lcd_platform_data *pd;
-> +
-> +       pd = lcd->lcd_pd;
-> +
-> +       ret = lms501kf03_ldi_disable(lcd);
-> +       if (ret) {
-> +               dev_err(lcd->dev, "lcd setting failed.\n");
-> +               return -EIO;
-> +       }
-> +
-> +       msleep(pd->power_off_delay);
-> +
-> +       pd->power_on(lcd->ld, 0);
-> +
+We already have that issue, isn't it. Cpu does task scheduling and
+CFQ does io_context scheduling. (Nobody seems to be complaining though).
 
-seems that you are calling the core lcd framework api, i am curious to
-know why, :p , and obviously i dunno why its calling that way.
+> 
+>   The goal is to bring cpu, currently the only other controller which
+>   implements weight based resource allocation, to similar behavior.
 
-> +       return 0;
-> +}
-> +
-> +static int lms501kf03_power(struct lms501kf03 *lcd, int power)
-> +{
-> +       int ret = 0;
-> +
-> +       if (lms501kf03_power_is_on(power) &&
-> +               !lms501kf03_power_is_on(lcd->power))
-> +               ret = lms501kf03_power_on(lcd);
-> +       else if (!lms501kf03_power_is_on(power) &&
-> +               lms501kf03_power_is_on(lcd->power))
-> +               ret = lms501kf03_power_off(lcd);
-> +
+I think we first need to have some kind of buy-in from cpu controller
+guys that yes in long term they will change it. Otherwise we don't want
+to be stuck in a situation where cpu and blkio behave entirely
+differently.
 
-seems that ret is used unitialised in this function bug is covered by
-ret = 0 assignment, but why that else case is missed, or i am just
-misreading?
+In fact we need to revisit this idea that what makes more sense. To
+me treating task and group at same level is not necessarily bad as
+it gives more flexibility. And leave it to user to create another
+subgroup and launch all the tasks there if they want to emulate the
+behavior of a hidden sub-group.
 
-> +       if (!ret)
-> +               lcd->power = power;
-> +
-> +       return ret;
-> +}
-> +
+If you look at it systemd already puts services in separate group. They
+always wanted to put user sessions also in a separate group. So
+effectively hierarhcy looks as follows (for cpu controller).
 
-[snip]
-> +
-> +static int lms501kf03_probe(struct spi_device *spi)
-> +{
-> +       struct lms501kf03 *lcd = NULL;
-> +       struct lcd_device *ld = NULL;
-> +       int ret = 0;
-> +
-> +       lcd = devm_kzalloc(&spi->dev, sizeof(struct lms501kf03), GFP_KERNEL);
-> +       if (!lcd)
-> +               return -ENOMEM;
-> +
+			  root
+		        / | \  \ 
+		      T1 T2 usr system
 
-glad you used devm api.
+So T1 and T2 here basically a kernel threds (All users sessions and
+services have been moved out to respective cgroups).
 
-> +       /* lms501kf03 lcd panel uses 3-wire 9-bit SPI Mode. */
-> +       spi->bits_per_word = 9;
-> +
-> +       ret = spi_setup(spi);
-> +       if (ret < 0) {
-> +               dev_err(&spi->dev, "spi setup failed.\n");
-> +               return ret;
-> +       }
-> +
-> +       lcd->spi = spi;
-> +       lcd->dev = &spi->dev;
-> +
-> +       lcd->lcd_pd = spi->dev.platform_data;
-> +       if (!lcd->lcd_pd) {
-> +               dev_err(&spi->dev, "platform data is NULL\n");
-> +               return -EFAULT;
-May be here too -EINVAL or some correct errno should be returned not
-the EFAULT no?
+I think I am fine with not limiting kernel threads into a subgroup of
+their own. In fact I think there was a patch where we could not move
+kernel threads out of root cgroup. If that makes sense, then it does
+not make sense to limit kernel threads to a subgroup of their own
+by default (it is equivalent to moving these threads to a cgroup of
+their own).
 
-> +       }
-> +
-> +       ld = lcd_device_register("lms501kf03", &spi->dev, lcd,
-> +                               &lms501kf03_lcd_ops);
-> +       if (IS_ERR(ld))
-> +               return PTR_ERR(ld);
-> +
-> +       lcd->ld = ld;
-> +
+So though I don't mind the notion of this hidden cgroups but given
+the fact that we have implemented things other way and left it to
+user space to manage it based on their needs, I am not sure what's
+that fundamental reason that we should change that assumption now.
 
-[snip]
+And even if we decide to do it, we need to have other controllers
+on board (especially cpu).
 
-> +#if defined(CONFIG_PM)
-> +static unsigned int before_power;
-> +
-> +static int lms501kf03_suspend(struct spi_device *spi, pm_message_t mesg)
-> +{
-> +       int ret = 0;
-> +       struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
-> +
-> +       dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
-> +
-> +       before_power = lcd->power;
-> +
-> +       /*
-> +        * when lcd panel is suspend, lcd panel becomes off
-> +        * regardless of status.
-> +        */
-> +       ret = lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
-> +
+I think we will have similar issues with others components too. In blkio
+throttling support, we will have to put some kind of throttling limits
+on internal group too. I guess one can raise similar concerns for memory
+controller too where there are no internal limits on child task of a
+cgroup but there are limits on child group.
 
-returning ret is redundant just like that return that is mentioned
-above. you can return as is.
+			parent (mem.limit_in_bytes = 200)
+			  /   |   \
+			 T1  T2   child-grp (mem.limit_in_bytes = 100)
+					|
+					T3
 
-> +       return ret;
-> +}
-> +
-> +static int lms501kf03_resume(struct spi_device *spi)
-> +{
-> +       int ret = 0;
-> +       struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
-> +
-> +       lcd->power = FB_BLANK_POWERDOWN;
-> +
-> +       ret = lms501kf03_power(lcd, FB_BLANK_UNBLANK);
-> +
-> +       return ret;
-> +}
+Now there are no  guarantees that T3 will get its share of 100 bytes of
+memory allocation as T1 and T2 might have already exhausted the quota
+of 200 bytes of parent.
 
-here too..
-> +#else
-> +#define lms501kf03_suspend     NULL
-> +#define lms501kf03_resume      NULL
-> +#endif
-> +
-> +void lms501kf03_shutdown(struct spi_device *spi)
-> +{
-> +       struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
-> +
-> +       lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
-> +}
-> +
-> +static struct spi_driver lms501kf03_driver = {
-> +       .driver = {
-> +               .name   = "lms501kf03",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +       .probe          = lms501kf03_probe,
-> +       .remove         = lms501kf03_remove,
-> +       .shutdown       = lms501kf03_shutdown,
-> +       .suspend        = lms501kf03_suspend,
-> +       .resume         = lms501kf03_resume,
-> +};
-> +
-> +module_spi_driver(lms501kf03_driver);
-> +
+So should we create an internal group there too to limit the share of
+T1 and T2. I thought if somebody wants it, then it is best to leave it
+to user space then kernel enforcing that. 
 
-nice, using module_spi_driver reduce the duplication of the
-spi_register unregister code.
+Thanks
+Vivek
