@@ -1,101 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331Ab2LQGAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 01:00:40 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab2LQGAi (ORCPT
+	id S1751392Ab2LQGJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 01:09:16 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57129 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2LQGJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 01:00:38 -0500
-Date: Sun, 16 Dec 2012 22:00:32 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Felipe Balbi <balbi@ti.com>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [GIT PULL] fbdev changes for 3.8
-Message-ID: <20121217060032.GB13300@core.coreip.homeip.net>
-References: <50CAFDFF.3070802@ti.com>
- <CA+55aFz9+3mOZcjJ9C-izKkidT9mxeO7xUubJER0OTjcZjE=2A@mail.gmail.com>
- <20121215222431.GA7153@redhat.com>
- <20121216174613.GA18490@atomide.com>
- <20121216203536.GR4989@atomide.com>
+	Mon, 17 Dec 2012 01:09:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121216203536.GR4989@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1355724270-11579-1-git-send-email-lliubbo@gmail.com>
+References: <1355724270-11579-1-git-send-email-lliubbo@gmail.com>
+Date: Mon, 17 Dec 2012 14:09:14 +0800
+Message-ID: <CAA_GA1c1GzTFykZmuVqs3DG-fnEXpV7w=DPtrpnj05qFtbL50A@mail.gmail.com>
+Subject: Re: [GIT PULL] Blackfin changes for 3.8
+From: Bob Liu <lliubbo@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        sonic.zhang@analog.com, vapier@gentoo.org, Bob Liu <lliubbo@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 12:35:37PM -0800, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [121216 09:49]:
-> > * Dave Jones <davej@redhat.com> [121215 14:27]:
-> > > On Sat, Dec 15, 2012 at 01:11:04PM -0800, Linus Torvalds wrote:
-> > >  > On Fri, Dec 14, 2012 at 2:22 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> > >  > > Hi Linus,
-> > >  > >
-> > >  > > Florian, the fbdev maintainer, has been very busy lately, so I offered to send
-> > >  > > the pull request for fbdev for this merge window.
-> > >  > 
-> > >  > Pulled. However, with this I get the Kconfig question
-> > >  > 
-> > >  >    OMAP2+ Display Subsystem support (OMAP2_DSS) [N/m/y/?] (NEW)
-> > >  > 
-> > >  > which doesn't make a whole lot of sense on x86-64, unless there's
-> > >  > something about OMAP2 that I don't know.
-> > >  > 
-> > >  > So I'd suggest making that OMAP2_DSS be dependent on OMAP2. Or at
-> > >  > least ARM. Because showing it to anybody else seems insane.
-> > >  > 
-> > >  > Same goes for FB_OMAP2 for that matter. I realize that it's likely
-> > >  > nice to get compile testing for this on x86-64 too, but if that's the
-> > >  > intent, we need to think about it some more. I don't think it's good
-> > >  > to ask actual normal users questions like this just for compile
-> > >  > coverage.
-> > > 
-> > > This OMAP stuff has been creeping into x86 builds for a while.
-> > > Grep from my current build config ..
-> > > 
-> > > # CONFIG_OMAP_OCP2SCP is not set
-> > > # CONFIG_KEYBOARD_OMAP4 is not set
-> > > # CONFIG_OMAP2_DSS is not set
-> > > # CONFIG_OMAP_USB2 is not set
-> > > 
-> > > There was some other arm-ism that does the same that I' currently forgetting,
-> > > or maybe that got fixed..
-> > 
-> > Those are all omap internal devices and should be all marked with
-> > depends on ARCH_OMAP2PLUS.
-> > 
-> > It's a different story for external devices that may be used on other
-> > architectures.
-> > 
-> > I only came up with one reason to compile internal devices for other
-> > architectures: In some cases the driver subsystem maintainer may want to
-> > be able to compile test subsystem wide changes without having to compile
-> > for each target separately. But for those cases it's trivial to carry a
-> > compile test patch that just drops the depends Kconfig entries.
-> 
-> And here's a patch to limit the omap drivers above to omap only.
+On Mon, Dec 17, 2012 at 2:04 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>
+> Hi linus,
+>
 
-Do you think we could add a new symbol to debug options, something like
-COMPILE_COVERAGE, and have drivers that can be compiled on platforms
-other than ones having the hardware to do
+Fix the lkml address, sorry.
 
-	depend on ARCH_XXX || COMPILE_CONVERAGE
+> The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
+>
+>   Linux 3.7 (2012-12-10 19:30:57 -0800)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/lliubbo/blackfin.git for-linus
+>
+> for you to fetch changes up to 86794b43569c9b8936dff2e8eed503393379af6e:
+>
+>   blackfin: SEC: clean up SEC interrupt initialization (2012-12-14 11:20:22 +0800)
+>
+> ----------------------------------------------------------------
+> David Howells (1):
+>       UAPI: (Scripted) Disintegrate arch/blackfin/include/asm
+>
+> Lars-Peter Clausen (5):
+>       Blackfin: Annotate strncpy_from_user src parameter with __user
+>       Blackfin: Add missing __user annotations to put_user
+>       Blackfin: Annotate clear_user 'to' parameter with __user
+>       Blackfin: Annotate strnlen_user and strlen_user 'src' parameter with __user
+>       Blackfin: twi: Add missing __iomem annotation
+>
+> Sonic Zhang (3):
+>       blackfin: anomaly: add anomaly 16000030 for bf5xx
+>       blackfin: kgdb: call generic_exec_single() directly
+>       blackfin: SEC: clean up SEC interrupt initialization
+>
+> Srinivas Kandagatla (1):
+>       Blackfin: dpmc: use module_platform_driver macro
+>
+> Steven Rostedt (1):
+>       blackfin: Use Kbuild infrastructure for kvm_para.h
+>
+> Tobias Klauser (2):
+>       Blackfin: remove unnecessary prototype for kobjsize()
+>       Blackfin: remove unused is_in_rom()
+>
+>  arch/blackfin/include/asm/Kbuild                   |    6 +-
+>  arch/blackfin/include/asm/bfin_sport.h             |  128 +-----
+>  arch/blackfin/include/asm/bfin_twi.h               |    2 +-
+>  arch/blackfin/include/asm/fixed_code.h             |   30 +-
+>  arch/blackfin/include/asm/kvm_para.h               |    1 -
+>  arch/blackfin/include/asm/pgtable.h                |    2 -
+>  arch/blackfin/include/asm/ptrace.h                 |  161 +-------
+>  arch/blackfin/include/asm/uaccess.h                |   41 +-
+>  arch/blackfin/include/asm/unistd.h                 |  430 +------------------
+>  arch/blackfin/include/mach-common/irq.h            |    5 +-
+>  arch/blackfin/include/uapi/asm/Kbuild              |   16 +
+>  arch/blackfin/include/uapi/asm/bfin_sport.h        |  136 ++++++
+>  arch/blackfin/include/{ => uapi}/asm/byteorder.h   |    0
+>  arch/blackfin/include/{ => uapi}/asm/cachectl.h    |    0
+>  arch/blackfin/include/{ => uapi}/asm/fcntl.h       |    0
+>  arch/blackfin/include/uapi/asm/fixed_code.h        |   38 ++
+>  arch/blackfin/include/{ => uapi}/asm/ioctls.h      |    0
+>  arch/blackfin/include/{ => uapi}/asm/poll.h        |    0
+>  arch/blackfin/include/{ => uapi}/asm/posix_types.h |    0
+>  arch/blackfin/include/uapi/asm/ptrace.h            |  170 ++++++++
+>  arch/blackfin/include/{ => uapi}/asm/sigcontext.h  |    0
+>  arch/blackfin/include/{ => uapi}/asm/siginfo.h     |    0
+>  arch/blackfin/include/{ => uapi}/asm/signal.h      |    0
+>  arch/blackfin/include/{ => uapi}/asm/stat.h        |    0
+>  arch/blackfin/include/{ => uapi}/asm/swab.h        |    0
+>  arch/blackfin/include/uapi/asm/unistd.h            |  437 ++++++++++++++++++++
+>  arch/blackfin/kernel/kgdb.c                        |   13 +-
+>  arch/blackfin/mach-bf518/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf527/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf533/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf537/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf538/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf548/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf561/include/mach/anomaly.h    |    1 +
+>  arch/blackfin/mach-bf609/include/mach/irq.h        |    3 -
+>  arch/blackfin/mach-bf609/pm.c                      |    3 +-
+>  arch/blackfin/mach-common/dpmc.c                   |   19 +-
+>  arch/blackfin/mach-common/ints-priority.c          |  272 ++++++------
+>  38 files changed, 972 insertions(+), 948 deletions(-)
+>  delete mode 100644 arch/blackfin/include/asm/kvm_para.h
+>  create mode 100644 arch/blackfin/include/uapi/asm/bfin_sport.h
+>  rename arch/blackfin/include/{ => uapi}/asm/byteorder.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/cachectl.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/fcntl.h (100%)
+>  create mode 100644 arch/blackfin/include/uapi/asm/fixed_code.h
+>  rename arch/blackfin/include/{ => uapi}/asm/ioctls.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/poll.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/posix_types.h (100%)
+>  create mode 100644 arch/blackfin/include/uapi/asm/ptrace.h
+>  rename arch/blackfin/include/{ => uapi}/asm/sigcontext.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/siginfo.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/signal.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/stat.h (100%)
+>  rename arch/blackfin/include/{ => uapi}/asm/swab.h (100%)
+>  create mode 100644 arch/blackfin/include/uapi/asm/unistd.h
+>
 
-This way people who want to do compile coverage do not have to carry
-patches and allyesconfig will pick this right up.
-
-Thanks.
-
--- 
-Dmitry
+--
+Regards,
+--Bob
