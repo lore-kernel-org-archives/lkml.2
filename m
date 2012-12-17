@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab2LQQhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 11:37:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37190 "EHLO mx2.suse.de"
+	id S1753552Ab2LQQkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 11:40:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:18294 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab2LQQhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 11:37:38 -0500
-Date: Mon, 17 Dec 2012 17:37:35 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Satoru Moriya <satoru.moriya@hds.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/8] mm: vmscan: disregard swappiness shortly before
- going OOM
-Message-ID: <20121217163735.GE25432@dhcp22.suse.cz>
-References: <1355348620-9382-3-git-send-email-hannes@cmpxchg.org>
- <20121213103420.GW1009@suse.de>
- <20121213152959.GE21644@dhcp22.suse.cz>
- <20121213160521.GG21644@dhcp22.suse.cz>
- <8631DC5930FA9E468F04F3FD3A5D007214AD2FA2@USINDEM103.corp.hds.com>
- <20121214045030.GE6317@cmpxchg.org>
- <20121214083738.GA6898@dhcp22.suse.cz>
- <50CB493B.8000900@redhat.com>
- <20121214161345.GA18780@dhcp22.suse.cz>
- <20121215001850.GA21353@cmpxchg.org>
+	id S1752179Ab2LQQkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 11:40:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,303,1355126400"; 
+   d="scan'208";a="263205466"
+Message-ID: <50CF4ACD.80701@linux.intel.com>
+Date: Mon, 17 Dec 2012 08:39:41 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121215001850.GA21353@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Beulich <JBeulich@suse.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, David Howells <dhowells@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86/uapi for 3.8
+References: <201212122211.qBCMBRxl027895@terminus.zytor.com> <23916.1355356085@warthog.procyon.org.uk> <CA+55aFwBh3SY-K_dqdjpqyiBE+_PzbjMc=Qnt-QU9LNaK325TA@mail.gmail.com> <21507.1355528749@warthog.procyon.org.uk> <CA+55aFw34Nwi_aNjN-jm4SHkvT5659_aNVVmvARTCg5=9K0cZg@mail.gmail.com> <CA+55aFytC4xktWHAfQ96cdbt5nu+qbYytUGky8wWAkxZE=J0kw@mail.gmail.com> <CA+55aFyd5O_GyB_+BgHVYNLW-DV8xMQ9LOgPU34AtCqVvzfDaQ@mail.gmail.com> <20121215163323.GA229@x4> <CA+55aFz3iLPT3wzbU_Nhh4ft1eNQcd4WdQXsgXnKBs6vG9a_Uw@mail.gmail.com> <50CEEE3302000078000B0AC0@nat28.tlf.novell.com> <CA+55aFzhgW=GBwGtxufqhX+ykNCRqek=iyVszvkpCTw=-MXSyA@mail.gmail.com> <50CF4FC502000078000B0CB6@nat28.tlf.novell.com>
+In-Reply-To: <50CF4FC502000078000B0CB6@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-12-12 19:18:51, Johannes Weiner wrote:
-> On Fri, Dec 14, 2012 at 05:13:45PM +0100, Michal Hocko wrote:
-> > On Fri 14-12-12 10:43:55, Rik van Riel wrote:
-> > > On 12/14/2012 03:37 AM, Michal Hocko wrote:
-> > > 
-> > > >I can answer the later. Because memsw comes with its price and
-> > > >swappiness is much cheaper. On the other hand it makes sense that
-> > > >swappiness==0 doesn't swap at all. Or do you think we should get back to
-> > > >_almost_ doesn't swap at all?
-> > > 
-> > > swappiness==0 will swap in emergencies, specifically when we have
-> > > almost no page cache left, we will still swap things out:
-> > > 
-> > >         if (global_reclaim(sc)) {
-> > >                 free  = zone_page_state(zone, NR_FREE_PAGES);
-> > >                 if (unlikely(file + free <= high_wmark_pages(zone))) {
-> > >                         /*
-> > >                          * If we have very few page cache pages, force-scan
-> > >                          * anon pages.
-> > >                          */
-> > >                         fraction[0] = 1;
-> > >                         fraction[1] = 0;
-> > >                         denominator = 1;
-> > >                         goto out;
-> > > 
-> > > This makes sense, because people who set swappiness==0 but
-> > > do have swap space available would probably prefer some
-> > > emergency swapping over an OOM kill.
-> > 
-> > Yes, but this is the global reclaim path. I was arguing about
-> > swappiness==0 & memcg. As this patch doesn't make a big difference for
-> > the global case (as both the changelog and you mentioned) then we should
-> > focus on whether this is desirable change for the memcg path. I think it
-> > makes sense to keep "no swapping at all for memcg semantic" as we have
-> > it currently.
+On 12/17/2012 08:00 AM, Jan Beulich wrote:
+>>>> On 17.12.12 at 16:44, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>> On Mon, Dec 17, 2012 at 1:04 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>>>
+>>> How about this being caused by using the same lower level
+>>> page table entries that swapper_pg_dir uses, namely including
+>>> the _PAGE_GLOBAL bits? efi_call_virt_{pre,epi}log() only write
+>>> CR3 (see 185034e72d591f9465e5e18f937ed642e7ea0070), but
+>>> would need to also flip CR4.PGE afaict.
+>>
+>> Now *this* is the kind of issue that I could easily see causing major
+>> corruption, but be subtle enough to not happen reliably. Coming back
+>> from the EFI calls (or going into them) with stale TLB contents due to
+>> global pages could explain things.
+>>
+>> Good thinking. That efi call code should use flush_tlb_kernel() (or
+>> __flush_tlb_global() if it wants to avoid any paravirtualization
+>> stuff) if it has global pages in different places from the normal
+>> kernel map. Does it really have that?
 > 
-> I would prefer we could agree on one thing, though.  Having global
-> reclaim behave different from memcg reclaim violates the principle of
-> least surprise. 
+> I don't see it having such. But I also don't think flush_tlb_kernel()
+> is the right mechanism here. I'd rather suggest clearing CR4.PGE in
+> the "prelog", an restore it in the epilog. Para-virtual environments
+> shouldn't be directly interfacing with EFI runtime code anyway.
+> 
 
-Hmm, I think that no swapping at all with swappiness==0 makes some sense
-with the global reclaim as well. Why should we swap if admin told us not
-to do that?
-I am not so strong in that though because the global swappiness has been
-more relaxed in the past and people got used to that. We have seen bug
-reports already where users were surprised by a high io wait times when
-it turned out that they had swappiness set to 0 because that prevented
-swapping most of the time in the past but fe35004f changed that.
+Right, I think you nailed this one.  This patch copies PTEs from the
+kernel PTEs and thus they will have the global bit set.  It obviously
+makes no sense to *copy* PTEs from the kernel and yet leaving the global
+bit set, which means there are two ways of fixing it: either sharing
+page tables and use the cr4.pge off/on trick that Jan mentioned -- this
+would also be my preference -- and the other is to copy the PTEs but
+strip the global bit, which has the advantage that the actual kernel
+mappings will survive.
 
-Usecases for memcg are more natural because memcg allows much better
-control over OOM and also requirements for (not) swapping are per group
-rather than on swap availability. We shouldn't push users into using
-memcg swap accounting to accomplish the same IMHO because the accounting
-has some costs and its primary usage is not to disable swapping but
-rather to keep it on the leash. The two approaches are also different
-from semantic point of view. Swappiness is proportional while the limit
-is an absolute number.
+One idea in this is to change ioremap() on x86-64 to instead of
+allocating address space dynamically to always use the PAGE_OFFSET
+mapping address, even for I/O devices.  Then the trampoline page table
+can simply include two sets of pointers into the kernel page tables --
+with, again, the caveat that a global page flush is absolutely mandatory.
 
-> Having the code behave like that implicitely without any mention of
-> global_reclaim() and vm_swappiness() is unacceptable.
+Linus, Ingo, do you have any preferences here?
 
-So what about:
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 7f30961..e6d4f23 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1750,7 +1750,15 @@ out:
- 		unsigned long scan;
- 
- 		scan = get_lru_size(lruvec, lru);
--		if (sc->priority || noswap || !vmscan_swappiness(sc)) {
-+		/*
-+		 * Memcg targeted reclaim, unlike the global reclaim, honours
-+		 * swappiness==0 and no swapping is allowed even if that would
-+		 * lead to an OOM killer which is a) local to the group resp.
-+		 * hierarchy and moreover can be handled from userspace which
-+		 * makes it different from the global reclaim.
-+		 */
-+		if (sc->priority || noswap ||
-+				(!global_reclaim(sc) && !vmscan_swappiness(sc))) {
- 			scan >>= sc->priority;
- 			if (!scan && force_scan)
- 				scan = SWAP_CLUSTER_MAX;
--- 
-Michal Hocko
-SUSE Labs
+	-hpa
+
+
