@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2LQU7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 15:59:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50053 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab2LQU7f (ORCPT
+	id S1753552Ab2LQU75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 15:59:57 -0500
+Received: from mail-wi0-f194.google.com ([209.85.212.194]:55591 "EHLO
+	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab2LQU74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 15:59:35 -0500
-Date: Mon, 17 Dec 2012 12:59:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Thompson <set.mailinglist@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build warning after merge of the final tree
-Message-Id: <20121217125933.ec758888.akpm@linux-foundation.org>
-In-Reply-To: <20121217143415.252a2f60076d1ba03807df55@canb.auug.org.au>
-References: <20121217142238.a0840563304419bb345ac25f@canb.auug.org.au>
-	<20121217143415.252a2f60076d1ba03807df55@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 17 Dec 2012 15:59:56 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/2] menuconfig: Get rid of the top-level entries for "Load an Alternate/Save an Alternate"
+Date: Mon, 17 Dec 2012 21:59:50 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.10-treguer; KDE/4.4.5; x86_64; ; )
+Cc: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
+        linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
+        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
+        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
+        bpoirier@suse.de
+References: <20121217145614.GC17427@udknight>
+In-Reply-To: <20121217145614.GC17427@udknight>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201212172159.50940.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012 14:34:15 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Wang, All,
 
-> Hi all,
+On Monday 17 December 2012 Wang YanQing wrote:
+> Now we have Load/Save buttons to do the Load/Save
+> in the convenient place, so we can drop the
+> top-level entries.
 > 
-> On Mon, 17 Dec 2012 14:22:38 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > After merging the final tree, today's linux-next build (powerpc allnoconfig)
-> > produced this warning:
-> > 
-> > warning: (PPC) selects SPARSE_IRQ which has unmet direct dependencies (HAVE_GENERIC_HARDIRQS && (IRQ_DOMAIN && DEBUG_FS || MAY_HAVE_SPARSE_IRQ))
-> > 
-> > I don't know what introduced that.
-> 
-> Actually probably caused by commit a1eaa3bc8247 ("Kconfig: fix Irq
-> Subsystem menu") from the akpm tree.
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
 
-kconfig-fix-irq-subsystem-menu.patch was causing various problems so I
-have dropped it.
+Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
 
