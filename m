@@ -1,93 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab2LQOKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 09:10:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22821 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab2LQOKr (ORCPT
+	id S1752644Ab2LQONa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 09:13:30 -0500
+Received: from relay.parallels.com ([195.214.232.42]:58955 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab2LQON3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 09:10:47 -0500
-Date: Mon, 17 Dec 2012 17:08:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sebastian Wankerl <sisewank@cip.cs.fau.de>
-Cc: linux-kernel@i4.informatik.uni-erlangen.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sebastian Wankerl 
-	<sisewank@faui49man10.informatik.uni-erlangen.de>,
-        Sebastian Ehrenfels <qi50dube@cip.cs.fau.de>
-Subject: Re: [PATCH 2/3] wlan-ng/prism2mgmt.c: formated too long lines
-Message-ID: <20121217140851.GR5083@mwanda>
-References: <1355751483-7059-1-git-send-email-sisewank@cip.cs.fau.de>
- <1355751483-7059-2-git-send-email-sisewank@cip.cs.fau.de>
+	Mon, 17 Dec 2012 09:13:29 -0500
+Message-ID: <50CF288E.8060002@parallels.com>
+Date: Mon, 17 Dec 2012 18:13:34 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355751483-7059-2-git-send-email-sisewank@cip.cs.fau.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Brian Foster <bfoster@redhat.com>
+CC: <miklos@szeredi.hu>, <dev@parallels.com>, <xemul@parallels.com>,
+        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH 5/6] fuse: truncate file if async dio failed
+References: <20121214151424.27155.45971.stgit@maximpc.sw.ru> <20121214152113.27155.58793.stgit@maximpc.sw.ru> <50CB8931.2000305@redhat.com>
+In-Reply-To: <50CB8931.2000305@redhat.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 02:38:02PM +0100, Sebastian Wankerl wrote:
-> From: Sebastian Wankerl <sisewank@faui49man10.informatik.uni-erlangen.de>
-> 
+Hi,
 
-We allow long lines for string literals actually.  Or you can break
-it up.
+12/15/2012 12:16 AM, Brian Foster пишет:
+> On 12/14/2012 10:21 AM, Maxim V. Patlasov wrote:
+>> The patch improves error handling in fuse_direct_IO(): if we successfully
+>> submitted several fuse requests on behalf of synchronous direct write
+>> extending file and some of them failed, let's try to do our best to clean-up.
+>>
+>> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+>> ---
+>>   fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>>   1 files changed, 53 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+>> index 05eed23..b6e9b8d 100644
+>> --- a/fs/fuse/file.c
+>> +++ b/fs/fuse/file.c
+>> @@ -2340,6 +2340,53 @@ int fuse_notify_poll_wakeup(struct fuse_conn *fc,
+>>   	return 0;
+>>   }
+>>   
+>> +static void fuse_do_truncate(struct file *file)
+>> +{
+>> +	struct fuse_file *ff = file->private_data;
+>> +	struct inode *inode = file->f_mapping->host;
+>> +	struct fuse_conn *fc = get_fuse_conn(inode);
+>> +	struct fuse_req *req;
+>> +	struct fuse_setattr_in inarg;
+>> +	struct fuse_attr_out outarg;
+>> +	int err;
+>> +
+>> +	req = fuse_get_req_nopages(fc);
+>> +	if (IS_ERR(req)) {
+>> +		printk(KERN_WARNING "failed to allocate req for truncate "
+>> +		       "(%ld)\n", PTR_ERR(req));
+>> +		return;
+>> +	}
+>> +
+>> +	memset(&inarg, 0, sizeof(inarg));
+>> +	memset(&outarg, 0, sizeof(outarg));
+>> +
+>> +	inarg.valid |= FATTR_SIZE;
+>> +	inarg.size = i_size_read(inode);
+>> +
+>> +	inarg.valid |= FATTR_FH;
+>> +	inarg.fh = ff->fh;
+>> +
+>> +	req->in.h.opcode = FUSE_SETATTR;
+>> +	req->in.h.nodeid = get_node_id(inode);
+>> +	req->in.numargs = 1;
+>> +	req->in.args[0].size = sizeof(inarg);
+>> +	req->in.args[0].value = &inarg;
+>> +	req->out.numargs = 1;
+>> +	if (fc->minor < 9)
+>> +		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
+>> +	else
+>> +		req->out.args[0].size = sizeof(outarg);
+>> +	req->out.args[0].value = &outarg;
+>> +
+>> +	fuse_request_send(fc, req);
+>> +	err = req->out.h.error;
+>> +	fuse_put_request(fc, req);
+>> +
+>> +	if (err)
+>> +		printk(KERN_WARNING "failed to truncate to %lld with error "
+>> +		       "%d\n", i_size_read(inode), err);
+>> +}
+>> +
+> fuse_do_truncate() looks fairly close to fuse_do_setattr(). Is there any
+> reason we couldn't make fuse_do_setattr() non-static, change the dentry
+> parameter to an inode and use that?
 
-> Signed-off-by: Sebastian Wankerl <sisewank@cip.cs.fau.de> 
-> Signed-off-by: Sebastian Ehrenfels <qi50dube@cip.cs.fau.de>
-> 
-> ---
->  drivers/staging/wlan-ng/prism2mgmt.c |   20 +++++++++++---------
->  1 file changed, 11 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/staging/wlan-ng/prism2mgmt.c b/drivers/staging/wlan-ng/prism2mgmt.c
-> index 62b94b0..4b3db73 100644
-> --- a/drivers/staging/wlan-ng/prism2mgmt.c
-> +++ b/drivers/staging/wlan-ng/prism2mgmt.c
-> @@ -1144,9 +1144,9 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
->  			/* Enable the port */
->  			result = hfa384x_drvr_enable(hw, 0);
->  			if (result) {
-> -				pr_debug
-> -				("failed to enable port to presniff setting, result=%d\n",
-> -				     result);
-> +				pr_debug(
-> +					"failed to enable port to presniff setting,"
-                                                                                   ^
-Space needed.
+fuse_do_setattr() performs extra checks that fuse_do_truncate() needn't. 
+Some of them are harmless, some not: fuse_allow_task() may return 0 if 
+task credentials changed. E.g. super-user successfully opened a file, 
+then setuid(other_user_uid), then write(2) to the file. write(2) doesn't 
+check uid, but fuse_do_truncate() - via fuse_allow_task() - does.
 
-You may as well put the string on the same line as the pr_debug().
-It only costs you one char.
+This non-POSIX behaviour (ftruncate(2) returning -1 with errno==EACCES) 
+was introduced long time ago:
 
-				pr_debug("failed to enable port for sniffing, "
-					 "result = %d", result);
+> commit e57ac68378a287d6336d187b26971f35f7ee7251
+> Author: Miklos Szeredi <mszeredi@suse.cz>
+> Date:   Thu Oct 18 03:06:58 2007 -0700
+>
+>     fuse: fix allowing operations
+>
+>     The following operation didn't check if sending the request was 
+> allowed:
+>
+>       setattr
+>       listxattr
+>       statfs
+>
+>     Some other operations don't explicitly do the check, but VFS calls
+>     ->permission() which checks this.
+>
+>     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-> +					"result=%d\n", result);
->  				goto failed;
->  			}
+and I'm not sure whether it was done intentionally or not. Maybe Miklos 
+could shed some light on it...
 
-	[ snip ]
-
->  				/* Disable the port */
->  				result = hfa384x_drvr_disable(hw, 0);
->  				if (result) {
-> -					pr_debug
-> -					    ("failed to enable port for sniffing, result=%d\n",
-> -					     result);
-> +					pr_debug(
-> +						"failed to enable port for "
-                                                           ^^^^^^
-Disable.
-
-> +						"sniffing, result=%d\n",
-> +						result);
->  					goto failed;
->  				}
->  			}
-
-regards,
-dan carpenter
+Thanks,
+Maxim
