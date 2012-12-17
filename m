@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab2LQH0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 02:26:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52004 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2LQH0d (ORCPT
+	id S1751600Ab2LQHi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 02:38:26 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6918 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2LQHiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 02:26:33 -0500
+	Mon, 17 Dec 2012 02:38:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 16 Dec 2012 23:36:11 -0800
+Date: Mon, 17 Dec 2012 09:38:15 +0200
+From: Sivaram Nair <sivaramn@nvidia.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "shuox.liu@intel.com" <shuox.liu@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "yanmin_zhang@intel.com" <yanmin_zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpuidle: fix sysfs output for power_usage
+Message-ID: <20121217073815.GM10090@sivaramn-lnx>
+References: <1355491060-970-1-git-send-email-sivaramn@nvidia.com>
+ <1355491060-970-2-git-send-email-sivaramn@nvidia.com>
+ <39891276.jhMMUpZpil@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20121217004457.GA12234@1984>
-References: <f0955e6c2110044fa058d0f3ecf945ca@localhost>
-	<1290412334.2756.141.camel@edumazet-laptop>
-	<1355703441.18919.6.camel@shinybook.infradead.org>
-	<20121217004457.GA12234@1984>
-Date: Sun, 16 Dec 2012 23:26:31 -0800
-Message-ID: <CAJiQ=7BBquMQmQWp3=aD_s3-rSYr4Y+gke0GJKCkJV-mq5buug@mail.gmail.com>
-Subject: Re: [PATCH v3] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945 IP phones
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <39891276.jhMMUpZpil@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 4:44 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
->> What happened to this? OpenWRT is still carrying it, and it broke in
->> 3.7. Here's a completely untested update...
->
-> I requested Kevin to resend a new version based on the current kernel
-> tree while spinning on old pending patches since I have no access to
-> that hardware, but no luck.
->
-> So I'll review this and, since OpenWRT is carrying, I guess we can get
-> this into net-next merge window.
+On Sat, Dec 15, 2012 at 01:03:02AM +0100, Rafael J. Wysocki wrote:
+> On Friday, December 14, 2012 03:17:37 PM Sivaram Nair wrote:
+> > cpuidle_state->power_usage is signed; so change the corresponding sysfs
+> > ops to output signed value instead of unsigned.
+> 
+> What's actually wrong with printing it as an unsigned int?
 
-Sorry, been putting it off since the OpenWRT version has worked flawlessly...
+power_usage could have negative values (for example cpuidle/driver.c
+inits this value to -1, -2 etc. when drv->power_specified is not set) and
+these shows up badly in the sysfs output.
 
-I just reassembled my test rig and I'll get you a working patch this week.
-
-Is it OK to use
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git as the
-baseline?
+regards,
+Sivaram
