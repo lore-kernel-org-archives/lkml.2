@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab2LQMEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 07:04:41 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36098 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2LQMEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 07:04:40 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sivaram Nair <sivaramn@nvidia.com>
-Cc: "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "shuox.liu@intel.com" <shuox.liu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "yanmin_zhang@intel.com" <yanmin_zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpuidle: fix sysfs output for power_usage
-Date: Mon, 17 Dec 2012 13:09:48 +0100
-Message-ID: <3292933.Vhp5q9ibyJ@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121217084607.GN10090@sivaramn-lnx>
-References: <1355491060-970-1-git-send-email-sivaramn@nvidia.com> <4160971.sv9ruOS3QC@vostro.rjw.lan> <20121217084607.GN10090@sivaramn-lnx>
+	id S1752598Ab2LQMG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 07:06:28 -0500
+Received: from exprod5og101.obsmtp.com ([64.18.0.141]:38573 "EHLO
+	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab2LQMG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 07:06:27 -0500
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 07:06:27 EST
+Message-ID: <50CF0990.2060606@ge.com>
+Date: Mon, 17 Dec 2012 12:01:20 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Manohar Vanga <manohar.vanga@gmail.com>
+Subject: Re: [PATCH 05/12] staging: vme_pio2: fix oops on module unloading
+References: <20121214110229.11019.63713.stgit@zurg> <20121214110244.11019.14075.stgit@zurg>
+In-Reply-To: <20121214110244.11019.14075.stgit@zurg>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 17, 2012 10:46:07 AM Sivaram Nair wrote:
-> On Mon, Dec 17, 2012 at 08:56:45AM +0100, Rafael J. Wysocki wrote:
-> > On Monday, December 17, 2012 09:38:15 AM Sivaram Nair wrote:
-> > > On Sat, Dec 15, 2012 at 01:03:02AM +0100, Rafael J. Wysocki wrote:
-> > > > On Friday, December 14, 2012 03:17:37 PM Sivaram Nair wrote:
-> > > > > cpuidle_state->power_usage is signed; so change the corresponding sysfs
-> > > > > ops to output signed value instead of unsigned.
-> > > > 
-> > > > What's actually wrong with printing it as an unsigned int?
-> > > 
-> > > power_usage could have negative values (for example cpuidle/driver.c
-> > > inits this value to -1, -2 etc. when drv->power_specified is not set) and
-> > > these shows up badly in the sysfs output.
-> > 
-> > Does "badly" mean "as big positive numbers"?
+On 14/12/12 11:02, Konstantin Khlebnikov wrote:
+> This patch forbids loading vme_pio2 module without specifing "num_bus" parameter.
+> Otherwise on module unloading pio2_exit() calls vme_unregister_driver() for not
+> registered pio2_driver.
 > 
-> Yes (sorry for not being clearer).
+
+Acked-by: Martyn Welch <martyn.welch@ge.com>
+
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Martyn Welch <martyn.welch@ge.com>
+> Cc: Manohar Vanga <manohar.vanga@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: devel@driverdev.osuosl.org
+> ---
+>  drivers/staging/vme/devices/vme_pio2_core.c |   14 ++------------
+>  1 file changed, 2 insertions(+), 12 deletions(-)
 > 
-> > 
-> > Should we actually print them at all in those case?  Perhaps it'll be better to
-> > make the file appear empty then?
+> diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
+> index 0331178..bf73ba2 100644
+> --- a/drivers/staging/vme/devices/vme_pio2_core.c
+> +++ b/drivers/staging/vme/devices/vme_pio2_core.c
+> @@ -162,11 +162,9 @@ static struct vme_driver pio2_driver = {
+>  
+>  static int __init pio2_init(void)
+>  {
+> -	int retval = 0;
+> -
+>  	if (bus_num == 0) {
+>  		pr_err("No cards, skipping registration\n");
+> -		goto err_nocard;
+> +		return -ENODEV;
+>  	}
+>  
+>  	if (bus_num > PIO2_CARDS_MAX) {
+> @@ -176,15 +174,7 @@ static int __init pio2_init(void)
+>  	}
+>  
+>  	/* Register the PIO2 driver */
+> -	retval = vme_register_driver(&pio2_driver, bus_num);
+> -	if (retval != 0)
+> -		goto err_reg;
+> -
+> -	return retval;
+> -
+> -err_reg:
+> -err_nocard:
+> -	return retval;
+> +	return  vme_register_driver(&pio2_driver, bus_num);
+>  }
+>  
+>  static int pio2_match(struct vme_dev *vdev)
 > 
-> May be, but why is power_usage signed in the first place?
-
-Please read the comment in driver.c:set_power_states() for the answer. :-)
-
-> I also noticed
-> Daniel Lezcano's patches that reduces the scope of this variable. So,
-> perhaps we can just ignore this change.
-
-OK
-
-Rafael
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
