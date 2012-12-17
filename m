@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2LQXPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 18:15:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63480 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2LQXPF (ORCPT
+	id S1753608Ab2LQXPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 18:15:24 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33483 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2LQXPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 18:15:05 -0500
-Date: Tue, 18 Dec 2012 00:15:01 +0100
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: i915: GPU hang
-Message-ID: <20121217231501.GA7108@fancy-poultry.org>
-References: <Pine.LNX.4.64.1212172322350.30738@axis700.grange>
+	Mon, 17 Dec 2012 18:15:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+X-Originating-IP: [178.83.130.250]
 In-Reply-To: <Pine.LNX.4.64.1212172322350.30738@axis700.grange>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+73 (c4c65eadeb71) (2011-07-01)
-X-Provags-ID: V02:K0:brAbfyN6q9SbkF/rv0/xECFlMQa7/GMyTC2oKc0SP+d
- Ssr4ZPCVAvhwcGI5qekKuHGufyd91o9PItMy690q9MmTsnh/Hu
- 2ffni4fIos2MXDFSZa73fUZyXQJ1ih1rK8zr00fLi5SOe5oDTq
- Ie6rECD+0Uvn6Td/qffS5ZCrI3zlYVHCQ1MZGeWBcla8o0UAgk
- HBQNDadkNWN6NWEN06GWK/CggKG0qb61Tl1Fjx6bPtGzxOsqcz
- XMl1yY9eXWWkzwPFFo2yEgzqmbe7PAlyr9XliK4JeKgyPh+mav
- +mEIzs9d9PaM3/o2ZKOPMszSWrvKrXrwHkPpB0XnOnVdfYcsyX
- ovoHSjE4qUnTDyskDsqnxXTLNUg6tCyqu+uS3QCdL
+References: <Pine.LNX.4.64.1212172322350.30738@axis700.grange>
+Date: Tue, 18 Dec 2012 00:15:20 +0100
+Message-ID: <CAKMK7uHvqJbXqass9UTT-sUOxnggrUFouNA7019htq2445i_FQ@mail.gmail.com>
+Subject: Re: i915: GPU hang
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.12.2012, Guennadi Liakhovetski wrote: 
+On Mon, Dec 17, 2012 at 11:36 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> Sorry, not sure what information is most appropriate here. GPU hangs from
+> time to time on this laptop, typically when running firefox on
+> graphics-intensive sites. Error log at the bottom. Distro is Debian 6.0.6
+> (squeeze), lspci
+>
+> 00:02.0 VGA compatible controller: Intel Corporation Mobile GM965/GL960
+> Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+>         Subsystem: Acer Incorporated [ALI] Device 011f
+>         Flags: bus master, fast devsel, latency 0, IRQ 46
+>         Memory at fc000000 (64-bit, non-prefetchable) [size=1M]
+>         Memory at d0000000 (64-bit, prefetchable) [size=256M]
+>         I/O ports at 1800 [size=8]
+>         Expansion ROM at <unassigned> [disabled]
+>         Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+>         Capabilities: [d0] Power Management version 3
+>         Kernel driver in use: i915
+>
+> kernel version 3.5.2 (yes, I'll try to upgrade). Sometimes also the
+> X-server freezes and restarts with no errors in dmesg. Is it a known
+> problem?
 
-> [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-> [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
-> [drm:i915_reset] *ERROR* Failed to reset chip.
+Upgrading to 3.7 highly recommended, if just to get the recent pile of
+gpu reset fixes - those should increase the chances that the reset
+works and your system survives. Also worth testing is upgrading
+userspace gfx driver components to the latest versions (mesa +
+xf86-video-intel). If you still have gpu hangs with all that, please
+file a bug report against DRM -> DRI/Intel and please attach the
+i915_error_state from debugfs after your gpu hung).
 
-I have the same problem, are able to reproduce it and have bisected
-it, but the commit which git --bisect identified seems not to be the
-cause.
-
-root@wildsau linux-git]# git bisect good
-6c085a728cf000ac1865d66f8c9b52935558b328 is the first bad commit
-commit 6c085a728cf000ac1865d66f8c9b52935558b328
-Author: Chris Wilson <ch...@chris-wilson.co.uk>
-Date:   Mon Aug 20 11:40:46 2012 +0200
-
-    drm/i915: Track unbound pages
+Yours, Daniel
 
 
-This is a quite nasty (3.7) regression. I have it on all of my three
-machines and it drives me mad (3.6.x hangs my USB 3.0 port and 3.7 my
-intel graphics).
-
-Try to boot with "i915.i915_enable_rc6=0" and switch to SNA in your
-Xorg.conf:
-
-Section "Device"
-   Identifier "Card0"
-   Driver "intel"
-   Option "AccelMethod" "SNA"
-EndSection
-
-There are tons of this "GPU hangcheck timer elapsed"
-messages on the net...
-
-Good luck!
-
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
