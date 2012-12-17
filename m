@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab2LQI1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 03:27:40 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65374 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2LQI1i (ORCPT
+	id S1751895Ab2LQIaz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 03:30:55 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:36962 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2LQIay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 03:27:38 -0500
-From: Guangliang Zhao <gzhao@suse.com>
-To: linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Cc: lucienchao@gmail.com
-Subject: [PATCH 3/3 v2] dm raid1: add interface to get resync speed
-Date: Mon, 17 Dec 2012 16:26:37 +0800
-Message-Id: <1355732797-7233-4-git-send-email-gzhao@suse.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1355732797-7233-1-git-send-email-gzhao@suse.com>
-References: <1355732797-7233-1-git-send-email-gzhao@suse.com>
+	Mon, 17 Dec 2012 03:30:54 -0500
+X-Auth-Info: Qk8KF5vovdMM52bqmBFb2w9cRo+j43dXfUI89gEh41c=
+Date: Mon, 17 Dec 2012 09:30:36 +0100
+From: Anatolij Gustschin <agust@denx.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Please pull powerpc.git next branch
+Message-ID: <20121217093036.65cb7cef@wker>
+In-Reply-To: <1355517897.19932.136.camel@pasglop>
+References: <1355517897.19932.136.camel@pasglop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ioctl to get resync speed, userspace tool
-is dmsetup status:
-	dmsetup status $device
-e.g.
-	dmsetup status /dev/dm-2
+Hi Ben,
 
-Signed-off-by: Guangliang Zhao <gzhao@suse.com>
----
- drivers/md/dm-raid1.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+On Sat, 15 Dec 2012 07:44:57 +1100
+Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+...
+> Overall it's pretty quiet, or rather I've been pretty poor at
+> picking things up from patchwork and reviewing them this time
+> around and Kumar no better on the FSL side it seems...
 
-diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
-index 3cdad37..68081ff 100644
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -1427,6 +1427,20 @@ static char device_status_char(struct mirror *m)
- 		(test_bit(DM_RAID1_READ_ERROR, &(m->error_type))) ? 'R' : 'U';
- }
- 
-+/*
-+ * get speed from ratelimit_state
-+ */
-+static unsigned int rlimit_to_speed(struct mirror_set *ms,
-+				    struct ratelimit_state *rl)
-+{
-+	sector_t region_size = dm_rh_get_region_size(ms->rh);
-+	unsigned int time, burst;
-+
-+	time = rl->interval / HZ;
-+	burst = (rl->burst * region_size) >> 1;
-+
-+	return burst / time;
-+}
- 
- static int mirror_status(struct dm_target *ti, status_type_t type,
- 			 char *result, unsigned int maxlen)
-@@ -1445,9 +1459,10 @@ static int mirror_status(struct dm_target *ti, status_type_t type,
- 		}
- 		buffer[m] = '\0';
- 
--		DMEMIT("%llu/%llu 1 %s ",
-+		DMEMIT("%llu/%llu 1 %u 1 %s ",
- 		      (unsigned long long)log->type->get_sync_count(log),
--		      (unsigned long long)ms->nr_regions, buffer);
-+		      (unsigned long long)ms->nr_regions,
-+		      rlimit_to_speed(ms, &ms->ms_rlimit), buffer);
- 
- 		sz += log->type->status(log, type, result+sz, maxlen-sz);
- 
--- 
-1.7.10.4
+Could you please also include some 5xxx patches for v3.8 in your pull
+request? I've submitted a pull request for them last week
 
+  http://patchwork.ozlabs.org/patch/205138
+
+Thanks,
+Anatolij
