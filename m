@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab2LQBm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Dec 2012 20:42:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:40723 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab2LQBmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Dec 2012 20:42:38 -0500
-X-IronPort-AV: E=Sophos;i="4.84,297,1355068800"; 
-   d="scan'208";a="6411088"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: akpm@linux-foundation.org, isimatu.yasuaki@jp.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie, tangchen@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, mingo@elte.hu,
-        penberg@kernel.org
-Cc: torvalds@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] memory-hotplug: Add help info for CONFIG_MOVABLE_NODE option
-Date: Mon, 17 Dec 2012 09:41:27 +0800
-Message-Id: <1355708488-2913-2-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1355708488-2913-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1355708488-2913-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/17 09:41:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/17 09:41:39,
-	Serialize complete at 2012/12/17 09:41:39
+	id S1751116Ab2LQCBy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Dec 2012 21:01:54 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:34151 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855Ab2LQCBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Dec 2012 21:01:52 -0500
+X-ASG-Debug-ID: 1355709711-03d6a508b8269d80001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Sun, 16 Dec 2012 21:01:49 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Chris Mason <clmason@fusionio.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Behrens <sbehrens@giantdisaster.de>,
+        Josef Bacik <JBacik@fusionio.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the btrfs tree
+Message-ID: <20121217020149.GB13828@shiny>
+X-ASG-Orig-Subj: Re: linux-next: build failure after merge of the btrfs tree
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Chris Mason <clmason@fusionio.com>,
+	"linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Stefan Behrens <sbehrens@giantdisaster.de>,
+	Josef Bacik <JBacik@fusionio.com>,
+	Linus <torvalds@linux-foundation.org>
+References: <20121217100022.7d751dc9075d60a33d636a23@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20121217100022.7d751dc9075d60a33d636a23@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1355709711
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.117224
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds help info for CONFIG_MOVABLE_NODE option.
+On Sun, Dec 16, 2012 at 04:00:22PM -0700, Stephen Rothwell wrote:
+> Hi Chris,
+> 
+> After merging the btrfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> fs/btrfs/ioctl.c: In function 'btrfs_ioctl':
+> fs/btrfs/ioctl.c:3940:7: error: case label does not reduce to an integer constant
 
-This option allows user to online all memory of a node as movable
-memory. So that the whole node can be hotpluged. Users who don't
-use hotplug feature are also fine with this option on since they
-won't online memory as movable.
+Many thanks Stephen for helping debug this.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
----
- mm/Kconfig |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+It turned out to be the size of the ioctl arg was just too big.  Stefan,
+I lowered this by using BTRFS_DEVICE_PATH_NAME_MAX instead, and I also
+put the char arrays after the u64s.
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 71259e0..4913333 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -150,6 +150,16 @@ config MOVABLE_NODE
- 	depends on X86_64
- 	depends on NUMA
- 	depends on BROKEN
-+	help
-+	  Allow a node to have only movable memory. Pages used by the kernel,
-+	  such as direct mapping pages can not be migrated. So the corresponding
-+	  memory device can not be hotplugged. This option allows users to online
-+	  all the memory of a node as movable memory so that the whole node can
-+	  be hot-unplugged. Users who don't use the hotplug feature are fine
-+	  with this option on since they don't online memory as movable.
-+
-+	  Say Y here if you want to hotplug a whole node.
-+	  Say N here if you want kernel to use memory on all nodes evenly.
- 
- # eventually, we can have this option just 'select SPARSEMEM'
- config MEMORY_HOTPLUG
--- 
-1.7.10.1
+It works here with the progs patch you sent (and matching struct
+changes), including cancel and the btrfs replace -r mode.  I've pushed
+the result out to my next branch and my for-linus branch, please take a
+look and make sure I didn't miss anything.
 
+-chris
