@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab2LQT5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 14:57:30 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49927 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab2LQT5Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 14:57:25 -0500
-From: Dongjin Kim <tobetter@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        Dongjin Kim <tobetter@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] ODROID-X: dts: Add mshc node for ODROID-X board
-Date: Tue, 18 Dec 2012 04:55:07 +0900
-Message-Id: <1355774107-364-5-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355774107-364-1-git-send-email-tobetter@gmail.com>
-References: <1355774107-364-1-git-send-email-tobetter@gmail.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1753903Ab2LQT6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 14:58:06 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:52333 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753343Ab2LQT5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 14:57:01 -0500
+Message-ID: <1355774221.13361.48.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] MCE, AMD: Make MC2 decoding part of amd_decoder_ops
+ as well
+From: Joe Perches <joe@perches.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Borislav Petkov <bp@alien8.de>, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 17 Dec 2012 11:57:01 -0800
+In-Reply-To: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>
+References: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the device node to support eMMC storage on SDCARD4 ports, controlled by
-Mobile Storage Host Controller.
+On Mon, 2012-12-17 at 13:39 -0600, Jacob Shin wrote:
+> Currently only AMD Family 15h processors have special handling for MC2
+> errors, since upcoming Family 16h will also need unique handling,
+> let's make MC2 handling part of amd_decoder_ops.
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- arch/arm/boot/dts/exynos4412-odroidx.dts |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+[]
 
-diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
-index 3943011..fbd0b51 100644
---- a/arch/arm/boot/dts/exynos4412-odroidx.dts
-+++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
-@@ -73,4 +73,25 @@
- 			linux,default-trigger = "mmc0";
- 		};
- 	};
-+
-+	mshc@12550000 {
-+		num-slots = <1>;
-+		supports-highspeed;
-+		broken-cd;
-+		fifo-depth = <0x80>;
-+		card-detect-delay = <200>;
-+		samsung,dw-mshc-ciu-div = <3>;
-+		samsung,dw-mshc-sdr-timing = <2 3 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2 3>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <8>;
-+			gpios = <&gpk0 0 3>, <&gpk0 1 3>,
-+				<&gpk0 3 3>, <&gpk0 4 3>,
-+				<&gpk0 5 3>, <&gpk0 6 3>,
-+				<&gpk1 3 4>, <&gpk1 4 4>,
-+				<&gpk1 5 4>, <&gpk1 6 4>;
-+		};
-+	};
- };
--- 
-1.7.9.5
+> diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+[]
+> @@ -399,12 +399,9 @@ static void decode_mc1_mce(struct mce *m)
+>  		pr_emerg(HW_ERR "Corrupted MC1 MCE info?\n");
+>  }
+>  
+> -static void decode_mc2_mce(struct mce *m)
+> +static bool k8_mc2_mce(u16 ec, u8 xec)
+>  {
+> -	u16 ec = EC(m->status);
+> -	u8 xec = XEC(m->status, xec_mask);
+> -
+> -	pr_emerg(HW_ERR "MC2 Error");
+> +	bool ret = true;
+>  
+>  	if (xec == 0x1)
+>  		pr_cont(" in the write data buffers.\n");
+
+It'd be better to change the pr_cont uses to pr_emerg
+
+[]
+
+> +static void decode_mc2_mce(struct mce *m)
+> +{
+> +	u16 ec = EC(m->status);
+> +	u8 xec = XEC(m->status, xec_mask);
+> +
+> +	pr_emerg(HW_ERR "MC2 Error: ");
+
+Remove this and
+
+> +	if (fam_ops->mc2_mce(ec, xec))
+> +		;
+> +	else
+> +		pr_emerg(HW_ERR "Corrupted MC2 MCE info?\n");
+>  }
+
+And make this
+
+	if (!fam_ops->mc2_mce(ec, xec))
+		pr_emerg(etc...);
+
 
