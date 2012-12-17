@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab2LQVgK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 16:36:10 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53749 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2LQVgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 16:36:07 -0500
-Message-ID: <50CF9043.8030308@wwwdotorg.org>
-Date: Mon, 17 Dec 2012 14:36:03 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753574Ab2LQVje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 16:39:34 -0500
+Received: from bs1.fjl.org.uk ([84.45.41.196]:62015 "EHLO bs1.fjl.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751831Ab2LQVjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 16:39:33 -0500
+X-Greylist: delayed 1531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 16:39:33 EST
+Message-ID: <50CF8B03.1070102@avoncliff.com>
+Date: Mon, 17 Dec 2012 21:13:39 +0000
+From: david <david@avoncliff.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-CC: alan@linux.intel.com, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] serial: tegra: add serial driver
-References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
+To: Evgeniy Polyakov <zbr@ioremap.net>, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] w1_therm:Retries:remove old code add CRC
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 05:10 AM, Laxman Dewangan wrote:
-> Nvidia's Tegra has multiple uart controller which supports:
-> - APB dma based controller fifo read/write.
-> - End Of Data interrupt in incoming data to know whether end
->   of frame achieve or not.
-> - Hw controlled RTS and CTS flow control to reduce SW overhead.
+w1_therm includes some obsolete code to detect bad_roms, this is no
+longer relevant.
+The retry code is only used for this bad_rom test, however there is a
+CRC check that detects a bad read, but does not trigger a retry. This
+patch removes all the bad_rom code and uses the CRC check to trigger
+retries.
 
-> diff --git a/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt b/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt
+Patch is against Raspberry 3.2.27 ( my test hardware) but has also been
+tested against 3.7.
 
-> +NVIDIA Tegra20/Tegra30 high speed (dma based) UART controller driver.
-> +
-> +Required properties:
-> +- compatible : should be "nvidia,tegra20-hsuart", "nvidia,tegra30-hsuart".
+David Stevenson   david at avoncliff.com
 
-One question that isn't addressed here is:
+diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
+index 016dd7d..8166075 100644
+--- a/drivers/w1/slaves/w1_therm.c
++++ b/drivers/w1/slaves/w1_therm.c
+@@ -45,10 +45,6 @@ MODULE_DESCRIPTION("Driver for 1-wire Dallas network
+protocol, temperature famil
+ static int w1_strong_pullup = 1;
+ module_param_named(strong_pullup, w1_strong_pullup, int, 0);
 
-Tegra has 5 UARTs. All of them can use the existing 8250.c by specifying
-compatible = "nvidia,tegra20-uart". However, the 8250.c driver doesn't
-support the DMA features of this driver. This driver is an alternate
-driver for the same HW that allows DMA to be used with it, etc.
+-static u8 bad_roms[][9] = {
+-				{0xaa, 0x00, 0x4b, 0x46, 0xff, 0xff, 0x0c, 0x10, 0x87},
+-				{}
+-			};
 
-Since DT is supposed to describe the HW, modifying the DT to change the
-compatible value in order to select a different driver in Linux doesn't
-seem correct, or is it? Is there any kind of precedent for how to select
-different drivers for the same HW at run-time? I'd wondered about using
-the sysfs bind/unbind "methods" from user-space as the driver selection
-mechanism...
+ static ssize_t w1_therm_read(struct device *device,
+ 	struct device_attribute *attr, char *buf);
+@@ -159,16 +155,6 @@ static inline int w1_convert_temp(u8 rom[9], u8 fid)
+ 	return 0;
+ }
+
+-static int w1_therm_check_rom(u8 rom[9])
+-{
+-	int i;
+-
+-	for (i=0; i<sizeof(bad_roms)/9; ++i)
+-		if (!memcmp(bad_roms[i], rom, 9))
+-			return 1;
+-
+-	return 0;
+-}
+
+ static ssize_t w1_therm_read(struct device *device,
+ 	struct device_attribute *attr, char *buf)
+@@ -183,10 +169,11 @@ static ssize_t w1_therm_read(struct device *device,
+
+ 	memset(rom, 0, sizeof(rom));
+
+-	verdict = 0;
+-	crc = 0;
+-
+ 	while (max_trying--) {
++
++		verdict = 0;
++		crc = 0;
++		
+ 		if (!w1_reset_select_slave(sl)) {
+ 			int count = 0;
+ 			unsigned int tm = 750;
+@@ -214,7 +201,7 @@ static ssize_t w1_therm_read(struct device *device,
+ 			}
+ 		}
+
+-		if (!w1_therm_check_rom(rom))
++		if (verdict)
+ 			break;
+ 	}
+
