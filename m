@@ -1,159 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab2LQPCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:02:35 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33350 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab2LQPCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:02:32 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 04/15] mm/huge_memory: use new hashtable implementation
-Date: Mon, 17 Dec 2012 10:01:24 -0500
-Message-Id: <1355756497-15834-4-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
-References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1753285Ab2LQPCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:02:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44539 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753159Ab2LQPCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:02:40 -0500
+Date: Mon, 17 Dec 2012 10:02:31 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Cc: kexec@lists.infradead.org, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] Add the values related to buddy system for filtering
+ free pages.
+Message-ID: <20121217150231.GA7235@redhat.com>
+References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
+ <20121210131705.GC26447@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121210131705.GC26447@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch hugemem to use the new hashtable implementation. This reduces the
-amount of generic unrelated code in the hugemem.
+CCing Andrew Morton. I think he picks kexec patches.
 
-This also removes the dymanic allocation of the hash table. The size of the table is
-constant so there's no point in paying the price of an extra dereference when accessing
-it.
 
-This patch depends on d9b482c ("hashtable: introduce a small and naive
-hashtable") which was merged in v3.6.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- mm/huge_memory.c | 53 ++++++++++++-----------------------------------------
- 1 file changed, 12 insertions(+), 41 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 827d9c8..2a0ef01 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -20,6 +20,7 @@
- #include <linux/mman.h>
- #include <linux/pagemap.h>
- 
-+#include <linux/hashtable.h>
- #include <asm/tlb.h>
- #include <asm/pgalloc.h>
- #include "internal.h"
-@@ -61,12 +62,12 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
- static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
- 
- static int khugepaged(void *none);
--static int mm_slots_hash_init(void);
- static int khugepaged_slab_init(void);
- static void khugepaged_slab_free(void);
- 
--#define MM_SLOTS_HASH_HEADS 1024
--static struct hlist_head *mm_slots_hash __read_mostly;
-+#define MM_SLOTS_HASH_BITS 10
-+static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
-+
- static struct kmem_cache *mm_slot_cache __read_mostly;
- 
- /**
-@@ -633,12 +634,6 @@ static int __init hugepage_init(void)
- 	if (err)
- 		goto out;
- 
--	err = mm_slots_hash_init();
--	if (err) {
--		khugepaged_slab_free();
--		goto out;
--	}
--
- 	register_shrinker(&huge_zero_page_shrinker);
- 
- 	/*
-@@ -1821,47 +1816,23 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 	kmem_cache_free(mm_slot_cache, mm_slot);
- }
- 
--static int __init mm_slots_hash_init(void)
--{
--	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
--				GFP_KERNEL);
--	if (!mm_slots_hash)
--		return -ENOMEM;
--	return 0;
--}
--
--#if 0
--static void __init mm_slots_hash_free(void)
--{
--	kfree(mm_slots_hash);
--	mm_slots_hash = NULL;
--}
--#endif
--
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
--	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
-+	struct mm_slot *slot;
- 	struct hlist_node *node;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
--	hlist_for_each_entry(mm_slot, node, bucket, hash) {
--		if (mm == mm_slot->mm)
--			return mm_slot;
--	}
-+	hash_for_each_possible(mm_slots_hash, slot, node, hash, (unsigned long) mm)
-+		if (slot->mm == mm)
-+			return slot;
-+
- 	return NULL;
- }
- 
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
- {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->hash, bucket);
-+	hash_add(mm_slots_hash, &mm_slot->hash, (long)mm);
- }
- 
- static inline int khugepaged_test_exit(struct mm_struct *mm)
-@@ -1930,7 +1901,7 @@ void __khugepaged_exit(struct mm_struct *mm)
- 	spin_lock(&khugepaged_mm_lock);
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
--		hlist_del(&mm_slot->hash);
-+		hash_del(&mm_slot->hash);
- 		list_del(&mm_slot->mm_node);
- 		free = 1;
- 	}
-@@ -2379,7 +2350,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
- 
- 	if (khugepaged_test_exit(mm)) {
- 		/* free mm_slot */
--		hlist_del(&mm_slot->hash);
-+		hash_del(&mm_slot->hash);
- 		list_del(&mm_slot->mm_node);
- 
- 		/*
--- 
-1.8.0
-
+On Mon, Dec 10, 2012 at 08:17:05AM -0500, Vivek Goyal wrote:
+> On Mon, Dec 10, 2012 at 10:39:13AM +0900, Atsushi Kumagai wrote:
+> > This patch adds the values related to buddy system to vmcoreinfo data
+> > so that makedumpfile (dump filtering command) can filter out all free
+> > pages with the new logic.
+> > It's faster than the current logic because it can distinguish free page
+> > by analyzing page structure at the same time as filtering for other
+> > unnecessary pages (e.g. anonymous page).
+> > OTOH, the current logic has to trace free_list to distinguish free 
+> > pages while analyzing page structure to filter out other unnecessary
+> > pages.
+> > 
+> > The new logic uses the fact that buddy page is marked by _mapcount == 
+> > PAGE_BUDDY_MAPCOUNT_VALUE. But, _mapcount shares its memory with other
+> > fields for SLAB/SLUB when PG_slab is set, so we need to check if PG_slab
+> > is set or not before looking up _mapcount value.
+> > And we can get the order of buddy system from private field.
+> > To sum it up, the values below are required for this logic.
+> > 
+> > Required values:
+> >   - OFFSET(page._mapcount)
+> >   - OFFSET(page.private)
+> >   - NUMBER(PG_slab)
+> >   - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
+> > 
+> > Changelog from v1 to v2:
+> > 1. remove SIZE(pageflags)
+> >   The new logic was changed after I sent v1 patch.  
+> >   Accordingly, SIZE(pageflags) has been unnecessary for makedumpfile.
+> > 
+> > What's makedumpfile:
+> >   makedumpfile creates a small dumpfile by excluding unnecessary pages
+> >   for the analysis. To distinguish unnecessary pages, makedumpfile gets
+> >   the vmcoreinfo data which has the minimum debugging information only
+> >   for dump filtering.
+> > 
+> > Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> 
+> Looks good to me.
+> 
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> 
+> Thanks
+> Vivek
+> 
+> > ---
+> >  kernel/kexec.c |    4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index 5e4bd78..b27efe4 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -1490,6 +1490,8 @@ static int __init crash_save_vmcoreinfo_init(void)
+> > 	VMCOREINFO_OFFSET(page, _count);
+> > 	VMCOREINFO_OFFSET(page, mapping);
+> > 	VMCOREINFO_OFFSET(page, lru);
+> > +	VMCOREINFO_OFFSET(page, _mapcount);
+> > +	VMCOREINFO_OFFSET(page, private);
+> > 	VMCOREINFO_OFFSET(pglist_data, node_zones);
+> > 	VMCOREINFO_OFFSET(pglist_data, nr_zones);
+> >  #ifdef CONFIG_FLAT_NODE_MEM_MAP
+> > @@ -1512,6 +1514,8 @@ static int __init crash_save_vmcoreinfo_init(void)
+> > 	VMCOREINFO_NUMBER(PG_lru);
+> > 	VMCOREINFO_NUMBER(PG_private);
+> > 	VMCOREINFO_NUMBER(PG_swapcache);
+> > +	VMCOREINFO_NUMBER(PG_slab);
+> > +	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+> > 
+> > 	arch_crash_save_vmcoreinfo();
+> > 	update_vmcoreinfo_note();
+> > --
+> > 1.7.9.2
+> > 
+> > _______________________________________________
+> > kexec mailing list
+> > kexec@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/kexec
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
