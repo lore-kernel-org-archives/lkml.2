@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab2LQNVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 08:21:23 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52522 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab2LQNVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 08:21:22 -0500
+	id S1752834Ab2LQNch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 08:32:37 -0500
+Received: from antcom.de ([188.40.178.216]:34877 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab2LQNcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 08:32:36 -0500
+Message-ID: <50CF1EF1.2070601@antcom.de>
+Date: Mon, 17 Dec 2012 14:32:33 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.11) Gecko/20121123 Icedove/10.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaNOK=isKPZtxYaBFsGvcpN0261wExaXgRYjg5N3Y7qJZg@mail.gmail.com>
-References: <20686.63778.840426.61474@pilspetsen.it.uu.se>
-	<CAHdPZaPQNQ1WS5Qkb4FpmmOX7mXL10HsdaXf5dctp2hd2T0Sow@mail.gmail.com>
-	<20687.3736.365327.811519@pilspetsen.it.uu.se>
-	<CAHdPZaNOK=isKPZtxYaBFsGvcpN0261wExaXgRYjg5N3Y7qJZg@mail.gmail.com>
-Date: Mon, 17 Dec 2012 14:21:21 +0100
-Message-ID: <CAL1gcdMyx4y0TeSRi+5oG6cpULPXGu+i8E0ej3-6+n9pt8qPSw@mail.gmail.com>
-Subject: Re: [3.7.0 regression] rt2x00lib_probe_dev: Error - Failed to
- initialize hw
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wolfgang Grandegger <wg@grandegger.com>
+CC: rmallon@gmail.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca, daniel-gl@gmx.net,
+        sr@denx.de, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, highguy@gmail.com
+Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
+References: <1355495185-24220-1-git-send-email-stigge@antcom.de> <50CB68AB.5070806@grandegger.com> <50CBBB25.20002@antcom.de> <50CF03FB.2030100@grandegger.com> <50CF0744.7040404@grandegger.com>
+In-Reply-To: <50CF0744.7040404@grandegger.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikael, Devendra,
-
-On Mon, Dec 17, 2012 at 1:59 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> On Mon, Dec 17, 2012 at 7:22 AM, Mikael Pettersson <mikpe@it.uu.se> wrote:
->> devendra.aaru writes:
->>  > On Mon, Dec 17, 2012 at 5:51 AM, Mikael Pettersson <mikpe@it.uu.se> wrote:
->>  > > I just updated an old 1st gen AMD64 laptop from kernel 3.6.0 to 3.7.0,
->>  > > Fedora 15 user-space, and was greeted by the following kernel warning:
->>  > >
->>  > > WARNING: at net/wireless/core.c:389 wiphy_register+0x5c3/0x600 [cfg80211]()
->>  >
->>  > I am seeing this line actually when i do vim +389 net/wireless/core.c.
->>  >
->>  >                 u16 all_iftypes = 0;
->>  >
->>  > its good if you tell us the top sha1 of yours?
+On 12/17/2012 12:51 PM, Wolfgang Grandegger wrote:
+>>> Without having an AT91 available right now, I guess the hardware
+>>> interface of this GPIO chip is different from the GPIO block API. While
+>>> the hardware has clear and set registers, the val parameter of
+>>> at91_gpiolib_set_block() should be interpreted as the actual output
+>>> values. See lpc32xx_gpo_set_block() for an example for handling set and
+>>> clear registers like this: First, set_bits and clear_bits words are
+>>> calculated from mask and val parameters, and finally written to the
+>>> respective hardware registers.
+>>>
+>>> Note that one .set_block() can result in writing both the set and clear
+>>> registers of the hardware when val contains both 0s and 1s in
+>>> respectively masked positions.
 >>
->> It's the plain linux-3.7.tar.xz from kernel.org, no git involved.
->> Lines 389-390 of net/wireless/core.c are:
->>
->>                 if (WARN_ON(c->max_interfaces < 2))
->>                         return -EINVAL;
->>
->
-> so its v3.7 tag hash 29594404d7fe73cd80eaa4ee8c43dcc53970c60e.
->
-> i see that code line :). thanks
->
-> i traced a while and looked at the rt2500pci.c code and there we are
-> assigning the max_ap_intf variable to 1. the same go with the
-> rt2800pci.c
->
-> here's the part of the ops structure
->
-> static const struct rt2x00_ops rt2500pci_ops = {
->         .name                   = KBUILD_MODNAME,
->         .max_ap_intf            = 1,
->         .eeprom_size            = EEPROM_SIZE,
->         .rf_size                = RF_SIZE,
->         .tx_queues              = NUM_TX_QUEUES,
->         .extra_tx_headroom      = 0,
->         .rx                     = &rt2500pci_queue_rx,
->         .tx                     = &rt2500pci_queue_tx,
->         .bcn                    = &rt2500pci_queue_bcn,
->         .atim                   = &rt2500pci_queue_atim,
->         .lib                    = &rt2500pci_rt2x00_ops,
->         .hw                     = &rt2500pci_mac80211_ops,
-> #ifdef CONFIG_RT2X00_LIB_DEBUGFS
->         .debugfs                = &rt2500pci_rt2x00debug,
-> #endif /* CONFIG_RT2X00_LIB_DEBUGFS */
-> };
->
-> i really dont know why is that max_ap_intf is 1. may be some wireless
-> dev's know about this?
->
->
->> /Mikael
+>> Oops, I obviously did not test GPIO block write. The patch below does
+>> work now. Feel free to add it to the next version of your series.
+> 
+> The patch lacks an important fix, sorry. Please consider the updated
+> patch below.
 
-This is caused by the introduction of interface combinations. Helmut
-Schaa has already submitted a patch to fix this, but this has
-unfortunately not ended up in 3.7. I'm confident it will end up in one
-of the upcoming 3.7.x stable releases.
+Thanks!
 
-See http://marc.info/?l=linux-wireless&m=135478723823922&w=2 for the
-patch submitted by Helmut.
----
-Gertjan
+And I guess Russell is right: If possible, we should write outputs
+simultaneously via ODSR (plus OWER/OWDR/OWSR) instead of separate set/clear.
+
+I wonder if we need to save/restore the state of OWSR at every write
+operation or if we need/can cache it. Assuming that block GPIO are the
+only code in the kernel that manipulates ODSR.
+
+Further: Can we include this patch for arch/arm/mach-at91 via the gpio
+subsystem or does it need to go separately via arm-soc.git?
+
+Thanks,
+
+Roland
