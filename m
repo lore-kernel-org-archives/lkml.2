@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab2LQPfy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:35:54 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36382 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2LQPfv (ORCPT
+	id S1753445Ab2LQPgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:36:15 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35224 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab2LQPgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:35:51 -0500
-Date: Mon, 17 Dec 2012 16:35:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.6.9-rt21
-In-Reply-To: <1355543529.20987.6.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1212171634070.3148@ionos>
-References: <alpine.LFD.2.02.1212051659160.2701@ionos> <1355543529.20987.6.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 17 Dec 2012 10:36:11 -0500
+Message-ID: <50CF3BE7.7080509@lwfinger.net>
+Date: Mon, 17 Dec 2012 09:36:07 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Unable to enumerate USB device messages back in 3.7-gitX
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Dec 2012, Mike Galbraith wrote:
-> On Wed, 2012-12-05 at 17:05 +0100, Thomas Gleixner wrote: 
-> > Dear RT Folks,
-> > 
-> > I'm pleased to announce the 3.6.9-rt21 release. 3.6.7-rt18, 3.6.8-rt19
-> > and 3.6.9-rt20 are not announced updates to the respective 3.6.y
-> > stable releases without any RT changes
-> > 
-> > Changes since 3.6.9-rt20:
-> > 
-> >    * Fix the PREEMPT_LAZY implementation on ARM
-> > 
-> >    * Fix the RCUTINY issues
-> > 
-> >    * Fix a long standing scheduler bug (See commit log of
-> >      sched-enqueue-to-head.patch)
-> 
-> That last has an oversight buglet.
-> 
-> sched: add missing userspace->kernel struct sched_param.sched_priority inversion
-> 
-> Signed-off-by: Mike Galbraith <bitbucket@online.de>
-> ---
->  kernel/sched/core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4624,7 +4624,7 @@ static int __sched_setscheduler(struct t
->  	p->sched_reset_on_fork = reset_on_fork;
->  
->  	oldprio = p->prio;
-> -	if (oldprio == param->sched_priority)
-> +	if (oldprio == (MAX_RT_PRIO - 1) - param->sched_priority)
->  		goto out;
->  
->  	on_rq = p->on_rq;
+Alan,
 
-Duh, yes. But there is another one here:
+Unfortunately, those pesky messages have returned since the 3.8 merge has 
+started. Using 'git describe', my system is v3.7-8805-ga4f1de1. The USB-related 
+messages logged are as follows:
 
-+               enqueue_task(rq, p, oldprio < param->sched_priority ?
-+                            ENQUEUE_HEAD : 0);
+  usbcore: registered new interface driver usbfs
+  usbcore: registered new interface driver hub
+  usbcore: registered new device driver usb
+  ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+  ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+  ohci_hcd 0000:00:02.0: setting latency timer to 64
+  ohci_hcd 0000:00:02.0: OHCI Host Controller
+  ohci_hcd 0000:00:02.0: new USB bus registered, assigned bus number 1
+  ohci_hcd 0000:00:02.0: irq 17, io mem 0xfc486000
+  hub 1-0:1.0: USB hub found
+  hub 1-0:1.0: 5 ports detected
+  ohci_hcd 0000:00:04.0: setting latency timer to 64
+  ohci_hcd 0000:00:04.0: OHCI Host Controller
+  ohci_hcd 0000:00:04.0: new USB bus registered, assigned bus number 2
+  ohci_hcd 0000:00:04.0: irq 16, io mem 0xfc487000
+  hub 2-0:1.0: USB hub found
+  hub 2-0:1.0: 5 ports detected
+  usb 1-4: new full-speed USB device number 2 using ohci_hcd
+  usb 2-2: new full-speed USB device number 2 using ohci_hcd
+  hub 2-0:1.0: unable to enumerate USB device on port 5
+  hub 2-0:1.0: unable to enumerate USB device on port 5
+  <plus a lot more of the above>
 
-Bah. This reverse user/kernel priority nonsense really should go away!
+I have not yet had time to bisect the problem, but I will do so ASAP. I mostly 
+want you to have a heads-up that the problem has returned.
 
 Thanks,
 
-	tglx
+Larry
