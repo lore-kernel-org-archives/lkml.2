@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab2LQOCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 09:02:45 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50708 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab2LQOCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 09:02:44 -0500
-Date: Mon, 17 Dec 2012 15:02:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [regression] 3.7 ends in APIC panic
-Message-ID: <20121217140238.GA626@gmail.com>
-References: <50CB3EAB.309@itwm.fraunhofer.de>
- <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com>
- <CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com>
- <50CE0C82.20708@itwm.fraunhofer.de>
- <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com>
- <50CEE586.10800@itwm.fraunhofer.de>
+	id S1752808Ab2LQOGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 09:06:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56408 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752254Ab2LQOF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 09:05:59 -0500
+Date: Mon, 17 Dec 2012 14:05:53 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: numa: Fix build error if CONFIG_NUMA_BALANCING &&
+ !CONFIG_TRANSPARENT_HUGEPAGE
+Message-ID: <20121217140553.GG9887@suse.de>
+References: <20121212100338.GS1009@suse.de>
+ <CA+55aFzedbhcuo-WObUjigrXGuG2VGLqDOvh_HFA9Cn_BRkwjQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <50CEE586.10800@itwm.fraunhofer.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzedbhcuo-WObUjigrXGuG2VGLqDOvh_HFA9Cn_BRkwjQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michal Hocko reported that the following build error occurs if
+CONFIG_NUMA_BALANCING is set without THP support
 
-* Bernd Schubert <bernd.schubert@itwm.fraunhofer.de> wrote:
+kernel/sched/fair.c: In function ‘task_numa_work’:
+kernel/sched/fair.c:932:55: error: call to ‘__build_bug_failed’ declared with attribute error: BUILD_BUG failed
 
-> On 12/16/2012 07:07 PM, Yinghai Lu wrote:
-> >On Sun, Dec 16, 2012 at 10:01 AM, Bernd Schubert
-> ><bernd.schubert@itwm.fraunhofer.de> wrote:
-> >>>can you post your .config for v3.7 ?
-> >>>
-> >>>wonder if you have x2apic in .config
-> >>
-> >>Which setting is it? Config is attached.
-> >
-> >your config does not have
-> >
-> >CONFIG_X86_X2APIC=y
-> >
-> >set.
-> >
-> >please enable that.
-> >
-> >your BIOS pre-enable x2apic somehow, so you must have x2apic enabled in kernel.
-> >
-> >it x2apic really can not be re-enabled by kernel, kernel would disable
-> >x2apic automatically.
-> 
-> The system boots fine with x2apic enabled.
-> 
-> Thanks a bunch for your help,
+The problem is that HPAGE_PMD_SHIFT triggers a BUILD_BUG() on
+!CONFIG_TRANSPARENT_HUGEPAGE. This patch addresses the problem.
 
-I suspect this needs to be fixed/improved: currently it's way 
-too easy to disable x2apic support accidentally.
+Reported-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ kernel/sched/fair.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9af5af9..4603d6c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -929,7 +929,7 @@ void task_numa_work(struct callback_head *work)
+ 			continue;
+ 
+ 		/* Skip small VMAs. They are not likely to be of relevance */
+-		if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < HPAGE_PMD_NR)
++		if (vma->vm_end - vma->vm_start < HPAGE_SIZE)
+ 			continue;
+ 
+ 		do {
 
-	Ingo
