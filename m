@@ -1,112 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2LQW5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:57:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25711 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2LQW5k (ORCPT
+	id S1752884Ab2LQW7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:59:17 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:16952 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2LQW7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:57:40 -0500
-Date: Mon, 17 Dec 2012 14:56:17 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
-        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
-        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
- stable pages during write
-Message-ID: <20121217225617.GB10874@blackbox.djwong.org>
-References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
- <20121213080811.23360.98131.stgit@blackbox.djwong.org>
- <20121216161336.GA6243@gmail.com>
+	Mon, 17 Dec 2012 17:59:16 -0500
+Message-ID: <50CFA3C1.3040004@tilera.com>
+Date: Mon, 17 Dec 2012 17:59:13 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121216161336.GA6243@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Simon Marchi <simon.marchi@polymtl.ca>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] arch/tile: implement user_regset interface on tilegx
+References: <1355546091-32537-1-git-send-email-simon.marchi@polymtl.ca> <50CF510E.6050406@tilera.com> <CAFXXi0m3rHg7P+GetLKv_cwp5+c5xsmbJ8LM5CTLGT39JhBmzA@mail.gmail.com>
+In-Reply-To: <CAFXXi0m3rHg7P+GetLKv_cwp5+c5xsmbJ8LM5CTLGT39JhBmzA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 12:13:36AM +0800, Zheng Liu wrote:
-> On Thu, Dec 13, 2012 at 12:08:11AM -0800, Darrick J. Wong wrote:
-> > diff --git a/mm/bounce.c b/mm/bounce.c
-> > index 0420867..fa11935 100644
-> > --- a/mm/bounce.c
-> > +++ b/mm/bounce.c
-> > @@ -178,6 +178,38 @@ static void bounce_end_io_read_isa(struct bio *bio, int err)
-> >  	__bounce_end_io_read(bio, isa_page_pool, err);
-> >  }
-> >  
-> > +#ifdef CONFIG_NEED_BOUNCE_POOL
-> > +static int might_snapshot_stable_page_write(struct bio **bio_orig)
-> > +{
-> > +	return bio_data_dir(*bio_orig) == WRITE;
-> > +}
-> > +
-> > +static int should_snapshot_stable_pages(struct page *page, int rw)
-> > +{
-> > +	struct backing_dev_info *bdi;
-> > +	struct address_space *mapping = page_mapping(page);
-> > +
-> > +	if (!mapping)
-> > +		return 0;
-> > +	bdi = mapping->backing_dev_info;
-> > +	if (!bdi_cap_stable_pages_required(bdi))
-> > +		return 0;
-> > +
-> > +	return mapping->host->i_sb->s_flags & MS_SNAP_STABLE &&
-> > +	       rw == WRITE;
-> > +}
-> > +#else
-> > +static int might_snapshot_stable_page_write(struct bio **bio_orig)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> > +static int should_snapshot_static_pages(struct page *page, int rw)
->                               ^^^^^^
->                               It should be _stable_.
+On 12/17/2012 5:07 PM, Simon Marchi wrote:
+>> I think with this support added, we have all the prerequisites to add "select HAVE_ARCH_TRACEHOOK" under "config TILE" in arch/tile/Kconfig, so we might as well do that too.  That will enable PTRACE_GETREGSET and PTRACE_SETREGSET, as well as /proc/PID/syscall, so why not?
+> This is indeed my objective ;), and it is an intermediate objective to
+> add support for HAVE_SYSCALL_TRACEPOINTS. If we look at arch/Kconfig,
+> just above HAVE_ARCH_TRACEHOOK, we still have
+>
+> TIF_SYSCALL_TRACE       calls tracehook_report_syscall_{entry,exit}
+> TIF_NOTIFY_RESUME       calls tracehook_notify_resume()
+> signal delivery         calls tracehook_signal_handler()
 
-Good catch!  Thank you!
+I believe we do properly support TIF_SYSCALL_TRACE; see arch/tile/kernel/intvec_64.S.  Likewise TIF_NOTIFY_RESUME; see do_work_pending() in arch/tile/kernel/process.c.  And signal delivery seems to be handled in a platform-independent way now; see kernel/signal.c.
 
---D
-> 
-> Regards,
->                                                 - Zheng
-> > +{
-> > +	return 0;
-> > +}
-> > +#endif /* CONFIG_NEED_BOUNCE_POOL */
-> > +
-> >  static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
-> >  			       mempool_t *pool)
-> >  {
-> > @@ -192,7 +224,8 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
-> >  		/*
-> >  		 * is destination page below bounce pfn?
-> >  		 */
-> > -		if (page_to_pfn(page) <= queue_bounce_pfn(q))
-> > +		if (page_to_pfn(page) <= queue_bounce_pfn(q) &&
-> > +		    !should_snapshot_stable_pages(page, rw))
-> >  			continue;
-> >  
-> >  		/*
-> > @@ -284,7 +317,8 @@ void blk_queue_bounce(struct request_queue *q, struct bio **bio_orig)
-> >  	 * don't waste time iterating over bio segments
-> >  	 */
-> >  	if (!(q->bounce_gfp & GFP_DMA)) {
-> > -		if (queue_bounce_pfn(q) >= blk_max_pfn)
-> > +		if (queue_bounce_pfn(q) >= blk_max_pfn &&
-> > +		    !might_snapshot_stable_page_write(bio_orig))
-> >  			return;
-> >  		pool = page_pool;
-> >  	} else {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+My only comment on the revised patch is that I believe you should #include <arch/chip.h>, not <uapi/arch/chip.h>.  Source code (.c files) doesn't seem to use the <uapi/> prefix.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
