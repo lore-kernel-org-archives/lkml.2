@@ -1,64 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab2LQHkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 02:40:47 -0500
-Received: from smtp.xy24.at ([85.126.109.136]:58339 "EHLO renate.xy24.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751387Ab2LQHkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 02:40:46 -0500
-X-Greylist: delayed 679 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 02:40:46 EST
-Message-ID: <50CEC9B0.3040503@universalnet.at>
-Date: Mon, 17 Dec 2012 08:28:48 +0100
-From: Bernd Krumboeck <krumboeck@universalnet.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751843Ab2LQHp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 02:45:59 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35971 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab2LQHp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 02:45:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, tony.luck@intel.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Mon, 17 Dec 2012 08:51:05 +0100
+Message-ID: <6849411.jDP7VSUtXm@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAE9FiQWejZEj35okrHfuw6QQJNKNj2b+67yg+iGKEqYhgsaHCg@mail.gmail.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <CAE9FiQWejZEj35okrHfuw6QQJNKNj2b+67yg+iGKEqYhgsaHCg@mail.gmail.com>
 MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] can: add tx/rx LED trigger support
-References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com> <1355656113-9562-2-git-send-email-fabio.baltieri@gmail.com>
-In-Reply-To: <1355656113-9562-2-git-send-email-fabio.baltieri@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.4 (renate.xy24.at [85.126.109.136]); Mon, 17 Dec 2012 08:29:14 +0100 (CET)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Fabio!
+On Sunday, December 16, 2012 09:27:49 PM Yinghai Lu wrote:
+> On Sun, Dec 16, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > The ACPI handles of PCI root bridges need to be known to
+> > acpi_bind_one(), so that it can create the appropriate
+> > "firmware_node" and "physical_node" files for them, but currently
+> > the way it gets to know those handles is not exactly straightforward
+> > (to put it lightly).
+> >
+> > This is how it works, roughly:
+> >
+> >   1. acpi_bus_scan() finds the handle of a PCI root bridge,
+> >      creates a struct acpi_device object for it and passes that
+> >      object to acpi_pci_root_add().
+> >
+> >   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
+> >      populates its "device" field with its argument's address
+> >      (device->handle is the ACPI handle found in step 1).
+> >
+> >   3. The struct acpi_pci_root object created in step 2 is passed
+> >      to pci_acpi_scan_root() and used to get resources that are
+> >      passed to pci_create_root_bus().
+> >
+> >   4. pci_create_root_bus() creates a struct pci_host_bridge object
+> >      and passes its "dev" member to device_register().
+> >
+> >   5. platform_notify(), which for systems with ACPI is set to
+> >      acpi_platform_notify(), is called.
+> >
+> > So far, so good.  Now it starts to be "interesting".
+> >
+> >   6. acpi_find_bridge_device() is used to find the ACPI handle of
+> >      the given device (which is the PCI root bridge) and executes
+> >      acpi_pci_find_root_bridge(), among other things, for the
+> >      given device object.
+> >
+> >   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
+> >      device object to extract the segment and bus numbers of the PCI
+> >      root bridge and passes them to acpi_get_pci_rootbridge_handle().
+> >
+> >   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
+> >      root bridges and finds the one that matches the given segment
+> >      and bus numbers.  Its handle is then used to initialize the
+> >      ACPI handle of the PCI root bridge's device object by
+> >      acpi_bind_one().  However, this is *exactly* the ACPI handle we
+> >      started with in step 1.
+> >
+> > Needless to say, this is quite embarassing, but it may be avoided
+> > thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
+> > initialized in advance), which makes it possible to initialize the
+> > ACPI handle of a device before passing it to device_register().
+> > Namely, if pci_acpi_scan_root() could easily pass the root bridge's
+> > ACPI handle to pci_create_root_bus(), the latter could set the ACPI
+> > handle in its struct pci_host_bridge object's "dev" member before
+> > passing it to device_register() and steps 6-8 above wouldn't be
+> > necessary any more.
+> >
+> > To make that happen I decided to repurpose the 4th argument of
+> > pci_create_root_bus(), because that allowed me to avoid defining
+> > additional callbacks or similar things and didn't seem to impact
+> > architectures without ACPI substantially.
+> >
+> > Only x86 and ia64 are affected directly, there should be no
+> > functional changes resulting from this on other architectures.
+> 
+> that is good one to avoid that find_root_bridge...
+> 
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >
+> > Should apply to the current Linus' tree, boots correctly on x86(-64).
 
-Am 2012-12-16 12:08, schrieb Fabio Baltieri:
-> This patch implements the functions to add two LED triggers, named
-> <ifname>-tx and <ifname>-rx, to a canbus device driver.
->
-> Triggers are called from specific handlers by each CAN device driver and
-> can be disabled altogether with a Kconfig option.
->
-> The implementation keeps the LED on when the interface is UP and blinks
-> the LED on network activity at a configurable rate.
->
-> This only supports can-dev based drivers, as it uses some support field
-> in the can_priv structure.
->
-> Supported drivers should call devm_can_led_init() and can_led_event() as
-> needed.
->
-> Cleanup is handled automatically by devres, so no *_exit function is
-> needed.
->
-> Supported events are:
-> - CAN_LED_EVENT_OPEN: turn on tx/rx LEDs
-> - CAN_LED_EVENT_STOP: turn off tx/rx LEDs
-> - CAN_LED_EVENT_TX: trigger tx LED blink
-> - CAN_LED_EVENT_RX: trigger tx LED blink
+> >
+> > ---
+> >  arch/ia64/pci/pci.c              |    5 ++++-
+> >  arch/powerpc/kernel/pci-common.c |    3 ++-
+> >  arch/sparc/kernel/pci.c          |    3 ++-
+> >  arch/x86/pci/acpi.c              |    5 ++++-
+> >  drivers/acpi/pci_root.c          |   18 ------------------
+> >  drivers/pci/pci-acpi.c           |   19 -------------------
+> >  drivers/pci/probe.c              |   16 +++++++++++-----
+> >  include/acpi/acpi_bus.h          |    1 -
+> >  include/linux/pci.h              |    9 ++++++++-
+> >  9 files changed, 31 insertions(+), 48 deletions(-)
+> 
+> you need to update other arch for pci_create_root_bus
+> 
+> arch/powerpc/kernel/pci-common.c:       bus =
+> pci_create_root_bus(hose->parent, hose->first_busno,
 
-Why there is no patch for any usb can device?
+I thought I addressed this one, didn't I?
 
-Can this be done in a more general way, except patching every driver?
+> arch/s390/pci/pci.c:    zdev->bus = pci_create_root_bus(NULL,
+> ZPCI_BUS_NR, &pci_root_ops,
+
+This one appears to have been removed.  There's no pci_create_root_bus()
+in all arch/s390, as far as I can say.
+
+> arch/sparc/kernel/pci.c:        bus = pci_create_root_bus(parent,
+> pbm->pci_first_busno, pbm->pci_ops,
+
+I modified this one too, is that not sufficient?
+
+> drivers/parisc/dino.c:  dino_dev->hba.hba_bus = bus =
+> pci_create_root_bus(&dev->dev,
+> drivers/parisc/lba_pci.c:               pci_create_root_bus(&dev->dev,
+> lba_dev->hba.bus_num.start,
+
+These two pass NULL as the 4th argument to pci_create_root_bus() and don't
+need to be updated, AFAICS.
+
+> >
+> > Index: linux/arch/x86/pci/acpi.c
+> > ===================================================================
+> > --- linux.orig/arch/x86/pci/acpi.c
+> > +++ linux/arch/x86/pci/acpi.c
+> > @@ -450,6 +450,7 @@ struct pci_bus * __devinit pci_acpi_scan
+> >         LIST_HEAD(resources);
+> >         struct pci_bus *bus = NULL;
+> >         struct pci_sysdata *sd;
+> > +       struct pci_root_sys_info si;
+> >         int node;
+> >  #ifdef CONFIG_ACPI_NUMA
+> >         int pxm;
+> > @@ -486,6 +487,8 @@ struct pci_bus * __devinit pci_acpi_scan
+> >         sd = &info->sd;
+> >         sd->domain = domain;
+> >         sd->node = node;
+> > +       si.acpi_node.handle = device->handle;
+> > +       si.sysdata = sd;
+> 
+> maybe you can try to have si.acpi_handle directly ?
+
+I did it this way for handle to be compiled out when CONFIG_ACPI is not set
+(struct acpi_dev_node is an empty structure in that case).
+
+Thanks,
+Rafael
 
 
-regards,
-Bernd
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
