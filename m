@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab2LQInt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 03:43:49 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:53246 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab2LQIns (ORCPT
+	id S1751968Ab2LQIqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 03:46:17 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3197 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab2LQIqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 03:43:48 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Hideki EIRAKU <hdk@igel.co.jp>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH/WIP/RFC 02/14] shmobile-iommu: Move IPMMU driver to drivers/iommu
-Date: Mon, 17 Dec 2012 09:45:03 +0100
-Message-ID: <1626129.3KmpqDAOtk@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <50CE8D24.3010604@igel.co.jp>
-References: <1350290093-998-1-git-send-email-hdk@igel.co.jp> <1355678760-27357-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <50CE8D24.3010604@igel.co.jp>
+	Mon, 17 Dec 2012 03:46:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 17 Dec 2012 00:46:11 -0800
+Date: Mon, 17 Dec 2012 10:46:07 +0200
+From: Sivaram Nair <sivaramn@nvidia.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "shuox.liu@intel.com" <shuox.liu@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "yanmin_zhang@intel.com" <yanmin_zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpuidle: fix sysfs output for power_usage
+Message-ID: <20121217084607.GN10090@sivaramn-lnx>
+References: <1355491060-970-1-git-send-email-sivaramn@nvidia.com>
+ <39891276.jhMMUpZpil@vostro.rjw.lan>
+ <20121217073815.GM10090@sivaramn-lnx>
+ <4160971.sv9ruOS3QC@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+In-Reply-To: <4160971.sv9ruOS3QC@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Damian,
-
-(CC'ing iommu@lists.linux-foundation.org)
-
-On Monday 17 December 2012 12:10:28 Damian Hobson-Garcia wrote:
-> On 2012/12/17 2:25, Laurent Pinchart wrote:
-> > Signed-off-by: Laurent Pinchart
-> > <laurent.pinchart+renesas@ideasonboard.com>
-> > ---
+On Mon, Dec 17, 2012 at 08:56:45AM +0100, Rafael J. Wysocki wrote:
+> On Monday, December 17, 2012 09:38:15 AM Sivaram Nair wrote:
+> > On Sat, Dec 15, 2012 at 01:03:02AM +0100, Rafael J. Wysocki wrote:
+> > > On Friday, December 14, 2012 03:17:37 PM Sivaram Nair wrote:
+> > > > cpuidle_state->power_usage is signed; so change the corresponding sysfs
+> > > > ops to output signed value instead of unsigned.
+> > > 
+> > > What's actually wrong with printing it as an unsigned int?
 > > 
-> >  arch/arm/mach-shmobile/Kconfig                     |    6 ------
-> >  arch/arm/mach-shmobile/Makefile                    |    3 ---
-> >  drivers/iommu/Kconfig                              |    6 ++++++
-> >  drivers/iommu/Makefile                             |    1 +
-> >  .../ipmmu.c => drivers/iommu/shmobile-ipmmu.c      |    0
-> >  5 files changed, 7 insertions(+), 9 deletions(-)
-> >  rename arch/arm/mach-shmobile/ipmmu.c => drivers/iommu/shmobile-ipmmu.c
-> >  (100%)
->
-> I agree that arch/arm is not a good place, but I'm not completely sure that
-> ipmmu.c belongs in drivers/iommu.  The reason is because of the PMB
-> functionality provided by the IPMMU.  The PMB provides a fixed address
-> remapping capability that is completely unrelated to the IOMMU
-> functionality.  Since this remapping is done by writing the IPMMU registers
-> directly, instead of via a page table it doesn't really fit in well with the
-> IOMMU API (it also supports things like tiled/linear address translation,
-> which require some other method to set up).  Since the PMB and the IOMMU
-> functions of the IPPMU share the same register address space, we would like
-> to have one driver to handle the register accesses of both of these
-> functions.  That driver is ipmmu.c.  So if ipmmu.c is in drivers/iommu, the
-> entire IOMMU subsystem must be enabled in order to use the PMB
-> functionality. So maybe it might be better to treat the IPMMU like a
-> multifuction device, with a core driver (ipmmu.c) in one location and the
-> function implementations in their own respective directories. Does
-> drivers/mfd sound like a good place for it?
+> > power_usage could have negative values (for example cpuidle/driver.c
+> > inits this value to -1, -2 etc. when drv->power_specified is not set) and
+> > these shows up badly in the sysfs output.
+> 
+> Does "badly" mean "as big positive numbers"?
 
-I've thought about this as well. The IPMMU indeed provides two different 
-functions, so drivers/mfd/ could be a candidate. This being said, both the 
-IOMMU function and the PMB function are related to virtual memory space 
-management, so they're not totally unrelated. I agree that the PMB function 
-isn't really an IOMMU in the sense that it will likely not be exposed through 
-the existing IOMMU API.
+Yes (sorry for not being clearer).
 
-However, drivers/iommu/ seems to me like a more natural place to store the 
-IPMMU driver compared to drivers/mfd/. Enabling IOMMU support 
-(CONFIG_IOMMU_SUPPORT) doesn't mean the IOMMU core (CONFIG_IOMMU_API) will be 
-compiled in. There would thus be no extra code compiled in if the IOMMU 
-function of the IPMMU is disabled.
+> 
+> Should we actually print them at all in those case?  Perhaps it'll be better to
+> make the file appear empty then?
 
--- 
-Regards,
+May be, but why is power_usage signed in the first place? I also noticed
+Daniel Lezcano's patches that reduces the scope of this variable. So,
+perhaps we can just ignore this change.
 
-Laurent Pinchart
-
+-Sivaram
