@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2LQKKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 05:10:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43990 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab2LQKKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 05:10:50 -0500
-Date: Mon, 17 Dec 2012 11:10:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Automatic NUMA Balancing V11
-Message-ID: <20121217101044.GA1426@gmail.com>
-References: <20121212100338.GS1009@suse.de>
- <CA+55aFzedbhcuo-WObUjigrXGuG2VGLqDOvh_HFA9Cn_BRkwjQ@mail.gmail.com>
+	id S1751990Ab2LQKLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 05:11:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46570 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013Ab2LQKLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 05:11:46 -0500
+Date: Mon, 17 Dec 2012 11:11:30 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 3/4] 9pfs: Fix filesystem to wait for stable page
+ writeback
+Message-ID: <20121217101130.GG5133@quack.suse.cz>
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+ <20121213080802.23360.4487.stgit@blackbox.djwong.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="0F1p//8PRICkK4MW"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzedbhcuo-WObUjigrXGuG2VGLqDOvh_HFA9Cn_BRkwjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121213080802.23360.4487.stgit@blackbox.djwong.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Wed, Dec 12, 2012 at 2:03 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > This is a pull request for "Automatic NUMA Balancing V11". The list
+On Thu 13-12-12 00:08:02, Darrick J. Wong wrote:
+> Fix up the ->page_mkwrite handler to provide stable page writes if necessary.
 > 
-> Ok, guys, I've pulled this and pushed out. There were some 
-> conflicts with both the VM changes and with the scheduler 
-> tree, but they were pretty small and looked simple, so I fixed 
-> them up and hope they all work.
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+  Looks good. Also UBIFS and OCFS2 seem to need similar treatment. Patches
+attached...
 
-Cool, thanks Linus!
+									Honza
+> ---
+>  fs/9p/vfs_file.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> 
+> diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+> index c2483e9..357260b 100644
+> --- a/fs/9p/vfs_file.c
+> +++ b/fs/9p/vfs_file.c
+> @@ -620,6 +620,7 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  	lock_page(page);
+>  	if (page->mapping != inode->i_mapping)
+>  		goto out_unlock;
+> +	wait_for_stable_page(page);
+>  
+>  	return VM_FAULT_LOCKED;
+>  out_unlock:
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-> Has anybody tested the impact on single-node systems? If 
-> distros enable this by default (and it does have 'default y', 
-> which is a big no-no for new features - I undid that part) 
+--0F1p//8PRICkK4MW
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-ocfs2-Wait-for-page-writeback-to-provide-stable-page.patch"
 
-Yes, that was for easy testing, leaving it in was an oversight.
+>From 0e99ae8cf891015105f01065e2977ea6cc737ff8 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Mon, 17 Dec 2012 11:03:42 +0100
+Subject: [PATCH 1/2] ocfs2: Wait for page writeback to provide stable pages
 
-> then there will be tons of people running this without 
-> actually having multiple sockets. Does it gracefully avoid 
-> pointless overheads for this case?
+When stable pages are required, we have to wait if the page is just
+going to disk and we want to modify it. Add proper callback to
+ocfs2_grab_pages_for_write().
 
-Yes. We have:
+CC: ocfs2-devel@oss.oracle.com
+CC: Joel Becker <jlbec@evilplan.org>
+CC: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ocfs2/aops.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-+       bool numabalancing_default = false;
-+
-+       if (IS_ENABLED(CONFIG_NUMA_BALANCING_DEFAULT_ENABLED))
-+               numabalancing_default = true;
-+
-+       if (nr_node_ids > 1 && !numabalancing_override) {
-+               printk(KERN_INFO "Enabling automatic NUMA balancing. "
-+                       "Configure with numa_balancing= or sysctl");
-+               set_numabalancing_state(numabalancing_default);
-+       }
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 6577432..9796330 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1194,6 +1194,7 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+ 				goto out;
+ 			}
+ 		}
++		wait_for_stable_page(wc->w_pages[i]);
+ 
+ 		if (index == target_index)
+ 			wc->w_target_page = wc->w_pages[i];
+-- 
+1.7.1
 
-The nr_node_ids check makes sure that on single-node systems we 
-don't enable the feature.
 
-At that point it will be some extra passive code in the kernel - 
-last I measured it was around +20K to the kernel image plus a 
-couple of extra branches in a couple of generic paths - but no 
-measurable runtime overhead.
+--0F1p//8PRICkK4MW
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0002-ubifs-Wait-for-page-writeback-to-provide-stable-page.patch"
 
-Any other negative impact would either come from preparatory or 
-scalability patches attached to the NUMA balancing feature, 
-which would be a regression we want to fix.
+>From 988439f828b24fba8784cbd4d713d87cabd807cf Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Mon, 17 Dec 2012 11:08:11 +0100
+Subject: [PATCH 2/2] ubifs: Wait for page writeback to provide stable pages
 
-> Anyway, hopefully we'll have a more real numa balancing for 
-> 3.9, and this is still considered a reasonable base for that 
-> work.
+When stable pages are required, we have to wait if the page is just
+going to disk and we want to modify it. Add proper callback to
+ubifs_vm_page_mkwrite().
 
-We are working on it ;-)
+CC: Artem Bityutskiy <dedekind1@gmail.com>
+CC: Adrian Hunter <adrian.hunter@intel.com>
+CC: linux-mtd@lists.infradead.org
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ubifs/file.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks,
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5bc7781..4f6493c 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1522,6 +1522,7 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
+ 			ubifs_release_dirty_inode_budget(c, ui);
+ 	}
+ 
++	wait_for_stable_page(page);
+ 	unlock_page(page);
+ 	return 0;
+ 
+-- 
+1.7.1
 
-	Ingo
+
+--0F1p//8PRICkK4MW--
