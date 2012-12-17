@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab2LQRwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 12:52:40 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4042 "EHLO
+	id S1753214Ab2LQRws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 12:52:48 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4052 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab2LQRwi (ORCPT
+	with ESMTP id S1753046Ab2LQRwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 12:52:38 -0500
+	Mon, 17 Dec 2012 12:52:46 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 17 Dec 2012 09:52:05 -0800
+	by hqnvupgp05.nvidia.com on Mon, 17 Dec 2012 09:52:08 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>
 CC: <ben-linux@fluff.org>, <kgene.kim@samsung.com>, <baohua.song@csr.com>,
@@ -18,9 +18,11 @@ CC: <ben-linux@fluff.org>, <kgene.kim@samsung.com>, <baohua.song@csr.com>,
         <linux-arm-kernel@lists.infradead.org>, <jonas.gorski@gmail.com>,
         <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
 Subject: [PATCH] spi: remove check for bits_per_word on transfer
-Date: Mon, 17 Dec 2012 23:21:57 +0530
-Message-ID: <1355766718-2040-1-git-send-email-ldewangan@nvidia.com>
+Date: Mon, 17 Dec 2012 23:21:58 +0530
+Message-ID: <1355766718-2040-2-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1355766718-2040-1-git-send-email-ldewangan@nvidia.com>
+References: <1355766718-2040-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
