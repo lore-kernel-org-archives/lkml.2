@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab2LQPah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:30:37 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:45847 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2LQPaf (ORCPT
+	id S1753238Ab2LQPea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:34:30 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52255
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752626Ab2LQPe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:30:35 -0500
+	Mon, 17 Dec 2012 10:34:29 -0500
+Message-ID: <50CF3B82.9000904@kernel.dk>
+Date: Mon, 17 Dec 2012 16:34:26 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1355737085-6671-1-git-send-email-bp@alien8.de>
-References: <1355737085-6671-1-git-send-email-bp@alien8.de>
-Date: Mon, 17 Dec 2012 09:30:33 -0600
-Message-ID: <CAH2r5mt=4ZoGR_4hP52uHsZabXpPfh1sa1X0GSg6W4=fawNFnA@mail.gmail.com>
-Subject: Re: [PATCH] cifs: Do not enable debugging code by default
-From: Steve French <smfrench@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] core block IO bits for 3.8
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think taking out debugging makes sense - we need debugging a
-lot more often than expected even to diagnose user errors (usually
-relating to session establishment failures, since we are very limited
-in how much information can be passed back in mount).   If we had
-dynamic trace points for cifs and for common vfs entry points, or if
-the distros shipped dual cifs modules (one with debugging and one
-without), I wouldn't mind disabling it - but multiple times a month we
-have to diagnose user problems (sometimes user errors, sometimes
-server bugs etc.) by enabling debugging.
+Hi Linus,
 
-On Mon, Dec 17, 2012 at 3:38 AM, Borislav Petkov <bp@alien8.de> wrote:
-> Debugging code is generally disabled in the configurator since it is
-> only for devs and testers and not for the majority of the installations.
->
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Jeff Layton <jlayton@redhat.com>
-> Cc: Steve French <sfrench@samba.org>
-> Cc: linux-cifs@vger.kernel.org
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> ---
->  fs/cifs/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
-> index 21ff76c22a17..241a0e2853c5 100644
-> --- a/fs/cifs/Kconfig
-> +++ b/fs/cifs/Kconfig
-> @@ -124,7 +124,6 @@ config CIFS_ACL
->
->  config CIFS_DEBUG
->         bool "Enable CIFS debugging routines"
-> -       default y
->         depends on CIFS
->         help
->            Enabling this option adds helpful debugging messages to
-> --
-> 1.8.1.rc2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Here are the core block IO bits for 3.8. The branch contains:
+
+- The final version of the surprise device removal fixups from Bart.
+
+- Don't hide EFI partitions under advanced partition types. It's fairly
+  wide spread these days. This is especially dangerous for systems that
+  have both msdos and efi partition tables, where you want to keep them
+  in sync.
+
+- Cleanup of using -1 instead of the proper NUMA_NO_NODE
+
+- Export control of bdi flusher thread CPU mask and default to using the
+  home node (if known) from Jeff.
+
+- Export unplug tracepoint for MD.
+
+- Core improvements from Shaohua. Reinstate the recursive merge, as the
+  original bug has been fixed. Add plugging for discard and also fix a
+  problem handling non pow-of-2 discard limits.
+
+Please pull! There's a trivial merge in block/blk-exec.c due to a fix
+that went into 3.7-rc at a later point than -rc4 where this is based.
 
 
+  git://git.kernel.dk/linux-block.git for-3.8/core
+
+
+----------------------------------------------------------------
+Bart Van Assche (6):
+      block: Rename queue dead flag
+      block: Let blk_drain_queue() caller obtain the queue lock
+      block: Avoid that request_fn is invoked on a dead queue
+      block: Avoid scheduling delayed work on a dead queue
+      block: Make blk_cleanup_queue() wait until request_fn finished
+      bsg: Remove unused function bsg_goose_queue()
+
+Diego Calleja (1):
+      partitions: enable EFI/GPT support by default
+
+Ezequiel Garcia (1):
+      block: use NUMA_NO_NODE instead of -1
+
+Jeff Moyer (1):
+      bdi: add a user-tunable cpu_list for the bdi flusher threads
+
+NeilBrown (1):
+      block: export block_unplug tracepoint
+
+Shaohua Li (4):
+      block CFQ: avoid moving request to different queue
+      block: recursive merge requests
+      block: discard granularity might not be power of 2
+      block: add plug for blkdev_issue_discard
+
+xiaobing tu (1):
+      deadline: Allow 0ms deadline latency, increase the read speed
+
+ block/blk-cgroup.c          |    2 +-
+ block/blk-core.c            |  127 ++++++++++++++++++++++++++-----------------
+ block/blk-exec.c            |    4 +-
+ block/blk-lib.c             |   26 +++++----
+ block/blk-settings.c        |    6 +-
+ block/blk-sysfs.c           |    4 +-
+ block/blk-throttle.c        |    2 +-
+ block/blk.h                 |    4 +-
+ block/bsg-lib.c             |   13 -----
+ block/cfq-iosched.c         |    3 +-
+ block/deadline-iosched.c    |    2 +-
+ block/elevator.c            |   16 ++++--
+ block/genhd.c               |    2 +-
+ block/partitions/Kconfig    |    4 +-
+ drivers/scsi/scsi_lib.c     |    2 +-
+ include/linux/backing-dev.h |    4 ++
+ include/linux/blkdev.h      |   17 ++++--
+ include/linux/bsg-lib.h     |    1 -
+ mm/backing-dev.c            |   84 ++++++++++++++++++++++++++++
+ 19 files changed, 224 insertions(+), 99 deletions(-)
 
 -- 
-Thanks,
+Jens Axboe
 
-Steve
