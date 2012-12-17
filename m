@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab2LQWOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 17:14:10 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:32975 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab2LQWOG (ORCPT
+	id S1754198Ab2LQWT4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 17:19:56 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:42404 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab2LQWTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 17:14:06 -0500
-Message-ID: <50CF992A.8080008@wwwdotorg.org>
-Date: Mon, 17 Dec 2012 15:14:02 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 17 Dec 2012 17:19:55 -0500
+Date: Mon, 17 Dec 2012 14:14:06 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mariusz Kozlowski <mk@lab.zgora.pl>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 00/27] 3.7.1-stable review
+Message-ID: <20121217221406.GA20720@kroah.com>
+References: <20121214222251.229078963@linuxfoundation.org>
+ <20121217220738.GA3542@mako-laptop>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from
- DT
-References: <1355725087-11363-1-git-send-email-hdoyu@nvidia.com> <1355725087-11363-4-git-send-email-hdoyu@nvidia.com> <50CF258E.2080207@gmail.com>
-In-Reply-To: <50CF258E.2080207@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217220738.GA3542@mako-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 07:00 AM, Rob Herring wrote:
-> On 12/17/2012 12:18 AM, Hiroshi Doyu wrote:
->> Set Snoop Control Unit(SCU) register base address dynamically from DT.
-
->> diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-
->>  static void __init tegra_smp_init_cpus(void)
->>  {
->> -	unsigned int i, ncores = scu_get_core_count(scu_base);
->> +	struct device_node *np;
->> +	unsigned int i, ncores = 1;
->> +
->> +	np = of_find_matching_node(NULL, cortex_a9_scu_match);
->> +	if (!np)
->> +		return;
->> +	scu_base = of_iomap(np, 0);
+On Mon, Dec 17, 2012 at 11:07:38PM +0100, Mariusz Kozlowski wrote:
+> On Fri, Dec 14, 2012 at 03:01:13PM -0800, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.7.1 release.
+> > There are 27 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Sun Dec 16 22:16:56 UTC 2012.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.1-rc1.gz
+> > and the diffstat can be found below.
 > 
-> Did you actually test this? Unless something changed, ioremap does not
-> work this early. The only reason to have it mapped this early is to get
-> the core count, but that doesn't work on A15 or A7. So we really need to
-> get core count/mask in a standard way. At least some work to get core
-> count from DT went into 3.8.
+> Greg, would that be a problem to send these patches for review to
+> linux-3.7.y branch and mark them with v3.7.1-rc1 commit/tag?
 
-Does it work if the machine's .map_io() function has set up a static
-mapping that includes the specified region? I believe that is the case
-on Tegra. What is the alternative if the registers can't be mapped;
-should the code count the number of child nodes in /cpus?
+Yes, it is a problem, sorry.
+
+> Is something goes wrong there is still place to fix/revert as needed.
+> If not do the final commit/tag that says this is v3.7.1 [1].
+> 
+> It would be easier to automate things by just monitoring linux-stable
+> remote for new tags.
+
+Automate what?  You can just look for the patch files to show up on
+kernel.org if you wish to automate testing.
+
+Otherwise, sorry, but creating a git tree of these patches, for the -rc
+kernels, doesn't work with the current work flow.  I have to have the
+ability to remove and add patches and change patches in the middle of
+the series of patches before the final kernel release for a variety of
+reasons, all of which have come up over the years of doing these stable
+kernel releases.
+
+In other words, I don't ever want to rebase.
+
+greg k-h
