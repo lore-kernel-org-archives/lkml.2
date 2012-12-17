@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2LQPfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 10:35:47 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:52346 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752175Ab2LQPfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 10:35:44 -0500
-Message-ID: <1355758544.13361.14.camel@joe-AO722>
-Subject: Re: [PATCH] scripts: add checkmaintainers.py
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Date: Mon, 17 Dec 2012 07:35:44 -0800
-In-Reply-To: <20121217102714.GB31947@liondog.tnic>
-References: <1355523576-7596-1-git-send-email-cesarb@cesarb.net>
-	 <50CEF080.8010208@suse.cz> <20121217102714.GB31947@liondog.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753416Ab2LQPfy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 10:35:54 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36382 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab2LQPfv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 10:35:51 -0500
+Date: Mon, 17 Dec 2012 16:35:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <bitbucket@online.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.6.9-rt21
+In-Reply-To: <1355543529.20987.6.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1212171634070.3148@ionos>
+References: <alpine.LFD.2.02.1212051659160.2701@ionos> <1355543529.20987.6.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-17 at 11:27 +0100, Borislav Petkov wrote:
-> On Mon, Dec 17, 2012 at 11:14:24AM +0100, Michal Marek wrote:
-> > On 14.12.2012 23:19, Cesar Eduardo Barros wrote:
-> > > This small script checks the file patterns in the MAINTAINERS file.
-> > > 
-> > > For every file pattern, it checks if the pattern matches any file or
-> > > directory in the kernel tree, printing the patterns which do not have a
-> > > match.
+On Sat, 15 Dec 2012, Mike Galbraith wrote:
+> On Wed, 2012-12-05 at 17:05 +0100, Thomas Gleixner wrote: 
+> > Dear RT Folks,
 > > 
-> > Can't this be added as a warning to scripts/get_maintainer.pl instead?
+> > I'm pleased to announce the 3.6.9-rt21 release. 3.6.7-rt18, 3.6.8-rt19
+> > and 3.6.9-rt20 are not announced updates to the respective 3.6.y
+> > stable releases without any RT changes
+> > 
+> > Changes since 3.6.9-rt20:
+> > 
+> >    * Fix the PREEMPT_LAZY implementation on ARM
+> > 
+> >    * Fix the RCUTINY issues
+> > 
+> >    * Fix a long standing scheduler bug (See commit log of
+> >      sched-enqueue-to-head.patch)
 > 
-> Yep, it definitely makes more sense than having a standalone script.
+> That last has an oversight buglet.
+> 
+> sched: add missing userspace->kernel struct sched_param.sched_priority inversion
+> 
+> Signed-off-by: Mike Galbraith <bitbucket@online.de>
+> ---
+>  kernel/sched/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4624,7 +4624,7 @@ static int __sched_setscheduler(struct t
+>  	p->sched_reset_on_fork = reset_on_fork;
+>  
+>  	oldprio = p->prio;
+> -	if (oldprio == param->sched_priority)
+> +	if (oldprio == (MAX_RT_PRIO - 1) - param->sched_priority)
+>  		goto out;
+>  
+>  	on_rq = p->on_rq;
 
-I'm not so sure of that myself.
+Duh, yes. But there is another one here:
 
-I think maybe it should go into checkpatch.
++               enqueue_task(rq, p, oldprio < param->sched_priority ?
++                            ENQUEUE_HEAD : 0);
 
-I do have a similar script as a get_maintainers variant.
+Bah. This reverse user/kernel priority nonsense really should go away!
 
-Adding a --verify-patterns option seems off-topic to
-the generic tool use of get_maintainers.
+Thanks,
 
-There's a fair amount of tedium for people to do more
-than determine there is a pattern that doesn't match
-files in git.
-
-Doing the work that Cesar did to find the commit that
-makes a pattern valid/invalid when renames or deletions
-occur is the chore that could be automated.
-
-Perhaps Cesar can use his script as a starting point
-to find those pattern invalidating commits or maybe
-add the capability (or a --strict check) to checkpatch.
-
-
+	tglx
