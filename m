@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab2LQUQS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 15:16:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57671 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752642Ab2LQUQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 15:16:16 -0500
-Message-ID: <1355775376.19706.1.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] MCE, AMD: Make MC2 decoding part of amd_decoder_ops
- as well
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jacob Shin <jacob.shin@amd.com>, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 17 Dec 2012 12:16:16 -0800
-In-Reply-To: <20121217200535.GF31866@liondog.tnic>
-References: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>
-	 <1355774221.13361.48.camel@joe-AO722> <20121217200535.GF31866@liondog.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753430Ab2LQUTt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 15:19:49 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52475 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab2LQUTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 15:19:48 -0500
+Date: Mon, 17 Dec 2012 21:19:45 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Chao Xie <xiechao.mail@gmail.com>
+Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, haojian.zhuang@gmail.com
+Subject: Re: common clock framwork: clk_set_rate issue
+Message-ID: <20121217201945.GA19651@pengutronix.de>
+References: <CADApbej+f9P1sgLMR8_McoCCSLDjJt_qitWdNd8X1v6PwZqsnQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADApbej+f9P1sgLMR8_McoCCSLDjJt_qitWdNd8X1v6PwZqsnQ@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 21:14:27 up 177 days, 11:26, 28 users,  load average: 0.31, 0.45,
+ 0.42
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-17 at 21:05 +0100, Borislav Petkov wrote:
-> On Mon, Dec 17, 2012 at 11:57:01AM -0800, Joe Perches wrote:
-> > It'd be better to change the pr_cont uses to pr_emerg
-> > 
-> > []
-> > 
-> > > +static void decode_mc2_mce(struct mce *m)
-> > > +{
-> > > +	u16 ec = EC(m->status);
-> > > +	u8 xec = XEC(m->status, xec_mask);
-> > > +
-> > > +	pr_emerg(HW_ERR "MC2 Error: ");
-
-> > 
-> > Remove this and
-> > 
-> > > +	if (fam_ops->mc2_mce(ec, xec))
-> > > +		;
-> > > +	else
-> > > +		pr_emerg(HW_ERR "Corrupted MC2 MCE info?\n");
-> > >  }
-> > 
-> > And make this
-> > 
-> > 	if (!fam_ops->mc2_mce(ec, xec))
-> > 		pr_emerg(etc...);
+On Thu, Dec 06, 2012 at 10:52:03AM +0800, Chao Xie wrote:
+> hi
+> When develop the clk drivers for SOCs based on common clock framework.
+> I met a issue.
+> For example there is a uart device, it's function clock comes from a
+> divider, and the divider's parent is a mux. It means
 > 
-> No, this is not how we do this here. We do pr_emerg in the main per-bank
-> function, i.e. mc0, mc1, mc2... and we finish the line in the respective
-> function with pr_cont.
+> MUX --> DIV --> UART
 > 
-> If your fear is line interleaving, then this shouldn't happen in most
-> cases because we're in atomic #MC context and nothing else is executing
-> in that case. (And I haven't seen it interleave in all my testing so
-> far).
+> As we know that UART can work at low baudrate for a terminal, while it
+> can also connect to GPS module which needs a high rate. So the MUX
+> will provide two clock source, a low clock rate and high clock rate.
 > 
-> If it does interleave when we have a non-critical error detected and
-> reported in process context, then this whole decoding code needs a lot
-> more work than this.
-> 
+> The MUX clk driver clk-mux.c does not implement a ->round_rate callbacks.
+> It means that when uart driver is used for a GPS and it want to change
+> it clock, the driver will call clk_set_rate(); clk_set_rate will loop
+> upward to DIV, and DIV will try to set its divider, and it need loop
+> upward to MUX.
+> In fact the current clk drivers have some issue.
+> MUX clk driver should provide the round_rate callback, it then can
+> provide a new_rate. It means that in clk_calc_subtree MUX can switch
+> the clock source.
 
-You also have paths where you start a pr_emerg and do not terminate
-it when there is no apparent error at all.
+It's not that simple. The input clocks to a mux may not only differ in
+their rate but can also have other different properties, like for
+example one input may be always present whereas another input only runs
+when the CPU is in run mode.
 
+It may be a possibility to add a flag to the mux to explicitely
+allow reparenting on a rate change.
 
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
