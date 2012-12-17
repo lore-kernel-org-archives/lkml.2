@@ -1,137 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab2LQNJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 08:09:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab2LQNJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 08:09:23 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/3] perf tests: Add event parsing test for '*:*' tracepoints
-Date: Mon, 17 Dec 2012 14:08:38 +0100
-Message-Id: <1355749718-4355-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1355749718-4355-1-git-send-email-jolsa@redhat.com>
-References: <1355749718-4355-1-git-send-email-jolsa@redhat.com>
+	id S1752745Ab2LQNLY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 08:11:24 -0500
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:59137 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab2LQNLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 08:11:23 -0500
+Message-ID: <50CF19EA.3070203@itwm.fraunhofer.de>
+Date: Mon, 17 Dec 2012 14:11:06 +0100
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Weidong Han <weidong.han@intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>, sbsiddha@gmail.com
+Subject: Re: [regression] 3.7 ends in APIC panic
+References: <50CB3EAB.309@itwm.fraunhofer.de> <CAE9FiQVFSx7sJhYbREk+gfdgxO6uMgHWdDv1tbkU=VXqfH4iAg@mail.gmail.com> <CAE9FiQUyj65jB4bPkJQHGRZEkhOry736g362-m145vNYRRSdAQ@mail.gmail.com> <50CE0C82.20708@itwm.fraunhofer.de> <CAE9FiQUJ-TZCCOki3XfMOgOvOL=TiApJGQdHcHNAPmYKRtVk6A@mail.gmail.com> <50CE12EB.1050804@itwm.fraunhofer.de> <20121216191347.GB14678@liondog.tnic> <50CE24FE.3030409@itwm.fraunhofer.de> <20121216203913.GB14643@liondog.tnic> <50CEE736.8020000@itwm.fraunhofer.de> <20121217100014.GA31866@liondog.tnic>
+In-Reply-To: <20121217100014.GA31866@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding event parsing test for '*:*' tracepoints. Checking the
-count matches all the tracepoints available plus current
-standard tracepoint perf_event_attr check.
+On 12/17/2012 11:00 AM, Borislav Petkov wrote:
+> + Suresh.
+>
+> On Mon, Dec 17, 2012 at 10:34:46AM +0100, Bernd Schubert wrote:
+>> On 12/16/2012 09:39 PM, Borislav Petkov wrote:
+>>> On Sun, Dec 16, 2012 at 08:46:06PM +0100, Bernd Schubert wrote:
+>>>> Hmm, I read it the other way around - x2apic depends on interrupt
+>>>> remapping, but interrupt remapping can be used without x2apic.
+>>>
+>>> Ok, you're right. X2APIC should depend on IRQ_REMAP:
+>>> https://lwn.net/Articles/289881/
+>>>
+>>>> The help text of CONFIG_IRQ_REMAP also says "x2APIC enhancements or to
+>>>> support platforms with CPU's having > 8 bit APIC ID, say Y." I guess
+>>>> may CPU has the latter?
+>>>
+>>> I think it is what Yinghai said - you obviously need x2apic kernel
+>>> support if you have IRQ_REMAP on.
+>>>
+>>>> Can the kernel panic a bit improved to help user to understand what
+>>>> needs to be enabled?
+>>>
+>>> Well, your kernel enables IRQ_REMAP properly:
+>>>
+>>> [    0.031115] Enabled IRQ remapping in x2apic mode
+>>>
+>>> I guess at that stage we could probably check for x2apic support and
+>>> scream loudly if it is not present... IMHO.
+>>>
+>> Hmm, I think that would the wrong place,
+>
+> It has to be the right place because this "Enabled IRQ..." printk above
+> is from the IRQ remapping code which detects an x2apic mode in your
+> case.
+>
+>> as the initial 3.7.0 configuration didn't have IRQ_REMAP enabled.
+>
+> Huh, so why do I see the above message in your dmesg output in
+> http://marc.info/?l=linux-kernel&m=135540103415652 then?
 
-This test exposes warnings from traceevent lib about not being
-able to parse some tracepoints' format data. Exposing these
-messages in the automated test suite will probably speed up
-the fix ;-)
+Oh huh, that is the dmesg from 3.4.7, which booted fine. I just sent it 
+hoping it would help to see where the issue comes from.
+When I run "make oldconfig" for 3.7.0 I accidentally unset 
+CONFIG_IRQ_REMAP, wich also unset CONFIG_X86_X2APIC :(
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- tools/perf/tests/parse-events.c | 62 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 62 insertions(+)
+>
+> Ok, let's sort things out here. Your .config has
+>
+> # CONFIG_IRQ_REMAP is not set
+>
+> but in the original dmesg you sent, the printk above comes from
+> intel_irq_remapping.c which gets enabled by CONFIG_IRQ_REMAP.
+>
+> So, can you try enabling only CONFIG_IRQ_REMAP and leave
+> CONFIG_X86_X2APIC off to confirm the original observation?
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 294ffdd..e7eb708 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -3,6 +3,7 @@
- #include "evsel.h"
- #include "evlist.h"
- #include "sysfs.h"
-+#include "debugfs.h"
- #include "tests.h"
- #include <linux/hw_breakpoint.h>
- 
-@@ -782,6 +783,63 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	return 0;
- }
- 
-+static int count_tracepoints(void)
-+{
-+	char events_path[PATH_MAX];
-+	struct dirent *events_ent;
-+	DIR *events_dir;
-+	int cnt = 0;
-+
-+	scnprintf(events_path, PATH_MAX, "%s/tracing/events",
-+		  debugfs_find_mountpoint());
-+
-+	events_dir = opendir(events_path);
-+
-+	TEST_ASSERT_VAL("Can't open events dir", events_dir);
-+
-+	while ((events_ent = readdir(events_dir))) {
-+		char sys_path[PATH_MAX];
-+		struct dirent *sys_ent;
-+		DIR *sys_dir;
-+
-+		if (!strcmp(events_ent->d_name, ".")
-+		    || !strcmp(events_ent->d_name, "..")
-+		    || !strcmp(events_ent->d_name, "enable")
-+		    || !strcmp(events_ent->d_name, "header_event")
-+		    || !strcmp(events_ent->d_name, "header_page"))
-+			continue;
-+
-+		scnprintf(sys_path, PATH_MAX, "%s/%s",
-+			  events_path, events_ent->d_name);
-+
-+		sys_dir = opendir(sys_path);
-+		TEST_ASSERT_VAL("Can't open sys dir", sys_dir);
-+
-+		while ((sys_ent = readdir(sys_dir))) {
-+			if (!strcmp(sys_ent->d_name, ".")
-+			    || !strcmp(sys_ent->d_name, "..")
-+			    || !strcmp(sys_ent->d_name, "enable")
-+			    || !strcmp(sys_ent->d_name, "filter"))
-+				continue;
-+
-+			cnt++;
-+		}
-+
-+		closedir(sys_dir);
-+	}
-+
-+	closedir(events_dir);
-+	return cnt;
-+}
-+
-+static int test__all_tracepoints(struct perf_evlist *evlist)
-+{
-+	TEST_ASSERT_VAL("wrong events count",
-+			count_tracepoints() == evlist->nr_entries);
-+
-+	return test__checkevent_tracepoint_multi(evlist);
-+}
-+
- struct test__event_st {
- 	const char *name;
- 	__u32 type;
-@@ -921,6 +979,10 @@ static struct test__event_st test__events[] = {
- 		.name  = "{cycles,instructions}:G,{cycles:G,instructions:G},cycles",
- 		.check = test__group5,
- 	},
-+	[33] = {
-+		.name  = "*:*",
-+		.check = test__all_tracepoints,
-+	},
- };
- 
- static struct test__event_st test__events_pmu[] = {
--- 
-1.7.11.7
+No need, as I said above, the printk comes from a different kernel with 
+a different config. With either CONFIG_IRQ_REMAP=false or 
+CONFIG_X86_X2APIC=false the booting ends in a kernel panic.
 
+>
+> Also, I'd guess your machine can boot with both options off?
+
+No, only partly with "noapic", but that makes ahci to fail to detect 
+disks later on.
+
+>
+>> And that was the reason why x2apic got disabled during the "make
+>> oldconfig" process...
+>>
+>> Is this message an indication for missing x2apic?
+>>
+>> "smpboot: weird, boot (#255) not listed by the BIOS"
+>
+> It's an indication that something is fishy with the apic IDs.
+>
+> Thanks.
+>
+
+
+Cheers,
+Bernd
