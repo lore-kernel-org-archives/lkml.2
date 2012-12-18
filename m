@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2LRBLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:11:43 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:65286 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab2LRBLl (ORCPT
+	id S1754039Ab2LRBMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:12:09 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57293 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab2LRBMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:11:41 -0500
+	Mon, 17 Dec 2012 20:12:08 -0500
+X-AuditID: 9c93016f-b7b74ae000000e39-d6-50cfc2e3139d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/3] perf tool: Add support to include non architectural event aliases
+References: <1355751425-7993-1-git-send-email-jolsa@redhat.com>
+	<1355751425-7993-3-git-send-email-jolsa@redhat.com>
+Date: Tue, 18 Dec 2012 10:12:03 +0900
+In-Reply-To: <1355751425-7993-3-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Mon, 17 Dec 2012 14:37:04 +0100")
+Message-ID: <871ueokvto.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUx-T2ZFyBtrdLjzkUO50LObMv_nOEUNPwU+wPQscD1_A@mail.gmail.com>
-References: <20121211170605.GD28827@liondog.tnic>
-	<50C82ABF.3020907@zytor.com>
-	<20121212133853.GC8760@liondog.tnic>
-	<50C963B1.3040609@zytor.com>
-	<50C96717.3020407@zytor.com>
-	<20121213191317.GE31485@liondog.tnic>
-	<50CA4A7A.10104@zytor.com>
-	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
-	<50CB8213.9000908@zytor.com>
-	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
-	<CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
-	<CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
-	<50CCCFD0.7030704@linux.intel.com>
-	<CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
-	<50CCEE49.3080801@zytor.com>
-	<CAE9FiQV6tmHqnwOX8Rh3heaG1PQ9YQNN45esMQjqZP8Upw0Y-g@mail.gmail.com>
-	<CAE9FiQUSve-5zuD8JyOK-eeJwTu6-E7ZnYCvc74jPVWwxhLP4g@mail.gmail.com>
-	<CAE9FiQUWFaOkLNc8fJw=bEUwOkusadriMn0Oajk+F64vo5Eysw@mail.gmail.com>
-	<CAE9FiQVG1WvtoUNK3ecfmSCocJZt694yrm7=iaOciD47GN=9EA@mail.gmail.com>
-	<50CFA6A4.7010805@zytor.com>
-	<CAE9FiQUx-T2ZFyBtrdLjzkUO50LObMv_nOEUNPwU+wPQscD1_A@mail.gmail.com>
-Date: Mon, 17 Dec 2012 17:11:40 -0800
-X-Google-Sender-Auth: JFRo0_E2uKhuMa_sONWwCcnw_4g
-Message-ID: <CAE9FiQXbBXucvAkDf6O3XFS-6mFDW0U9qKfA8CZbDRpq=e0OrQ@mail.gmail.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 3:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Dec 17, 2012 at 3:11 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/17/2012 02:47 PM, Yinghai Lu wrote:
->>>
->>>
->>> Peter, can you check that branch again?
->>>
->>> I moved the early_trap_init after init_mem_mapping.
->>> so for 64bit native, init_mem_mapping will setup page table for ram from
->>> blank.
->>>
->>
->> Looks better, at first glance at least.  There are a couple of unnecessary
->> changes (the counter in head_64.S cannot exceed 32 bits once computed, so
->> the change from %rcx to %ecx change is pointless.)
+Hi Jiri,
+
+On Mon, 17 Dec 2012 14:37:04 +0100, Jiri Olsa wrote:
+> Adding support to parse non architectural event aliases
+> for given cpu. These aliases will be provided as 'events'
+> directory like architectural ones provided by kernel.
 >
-> ok,  return to use %ecx
->
->>
->> There is another bug in my patch: it either needs to mask off the NX bit if
->> we are running on non-NX-enabled hardware, or it needs to not set the NX bit
->> (which is mostly okay that early on, I suspect.)
->
-> i test that in kvm guest, and westmere, current version seem ok.
->
-> will repost the patchset to list to get more review.
->
+[snip]
+> +
+> +$(OUTPUT)$(OUTPUT)arch/$(ARCH)/util/pmu.o: $(OUTPUT)arch/$(ARCH)/util/pmu.c $(OUTPUT)PERF-CFLAGS
 
-not sure if i could move that early_trap_init down.
+Double OUTPUT ? ;)
 
-jason,
 
-We need to move down early_trap_init after init_memory_mapping to use
-early #PF handler to set page table.
+> +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+> +	 '-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
+> +	 '-DPREFIX="$(prefix_SQ)"' \
+> +	 $<
+[snip]
+> +static int cpu_aliases(struct list_head *head)
+> +{
+> +	unsigned vendol, model;
 
-So can we do that? for kgdb it is that ok to move it down?
+s/vendol/vendor/ ?
 
-or can we just move
-set_intr_gate(X86_TRAP_PF, &page_fault)
-back to trap_init?
+Thanks,
+Namhyung
 
-Thanks
 
-Yinghai
+> +	int ret;
+> +
+> +	ret = cpu_specs(&vendol, &model);
+> +	if (ret) {
+> +		pr_info("failed to get cpu aliases");
+> +		return 0;
+> +	}
+> +
+> +	switch (vendol) {
+> +	/* Intel */
+> +	case 0:
+> +		return intel_aliases(head, model);
+> +	default:
+> +		/* unknown vendor.. plenty to cover ;-) */
+> +		return 0;
+> +	}
+> +
+> +	return 0;
+> +}
