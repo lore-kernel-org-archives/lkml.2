@@ -1,135 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2LRCjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 21:39:13 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:53248 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab2LRCjM (ORCPT
+	id S1754256Ab2LRCm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 21:42:26 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:34859 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab2LRCmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 21:39:12 -0500
-X-Spam-Score: -100.7
-Message-ID: <50CFD786.5010101@asianux.com>
-Date: Tue, 18 Dec 2012 10:40:06 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Mon, 17 Dec 2012 21:42:24 -0500
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.ramirez@copitl.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [Suggestion] drivers/staging/tidspbridge:  strcpy and strncpy,
-  src length checking issue.
-References: <50CAA1F2.9000003@asianux.com>
-In-Reply-To: <50CAA1F2.9000003@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQWe+5+Oh7gKT1mCKn+sEm0P8_azfLV=WN6xWHKp2j-eUA@mail.gmail.com>
+References: <20121211170605.GD28827@liondog.tnic>
+	<50C82ABF.3020907@zytor.com>
+	<20121212133853.GC8760@liondog.tnic>
+	<50C963B1.3040609@zytor.com>
+	<50C96717.3020407@zytor.com>
+	<20121213191317.GE31485@liondog.tnic>
+	<50CA4A7A.10104@zytor.com>
+	<CAE9FiQX38Ea19_v6yJO7buQcqOP9t7jp+91kbBZx-QrjB1AimA@mail.gmail.com>
+	<50CB8213.9000908@zytor.com>
+	<CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
+	<CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
+	<CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
+	<50CCCFD0.7030704@linux.intel.com>
+	<CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
+	<50CCEE49.3080801@zytor.com>
+	<CAE9FiQV6tmHqnwOX8Rh3heaG1PQ9YQNN45esMQjqZP8Upw0Y-g@mail.gmail.com>
+	<CAE9FiQUSve-5zuD8JyOK-eeJwTu6-E7ZnYCvc74jPVWwxhLP4g@mail.gmail.com>
+	<CAE9FiQUWFaOkLNc8fJw=bEUwOkusadriMn0Oajk+F64vo5Eysw@mail.gmail.com>
+	<CAE9FiQVG1WvtoUNK3ecfmSCocJZt694yrm7=iaOciD47GN=9EA@mail.gmail.com>
+	<50CFA6A4.7010805@zytor.com>
+	<CAE9FiQUx-T2ZFyBtrdLjzkUO50LObMv_nOEUNPwU+wPQscD1_A@mail.gmail.com>
+	<CAE9FiQXbBXucvAkDf6O3XFS-6mFDW0U9qKfA8CZbDRpq=e0OrQ@mail.gmail.com>
+	<CAE9FiQWe+5+Oh7gKT1mCKn+sEm0P8_azfLV=WN6xWHKp2j-eUA@mail.gmail.com>
+Date: Mon, 17 Dec 2012 18:42:22 -0800
+X-Google-Sender-Auth: yNykJTgWB8loPDKXRwGTg9Zls74
+Message-ID: <CAE9FiQV6ZnMKKAeH=3rmrTW62Y95_2SWLcFrAM9P0+gbamCn_A@mail.gmail.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Content-Type: multipart/mixed; boundary=001517478216861c3104d11772ad
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Omar Ramirez Luna:
+--001517478216861c3104d11772ad
+Content-Type: text/plain; charset=ISO-8859-1
 
-  excuse me to bother you (maybe you are busy in these days).
-  please help checking this suggestion when you have free time.
+Jan,
 
-  my suggestion may be not valid (I already have at least 9 fault which I made)
-  for example of my fault:
-    A) net/atm:  "%pM means format this pointer as a mac address", thank Chas Williams
-    B) net/tipc: "TIPC_MAX_IF_NAME is not TIPC_MAX_LINK_NAME", thank Xue Ying
-    C) net/core: "not see 'if (PAGE_SIZE - len < 3)' ", find by myself
-    D) MAINTAINER: "tty != serial",  thank Jiri Slaby and Joe Perches
-    E) drvers/staging/telephony: "torvalds' tree is different with next tree", thank devendra.aaru
-    F) drivers/staging/telephony: "we should probably fix it for older kernels", thank Dan Carpenter
-    G) drivers/usb/core: "doing DMA on the stack violates the DMA rules", thank Oliver Neukum
-    H) arch/blackfin/kernel: "%8s is used to take up the same space", thank Mike Frysinger and Steven Miao
-    I) drivers/usb/host: "usb_hcd_giveback_urb set urb->hcpriv to NULL", thank Alan Stern
+Can you check if attached patch is going to break KGDB?
 
-  finding and solving issues is a way (not a goal) to provide contributes to Open Source.
-  so I hope: 
-    When you have free time, also can provide your contributes to Open Source, too.
+Thanks
 
-  thanks.
+Yinghai
 
+--001517478216861c3104d11772ad
+Content-Type: application/octet-stream; 
+	name="move_down_early_trap_init.patch"
+Content-Disposition: attachment; filename="move_down_early_trap_init.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hauffufu0
 
-By the way:
-  this week, I need work for 2 patches which relative with usb sub-system.
-  if still get no reply for tidspbridge until next week.
-    I should work for it, it is my duty (since I have provided 'suggestion' to it).
-    "work for it" means:
-       if tidspbridge is still useful
-         I need construct relative environments for unit test.
-         then provide relative patches.
-       else (useless)
-         I need delete it from Open Source.
-         (since it can not pass compiling, and no response from *@ti.com, it almost means useless)
-         (at least, fix the 2 compiling issues which I have suggested, can pass compiling)
-
-
-  welcome any other members to giving suggestions and completions (especially from *@ti.com)
-
-
-  Regards
-
-gchen.
-
-
-于 2012年12月14日 11:50, Chen Gang 写道:
-> Hello Omar Ramirez Luna:
-> 
->   in drivers/staging/tidspbridge/rmgr/proc.c:
-> 
->     if strlen(drv_datap->base_img) == size, will pass checking (line 397)
->     the size is the full length of exec_file (line 382, line 468..469)
->     strcpy causes issue: src len is strlen(drv_datap->base_img) + '\0'. (line 400)
-> 
->     strncpy seems also has issue: need use size instead of strlen(iva_img) + 1. (line 402..403)
-> 
->   please help to check, thanks.
-> 
-> gchen.
-> 
-> 
->  380 static int get_exec_file(struct cfg_devnode *dev_node_obj,
->  381                                 struct dev_object *hdev_obj,
->  382                                 u32 size, char *exec_file)
->  383 {
->  384         u8 dev_type;
->  385         s32 len;
->  386         struct drv_data *drv_datap = dev_get_drvdata(bridge);
->  387 
->  388         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
->  389 
->  390         if (!exec_file)
->  391                 return -EFAULT;
->  392 
->  393         if (dev_type == DSP_UNIT) {
->  394                 if (!drv_datap || !drv_datap->base_img)
->  395                         return -EFAULT;
->  396 
->  397                 if (strlen(drv_datap->base_img) > size)
->  398                         return -EINVAL;
->  399 
->  400                 strcpy(exec_file, drv_datap->base_img);
->  401         } else if (dev_type == IVA_UNIT && iva_img) {
->  402                 len = strlen(iva_img);
->  403                 strncpy(exec_file, iva_img, len + 1);
->  404         } else {
->  405                 return -ENOENT;
->  406         }
->  407 
->  408         return 0;
->  409 }
->  410 
->  ...
-> 
->  465         /* Get the default executable for this board... */
->  466         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
->  467         p_proc_object->processor_id = dev_type;
->  468         status = get_exec_file(dev_node_obj, hdev_obj, sizeof(sz_exec_file),
->  469                                sz_exec_file);
-> 
-
-
--- 
-Chen Gang
-
-Asianux Corporation
+U3ViamVjdDogW1BBVENIXSB4ODY6IE1vdmUgZWFybHlfdHJhcF9wZl9pbml0IGRvd24gYWZ0ZXIg
+aW5pdF9tZW1fbWFwcGluZwoKV2l0aCAjUEYgaGFuZGxlciBoZWxwLCB3ZSBjYW4gc2V0IG1lbSBt
+YXBwaW5nIGZyb20gYmxhbmsgaW4gaW5pdF9sZXZlbDRfcGd0CgpidXQgd2UgbmVlZCB0byBrZWVw
+IHRoYXQgaGFuZGxlciBhbGl2ZSB1bnRpbCBpbml0X21lbV9tYXBwaW5nIGFuZCBkb24ndAoKbGV0
+IGVhcmx5X3RyYXBfaW5pdCB0byB0cmFzaCB0aGF0IGVhcmx5ICNQRiBoYW5kbGVyLgoKU28gc3Bs
+aXQgZWFybHlfdHJhcF9wZl9pbml0IG91dCBhbmQgbW92ZSBpdCBkb3duLgoKU2lnbmVkLW9mZi1i
+eTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBhcmNoL3g4Ni9pbmNsdWRl
+L2FzbS9wcm9jZXNzb3IuaCB8ICAgIDMgKystCiBhcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYyAgICAg
+ICAgICB8ICAgIDQgKysrLQogYXJjaC94ODYva2VybmVsL3RyYXBzLmMgICAgICAgICAgfCAgICA4
+ICsrKysrKy0tCiAzIGZpbGVzIGNoYW5nZWQsIDExIGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25z
+KC0pCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCj09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
+LS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCisrKyBsaW51eC0yLjYv
+YXJjaC94ODYva2VybmVsL3NldHVwLmMKQEAgLTY4NSw3ICs2ODUsNyBAQCB2b2lkIF9faW5pdCBz
+ZXR1cF9hcmNoKGNoYXIgKipjbWRsaW5lX3ApCiAJICovCiAJb2xwY19vZndfZGV0ZWN0KCk7CiAK
+LQllYXJseV90cmFwX2luaXQoKTsKKwllYXJseV90cmFwX2RiX2JwX2luaXQoKTsKIAllYXJseV9j
+cHVfaW5pdCgpOwogCWVhcmx5X2lvcmVtYXBfaW5pdCgpOwogCkBAIC05MTcsNiArOTE3LDggQEAg
+dm9pZCBfX2luaXQgc2V0dXBfYXJjaChjaGFyICoqY21kbGluZV9wKQogCiAJaW5pdF9tZW1fbWFw
+cGluZygpOwogCisJZWFybHlfdHJhcF9wZl9pbml0KCk7CisKIAlzZXR1cF9yZWFsX21vZGUoKTsK
+IAogCW1lbWJsb2NrLmN1cnJlbnRfbGltaXQgPSBnZXRfbWF4X21hcHBlZCgpOwpJbmRleDogbGlu
+dXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3Byb2Nlc3Nvci5oCj09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxp
+bnV4LTIuNi5vcmlnL2FyY2gveDg2L2luY2x1ZGUvYXNtL3Byb2Nlc3Nvci5oCisrKyBsaW51eC0y
+LjYvYXJjaC94ODYvaW5jbHVkZS9hc20vcHJvY2Vzc29yLmgKQEAgLTczMCw3ICs3MzAsOCBAQCBl
+bnVtIGlkbGVfYm9vdF9vdmVycmlkZSB7SURMRV9OT19PVkVSUklECiBleHRlcm4gdm9pZCBlbmFi
+bGVfc2VwX2NwdSh2b2lkKTsKIGV4dGVybiBpbnQgc3lzZW50ZXJfc2V0dXAodm9pZCk7CiAKLWV4
+dGVybiB2b2lkIGVhcmx5X3RyYXBfaW5pdCh2b2lkKTsKK2V4dGVybiB2b2lkIGVhcmx5X3RyYXBf
+ZGJfYnBfaW5pdCh2b2lkKTsKK2V4dGVybiB2b2lkIGVhcmx5X3RyYXBfcGZfaW5pdCh2b2lkKTsK
+IAogLyogRGVmaW5lZCBpbiBoZWFkLlMgKi8KIGV4dGVybiBzdHJ1Y3QgZGVzY19wdHIJCWVhcmx5
+X2dkdF9kZXNjcjsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvdHJhcHMuYwo9PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvdHJhcHMuYworKysgbGlu
+dXgtMi42L2FyY2gveDg2L2tlcm5lbC90cmFwcy5jCkBAIC02ODksMTUgKzY4OSwxOSBAQCBkb3Ry
+YXBsaW5rYWdlIHZvaWQgZG9faXJldF9lcnJvcihzdHJ1Y3QKICNlbmRpZgogCiAvKiBTZXQgb2Yg
+dHJhcHMgbmVlZGVkIGZvciBlYXJseSBkZWJ1Z2dpbmcuICovCi12b2lkIF9faW5pdCBlYXJseV90
+cmFwX2luaXQodm9pZCkKK3ZvaWQgX19pbml0IGVhcmx5X3RyYXBfZGJfYnBfaW5pdCh2b2lkKQog
+ewogCXNldF9pbnRyX2dhdGVfaXN0KFg4Nl9UUkFQX0RCLCAmZGVidWcsIERFQlVHX1NUQUNLKTsK
+IAkvKiBpbnQzIGNhbiBiZSBjYWxsZWQgZnJvbSBhbGwgKi8KIAlzZXRfc3lzdGVtX2ludHJfZ2F0
+ZV9pc3QoWDg2X1RSQVBfQlAsICZpbnQzLCBERUJVR19TVEFDSyk7Ci0Jc2V0X2ludHJfZ2F0ZShY
+ODZfVFJBUF9QRiwgJnBhZ2VfZmF1bHQpOwogCWxvYWRfaWR0KCZpZHRfZGVzY3IpOwogfQogCit2
+b2lkIF9faW5pdCBlYXJseV90cmFwX3BmX2luaXQodm9pZCkKK3sKKwlzZXRfaW50cl9nYXRlKFg4
+Nl9UUkFQX1BGLCAmcGFnZV9mYXVsdCk7Cit9CisKIHZvaWQgX19pbml0IHRyYXBfaW5pdCh2b2lk
+KQogewogCWludCBpOwo=
+--001517478216861c3104d11772ad--
