@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2LRW5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:57:14 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51554 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab2LRW5M (ORCPT
+	id S1754665Ab2LRW7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:59:38 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:59658 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab2LRW7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:57:12 -0500
+	Tue, 18 Dec 2012 17:59:37 -0500
+X-Originating-IP: 108.223.40.66
+Date: Tue, 18 Dec 2012 14:59:44 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Strange results of DIV_ROUND_CLOSEST
+Message-ID: <20121218225944.GA23052@roeck-us.net>
+References: <201212181603.42094.jbe@pengutronix.de>
+ <20121218171620.GA19972@roeck-us.net>
+ <201212182204.56523.jbe@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220470F89E7@ORSMSX105.amr.corp.intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
-	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-	<50CE4097.2020104@zytor.com>
-	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
-	<CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F8584@ORSMSX105.amr.corp.intel.com>
-	<CAE9FiQVQMumUSgJ91rT5Zr2_Q=Wk=jBy+MEA3Li0Y215OHQT_Q@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F89E7@ORSMSX105.amr.corp.intel.com>
-Date: Tue, 18 Dec 2012 14:57:11 -0800
-X-Google-Sender-Auth: KkIHHmVU-H4XW1NV28iLjgpENAY
-Message-ID: <CAE9FiQVS4eryY5E1SJ8OA57aHFUwMKnnTJGopYxC6+CPEvWG8Q@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212182204.56523.jbe@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 2:55 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
->> Yinghai Lu
->> On Mon, Dec 17, 2012 at 3:30 PM, Yu, Fenghua <fenghua.yu@intel.com>
->> wrote:
->> >
->> > OSV may need the patchset based on old kernel. So I'll have the
->> patchset ready. Is this the right place to call load_ucode_bsp() in the
->> upstream kernel?
->> >
->> > diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
->> > index a512f56..e94b90e 100644
->> > --- a/arch/x86/kernel/head64.c
->> > +++ b/arch/x86/kernel/head64.c
->> > @@ -93,6 +88,11 @@ void __init x86_64_start_kernel(char *
->> real_mode_data)
->> >         }
->> >         load_idt((const struct desc_ptr *)&idt_descr);
->> >
->> > +       /*
->> > +        * Load microcode early on BSP.
->> > +        */
->> > +       load_ucode_bsp(__va(real_mode_data));
->> > +
->> >         if (console_loglevel == 10)
->> >                 early_printk("Kernel alive\n");
->> >
->> it has to be after #PF handler set page table patch...
->>
->> otherwise when ramdisk is above 1G, customer will get early PF
->> exception.
->
-> If based on your for_x86_boot tree, is load_ucode_bsp() called afer load_idt()?
->
+On Tue, Dec 18, 2012 at 10:04:56PM +0100, Juergen Beisert wrote:
+> Hi Guenter,
+> 
+> Guenter Roeck wrote:
+> > On Tue, Dec 18, 2012 at 04:03:41PM +0100, Juergen Beisert wrote:
+> > > commit 263a523d18bca306016d75f5c8d5c57c37fe52fb changes the code of
+> > > DIV_ROUND_CLOSEST in include/linux/kernel.h to fix a compile time
+> > > warning.
+> > >
+> > > But now feeding in a zero into this macro results into 4198403. Tested
+> > > with gcc 4.4.3 and 4.7.2, on arch x86 and ARM.
+> > >
+> > > I can reproduce this behaviour, when my ADC delivers a '0' value in the
+> > > driver drivers/hwmon/s3c-hwmon.c in function s3c_hwmon_ch_show() with a
+> > > current 3.7.1 kernel. The value is correct again, when the ADC delivers
+> > > at least a '1'.
+> > >
+> > > Any ideas how to fix it correctly?
+> >
+> > Odd one. I ran the macro through a large number of values and divisors as
+> > well as various optimization options, with different compilers, and always
+> > get correct results.
+> >
+> > What are your compile options, and what are the channel multiplier and
+> > dividers set to ?
+> 
+> Refer the lines 177 to 182 in drivers/hwmon/s3c-hwmon.c. "cfg->mult" is '3300' 
+> in my case, and "cfg->div" is '1023'. And whenever s3c_hwmon_read_ch() 
+> returns '0' line 184 returns '4198403' since Linux-3.6. checked with my 
+> gcc-4.6.2 cross compiler for Linux-3.6 and with gcc-4.6.2 for Linux-3.7.
+> 
+> I did a quick test with this macro on my host with gcc-4.4.3 and a simple 
+> userland program and surprise, surprise:
+> 
+> result = DIV_ROUND_CLOSEST(0, 1023);
+> 
+> works as expected (result is 0), but
+> 
+> int x = 0;
+> unsigned y = 1023;
+> result = DIV_ROUND_CLOSEST(x, y);
+> 
+> gives me result = 4198403!
+> 
+> Strange.
+> 
+Yes. Try:
+	printf("%d\n", -10 / 2U);
 
-yes.
+I am amazed. Apparently the compiler converts an expression to unsigned if the
+divisor is unsigned. Which of course completely defeats the purpose of the
+operation.
 
-Please do try your patches on system with more than 4G ram.
+I'll try to come up with a fix. Let me know if you have an idea. Obviously this
+does not only affect the "0" case, but all operations with negative dividend and
+unsigned divisor.
 
-Thanks
+Guenter
 
-Yinghai
