@@ -1,110 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab2LRBMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:12:55 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29653 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab2LRBMx (ORCPT
+	id S1754146Ab2LRBNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:13:17 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:36696 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab2LRBNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:12:53 -0500
-Date: Mon, 17 Dec 2012 20:12:39 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: fenghua.yu@intel.com, xen-devel <xen-devel@lists.xen.org>,
-        linux-kernel@vger.kernel.org, hpa@linux.intel.com
-Subject: Re: 3.8.0-rc0 on xen-unstable: RCU Stall during boot as dom0 kernel
- after IOAPIC
-Message-ID: <20121218011239.GB4518@phenom.dumpdata.com>
-References: <1995613404.20121214165557@eikelenboom.it>
- <20121216173824.GA4518@phenom.dumpdata.com>
- <1782021524.20121217213217@eikelenboom.it>
- <20121217204634.GA13181@konrad-lan.dumpdata.com>
- <20121217211240.GA13412@konrad-lan.dumpdata.com>
- <29163327.20121217223558@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <29163327.20121217223558@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 17 Dec 2012 20:13:12 -0500
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: linux-kernel@vger.kernel.org
+Cc: npiggin@kernel.dk, Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: [PATCH v2 3/4] brd: replace list with brd_devices by an idr indexed by minor ids
+Date: Tue, 18 Dec 2012 02:13:06 +0100
+Message-Id: <1355793187-2638-4-git-send-email-hannes@stressinduktion.org>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1355793187-2638-1-git-send-email-hannes@stressinduktion.org>
+References: <1355793187-2638-1-git-send-email-hannes@stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 10:35:58PM +0100, Sander Eikelenboom wrote:
-> 
-> Monday, December 17, 2012, 10:12:40 PM, you wrote:
-> 
-> > On Mon, Dec 17, 2012 at 03:46:34PM -0500, Konrad Rzeszutek Wilk wrote:
-> >> On Mon, Dec 17, 2012 at 09:32:17PM +0100, Sander Eikelenboom wrote:
-> >> > 
-> >> > Sunday, December 16, 2012, 6:38:24 PM, you wrote:
-> >> > 
-> >> > > On Fri, Dec 14, 2012 at 04:55:57PM +0100, Sander Eikelenboom wrote:
-> >> > >> Hi Konrad,
-> >> > >> 
-> >> > >> I just tried to boot a 3.8.0-rc0 kernel (last commit: 7313264b899bbf3988841296265a6e0e8a7b6521) as dom0 on my machine with current xen-unstable.
-> >> > 
-> >> > > Yeah, saw it over the Dec 11->Dec 12 merges and was out on
-> >> > > vacation during that time (just got back).
-> >> > 
-> >> > > Did you by any chance try to do a git bisect to narrow down
-> >> > > which merge it was?
-> >> > 
-> >> > Hi Konrad,
-> >> 
-> >> Hey Sander,
-> >> 
-> >> Thank you for doing the bisection.
-> >> 
-> >> Fenghua - any ideas what might be amiss in the Xen subsystem?
-> >> I hadn't looked at the patchset of the CPU0 offlining/onlining
-> >> so I am not completly up to speed on the particulars of the patches.
-> 
-> >> > 30106c174311b8cfaaa3186c7f6f9c36c62d17da is the first bad commit
-> >> > commit 30106c174311b8cfaaa3186c7f6f9c36c62d17da
-> >> > Author: Fenghua Yu <fenghua.yu@intel.com>
-> >> > Date:   Tue Nov 13 11:32:41 2012 -0800
-> >> > 
-> >> >     x86, hotplug: Support functions for CPU0 online/offline
-> >> > 
-> >> >     Add smp_store_boot_cpu_info() to store cpu info for BSP during boot time.
-> >> > 
-> >> >     Now smp_store_cpu_info() stores cpu info for bringing up BSP or AP after
-> >> >     it's offline.
-> >> > 
-> >> >     Continue to online CPU0 in native_cpu_up().
-> >> > 
-> >> >     Continue to offline CPU0 in native_cpu_disable().
-> >> > 
-> >> >     Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> >> >     Link: http://lkml.kernel.org/r/1352835171-3958-5-git-send-email-fenghua.yu@intel.com
-> >> >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> >> > 
-> 
-> > This patch:
-> 
-> 
-> > diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> > index 353c50f..4f7d259 100644
-> > --- a/arch/x86/xen/smp.c
-> > +++ b/arch/x86/xen/smp.c
-> > @@ -254,7 +254,7 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
-> >         }
-> >         xen_init_lock_cpu(0);
-> >  
-> > -       smp_store_cpu_info(0);
-> > +       smp_store_boot_cpu_info();
-> >         cpu_data(0).x86_max_cores = 1;
-> >  
-> >         for_each_possible_cpu(i) {
-> 
-> > Would do the corresponding change in the Xen subsystem that the above
-> > mentioned commit did. Perhaps that is all that is needed? I am going to
-> > be able to test this and look in more details tomorrow.
-> 
-> Seems like it, don't know if there are other things still lurking, but with your patch it boots again as dom0 :-)
+This patch replaces the list of brd_devices with an idr, thus enabling
+easier block ram disk creation and deletion.
 
-Excellent. And it seems that it also fixes it on my test machine. Great.
-I am going to stick Reported-and-Tested-by: Sander Eikelenboom
-and push it to Linus shortly. Thanks!
+Cc: Nick Piggin <npiggin@kernel.dk>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+---
+ drivers/block/brd.c | 136 ++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 106 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 80dd094..68641d8 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -19,6 +19,7 @@
+ #include <linux/radix-tree.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
++#include <linux/idr.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -34,11 +35,8 @@
+  * device).
+  */
+ struct brd_device {
+-	int		brd_number;
+-
+ 	struct request_queue	*brd_queue;
+ 	struct gendisk		*brd_disk;
+-	struct list_head	brd_list;
+ 
+ 	/*
+ 	 * Backing store of pages and lock to protect it. This is the contents
+@@ -50,6 +48,10 @@ struct brd_device {
+ 
+ static DEFINE_MUTEX(brd_mutex);
+ 
++static char dummy = -1;
++#define DUMMY ((struct brd_device *)&dummy)
++static DEFINE_IDR(brd_idr);
++
+ /*
+  * Look up and return a brd's page for a given sector.
+  */
+@@ -458,6 +460,8 @@ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
+ MODULE_ALIAS("rd");
+ 
++static struct brd_device *brd_new(int id);
++
+ #ifndef MODULE
+ /* Legacy boot options - nonmodular */
+ static int __init ramdisk_size(char *str)
+@@ -473,7 +477,6 @@ __setup("ramdisk_size=", ramdisk_size);
+  * The device scheme is derived from loop.c. Keep them in synch where possible
+  * (should share code eventually).
+  */
+-static LIST_HEAD(brd_devices);
+ static DEFINE_MUTEX(brd_devices_mutex);
+ 
+ static struct brd_device *brd_alloc(int i)
+@@ -484,7 +487,6 @@ static struct brd_device *brd_alloc(int i)
+ 	brd = kzalloc(sizeof(*brd), GFP_KERNEL);
+ 	if (!brd)
+ 		goto out;
+-	brd->brd_number		= i;
+ 	spin_lock_init(&brd->brd_lock);
+ 	INIT_RADIX_TREE(&brd->brd_pages, GFP_ATOMIC);
+ 
+@@ -534,27 +536,100 @@ static struct brd_device *brd_init_one(int i)
+ {
+ 	struct brd_device *brd;
+ 
+-	list_for_each_entry(brd, &brd_devices, brd_list) {
+-		if (brd->brd_number == i)
+-			goto out;
+-	}
++	brd = idr_find(&brd_idr, i);
++	if (brd)
++		return brd;
+ 
+-	brd = brd_alloc(i);
+-	if (brd) {
++	brd = brd_new(i);
++	if (!IS_ERR(brd))
+ 		add_disk(brd->brd_disk);
+-		list_add_tail(&brd->brd_list, &brd_devices);
+-	}
+-out:
+ 	return brd;
+ }
+ 
+ static void brd_del_one(struct brd_device *brd)
+ {
+-	list_del(&brd->brd_list);
+ 	del_gendisk(brd->brd_disk);
+ 	brd_free(brd);
+ }
+ 
++static int brd_new_id(int min)
++{
++	int id, err;
++	err = idr_pre_get(&brd_idr, GFP_KERNEL);
++	if (!err)
++		return -ENOMEM;
++	err = idr_get_new_above(&brd_idr, DUMMY, min, &id);
++	if (err < 0)
++		return err;
++	return id;
++}
++
++static int brd_new_specific_id(int id)
++{
++	int n;
++	n = brd_new_id(id);
++	if (n < 0)
++		return n;
++	if (id != n) {
++		idr_remove(&brd_idr, n);
++		return -EBUSY;
++	}
++	return n;
++}
++
++static struct brd_device *brd_new(int id)
++{
++	int err;
++	struct brd_device *brd, *p;
++
++	err = brd_new_specific_id(id);
++	if (err < 0)
++		return ERR_PTR(err);
++	brd = brd_alloc(id);
++	if (!brd) {
++		p = ERR_PTR(-ENOMEM);
++		goto out;
++	}
++	p = idr_replace(&brd_idr, brd, id);
++	if (IS_ERR(p))
++		goto out2;
++	if (p != DUMMY) {
++		WARN_ON(1);
++		p = ERR_PTR(-EBUSY);
++		goto out2;
++	}
++	return brd;
++out2:
++	brd_free(brd);
++out:
++	idr_remove(&brd_idr, id);
++	return p;
++}
++
++static int brd_add_disk_idr(int id, void *p, void *data)
++{
++	struct brd_device *brd = (struct brd_device *)p;
++	WARN_ON(brd == DUMMY);
++	add_disk(brd->brd_disk);
++	return 0;
++}
++
++static int brd_free_idr(int id, void *p, void *data)
++{
++	struct brd_device *brd = (struct brd_device *)p;
++	WARN_ON(brd == DUMMY);
++	brd_free(brd);
++	return 0;
++}
++
++static int brd_del_one_idr(int id, void *p, void *data)
++{
++	struct brd_device *brd = (struct brd_device *)p;
++	WARN_ON(brd == DUMMY);
++	brd_del_one(brd);
++	return 0;
++}
++
+ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
+ {
+ 	struct brd_device *brd;
+@@ -562,7 +637,7 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
+ 
+ 	mutex_lock(&brd_devices_mutex);
+ 	brd = brd_init_one(MINOR(dev) >> part_shift);
+-	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
++	kobj = IS_ERR(brd) ? ERR_PTR(PTR_ERR(brd)) : get_disk(brd->brd_disk);
+ 	mutex_unlock(&brd_devices_mutex);
+ 
+ 	*part = 0;
+@@ -571,9 +646,10 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
+ 
+ static int __init brd_init(void)
+ {
++	int err;
+ 	unsigned int i, nr;
+ 	unsigned long range;
+-	struct brd_device *brd, *next;
++	struct brd_device *brd;
+ 
+ 	/*
+ 	 * brd module now has a feature to instantiate underlying device
+@@ -620,16 +696,16 @@ static int __init brd_init(void)
+ 		return -EIO;
+ 
+ 	for (i = 0; i < nr; i++) {
+-		brd = brd_alloc(i);
+-		if (!brd)
++		brd = brd_new(i);
++		if (IS_ERR(brd)) {
++			err = PTR_RET(brd);
+ 			goto out_free;
+-		list_add_tail(&brd->brd_list, &brd_devices);
++		}
+ 	}
+ 
+ 	/* point of no return */
+ 
+-	list_for_each_entry(brd, &brd_devices, brd_list)
+-		add_disk(brd->brd_disk);
++	idr_for_each(&brd_idr, brd_add_disk_idr, NULL);
+ 
+ 	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), range,
+ 				  THIS_MODULE, brd_probe, NULL, NULL);
+@@ -638,24 +714,24 @@ static int __init brd_init(void)
+ 	return 0;
+ 
+ out_free:
+-	list_for_each_entry_safe(brd, next, &brd_devices, brd_list) {
+-		list_del(&brd->brd_list);
+-		brd_free(brd);
+-	}
++	idr_for_each(&brd_idr, brd_free_idr, NULL);
++	idr_remove_all(&brd_idr);
++	idr_destroy(&brd_idr);
++
+ 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
+ 
+-	return -ENOMEM;
++	return err;
+ }
+ 
+ static void __exit brd_exit(void)
+ {
+ 	unsigned long range;
+-	struct brd_device *brd, *next;
+ 
+ 	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
+ 
+-	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
+-		brd_del_one(brd);
++	idr_for_each(&brd_idr, brd_del_one_idr, NULL);
++	idr_remove_all(&brd_idr);
++	idr_destroy(&brd_idr);
+ 
+ 	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), range);
+ 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
+-- 
+1.8.0.2
+
