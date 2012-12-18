@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab2LRPR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:17:26 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:42049 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076Ab2LRPRY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:17:24 -0500
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [patch 3/7] mm: vmscan: clarify how swappiness, highest
- priority, memcg interact
-Thread-Topic: [patch 3/7] mm: vmscan: clarify how swappiness, highest
- priority, memcg interact
-Thread-Index: AQHN3II/O6dqwebIPkiSLfmFB0XPrJgeqxJQ
-Date: Tue, 18 Dec 2012 15:16:22 +0000
-Message-ID: <8631DC5930FA9E468F04F3FD3A5D007214AD86F1@USINDEM103.corp.hds.com>
-References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
- <1355767957-4913-4-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1355767957-4913-4-git-send-email-hannes@cmpxchg.org>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932164Ab2LRPTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:19:09 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34093 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932119Ab2LRPTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 10:19:07 -0500
+Date: Tue, 18 Dec 2012 16:19:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Steve French <smfrench@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: [PATCH] cifs: Do not enable debugging code by default
+Message-ID: <20121218151904.GC31255@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
+	Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+References: <1355737085-6671-1-git-send-email-bp@alien8.de>
+ <CAH2r5mt=4ZoGR_4hP52uHsZabXpPfh1sa1X0GSg6W4=fawNFnA@mail.gmail.com>
+ <20121218071317.01cbc41b@tlielax.poochiereds.net>
+ <20121218144452.GB31255@liondog.tnic>
+ <20121218100702.478fc1b1@tlielax.poochiereds.net>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-18_05:2012-12-18,2012-12-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1212180103
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121218100702.478fc1b1@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 01:12 PM, Johannes Weiner wrote:
-> A swappiness of 0 has a slightly different meaning for global reclaim 
-> (may swap if file cache really low) and memory cgroup reclaim (never 
-> swap, ever).
-> 
-> In addition, global reclaim at highest priority will scan all LRU 
-> lists equal to their size and ignore other balancing heuristics.
-> UNLESS swappiness forbids swapping, then the lists are balanced based 
-> on recent reclaim effectiveness.  UNLESS file cache is running low, 
-> then anonymous pages are force-scanned.
-> 
-> This (total mess of a) behaviour is implicit and not obvious from the 
-> way the code is organized.  At least make it apparent in the code flow 
-> and document the conditions.  It will be it easier to come up with 
-> sane semantics later.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On Tue, Dec 18, 2012 at 10:07:02AM -0500, Jeff Layton wrote:
+> Yeah, not many do, but presumably they'll set it once and forget about
+> it. Once someone straightens them out, they should rarely break.
+>
+> OTOH, the value of defaulting to "N" is pretty low here. Maybe it
+> would just be best to just drop this patch and have the embedded folks
+> turn this off on their own.
 
-Hmmm, my company's mail server is in trouble... The mail I sent
-yesterday has not been delivered yet.
+Yeah, sure.
 
-Anyway, this is good for me.
-Thanks!
+I just thought you have this debugging code forked out of the driver and
+it should be enabled only for when there are issues.
 
-Reviewed-by: Satoru Moriya <satoru.moriya@hds.com>
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
