@@ -1,111 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab2LRN4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 08:56:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17647 "EHLO mx1.redhat.com"
+	id S1755020Ab2LROI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 09:08:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41199 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754739Ab2LRN4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 08:56:36 -0500
-Date: Tue, 18 Dec 2012 15:59:38 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+	id S1754964Ab2LROI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 09:08:28 -0500
+Message-ID: <50D078C8.208@redhat.com>
+Date: Tue, 18 Dec 2012 15:08:08 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
         linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
         rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
         nab@linux-iscsi.org
-Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of
- buffers
-Message-ID: <20121218135938.GG26110@redhat.com>
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
- <1355833972-20319-2-git-send-email-pbonzini@redhat.com>
- <20121218133606.GC26110@redhat.com>
- <50D07317.8050902@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D07317.8050902@redhat.com>
+Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-6-git-send-email-pbonzini@redhat.com> <20121218135736.GF26110@redhat.com>
+In-Reply-To: <20121218135736.GF26110@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 02:43:51PM +0100, Paolo Bonzini wrote:
-> Il 18/12/2012 14:36, Michael S. Tsirkin ha scritto:
-> > Some comments without arguing about whether the performance
-> > benefit is worth it.
-> > 
-> > On Tue, Dec 18, 2012 at 01:32:48PM +0100, Paolo Bonzini wrote:
-> >> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> >> index cf8adb1..39d56c4 100644
-> >> --- a/include/linux/virtio.h
-> >> +++ b/include/linux/virtio.h
-> >> @@ -7,6 +7,7 @@
-> >>  #include <linux/spinlock.h>
-> >>  #include <linux/device.h>
-> >>  #include <linux/mod_devicetable.h>
-> >> +#include <linux/dma-direction.h>
-> >>  #include <linux/gfp.h>
-> >>  
-> >>  /**
-> >> @@ -40,6 +41,26 @@ int virtqueue_add_buf(struct virtqueue *vq,
-> >>  		      void *data,
-> >>  		      gfp_t gfp);
-> >>  
-> >> +struct virtqueue_buf {
-> >> +	struct virtqueue *vq;
-> >> +	struct vring_desc *indirect, *tail;
-> > 
-> > This is wrong: virtio.h does not include virito_ring.h,
-> > and it shouldn't by design depend on it.
-> > 
-> >> +	int head;
-> >> +};
-> >> +
-> > 
-> > Can't we track state internally to the virtqueue?
-> > Exposing it seems to buy us nothing since you can't
-> > call add_buf between start and end anyway.
+Il 18/12/2012 14:57, Michael S. Tsirkin ha scritto:
+>> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+>> +				 struct virtio_scsi_target_state *tgt,
+>> +				 struct scsi_cmnd *sc)
+>>  {
+>> -	struct virtio_scsi *vscsi = shost_priv(sh);
+>> -	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>>  	struct virtio_scsi_cmd *cmd;
+>> +	struct virtio_scsi_vq *req_vq;
+>>  	int ret;
+>>  
+>>  	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+>> @@ -461,7 +533,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+>>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+>>  
+>> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
+>> +	req_vq = ACCESS_ONCE(tgt->req_vq);
 > 
-> I wanted to keep the state for these functions separate from the rest.
-> I don't think it makes much sense to move it to struct virtqueue unless
-> virtqueue_add_buf is converted to use the new API (doesn't make much
-> sense, could even be a tad slower).
+> This ACCESS_ONCE without a barrier looks strange to me.
+> Can req_vq change? Needs a comment.
 
-Why would it be slower?
+Barriers are needed to order two things.  Here I don't have the second thing
+to order against, hence no barrier.
 
-> On the other hand moving it there would eliminate the dependency on
-> virtio_ring.h.  Rusty, what do you think?
+Accessing req_vq lockless is safe, and there's a comment about it, but you
+still want ACCESS_ONCE to ensure the compiler doesn't play tricks.  It
+shouldn't be necessary, because the critical section of
+virtscsi_queuecommand_multi will already include the appropriate
+compiler barriers, but it is actually clearer this way to me. :)
+
+>> +	if (virtscsi_kick_cmd(tgt, req_vq, cmd,
+>>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+>>  			      GFP_ATOMIC) == 0)
+>>  		ret = 0;
+>> @@ -472,6 +545,48 @@ out:
+>>  	return ret;
+>>  }
+>>  
+>> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
+>> +					struct scsi_cmnd *sc)
+>> +{
+>> +	struct virtio_scsi *vscsi = shost_priv(sh);
+>> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>> +
+>> +	atomic_inc(&tgt->reqs);
 > 
-> >> +int virtqueue_start_buf(struct virtqueue *_vq,
-> >> +			struct virtqueue_buf *buf,
-> >> +			void *data,
-> >> +			unsigned int count,
-> >> +			unsigned int count_sg,
-> >> +			gfp_t gfp);
-> >> +
-> >> +void virtqueue_add_sg(struct virtqueue_buf *buf,
-> >> +		      struct scatterlist sgl[],
-> >> +		      unsigned int count,
-> >> +		      enum dma_data_direction dir);
-> >> +
-> > 
-> > And idea: in practice virtio scsi seems to always call sg_init_one, no?
-> > So how about we pass in void* or something and avoid using sg and count?
-> > This would make it useful for -net BTW.
-> 
-> It also passes the scatterlist from the LLD.  It calls sg_init_one for
-> the request/response headers.
-> 
-> Paolo
+> And here we don't have barrier after atomic? Why? Needs a comment.
 
-Try adding a _single variant. You might see unrolling a loop
-gives more of a benefit than this whole optimization.
+Because we don't write req_vq, so there's no two writes to order.  Barrier
+against what?
 
-> >> +void virtqueue_end_buf(struct virtqueue_buf *buf);
-> >> +
-> >>  void virtqueue_kick(struct virtqueue *vq);
-> >>  
-> >>  bool virtqueue_kick_prepare(struct virtqueue *vq);
-> >> -- 
-> >> 1.7.1
-> >>
+>> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+>> +}
+>> +
+>> +static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
+>> +				       struct scsi_cmnd *sc)
+>> +{
+>> +	struct virtio_scsi *vscsi = shost_priv(sh);
+>> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>> +	unsigned long flags;
+>> +	u32 queue_num;
+>> +
+>> +	/*
+>> +	 * Using an atomic_t for tgt->reqs lets the virtqueue handler
+>> +	 * decrement it without taking the spinlock.
+>> +	 *
+>> +	 * We still need a critical section to prevent concurrent submissions
+>> +	 * from picking two different req_vqs.
+>> +	 */
+>> +	spin_lock_irqsave(&tgt->tgt_lock, flags);
+>> +	if (atomic_inc_return(&tgt->reqs) == 1) {
+>> +		queue_num = smp_processor_id();
+>> +		while (unlikely(queue_num >= vscsi->num_queues))
+>> +			queue_num -= vscsi->num_queues;
+>> +
+>> +		/*
+>> +		 * Write reqs before writing req_vq, matching the
+>> +		 * smp_read_barrier_depends() in virtscsi_req_done.
+>> +		 */
+>> +		smp_wmb();
+>> +		tgt->req_vq = &vscsi->req_vqs[queue_num];
+>> +	}
+>> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+>> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+>> +}
+>> +
+>>  static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+>>  {
+>>  	DECLARE_COMPLETION_ONSTACK(comp);
+>> @@ -541,12 +656,26 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
+>>  	return virtscsi_tmf(vscsi, cmd);
+>>  }
+>>  
+>> -static struct scsi_host_template virtscsi_host_template = {
+>> +static struct scsi_host_template virtscsi_host_template_single = {
+>>  	.module = THIS_MODULE,
+>>  	.name = "Virtio SCSI HBA",
+>>  	.proc_name = "virtio_scsi",
+>> -	.queuecommand = virtscsi_queuecommand,
+>>  	.this_id = -1,
+>> +	.queuecommand = virtscsi_queuecommand_single,
+>> +	.eh_abort_handler = virtscsi_abort,
+>> +	.eh_device_reset_handler = virtscsi_device_reset,
+>> +
+>> +	.can_queue = 1024,
+>> +	.dma_boundary = UINT_MAX,
+>> +	.use_clustering = ENABLE_CLUSTERING,
+>> +};
+>> +
+>> +static struct scsi_host_template virtscsi_host_template_multi = {
+>> +	.module = THIS_MODULE,
+>> +	.name = "Virtio SCSI HBA",
+>> +	.proc_name = "virtio_scsi",
+>> +	.this_id = -1,
+>> +	.queuecommand = virtscsi_queuecommand_multi,
+>>  	.eh_abort_handler = virtscsi_abort,
+>>  	.eh_device_reset_handler = virtscsi_device_reset,
+>>  
+>> @@ -572,16 +701,27 @@ static struct scsi_host_template virtscsi_host_template = {
+>>  				  &__val, sizeof(__val)); \
+>>  	})
+>>  
+>> +
+>>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+>> -			     struct virtqueue *vq)
+>> +			     struct virtqueue *vq, bool affinity)
+>>  {
+>>  	spin_lock_init(&virtscsi_vq->vq_lock);
+>>  	virtscsi_vq->vq = vq;
+>> +	if (affinity)
+>> +		virtqueue_set_affinity(vq, vq->index - VIRTIO_SCSI_VQ_BASE);
+> 
+> I've been thinking about how set_affinity
+> interacts with online/offline CPUs.
+> Any idea?
+
+No, I haven't tried.
+
+>>  
+>>  	/* Discover virtqueues and write information to configuration.  */
+>> -	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
+>> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
+>>  	if (err)
+>>  		return err;
+>>  
+>> -	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
+>> -	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
+>> -	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
+>> +	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0], false);
+>> +	virtscsi_init_vq(&vscsi->event_vq, vqs[1], false);
+>> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++)
+>> +		virtscsi_init_vq(&vscsi->req_vqs[i - VIRTIO_SCSI_VQ_BASE],
+>> +				 vqs[i], vscsi->num_queues > 1);
+> 
+> So affinity is true if >1 vq? I am guessing this is not
+> going to do the right thing unless you have at least
+> as many vqs as CPUs.
+
+Yes, and then you're not setting up the thing correctly.
+
+Isn't the same thing true for virtio-net mq?
+
+Paolo
