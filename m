@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab2LRBhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:37:16 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:61557 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752817Ab2LRBhO (ORCPT
+	id S1754163Ab2LRBhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:37:40 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:38830 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab2LRBhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:37:14 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/700EHNIAhDNMm7DGTJ22Y8xjCrUoNsYo=
-Date: Mon, 17 Dec 2012 20:37:08 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: Dove: add Cubox sdhci card detect gpio
-Message-ID: <20121218013708.GQ21694@titan.lakedaemon.net>
-References: <1355790269-10596-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1355790269-10596-3-git-send-email-sebastian.hesselbarth@gmail.com>
- <20121218003810.GP21694@titan.lakedaemon.net>
- <50CFBDC4.8040109@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50CFBDC4.8040109@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 17 Dec 2012 20:37:38 -0500
+Message-ID: <1355794293.5681.3.camel@phoenix>
+Subject: [PATCH 2/4] regulator: 88pm8607: Use apply_[reg|bit] with regmap
+ based voltage_sel operations
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 18 Dec 2012 09:31:33 +0800
+In-Reply-To: <1355794210.5681.1.camel@phoenix>
+References: <1355794210.5681.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 01:50:12AM +0100, Sebastian Hesselbarth wrote:
-> On 12/18/2012 01:38 AM, Jason Cooper wrote:
-> > On Tue, Dec 18, 2012 at 01:24:29AM +0100, Sebastian Hesselbarth wrote:
-> >> Card detect for sdhci on Cubox is connected to the wrong pin
-> >> (sdio1_cd instead of sdio0_cd). With support for cd-gpios and
-> >> pinctrl add the corresponding properties to DT for Cubox.
-> >>
-> >> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
-> >> ...
-> >> +&sdio0 {
-> >> +	status = "okay";
-> >> +	/* sdio0 card detect is connected to wrong pin on CuBox */
-> >> +	cd-gpios =<&gpio0 12 1>;
-> >
-> > this looks like a fix that should be merged into v3.8, I'll cue it up
-> > for v3.8-rc2.
-> 
-> Jason,
-> 
-> it is more a feature than a fix, as gpio-cd support for sdhci-dove
-> moved in lately. You want me to split this patch from the other two
-> (that I'll reorder as requested)?
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/88pm8607.c |   43 ++++++++++++------------------------------
+ 1 file changed, 12 insertions(+), 31 deletions(-)
 
-I was referring to the code more than the physical feature itself.  You
-appear to remove the default &sdio0, and replace it with a working
-version.  Looked like a fix to me ;-)
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index 2b55711..9ebdf8c 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -30,8 +30,6 @@ struct pm8607_regulator_info {
+ 	unsigned int	*vol_table;
+ 	unsigned int	*vol_suspend;
+ 
+-	int	update_reg;
+-	int	update_bit;
+ 	int	slope_double;
+ };
+ 
+@@ -222,29 +220,6 @@ static int pm8607_list_voltage(struct regulator_dev *rdev, unsigned index)
+ 	return ret;
+ }
+ 
+-static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+-{
+-	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
+-	uint8_t val;
+-	int ret;
+-
+-	val = (uint8_t)(selector << (ffs(rdev->desc->vsel_mask) - 1));
+-
+-	ret = pm860x_set_bits(info->i2c, rdev->desc->vsel_reg,
+-			      rdev->desc->vsel_mask, val);
+-	if (ret)
+-		return ret;
+-	switch (info->desc.id) {
+-	case PM8607_ID_BUCK1:
+-	case PM8607_ID_BUCK3:
+-		ret = pm860x_set_bits(info->i2c, info->update_reg,
+-				      1 << info->update_bit,
+-				      1 << info->update_bit);
+-		break;
+-	}
+-	return ret;
+-}
+-
+ static int pm8606_preg_enable(struct regulator_dev *rdev)
+ {
+ 	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
+@@ -276,7 +251,7 @@ static int pm8606_preg_is_enabled(struct regulator_dev *rdev)
+ 
+ static struct regulator_ops pm8607_regulator_ops = {
+ 	.list_voltage	= pm8607_list_voltage,
+-	.set_voltage_sel = pm8607_set_voltage_sel,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -313,11 +288,11 @@ static struct regulator_ops pm8606_preg_ops = {
+ 		.n_voltages = ARRAY_SIZE(vreg##_table),			\
+ 		.vsel_reg = PM8607_##vreg,				\
+ 		.vsel_mask = ARRAY_SIZE(vreg##_table) - 1,		\
++		.apply_reg = PM8607_##ureg,				\
++		.apply_bit = (ubit),					\
+ 		.enable_reg = PM8607_##ereg,				\
+ 		.enable_mask = 1 << (ebit),				\
+ 	},								\
+-	.update_reg	= PM8607_##ureg,				\
+-	.update_bit	= (ubit),					\
+ 	.slope_double	= (0),						\
+ 	.vol_table	= (unsigned int *)&vreg##_table,		\
+ 	.vol_suspend	= (unsigned int *)&vreg##_suspend_table,	\
+@@ -343,9 +318,15 @@ static struct regulator_ops pm8606_preg_ops = {
+ }
+ 
+ static struct pm8607_regulator_info pm8607_regulator_info[] = {
+-	PM8607_DVC(BUCK1, GO, 0, SUPPLIES_EN11, 0),
+-	PM8607_DVC(BUCK2, GO, 1, SUPPLIES_EN11, 1),
+-	PM8607_DVC(BUCK3, GO, 2, SUPPLIES_EN11, 2),
++	PM8607_DVC(BUCK1, GO, BIT(0), SUPPLIES_EN11, 0),
++	/*
++	 * BUCK2 is designed to control voltage of CP domain.
++	 * Linux only runs in AP side, so we don't need to control BUCK2 in AP
++	 * side. Thus set the apply bit to be 0 instead of BIT(1) to avoid
++	 * updating apply_bit for BUCK2.
++	 */
++	PM8607_DVC(BUCK2, GO, 0, SUPPLIES_EN11, 1),
++	PM8607_DVC(BUCK3, GO, BIT(2), SUPPLIES_EN11, 2),
+ 
+ 	PM8607_LDO(1,         LDO1, 0, SUPPLIES_EN11, 3),
+ 	PM8607_LDO(2,         LDO2, 0, SUPPLIES_EN11, 4),
+-- 
+1.7.9.5
 
-No need to send it separate, I'll apply it as is once v3.8-rc1 drops.
 
-thx,
 
-Jason.
