@@ -1,135 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab2LRHTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:19:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39057 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296Ab2LRHQf (ORCPT
+	id S1754289Ab2LRHQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:16:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30278 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab2LRHQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:16:35 -0500
+	Tue, 18 Dec 2012 02:16:32 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v7 20/27] x86, boot: update comments about entries for 64bit image
-Date: Mon, 17 Dec 2012 23:15:52 -0800
-Message-Id: <1355814959-10573-21-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v7 17/27] x86, kexec: Merge ident_mapping_init and init_level4_page
+Date: Mon, 17 Dec 2012 23:15:49 -0800
+Message-Id: <1355814959-10573-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
 References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now 64bit entry is fixed on 0x200, can not be changed anymore.
+Now ident_mapping_init is checking if pgd/pud is present for every 2M,
+so several 2Ms are in same PUD, it will keep checking if pud is there.
 
-Update the comments to reflect that.
+init_level4_page does not check existing pgd/pud.
 
-Also put info about it in boot.txt
+We will need to use ident_mapping_init with pfn_mapped array to
+map ram only, and two entries in pfn_mapped could be in same pgd/pud,
+so we need to check if pgd/pud is present instead of init_level4_page.
+
+So merge these two set functions to make new ident_mapping_init not
+check pgd/pud for every pmd in same pgd/pud, and use it to replace
+init_level4_page.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- Documentation/x86/boot.txt         |   38 ++++++++++++++++++++++++++++++++++++
- arch/x86/boot/compressed/head_64.S |   22 ++++++++++++---------
- 2 files changed, 51 insertions(+), 9 deletions(-)
+ arch/x86/kernel/machine_kexec_64.c |  214 ++++++++++++++----------------------
+ 1 file changed, 80 insertions(+), 134 deletions(-)
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 18ca9fb..24cc542 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -1042,6 +1042,44 @@ must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
- must be __BOOT_DS; interrupt must be disabled; %esi must hold the base
- address of the struct boot_params; %ebp, %edi and %ebx must be zero.
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index be14ee1..a0bf7fb 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -21,139 +21,6 @@
+ #include <asm/mmu_context.h>
+ #include <asm/debugreg.h>
  
-+**** 64-bit BOOT PROTOCOL
-+
-+For machine with 64bit cpus and 64bit kernel, we could use 64bit bootloader
-+We need a 64-bit boot protocol.
-+
-+In 64-bit boot protocol, the first step in loading a Linux kernel
-+should be to setup the boot parameters (struct boot_params,
-+traditionally known as "zero page"). The memory for struct boot_params
-+should be allocated under or above 4G and initialized to all zero.
-+Then the setup header from offset 0x01f1 of kernel image on should be
-+loaded into struct boot_params and examined. The end of setup header
-+can be calculated as follow:
-+
-+	0x0202 + byte value at offset 0x0201
-+
-+In addition to read/modify/write the setup header of the struct
-+boot_params as that of 16-bit boot protocol, the boot loader should
-+also fill the additional fields of the struct boot_params as that
-+described in zero-page.txt.
-+
-+After setting up the struct boot_params, the boot loader can load the
-+64-bit kernel in the same way as that of 16-bit boot protocol, but
-+kernel could be above 4G.
-+
-+In 64-bit boot protocol, the kernel is started by jumping to the
-+64-bit kernel entry point, which is the start address of loaded
-+64-bit kernel plus 0x200.
-+
-+At entry, the CPU must be in 64-bit mode with paging enabled.
-+The range with setup_header.init_size from start address of loaded
-+kernel and zero page and command line buffer get ident mapping;
-+a GDT must be loaded with the descriptors for selectors
-+__BOOT_CS(0x10) and __BOOT_DS(0x18); both descriptors must be 4G flat
-+segment; __BOOT_CS must have execute/read permission, and __BOOT_DS
-+must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
-+must be __BOOT_DS; interrupt must be disabled; %rsi must hold the base
-+address of the struct boot_params.
-+
- **** EFI HANDOVER PROTOCOL
+-static int init_one_level2_page(struct kimage *image, pgd_t *pgd,
+-				unsigned long addr)
+-{
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	struct page *page;
+-	int result = -ENOMEM;
+-
+-	addr &= PMD_MASK;
+-	pgd += pgd_index(addr);
+-	if (!pgd_present(*pgd)) {
+-		page = kimage_alloc_control_pages(image, 0);
+-		if (!page)
+-			goto out;
+-		pud = (pud_t *)page_address(page);
+-		clear_page(pud);
+-		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
+-	}
+-	pud = pud_offset(pgd, addr);
+-	if (!pud_present(*pud)) {
+-		page = kimage_alloc_control_pages(image, 0);
+-		if (!page)
+-			goto out;
+-		pmd = (pmd_t *)page_address(page);
+-		clear_page(pmd);
+-		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+-	}
+-	pmd = pmd_offset(pud, addr);
+-	if (!pmd_present(*pmd))
+-		set_pmd(pmd, __pmd(addr | __PAGE_KERNEL_LARGE_EXEC));
+-	result = 0;
+-out:
+-	return result;
+-}
+-
+-static int ident_mapping_init(struct kimage *image, pgd_t *level4p,
+-				unsigned long mstart, unsigned long mend)
+-{
+-	int result;
+-
+-	mstart = round_down(mstart, PMD_SIZE);
+-	mend   = round_up(mend - 1, PMD_SIZE);
+-
+-	while (mstart < mend) {
+-		result = init_one_level2_page(image, level4p, mstart);
+-		if (result)
+-			return result;
+-
+-		mstart += PMD_SIZE;
+-	}
+-
+-	return 0;
+-}
+-
+-static void init_level2_page(pmd_t *level2p, unsigned long addr)
+-{
+-	unsigned long end_addr;
+-
+-	addr &= PAGE_MASK;
+-	end_addr = addr + PUD_SIZE;
+-	while (addr < end_addr) {
+-		set_pmd(level2p++, __pmd(addr | __PAGE_KERNEL_LARGE_EXEC));
+-		addr += PMD_SIZE;
+-	}
+-}
+-
+-static int init_level3_page(struct kimage *image, pud_t *level3p,
+-				unsigned long addr, unsigned long last_addr)
+-{
+-	unsigned long end_addr;
+-	int result;
+-
+-	result = 0;
+-	addr &= PAGE_MASK;
+-	end_addr = addr + PGDIR_SIZE;
+-	while ((addr < last_addr) && (addr < end_addr)) {
+-		struct page *page;
+-		pmd_t *level2p;
+-
+-		page = kimage_alloc_control_pages(image, 0);
+-		if (!page) {
+-			result = -ENOMEM;
+-			goto out;
+-		}
+-		level2p = (pmd_t *)page_address(page);
+-		init_level2_page(level2p, addr);
+-		set_pud(level3p++, __pud(__pa(level2p) | _KERNPG_TABLE));
+-		addr += PUD_SIZE;
+-	}
+-	/* clear the unused entries */
+-	while (addr < end_addr) {
+-		pud_clear(level3p++);
+-		addr += PUD_SIZE;
+-	}
+-out:
+-	return result;
+-}
+-
+-
+-static int init_level4_page(struct kimage *image, pgd_t *level4p,
+-				unsigned long addr, unsigned long last_addr)
+-{
+-	unsigned long end_addr;
+-	int result;
+-
+-	result = 0;
+-	addr &= PAGE_MASK;
+-	end_addr = addr + (PTRS_PER_PGD * PGDIR_SIZE);
+-	while ((addr < last_addr) && (addr < end_addr)) {
+-		struct page *page;
+-		pud_t *level3p;
+-
+-		page = kimage_alloc_control_pages(image, 0);
+-		if (!page) {
+-			result = -ENOMEM;
+-			goto out;
+-		}
+-		level3p = (pud_t *)page_address(page);
+-		result = init_level3_page(image, level3p, addr, last_addr);
+-		if (result)
+-			goto out;
+-		set_pgd(level4p++, __pgd(__pa(level3p) | _KERNPG_TABLE));
+-		addr += PGDIR_SIZE;
+-	}
+-	/* clear the unused entries */
+-	while (addr < end_addr) {
+-		pgd_clear(level4p++);
+-		addr += PGDIR_SIZE;
+-	}
+-out:
+-	return result;
+-}
+-
+ static void free_transition_pgtable(struct kimage *image)
+ {
+ 	free_page((unsigned long)image->arch.pud);
+@@ -203,6 +70,84 @@ err:
+ 	return result;
+ }
  
- This protocol allows boot loaders to defer initialisation to the EFI
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 5c80b94..aaafd4e 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -37,6 +37,12 @@
- 	__HEAD
- 	.code32
- ENTRY(startup_32)
-+	/*
-+	 * 32bit entry is 0, could not be changed!
-+	 * If we come here directly from a bootloader,
-+	 * kernel(text+data+bss+brk) ramdisk, zero_page, command line
-+	 * all need to be under 4G limit.
-+	 */
- 	cld
- 	/*
- 	 * Test KEEP_SEGMENTS flag to see if the bootloader is asking
-@@ -182,20 +188,18 @@ ENTRY(startup_32)
- 	lret
- ENDPROC(startup_32)
++static void ident_pmd_init(pmd_t *pmd_page,
++			  unsigned long addr, unsigned long end)
++{
++	addr &= PMD_MASK;
++	for (; addr < end; addr += PMD_SIZE) {
++		pmd_t *pmd = pmd_page + pmd_index(addr);
++
++		if (!pmd_present(*pmd))
++			set_pmd(pmd, __pmd(addr | __PAGE_KERNEL_LARGE_EXEC));
++	}
++}
++static int ident_pud_init(struct kimage *image, pud_t *pud_page,
++			  unsigned long addr, unsigned long end)
++{
++	unsigned long next;
++	struct page *page;
++
++	for (; addr < end; addr = next) {
++		pud_t *pud = pud_page + pud_index(addr);
++		pmd_t *pmd;
++
++		next = (addr & PUD_MASK) + PUD_SIZE;
++		if (next > end)
++			next = end;
++
++		if (pud_present(*pud)) {
++			pmd = pmd_offset(pud, 0);
++			ident_pmd_init(pmd, addr, next);
++			continue;
++		}
++		page = kimage_alloc_control_pages(image, 0);
++		if (!page)
++			return -ENOMEM;
++		pmd = (pmd_t *)page_address(page);
++		clear_page(pmd);
++		ident_pmd_init(pmd, addr, next);
++		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
++	}
++
++	return 0;
++}
++static int ident_mapping_init(struct kimage *image, pgd_t *pgd_page,
++				unsigned long addr, unsigned long end)
++{
++	unsigned long next;
++	struct page *page;
++	int result;
++
++	for (; addr < end; addr = next) {
++		pgd_t *pgd = pgd_page + pgd_index(addr);
++		pud_t *pud;
++
++		next = (addr & PGDIR_MASK) + PGDIR_SIZE;
++		if (next > end)
++			next = end;
++
++		if (pgd_present(*pgd)) {
++			pud = pud_offset(pgd, 0);
++			result = ident_pud_init(image, pud, addr, next);
++			if (result)
++				return result;
++			continue;
++		}
++
++		page = kimage_alloc_control_pages(image, 0);
++		if (!page)
++			return -ENOMEM;
++		pud = (pud_t *)page_address(page);
++		clear_page(pud);
++		result = ident_pud_init(image, pud, addr, next);
++		if (result)
++			return result;
++		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
++	}
++
++	return 0;
++}
++
+ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+ {
+ 	unsigned long mstart, mend;
+@@ -211,7 +156,8 @@ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+ 	int i;
  
--	/*
--	 * Be careful here startup_64 needs to be at a predictable
--	 * address so I can export it in an ELF header.  Bootloaders
--	 * should look at the ELF header to find this address, as
--	 * it may change in the future.
--	 */
- 	.code64
- 	.org 0x200
- ENTRY(startup_64)
- 	/*
-+	 * 64bit entry is 0x200, could not be changed!
- 	 * We come here either from startup_32 or directly from a
--	 * 64bit bootloader.  If we come here from a bootloader we depend on
--	 * an identity mapped page table being provied that maps our
--	 * entire text+data+bss and hopefully all of memory.
-+	 * 64bit bootloader.
-+	 * If we come here from a bootloader, kernel(text+data+bss+brk),
-+	 * ramdisk, zero_page, command line could be above 4G.
-+	 * We depend on an identity mapped page table being provided
-+	 * that maps our entire kernel(text+data+bss+brk), zero page
-+	 * and command line.
- 	 */
- #ifdef CONFIG_EFI_STUB
- 	/*
+ 	level4p = (pgd_t *)__va(start_pgtable);
+-	result = init_level4_page(image, level4p, 0, max_pfn << PAGE_SHIFT);
++	clear_page(level4p);
++	result = ident_mapping_init(image, level4p, 0, max_pfn << PAGE_SHIFT);
+ 	if (result)
+ 		return result;
+ 
 -- 
 1.7.10.4
 
