@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab2LRSAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 13:00:17 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:59234 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab2LRSAP (ORCPT
+	id S1754364Ab2LRSAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 13:00:22 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:53207 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab2LRSAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 13:00:15 -0500
+	Tue, 18 Dec 2012 13:00:19 -0500
 From: Fabio Baltieri <fabio.baltieri@gmail.com>
 To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
 Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
         Wolfgang Grandegger <wg@grandegger.com>,
         Oliver Hartkopp <socketcan@hartkopp.net>,
         Bernd Krumboeck <b.krumboeck@gmail.com>, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Anant Gole <anantgole@ti.com>
-Subject: [PATCH 06/10] can: ti_hecc: add LED trigger support
-Date: Tue, 18 Dec 2012 18:51:00 +0100
-Message-Id: <1355853064-18144-7-git-send-email-fabio.baltieri@gmail.com>
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH 02/10] can: export a safe netdev_priv wrapper for candev
+Date: Tue, 18 Dec 2012 18:50:56 +0100
+Message-Id: <1355853064-18144-3-git-send-email-fabio.baltieri@gmail.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
 References: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
@@ -25,75 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for canbus activity led indicators on ti_hecc devices by
-calling appropriate can_led functions.
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
 
-These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
-otherwise.
+In net_device notifier calls, it was impossible to determine
+if a CAN device is based on candev in a safe way.
+This patch adds such test in order to access candev storage
+from within those notifiers.
 
-Cc: Anant Gole <anantgole@ti.com>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 ---
- drivers/net/can/ti_hecc.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/can/dev.c   | 13 +++++++++++++
+ include/linux/can/dev.h |  3 +++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
-index f898c63..f52a975 100644
---- a/drivers/net/can/ti_hecc.c
-+++ b/drivers/net/can/ti_hecc.c
-@@ -50,6 +50,7 @@
- 
- #include <linux/can/dev.h>
- #include <linux/can/error.h>
-+#include <linux/can/led.h>
- #include <linux/can/platform/ti_hecc.h>
- 
- #define DRV_NAME "ti_hecc"
-@@ -593,6 +594,7 @@ static int ti_hecc_rx_pkt(struct ti_hecc_priv *priv, int mbxno)
- 	spin_unlock_irqrestore(&priv->mbx_lock, flags);
- 
- 	stats->rx_bytes += cf->can_dlc;
-+	can_led_event(priv->ndev, CAN_LED_EVENT_RX);
- 	netif_receive_skb(skb);
- 	stats->rx_packets++;
- 
-@@ -796,6 +798,7 @@ static irqreturn_t ti_hecc_interrupt(int irq, void *dev_id)
- 			stats->tx_bytes += hecc_read_mbx(priv, mbxno,
- 						HECC_CANMCF) & 0xF;
- 			stats->tx_packets++;
-+			can_led_event(ndev, CAN_LED_EVENT_TX);
- 			can_get_echo_skb(ndev, mbxno);
- 			--priv->tx_tail;
- 		}
-@@ -851,6 +854,8 @@ static int ti_hecc_open(struct net_device *ndev)
- 		return err;
- 	}
- 
-+	can_led_event(ndev, CAN_LED_EVENT_OPEN);
-+
- 	ti_hecc_start(ndev);
- 	napi_enable(&priv->napi);
- 	netif_start_queue(ndev);
-@@ -869,6 +874,8 @@ static int ti_hecc_close(struct net_device *ndev)
- 	close_candev(ndev);
- 	ti_hecc_transceiver_switch(priv, 0);
- 
-+	can_led_event(ndev, CAN_LED_EVENT_STOP);
-+
- 	return 0;
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index 8233e5e..13e7380 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -794,6 +794,19 @@ void unregister_candev(struct net_device *dev)
  }
+ EXPORT_SYMBOL_GPL(unregister_candev);
  
-@@ -961,6 +968,9 @@ static int ti_hecc_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "register_candev() failed\n");
- 		goto probe_exit_clk;
- 	}
++/*
++ * Test if a network device is a candev based device
++ * and return the can_priv* if so.
++ */
++struct can_priv *safe_candev_priv(struct net_device *dev)
++{
++	if ((dev->type != ARPHRD_CAN) || (dev->rtnl_link_ops != &can_link_ops))
++		return NULL;
 +
-+	devm_can_led_init(ndev);
++	return netdev_priv(dev);
++}
++EXPORT_SYMBOL_GPL(safe_candev_priv);
 +
- 	dev_info(&pdev->dev, "device registered (reg_base=%p, irq=%u)\n",
- 		priv->base, (u32) ndev->irq);
+ static __init int can_dev_init(void)
+ {
+ 	int err;
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 7747d9b..fb0ab65 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -106,6 +106,9 @@ u8 can_len2dlc(u8 len);
+ struct net_device *alloc_candev(int sizeof_priv, unsigned int echo_skb_max);
+ void free_candev(struct net_device *dev);
+ 
++/* a candev safe wrapper around netdev_priv */
++struct can_priv *safe_candev_priv(struct net_device *dev);
++
+ int open_candev(struct net_device *dev);
+ void close_candev(struct net_device *dev);
  
 -- 
 1.7.12.1
