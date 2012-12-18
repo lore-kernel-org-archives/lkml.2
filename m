@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2LRHRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:17:35 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22854 "EHLO
+	id S1754477Ab2LRHRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:17:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22856 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab2LRHQj (ORCPT
+	with ESMTP id S1754146Ab2LRHQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Dec 2012 02:16:39 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,11 +12,10 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Rob Landley <rob@landley.net>, Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH v7 19/27] x86, boot: add fields to support load bzImage and ramdisk above 4G
-Date: Mon, 17 Dec 2012 23:15:51 -0800
-Message-Id: <1355814959-10573-20-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v7 26/27] x86: add Crash kernel low reservation
+Date: Mon, 17 Dec 2012 23:15:58 -0800
+Message-Id: <1355814959-10573-27-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
 References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
@@ -25,278 +24,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext_ramdisk_image/size will record high 32bits for ramdisk info.
+During kdump kernel's booting stage, it need to find low ram for
+swiotlb buffer when system does not support intel iommu/dmar remapping.
 
-xloadflags bit0 will be set if relocatable with 64bit.
+kexed-tools is appending memmap=exactmap and range from /proc/iomem
+with "Crash kernel", and that range is above 4G for 64bit after boot
+protocol 2.12.
 
-Let get_ramdisk_image/size to use ext_ramdisk_image/size to get
-right positon for ramdisk.
+We need to add another range in /proc/iomem like "Crash kernel low",
+so kexec-tools could find that info and append to kdump kernel
+command line.
 
-bootloader will fill value to ext_ramdisk_image/size when it load
-ramdisk above 4G.
+Try to reserve some under 4G if the normal "Crash kernel" is above
+4G.
 
-Also bootloader will check if xloadflags bit0 is set to decicde if
-it could load ramdisk high above 4G.
+User could specify the size with crashkernel_low=XX[KMG].
+If the user does not specify that, will use 72M instead.
 
-sentinel is used to make sure kernel have ext_* valid values set
-
-Update header version to 2.12.
-
--v2: add ext_cmd_line_ptr for above 4G support.
--v3: update to xloadflags from HPA.
--v4: use fields from bootparam instead setup_header according to HPA.
--v5: add checking for USE_EXT_BOOT_PARAMS
--v6: use sentinel to check if ext_* are valid suggested by HPA.
-     HPA said:
-	1. add a field in the uninitialized portion, call it "sentinel";
-	2. make sure the byte position corresponding to the "sentinel" field is
-	   nonzero in the bzImage file;
-	3. if the kernel boots up and sentinel is nonzero, erase those fields
-	   that you identified as uninitialized;
--v7: change to 0x1ef instead of 0x1f0, HPA said:
-	it is quite plausible that someone may (fairly sanely) start the
-	copy range at 0x1f0 instead of 0x1f1
+-v2: fix warning that is found by Fengguang's test robot.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- Documentation/x86/boot.txt            |   15 ++++++++++++++-
- Documentation/x86/zero-page.txt       |    4 ++++
- arch/x86/boot/compressed/cmdline.c    |    2 ++
- arch/x86/boot/compressed/misc.c       |   12 ++++++++++++
- arch/x86/boot/header.S                |   12 ++++++++++--
- arch/x86/boot/setup.ld                |    7 +++++++
- arch/x86/include/uapi/asm/bootparam.h |   13 ++++++++++---
- arch/x86/kernel/head64.c              |    2 ++
- arch/x86/kernel/setup.c               |    4 ++++
- 9 files changed, 65 insertions(+), 6 deletions(-)
+ Documentation/kernel-parameters.txt |    3 ++
+ arch/x86/kernel/setup.c             |   70 +++++++++++++++++++++++++++--------
+ include/linux/kexec.h               |    3 ++
+ kernel/kexec.c                      |   34 ++++++++++++++---
+ 4 files changed, 89 insertions(+), 21 deletions(-)
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 406d82d..18ca9fb 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -57,6 +57,9 @@ Protocol 2.10:	(Kernel 2.6.31) Added a protocol for relaxed alignment
- Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
- 		protocol entry point.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 2b37020..e8c48e9 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -600,6 +600,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			is selected automatically. Check
+ 			Documentation/kdump/kdump.txt for further details.
  
-+Protocol 2.12:	(Kernel 3.9) Added three fields for loading bzImage and
-+		 ramdisk above 4G with 64bit in bootparam.
++	crashkernel_low=size[KMG]
++			[KNL, x86] parts under 4G.
 +
- **** MEMORY LAYOUT
- 
- The traditional memory map for the kernel loader, used for Image or
-@@ -182,7 +185,7 @@ Offset	Proto	Name		Meaning
- 0230/4	2.05+	kernel_alignment Physical addr alignment required for kernel
- 0234/1	2.05+	relocatable_kernel Whether kernel is relocatable or not
- 0235/1	2.10+	min_alignment	Minimum alignment, as a power of two
--0236/2	N/A	pad3		Unused
-+0236/2	2.12+	xloadflags	Boot protocol option flags
- 0238/4	2.06+	cmdline_size	Maximum size of the kernel command line
- 023C/4	2.07+	hardware_subarch Hardware subarchitecture
- 0240/8	2.07+	hardware_subarch_data Subarchitecture-specific data
-@@ -582,6 +585,16 @@ Protocol:	2.10+
-   misaligned kernel.  Therefore, a loader should typically try each
-   power-of-two alignment from kernel_alignment down to this alignment.
- 
-+Field name:     xloadflags
-+Type:           modify (obligatory)
-+Offset/size:    0x236/2
-+Protocol:       2.12+
-+
-+  This field is a bitmask.
-+
-+  Bit 0 (read): CAN_BE_LOADED_ABOVE_4G
-+        - If 1, kernel/boot_params/cmdline/ramdisk can be above 4g,
-+
- Field name:	cmdline_size
- Type:		read
- Offset/size:	0x238/4
-diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-index cf5437d..1140e59 100644
---- a/Documentation/x86/zero-page.txt
-+++ b/Documentation/x86/zero-page.txt
-@@ -19,6 +19,9 @@ Offset	Proto	Name		Meaning
- 090/010	ALL	hd1_info	hd1 disk parameter, OBSOLETE!!
- 0A0/010	ALL	sys_desc_table	System description table (struct sys_desc_table)
- 0B0/010	ALL	olpc_ofw_header	OLPC's OpenFirmware CIF and friends
-+0C0/004	ALL	ext_ramdisk_image ramdisk_image high 32bits
-+0C4/004	ALL	ext_ramdisk_size  ramdisk_size high 32bits
-+0C8/004	ALL	ext_cmd_line_ptr  cmd_line_ptr high 32bits
- 140/080	ALL	edid_info	Video mode setup (struct edid_info)
- 1C0/020	ALL	efi_info	EFI 32 information (struct efi_info)
- 1E0/004	ALL	alk_mem_k	Alternative mem check, in KB
-@@ -27,6 +30,7 @@ Offset	Proto	Name		Meaning
- 1E9/001	ALL	eddbuf_entries	Number of entries in eddbuf (below)
- 1EA/001	ALL	edd_mbr_sig_buf_entries	Number of entries in edd_mbr_sig_buffer
- 				(below)
-+1EF/001	ALL	sentinel	0: states _ext_* fields are valid
- 290/040	ALL	edd_mbr_sig_buffer EDD MBR signatures
- 2D0/A00	ALL	e820_map	E820 memory map table
- 				(array of struct e820entry)
-diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
-index b4c913c..bffd73b 100644
---- a/arch/x86/boot/compressed/cmdline.c
-+++ b/arch/x86/boot/compressed/cmdline.c
-@@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
- {
- 	unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
- 
-+	cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
-+
- 	return cmd_line_ptr;
- }
- int cmdline_find_option(const char *option, char *buffer, int bufsize)
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 88f7ff6..f714576 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -318,6 +318,16 @@ static void parse_elf(void *output)
- 	free(phdrs);
- }
- 
-+static void sanitize_real_mode(struct boot_params *real_mode)
-+{
-+	if (real_mode->sentinel) {
-+		/* ext_* fields in boot_params are not valid, clear them */
-+		real_mode->ext_ramdisk_image = 0;
-+		real_mode->ext_ramdisk_size  = 0;
-+		real_mode->ext_cmd_line_ptr  = 0;
-+	}
-+}
-+
- asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 				  unsigned char *input_data,
- 				  unsigned long input_len,
-@@ -325,6 +335,8 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
- {
- 	real_mode = rmode;
- 
-+	sanitize_real_mode(real_mode);
-+
- 	if (real_mode->screen_info.orig_video_mode == 7) {
- 		vidmem = (char *) 0xb0000;
- 		vidport = 0x3b4;
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index 8c132a6..0d5790f 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -279,7 +279,7 @@ _start:
- 	# Part 2 of the header, from the old setup.S
- 
- 		.ascii	"HdrS"		# header signature
--		.word	0x020b		# header version number (>= 0x0105)
-+		.word	0x020c		# header version number (>= 0x0105)
- 					# or else old loadlin-1.5 will fail)
- 		.globl realmode_swtch
- realmode_swtch:	.word	0, 0		# default_switch, SETUPSEG
-@@ -369,7 +369,15 @@ relocatable_kernel:    .byte 1
- relocatable_kernel:    .byte 0
- #endif
- min_alignment:		.byte MIN_KERNEL_ALIGN_LG2	# minimum alignment
--pad3:			.word 0
-+
-+xloadflags:
-+CAN_BE_LOADED_ABOVE_4G	= 1		# If set, the kernel/boot_param/
-+					# ramdisk could be loaded above 4g
-+#if defined(CONFIG_X86_64) && defined(CONFIG_RELOCATABLE)
-+			.word CAN_BE_LOADED_ABOVE_4G
-+#else
-+			.word 0
-+#endif
- 
- cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
-                                                 #added with boot protocol
-diff --git a/arch/x86/boot/setup.ld b/arch/x86/boot/setup.ld
-index 03c0683..9333d37 100644
---- a/arch/x86/boot/setup.ld
-+++ b/arch/x86/boot/setup.ld
-@@ -13,6 +13,13 @@ SECTIONS
- 	.bstext		: { *(.bstext) }
- 	.bsdata		: { *(.bsdata) }
- 
-+	/* sentinel: make sure if boot_params from bootloader is right */
-+	. = 495;
-+	.sentinel	: {
-+		sentinel = .;
-+		BYTE(0xff);
-+	}
-+
- 	. = 497;
- 	.header		: { *(.header) }
- 	.entrytext	: { *(.entrytext) }
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index 92862cd..3d8ed8f 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -58,7 +58,9 @@ struct setup_header {
- 	__u32	initrd_addr_max;
- 	__u32	kernel_alignment;
- 	__u8	relocatable_kernel;
--	__u8	_pad2[3];
-+	__u8	min_alignment;
-+	__u16	xloadflags;
-+#define CAN_BE_LOADED_ABOVE_4G	(1<<0)
- 	__u32	cmdline_size;
- 	__u32	hardware_subarch;
- 	__u64	hardware_subarch_data;
-@@ -106,7 +108,10 @@ struct boot_params {
- 	__u8  hd1_info[16];	/* obsolete! */		/* 0x090 */
- 	struct sys_desc_table sys_desc_table;		/* 0x0a0 */
- 	struct olpc_ofw_header olpc_ofw_header;		/* 0x0b0 */
--	__u8  _pad4[128];				/* 0x0c0 */
-+	__u32 ext_ramdisk_image;			/* 0x0c0 */
-+	__u32 ext_ramdisk_size;				/* 0x0c4 */
-+	__u32 ext_cmd_line_ptr;				/* 0x0c8 */
-+	__u8  _pad4[116];				/* 0x0cc */
- 	struct edid_info edid_info;			/* 0x140 */
- 	struct efi_info efi_info;			/* 0x1c0 */
- 	__u32 alt_mem_k;				/* 0x1e0 */
-@@ -115,7 +120,9 @@ struct boot_params {
- 	__u8  eddbuf_entries;				/* 0x1e9 */
- 	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
- 	__u8  kbd_status;				/* 0x1eb */
--	__u8  _pad6[5];					/* 0x1ec */
-+	__u8  _pad5[3];					/* 0x1ec */
-+	__u8  sentinel;					/* 0x1ef */
-+	__u8  _pad6[1];					/* 0x1f0 */
- 	struct setup_header hdr;    /* setup header */	/* 0x1f1 */
- 	__u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
- 	__u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];	/* 0x290 */
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index fe9037d..0824b02 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -106,6 +106,8 @@ static unsigned long get_cmd_line_ptr(void)
- {
- 	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
- 
-+	cmd_line_ptr |= (u64)boot_params.ext_cmd_line_ptr << 32;
-+
- 	return cmd_line_ptr;
- }
- 
+ 	crashkernel=range1:size1[,range2:size2,...][@offset]
+ 			[KNL] Same as above, but depends on the memory
+ 			in the running system. The syntax of range is
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 644a123..2509efa 100644
+index 2631008..5373a71 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -298,12 +298,16 @@ static u64 __init get_ramdisk_image(void)
- {
- 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
- 
-+	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+
- 	return ramdisk_image;
- }
- static u64 __init get_ramdisk_size(void)
- {
- 	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
- 
-+	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+
- 	return ramdisk_size;
+@@ -292,6 +292,21 @@ static void __init reserve_brk(void)
+ 	_brk_start = 0;
  }
  
++static u64 __init get_mem_size(unsigned long limit_pfn)
++{
++	int i;
++	u64 pages = 0;
++	unsigned long start_pfn, end_pfn;
++
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
++		start_pfn = min_t(unsigned long, start_pfn, limit_pfn);
++		end_pfn = min_t(unsigned long, end_pfn, limit_pfn);
++		pages += end_pfn - start_pfn;
++	}
++
++	return pages << PAGE_SHIFT;
++}
++
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+ static u64 __init get_ramdisk_image(void)
+@@ -363,20 +378,6 @@ static void __init relocate_initrd(void)
+ 		ramdisk_here, ramdisk_here + ramdisk_size - 1);
+ }
+ 
+-static u64 __init get_mem_size(unsigned long limit_pfn)
+-{
+-	int i;
+-	u64 mapped_pages = 0;
+-	unsigned long start_pfn, end_pfn;
+-
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
+-		start_pfn = min_t(unsigned long, start_pfn, limit_pfn);
+-		end_pfn = min_t(unsigned long, end_pfn, limit_pfn);
+-		mapped_pages += end_pfn - start_pfn;
+-	}
+-
+-	return mapped_pages << PAGE_SHIFT;
+-}
+ static void __init early_reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+@@ -522,8 +523,43 @@ static void __init memblock_x86_reserve_range_setup_data(void)
+ # define CRASH_KERNEL_ADDR_MAX	MAXMEM
+ #endif
+ 
++static void __init reserve_crashkernel_low(void)
++{
++#ifdef CONFIG_X86_64
++	const unsigned long long alignment = 16<<20;	/* 16M */
++	unsigned long long low_base = 0, low_size = 0;
++	unsigned long total_low_mem;
++	unsigned long long base;
++	int ret;
++
++	total_low_mem = get_mem_size(1UL<<(32-PAGE_SHIFT));
++	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
++						&low_size, &base);
++	if (ret != 0 || low_size <= 0)
++		low_size = (72UL<<20);  /* 72M */
++	low_base = memblock_find_in_range(low_size, (1ULL<<32),
++					low_size, alignment);
++
++	if (!low_base) {
++		pr_info("crashkernel low reservation failed - No suitable area found.\n");
++
++		return;
++	}
++
++	memblock_reserve(low_base, low_size);
++	pr_info("Reserving %ldMB of low memory at %ldMB for crashkernel (System low RAM: %ldMB)\n",
++			(unsigned long)(low_size >> 20),
++			(unsigned long)(low_base >> 20),
++			(unsigned long)(total_low_mem >> 20));
++	crashk_low_res.start = low_base;
++	crashk_low_res.end   = low_base + low_size - 1;
++	insert_resource(&iomem_resource, &crashk_low_res);
++#endif
++}
++
+ static void __init reserve_crashkernel(void)
+ {
++	const unsigned long long alignment = 16<<20;	/* 16M */
+ 	unsigned long long total_mem;
+ 	unsigned long long crash_size, crash_base;
+ 	int ret;
+@@ -537,8 +573,6 @@ static void __init reserve_crashkernel(void)
+ 
+ 	/* 0 means: find the address automatically */
+ 	if (crash_base <= 0) {
+-		const unsigned long long alignment = 16<<20;	/* 16M */
+-
+ 		/*
+ 		 *  kexec want bzImage is below CRASH_KERNEL_ADDR_MAX
+ 		 */
+@@ -549,6 +583,7 @@ static void __init reserve_crashkernel(void)
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
+ 			return;
+ 		}
++
+ 	} else {
+ 		unsigned long long start;
+ 
+@@ -570,6 +605,9 @@ static void __init reserve_crashkernel(void)
+ 	crashk_res.start = crash_base;
+ 	crashk_res.end   = crash_base + crash_size - 1;
+ 	insert_resource(&iomem_resource, &crashk_res);
++
++	if (crash_base >= (1ULL<<32))
++		reserve_crashkernel_low();
+ }
+ #else
+ static void __init reserve_crashkernel(void)
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index d0b8458..d2e6927 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -191,6 +191,7 @@ extern struct kimage *kexec_crash_image;
+ /* Location of a reserved region to hold the crash kernel.
+  */
+ extern struct resource crashk_res;
++extern struct resource crashk_low_res;
+ typedef u32 note_buf_t[KEXEC_NOTE_BYTES/4];
+ extern note_buf_t __percpu *crash_notes;
+ extern u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
+@@ -199,6 +200,8 @@ extern size_t vmcoreinfo_max_size;
+ 
+ int __init parse_crashkernel(char *cmdline, unsigned long long system_ram,
+ 		unsigned long long *crash_size, unsigned long long *crash_base);
++int parse_crashkernel_low(char *cmdline, unsigned long long system_ram,
++		unsigned long long *crash_size, unsigned long long *crash_base);
+ int crash_shrink_memory(unsigned long new_size);
+ size_t crash_get_memory_size(void);
+ void crash_free_reserved_phys_range(unsigned long begin, unsigned long end);
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 5e4bd78..2436ffc 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -54,6 +54,12 @@ struct resource crashk_res = {
+ 	.end   = 0,
+ 	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
+ };
++struct resource crashk_low_res = {
++	.name  = "Crash kernel low",
++	.start = 0,
++	.end   = 0,
++	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
++};
+ 
+ int kexec_should_crash(struct task_struct *p)
+ {
+@@ -1369,10 +1375,11 @@ static int __init parse_crashkernel_simple(char 		*cmdline,
+  * That function is the entry point for command line parsing and should be
+  * called from the arch-specific code.
+  */
+-int __init parse_crashkernel(char 		 *cmdline,
++static int __init __parse_crashkernel(char *cmdline,
+ 			     unsigned long long system_ram,
+ 			     unsigned long long *crash_size,
+-			     unsigned long long *crash_base)
++			     unsigned long long *crash_base,
++				const char *name)
+ {
+ 	char 	*p = cmdline, *ck_cmdline = NULL;
+ 	char	*first_colon, *first_space;
+@@ -1382,16 +1389,16 @@ int __init parse_crashkernel(char 		 *cmdline,
+ 	*crash_base = 0;
+ 
+ 	/* find crashkernel and use the last one if there are more */
+-	p = strstr(p, "crashkernel=");
++	p = strstr(p, name);
+ 	while (p) {
+ 		ck_cmdline = p;
+-		p = strstr(p+1, "crashkernel=");
++		p = strstr(p+1, name);
+ 	}
+ 
+ 	if (!ck_cmdline)
+ 		return -EINVAL;
+ 
+-	ck_cmdline += 12; /* strlen("crashkernel=") */
++	ck_cmdline += strlen(name);
+ 
+ 	/*
+ 	 * if the commandline contains a ':', then that's the extended
+@@ -1409,6 +1416,23 @@ int __init parse_crashkernel(char 		 *cmdline,
+ 	return 0;
+ }
+ 
++int __init parse_crashkernel(char *cmdline,
++			     unsigned long long system_ram,
++			     unsigned long long *crash_size,
++			     unsigned long long *crash_base)
++{
++	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
++					"crashkernel=");
++}
++
++int __init parse_crashkernel_low(char *cmdline,
++			     unsigned long long system_ram,
++			     unsigned long long *crash_size,
++			     unsigned long long *crash_base)
++{
++	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
++					"crashkernel_low=");
++}
+ 
+ static void update_vmcoreinfo_note(void)
+ {
 -- 
 1.7.10.4
 
