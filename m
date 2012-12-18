@@ -1,208 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab2LREky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 23:40:54 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:54004 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2LREkw (ORCPT
+	id S1753846Ab2LREpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 23:45:08 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:58411 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LREpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 23:40:52 -0500
-X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 23:40:51 EST
-From: Kevin Cernekee <cernekee@gmail.com>
-To: pablo@netfilter.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Gabor Juhos <juhosg@openwrt.org>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH v4] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945 IP phones
-Date: Mon, 17 Dec 2012 20:33:58 -0800
-Message-Id: <1355805238-2460-1-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 17 Dec 2012 23:45:06 -0500
+Date: Mon, 17 Dec 2012 20:45:13 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] mm/swap: add independed bio pool for swap
+In-Reply-To: <20121214110118.8387.66431.stgit@zurg>
+Message-ID: <alpine.LNX.2.00.1212172024500.5927@eggly.anvils>
+References: <20121214110118.8387.66431.stgit@zurg>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most SIP devices use a source port of 5060/udp on SIP requests, so the
-response automatically comes back to port 5060:
+On Fri, 14 Dec 2012, Konstantin Khlebnikov wrote:
 
-    phone_ip:5060 -> proxy_ip:5060   REGISTER
-    proxy_ip:5060 -> phone_ip:5060   100 Trying
+> This bio pool guarantees reclaiming progress for anonymous pages.
+> All avaliable bio in fs_bio_set may be borrowed by writeback which may
+> never ends, because disk too slow or broken. I have seen this situation in
+> real life in system where was a lot of bio requests to a loop device which
+> laying on top of special fuse-based filesystem.
 
-The newer Cisco IP phones, however, use a randomly chosen high source
-port for the SIP request but expect the response on port 5060:
+Hmm, perhaps, I'm not at all sure.
 
-    phone_ip:49173 -> proxy_ip:5060  REGISTER
-    proxy_ip:5060 -> phone_ip:5060   100 Trying
+I don't particularly want to fragment off yet another pool if it's
+not the right approach.  Or maybe it's loop or fuse which should
+have the pool, rather than swap.
 
-Standard Linux NAT, with or without nf_nat_sip, will send the reply back
-to port 49173, not 5060:
+If the disk is slow, I'd expect us to be okay; but if it's not
+responding at all, then yes, those mempools will remain exhausted.
+You're imagining swap going to a more reliable disk, but it's being
+starved by the unresponding disk, so deserves a separate pool?
 
-    phone_ip:49173 -> proxy_ip:5060  REGISTER
-    proxy_ip:5060 -> phone_ip:49173  100 Trying
+Let's Cc Mel and Jens, who will each have plenty of experience of
+running out of bios/mempools, and the proper way to avoid or accept it.
 
-But the phone is not listening on 49173, so it will never see the reply.
+(Note that BIO_POOL_SIZE is only 2 nowadays: when mempools were
+first introduced, indeed they were sized larger; but once we found so
+much memory disappearing into them, they got cut down to the minimum
+needed for forward progress - I forget why that's 2 not 1).
 
-This patch modifies nf_*_sip to work around this quirk by extracting
-the SIP response port from the Via: header, iff the source IP in the
-packet header matches the source IP in the SIP request.
+Hugh
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>
----
-
-
-Baseline: git://1984.lsi.us.es/nf-next
-
-v3->v4 changes:
-
-Fix patch context and APIs to match the current Linux tree.  These
-changes are from OpenWRT (Gabor?) and David W.
-
-v4 was tested with Cisco 7945 (high UDP destination port) and Snom m9
-(normal "symmetric" UDP destination port), both on IPv4 only.
-
-I've been running a recent OpenWRT port of this patch (Attitude Adjustment
-release, 3.3 kernel) for ~2mo, with both phones as clients.
-
-
- include/linux/netfilter/nf_conntrack_sip.h |    3 +++
- net/netfilter/nf_conntrack_sip.c           |   17 +++++++++++++++++
- net/netfilter/nf_nat_sip.c                 |   27 ++++++++++++++++++++++++---
- 3 files changed, 44 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/netfilter/nf_conntrack_sip.h b/include/linux/netfilter/nf_conntrack_sip.h
-index 387bdd0..ba7f571 100644
---- a/include/linux/netfilter/nf_conntrack_sip.h
-+++ b/include/linux/netfilter/nf_conntrack_sip.h
-@@ -4,12 +4,15 @@
- 
- #include <net/netfilter/nf_conntrack_expect.h>
- 
-+#include <linux/types.h>
-+
- #define SIP_PORT	5060
- #define SIP_TIMEOUT	3600
- 
- struct nf_ct_sip_master {
- 	unsigned int	register_cseq;
- 	unsigned int	invite_cseq;
-+	__be16		forced_dport;
- };
- 
- enum sip_expectation_classes {
-diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
-index df8f4f2..72a67bb 100644
---- a/net/netfilter/nf_conntrack_sip.c
-+++ b/net/netfilter/nf_conntrack_sip.c
-@@ -1440,8 +1440,25 @@ static int process_sip_request(struct sk_buff *skb, unsigned int protoff,
- {
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
-+	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
-+	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
- 	unsigned int matchoff, matchlen;
- 	unsigned int cseq, i;
-+	union nf_inet_addr addr;
-+	__be16 port;
-+
-+	/* Many Cisco IP phones use a high source port for SIP requests, but
-+	 * listen for the response on port 5060.  If we are the local
-+	 * router for one of these phones, save the port number from the
-+	 * Via: header so that nf_nat_sip can redirect the responses to
-+	 * the correct port.
-+	 */
-+	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
-+				    SIP_HDR_VIA_UDP, NULL, &matchoff,
-+				    &matchlen, &addr, &port) > 0 &&
-+	    port != ct->tuplehash[dir].tuple.src.u.udp.port &&
-+	    nf_inet_addr_cmp(&addr, &ct->tuplehash[dir].tuple.src.u3))
-+		ct_sip_info->forced_dport = port;
- 
- 	for (i = 0; i < ARRAY_SIZE(sip_handlers); i++) {
- 		const struct sip_handler *handler;
-diff --git a/net/netfilter/nf_nat_sip.c b/net/netfilter/nf_nat_sip.c
-index 16303c7..5951146e 100644
---- a/net/netfilter/nf_nat_sip.c
-+++ b/net/netfilter/nf_nat_sip.c
-@@ -95,6 +95,7 @@ static int map_addr(struct sk_buff *skb, unsigned int protoff,
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
-+	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
- 	char buffer[INET6_ADDRSTRLEN + sizeof("[]:nnnnn")];
- 	unsigned int buflen;
- 	union nf_inet_addr newaddr;
-@@ -107,7 +108,8 @@ static int map_addr(struct sk_buff *skb, unsigned int protoff,
- 	} else if (nf_inet_addr_cmp(&ct->tuplehash[dir].tuple.dst.u3, addr) &&
- 		   ct->tuplehash[dir].tuple.dst.u.udp.port == port) {
- 		newaddr = ct->tuplehash[!dir].tuple.src.u3;
--		newport = ct->tuplehash[!dir].tuple.src.u.udp.port;
-+		newport = ct_sip_info->forced_dport ? :
-+			  ct->tuplehash[!dir].tuple.src.u.udp.port;
- 	} else
- 		return 1;
- 
-@@ -144,6 +146,7 @@ static unsigned int nf_nat_sip(struct sk_buff *skb, unsigned int protoff,
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
-+	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
- 	unsigned int coff, matchoff, matchlen;
- 	enum sip_header_types hdr;
- 	union nf_inet_addr addr;
-@@ -258,6 +261,21 @@ next:
- 	    !map_sip_addr(skb, protoff, dataoff, dptr, datalen, SIP_HDR_TO))
- 		return NF_DROP;
- 
-+	/* Mangle destination port for Cisco phones, then fix up checksums */
-+	if (dir == IP_CT_DIR_REPLY && ct_sip_info->forced_dport) {
-+		struct udphdr *uh;
-+
-+		if (!skb_make_writable(skb, skb->len))
-+			return NF_DROP;
-+
-+		uh = (void *)skb->data + protoff;
-+		uh->dest = ct_sip_info->forced_dport;
-+
-+		if (!nf_nat_mangle_udp_packet(skb, ct, ctinfo, protoff,
-+					      0, 0, NULL, 0))
-+			return NF_DROP;
-+	}
-+
- 	return NF_ACCEPT;
- }
- 
-@@ -311,8 +329,10 @@ static unsigned int nf_nat_sip_expect(struct sk_buff *skb, unsigned int protoff,
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
-+	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
- 	union nf_inet_addr newaddr;
- 	u_int16_t port;
-+	__be16 srcport;
- 	char buffer[INET6_ADDRSTRLEN + sizeof("[]:nnnnn")];
- 	unsigned int buflen;
- 
-@@ -326,8 +346,9 @@ static unsigned int nf_nat_sip_expect(struct sk_buff *skb, unsigned int protoff,
- 	/* If the signalling port matches the connection's source port in the
- 	 * original direction, try to use the destination port in the opposite
- 	 * direction. */
--	if (exp->tuple.dst.u.udp.port ==
--	    ct->tuplehash[dir].tuple.src.u.udp.port)
-+	srcport = ct_sip_info->forced_dport ? :
-+		  ct->tuplehash[dir].tuple.src.u.udp.port;
-+	if (exp->tuple.dst.u.udp.port == srcport)
- 		port = ntohs(ct->tuplehash[!dir].tuple.dst.u.udp.port);
- 	else
- 		port = ntohs(exp->tuple.dst.u.udp.port);
--- 
-1.7.5.4
-
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/page_io.c |   13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/page_io.c b/mm/page_io.c
+> index 78eee32..699f85e 100644
+> --- a/mm/page_io.c
+> +++ b/mm/page_io.c
+> @@ -22,12 +22,14 @@
+>  #include <linux/frontswap.h>
+>  #include <asm/pgtable.h>
+>  
+> +static struct bio_set *swap_bio_set;
+> +
+>  static struct bio *get_swap_bio(gfp_t gfp_flags,
+>  				struct page *page, bio_end_io_t end_io)
+>  {
+>  	struct bio *bio;
+>  
+> -	bio = bio_alloc(gfp_flags, 1);
+> +	bio = bio_alloc_bioset(gfp_flags, 1, swap_bio_set);
+>  	if (bio) {
+>  		bio->bi_sector = map_swap_page(page, &bio->bi_bdev);
+>  		bio->bi_sector <<= PAGE_SHIFT - 9;
+> @@ -290,3 +292,12 @@ int swap_set_page_dirty(struct page *page)
+>  		return __set_page_dirty_no_writeback(page);
+>  	}
+>  }
+> +
+> +static int __init swap_bio_init(void)
+> +{
+> +	swap_bio_set = bioset_create(SWAP_CLUSTER_MAX, 0);
+> +	if (!swap_bio_set)
+> +		panic("can't allocate swap_bio_set\n");
+> +	return 0;
+> +}
+> +late_initcall(swap_bio_init);
