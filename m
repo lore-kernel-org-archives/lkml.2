@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab2LRMIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 07:08:45 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:47175 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab2LRMIn (ORCPT
+	id S1754763Ab2LRMKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 07:10:31 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12122 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab2LRMKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 07:08:43 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        tglx@linutronix.de, nico@linaro.org, will.deacon@arm.com,
-        marc.zyngier@arm.com, john.stultz@linaro.org,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [RFC PATCH 5/5] ARM: Add generic timer broadcast support
-Date: Tue, 18 Dec 2012 12:06:58 +0000
-Message-Id: <1355832418-31692-6-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
-References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
-X-OriginalArrivalTime: 18 Dec 2012 12:08:23.0437 (UTC) FILETIME=[60AAC3D0:01CDDD18]
-X-MC-Unique: 112121812082500401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 18 Dec 2012 07:10:30 -0500
+Date: Tue, 18 Dec 2012 13:10:22 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Uwe =?ISO-8859-1?B?S2xlaW5lLUv2bmln?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] at24: make module parameters changeable via sysfs
+Message-ID: <20121218131022.3a216b3b@endymion.delvare>
+In-Reply-To: <20121218115926.GD2612@pengutronix.de>
+References: <1347443012-21302-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	<20120914102536.1ebd248d@endymion.delvare>
+	<20121218125315.5adb1fef@endymion.delvare>
+	<20121218115926.GD2612@pengutronix.de>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qBIC8lX2018321
 
-Implement timer_broadcast for the arm architecture, allowing for the use
-of clock_event_device_drivers decoupled from the timer tick broadcast
-mechanism.
+On Tue, 18 Dec 2012 12:59:26 +0100, Wolfram Sang wrote:
+> 
+> > I reviewed this patch 3 months ago and did not hear back. Are you going
+> > to update this patch and resubmit, or should I just drop it?
+> 
+> Uwe is on holiday. I'll take care about it if the need is still there...
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
----
- arch/arm/Kconfig      |    1 +
- arch/arm/kernel/smp.c |    3 +--
- 2 files changed, 2 insertions(+), 2 deletions(-)
+The need was Uwe's originally, so we might as well wait for his return.
+Nothing urgent here.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 9759fec..d28a899 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -4,6 +4,7 @@ config ARM
- 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-+	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select CPU_PM if (SUSPEND || CPU_IDLE)
- 	select DCACHE_WORD_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && !CPU_BIG_ENDIAN
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 59bf6d5..ba1dc4a 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -467,7 +467,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
-  */
- static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
- 
--static void smp_timer_broadcast(const struct cpumask *mask)
-+void tick_broadcast(const struct cpumask *mask)
- {
- 	smp_cross_call(mask, IPI_TIMER);
- }
-@@ -512,7 +512,6 @@ static void __cpuinit percpu_timer_setup(void)
- 	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
- 
- 	evt->cpumask = cpumask_of(cpu);
--	evt->broadcast = smp_timer_broadcast;
- 
- 	if (!lt_ops || lt_ops->setup(evt))
- 		broadcast_timer_setup(evt);
 -- 
-1.7.0.4
-
-
+Jean Delvare
