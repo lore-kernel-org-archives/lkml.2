@@ -1,159 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab2LRUSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 15:18:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755347Ab2LRUSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 15:18:17 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, aquini@redhat.com,
-        mst@redhat.com, amit.shah@redhat.com, agl@us.ibm.com
-Subject: [RFC 2/2] virtio_balloon: add auto-ballooning support
-Date: Tue, 18 Dec 2012 18:17:30 -0200
-Message-Id: <1355861850-2702-3-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
-References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
+	id S1755362Ab2LRUTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 15:19:32 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55304 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab2LRUTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 15:19:31 -0500
+Date: Tue, 18 Dec 2012 15:19:01 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Daniel Berrange <berrange@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: +
+ core_pattern-set-core-helpers-root-and-namespace-to-crashing-process .patch
+ added to -mm tree
+Message-ID: <20121218201900.GA10059@hmsreliant.think-freely.org>
+References: <20121217123428.GA1957@redhat.com>
+ <20121217150559.GD25322@hmsreliant.think-freely.org>
+ <20121217160408.GA20166@redhat.com>
+ <20121217183925.GE25322@hmsreliant.think-freely.org>
+ <20121218200604.GA28834@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121218200604.GA28834@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The auto-ballooning feature automatically performs balloon inflate or
-deflate based on host and guest memory pressure. This can help to
-avoid swapping or worse in both, host and guest.
+On Tue, Dec 18, 2012 at 09:06:04PM +0100, Oleg Nesterov wrote:
+> On 12/17, Neil Horman wrote:
+> >
+> > On Mon, Dec 17, 2012 at 05:04:08PM +0100, Oleg Nesterov wrote:
+> > >
+> > > > Is there a way to switch all namespaces, except for the pid
+> > > > namespace?
+> > >
+> > > Which exactly namespaces you want to change?
+> > >
+> > Ideally, I want the pipe reader process to execute in the same namespaces that
+> > the crashing process executed in (i.e. the pipe reader should execute as though
+> > the crashing process forked it).
+> 
+> Yes, and we probably want to change pid_ns as well. But afaics currently
+> this is not possible, even setns can't do this.
+> 
+> I am starting to think that in this case, perhaps, do_coredump() should
+> not use call_usermode_helper() at all. Perhaps we can do clone(CLONE_VM) +
+> commit_creds/restore_root/etc + kernel_execve.
+> 
+Yeah, I was comming to this same conclusion last night as well.  I'd rather keep
+using the call_usermode_helper solution if at all possible, but perhaps we can
+integrate a clone path into it.
 
-Auto-ballooning has a host and a guest part. The host performs
-automatic inflate by requesting the guest to inflate its balloon
-when the host is facing memory pressure. The guest performs
-automatic deflate when it's facing memory pressure itself. It's
-expected that auto-inflate and auto-deflate will balance each
-other over time.
+> > > To be honest, I do not understand this patch at all. It seems that
+> > > you need to do something like sys_setns(). But if we do this, then
+> > > why we can't make core_pattern per-namespace?
+> > >
+> > That actually would make sense, although we can't really use setns directly, as
+> > I don't think we want to open file descriptors to do this manipulation in the
+> > kernel.
+> 
+> Yes, yes, sure. But this is solveable. We do not really need to open
+> the files in /proc, we could use proc_ns_operations->install() directly.
+> Although this is not pretty.
+> 
+Its not pretty, no.  If we use the above clone solution however, we can avoid
+this entirely.
 
-This commit implements the guest side of auto-ballooning.
+> > Perhaps its best just to restrict this patch to adjusting the root fs location
+> > for the chroot case.
+> 
+> Probably... at least for the start.
+> 
+> BTW. Of course this is subjective, but personally I think that "||"
+> looks strange. Perhaps it would be better to add something like
+> --croot argument?
+> 
+The || is ambiguous with its simmilarity to a shell 'or' command, but I don't
+think the --croot argument is much better on that front, as that then becomes
+ambiguous with arguments supplied to the pipe reader directly.  The token should
+be leading the pipe_reader string in core_pattern to indicate a change in
+environment independent of the executable path.  Perhaps |^ or something
+simmilar?
 
-To perform automatic deflate, the virtio_balloon driver registers
-a shrinker callback, which will try to deflate the guest's balloon
-on guest memory pressure just like if it were a cache. The shrinker
-callback is only registered if the host supports the
-VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
+Either way, Andrew, could you please drop this patch?  Olegs comments I think
+make it pretty clear I've got some more work to do on this.
 
-FIXMEs
-
- o the guest kernel seems to spin when the host is performing a long
-   auto-inflate
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
- drivers/virtio/virtio_balloon.c     | 54 +++++++++++++++++++++++++++++++++++++
- include/uapi/linux/virtio_balloon.h |  1 +
- 2 files changed, 55 insertions(+)
-
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 877e695..12fb70e 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -71,6 +71,9 @@ struct virtio_balloon
- 	/* Memory statistics */
- 	int need_stats_update;
- 	struct virtio_balloon_stat stats[VIRTIO_BALLOON_S_NR];
-+
-+	/* Memory shrinker */
-+	struct shrinker shrinker;
- };
- 
- static struct virtio_device_id id_table[] = {
-@@ -286,6 +289,46 @@ static void update_balloon_size(struct virtio_balloon *vb)
- 			      &actual, sizeof(actual));
- }
- 
-+static unsigned long balloon_get_nr_pages(const struct virtio_balloon *vb)
-+{
-+	return vb->num_pages / VIRTIO_BALLOON_PAGES_PER_PAGE;
-+}
-+
-+static int balloon_shrinker(struct shrinker *shrinker,struct shrink_control *sc)
-+{
-+	unsigned int nr_pages, new_target;
-+	struct virtio_balloon *vb;
-+
-+	vb = container_of(shrinker, struct virtio_balloon, shrinker);
-+	if (!mutex_trylock(&vb->balloon_lock)) {
-+		return -1;
-+	}
-+
-+	nr_pages = balloon_get_nr_pages(vb);
-+	if (!sc->nr_to_scan || !nr_pages) {
-+		goto out;
-+	}
-+
-+	/*
-+	 * If the current balloon size is greater than the number of
-+	 * pages being reclaimed by the kernel, deflate only the needed
-+	 * amount. Otherwise deflate everything we have.
-+	 */
-+	if (nr_pages > sc->nr_to_scan) {
-+		new_target = nr_pages - sc->nr_to_scan;
-+	} else {
-+		new_target = 0;
-+	}
-+
-+	leak_balloon(vb, new_target);
-+	update_balloon_size(vb);
-+	nr_pages = balloon_get_nr_pages(vb);
-+
-+out:
-+	mutex_unlock(&vb->balloon_lock);
-+	return nr_pages;
-+}
-+
- static int balloon(void *_vballoon)
- {
- 	struct virtio_balloon *vb = _vballoon;
-@@ -472,6 +515,13 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 		goto out_del_vqs;
- 	}
- 
-+	memset(&vb->shrinker, 0, sizeof(vb->shrinker));
-+	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_AUTO_BALLOON)) {
-+		vb->shrinker.shrink = balloon_shrinker;
-+		vb->shrinker.seeks = DEFAULT_SEEKS;
-+		register_shrinker(&vb->shrinker);
-+	}
-+
- 	return 0;
- 
- out_del_vqs:
-@@ -488,6 +538,9 @@ out:
- 
- static void remove_common(struct virtio_balloon *vb)
- {
-+	if (vb->shrinker.shrink)
-+		unregister_shrinker(&vb->shrinker);
-+
- 	/* There might be pages left in the balloon: free them. */
- 	while (vb->num_pages)
- 		leak_balloon(vb, vb->num_pages);
-@@ -542,6 +595,7 @@ static int virtballoon_restore(struct virtio_device *vdev)
- static unsigned int features[] = {
- 	VIRTIO_BALLOON_F_MUST_TELL_HOST,
- 	VIRTIO_BALLOON_F_STATS_VQ,
-+	VIRTIO_BALLOON_F_AUTO_BALLOON,
- };
- 
- static struct virtio_driver virtio_balloon_driver = {
-diff --git a/include/uapi/linux/virtio_balloon.h b/include/uapi/linux/virtio_balloon.h
-index 652dc8b..3764cac 100644
---- a/include/uapi/linux/virtio_balloon.h
-+++ b/include/uapi/linux/virtio_balloon.h
-@@ -31,6 +31,7 @@
- /* The feature bitmap for virtio balloon */
- #define VIRTIO_BALLOON_F_MUST_TELL_HOST	0 /* Tell before reclaiming pages */
- #define VIRTIO_BALLOON_F_STATS_VQ	1 /* Memory Stats virtqueue */
-+#define VIRTIO_BALLOON_F_AUTO_BALLOON	2 /* Automatic ballooning */
- 
- /* Size of a PFN in the balloon interface. */
- #define VIRTIO_BALLOON_PFN_SHIFT 12
--- 
-1.8.0
+Thanks!
+Neil
 
