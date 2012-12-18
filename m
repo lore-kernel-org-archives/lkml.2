@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab2LRUBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 15:01:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33954 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab2LRUBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 15:01:13 -0500
-Date: Tue, 18 Dec 2012 12:01:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
-Subject: Re: [Patch][resend] SGI-XP: Handle non-fatal traps.
-Message-Id: <20121218120111.00d0adaf.akpm@linux-foundation.org>
-In-Reply-To: <20121218175243.GP3452@sgi.com>
-References: <20121218175243.GP3452@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754958Ab2LRUGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 15:06:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60781 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754877Ab2LRUGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 15:06:01 -0500
+Date: Tue, 18 Dec 2012 21:06:04 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Daniel Berrange <berrange@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: +
+	core_pattern-set-core-helpers-root-and-namespace-to-crashing-process
+	.patch added to -mm tree
+Message-ID: <20121218200604.GA28834@redhat.com>
+References: <20121217123428.GA1957@redhat.com> <20121217150559.GD25322@hmsreliant.think-freely.org> <20121217160408.GA20166@redhat.com> <20121217183925.GE25322@hmsreliant.think-freely.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217183925.GE25322@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>, Linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
-
-It's stable@vger.kernel.org.
-
-On Tue, 18 Dec 2012 11:52:43 -0600
-Robin Holt <holt@sgi.com> wrote:
-
-> We found a user code which was raising a divide-by-zero trap.  That trap
-> would lead to XPC connections between system-partitions being torn down
-> due to the die_chain notifier callouts it received.
-> 
-> This also revealed a different issue where multiple callers into
-> xpc_die_deactivate() would all attempt to do the disconnect in parallel
-> which would sometimes lock up but often overwhelm the console on very
-> large machines as each would print at least one line of output at the
-> end of the deactivate.
-> 
-> I reviewed all the users of the die_chain notifier and changed the code
-> to ignore the notifier callouts for reasons which will not actually lead
-> to a system to continue on to call die().
+On 12/17, Neil Horman wrote:
 >
-> ...
->
-> --- linux.orig/drivers/misc/sgi-xp/xpc_main.c
-> +++ linux/drivers/misc/sgi-xp/xpc_main.c
-> @@ -53,6 +53,8 @@
->  #include <linux/kthread.h>
->  #include "xpc.h"
->  
-> +#include <asm/traps.h>
+> On Mon, Dec 17, 2012 at 05:04:08PM +0100, Oleg Nesterov wrote:
+> >
+> > > Is there a way to switch all namespaces, except for the pid
+> > > namespace?
+> >
+> > Which exactly namespaces you want to change?
+> >
+> Ideally, I want the pipe reader process to execute in the same namespaces that
+> the crashing process executed in (i.e. the pipe reader should execute as though
+> the crashing process forked it).
 
-You just broke ia64 ;)
+Yes, and we probably want to change pid_ns as well. But afaics currently
+this is not possible, even setns can't do this.
 
-As there was no cleaner alternative apparent to me, I did this:
+I am starting to think that in this case, perhaps, do_coredump() should
+not use call_usermode_helper() at all. Perhaps we can do clone(CLONE_VM) +
+commit_creds/restore_root/etc + kernel_execve.
 
---- a/drivers/misc/sgi-xp/xpc_main.c~sgi-xp-handle-non-fatal-traps-fix
-+++ a/drivers/misc/sgi-xp/xpc_main.c
-@@ -53,7 +53,9 @@
- #include <linux/kthread.h>
- #include "xpc.h"
- 
-+#ifdef CONFIG_X86_64
- #include <asm/traps.h>
-+#endif
- 
- /* define two XPC debug device structures to be used with dev_dbg() et al */
- 
+> > To be honest, I do not understand this patch at all. It seems that
+> > you need to do something like sys_setns(). But if we do this, then
+> > why we can't make core_pattern per-namespace?
+> >
+> That actually would make sense, although we can't really use setns directly, as
+> I don't think we want to open file descriptors to do this manipulation in the
+> kernel.
 
-But I worry that the change apparently hasn't been runtime tested on
-ia64?
+Yes, yes, sure. But this is solveable. We do not really need to open
+the files in /proc, we could use proc_ns_operations->install() directly.
+Although this is not pretty.
 
+> Perhaps its best just to restrict this patch to adjusting the root fs location
+> for the chroot case.
+
+Probably... at least for the start.
+
+BTW. Of course this is subjective, but personally I think that "||"
+looks strange. Perhaps it would be better to add something like
+--croot argument?
+
+Oleg.
 
