@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab2LRCnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 21:43:07 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:38217 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab2LRCnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 21:43:06 -0500
-X-Greylist: delayed 5543 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 21:43:06 EST
+	id S1754274Ab2LRCoZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 21:44:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44021 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753989Ab2LRCoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 21:44:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,305,1355126400"; 
+   d="scan'208";a="235397195"
+Date: Tue, 18 Dec 2012 10:44:48 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        alek.du@intel.com
+Subject: Re: [PATCH 1/3] timekeeping: Add persistent_clock_exist flag
+Message-ID: <20121218024448.GB6196@feng-snb>
+References: <50CA7EE4.3000306@linaro.org>
+ <20121214013725.GA11276@feng-snb>
+ <50CA8837.5010800@linaro.org>
+ <20121214023826.GA31613@obsidianresearch.com>
+ <20121214031330.GC11276@feng-snb>
+ <20121214041024.GA1040@obsidianresearch.com>
+ <50CB98AA.5090600@linaro.org>
+ <20121214215651.GA31384@obsidianresearch.com>
+ <20121217161433.GB4762@feng-snb>
+ <20121217182202.GA10368@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <20121218015705.GH4939@ZenIV.linux.org.uk>
-References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
- <20121218015705.GH4939@ZenIV.linux.org.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 17 Dec 2012 18:42:44 -0800
-Message-ID: <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
-Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121217182202.GA10368@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 5:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Dec 17, 2012 at 05:10:21PM -0800, Andy Lutomirski wrote:
->> I want to change inode->i_flags access to be atomic -- there are some
->> locking oddities right now, I think, and I want to use a new inode
->> flag to signal mtime updates from page_mkwrite.  The problem is that
->> i_flags is an unsigned int, and making it an unsigned long seems like
->> a waste, but there aren't any u32 atomic bitops.
->
-> ... and atomic accesses cost more.  A lot more on some architectures.
-> FWIW, atomic_t *is* 32bit on 32bit architectures, which still doesn't
-> make it a good idea.
+On Mon, Dec 17, 2012 at 11:22:02AM -0700, Jason Gunthorpe wrote:
+> On Tue, Dec 18, 2012 at 12:14:33AM +0800, Feng Tang wrote:
+> 
+> > > Sure, but my view on this is that it has nothing to do with
+> > > read_persistent_clock. If the RTC driver can run with IRQs off is a
+> > > property of the RTC driver and RTC hardware - it has nothing to do
+> > > with the platform. ARM platforms will vary on a machine by machine
+> > > basis. The rtc-mv driver used on my ARM system is perfectly
+> > > re-entrant, lots of rtc on SOC drivers will be the same.
+> > > 
+> > > If this is the only thing keeping you on read_persistent_clock, for
+> > > real RTCs, then how about a RTC_DEV_SAFE_READ flag (or whatever) in
+> > > rtc_device.flags?
+> > > 
+> > > Reserve read_persistent_clock for things like that very specialized
+> > > non-RTC ARM counter.
+> > 
+> > Yes, these non-RTC device is one reason for keeping read_persistent_clock,
+> > one other reason I can think of is the CONFIG_RTC_LIB is not always on by
+> > default for all Archs, and some platforms may chose to disable it on purpose. 
+> > When CONFIG_RTC_LIB is not set, we need the read_persistent_clock for
+> > time init/suspend/resume.
+> 
+> I thought your concern was the case where the RTC was turned on and
+> read_persistent_clock was also turned on. Having a flag in the RTC and
+> disabling read_persistent_clock for that situation would help you
+> avoid the double code path to the same hardware.
 
-Are atomic_set_mask and atomic_clear_mask as fast as set_bit and
-friends on all archs?
+No, it's not about my concern (actually I don't have concerns :), my 3
+patches are just some optimization).
 
-In any case, i_flags looks like it's rarely written, so I find it a
-bit hard to believe that making it atomic would hurt.  Isn't
-atomic_read equivalent to non-atomic reads everywhere?
+My point is the "driver/rtc" or "drivers/rtc/class.c" can't be ganrateeded
+to be built for all kernels, myself saw several cases, under which
+the read_persistent_clock is still needed.
 
-I want page_mkwrite to set a flag (without taking i_mutex) but *not*
-call file_update_time and then to have the writeback paths update the
-inode time.  (This, along with stable pages, is the major cause of
-long sleeps in my application.)  OTOH, maybe I should just use i_state
-and i_lock for this.
+If you want drivers/rtc code to take the priority, first thing you have
+to do is to make those codes always "obj-y=xxx.o"
 
+Thanks,
+Feng
 
---Andy
