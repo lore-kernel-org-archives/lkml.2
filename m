@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2LRR54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:57:56 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37383 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab2LRR5z (ORCPT
+	id S1754072Ab2LRR6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:58:07 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:43019 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab2LRR6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:57:55 -0500
+	Tue, 18 Dec 2012 12:58:04 -0500
 From: Fabio Baltieri <fabio.baltieri@gmail.com>
 To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
 Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
         Wolfgang Grandegger <wg@grandegger.com>,
         Oliver Hartkopp <socketcan@hartkopp.net>,
         Bernd Krumboeck <b.krumboeck@gmail.com>, linux-kernel@vger.kernel.org,
-        Bernd Krumboeck <krumboeck@universalnet.at>,
         Fabio Baltieri <fabio.baltieri@gmail.com>
-Subject: [PATCH 10/10] can: usb_8dev: add LED trigger support
-Date: Tue, 18 Dec 2012 18:51:04 +0100
-Message-Id: <1355853064-18144-11-git-send-email-fabio.baltieri@gmail.com>
+Subject: [PATCH 05/10] can: at91_can: add LED trigger support
+Date: Tue, 18 Dec 2012 18:50:59 +0100
+Message-Id: <1355853064-18144-6-git-send-email-fabio.baltieri@gmail.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
 References: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
@@ -25,77 +24,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernd Krumboeck <b.krumboeck@gmail.com>
-
-Add support for canbus activity led indicators on usb_8dev devices by
+Add support for canbus activity led indicators on at91_can devices by
 calling appropriate can_led functions.
 
 These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
 otherwise.
 
-Signed-off-by: Bernd Krumboeck <krumboeck@universalnet.at>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 ---
- drivers/net/can/usb/usb_8dev.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/can/at91_can.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/net/can/usb/usb_8dev.c b/drivers/net/can/usb/usb_8dev.c
-index 660b4f87..b4bb1a6 100644
---- a/drivers/net/can/usb/usb_8dev.c
-+++ b/drivers/net/can/usb/usb_8dev.c
-@@ -33,6 +33,7 @@
- #include <linux/can.h>
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index 81baefd..44f3637 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -37,6 +37,7 @@
+ 
  #include <linux/can/dev.h>
  #include <linux/can/error.h>
 +#include <linux/can/led.h>
  
- /* driver constants */
- #define MAX_RX_URBS			10
-@@ -504,6 +505,8 @@ static void usb_8dev_rx_can_msg(struct usb_8dev_priv *priv,
+ #define AT91_MB_MASK(i)		((1 << (i)) - 1)
  
- 		stats->rx_packets++;
- 		stats->rx_bytes += cf->can_dlc;
+@@ -641,6 +642,8 @@ static void at91_read_msg(struct net_device *dev, unsigned int mb)
+ 
+ 	stats->rx_packets++;
+ 	stats->rx_bytes += cf->can_dlc;
 +
-+		can_led_event(priv->netdev, CAN_LED_EVENT_RX);
- 	} else {
- 		netdev_warn(priv->netdev, "frame type %d unknown",
- 			 msg->type);
-@@ -606,6 +609,8 @@ static void usb_8dev_write_bulk_callback(struct urb *urb)
- 
- 	can_get_echo_skb(netdev, context->echo_index);
- 
-+	can_led_event(netdev, CAN_LED_EVENT_TX);
-+
- 	/* Release context */
- 	context->echo_index = MAX_TX_URBS;
- 
-@@ -830,6 +835,8 @@ static int usb_8dev_open(struct net_device *netdev)
- 	if (err)
- 		return err;
- 
-+	can_led_event(netdev, CAN_LED_EVENT_OPEN);
-+
- 	/* finally start device */
- 	err = usb_8dev_start(priv);
- 	if (err) {
-@@ -882,6 +889,8 @@ static int usb_8dev_close(struct net_device *netdev)
- 
- 	close_candev(netdev);
- 
-+	can_led_event(netdev, CAN_LED_EVENT_STOP);
-+
- 	return err;
++	can_led_event(dev, CAN_LED_EVENT_RX);
  }
  
-@@ -990,6 +999,8 @@ static int usb_8dev_probe(struct usb_interface *intf,
- 			 (version>>8) & 0xff, version & 0xff);
+ /**
+@@ -875,6 +878,7 @@ static void at91_irq_tx(struct net_device *dev, u32 reg_sr)
+ 			/* _NOTE_: subtract AT91_MB_TX_FIRST offset from mb! */
+ 			can_get_echo_skb(dev, mb - get_mb_tx_first(priv));
+ 			dev->stats.tx_packets++;
++			can_led_event(dev, CAN_LED_EVENT_TX);
+ 		}
  	}
  
-+	devm_can_led_init(netdev);
+@@ -1128,6 +1132,8 @@ static int at91_open(struct net_device *dev)
+ 		goto out_close;
+ 	}
+ 
++	can_led_event(dev, CAN_LED_EVENT_OPEN);
++
+ 	/* start chip and queuing */
+ 	at91_chip_start(dev);
+ 	napi_enable(&priv->napi);
+@@ -1159,6 +1165,8 @@ static int at91_close(struct net_device *dev)
+ 
+ 	close_candev(dev);
+ 
++	can_led_event(dev, CAN_LED_EVENT_STOP);
 +
  	return 0;
+ }
  
- cleanup_cmd_msg_buffer:
+@@ -1321,6 +1329,8 @@ static int at91_can_probe(struct platform_device *pdev)
+ 		goto exit_free;
+ 	}
+ 
++	devm_can_led_init(dev);
++
+ 	dev_info(&pdev->dev, "device registered (reg_base=%p, irq=%d)\n",
+ 		 priv->reg_base, dev->irq);
+ 
 -- 
 1.7.12.1
 
