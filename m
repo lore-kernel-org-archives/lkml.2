@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2LRToM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:44:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39884 "EHLO mx1.redhat.com"
+	id S1754420Ab2LRTuf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:50:35 -0500
+Received: from plane.gmane.org ([80.91.229.3]:50245 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753619Ab2LRToL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:44:11 -0500
-Date: Tue, 18 Dec 2012 20:43:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
-	offline from atomic context
-Message-ID: <20121218194357.GA27972@redhat.com>
-References: <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <20121213161709.GA19125@redhat.com> <50CA0317.90501@linux.vnet.ibm.com> <20121214180345.GA22024@redhat.com> <50D09180.4080703@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D09180.4080703@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751357Ab2LRTue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:50:34 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: rh <richard_hubbe11@lavabit.com>
+Subject: Re: FYI, nouveau nv17 stopped working in 3.7
+Date: Tue, 18 Dec 2012 11:50:19 -0800
+Message-ID: <20121218115019.c75bb9d1dea07bbf93319b22@lavabit.com>
+References: <20121213140229.d47b2a1584ef1c59ed76bc0c@lavabit.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip70-185-179-140.sb.sd.cox.net
+User-Agent: dsodnetnin
+X-Mailer: EZnn0.37p
+X-Newsreader: EZnn0.37p
+X-Gmane-NNTP-Posting-Host: EZnn0.37p
+Original-Received: from slem by 1.1 with local
+X-No-Archive: yes
+Archive: no
+X-Archive: expiry=11
+X-Archive: encrypt
+X-Operating-System: Barebones_6.1
+X-Gmane-NNTP-Posting-Host: 192.168.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18, Srivatsa S. Bhat wrote:
->
-> So now that we can't avoid disabling and enabling interrupts,
+On Thu, 13 Dec 2012 14:02:29 -0800
+rh <richard_hubbe11@lavabit.com> wrote:
 
-Still I think it would be better to not use local_irq_save/restore
-directly. And,
+> During boot, at the point when some graphics stuff happens, I lose the
+> screen. Graphics looks to be stuck somewhere. The system boots but
+> just can't see anything.  No console.
+> 
+> It's all fine in 3.6.7. Nothing jumped out from the boot log.
+> It may be that in my haste configuring the kernel with make oldconfig
+> I hit enter on one of the cases where new features default to "y".
+> 
 
-> I was
-> wondering if we could exploit this to avoid the smp_mb()..
->
-> Maybe this is a stupid question, but I'll shoot it anyway...
-> Does local_irq_disable()/enable provide any ordering guarantees by any chance?
+Seems to be a regression, the symptoms described here apply to what
+I see (...or don't see).
 
-Oh, I do not know.
-
-But please look at the comment above prepare_to_wait(). It assumes
-that even spin_unlock_irqrestore() is not the full barrier.
-
-In any case. get_online_cpus_atomic() has to use irq_restore, not
-irq_enable. And _restore does nothing "special" if irqs were already
-disabled, so I think we can't rely on sti.
-
-> I tried thinking about other ways to avoid that smp_mb() in the reader,
-
-Just in case, I think there is no way to avoid mb() in _get (although
-perhaps it can be "implicit").
-
-The writer changes cpu_online_mask and drops the lock. We need to ensure
-that the reader sees the change in cpu_online_mask after _get returns.
-
-> but was unsuccessful. So if the above assumption is wrong, I guess we'll
-> just have to go with the version that uses synchronize_sched() at the
-> writer-side.
-
-In this case we can also convert get_online_cpus() to use percpu_rwsem
-and avoid mutex_lock(&cpu_hotplug.lock), but this is minor I guess.
-I do not think get_online_cpus() is called too often.
-
-Oleg.
+http://article.gmane.org/gmane.linux.kernel/1269631
 
