@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab2LRTjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:39:10 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:52794 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab2LRTjH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:39:07 -0500
-Message-ID: <1355859555.24188.6.camel@gitbox>
-Subject: Re: [PATCH RESEND 3/6] clk: exynos: Fix incorrect usage of
- IS_ERR_OR_NULL
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: kernel-janitors@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        Mike Turquette <mturquette@linaro.org>
-Date: Wed, 19 Dec 2012 08:39:15 +1300
-In-Reply-To: <1355857917.24188.3.camel@gitbox>
-References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
-	 <1355852048-23188-4-git-send-email-linux@prisktech.co.nz>
-	 <20121218183944.GH5032@mwanda> <1355856767.23479.3.camel@gitbox>
-	 <20121218190334.GK5032@mwanda> <1355857917.24188.3.camel@gitbox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754366Ab2LRToM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:44:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39884 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753619Ab2LRToL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:44:11 -0500
+Date: Tue, 18 Dec 2012 20:43:57 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121218194357.GA27972@redhat.com>
+References: <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <20121213161709.GA19125@redhat.com> <50CA0317.90501@linux.vnet.ibm.com> <20121214180345.GA22024@redhat.com> <50D09180.4080703@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D09180.4080703@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-19 at 08:11 +1300, Tony Prisk wrote:
-> On Tue, 2012-12-18 at 22:03 +0300, Dan Carpenter wrote:
-> > I don't care either way, but being different from the documentation
-> > is less bad than crashing which is what your patch does.  Please
-> > be more careful in the future.
-> > 
-> > regards,
-> > dan carpenter
-> 
-> Critism accepted.
-> 
-> Given that the driver depends on (PLAT_SAMSUNG || ARCH_MULTIPLATFORM),
-> and multiplatform select COMMON_CLK and PLAT_SAMSUNG is selected only by
-> ARCH_S3C64XX which has HAVE_CLK I didn't see a problem here.
-> 
-> Your point is still valid and I will sort it out with Mike first.
-> 
-> Regards
-> Tony P
+On 12/18, Srivatsa S. Bhat wrote:
+>
+> So now that we can't avoid disabling and enabling interrupts,
 
-Actually, I was wrong here - PLAT_SAMSUNG is selectable via
+Still I think it would be better to not use local_irq_save/restore
+directly. And,
 
-PLAT_S3C24XX || ARCH_S3C64XX || PLAT_S5P
+> I was
+> wondering if we could exploit this to avoid the smp_mb()..
+>
+> Maybe this is a stupid question, but I'll shoot it anyway...
+> Does local_irq_disable()/enable provide any ordering guarantees by any chance?
 
-but all these options (or the options that select them) seem to select a
-clock system as well, hence still no reason for a crash.
+Oh, I do not know.
 
-Regards
-Tony P
+But please look at the comment above prepare_to_wait(). It assumes
+that even spin_unlock_irqrestore() is not the full barrier.
+
+In any case. get_online_cpus_atomic() has to use irq_restore, not
+irq_enable. And _restore does nothing "special" if irqs were already
+disabled, so I think we can't rely on sti.
+
+> I tried thinking about other ways to avoid that smp_mb() in the reader,
+
+Just in case, I think there is no way to avoid mb() in _get (although
+perhaps it can be "implicit").
+
+The writer changes cpu_online_mask and drops the lock. We need to ensure
+that the reader sees the change in cpu_online_mask after _get returns.
+
+> but was unsuccessful. So if the above assumption is wrong, I guess we'll
+> just have to go with the version that uses synchronize_sched() at the
+> writer-side.
+
+In this case we can also convert get_online_cpus() to use percpu_rwsem
+and avoid mutex_lock(&cpu_hotplug.lock), but this is minor I guess.
+I do not think get_online_cpus() is called too often.
+
+Oleg.
 
