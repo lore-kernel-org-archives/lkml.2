@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab2LRHxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:53:39 -0500
+	id S1754457Ab2LRHx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:53:56 -0500
 Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41749 "EHLO
 	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab2LRHxf (ORCPT
+	with ESMTP id S1754309Ab2LRHxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:53:35 -0500
+	Tue, 18 Dec 2012 02:53:38 -0500
 X-Greylist: delayed 1593 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 02:53:30 EST
-Date: Tue, 18 Dec 2012 16:30:03 +0900
+Date: Tue, 18 Dec 2012 16:28:49 +0900
 From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 To: mtosatti@redhat.com, gleb@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] KVM: Make kvm_mmu_slot_remove_write_access() take
- mmu_lock by itself
-Message-Id: <20121218163003.0185affe.yoshikawa_takuya_b1@lab.ntt.co.jp>
+Subject: [PATCH 4/7] KVM: x86: Remove unused slot_bitmap from kvm_mmu_page
+Message-Id: <20121218162849.cc9d87e9.yoshikawa_takuya_b1@lab.ntt.co.jp>
 In-Reply-To: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
 References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -25,53 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Better to place mmu_lock handling and TLB flushing code together since
-this is a self-contained function.
+Not needed any more.
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 ---
- arch/x86/kvm/mmu.c |    3 +++
- arch/x86/kvm/x86.c |    5 +----
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ Documentation/virtual/kvm/mmu.txt |    7 -------
+ arch/x86/include/asm/kvm_host.h   |    5 -----
+ arch/x86/kvm/mmu.c                |   10 ----------
+ 3 files changed, 0 insertions(+), 22 deletions(-)
 
+diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+index fa5f1db..43fcb76 100644
+--- a/Documentation/virtual/kvm/mmu.txt
++++ b/Documentation/virtual/kvm/mmu.txt
+@@ -187,13 +187,6 @@ Shadow pages contain the following information:
+     perform a reverse map from a pte to a gfn. When role.direct is set, any
+     element of this array can be calculated from the gfn field when used, in
+     this case, the array of gfns is not allocated. See role.direct and gfn.
+-  slot_bitmap:
+-    A bitmap containing one bit per memory slot.  If the page contains a pte
+-    mapping a page from memory slot n, then bit n of slot_bitmap will be set
+-    (if a page is aliased among several slots, then it is not guaranteed that
+-    all slots will be marked).
+-    Used during dirty logging to avoid scanning a shadow page if none if its
+-    pages need tracking.
+   root_count:
+     A counter keeping track of how many hardware registers (guest cr3 or
+     pdptrs) are now pointing at the page.  While this counter is nonzero, the
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c431b33..f75e1fe 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -219,11 +219,6 @@ struct kvm_mmu_page {
+ 	u64 *spt;
+ 	/* hold the gfn of each spte inside spt */
+ 	gfn_t *gfns;
+-	/*
+-	 * One bit set per slot which has memory
+-	 * in this shadow page.
+-	 */
+-	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
+ 	bool unsync;
+ 	int root_count;          /* Currently serving as active root */
+ 	unsigned int unsync_children;
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index fc7d84a..b7a1235 100644
+index b4d4fd1..bb964b3 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -4199,6 +4199,8 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
- 	memslot = id_to_memslot(kvm->memslots, slot);
- 	last_gfn = memslot->base_gfn + memslot->npages - 1;
- 
-+	spin_lock(&kvm->mmu_lock);
-+
- 	for (i = PT_PAGE_TABLE_LEVEL;
- 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
- 		unsigned long *rmapp;
-@@ -4214,6 +4216,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
- 	}
- 
- 	kvm_flush_remote_tlbs(kvm);
-+	spin_unlock(&kvm->mmu_lock);
+@@ -1522,7 +1522,6 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+ 		sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache);
+ 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
+ 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
+-	bitmap_zero(sp->slot_bitmap, KVM_MEM_SLOTS_NUM);
+ 	sp->parent_ptes = 0;
+ 	mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+ 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
+@@ -2183,14 +2182,6 @@ int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
  }
+ EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page);
  
- void kvm_mmu_zap_all(struct kvm *kvm)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index d9d0f6b..aa183e9 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6900,11 +6900,8 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 	 * not be created until the end of the logging.
- 	 */
- 	if ((mem->flags & KVM_MEM_LOG_DIRTY_PAGES) &&
--	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES)) {
--		spin_lock(&kvm->mmu_lock);
-+	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES))
- 		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
--		spin_unlock(&kvm->mmu_lock);
--	}
- 	/*
- 	 * If memory slot is created, or moved, we need to clear all
- 	 * mmio sptes.
+-static void page_header_update_slot(struct kvm *kvm, void *pte, gfn_t gfn)
+-{
+-	int slot = memslot_id(kvm, gfn);
+-	struct kvm_mmu_page *sp = page_header(__pa(pte));
+-
+-	__set_bit(slot, sp->slot_bitmap);
+-}
+-
+ /*
+  * The function is based on mtrr_type_lookup() in
+  * arch/x86/kernel/cpu/mtrr/generic.c
+@@ -2497,7 +2488,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		++vcpu->kvm->stat.lpages;
+ 
+ 	if (is_shadow_present_pte(*sptep)) {
+-		page_header_update_slot(vcpu->kvm, sptep, gfn);
+ 		if (!was_rmapped) {
+ 			rmap_count = rmap_add(vcpu, sptep, gfn);
+ 			if (rmap_count > RMAP_RECYCLE_THRESHOLD)
 -- 
 1.7.5.4
 
