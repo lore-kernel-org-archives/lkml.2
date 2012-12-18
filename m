@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2LRHrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:47:14 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47788 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2LRHrN (ORCPT
+	id S1754217Ab2LRHri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:47:38 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:56757 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab2LRHrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:47:13 -0500
-Date: Tue, 18 Dec 2012 08:47:11 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, haojian.zhuang@gmail.com
-Subject: Re: common clock framwork: clk_set_rate issue
-Message-ID: <20121218074711.GU26326@pengutronix.de>
-References: <CADApbej+f9P1sgLMR8_McoCCSLDjJt_qitWdNd8X1v6PwZqsnQ@mail.gmail.com>
- <20121217201945.GA19651@pengutronix.de>
- <CADApbej17udzpStNeY+tsSkeOy_Fv2+o+zKs4zBLV8+ST4DWTg@mail.gmail.com>
+	Tue, 18 Dec 2012 02:47:36 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+References: <87wqwggtcu.fsf@xmission.com>
+Date: Mon, 17 Dec 2012 23:47:26 -0800
+In-Reply-To: <87wqwggtcu.fsf@xmission.com> (Eric W. Biederman's message of
+	"Mon, 17 Dec 2012 15:18:57 -0800")
+Message-ID: <87d2y7dcoh.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADApbej17udzpStNeY+tsSkeOy_Fv2+o+zKs4zBLV8+ST4DWTg@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:38:07 up 177 days, 22:49, 27 users,  load average: 2.25, 3.11,
- 2.87
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19Su8nAjexlaxIqEOO1+fl8VveLfOdbjHY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [GIT PULL] user namespace and namespace infrastructure changes for 3.8
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 10:19:21AM +0800, Chao Xie wrote:
-> On Tue, Dec 18, 2012 at 4:19 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > On Thu, Dec 06, 2012 at 10:52:03AM +0800, Chao Xie wrote:
-> >> hi
-> >> When develop the clk drivers for SOCs based on common clock framework.
-> >> I met a issue.
-> >> For example there is a uart device, it's function clock comes from a
-> >> divider, and the divider's parent is a mux. It means
-> >>
-> >> MUX --> DIV --> UART
-> >>
-> >> As we know that UART can work at low baudrate for a terminal, while it
-> >> can also connect to GPS module which needs a high rate. So the MUX
-> >> will provide two clock source, a low clock rate and high clock rate.
-> >>
-> >> The MUX clk driver clk-mux.c does not implement a ->round_rate callbacks.
-> >> It means that when uart driver is used for a GPS and it want to change
-> >> it clock, the driver will call clk_set_rate(); clk_set_rate will loop
-> >> upward to DIV, and DIV will try to set its divider, and it need loop
-> >> upward to MUX.
-> >> In fact the current clk drivers have some issue.
-> >> MUX clk driver should provide the round_rate callback, it then can
-> >> provide a new_rate. It means that in clk_calc_subtree MUX can switch
-> >> the clock source.
-> >
-> > It's not that simple. The input clocks to a mux may not only differ in
-> > their rate but can also have other different properties, like for
-> > example one input may be always present whereas another input only runs
-> > when the CPU is in run mode.
-> >
-> > It may be a possibility to add a flag to the mux to explicitely
-> > allow reparenting on a rate change.
-> >
-> There is already a flag to do it.
-> CLK_SET_RATE_PARENT
+ebiederm@xmission.com (Eric W. Biederman) writes:
 
-That flag has another meaning. It means that a clock is allowed to
-change the parents rate when a rate change is requested. What I meant
-is a flag that allows a mux to change its parent when a rate change is
-requested.
- 
-> if the mux does not want to changes the input for clk_set_rate called
-> by its child, it can clear this flag.
-> The question is whether we need add the round_rate/recalc_rate for MUX
-> type of clock? Is there any special issue about it that why current
-> MUX implementation does not have these callbacks?
+> Linus,
+>
+> Please pull the for-linus git tree from:
+>
+>    git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
+>
+>    HEAD: 5155040ed349950e16c093ba8e65ad534994df2a userns: Fix typo in description of the limitation of userns_install
+>
+>    This tree is against v3.7-rc3
+>
+> The embarrasing oversights that Andy found have been corrected.
 
-They currently do not need these callbacks. When a clock does not have
-round_rate propagates up to the parent if CLK_SET_RATE_PARENT is set or
-it returns the parents rate if this flag is not set. The situation with
-set_rate is similar.
+Those bugs, those darn embarrasing bugs just want don't want to get
+fixed.
 
-Sascha
+Linus I just updated my mirror of your kernel.org tree and it appears
+you successfully pulled everything except the last 4 commits that fix
+those embarrasing bugs.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+When you get a chance can you please repull my branch (the details
+above are still corect.
+
+The pending changes are.
+
+Eric W. Biederman (4):
+      Fix cap_capable to only allow owners in the parent user namespace to have caps.
+      userns: Require CAP_SYS_ADMIN for most uses of setns.
+      userns: Add a more complete capability subset test to commit_creds
+      userns: Fix typo in description of the limitation of userns_install
+
+ fs/namespace.c           |    3 ++-
+ ipc/namespace.c          |    3 ++-
+ kernel/cred.c            |   27 ++++++++++++++++++++++++++-
+ kernel/pid_namespace.c   |    3 ++-
+ kernel/user_namespace.c  |    2 +-
+ kernel/utsname.c         |    3 ++-
+ net/core/net_namespace.c |    3 ++-
+ security/commoncap.c     |   25 +++++++++++++++++--------
+ 8 files changed, 54 insertions(+), 15 deletions(-)
+
+Eric
