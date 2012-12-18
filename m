@@ -1,149 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab2LRPrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:47:55 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:50767 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2LRPrx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:47:53 -0500
-X-Greylist: delayed 1496 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 10:47:53 EST
+	id S932268Ab2LRPwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:52:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932214Ab2LRPwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 10:52:00 -0500
+Message-ID: <50D09100.3060505@redhat.com>
+Date: Tue, 18 Dec 2012 16:51:28 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <50D0473D.9060106@vodafone.de>
-References: <1355779884.1414.14.camel@x61.thuisdomein>
-	<50D0473D.9060106@vodafone.de>
-Date: Tue, 18 Dec 2012 10:22:55 -0500
-Message-ID: <CADnq5_ORb_kdaehxR6y+P1S0eStiLEo7jFOYXhn4sMDw5b=bcw@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] drm/radeon: return 0 on successful gpu reset
-From: Alex Deucher <alexdeucher@gmail.com>
-To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Jerome Glisse <jglisse@redhat.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-6-git-send-email-pbonzini@redhat.com> <20121218135736.GF26110@redhat.com> <50D078C8.208@redhat.com> <20121218150327.GB27400@redhat.com>
+In-Reply-To: <20121218150327.GB27400@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 5:36 AM, Christian König
-<deathsimple@vodafone.de> wrote:
-> On 17.12.2012 22:31, Paul Bolle wrote:
+Il 18/12/2012 16:03, Michael S. Tsirkin ha scritto:
+> On Tue, Dec 18, 2012 at 03:08:08PM +0100, Paolo Bonzini wrote:
+>> Il 18/12/2012 14:57, Michael S. Tsirkin ha scritto:
+>>>> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>>>> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+>>>> +				 struct virtio_scsi_target_state *tgt,
+>>>> +				 struct scsi_cmnd *sc)
+>>>>  {
+>>>> -	struct virtio_scsi *vscsi = shost_priv(sh);
+>>>> -	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>>>>  	struct virtio_scsi_cmd *cmd;
+>>>> +	struct virtio_scsi_vq *req_vq;
+>>>>  	int ret;
+>>>>  
+>>>>  	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+>>>> @@ -461,7 +533,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>>>>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+>>>>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+>>>>  
+>>>> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
+>>>> +	req_vq = ACCESS_ONCE(tgt->req_vq);
+>>>
+>>> This ACCESS_ONCE without a barrier looks strange to me.
+>>> Can req_vq change? Needs a comment.
 >>
->> On an (outdated) laptop the radeon driver (almost always) prints, during
->> the first resume of each session:
->>      [drm] crtc 1 is connected to a TV
+>> Barriers are needed to order two things.  Here I don't have the second thing
+>> to order against, hence no barrier.
 >>
->> This message is a bit puzzling as, as far as I know, no TV has ever
->> been connected to this laptop. Anyhow, before v3.5, if that happened the
->> radeon driver then printed an error during all following resumes:
->>      [drm:radeon_cs_ioctl] *ERROR* Failed to parse relocation -35!
->>
->> (-35 is -EDEADLK.) But the resume would succeed and the driver seemed to
->> run without too much trouble. From v3.5 onwards things changed. If the
->> (puzzling) message about crtc 1 was printed on first resume the laptop
->> would simply hang on second resume. Only a manual power off would then
->> be possible. In that case nothing of interest would be found in the
->> (truncated) logs.  And, most annoyingly, the hang would never happen if
->> the laptop was booted with, say, "console=ttyS0,115200n8" added to the
->> kernel command line.
->>
->> I bisected the hang to commit 6c6f478370eccfbfafbdc6fc55c0def03e58f124
->> ("drm/radeon: rework recursive gpu reset handling"), which was added in
->> the v3.5 release cycle. After discovering that and poking at the driver
->> it turned out that this hang is triggered by radeon_cs_handle_lockup()
->> returning -EAGAIN after successfully resetting the gpu. Simply returning
->> 0 makes the hang disappear (and makes the drm error reappear).
->>
->> Nothing in the code or the commit explanation clarifies why -EAGAIN
->> should be returned on successful gpu reset. So I suggest
->> radeon_cs_handle_lockup() simply returns what radeon_gpu_reset()
->> returns, eg 0 (on success) or a negative error code (on failure).
->>
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> 0) This exact patch is untested (but I run something comparable).
->>
->> 1) Sent as an RFC because I do not understand why this laptop (almost
->> always) prints the "crtc 1" message on first resume. Note that another
->> workaround for this hang is simply booting with "radeon.tv=0".
->
-> Alex should probably take a look into this, since he probably is the one
-> with the deepest knowledge of the display engine. My best guess is that it
-> is just some error while probing for an attached TV and actually isn't so
-> bad after all.
+>> Accessing req_vq lockless is safe, and there's a comment about it, but you
+>> still want ACCESS_ONCE to ensure the compiler doesn't play tricks.
+> 
+> That's just it.
+> Why don't you want compiler to play tricks?
 
-TV detection is always a bit flakey.  I suspect some register or gpio
-related to TV out doesn't get restored properly on resume which
-results in a false positive.  What asic is this?
+Because I want the lockless access to occur exactly when I write it.
+Otherwise I have one more thing to think about, i.e. what a crazy
+compiler writer could do with my code.  And having been on the other
+side of the trench, compiler writers can have *really* crazy ideas.
 
->
->
->> 2) Also sent as an RFC because I have no idea whatsoever why returning
->> -EAGAIN will hang the machine. I guess it's returned to userland by
->> radeon_cs_ioctl(). What code uses that ioctl? And what does that code do
->> on -EAGAIN that hangs this laptop?
->
->
-> EAGAIN just tells userspace to reissue the requested system call. When a
-> system call is interrupted (either by a signal or in our case a GPU lockup)
-> it aborts and EGAIN is returned to userspace, telling userspace that it
-> should try again. So by just returning 0 userspace things that our system
-> call was executed and doesn't try it again.
->
-> So you just prevented the normal reissuing of the system call and so also
-> prevented whatever this command submission should be doing in the first
-> place.
->
->
->> 3) A third reason to send this as an RFC is that I also have no idea why
->> this hang doesn't happen when booting with "console=ttyS0,115200n8" or
->> even "console=tty0"! But I guess I'm now allowed to call this hang a
->> Heisenbug.
->
-> "Heisenbug" ? LOL, I need to remember that.
->
-> But anyway it is not so unusual seeing a bug like this, cause it is possible
-> (but highly unlikely) that actually trying to print an error message can
-> cause a lockup.
->
-> You should definitely try Alex latest drm-fixes-3.8 branch
-> (git://people.freedesktop.org/~agd5f/linux) since the possibility is quite
-> high that we already have fixed that bug. If that doesn't helps then please
-> open a bug report and leave me a note so that I can investigate further.
+Anyhow, I'll reorganize the code to move the ACCESS_ONCE closer to the
+write and make it clearer.
 
-I don't have a 3.8 fixes branch up just yet, but will soon.
-
-Alex
-
->
-> Christian.
->
->
->
+>>>> +	if (virtscsi_kick_cmd(tgt, req_vq, cmd,
+>>>>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+>>>>  			      GFP_ATOMIC) == 0)
+>>>>  		ret = 0;
+>>>> @@ -472,6 +545,48 @@ out:
+>>>>  	return ret;
+>>>>  }
+>>>>  
+>>>> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
+>>>> +					struct scsi_cmnd *sc)
+>>>> +{
+>>>> +	struct virtio_scsi *vscsi = shost_priv(sh);
+>>>> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>>>> +
+>>>> +	atomic_inc(&tgt->reqs);
+>>>
+>>> And here we don't have barrier after atomic? Why? Needs a comment.
 >>
->>   drivers/gpu/drm/radeon/radeon_cs.c |    5 +----
->>   1 files changed, 1 insertions(+), 4 deletions(-)
+>> Because we don't write req_vq, so there's no two writes to order.  Barrier
+>> against what?
+> 
+> Between atomic update and command. Once you queue command it
+> can complete and decrement reqs, if this happens before
+> increment reqs can become negative even.
+
+This is not a problem.  Please read Documentation/memory-barrier.txt:
+
+   The following also do _not_ imply memory barriers, and so may
+   require explicit memory barriers under some circumstances
+   (smp_mb__before_atomic_dec() for instance):
+
+        atomic_add();
+        atomic_sub();
+        atomic_inc();
+        atomic_dec();
+
+   If they're used for statistics generation, then they probably don't
+   need memory barriers, unless there's a coupling between statistical
+   data.
+
+This is the single-queue case, so it falls under this case.
+
+>>>>  	/* Discover virtqueues and write information to configuration.  */
+>>>> -	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
+>>>> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
+>>>>  	if (err)
+>>>>  		return err;
+>>>>  
+>>>> -	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
+>>>> -	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
+>>>> -	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
+>>>> +	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0], false);
+>>>> +	virtscsi_init_vq(&vscsi->event_vq, vqs[1], false);
+>>>> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++)
+>>>> +		virtscsi_init_vq(&vscsi->req_vqs[i - VIRTIO_SCSI_VQ_BASE],
+>>>> +				 vqs[i], vscsi->num_queues > 1);
+>>>
+>>> So affinity is true if >1 vq? I am guessing this is not
+>>> going to do the right thing unless you have at least
+>>> as many vqs as CPUs.
 >>
->> diff --git a/drivers/gpu/drm/radeon/radeon_cs.c
->> b/drivers/gpu/drm/radeon/radeon_cs.c
->> index 41672cc..a302c00 100644
->> --- a/drivers/gpu/drm/radeon/radeon_cs.c
->> +++ b/drivers/gpu/drm/radeon/radeon_cs.c
->> @@ -486,11 +486,8 @@ out:
->>     static int radeon_cs_handle_lockup(struct radeon_device *rdev, int r)
->>   {
->> -       if (r == -EDEADLK) {
->> +       if (r == -EDEADLK)
->>                 r = radeon_gpu_reset(rdev);
->> -               if (!r)
->> -                       r = -EAGAIN;
->> -       }
->>         return r;
->>   }
+>> Yes, and then you're not setting up the thing correctly.
+> 
+> Why not just check instead of doing the wrong thing?
+
+The right thing could be to set the affinity with a stride, e.g. CPUs
+0-4 for virtqueue 0 and so on until CPUs 3-7 for virtqueue 3.
+
+Paolo
+
+>> Isn't the same thing true for virtio-net mq?
 >>
->
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>> Paolo
+> 
+> Last I looked it checked vi->max_queue_pairs == num_online_cpus().
+> This is even too aggressive I think, max_queue_pairs >=
+> num_online_cpus() should be enough.
+> 
+
