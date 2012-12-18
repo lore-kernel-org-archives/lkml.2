@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab2LRWzb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:55:31 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37045 "EHLO hydra.sisk.pl"
+	id S1754725Ab2LRWzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:55:52 -0500
+Received: from mga14.intel.com ([143.182.124.37]:63413 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab2LRWz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:55:28 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from probing ACPI drivers
-Date: Wed, 19 Dec 2012 00:00:40 +0100
-Message-ID: <4447450.z46Q2xYLQX@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1355868912.18964.381.camel@misato.fc.hp.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <3027479.MToB281uxK@vostro.rjw.lan> <1355868912.18964.381.camel@misato.fc.hp.com>
+	id S1751271Ab2LRWzt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 17:55:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,311,1355126400"; 
+   d="scan'208";a="233561320"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
+Thread-Topic: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
+Thread-Index: AQHN27U5Cxm9cfLkVkqEiPpUYGHzQJgcPMCAgAA+0YCAAB9DAP//gCswgACSdoCAAPdAkIAAiAKAgAEBDwA=
+Date: Tue, 18 Dec 2012 22:55:46 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220470F89E7@ORSMSX105.amr.corp.intel.com>
+References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
+	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
+	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
+	<50CE4097.2020104@zytor.com>
+	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
+	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
+	<CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
+	<3E5A0FA7E9CA944F9D5414FEC6C71220470F8584@ORSMSX105.amr.corp.intel.com>
+ <CAE9FiQVQMumUSgJ91rT5Zr2_Q=Wk=jBy+MEA3Li0Y215OHQT_Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQVQMumUSgJ91rT5Zr2_Q=Wk=jBy+MEA3Li0Y215OHQT_Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 18, 2012 03:15:12 PM Toshi Kani wrote:
-> On Tue, 2012-12-18 at 22:57 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, December 18, 2012 09:10:41 AM Toshi Kani wrote:
-> > > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
->  :
-> > > We need to decide which module is responsible for calling .bind().  I
-> > > think it should be the ACPI scan module, not the ACPI PCI root bridge
-> > > driver, because:
-> > >  - bind() needs to be called when _ADR device is added.  The ACPI scan
-> > > module can scan any devices, while the PCI root driver can only scan
-> > > when it is added.
-> > >  - acpi_bus_remove() calls unbind() at hot-remove.  The same module
-> > > should be responsible for both bind() and unbind() handling.
-> > >  - It is cleaner to keep struct acpi_device_ops interface to be called
-> > > by the ACPI core.
-> > 
-> > I agree with that. :-)
-> > 
-> > Moreover, I don't think we need acpi_pci_bind() and acpi_pci_unbind() at all.
-> > 
-> > > So, I would propose the following changes.
-> > > 
-> > >  - Move the acpi_hot_add_bind() call back to the original place after
-> > > the device_attach() call.
-> > >  - Rename the name of acpi_hot_add_bind() to something like
-> > > acpi_bind_adr_device() since it is no longer hot-add only (and is
-> > > specific to _ADR devices).
-> > >  - Create its pair function, acpi_unbind_adr_device(), which is called
-> > > from acpi_bus_remove().  When a constructor interface is introduced, its
-> > > destructor should be introduced as well. 
-> > >  - Remove the binding procedure from acpi_pci_root_add().  This should
-> > > be done in patch [2/6].
-> > 
-> > Well, what about moving the code from acpi_pci_bind()/acpi_pci_unbind()
-> > somewhere else and removing those things altogether?
+> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+> Yinghai Lu
+> On Mon, Dec 17, 2012 at 3:30 PM, Yu, Fenghua <fenghua.yu@intel.com>
+> wrote:
+> >
+> > OSV may need the patchset based on old kernel. So I'll have the
+> patchset ready. Is this the right place to call load_ucode_bsp() in the
+> upstream kernel?
+> >
+> > diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> > index a512f56..e94b90e 100644
+> > --- a/arch/x86/kernel/head64.c
+> > +++ b/arch/x86/kernel/head64.c
+> > @@ -93,6 +88,11 @@ void __init x86_64_start_kernel(char *
+> real_mode_data)
+> >         }
+> >         load_idt((const struct desc_ptr *)&idt_descr);
+> >
+> > +       /*
+> > +        * Load microcode early on BSP.
+> > +        */
+> > +       load_ucode_bsp(__va(real_mode_data));
+> > +
+> >         if (console_loglevel == 10)
+> >                 early_printk("Kernel alive\n");
+> >
+> it has to be after #PF handler set page table patch...
 > 
-> Sounds nice.  It will be bonus point if you can do that. :-)
+> otherwise when ramdisk is above 1G, customer will get early PF
+> exception.
 
-I think I can, but I need a few more patches on top of what I've already posted
-to do that.
+If based on your for_x86_boot tree, is load_ucode_bsp() called afer load_idt()?
 
-I think that https://patchwork.kernel.org/patch/1889821/ and
-https://patchwork.kernel.org/patch/1884701/ can stay as they are, since there's
-some material on top of them already and I'll cut the new patches on top of all
-that.  I'll repost the whole series some time later this week, stay tuned. :-)
+Thanks.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-Fenghua
