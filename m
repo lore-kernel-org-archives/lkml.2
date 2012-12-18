@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab2LRTRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:17:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11013 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753306Ab2LRTRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:17:52 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <9cfc0861cd3ae0a7d4e72056c00b8bebef1490eb.1355853060.git.joe@perches.com>
-References: <9cfc0861cd3ae0a7d4e72056c00b8bebef1490eb.1355853060.git.joe@perches.com> <6433.1355840610@warthog.procyon.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Warn on #include <uapi/...
-Date: Tue, 18 Dec 2012 19:17:03 +0000
-Message-ID: <12373.1355858223@warthog.procyon.org.uk>
+	id S1754870Ab2LRTSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:18:07 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:44109 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab2LRTSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:18:03 -0500
+Date: Tue, 18 Dec 2012 11:17:56 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 09/12] cfq-iosched: enable full blkcg hierarchy support
+Message-ID: <20121218191756.GP1844@htj.dyndns.org>
+References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+ <1355524885-22719-10-git-send-email-tj@kernel.org>
+ <20121218184022.GC24050@redhat.com>
+ <20121218191055.GN1844@htj.dyndns.org>
+ <20121218191645.GA25908@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121218191645.GA25908@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> wrote:
+Hey,
 
-> +			if ($path =~ "^uapi/") {
-> +				ERROR("UAPI_INCLUDE",
-> +				      "#include should not start with uapi/\n" . $herecurr);
->  			}
+On Tue, Dec 18, 2012 at 02:16:45PM -0500, Vivek Goyal wrote:
+> > Yeah, sure thing.  Other than documentation / field names, do things
+> > look okay to you?  If so, I'll post updated round once -rc1 happens.
+> 
+> Yes, in general things look good to me with this patch.
 
-But does this limit the check only to headers in uapi/ directories?  You need
-to be able to do this outside of a uapi/ directory.  For instance,
-include/linux/fs.h shadows include/uapi/linux/fs.h and so the former has to
-#include the latter directly as <uapi/linux/fs.h> or else suffer a circular
-link.
+Cool.
 
-David
+> /me is wondering how to get a response from cpu controller folks.
+
+Well, I pinged Peter last time about it and didn't get any response.
+Prolly best to ping w/ patch.
+
+Thanks.
+
+-- 
+tejun
