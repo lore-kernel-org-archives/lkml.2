@@ -1,232 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab2LRVHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 16:07:53 -0500
-Received: from [213.199.154.205] ([213.199.154.205]:55249 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754719Ab2LRVHh (ORCPT
+	id S1755405Ab2LRVH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 16:07:57 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58132 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755361Ab2LRVHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 16:07:37 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1155h)
-X-WSS-ID: 0MF8VY5-01-1DF-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Borislav Petkov <bp@alien8.de>, Doug Thompson <dougthompson@xmission.com>
-CC: <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 2/2] MCE, AMD: MCE decoding support for AMD Family 16h
-Date: Tue, 18 Dec 2012 15:06:11 -0600
-Message-ID: <1355864771-13839-3-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355864771-13839-1-git-send-email-jacob.shin@amd.com>
-References: <1355864771-13839-1-git-send-email-jacob.shin@amd.com>
+	Tue, 18 Dec 2012 16:07:51 -0500
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: Strange results of DIV_ROUND_CLOSEST
+Date: Tue, 18 Dec 2012 22:04:56 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+References: <201212181603.42094.jbe@pengutronix.de> <20121218171620.GA19972@roeck-us.net>
+In-Reply-To: <20121218171620.GA19972@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201212182204.56523.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add MCE decoding logic for AMD Family 16h processors.
+Hi Guenter,
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- drivers/edac/mce_amd.c |   83 +++++++++++++++++++++++++++++++++++++++++-------
- drivers/edac/mce_amd.h |    3 ++
- 2 files changed, 75 insertions(+), 11 deletions(-)
+Guenter Roeck wrote:
+> On Tue, Dec 18, 2012 at 04:03:41PM +0100, Juergen Beisert wrote:
+> > commit 263a523d18bca306016d75f5c8d5c57c37fe52fb changes the code of
+> > DIV_ROUND_CLOSEST in include/linux/kernel.h to fix a compile time
+> > warning.
+> >
+> > But now feeding in a zero into this macro results into 4198403. Tested
+> > with gcc 4.4.3 and 4.7.2, on arch x86 and ARM.
+> >
+> > I can reproduce this behaviour, when my ADC delivers a '0' value in the
+> > driver drivers/hwmon/s3c-hwmon.c in function s3c_hwmon_ch_show() with a
+> > current 3.7.1 kernel. The value is correct again, when the ADC delivers
+> > at least a '1'.
+> >
+> > Any ideas how to fix it correctly?
+>
+> Odd one. I ran the macro through a large number of values and divisors as
+> well as various optimization options, with different compilers, and always
+> get correct results.
+>
+> What are your compile options, and what are the channel multiplier and
+> dividers set to ?
 
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index e4752be..ce4c8b7 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -64,6 +64,10 @@ EXPORT_SYMBOL_GPL(to_msgs);
- const char * const ii_msgs[] = { "MEM", "RESV", "IO", "GEN" };
- EXPORT_SYMBOL_GPL(ii_msgs);
- 
-+/* internal error type */
-+const char * const uu_msgs[] = { "RESV", "RESV", "HWA", "RESV" };
-+EXPORT_SYMBOL_GPL(uu_msgs);
-+
- static const char * const f15h_mc1_mce_desc[] = {
- 	"UC during a demand linefill from L2",
- 	"Parity error during data load from IC",
-@@ -176,7 +180,7 @@ static bool k8_mc0_mce(u16 ec, u8 xec)
- 	return f10h_mc0_mce(ec, xec);
- }
- 
--static bool f14h_mc0_mce(u16 ec, u8 xec)
-+static bool cat_mc0_mce(u16 ec, u8 xec)
- {
- 	u8 r4	 = R4(ec);
- 	bool ret = true;
-@@ -330,22 +334,27 @@ static bool k8_mc1_mce(u16 ec, u8 xec)
- 	return ret;
- }
- 
--static bool f14h_mc1_mce(u16 ec, u8 xec)
-+static bool cat_mc1_mce(u16 ec, u8 xec)
- {
- 	u8 r4    = R4(ec);
- 	bool ret = true;
- 
- 	if (MEM_ERROR(ec)) {
--		if (TT(ec) != 0 || LL(ec) != 1)
-+		if (TT(ec) != TT_INSTR)
- 			ret = false;
--
--		if (r4 == R4_IRD)
-+		else if (r4 == R4_IRD)
- 			pr_cont("Data/tag array parity error for a tag hit.\n");
- 		else if (r4 == R4_SNOOP)
- 			pr_cont("Tag error during snoop/victimization.\n");
-+		else if (xec == 0x0)
-+			pr_cont("Tag parity error from victim castout.\n");
-+		else if (xec == 0x2)
-+			pr_cont("Microcode patch RAM parity error.\n");
- 		else
- 			ret = false;
--	}
-+	} else
-+		ret = false;
-+
- 	return ret;
- }
- 
-@@ -469,6 +478,47 @@ static bool f15h_mc2_mce(u16 ec, u8 xec)
- 	return ret;
- }
- 
-+static bool f16h_mc2_mce(u16 ec, u8 xec)
-+{
-+	u8 r4 = R4(ec);
-+
-+	if (!MEM_ERROR(ec))
-+		return false;
-+
-+	switch (xec) {
-+	case 0x04 ... 0x05:
-+		pr_cont("%cBUFF parity error.\n", (r4 == R4_RD) ? 'I' : 'O');
-+		break;
-+
-+	case 0x09 ... 0x0b:
-+	case 0x0d ... 0x0f:
-+		pr_cont("ECC error in L2 tag (%s).\n",
-+			((r4 == R4_GEN)   ? "BankReq" :
-+			((r4 == R4_SNOOP) ? "Prb"     : "Fill")));
-+		break;
-+
-+	case 0x10 ... 0x19:
-+	case 0x1b:
-+		pr_cont("ECC error in L2 data array (%s).\n",
-+			(((r4 == R4_RD) && !(xec & 0x3)) ? "Hit"  :
-+			((r4 == R4_GEN)   ? "Attr" :
-+			((r4 == R4_EVICT) ? "Vict" : "Fill"))));
-+		break;
-+
-+	case 0x1c ... 0x1d:
-+	case 0x1f:
-+		pr_cont("Parity error in L2 attribute bits (%s).\n",
-+			((r4 == R4_RD)  ? "Hit"  :
-+			((r4 == R4_GEN) ? "Attr" : "Fill")));
-+		break;
-+
-+	default:
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
- static void decode_mc2_mce(struct mce *m)
- {
- 	u16 ec = EC(m->status);
-@@ -546,7 +596,7 @@ static void decode_mc4_mce(struct mce *m)
- 		return;
- 
- 	case 0x19:
--		if (boot_cpu_data.x86 == 0x15)
-+		if (boot_cpu_data.x86 == 0x15 || boot_cpu_data.x86 == 0x16)
- 			pr_cont("Compute Unit Data Error.\n");
- 		else
- 			goto wrong_mc4_mce;
-@@ -632,6 +682,10 @@ static void decode_mc6_mce(struct mce *m)
- 
- static inline void amd_decode_err_code(u16 ec)
- {
-+	if (INT_ERROR(ec)) {
-+		pr_emerg(HW_ERR "internal: %s\n", UU_MSG(ec));
-+		return;
-+	}
- 
- 	pr_emerg(HW_ERR "cache level: %s", LL_MSG(ec));
- 
-@@ -736,7 +790,7 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
- 		((m->status & MCI_STATUS_PCC)	? "PCC"	  : "-"),
- 		((m->status & MCI_STATUS_ADDRV)	? "AddrV" : "-"));
- 
--	if (c->x86 == 0x15)
-+	if (c->x86 == 0x15 || c->x86 == 0x16)
- 		pr_cont("|%s|%s",
- 			((m->status & MCI_STATUS_DEFERRED) ? "Deferred" : "-"),
- 			((m->status & MCI_STATUS_POISON)   ? "Poison"   : "-"));
-@@ -768,7 +822,7 @@ static int __init mce_amd_init(void)
- 	if (c->x86_vendor != X86_VENDOR_AMD)
- 		return 0;
- 
--	if (c->x86 < 0xf || c->x86 > 0x15)
-+	if (c->x86 < 0xf || c->x86 > 0x16)
- 		return 0;
- 
- 	fam_ops = kzalloc(sizeof(struct amd_decoder_ops), GFP_KERNEL);
-@@ -802,8 +856,8 @@ static int __init mce_amd_init(void)
- 
- 	case 0x14:
- 		nb_err_cpumask  = 0x3;
--		fam_ops->mc0_mce = f14h_mc0_mce;
--		fam_ops->mc1_mce = f14h_mc1_mce;
-+		fam_ops->mc0_mce = cat_mc0_mce;
-+		fam_ops->mc1_mce = cat_mc1_mce;
- 		fam_ops->mc2_mce = k8_mc2_mce;
- 		break;
- 
-@@ -814,6 +868,13 @@ static int __init mce_amd_init(void)
- 		fam_ops->mc2_mce = f15h_mc2_mce;
- 		break;
- 
-+	case 0x16:
-+		xec_mask = 0x1f;
-+		fam_ops->mc0_mce = cat_mc0_mce;
-+		fam_ops->mc1_mce = cat_mc1_mce;
-+		fam_ops->mc2_mce = f16h_mc2_mce;
-+		break;
-+
- 	default:
- 		printk(KERN_WARNING "Huh? What family is it: 0x%x?!\n", c->x86);
- 		kfree(fam_ops);
-diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
-index 000f6e2..2828908 100644
---- a/drivers/edac/mce_amd.h
-+++ b/drivers/edac/mce_amd.h
-@@ -14,6 +14,7 @@
- #define TLB_ERROR(x)			(((x) & 0xFFF0) == 0x0010)
- #define MEM_ERROR(x)			(((x) & 0xFF00) == 0x0100)
- #define BUS_ERROR(x)			(((x) & 0xF800) == 0x0800)
-+#define INT_ERROR(x)			(((x) & 0xF4FF) == 0x0400)
- 
- #define TT(x)				(((x) >> 2) & 0x3)
- #define TT_MSG(x)			tt_msgs[TT(x)]
-@@ -25,6 +26,8 @@
- #define TO_MSG(x)			to_msgs[TO(x)]
- #define PP(x)				(((x) >> 9) & 0x3)
- #define PP_MSG(x)			pp_msgs[PP(x)]
-+#define UU(x)				(((x) >> 8) & 0x3)
-+#define UU_MSG(x)			uu_msgs[UU(x)]
- 
- #define R4(x)				(((x) >> 4) & 0xf)
- #define R4_MSG(x)			((R4(x) < 9) ?  rrrr_msgs[R4(x)] : "Wrong R4!")
+Refer the lines 177 to 182 in drivers/hwmon/s3c-hwmon.c. "cfg->mult" is '3300' 
+in my case, and "cfg->div" is '1023'. And whenever s3c_hwmon_read_ch() 
+returns '0' line 184 returns '4198403' since Linux-3.6. checked with my 
+gcc-4.6.2 cross compiler for Linux-3.6 and with gcc-4.6.2 for Linux-3.7.
+
+I did a quick test with this macro on my host with gcc-4.4.3 and a simple 
+userland program and surprise, surprise:
+
+result = DIV_ROUND_CLOSEST(0, 1023);
+
+works as expected (result is 0), but
+
+int x = 0;
+unsigned y = 1023;
+result = DIV_ROUND_CLOSEST(x, y);
+
+gives me result = 4198403!
+
+Strange.
+
+Regards,
+Juergen
+
 -- 
-1.7.9.5
-
-
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
