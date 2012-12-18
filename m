@@ -1,162 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750929Ab2LRFBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 00:01:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:38566 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab2LRFBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 00:01:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,305,1355126400"; 
-   d="scan'208";a="263484392"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, tglx@linutronix.de,
-        mingo@kernel.org
-Cc: Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH] x86,apic: Blacklist x2APIC on some platforms
-Date: Tue, 18 Dec 2012 12:07:30 -0500
-Message-Id: <1355850450-26445-1-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S1751096Ab2LRFC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 00:02:58 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:28703 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab2LRFC5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 00:02:57 -0500
+X-Spam-Score: -100.7
+Message-ID: <50CFF937.3020101@asianux.com>
+Date: Tue, 18 Dec 2012 13:03:51 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Omar Ramirez Luna <omar.ramirez@copitl.com>
+CC: "l >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] drivers/staging/tidspbridge:  strcpy and strncpy,
+  src length checking issue.
+References: <50CFD786.5010101@asianux.com>
+In-Reply-To: <50CFD786.5010101@asianux.com>
+X-Forwarded-Message-Id: <50CFD786.5010101@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Blacklist x2apic when Nivida graphics enabled on Lenovo ThinkPad T420.
-Also set blacklist x2apic for Lenovo ThinkPad W520 and L520.
+Hello Omar Ramirez Luna:
+
+  excuse me to bother you (maybe you are busy in these days).
+  please help checking this suggestion when you have free time.
+
+  my suggestion may be not valid (I already have at least 9 fault which
+I made)
+  for example of my fault:
+    A) net/atm:  "%pM means format this pointer as a mac address", thank
+Chas Williams
+    B) net/tipc: "TIPC_MAX_IF_NAME is not TIPC_MAX_LINK_NAME", thank Xue
+Ying
+    C) net/core: "not see 'if (PAGE_SIZE - len < 3)' ", find by myself
+    D) MAINTAINER: "tty != serial",  thank Jiri Slaby and Joe Perches
+    E) drvers/staging/telephony: "torvalds' tree is different with next
+tree", thank devendra.aaru
+    F) drivers/staging/telephony: "we should probably fix it for older
+kernels", thank Dan Carpenter
+    G) drivers/usb/core: "doing DMA on the stack violates the DMA
+rules", thank Oliver Neukum
+    H) arch/blackfin/kernel: "%8s is used to take up the same space",
+thank Mike Frysinger and Steven Miao
+    I) drivers/usb/host: "usb_hcd_giveback_urb set urb->hcpriv to NULL",
+thank Alan Stern
+
+  finding and solving issues is a way (not a goal) to provide
+contributes to Open Source.
+  so I hope:
+    When you have free time, also can provide your contributes to Open
+Source, too.
+
+  thanks.
 
 
-Thre are 3 bug reports:
-https://bugzilla.kernel.org/show_bug.cgi?id=43054
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/776999
-https://bugs.launchpad.net/bugs/922037
+By the way:
+  this week, I need work for 2 patches which relative with usb sub-system.
+  if still get no reply for tidspbridge until next week.
+    I should work for it, it is my duty (since I have provided
+'suggestion' to it).
+    "work for it" means:
+       if tidspbridge is still useful
+         I need construct relative environments for unit test.
+         then provide relative patches.
+       else (useless)
+         I need delete it from Open Source.
+         (since it can not pass compiling, and no response from
+*@ti.com, it almost means useless)
+         (at least, fix the 2 compiling issues which I have suggested,
+can pass compiling)
 
-The patches is based on http://git.kernel.org/?p=linux/kernel/git/yinghai/
-linux-yinghai.git;a=patch;h=de38757e964cfee20e6da1977572a2191d7f4aa0
 
-Reviewed-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- arch/x86/include/asm/x86_init.h |    1 +
- arch/x86/kernel/apic/apic.c     |   51 +++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/early-quirks.c  |    9 +++++++
- 3 files changed, 61 insertions(+), 0 deletions(-)
+  welcome any other members to giving suggestions and completions
+(especially from *@ti.com)
 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 38155f6..88e39e6 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -202,5 +202,6 @@ extern struct x86_msi_ops x86_msi;
- extern struct x86_io_apic_ops x86_io_apic_ops;
- extern void x86_init_noop(void);
- extern void x86_init_uint_noop(unsigned int unused);
-+extern int early_found_nvidia_display_card;
- 
- #endif
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 24deb30..0822fe9 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -170,6 +170,54 @@ static __init int setup_nox2apic(char *str)
- 	return 0;
- }
- early_param("nox2apic", setup_nox2apic);
-+
-+static __init int x2apic_set_blacklist_nvidia(const struct dmi_system_id *d)
-+{
-+	if (!early_found_nvidia_display_card)
-+		return 1;
-+
-+	setup_nox2apic("");
-+	pr_info("x2apic blacklisted when Nivida graphics enabled on %s\n",
-+		d->ident);
-+	return 0;
-+}
-+
-+static __init int x2apic_set_blacklist(const struct dmi_system_id *d)
-+{
-+	setup_nox2apic("");
-+	pr_info("x2apic blacklisted because of broken SMI on %s\n",
-+		d->ident);
-+	return 0;
-+}
-+
-+static const struct dmi_system_id x2apic_dmi_table[] = {
-+	{
-+		.callback = x2apic_set_blacklist_nvidia,
-+		.ident = "Lenovo ThinkPad T420",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T420"),
-+		},
-+	},
-+	{
-+		.callback = x2apic_set_blacklist,
-+		.ident = "Lenovo ThinkPad W520",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W520"),
-+		},
-+	},
-+	{
-+		.callback = x2apic_set_blacklist,
-+		.ident = "Lenovo ThinkPad L520",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L520"),
-+		},
-+	},
-+	{}
-+};
-+
- #endif
- 
- unsigned long mp_lapic_addr;
-@@ -1542,6 +1590,9 @@ void __init enable_IR_x2apic(void)
- 	int ret, x2apic_enabled = 0;
- 	int hardware_init_ret;
- 
-+	if (x2apic_supported())
-+		dmi_check_system(x2apic_dmi_table);
-+
- 	/* Make sure irq_remap_ops are initialized */
- 	setup_irq_remapping_ops();
- 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 7548932..852d7a0 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -19,6 +19,8 @@
- #include <asm/iommu.h>
- #include <asm/gart.h>
- 
-+int early_found_nvidia_display_card __initdata;
-+
- static void __init fix_hypertransport_config(int num, int slot, int func)
- {
- 	u32 htcfg;
-@@ -192,6 +194,11 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- }
- #endif
- 
-+static void __init nvidia_x2apic_bugs(int num, int slot, int func)
-+{
-+	early_found_nvidia_display_card = 1;
-+}
-+
- #define QFLAG_APPLY_ONCE 	0x1
- #define QFLAG_APPLIED		0x2
- #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-@@ -221,6 +228,8 @@ static struct chipset early_qrk[] __initdata = {
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
- 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
-+	{ PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID,
-+	  PCI_CLASS_DISPLAY_VGA, 0xff00, 0, nvidia_x2apic_bugs},
- 	{}
- };
- 
+
+  Regards
+
+gchen.
+
+
+于 2012年12月14日 11:50, Chen Gang 写道:
+> Hello Omar Ramirez Luna:
+> 
+>   in drivers/staging/tidspbridge/rmgr/proc.c:
+> 
+>     if strlen(drv_datap->base_img) == size, will pass checking (line 397)
+>     the size is the full length of exec_file (line 382, line 468..469)
+>     strcpy causes issue: src len is strlen(drv_datap->base_img) + '\0'. (line 400)
+> 
+>     strncpy seems also has issue: need use size instead of strlen(iva_img) + 1. (line 402..403)
+> 
+>   please help to check, thanks.
+> 
+> gchen.
+> 
+> 
+>  380 static int get_exec_file(struct cfg_devnode *dev_node_obj,
+>  381                                 struct dev_object *hdev_obj,
+>  382                                 u32 size, char *exec_file)
+>  383 {
+>  384         u8 dev_type;
+>  385         s32 len;
+>  386         struct drv_data *drv_datap = dev_get_drvdata(bridge);
+>  387 
+>  388         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
+>  389 
+>  390         if (!exec_file)
+>  391                 return -EFAULT;
+>  392 
+>  393         if (dev_type == DSP_UNIT) {
+>  394                 if (!drv_datap || !drv_datap->base_img)
+>  395                         return -EFAULT;
+>  396 
+>  397                 if (strlen(drv_datap->base_img) > size)
+>  398                         return -EINVAL;
+>  399 
+>  400                 strcpy(exec_file, drv_datap->base_img);
+>  401         } else if (dev_type == IVA_UNIT && iva_img) {
+>  402                 len = strlen(iva_img);
+>  403                 strncpy(exec_file, iva_img, len + 1);
+>  404         } else {
+>  405                 return -ENOENT;
+>  406         }
+>  407 
+>  408         return 0;
+>  409 }
+>  410 
+>  ...
+> 
+>  465         /* Get the default executable for this board... */
+>  466         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
+>  467         p_proc_object->processor_id = dev_type;
+>  468         status = get_exec_file(dev_node_obj, hdev_obj, sizeof(sz_exec_file),
+>  469                                sz_exec_file);
+> 
+
+
 -- 
-1.7.1
+Chen Gang
+
+Asianux Corporation
+
 
