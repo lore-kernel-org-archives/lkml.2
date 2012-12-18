@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2LRWAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:00:41 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37003 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753394Ab2LRWAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:00:36 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from probing ACPI drivers
-Date: Tue, 18 Dec 2012 23:05:49 +0100
-Message-ID: <3573149.O0Vu1dNrT9@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <1355847041.18964.369.camel@misato.fc.hp.com> <CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755438Ab2LRWCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:02:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35027 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab2LRWCU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 17:02:20 -0500
+Date: Tue, 18 Dec 2012 14:02:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] mm: cond_resched in tlb_flush_mmu to fix soft lockups
+ on !CONFIG_PREEMPT
+Message-Id: <20121218140219.45867ddd.akpm@linux-foundation.org>
+In-Reply-To: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 18, 2012 10:59:46 AM Yinghai Lu wrote:
-> On Tue, Dec 18, 2012 at 8:10 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
-> >
-> > So, I would propose the following changes.
-> >
-> >  - Move the acpi_hot_add_bind() call back to the original place after
-> > the device_attach() call.
-> >  - Rename the name of acpi_hot_add_bind() to something like
-> > acpi_bind_adr_device() since it is no longer hot-add only (and is
-> > specific to _ADR devices).
-> >  - Create its pair function, acpi_unbind_adr_device(), which is called
-> > from acpi_bus_remove().  When a constructor interface is introduced, its
-> > destructor should be introduced as well.
-> >  - Remove the binding procedure from acpi_pci_root_add().  This should
-> > be done in patch [2/6].
+On Tue, 18 Dec 2012 17:11:28 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+> pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+> are done.
 > 
-> i think we should put jiang four patches before Rafael's patches.
+> This works just fine most of the time but we can get in troubles with
+> non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY) on
+> large machines where too aggressive batching might lead to soft lockups during
+> process exit path (exit_mmap) because there are no scheduling points down the
+> free_pages_and_swap_cache path and so the freeing can take long enough to
+> trigger the soft lockup.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-jiang-hotplug
+> The lockup is harmless except when the system is setup to panic on
+> softlockup which is not that unusual.
+> 
+> The simplest way to work around this issue is to explicitly cond_resched per
+> batch in tlb_flush_mmu (1020 pages on x86_64).
+> 
+> ...
+>
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -239,6 +239,7 @@ void tlb_flush_mmu(struct mmu_gather *tlb)
+>  	for (batch = &tlb->local; batch; batch = batch->next) {
+>  		free_pages_and_swap_cache(batch->pages, batch->nr);
+>  		batch->nr = 0;
+> +		cond_resched();
+>  	}
+>  	tlb->active = &tlb->local;
+>  }
 
-Actually, I have something more radical than that in mind. :-)
+tlb_flush_mmu() has a large number of callsites (or callsites which
+call callers, etc), many in arch code.  It's not at all obvious that
+tlb_flush_mmu() is never called from under spinlock?
 
-Namely, we don't need to call the wakeup-related stuff from acpi_pci_bind() and
-acpi_pci_unbind().  It's only there, because I did't find a better place for it
-when I added it.
-
-If we can set the ACPI handles of PCI devices in pci_scan_device(), which isn't
-too difficult to do (I actually have a patch for that and it's not too invasive),
-we can easily move the wakeup enabling stuff to pci_pm_init() and wakeup
-disabling somewhere near pci_release_capabilities().
-
-Then we are only left with the _PRT setup in there, but that could be done
-as soon as in pci_scan_device() too, if I'm not mistaken.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
