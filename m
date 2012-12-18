@@ -1,164 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab2LRP7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:59:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754712Ab2LRP7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:59:33 -0500
-Date: Tue, 18 Dec 2012 18:02:26 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
-        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
-Message-ID: <20121218160226.GA28445@redhat.com>
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
- <1355833972-20319-6-git-send-email-pbonzini@redhat.com>
- <20121218135736.GF26110@redhat.com>
- <50D078C8.208@redhat.com>
- <20121218150327.GB27400@redhat.com>
- <50D09100.3060505@redhat.com>
+	id S1755250Ab2LRQFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 11:05:46 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43150 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755101Ab2LRQFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 11:05:45 -0500
+Date: Tue, 18 Dec 2012 11:05:44 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+cc: swarren@wwwdotorg.org, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] usb: host: tegra: make use of PHY pointer of HCD
+In-Reply-To: <1355813736-2487-1-git-send-email-vbyravarasu@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1212181105210.1604-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D09100.3060505@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 04:51:28PM +0100, Paolo Bonzini wrote:
-> Il 18/12/2012 16:03, Michael S. Tsirkin ha scritto:
-> > On Tue, Dec 18, 2012 at 03:08:08PM +0100, Paolo Bonzini wrote:
-> >> Il 18/12/2012 14:57, Michael S. Tsirkin ha scritto:
-> >>>> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
-> >>>> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
-> >>>> +				 struct virtio_scsi_target_state *tgt,
-> >>>> +				 struct scsi_cmnd *sc)
-> >>>>  {
-> >>>> -	struct virtio_scsi *vscsi = shost_priv(sh);
-> >>>> -	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
-> >>>>  	struct virtio_scsi_cmd *cmd;
-> >>>> +	struct virtio_scsi_vq *req_vq;
-> >>>>  	int ret;
-> >>>>  
-> >>>>  	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
-> >>>> @@ -461,7 +533,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
-> >>>>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
-> >>>>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
-> >>>>  
-> >>>> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
-> >>>> +	req_vq = ACCESS_ONCE(tgt->req_vq);
-> >>>
-> >>> This ACCESS_ONCE without a barrier looks strange to me.
-> >>> Can req_vq change? Needs a comment.
-> >>
-> >> Barriers are needed to order two things.  Here I don't have the second thing
-> >> to order against, hence no barrier.
-> >>
-> >> Accessing req_vq lockless is safe, and there's a comment about it, but you
-> >> still want ACCESS_ONCE to ensure the compiler doesn't play tricks.
-> > 
-> > That's just it.
-> > Why don't you want compiler to play tricks?
-> 
-> Because I want the lockless access to occur exactly when I write it.
+On Tue, 18 Dec 2012, Venu Byravarasu wrote:
 
-It doesn't occur when you write it. CPU can still move accesses
-around. That's why you either need both ACCESS_ONCE and a barrier
-or none.
+> As pointer to PHY structure can be stored in struct usb_hcd
+> making use of it, to call PHY APIs.
+> 
+> Call to usb_phy_shutdown() is moved up in tegra_ehci_remove(),
+> so that to avoid dereferencing of hcd after its freed up.
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+> This patch depends on patch http://marc.info/?l=linux-kernel&m=135581274019690&w=2.
+> Without above patch applied, phy->notify_connect & phy->notify_disconnect are
+> set to some unknown values, which need not be NULL.
+> This creates problem when hcd->phy pointer is initialized hub_port_init() in hub.c
+> calls usb_phy_notify_connect().
+> 
+> Stephen,
+> Can you plz take this patch through tegra tree, so as to take care of the dependencies?
 
-> Otherwise I have one more thing to think about, i.e. what a crazy
-> compiler writer could do with my code.  And having been on the other
-> side of the trench, compiler writers can have *really* crazy ideas.
-> 
-> Anyhow, I'll reorganize the code to move the ACCESS_ONCE closer to the
-> write and make it clearer.
-> 
-> >>>> +	if (virtscsi_kick_cmd(tgt, req_vq, cmd,
-> >>>>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
-> >>>>  			      GFP_ATOMIC) == 0)
-> >>>>  		ret = 0;
-> >>>> @@ -472,6 +545,48 @@ out:
-> >>>>  	return ret;
-> >>>>  }
-> >>>>  
-> >>>> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
-> >>>> +					struct scsi_cmnd *sc)
-> >>>> +{
-> >>>> +	struct virtio_scsi *vscsi = shost_priv(sh);
-> >>>> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
-> >>>> +
-> >>>> +	atomic_inc(&tgt->reqs);
-> >>>
-> >>> And here we don't have barrier after atomic? Why? Needs a comment.
-> >>
-> >> Because we don't write req_vq, so there's no two writes to order.  Barrier
-> >> against what?
-> > 
-> > Between atomic update and command. Once you queue command it
-> > can complete and decrement reqs, if this happens before
-> > increment reqs can become negative even.
-> 
-> This is not a problem.  Please read Documentation/memory-barrier.txt:
-> 
->    The following also do _not_ imply memory barriers, and so may
->    require explicit memory barriers under some circumstances
->    (smp_mb__before_atomic_dec() for instance):
-> 
->         atomic_add();
->         atomic_sub();
->         atomic_inc();
->         atomic_dec();
-> 
->    If they're used for statistics generation, then they probably don't
->    need memory barriers, unless there's a coupling between statistical
->    data.
-> 
-> This is the single-queue case, so it falls under this case.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Aha I missed it's single queue. Correct but please add a comment.
-
-> >>>>  	/* Discover virtqueues and write information to configuration.  */
-> >>>> -	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
-> >>>> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
-> >>>>  	if (err)
-> >>>>  		return err;
-> >>>>  
-> >>>> -	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
-> >>>> -	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
-> >>>> -	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
-> >>>> +	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0], false);
-> >>>> +	virtscsi_init_vq(&vscsi->event_vq, vqs[1], false);
-> >>>> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++)
-> >>>> +		virtscsi_init_vq(&vscsi->req_vqs[i - VIRTIO_SCSI_VQ_BASE],
-> >>>> +				 vqs[i], vscsi->num_queues > 1);
-> >>>
-> >>> So affinity is true if >1 vq? I am guessing this is not
-> >>> going to do the right thing unless you have at least
-> >>> as many vqs as CPUs.
-> >>
-> >> Yes, and then you're not setting up the thing correctly.
-> > 
-> > Why not just check instead of doing the wrong thing?
-> 
-> The right thing could be to set the affinity with a stride, e.g. CPUs
-> 0-4 for virtqueue 0 and so on until CPUs 3-7 for virtqueue 3.
-> 
-> Paolo
-
-I think a simple #vqs == #cpus check would be kind of OK for
-starters, otherwise let userspace set affinity.
-Again need to think what happens with CPU hotplug.
-
-> >> Isn't the same thing true for virtio-net mq?
-> >>
-> >> Paolo
-> > 
-> > Last I looked it checked vi->max_queue_pairs == num_online_cpus().
-> > This is even too aggressive I think, max_queue_pairs >=
-> > num_online_cpus() should be enough.
-> > 
