@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab2LRRtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:49:21 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:63320 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab2LRRtU (ORCPT
+	id S1751639Ab2LRRvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:51:22 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37916 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab2LRRvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:49:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net>
-References: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net>
-Date: Tue, 18 Dec 2012 09:49:18 -0800
-X-Google-Sender-Auth: f-bs6z4bopmxail5WNe3MsgHT5w
-Message-ID: <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
-Subject: Re: Why Linux kernel forced to enter X2APIC mode( just because of
- booting cpu has supported x2apic) without depending on BIOS' setting in
- MSR->x2apic enablement bit ?
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "jarkko.sakkinen@intel.com" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Dec 2012 12:51:20 -0500
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
+Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Bernd Krumboeck <b.krumboeck@gmail.com>, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH v2 00/10] tx/rx LED trigger support
+Date: Tue, 18 Dec 2012 18:50:54 +0100
+Message-Id: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 1:50 AM, Zhang, Lin-Bao (Linux Kernel R&D)
-<linbao.zhang@hp.com> wrote:
-> Hi Suresh and other guys ,
->
->         In 3.4.4/3.6.6 ,I found a x2apic issue . if I am wrong , sorry first , and welcome your correction . thanks for your forwarding other maintainers.
-> I am testing a server , its BIOS is like this:
-> a) If BIOS think the system is of x2apic , it will set x2apic enablement bit in MSR and create x2apic ACPI tables and pass control to OS with x2apic mode
+Hi All,
 
-kernel will check if DMAR table is right or not, if intr-remapping
-could be enabled, kernel will stay with x2apic.
-if intr-remapping can not be enabled (bad dmar table), kernel will
-switch back to xapic mode, but if BSP's X2APIC is
-bigger than 255, then you will get kernel panic.
+this is the v2 of the canbus LED series.
 
-> b) If BIOS feel the system doesn't meet x2apic conditions , it will not set x2apic enablement bit in MSR ,and pass control to OS with xapic mode.
+Changes from v1:
+- moved all framework patches before driver ones
+- added usb_8dev driver patch to the series (based on v9 version)
+- added by S-o-b to all patches in this series
 
-kernel will check if cpuid support x2apic, if it supports x2apic, it
-will check if DMAR/intr-remapping could be enabled, if so
-kernel will switch to x2apic. otherwise it will stay with xapic.
+The last usb_8dev patch requires Bernd's patch.  A part from this the
+set applies cleanly on current mainline.
 
-So you need to make cpuid show does not support x2apic --- check with
-intel they have way to do that.
-or you can pass "nox2apic" in boot command line.
+Thanks,
+Fabio
 
-Yinghai
+
+Bernd Krumboeck (1):
+  can: usb_8dev: add LED trigger support
+
+Fabio Baltieri (7):
+  can: add tx/rx LED trigger support
+  can: flexcan: add LED trigger support
+  can: at91_can: add LED trigger support
+  can: ti_hecc: add LED trigger support
+  can: c_can: add LED trigger support
+  can: mcp251x: add LED trigger support
+  can: sja1000: add LED trigger support
+
+Kurt Van Dijck (2):
+  can: export a safe netdev_priv wrapper for candev
+  can: rename LED trigger name on netdev renames
+
+ drivers/net/can/Kconfig           |  12 ++++
+ drivers/net/can/Makefile          |   2 +
+ drivers/net/can/at91_can.c        |  10 +++
+ drivers/net/can/c_can/c_can.c     |  10 +++
+ drivers/net/can/dev.c             |  18 ++++++
+ drivers/net/can/flexcan.c         |  11 ++++
+ drivers/net/can/led.c             | 129 ++++++++++++++++++++++++++++++++++++++
+ drivers/net/can/mcp251x.c         |  23 +++++--
+ drivers/net/can/sja1000/sja1000.c |  17 ++++-
+ drivers/net/can/ti_hecc.c         |  10 +++
+ drivers/net/can/usb/usb_8dev.c    |  11 ++++
+ include/linux/can/dev.h           |  11 ++++
+ include/linux/can/led.h           |  51 +++++++++++++++
+ 13 files changed, 310 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/net/can/led.c
+ create mode 100644 include/linux/can/led.h
+
+-- 
+1.7.12.1
+
