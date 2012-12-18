@@ -1,87 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab2LRQfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 11:35:10 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:38204 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab2LRQfI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 11:35:08 -0500
-Date: Tue, 18 Dec 2012 16:35:02 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: "rmallon@gmail.com" <rmallon@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "daniel-gl@gmx.net" <daniel-gl@gmx.net>, "sr@denx.de" <sr@denx.de>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "highguy@gmail.com" <highguy@gmail.com>
-Subject: Re: [PATCH RESEND 5/6 v10] gpio: Add device tree support to block
- GPIO API
-Message-ID: <20121218163502.GB32484@e106331-lin.cambridge.arm.com>
-References: <1355495185-24220-1-git-send-email-stigge@antcom.de>
- <1355495185-24220-6-git-send-email-stigge@antcom.de>
- <20121217155153.GD16561@e106331-lin.cambridge.arm.com>
- <50D07DFF.2040102@antcom.de>
+	id S932233Ab2LRQk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 11:40:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51950 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab2LRQkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 11:40:24 -0500
+Date: Tue, 18 Dec 2012 17:40:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: don't register hotcpu notifier from ->css_alloc()
+Message-ID: <20121218164022.GB25208@dhcp22.suse.cz>
+References: <20121214012436.GA25481@localhost>
+ <20121218154030.GC10220@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <50D07DFF.2040102@antcom.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 18 Dec 2012 16:35:03.0910 (UTC) FILETIME=[A1B13060:01CDDD3D]
-X-MC-Unique: 112121816350405801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121218154030.GC10220@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 02:30:23PM +0000, Roland Stigge wrote:
-> Hi Mark,
+On Tue 18-12-12 07:40:30, Tejun Heo wrote:
+> 648bb56d07 ("cgroup: lock cgroup_mutex in cgroup_init_subsys()") made
+> cgroup_init_subsys() grab cgroup_mutex before invoking ->css_alloc()
+> for the root css.  Because memcg registers hotcpu notifier from
+> ->css_alloc() for the root css, this introduced circular locking
+> dependency between cgroup_mutex and cpu hotplug.
 > 
-> On 12/17/2012 04:51 PM, Mark Rutland wrote:
-> >> +static int __devinit gpioblock_of_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct device_node *block;
-> >> +	unsigned *gpios;
-> >> +	int ngpio;
-> >> +	int ret;
-> >> +	struct gpio_block *gb;
-> >> +
-> >> +	for_each_available_child_of_node(pdev->dev.of_node, block) {
-> >> +		int i;
-> >> +
-> >> +		ngpio = of_gpio_count(block);
-> >> +		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
-> > 
-> > What if the block node is malformed? ngpio might be -ENOENT or -EINVAL.
+> Fix it by moving hotcpu notifier registration to a subsys initcall.
 > 
-> AFAICS, of_gpio_count() always returns at least 0. Both if
-> CONFIG_OF_GPIO is y, m or n. And called of_gpio_named_count() also
-> currently doesn't return error values. Further, other drivers using
-> of_gpio_count() don't expect or catch <0.
-
-Whoops. I'd managed to misread the logic in of_gpio_named_count, sorry.
-
-> However, it's reasonable to guard against of_gpio_count() < 1 since
-> probing without provided blocks should be void.
+>   ======================================================
+>   [ INFO: possible circular locking dependency detected ]
+>   3.7.0-rc4-work+ #42 Not tainted
+>   -------------------------------------------------------
+>   bash/645 is trying to acquire lock:
+>    (cgroup_mutex){+.+.+.}, at: [<ffffffff8110c5b7>] cgroup_lock+0x17/0x20
 > 
-> Will change this for the next patch update together with your leakage
-> findings.
+>   but task is already holding lock:
+>    (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8109300f>] cpu_hotplug_begin+0x2f/0x60
 > 
-> Thanks for reporting!
+>   which lock already depends on the new lock.
 > 
-> Roland
+> 
+>   the existing dependency chain (in reverse order) is:
+> 
+>  -> #1 (cpu_hotplug.lock){+.+.+.}:
+>          [<ffffffff810f8357>] lock_acquire+0x97/0x1e0
+>          [<ffffffff81be4701>] mutex_lock_nested+0x61/0x3b0
+>          [<ffffffff810930fc>] get_online_cpus+0x3c/0x60
+>          [<ffffffff811152fb>] rebuild_sched_domains_locked+0x1b/0x70
+>          [<ffffffff81116718>] cpuset_write_resmask+0x298/0x2c0
+>          [<ffffffff8110f70f>] cgroup_file_write+0x1ef/0x300
+>          [<ffffffff811c3b78>] vfs_write+0xa8/0x160
+>          [<ffffffff811c3e82>] sys_write+0x52/0xa0
+>          [<ffffffff81be89c2>] system_call_fastpath+0x16/0x1b
+> 
+>  -> #0 (cgroup_mutex){+.+.+.}:
+>          [<ffffffff810f74de>] __lock_acquire+0x14ce/0x1d20
+>          [<ffffffff810f8357>] lock_acquire+0x97/0x1e0
+>          [<ffffffff81be4701>] mutex_lock_nested+0x61/0x3b0
+>          [<ffffffff8110c5b7>] cgroup_lock+0x17/0x20
+>          [<ffffffff81116deb>] cpuset_handle_hotplug+0x1b/0x560
+>          [<ffffffff8111744e>] cpuset_update_active_cpus+0xe/0x10
+>          [<ffffffff810d0587>] cpuset_cpu_inactive+0x47/0x50
+>          [<ffffffff810c1476>] notifier_call_chain+0x66/0x150
+>          [<ffffffff810c156e>] __raw_notifier_call_chain+0xe/0x10
+>          [<ffffffff81092fa0>] __cpu_notify+0x20/0x40
+>          [<ffffffff81b9827e>] _cpu_down+0x7e/0x2f0
+>          [<ffffffff81b98526>] cpu_down+0x36/0x50
+>          [<ffffffff81b9c12d>] store_online+0x5d/0xe0
+>          [<ffffffff816b6ef8>] dev_attr_store+0x18/0x30
+>          [<ffffffff8123bb50>] sysfs_write_file+0xe0/0x150
+>          [<ffffffff811c3b78>] vfs_write+0xa8/0x160
+>          [<ffffffff811c3e82>] sys_write+0x52/0xa0
+>          [<ffffffff81be89c2>] system_call_fastpath+0x16/0x1b
+>   other info that might help us debug this:
+> 
+>    Possible unsafe locking scenario:
+> 
+>          CPU0                    CPU1
+>          ----                    ----
+>     lock(cpu_hotplug.lock);
+>                                  lock(cgroup_mutex);
+>                                  lock(cpu_hotplug.lock);
+>     lock(cgroup_mutex);
+> 
+>    *** DEADLOCK ***
+> 
+>   5 locks held by bash/645:
+>    #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8123bab8>] sysfs_write_file+0x48/0x150
+>    #1:  (s_active#42){.+.+.+}, at: [<ffffffff8123bb38>] sysfs_write_file+0xc8/0x150
+>    #2:  (x86_cpu_hotplug_driver_mutex){+.+...}, at: [<ffffffff81079277>] cpu_hotplug_driver_lock+0x1
+> +7/0x20
+>    #3:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff81093157>] cpu_maps_update_begin+0x17/0x20
+>    #4:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8109300f>] cpu_hotplug_begin+0x2f/0x60
+> 
+>   stack backtrace:
+>   Pid: 645, comm: bash Not tainted 3.7.0-rc4-work+ #42
+>   Call Trace:
+>    [<ffffffff81bdadfd>] print_circular_bug+0x28e/0x29f
+>    [<ffffffff810f74de>] __lock_acquire+0x14ce/0x1d20
+>    [<ffffffff810f8357>] lock_acquire+0x97/0x1e0
+>    [<ffffffff81be4701>] mutex_lock_nested+0x61/0x3b0
+>    [<ffffffff8110c5b7>] cgroup_lock+0x17/0x20
+>    [<ffffffff81116deb>] cpuset_handle_hotplug+0x1b/0x560
+>    [<ffffffff8111744e>] cpuset_update_active_cpus+0xe/0x10
+>    [<ffffffff810d0587>] cpuset_cpu_inactive+0x47/0x50
+>    [<ffffffff810c1476>] notifier_call_chain+0x66/0x150
+>    [<ffffffff810c156e>] __raw_notifier_call_chain+0xe/0x10
+>    [<ffffffff81092fa0>] __cpu_notify+0x20/0x40
+>    [<ffffffff81b9827e>] _cpu_down+0x7e/0x2f0
+>    [<ffffffff81b98526>] cpu_down+0x36/0x50
+>    [<ffffffff81b9c12d>] store_online+0x5d/0xe0
+>    [<ffffffff816b6ef8>] dev_attr_store+0x18/0x30
+>    [<ffffffff8123bb50>] sysfs_write_file+0xe0/0x150
+>    [<ffffffff811c3b78>] vfs_write+0xa8/0x160
+>    [<ffffffff811c3e82>] sys_write+0x52/0xa0
+>    [<ffffffff81be89c2>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
 
-Sounds good!
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Thanks,
-Mark.
+> ---
+> Michal, if it looks okay, can you please route this patch?
 
+Andrew, could you pick this one up, please?
+
+> Thanks.
+> 
+>  mm/memcontrol.c |   14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 12307b3..7d8a27f 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4982,7 +4982,6 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+>  						&per_cpu(memcg_stock, cpu);
+>  			INIT_WORK(&stock->work, drain_local_stock);
+>  		}
+> -		hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
+>  	} else {
+>  		parent = mem_cgroup_from_cont(cont->parent);
+>  		memcg->use_hierarchy = parent->use_hierarchy;
+> @@ -5644,6 +5643,19 @@ struct cgroup_subsys mem_cgroup_subsys = {
+>  	.use_id = 1,
+>  };
+>  
+> +/*
+> + * The rest of init is performed during ->css_alloc() for root css which
+> + * happens before initcalls.  hotcpu_notifier() can't be done together as
+> + * it would introduce circular locking by adding cgroup_lock -> cpu hotplug
+> + * dependency.  Do it from a subsys_initcall().
+> + */
+> +static int __init mem_cgroup_init(void)
+> +{
+> +	hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
+
+Hmm, we can move enable_swap_cgroup() and per-cpu memcg_stock
+initialization here as well to make the css_alloc a bit cleaner.
+mem_cgroup_soft_limit_tree_init with a trivial BUG_ON() on allocation
+failure can go there as well. 
+
+I will do it.
+
+> +	return 0;
+> +}
+> +subsys_initcall(mem_cgroup_init);
+> +
+>  #ifdef CONFIG_MEMCG_SWAP
+>  static int __init enable_swap_account(char *s)
+>  {
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Michal Hocko
+SUSE Labs
