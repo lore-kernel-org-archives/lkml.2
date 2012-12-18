@@ -1,66 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2LRR1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:27:13 -0500
-Received: from vm-emlprdomg-05.its.yale.edu ([130.132.50.168]:44931 "EHLO
-	vm-emlprdomg-05.its.yale.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755081Ab2LRR1M convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:27:12 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: epoll with ONESHOT possibly fails to deliver events
-From: Andreas Voellmy <andreas.voellmy@yale.edu>
-In-Reply-To: <4854E278-265E-433E-B55E-E60DA4C300F2@yale.edu>
-Date: Tue, 18 Dec 2012 12:27:10 -0500
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "junchang.wang@yale.edu Wang" <junchang.wang@yale.edu>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4335C40C-5F4E-484F-8D4B-38D6A244259A@yale.edu>
-References: <BC680BE9-F6EB-4278-819C-C552009CA884@yale.edu> <AF8622CA-CF9D-4F57-B4EB-FE088A752D80@yale.edu> <20121213093242.GA25436@dcvr.yhbt.net> <2F8919C4-395F-4029-8D4F-AD16A3815FC5@yale.edu> <9BE5F9A7-4D5B-4848-A0BA-55004240B6E0@yale.edu> <4F40C83D-1C29-4654-8B9C-9DBFB63BDC1D@yale.edu> <20121218020732.GA13396@dcvr.yhbt.net> <4854E278-265E-433E-B55E-E60DA4C300F2@yale.edu>
-To: Eric Wong <normalperson@yhbt.net>
-X-Mailer: Apple Mail (2.1499)
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-18_08:2012-12-18,2012-12-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1211240000 definitions=main-1212180122
-X-Yale-Not-Spam: For more info see: http://www.yale.edu/email/spam/content.html
+	id S932187Ab2LRR1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:27:36 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:36987 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab2LRR1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 12:27:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <50BDF72C.2000906@ti.com>
+References: <1354522904-22501-1-git-send-email-prabhakar.lad@ti.com>
+ <1354522904-22501-2-git-send-email-prabhakar.lad@ti.com> <50BDF72C.2000906@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 18 Dec 2012 22:57:13 +0530
+Message-ID: <CA+V-a8s73CR1QYiENQ6D2k=YcwdMjG3H3vy4YDjdyMpDQtg7ag@mail.gmail.com>
+Subject: Re: [PATCH v5 1/2] ARM: davinci: dm365: add support for v4l2 video display
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW, I simplified the test program a bit: I removed the loop that epoll_waits on the eventfd fd and reads from it (I also removed the epoll instance in that loop).  The bug still occurs with this removed. Now the bug is triggered simply by adding the call to eventfd_write after processing each request. 
+Sekhar,
 
-I pushed the update to my github project for the test program.
+Thanks for the review.
 
--Andi
+On Tue, Dec 4, 2012 at 6:44 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 12/3/2012 1:51 PM, Prabhakar Lad wrote:
+>> From: Manjunath Hadli <manjunath.hadli@ti.com>
+>>
+>> Create platform devices for various video modules like venc,osd,
+>> vpbe and v4l2 driver for dm365.
+>>
+>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> ---
+>>  arch/arm/mach-davinci/board-dm365-evm.c |    4 +-
+>>  arch/arm/mach-davinci/davinci.h         |    2 +-
+>>  arch/arm/mach-davinci/dm365.c           |  203 +++++++++++++++++++++++++++++--
+>>  3 files changed, 195 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+>> index 1b4a8ad..0c3dae6 100644
+>> --- a/arch/arm/mach-davinci/board-dm365-evm.c
+>> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
+>> @@ -564,8 +564,6 @@ static struct davinci_uart_config uart_config __initdata = {
+>>
+>>  static void __init dm365_evm_map_io(void)
+>>  {
+>> -     /* setup input configuration for VPFE input devices */
+>> -     dm365_set_vpfe_config(&vpfe_cfg);
+>>       dm365_init();
+>>  }
+>>
+>> @@ -597,6 +595,8 @@ static __init void dm365_evm_init(void)
+>>
+>>       davinci_setup_mmc(0, &dm365evm_mmc_config);
+>>
+>> +     dm365_init_video(&vpfe_cfg, NULL);
+>> +
+>>       /* maybe setup mmc1/etc ... _after_ mmc0 */
+>>       evm_init_cpld();
+>>
+>> diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
+>> index 12d544b..1c2670f 100644
+>> --- a/arch/arm/mach-davinci/davinci.h
+>> +++ b/arch/arm/mach-davinci/davinci.h
+>> @@ -84,7 +84,7 @@ void __init dm365_init_ks(struct davinci_ks_platform_data *pdata);
+>>  void __init dm365_init_rtc(void);
+>>  void dm365_init_spi0(unsigned chipselect_mask,
+>>                       const struct spi_board_info *info, unsigned len);
+>> -void dm365_set_vpfe_config(struct vpfe_config *cfg);
+>> +int __init dm365_init_video(struct vpfe_config *, struct vpbe_config *);
+>>
+>>  /* DM644x function declarations */
+>>  void __init dm644x_init(void);
+>> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+>> index b680c83..cada153 100644
+>> --- a/arch/arm/mach-davinci/dm365.c
+>> +++ b/arch/arm/mach-davinci/dm365.c
+>> @@ -40,10 +40,16 @@
+>>
+>>  #define DM365_REF_FREQ               24000000        /* 24 MHz on the DM365 EVM */
+>>
+>> +#define DM3XX_VDAC_CONFIG            0x01c4002c
+>> +
+>> +#define DM365_RTC_BASE                       0x01c69000
+>> +
+>>  /* Base of key scan register bank */
+>>  #define DM365_KEYSCAN_BASE           0x01c69400
+>>
+>> -#define DM365_RTC_BASE                       0x01c69000
+>> +#define DM365_OSD_REG_BASE           0x01c71c00
+>
+> Nit: Can you call it DM365_OSD_BASE. If we were to include REG in the
+> name, then it should be done consistently. So we would instead have
+> DM365_KEYSCAN_REG_BASE.
+>
+Ok.
 
-On Dec 17, 2012, at 9:35 PM, Andreas Voellmy <andreas.voellmy@yale.edu> wrote:
+>> +
+>> +#define DM365_VENC_REG_BASE          0x01c71e00
+>>
+>>  #define DAVINCI_DM365_VC_BASE                0x01d0c000
+>>  #define DAVINCI_DMA_VC_TX            2
+>> @@ -56,6 +62,11 @@
+>>  #define DM365_EMAC_CNTRL_RAM_OFFSET  0x1000
+>>  #define DM365_EMAC_CNTRL_RAM_SIZE    0x2000
+>>
+>> +#define DM365_VPSS_CLK_CTRL_ADDR             0x44
+>> +#define DM365_VPSS_VENCCLKEN_ENABLE          BIT(3)
+>> +#define DM365_VPSS_DACCLKEN_ENABLE           BIT(4)
+>> +#define DM365_VPSS_PLLC2SYSCLK5_ENABLE               (BIT(5) & ~BIT(6))
+>
+> This expression does not make much sense. It is same as BIT(5). You
+> needed a mask and an enable?
+>
+Agreed its equivalent to BIT(5), but pll2c2sysclk5 depends on two bits
+bit 5 and bit bit 6, so to keep consistent I used them. Do you want me to remove
+it and just keep BIT(5) ?
 
-> 
-> On Dec 17, 2012, at 9:07 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> 
->> Andreas Voellmy <andreas.voellmy@yale.edu> wrote:
->>> There were a couple of errors in the code when I posted my last
->>> message. I have fixed those. The epoll bug still occurs. 
->> 
->> Sorry I haven't gotten around to this.
->> 
->> Can you reproduce this with fewer cores? (I only have 4 at most).
-> 
-> I've been able to reproduce it on as few as 8 cores. I've never seen it occur with fewer than that.
-> 
->> Have you tried the latest stable kernel version?
-> 
-> No, I've only tried 3.4.0.0.
-> 
->> 
->> Can you reproduce this over TCP loopback, or only across two machines?
->> If the latter, it could also be a driver or firmware bug...
-> 
-> Yes, it also occurs when I run the http request generator on the same machine on the loopback interface.
-> 
-> -Andi
+>> +
+>>  static struct pll_data pll1_data = {
+>>       .num            = 1,
+>>       .phys_base      = DAVINCI_PLL1_BASE,
+>> @@ -1232,6 +1243,186 @@ static struct platform_device dm365_isif_dev = {
+>>       },
+>>  };
+>>
+>> +static struct resource dm365_osd_resources[] = {
+>> +     {
+>> +             .start = DM365_OSD_REG_BASE,
+>> +             .end   = DM365_OSD_REG_BASE + 0x100,
+>
+>         .end   = DM365_OSD_REG_BASE + 0xff,
+>
+> A similar fix is needed multiple places below. Sorry, I did not notice
+> this last time around.
+>
+Ok I'll fix it.
 
+Thanks and Regards,
+--Prabhakar Lad
+
+> Thanks,
+> Sekhar
