@@ -1,157 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab2LRGeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 01:34:31 -0500
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:36782 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab2LRGe3 (ORCPT
+	id S1754002Ab2LRGip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 01:38:45 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10605 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab2LRGio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 01:34:29 -0500
-Date: Tue, 18 Dec 2012 06:55:25 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Roland Stigge <stigge@antcom.de>, rmallon@gmail.com,
-        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        broonie@opensource.wolfsonmicro.com, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        daniel-gl@gmx.net, sr@denx.de, linux-arm-kernel@lists.infradead.org,
-        highguy@gmail.com
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
-Message-ID: <20121218055525.GJ23971@game.jcrosoft.org>
-References: <50CBBB25.20002@antcom.de>
- <50CF03FB.2030100@grandegger.com>
- <50CF0744.7040404@grandegger.com>
- <50CF1EF1.2070601@antcom.de>
- <50CF237E.5020409@antcom.de>
- <50CF4838.9000401@grandegger.com>
- <50CF5327.6070205@antcom.de>
- <50CF584E.1040601@grandegger.com>
- <50CF5E45.5030104@antcom.de>
- <50CF76D3.9030708@grandegger.com>
+	Tue, 18 Dec 2012 01:38:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 17 Dec 2012 22:38:42 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <linux-usb@vger.kernel.org>, Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: phy: tegra: Using devm API for memory allocation
+Date: Tue, 18 Dec 2012 11:51:23 +0530
+Message-ID: <1355811683-29981-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50CF76D3.9030708@grandegger.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 414331167076887522
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehkedrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehkedrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20:47 Mon 17 Dec     , Wolfgang Grandegger wrote:
-> On 12/17/2012 07:02 PM, Roland Stigge wrote:
-> > On 12/17/2012 06:37 PM, Wolfgang Grandegger wrote:
-> >> 	/* Do synchronous data output with a single write access */
-> >> 	__raw_writel(~mask, pio + PIO_OWDR);
-> >> 	__raw_writel(mask, pio + PIO_OWER);
-> >> 	__raw_writel(val, pio + PIO_ODSR);
-> >>
-> >> For caching we would need a storage. Not sure if it's worth compared to
-> >> a context switch into the kernel.
-> > 
-> > Block GPIO is not only for you in userspace. ;-) You can also implement
-> > efficient n-bit bus I/O in kernel drivers, n-bit-banging. :-) So not
-> > always context switches involved.
-> 
-> OK, what do you think about the following untested patch:
-> 
-> From b44cad16cbbca84715dffd4cb5268497216add25 Mon Sep 17 00:00:00 2001
-> From: Wolfgang Grandegger <wg@grandegger.com>
-> Date: Mon, 3 Dec 2012 08:31:55 +0100
-> Subject: [PATCH 1/2] gpio: add GPIO block callback functions for AT91
-> 
-> Signed-off-by: Wolfgang Grandegger <wg@grandegger.com>
-> ---
->  arch/arm/mach-at91/gpio.c |   29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
-> 
-> diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
-> index be42cf0..cf6bd45 100644
-> --- a/arch/arm/mach-at91/gpio.c
-> +++ b/arch/arm/mach-at91/gpio.c
-> @@ -42,13 +42,16 @@ struct at91_gpio_chip {
->  	void __iomem		*regbase;	/* PIO bank virtual address */
->  	struct clk		*clock;		/* associated clock */
->  	struct irq_domain	*domain;	/* associated irq domain */
-> +	unsigned long		mask_shadow;	/* synchronous data output */
->  };
->  
->  #define to_at91_gpio_chip(c) container_of(c, struct at91_gpio_chip, chip)
->  
->  static void at91_gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip);
->  static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val);
-> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val);
->  static int at91_gpiolib_get(struct gpio_chip *chip, unsigned offset);
-> +static unsigned long at91_gpiolib_get_block(struct gpio_chip *chip, unsigned long mask);
->  static int at91_gpiolib_direction_output(struct gpio_chip *chip,
->  					 unsigned offset, int val);
->  static int at91_gpiolib_direction_input(struct gpio_chip *chip,
-> @@ -62,7 +65,9 @@ static int at91_gpiolib_to_irq(struct gpio_chip *chip, unsigned offset);
->  			.direction_input  = at91_gpiolib_direction_input, \
->  			.direction_output = at91_gpiolib_direction_output, \
->  			.get		  = at91_gpiolib_get,		\
-> +			.get_block	  = at91_gpiolib_get_block,	\
->  			.set		  = at91_gpiolib_set,		\
-> +			.set_block	  = at91_gpiolib_set_block,	\
->  			.dbg_show	  = at91_gpiolib_dbg_show,	\
->  			.to_irq		  = at91_gpiolib_to_irq,	\
->  			.ngpio		  = nr_gpio,			\
-> @@ -896,6 +901,16 @@ static int at91_gpiolib_get(struct gpio_chip *chip, unsigned offset)
->  	return (pdsr & mask) != 0;
->  }
->  
-> +static unsigned long at91_gpiolib_get_block(struct gpio_chip *chip, unsigned long mask)
-> +{
-> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
-> +	void __iomem *pio = at91_gpio->regbase;
-> +	u32 pdsr;
-> +
-> +	pdsr = __raw_readl(pio + PIO_PDSR);
-> +	return pdsr & mask;
-> +}
-> +
->  static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val)
->  {
->  	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
-> @@ -905,6 +920,20 @@ static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val)
->  	__raw_writel(mask, pio + (val ? PIO_SODR : PIO_CODR));
->  }
->  
-> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
-> +{
-> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
-> +	void __iomem *pio = at91_gpio->regbase;
-> +
-> +	/* Do synchronous data output with a single write access */
-> +	if (mask != at91_gpio->mask_shadow) {
-> +		at91_gpio->mask_shadow = mask;
-> +		__raw_writel(~mask, pio + PIO_OWDR);
-> +		__raw_writel(mask, pio + PIO_OWER);
-> +	}
-> +	__raw_writel(val, pio + PIO_ODSR);
-> +}
-this driver is only for old at91 platfrom if you touch at91 you need to update
-the pinctrl too
+Using devm_kzalloc for allocating memory needed for PHY
+pointer and hence removing kfree calls to PHY pointer.
 
-Best Regards,
-J.
-> +
->  static void at91_gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
->  {
->  	int i;
-> -- 
-> 1.7.9.5
-> 
-> 
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ drivers/usb/phy/tegra_usb_phy.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_phy.c
+index 9d13c81..0b99e1f 100644
+--- a/drivers/usb/phy/tegra_usb_phy.c
++++ b/drivers/usb/phy/tegra_usb_phy.c
+@@ -704,7 +704,6 @@ static void tegra_usb_phy_close(struct usb_phy *x)
+ 		utmip_pad_close(phy);
+ 	clk_disable_unprepare(phy->pll_u);
+ 	clk_put(phy->pll_u);
+-	kfree(phy);
+ }
+ 
+ static int tegra_usb_phy_power_on(struct tegra_usb_phy *phy)
+@@ -740,7 +739,7 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+ 	int i;
+ 	int err;
+ 
+-	phy = kmalloc(sizeof(struct tegra_usb_phy), GFP_KERNEL);
++	phy = devm_kzalloc(dev, sizeof(struct tegra_usb_phy), GFP_KERNEL);
+ 	if (!phy)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -791,7 +790,6 @@ err1:
+ 	clk_disable_unprepare(phy->pll_u);
+ 	clk_put(phy->pll_u);
+ err0:
+-	kfree(phy);
+ 	return ERR_PTR(err);
+ }
+ EXPORT_SYMBOL_GPL(tegra_usb_phy_open);
+-- 
+1.7.0.4
+
