@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2LRVII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 16:08:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33856 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755337Ab2LRVIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 16:08:05 -0500
-Message-ID: <50D0DB1A.5010407@zytor.com>
-Date: Tue, 18 Dec 2012 13:07:38 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755140Ab2LRVLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 16:11:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56378 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2LRVLr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 16:11:47 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jason Wessel <jason.wessel@windriver.com>, Jan Kiszka <jan.kiszka@web.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 06/27] x86, 64bit: early #PF handler set page table
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <1355814959-10573-7-git-send-email-yinghai@kernel.org> <CAE9FiQXrpQtZ7Sq=xfjscKjKzZ6P89uPG0bByER8q48jEgYx_g@mail.gmail.com> <50D0D6D1.70400@zytor.com> <CAE9FiQV5zpTiskB_RwXT8XGNfgTGSwc3AAFqCBusq1t4-OSJHw@mail.gmail.com>
-In-Reply-To: <CAE9FiQV5zpTiskB_RwXT8XGNfgTGSwc3AAFqCBusq1t4-OSJHw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <1355863696.18964.378.camel@misato.fc.hp.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+	<1525730.exQ7msTINR@vostro.rjw.lan>
+	<1355789297.18964.334.camel@misato.fc.hp.com>
+	<4082842.31rfDviYHK@vostro.rjw.lan>
+	<1355847041.18964.369.camel@misato.fc.hp.com>
+	<CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
+	<1355863696.18964.378.camel@misato.fc.hp.com>
+Date: Tue, 18 Dec 2012 13:11:45 -0800
+X-Google-Sender-Auth: V8tTJ7opPvAbBBdbNXKTxv0o55I
+Message-ID: <CAE9FiQV=ByGT7gsTcW1L1wh-+jd6vOe1c5wAnH4kJ9ZaFtOuMg@mail.gmail.com>
+Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from
+ probing ACPI drivers
+From: Yinghai Lu <yinghai@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2012 12:55 PM, Yinghai Lu wrote:
-> On Tue, Dec 18, 2012 at 12:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/18/2012 12:43 PM, Yinghai Lu wrote:
-> 
+On Tue, Dec 18, 2012 at 12:48 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Tue, 2012-12-18 at 10:59 -0800, Yinghai Lu wrote:
+>> On Tue, Dec 18, 2012 at 8:10 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
+>> >
+>> > So, I would propose the following changes.
+>> >
+>> >  - Move the acpi_hot_add_bind() call back to the original place after
+>> > the device_attach() call.
+>> >  - Rename the name of acpi_hot_add_bind() to something like
+>> > acpi_bind_adr_device() since it is no longer hot-add only (and is
+>> > specific to _ADR devices).
+>> >  - Create its pair function, acpi_unbind_adr_device(), which is called
+>> > from acpi_bus_remove().  When a constructor interface is introduced, its
+>> > destructor should be introduced as well.
+>> >  - Remove the binding procedure from acpi_pci_root_add().  This should
+>> > be done in patch [2/6].
 >>
->> That is putting the cart before the horse.  What is the specific requirement
->> with kgdb here (I didn't see any email on that, please don't have private
->> back conversations)?  Either way, however, kgdb is a tool to debug the
->> kernel... having it a barrier for proper functionality of the kernel is not
->> acceptable.
-> 
-> did not hear back from Jason or Jan.
-> 
-> Looks like last mail in LKML from Jason is about Oct 20
-> 
-> looks like kgdb is want DB, BP, and PF are set at first.
-> 
-> and just after that early_param for kgdbwait will get into to hold the kernel.
-> 
-> then command from kgdb could dump ram etc.
-> 
+>> i think we should put jiang four patches before Rafael's patches.
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-jiang-hotplug
+>
+> Thanks for the pointer!  Oh, I did not know that pci_dev gets removed
+> before acpi_bus_trim() is called...
 
-So in that case, kgdb is broken and will need to be fixed up.  That
-happens all the time with debugging tools.
+yes. that is
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=8b4b836d8c56c290bc80ffa0b08b91fb3fe38867
 
-	-hpa
-
+> I looked at Jiang's last two
+> patches for the bind update, and they look good to me.
+>
+> Thanks,
+> -Toshi
+>
