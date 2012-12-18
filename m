@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab2LRWYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:24:23 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:20144 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2LRWYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:24:20 -0500
-Message-ID: <1355868912.18964.381.camel@misato.fc.hp.com>
-Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects
- from probing ACPI drivers
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Date: Tue, 18 Dec 2012 15:15:12 -0700
-In-Reply-To: <3027479.MToB281uxK@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
-	 <4082842.31rfDviYHK@vostro.rjw.lan>
-	 <1355847041.18964.369.camel@misato.fc.hp.com>
-	 <3027479.MToB281uxK@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1755507Ab2LRWYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:24:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34419 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754840Ab2LRWYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 17:24:38 -0500
+Message-ID: <50D0ED00.60804@zytor.com>
+Date: Tue, 18 Dec 2012 14:24:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Subject: Re: [PATCH 6/6] Add 32 bit VDSO support for 32 and 64 bit kernels
+References: <1355823656-13902-1-git-send-email-stefani@seibold.net> <1355823656-13902-7-git-send-email-stefani@seibold.net> <50D09733.3080502@zytor.com> <1355849558.26967.24.camel@wall-e> <50D0B986.7020009@zytor.com> <1355862759.28056.14.camel@wall-e> <CALCETrX2zAA-X7fjoPNSERq0kVDDY43O_u=Oqjq77_ggf64j9A@mail.gmail.com>
+In-Reply-To: <CALCETrX2zAA-X7fjoPNSERq0kVDDY43O_u=Oqjq77_ggf64j9A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-18 at 22:57 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, December 18, 2012 09:10:41 AM Toshi Kani wrote:
-> > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
- :
-> > We need to decide which module is responsible for calling .bind().  I
-> > think it should be the ACPI scan module, not the ACPI PCI root bridge
-> > driver, because:
-> >  - bind() needs to be called when _ADR device is added.  The ACPI scan
-> > module can scan any devices, while the PCI root driver can only scan
-> > when it is added.
-> >  - acpi_bus_remove() calls unbind() at hot-remove.  The same module
-> > should be responsible for both bind() and unbind() handling.
-> >  - It is cleaner to keep struct acpi_device_ops interface to be called
-> > by the ACPI core.
-> 
-> I agree with that. :-)
-> 
-> Moreover, I don't think we need acpi_pci_bind() and acpi_pci_unbind() at all.
-> 
-> > So, I would propose the following changes.
-> > 
-> >  - Move the acpi_hot_add_bind() call back to the original place after
-> > the device_attach() call.
-> >  - Rename the name of acpi_hot_add_bind() to something like
-> > acpi_bind_adr_device() since it is no longer hot-add only (and is
-> > specific to _ADR devices).
-> >  - Create its pair function, acpi_unbind_adr_device(), which is called
-> > from acpi_bus_remove().  When a constructor interface is introduced, its
-> > destructor should be introduced as well. 
-> >  - Remove the binding procedure from acpi_pci_root_add().  This should
-> > be done in patch [2/6].
-> 
-> Well, what about moving the code from acpi_pci_bind()/acpi_pci_unbind()
-> somewhere else and removing those things altogether?
+On 12/18/2012 12:37 PM, Andy Lutomirski wrote:
+>>
+>> There is no introduce of new fix address. There are still there for
+>> x86_64. If this will currently not a major problem on this architecture
+>> than it will not for x86_32 too.
+>
+> Not necessarily true.  On x86-64 (non-compat) the fixmap address is in
+> kernel space (high bit set), so it can't conflict with anything in
+> user space.  On true 32-bit mode, the same applies.  In compat mode,
+> the fixed address is in *user* space and might conflict with existing
+> uses.
+>
 
-Sounds nice.  It will be bonus point if you can do that. :-)
+The other bit is that the fixmap isn't actually fixed on 32 bits, which 
+creates its own set of problems.  As such, I really would prefer a 
+properly PIC solution.
 
-Thanks,
--Toshi
+	-hpa
 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
