@@ -1,85 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab2LRQxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 11:53:38 -0500
-Received: from www84.your-server.de ([213.133.104.84]:40609 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab2LRQxg (ORCPT
+	id S932341Ab2LRQzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 11:55:13 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:62389 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab2LRQzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 11:53:36 -0500
-Message-ID: <1355849558.26967.24.camel@wall-e>
-Subject: Re: [PATCH 6/6] Add 32 bit VDSO support for 32 and 64 bit kernels
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
-        john.stultz@linaro.org, luto@amacapital.net, xemul@parallels.com,
-        gorcunov@openvz.org, andriy.shevchenko@linux.intel.com
-Date: Tue, 18 Dec 2012 17:52:38 +0100
-In-Reply-To: <50D09733.3080502@zytor.com>
-References: <1355823656-13902-1-git-send-email-stefani@seibold.net>
-	 <1355823656-13902-7-git-send-email-stefani@seibold.net>
-	 <50D09733.3080502@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 18 Dec 2012 11:55:11 -0500
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1342995307-884-2-git-send-email-gorcunov@openvz.org>
+References: <1342995307-884-1-git-send-email-gorcunov@openvz.org> <1342995307-884-2-git-send-email-gorcunov@openvz.org>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Tue, 18 Dec 2012 17:54:49 +0100
+Message-ID: <CAKgNAkj-=wLEM+SjA_S8GUp0+0o5R4NuDH4fL-8H-pKCKdLryA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Add kcmp.2 manpage
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 18.12.2012, 08:17 -0800 schrieb H. Peter Anvin:
-> On 12/18/2012 01:40 AM, stefani@seibold.net wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> > 
-> > This patch adds support for 32 bit VDSO.
-> > 
-> > For 32 bit programs running on a 32 bit kernel, the same mechanism is
-> > used as for 64 bit programs running on a 64 bit kernel.
-> > 
-> > For 32 bit programs running under a 64 bit IA32_EMULATION, it is a
-> > little bit more tricky. In this case the VVAR and HPET will be mapped
-> > into the 32 bit address space, by cutting of the upper 32 bit. So the
-> > address for this will not changed in the view of the 32 bit VDSO. The
-> > HPET will be mapped in this case at 0xff5fe000 and the VVAR at 0xff5ff000.
-> > 
-> > The transformation between the in 64 bit kernel representation and the 32 bit
-> > abi will be also provided.
-> > 
-> > So we have one VDSO Source for all.
-> > 
-> 
-> You seem to once again have disregarded the request to make the vvar and
-> hpet part of the vdso address space proper.  If this is not possible or
-> highly impractical, please extend a technical motivation why that is so,
-> rather than simply ignoring it.
-> 
+Hello Cyrill,
 
-Pardon, i never disregarded nor i have agreed that this is going to be a
-part of the VDSO. I currently have also no idea how to do this and i see
-no need at the moment to do this revamp. The 64 bit VDSO lives since
-more than 6 years with this kind of implementation.
+On Mon, Jul 23, 2012 at 12:15 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> NAME
+>        kcmp - compare if two processes do share a particular kernel resource
 
-You asked me to do the VDSO 32 bit stuff for the IA32_EMULATION, before
-it is ready for inclusion into the kernel. Thats exactly what i did. I
-spend the whole weekend of my spare time to do this implementation. Now
-we have them all.
+Very late follow up on this page, sorry. You didn't provide a
+copyright or license for this page. Could you please supply that
+information. See http://www.kernel.org/doc/man-pages/licenses.html .
 
-The patch works perfectly, all issues are solved:
+Cheers,
 
-- Calling conventions
-- ABI transformations
-- System call gateway for X86 32 bit
-- Mapping of the FIXMAP and HPET into the lower 32 bit address space for
-IA32_EMULATION
-- Support for 32 bit programs in 32 kernel and 64 bit kernel
-- One VDSO source for all
+Michael
 
-If you prefer an other solutions, its okay. There are many ways to code
-things. But for now i think it is a good step ahead. That is what i
-currently can provide.
+> SYNOPSIS
+>        #define _GNU_SOURCE         /* See feature_test_macros(7) */
+>        #include <unistd.h>
+>        #include <linux/kcmp.h>
+>        #include <sys/syscall.h>   /* For SYS_xxx definitions */
+>
+>        int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);
+>
+> DESCRIPTION
+>        kcmp() allows to find out if two processes identified by pid1 and pid2
+>        share kernel resources such as virtual memory, file descriptors, file system etc.
+>
+>        The comparison type is one of the following
+>
+>        KCMP_FILE determines whether a file descriptor idx1 in the first process
+>        is the same as another descriptor idx2 in the second process
+>
+>        KCMP_VM compares whether processes share address space
+>
+>        KCMP_FILES compares the file descriptor arrays to see whether the processes
+>        share all files
+>
+>        KCMP_FS compares whether processes share the file system information (the current
+>        umask, working directory, namespace root, etc)
+>
+>        KCMP_SIGHAND compares whether processes share a signal handlers table
+>
+>        KCMP_IO compares whether processes do share I/O context, used mainly for
+>        block I/O scheduling
+>
+>        KCMP_SYSVSEM compares the list of undo operations associated with SYSV semaphores
+>
+>        Note  the  kcmp() is not protected against false positives which may have
+>        place if tasks are running.  Which means one should stop tasks being inspected
+>        with this syscall to obtain meaningful results.
+>
+> RETURN VALUE
+>        kcmp was designed to return values suitable for sorting.  This is particularly handy
+>        when one have to compare a large number of file descriptors.
+>
+>        The return value is merely a result of simple arithmetic comparison of kernel pointers
+>        (when kernel compares resources, it uses their memory addresses).
+>
+>        The  easiest way to explain is to consider an example.  Lets say v1 and v2 are the
+>        addresses of appropriate resources, then the return value is one of the following
+>
+>        0 - v1 is equal to v2 , in other words we have a shared resource here
+>        1 - v1 is less than v2
+>        2 - v1 is greater than v2
+>        3 - v1 is not equal to but ordering information is unavailble.
+>
+>        On error, -1 is returned, and errno is set appropriately.
+>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Al Viro <viro@ZenIV.linux.org.uk>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
+>  man2/kcmp.2 |  113 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 113 insertions(+), 0 deletions(-)
+>  create mode 100644 man2/kcmp.2
+>
+> diff --git a/man2/kcmp.2 b/man2/kcmp.2
+> new file mode 100644
+> index 0000000..5d2e9a3
+> --- /dev/null
+> +++ b/man2/kcmp.2
+> @@ -0,0 +1,113 @@
+> +.TH KCMP 2 2012-02-01 "Linux" "Linux Programmer's Manual"
+> +
+> +.SH NAME
+> +kcmp \- compare if two processes do share a particular kernel resource
+> +
+> +.SH SYNOPSIS
+> +.nf
+> +.BR "#define _GNU_SOURCE" "         /* See feature_test_macros(7) */"
+> +.B #include <unistd.h>
+> +.B #include <linux/kcmp.h>
+> +.BR "#include <sys/syscall.h>   "  "/* For SYS_xxx definitions */"
+> +
+> +.BI "int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);"
+> +.fi
+> +
+> +.SH DESCRIPTION
+> +
+> +.BR kcmp ()
+> +allows to find out if two processes identified by
+> +.I pid1
+> +and
+> +.I pid2
+> +share kernel resources such as virtual memory, file descriptors, file system etc.
+> +
+> +The comparison
+> +.I type
+> +is one of the following
+> +
+> +.BR KCMP_FILE
+> +determines whether a file descriptor
+> +.I idx1
+> +in the first process is the same as another descriptor
+> +.I idx2
+> +in the second process
+> +
+> +.BR KCMP_VM
+> +compares whether processes share address space
+> +
+> +.BR KCMP_FILES
+> +compares the file descriptor arrays to see whether the processes share all files
+> +
+> +.BR KCMP_FS
+> +compares whether processes share the file system information (the current umask,
+> +working directory, namespace root, etc)
+> +
+> +.BR KCMP_SIGHAND
+> +compares whether processes share a signal handlers table
+> +
+> +.BR KCMP_IO
+> +compares whether processes do share I/O context,
+> +used mainly for block I/O scheduling
+> +
+> +.BR KCMP_SYSVSEM
+> +compares the list of undo operations associated with SYSV semaphores
+> +
+> +Note the
+> +.BR kcmp ()
+> +is not protected against false positives which may have place if tasks are
+> +running.
+> +Which means one should stop tasks being inspected with this syscall to obtain
+> +meaningful results.
+> +
+> +.SH "RETURN VALUE"
+> +.B kcmp
+> +was designed to return values suitable for sorting.
+> +This is particularly handy when one have to compare
+> +a large number of file descriptors.
+> +
+> +The return value is merely a result of simple arithmetic comparison
+> +of kernel pointers (when kernel compares resources, it uses their
+> +memory addresses).
+> +
+> +The easiest way to explain is to consider an example.
+> +Lets say
+> +.I v1
+> +and
+> +.I v2
+> +are the addresses of appropriate resources, then the return value
+> +is one of the following
+> +
+> +.B 0
+> +\-
+> +.I v1
+> +is equal to
+> +.IR v2 ,
+> +in other words we have a shared resource here
+> +
+> +.B 1
+> +\-
+> +.I v1
+> +is less than
+> +.I v2
+> +
+> +.B 2
+> +\-
+> +.I v1
+> +is greater than
+> +.I v2
+> +
+> +.B 3
+> +\-
+> +.I v1
+> +is not equal to
+> +.IR v2 ,
+> +but ordering information is unavailable.
+> +
+> +On error, \-1 is returned, and errno is set appropriately.
+> +
+> +.SH "CONFORMING TO"
+> +.BR kcmp ()
+> +is Linux specific and should not be used in programs intended to be portable.
+> +.SH "SEE ALSO"
+> +.BR clone (2)
+> --
+> 1.7.7.6
+>
 
-- Stefani
 
 
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
