@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2LRUHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 15:07:50 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36556 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab2LRUHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 15:07:49 -0500
-Message-ID: <50D0CCB3.10105@linux.vnet.ibm.com>
-Date: Wed, 19 Dec 2012 01:36:11 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <20121213161709.GA19125@redhat.com> <50CA0317.90501@linux.vnet.ibm.com> <20121214180345.GA22024@redhat.com> <50D09180.4080703@linux.vnet.ibm.com> <20121218194357.GA27972@redhat.com>
-In-Reply-To: <20121218194357.GA27972@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121820-5564-0000-0000-000005D9BCA0
+	id S932071Ab2LRUSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 15:18:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753678Ab2LRUSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 15:18:16 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, aquini@redhat.com,
+        mst@redhat.com, amit.shah@redhat.com, agl@us.ibm.com
+Subject: [RFC 1/2] virtio_balloon: move locking to the balloon thread
+Date: Tue, 18 Dec 2012 18:17:29 -0200
+Message-Id: <1355861850-2702-2-git-send-email-lcapitulino@redhat.com>
+In-Reply-To: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
+References: <1355861850-2702-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 01:13 AM, Oleg Nesterov wrote:
-> On 12/18, Srivatsa S. Bhat wrote:
->>
->> So now that we can't avoid disabling and enabling interrupts,
-> 
-> Still I think it would be better to not use local_irq_save/restore
-> directly.
+Today, the balloon_lock mutex is taken and released by fill_balloon()
+and leak_balloon() when both functions are entered and when they
+return.
 
-Sure, we can use this_cpu_add() itself. I explicitly used
-local_irq_save/restore here just to explain my question.
+This commit moves the locking to the caller instead, which is
+the balloon() thread. The balloon thread is the sole caller of those
+functions today.
 
-> And,
-> 
->> I was
->> wondering if we could exploit this to avoid the smp_mb()..
->>
->> Maybe this is a stupid question, but I'll shoot it anyway...
->> Does local_irq_disable()/enable provide any ordering guarantees by any chance?
-> 
-> Oh, I do not know.
-> 
-> But please look at the comment above prepare_to_wait(). It assumes
-> that even spin_unlock_irqrestore() is not the full barrier.
-> 
+The reason for this move is that the next commit will introduce
+a shrinker callback for the balloon driver, which will also call
+leak_balloon() but will require different locking semantics.
 
-Semi-permeable barrier.. Hmm.. 
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+---
+ drivers/virtio/virtio_balloon.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-> In any case. get_online_cpus_atomic() has to use irq_restore, not
-> irq_enable. And _restore does nothing "special" if irqs were already
-> disabled, so I think we can't rely on sti.
-> 
-
-Right, I forgot about the _restore part.
-
->> I tried thinking about other ways to avoid that smp_mb() in the reader,
-> 
-> Just in case, I think there is no way to avoid mb() in _get (although
-> perhaps it can be "implicit").
-> 
-
-Actually, I was trying to avoid mb() in the _fastpath_, when there is no
-active writer. I missed stating that clearly, sorry.
-
-> The writer changes cpu_online_mask and drops the lock. We need to ensure
-> that the reader sees the change in cpu_online_mask after _get returns.
-> 
-
-The write_unlock() will ensure the completion of the update to cpu_online_mask,
-using the same semi-permeable logic that you pointed above. So readers will
-see the update as soon as the writer releases the lock, right?
-
->> but was unsuccessful. So if the above assumption is wrong, I guess we'll
->> just have to go with the version that uses synchronize_sched() at the
->> writer-side.
-> 
-> In this case we can also convert get_online_cpus() to use percpu_rwsem
-> and avoid mutex_lock(&cpu_hotplug.lock), but this is minor I guess.
-> I do not think get_online_cpus() is called too often.
-> 
-
-Yes, we could do that as well. I remember you saying that you had some
-patches for percpu_rwsem to help use it in cpu hotplug code (to make it
-recursive, IIRC).
-
-So, I guess we'll go with the synchronize_sched() approach for percpu rwlocks
-then. Tejun, it is still worthwhile to expose this as a generic percpu rwlock
-and then use it inside cpu hotplug code, right?
-
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 2a70558..877e695 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -133,7 +133,6 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 	/* We can only do one array worth at a time. */
+ 	num = min(num, ARRAY_SIZE(vb->pfns));
+ 
+-	mutex_lock(&vb->balloon_lock);
+ 	for (vb->num_pfns = 0; vb->num_pfns < num;
+ 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ 		struct page *page = balloon_page_enqueue(vb_dev_info);
+@@ -155,7 +154,6 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 	/* Did we get any? */
+ 	if (vb->num_pfns != 0)
+ 		tell_host(vb, vb->inflate_vq);
+-	mutex_unlock(&vb->balloon_lock);
+ }
+ 
+ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+@@ -177,7 +175,6 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ 	/* We can only do one array worth at a time. */
+ 	num = min(num, ARRAY_SIZE(vb->pfns));
+ 
+-	mutex_lock(&vb->balloon_lock);
+ 	for (vb->num_pfns = 0; vb->num_pfns < num;
+ 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ 		page = balloon_page_dequeue(vb_dev_info);
+@@ -193,7 +190,6 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ 	 * is true, we *have* to do it in this order
+ 	 */
+ 	tell_host(vb, vb->deflate_vq);
+-	mutex_unlock(&vb->balloon_lock);
+ 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+ }
+ 
+@@ -306,11 +302,13 @@ static int balloon(void *_vballoon)
+ 					 || freezing(current));
+ 		if (vb->need_stats_update)
+ 			stats_handle_request(vb);
++		mutex_lock(&vb->balloon_lock);
+ 		if (diff > 0)
+ 			fill_balloon(vb, diff);
+ 		else if (diff < 0)
+ 			leak_balloon(vb, -diff);
+ 		update_balloon_size(vb);
++		mutex_unlock(&vb->balloon_lock);
+ 	}
+ 	return 0;
+ }
+-- 
+1.8.0
 
