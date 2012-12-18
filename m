@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab2LRSwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 13:52:41 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:55796 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2LRSwk (ORCPT
+	id S1755515Ab2LRSxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 13:53:10 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:44494 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751348Ab2LRSxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 13:52:40 -0500
-Message-ID: <1355856767.23479.3.camel@gitbox>
-Subject: Re: [PATCH RESEND 3/6] clk: exynos: Fix incorrect usage of
- IS_ERR_OR_NULL
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: kernel-janitors@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        Mike Turquette <mturquette@linaro.org>
-Date: Wed, 19 Dec 2012 07:52:47 +1300
-In-Reply-To: <20121218183944.GH5032@mwanda>
-References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
-	 <1355852048-23188-4-git-send-email-linux@prisktech.co.nz>
-	 <20121218183944.GH5032@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 18 Dec 2012 13:53:08 -0500
+X-Greylist: delayed 1018 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 13:53:08 EST
+Message-ID: <50D0B5A2.2010707@fb.com>
+Date: Tue, 18 Dec 2012 10:27:46 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Michael Kerrisk <mtk.manpages@gmail.com>,
+        <sanjay@google.com>, Paul Turner <pjt@google.com>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v4 0/3] Support volatile for anonymous range
+References: <1355813274-571-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1355813274-571-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Spam-Reason: safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-18_08:2012-12-18,2012-12-18,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-18 at 21:39 +0300, Dan Carpenter wrote:
-> On Wed, Dec 19, 2012 at 06:34:05AM +1300, Tony Prisk wrote:
-> > Resend to include mailing lists.
-> > 
-> > Replace IS_ERR_OR_NULL with IS_ERR on clk_get results.
-> > 
-> 
-> The original code is correct.  clk_get() can return NULL depending
-> on the .config.
-> 
-> regards,
-> dan carpenter
+On 12/17/12 10:47 PM, Minchan Kim wrote:
 
-Thanks for than Dan,
+> I hope more inputs from user-space allocator people and test patch
+> with their allocator because it might need design change of arena
+> management for getting real vaule.
 
-Arguably that seems like an incorrect behaviour on the part of the clock
-subsystem given that the 'proper' function has kernel doc:
+jemalloc knows how to handle MADV_FREE on platforms that support it. 
+This looks similar (we'll need a SIGBUS handler that does the right 
+thing = zero the page + mark it as non-volatile in the common case).
 
-* Returns a struct clk corresponding to the clock producer, or
-* valid IS_ERR() condition containing errno.
+All of this of course assumes that apps madvise the kernel through APIs 
+exposed by the malloc implementation - not via a raw syscall.
 
-Therefore the 'empty' version should adhere to the same rules, and not
-return NULL.
+In other words, some new user space code needs to be written to test 
+this out fully. Sounds feasible though.
 
-I've cc'd Mike Turquette as well for his thoughts.
-
-Regards
-Tony P
-
+  -Arun
