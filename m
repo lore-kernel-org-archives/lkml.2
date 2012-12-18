@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2LRUTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 15:19:32 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55304 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab2LRUTb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 15:19:31 -0500
-Date: Tue, 18 Dec 2012 15:19:01 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Daniel Berrange <berrange@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
+	id S1754963Ab2LRUcH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 15:32:07 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43651 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754389Ab2LRUcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 15:32:03 -0500
+Date: Tue, 18 Dec 2012 21:31:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Joe Perches <joe@perches.com>
+Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
- core_pattern-set-core-helpers-root-and-namespace-to-crashing-process .patch
- added to -mm tree
-Message-ID: <20121218201900.GA10059@hmsreliant.think-freely.org>
-References: <20121217123428.GA1957@redhat.com>
- <20121217150559.GD25322@hmsreliant.think-freely.org>
- <20121217160408.GA20166@redhat.com>
- <20121217183925.GE25322@hmsreliant.think-freely.org>
- <20121218200604.GA28834@redhat.com>
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] scripts: add checkmaintainers.py
+Message-ID: <20121218203159.GI31255@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Joe Perches <joe@perches.com>, Michal Marek <mmarek@suse.cz>,
+	Cesar Eduardo Barros <cesarb@cesarb.net>,
+	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Howells <dhowells@redhat.com>
+References: <1355523576-7596-1-git-send-email-cesarb@cesarb.net>
+ <50CEF080.8010208@suse.cz>
+ <20121217102714.GB31947@liondog.tnic>
+ <1355758544.13361.14.camel@joe-AO722>
+ <20121217170011.GC31866@liondog.tnic>
+ <1355770579.13361.41.camel@joe-AO722>
+ <1355771383.13361.44.camel@joe-AO722>
+ <20121218182838.GF31255@liondog.tnic>
+ <1355859281.30366.29.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121218200604.GA28834@redhat.com>
+In-Reply-To: <1355859281.30366.29.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 09:06:04PM +0100, Oleg Nesterov wrote:
-> On 12/17, Neil Horman wrote:
-> >
-> > On Mon, Dec 17, 2012 at 05:04:08PM +0100, Oleg Nesterov wrote:
-> > >
-> > > > Is there a way to switch all namespaces, except for the pid
-> > > > namespace?
-> > >
-> > > Which exactly namespaces you want to change?
-> > >
-> > Ideally, I want the pipe reader process to execute in the same namespaces that
-> > the crashing process executed in (i.e. the pipe reader should execute as though
-> > the crashing process forked it).
-> 
-> Yes, and we probably want to change pid_ns as well. But afaics currently
-> this is not possible, even setns can't do this.
-> 
-> I am starting to think that in this case, perhaps, do_coredump() should
-> not use call_usermode_helper() at all. Perhaps we can do clone(CLONE_VM) +
-> commit_creds/restore_root/etc + kernel_execve.
-> 
-Yeah, I was comming to this same conclusion last night as well.  I'd rather keep
-using the call_usermode_helper solution if at all possible, but perhaps we can
-integrate a clone path into it.
+On Tue, Dec 18, 2012 at 11:34:41AM -0800, Joe Perches wrote:
+> If no patch is attached, you should get
+>
+> ERROR: Does not appear to be a unified-diff format patch
 
-> > > To be honest, I do not understand this patch at all. It seems that
-> > > you need to do something like sys_setns(). But if we do this, then
-> > > why we can't make core_pattern per-namespace?
-> > >
-> > That actually would make sense, although we can't really use setns directly, as
-> > I don't think we want to open file descriptors to do this manipulation in the
-> > kernel.
-> 
-> Yes, yes, sure. But this is solveable. We do not really need to open
-> the files in /proc, we could use proc_ns_operations->install() directly.
-> Although this is not pretty.
-> 
-Its not pretty, no.  If we use the above clone solution however, we can avoid
-this entirely.
+Well, it needs to handle the case where a patch simply and only renames
+a file.
 
-> > Perhaps its best just to restrict this patch to adjusting the root fs location
-> > for the chroot case.
-> 
-> Probably... at least for the start.
-> 
-> BTW. Of course this is subjective, but personally I think that "||"
-> looks strange. Perhaps it would be better to add something like
-> --croot argument?
-> 
-The || is ambiguous with its simmilarity to a shell 'or' command, but I don't
-think the --croot argument is much better on that front, as that then becomes
-ambiguous with arguments supplied to the pipe reader directly.  The token should
-be leading the pipe_reader string in core_pattern to indicate a change in
-environment independent of the executable path.  Perhaps |^ or something
-simmilar?
+Then, even if a patch follows:
 
-Either way, Andrew, could you please drop this patch?  Olegs comments I think
-make it pretty clear I've got some more work to do on this.
+diff --git a/README b/README.old
+similarity index 99%
+rename from README
+rename to README.old
+index a24ec89ba442..b0a7aa56c3cc 100644
+--- a/README
++++ b/README.old
+@@ -1,3 +1,6 @@
++TEST
++
++
+         Linux kernel release 3.x <http://kernel.org/>
+ 
+ These are the release notes for Linux version 3.  Read them carefully,
+--
 
-Thanks!
-Neil
+it says:
 
+$ git diff --cached HEAD -- | ./scripts/checkpatch.pl --strict -
+Must be run from the top-level dir. of a kernel tree
+
+If I comment out the following hunk:
+
+        if (!defined $root) { 
+                print "Must be run from the top-level dir. of a kernel tree\n";
+                exit(2);
+        }
+
+then it works, albeit with a bunch of warnings:
+
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1558.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1558.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1304.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1304.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1304.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1304.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1304.
+Use of uninitialized value $root in concatenation (.) or string at ./scripts/checkpatch.pl line 1304.
+CHECK: Patch renames README to README.old, update MAINTAINERS?
+...
+
+Looks like this would need a bit more work.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
