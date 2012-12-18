@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab2LRWOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:14:18 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49464 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab2LRWOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:14:16 -0500
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 17:14:15 EST
-From: Cong Ding <dinggnu@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+	id S1755475Ab2LRWOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:14:54 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:48556 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754203Ab2LRWOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 17:14:52 -0500
+Message-ID: <1355868892.3982.6.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Warn on #include <uapi/...
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
         linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] ipv6: addrconf.c: remove unnecessary "if"
-Date: Tue, 18 Dec 2012 23:08:56 +0100
-Message-Id: <1355868536-1622-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+Date: Tue, 18 Dec 2012 14:14:52 -0800
+In-Reply-To: <14276.1355862945@warthog.procyon.org.uk>
+References: <1355860368.30366.33.camel@joe-AO722>
+	 <9cfc0861cd3ae0a7d4e72056c00b8bebef1490eb.1355853060.git.joe@perches.com>
+	 <6433.1355840610@warthog.procyon.org.uk>
+	 <12373.1355858223@warthog.procyon.org.uk>
+	 <14276.1355862945@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the value of err is always negative if it goes to errout, so we don't need to
-check the value of err.
+On Tue, 2012-12-18 at 20:35 +0000, David Howells wrote:
+> Joe Perches <joe@perches.com> wrote:
+[]
+> > arch/powerpc/include/asm/kvm_para.h
+> > ...
+> > -#include <linux/types.h>
+> > +#include <uapi/asm/kvm_para.h>
+> 
+> No, that is a correct alteration.
+> 
+> The example I gave was:
+> 
+> 	- #include <asm/epapr_hcalls.h>
+> 	++#include <uapi/asm/epapr_hcalls.h>
+> 
+> which is to be found in arch/powerpc/include/uapi/asm/kvm_para.h.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- net/ipv6/addrconf.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Just to verify, any file in any path [.../]include/uapi/...
+should not itself have a line like '#include <uapi/...' ?
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 6fca01f..408cac4a 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -534,8 +534,7 @@ void inet6_netconf_notify_devconf(struct net *net, int type, int ifindex,
- 	rtnl_notify(skb, net, 0, RTNLGRP_IPV6_NETCONF, NULL, GFP_ATOMIC);
- 	return;
- errout:
--	if (err < 0)
--		rtnl_set_sk_err(net, RTNLGRP_IPV6_NETCONF, err);
-+	rtnl_set_sk_err(net, RTNLGRP_IPV6_NETCONF, err);
- }
- 
- static const struct nla_policy devconf_ipv6_policy[NETCONFA_MAX+1] = {
--- 
-1.7.10.4
 
