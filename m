@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab2LREpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 23:45:08 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:58411 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2LREpG (ORCPT
+	id S1753979Ab2LREsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 23:48:11 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15169 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LREsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 23:45:06 -0500
-Date: Mon, 17 Dec 2012 20:45:13 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] mm/swap: add independed bio pool for swap
-In-Reply-To: <20121214110118.8387.66431.stgit@zurg>
-Message-ID: <alpine.LNX.2.00.1212172024500.5927@eggly.anvils>
-References: <20121214110118.8387.66431.stgit@zurg>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 17 Dec 2012 23:48:09 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 17 Dec 2012 20:48:09 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] arm: tegra: remove USB address related macros from iomap.h
+Date: Tue, 18 Dec 2012 10:01:01 +0530
+Message-ID: <1355805061-22789-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Dec 2012, Konstantin Khlebnikov wrote:
+USB register base address and sizes defined in iomap.h
+are not used in any files other than board-dt-tegra20.c.
+Hence removed those defines from header file and using
+the absolute values in board files.
 
-> This bio pool guarantees reclaiming progress for anonymous pages.
-> All avaliable bio in fs_bio_set may be borrowed by writeback which may
-> never ends, because disk too slow or broken. I have seen this situation in
-> real life in system where was a lot of bio requests to a loop device which
-> laying on top of special fuse-based filesystem.
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ arch/arm/mach-tegra/board-dt-tegra20.c |    6 +++---
+ arch/arm/mach-tegra/iomap.h            |    9 ---------
+ 2 files changed, 3 insertions(+), 12 deletions(-)
 
-Hmm, perhaps, I'm not at all sure.
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index 734d9cc..aae399b 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -81,11 +81,11 @@ struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S1_BASE, "tegra20-i2s.0", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S2_BASE, "tegra20-i2s.1", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-das", TEGRA_APB_MISC_DAS_BASE, "tegra20-das", NULL),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB_BASE, "tegra-ehci.0",
++	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5000000, "tegra-ehci.0",
+ 		       &tegra_ehci1_pdata),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB2_BASE, "tegra-ehci.1",
++	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5004000, "tegra-ehci.1",
+ 		       &tegra_ehci2_pdata),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", TEGRA_USB3_BASE, "tegra-ehci.2",
++	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5008000, "tegra-ehci.2",
+ 		       &tegra_ehci3_pdata),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-apbdma", TEGRA_APB_DMA_BASE, "tegra-apbdma", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-pwm", TEGRA_PWFM_BASE, "tegra-pwm", NULL),
+diff --git a/arch/arm/mach-tegra/iomap.h b/arch/arm/mach-tegra/iomap.h
+index db8be51..399fbca 100644
+--- a/arch/arm/mach-tegra/iomap.h
++++ b/arch/arm/mach-tegra/iomap.h
+@@ -240,15 +240,6 @@
+ #define TEGRA_CSITE_BASE		0x70040000
+ #define TEGRA_CSITE_SIZE		SZ_256K
+ 
+-#define TEGRA_USB_BASE			0xC5000000
+-#define TEGRA_USB_SIZE			SZ_16K
+-
+-#define TEGRA_USB2_BASE			0xC5004000
+-#define TEGRA_USB2_SIZE			SZ_16K
+-
+-#define TEGRA_USB3_BASE			0xC5008000
+-#define TEGRA_USB3_SIZE			SZ_16K
+-
+ #define TEGRA_SDMMC1_BASE		0xC8000000
+ #define TEGRA_SDMMC1_SIZE		SZ_512
+ 
+-- 
+1.7.0.4
 
-I don't particularly want to fragment off yet another pool if it's
-not the right approach.  Or maybe it's loop or fuse which should
-have the pool, rather than swap.
-
-If the disk is slow, I'd expect us to be okay; but if it's not
-responding at all, then yes, those mempools will remain exhausted.
-You're imagining swap going to a more reliable disk, but it's being
-starved by the unresponding disk, so deserves a separate pool?
-
-Let's Cc Mel and Jens, who will each have plenty of experience of
-running out of bios/mempools, and the proper way to avoid or accept it.
-
-(Note that BIO_POOL_SIZE is only 2 nowadays: when mempools were
-first introduced, indeed they were sized larger; but once we found so
-much memory disappearing into them, they got cut down to the minimum
-needed for forward progress - I forget why that's 2 not 1).
-
-Hugh
-
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> ---
->  mm/page_io.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/page_io.c b/mm/page_io.c
-> index 78eee32..699f85e 100644
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
-> @@ -22,12 +22,14 @@
->  #include <linux/frontswap.h>
->  #include <asm/pgtable.h>
->  
-> +static struct bio_set *swap_bio_set;
-> +
->  static struct bio *get_swap_bio(gfp_t gfp_flags,
->  				struct page *page, bio_end_io_t end_io)
->  {
->  	struct bio *bio;
->  
-> -	bio = bio_alloc(gfp_flags, 1);
-> +	bio = bio_alloc_bioset(gfp_flags, 1, swap_bio_set);
->  	if (bio) {
->  		bio->bi_sector = map_swap_page(page, &bio->bi_bdev);
->  		bio->bi_sector <<= PAGE_SHIFT - 9;
-> @@ -290,3 +292,12 @@ int swap_set_page_dirty(struct page *page)
->  		return __set_page_dirty_no_writeback(page);
->  	}
->  }
-> +
-> +static int __init swap_bio_init(void)
-> +{
-> +	swap_bio_set = bioset_create(SWAP_CLUSTER_MAX, 0);
-> +	if (!swap_bio_set)
-> +		panic("can't allocate swap_bio_set\n");
-> +	return 0;
-> +}
-> +late_initcall(swap_bio_init);
