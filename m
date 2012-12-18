@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2LRMNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 07:13:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49459 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab2LRMNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 07:13:37 -0500
-Date: Tue, 18 Dec 2012 07:13:17 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Steve French <smfrench@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: [PATCH] cifs: Do not enable debugging code by default
-Message-ID: <20121218071317.01cbc41b@tlielax.poochiereds.net>
-In-Reply-To: <CAH2r5mt=4ZoGR_4hP52uHsZabXpPfh1sa1X0GSg6W4=fawNFnA@mail.gmail.com>
-References: <1355737085-6671-1-git-send-email-bp@alien8.de>
-	<CAH2r5mt=4ZoGR_4hP52uHsZabXpPfh1sa1X0GSg6W4=fawNFnA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754747Ab2LRMVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 07:21:22 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57615 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab2LRMVV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 07:21:21 -0500
+References: <50CC9663.4010200@gmail.com> <20121216021508.GG9806@dastard>
+In-Reply-To: <20121216021508.GG9806@dastard>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <60E209F1-F797-42C2-9F41-43BF7839B2A3@dilger.ca>
+Cc: ys <sickamd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+X-Mailer: iPhone Mail (10A525)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH] vfs: update atimes over one day in the past or future
+Date: Tue, 18 Dec 2012 05:14:57 -0700
+To: Dave Chinner <david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012 09:30:33 -0600
-Steve French <smfrench@gmail.com> wrote:
-
-> I don't think taking out debugging makes sense - we need debugging a
-> lot more often than expected even to diagnose user errors (usually
-> relating to session establishment failures, since we are very limited
-> in how much information can be passed back in mount).   If we had
-> dynamic trace points for cifs and for common vfs entry points, or if
-> the distros shipped dual cifs modules (one with debugging and one
-> without), I wouldn't mind disabling it - but multiple times a month we
-> have to diagnose user problems (sometimes user errors, sometimes
-> server bugs etc.) by enabling debugging.
+On 2012-12-15, at 19:15, Dave Chinner <david@fromorbit.com> wrote:
 > 
-> On Mon, Dec 17, 2012 at 3:38 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > Debugging code is generally disabled in the configurator since it is
-> > only for devs and testers and not for the majority of the installations.
-> >
-> > Cc: Joe Perches <joe@perches.com>
-> > Cc: Jeff Layton <jlayton@redhat.com>
-> > Cc: Steve French <sfrench@samba.org>
-> > Cc: linux-cifs@vger.kernel.org
-> > Signed-off-by: Borislav Petkov <bp@alien8.de>
-> > ---
-> >  fs/cifs/Kconfig | 1 -
-> >  1 file changed, 1 deletion(-)
-> >
-> > diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
-> > index 21ff76c22a17..241a0e2853c5 100644
-> > --- a/fs/cifs/Kconfig
-> > +++ b/fs/cifs/Kconfig
-> > @@ -124,7 +124,6 @@ config CIFS_ACL
-> >
-> >  config CIFS_DEBUG
-> >         bool "Enable CIFS debugging routines"
-> > -       default y
-> >         depends on CIFS
-> >         help
-> >            Enabling this option adds helpful debugging messages to
-> > --
-> > 1.8.1.rc2
-> >
+> On Sat, Dec 15, 2012 at 11:25:23PM +0800, ys wrote:
+>> From 3d56c131b58a21c05bcd677b9d2ba915abcbf195 Mon Sep 17 00:00:00 2001
+>> From: yangsheng <sickamd@gmail.com>
+>> Date: Sat, 15 Dec 2012 21:46:22 +0800
+>> Subject: [PATCH] vfs: update atimes over one day in the past or future
+>> 
+>> Relatime should update the inode atime if it is more than one day
+>> in the future.  The original problem seen was a tarball that had
+>> a bad atime in the distant future, but could also happen if someone
+>> fat-fingers a "touch".  The future atime will never be fixed.
+>> 
+>> Without relatime enabled, a future atime is updated to the current
+>> kernel time on access.  Relatime is meant to reduce the frequency
+>> of atime updates, not decide if whether the system clock or the
+>> inode timestamp is correct or not.
+>> 
+>> Signed-off-by: Yang Sheng <sickamd@gmail.com>
+>> Signed-off-by: Andreas Dilger <adilger@dilger.ca>
+>> Acked-by: David Chinner <david@fromorbit.com>
+> 
+> No I didn't. Please don't add tags that someone has not added
+> directly in a reply to the original patch.
 
-I agree that we often need cifsFYI debug info in order to troubleshoot
-problems. The question here though is whether compiling those in ought
-to be the default.
+That's my fault. I thought you'd OK'd the patch with the revised commit comment. 
 
-In generic distro kernels, I think we do want that turned on even in
-non-debug kernels. On an embedded arch, it's less compelling.
+>> CC: stable@vger.kernel.org
+>> ---
+>> fs/inode.c | 7 ++++---
+>> 1 ??????????????????????????? 4 ???(+)????????? 3 ???(-)
+> 
+> There's something wrong with the character encoding you are using...
 
-Might it make sense to couple this change with a change to the
-CONFIG_CIFS_DEBUG help text? Something like:
+Chinese locale, but probably doesn't matter since text below "---" isn't in the commit anyway?
 
-"This option defaults to 'N', but enabling this is strongly encouraged
-unless memory is severely constrained."
+>> diff --git a/fs/inode.c b/fs/inode.c
+>> index 14084b7..8713dc8 100644
+>> --- a/fs/inode.c
+>> +++ b/fs/inode.c
+>> @@ -1488,10 +1488,11 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
+>>        return 1;
+>> 
+>>    /*
+>> -     * Is the previous atime value older than a day? If yes,
+>> -     * update atime:
+>> +     * Update atime if it's older than a day or more than a day
+>> +     * in the future, which we assume is corrupt.
+>> +     *         
+> 
+> A time in the future is not a corruption - the comment should
+> reflect exactly what you've put in the commit message. i.e. that
+> relatime is for reducing updates, not preventing atime from ever
+> moving backwards.
 
-Then we can just try to make sure non-embedded distros enable it.
--- 
-Jeff Layton <jlayton@redhat.com>
+Ok. 
+
+> Also, you've added an extra line of whitespace damage that doesn't
+> need to be there.....
+> 
+> FWIW, could you write a test for xfstests for this behaviour
+> so we can confirm that we don't break it in future?
+
+Sure, I'll take a crack at that. 
+
+Cheers, Andreas
