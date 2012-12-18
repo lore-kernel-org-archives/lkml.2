@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab2LRHle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:41:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192Ab2LRHld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:41:33 -0500
-Date: Tue, 18 Dec 2012 08:41:14 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/3] perf tool: Add support to include non architectural
- event aliases
-Message-ID: <20121218074114.GB1283@krava.brq.redhat.com>
-References: <1355751425-7993-1-git-send-email-jolsa@redhat.com>
- <1355751425-7993-3-git-send-email-jolsa@redhat.com>
- <871ueokvto.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871ueokvto.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753997Ab2LRHn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:43:57 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:38309 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2LRHn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 02:43:56 -0500
+X-Greylist: delayed 21704 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 02:43:56 EST
+Message-ID: <1355816625.32595.0.camel@phoenix>
+Subject: [PATCH] clk: max77686: Fix return value checking for devm_kzalloc
+From: Axel Lin <axel.lin@ingics.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 18 Dec 2012 15:43:45 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 10:12:03AM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> On Mon, 17 Dec 2012 14:37:04 +0100, Jiri Olsa wrote:
-> > Adding support to parse non architectural event aliases
-> > for given cpu. These aliases will be provided as 'events'
-> > directory like architectural ones provided by kernel.
-> >
-> [snip]
-> > +
-> > +$(OUTPUT)$(OUTPUT)arch/$(ARCH)/util/pmu.o: $(OUTPUT)arch/$(ARCH)/util/pmu.c $(OUTPUT)PERF-CFLAGS
-> 
-> Double OUTPUT ? ;)
+devm_kzalloc returns NULL on failure.
 
-humm, yes ;-)
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/clk/clk-max77686.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> 
-> 
-> > +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-> > +	 '-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
-> > +	 '-DPREFIX="$(prefix_SQ)"' \
-> > +	 $<
-> [snip]
-> > +static int cpu_aliases(struct list_head *head)
-> > +{
-> > +	unsigned vendol, model;
-> 
-> s/vendol/vendor/ ?
+diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
+index d098f72..8944214 100644
+--- a/drivers/clk/clk-max77686.c
++++ b/drivers/clk/clk-max77686.c
+@@ -132,7 +132,7 @@ static int max77686_clk_register(struct device *dev,
+ 
+ 	max77686->lookup = devm_kzalloc(dev, sizeof(struct clk_lookup),
+ 					GFP_KERNEL);
+-	if (IS_ERR(max77686->lookup))
++	if (!max77686->lookup)
+ 		return -ENOMEM;
+ 
+ 	max77686->lookup->con_id = hw->init->name;
+@@ -151,13 +151,13 @@ static int max77686_clk_probe(struct platform_device *pdev)
+ 
+ 	max77686_clks = devm_kzalloc(&pdev->dev, sizeof(struct max77686_clk *)
+ 					* MAX77686_CLKS_NUM, GFP_KERNEL);
+-	if (IS_ERR(max77686_clks))
++	if (!max77686_clks)
+ 		return -ENOMEM;
+ 
+ 	for (i = 0; i < MAX77686_CLKS_NUM; i++) {
+ 		max77686_clks[i] = devm_kzalloc(&pdev->dev,
+ 					sizeof(struct max77686_clk), GFP_KERNEL);
+-		if (IS_ERR(max77686_clks[i]))
++		if (!max77686_clks[i])
+ 			return -ENOMEM;
+ 	}
+ 
+-- 
+1.7.9.5
 
-http://en.wikipedia.org/wiki/The_13th_Warrior
-... 'Wendol', fiends who come with the mist to kill and eat human flesh ...
 
-;-)
 
-thanks
-jirka
