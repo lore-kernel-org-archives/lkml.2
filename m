@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab2LRUGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 15:06:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60781 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754877Ab2LRUGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 15:06:01 -0500
-Date: Tue, 18 Dec 2012 21:06:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Daniel Berrange <berrange@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
-	core_pattern-set-core-helpers-root-and-namespace-to-crashing-process
-	.patch added to -mm tree
-Message-ID: <20121218200604.GA28834@redhat.com>
-References: <20121217123428.GA1957@redhat.com> <20121217150559.GD25322@hmsreliant.think-freely.org> <20121217160408.GA20166@redhat.com> <20121217183925.GE25322@hmsreliant.think-freely.org>
+	id S1755178Ab2LRUHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 15:07:50 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36556 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755145Ab2LRUHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 15:07:49 -0500
+Message-ID: <50D0CCB3.10105@linux.vnet.ibm.com>
+Date: Wed, 19 Dec 2012 01:36:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121217183925.GE25322@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <20121213161709.GA19125@redhat.com> <50CA0317.90501@linux.vnet.ibm.com> <20121214180345.GA22024@redhat.com> <50D09180.4080703@linux.vnet.ibm.com> <20121218194357.GA27972@redhat.com>
+In-Reply-To: <20121218194357.GA27972@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121820-5564-0000-0000-000005D9BCA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17, Neil Horman wrote:
->
-> On Mon, Dec 17, 2012 at 05:04:08PM +0100, Oleg Nesterov wrote:
-> >
-> > > Is there a way to switch all namespaces, except for the pid
-> > > namespace?
-> >
-> > Which exactly namespaces you want to change?
-> >
-> Ideally, I want the pipe reader process to execute in the same namespaces that
-> the crashing process executed in (i.e. the pipe reader should execute as though
-> the crashing process forked it).
+On 12/19/2012 01:13 AM, Oleg Nesterov wrote:
+> On 12/18, Srivatsa S. Bhat wrote:
+>>
+>> So now that we can't avoid disabling and enabling interrupts,
+> 
+> Still I think it would be better to not use local_irq_save/restore
+> directly.
 
-Yes, and we probably want to change pid_ns as well. But afaics currently
-this is not possible, even setns can't do this.
+Sure, we can use this_cpu_add() itself. I explicitly used
+local_irq_save/restore here just to explain my question.
 
-I am starting to think that in this case, perhaps, do_coredump() should
-not use call_usermode_helper() at all. Perhaps we can do clone(CLONE_VM) +
-commit_creds/restore_root/etc + kernel_execve.
+> And,
+> 
+>> I was
+>> wondering if we could exploit this to avoid the smp_mb()..
+>>
+>> Maybe this is a stupid question, but I'll shoot it anyway...
+>> Does local_irq_disable()/enable provide any ordering guarantees by any chance?
+> 
+> Oh, I do not know.
+> 
+> But please look at the comment above prepare_to_wait(). It assumes
+> that even spin_unlock_irqrestore() is not the full barrier.
+> 
 
-> > To be honest, I do not understand this patch at all. It seems that
-> > you need to do something like sys_setns(). But if we do this, then
-> > why we can't make core_pattern per-namespace?
-> >
-> That actually would make sense, although we can't really use setns directly, as
-> I don't think we want to open file descriptors to do this manipulation in the
-> kernel.
+Semi-permeable barrier.. Hmm.. 
 
-Yes, yes, sure. But this is solveable. We do not really need to open
-the files in /proc, we could use proc_ns_operations->install() directly.
-Although this is not pretty.
+> In any case. get_online_cpus_atomic() has to use irq_restore, not
+> irq_enable. And _restore does nothing "special" if irqs were already
+> disabled, so I think we can't rely on sti.
+> 
 
-> Perhaps its best just to restrict this patch to adjusting the root fs location
-> for the chroot case.
+Right, I forgot about the _restore part.
 
-Probably... at least for the start.
+>> I tried thinking about other ways to avoid that smp_mb() in the reader,
+> 
+> Just in case, I think there is no way to avoid mb() in _get (although
+> perhaps it can be "implicit").
+> 
 
-BTW. Of course this is subjective, but personally I think that "||"
-looks strange. Perhaps it would be better to add something like
---croot argument?
+Actually, I was trying to avoid mb() in the _fastpath_, when there is no
+active writer. I missed stating that clearly, sorry.
 
-Oleg.
+> The writer changes cpu_online_mask and drops the lock. We need to ensure
+> that the reader sees the change in cpu_online_mask after _get returns.
+> 
+
+The write_unlock() will ensure the completion of the update to cpu_online_mask,
+using the same semi-permeable logic that you pointed above. So readers will
+see the update as soon as the writer releases the lock, right?
+
+>> but was unsuccessful. So if the above assumption is wrong, I guess we'll
+>> just have to go with the version that uses synchronize_sched() at the
+>> writer-side.
+> 
+> In this case we can also convert get_online_cpus() to use percpu_rwsem
+> and avoid mutex_lock(&cpu_hotplug.lock), but this is minor I guess.
+> I do not think get_online_cpus() is called too often.
+> 
+
+Yes, we could do that as well. I remember you saying that you had some
+patches for percpu_rwsem to help use it in cpu hotplug code (to make it
+recursive, IIRC).
+
+So, I guess we'll go with the synchronize_sched() approach for percpu rwlocks
+then. Tejun, it is still worthwhile to expose this as a generic percpu rwlock
+and then use it inside cpu hotplug code, right?
+
+
+Regards,
+Srivatsa S. Bhat
 
