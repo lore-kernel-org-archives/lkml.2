@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab2LRVLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 16:11:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56378 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2LRVLr (ORCPT
+	id S1755378Ab2LRVMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 16:12:10 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:41982 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab2LRVMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 16:11:47 -0500
+	Tue, 18 Dec 2012 16:12:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <1355863696.18964.378.camel@misato.fc.hp.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
-	<1525730.exQ7msTINR@vostro.rjw.lan>
-	<1355789297.18964.334.camel@misato.fc.hp.com>
-	<4082842.31rfDviYHK@vostro.rjw.lan>
-	<1355847041.18964.369.camel@misato.fc.hp.com>
-	<CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
-	<1355863696.18964.378.camel@misato.fc.hp.com>
-Date: Tue, 18 Dec 2012 13:11:45 -0800
-X-Google-Sender-Auth: V8tTJ7opPvAbBBdbNXKTxv0o55I
-Message-ID: <CAE9FiQV=ByGT7gsTcW1L1wh-+jd6vOe1c5wAnH4kJ9ZaFtOuMg@mail.gmail.com>
-Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from
- probing ACPI drivers
-From: Yinghai Lu <yinghai@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+In-Reply-To: <20121211182720.GC29421@kroah.com>
+References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
+	<20121211182720.GC29421@kroah.com>
+Date: Tue, 18 Dec 2012 13:12:05 -0800
+Message-ID: <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
+Subject: Re: zram: fix invalid memory references during disk write
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 12:48 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Tue, 2012-12-18 at 10:59 -0800, Yinghai Lu wrote:
->> On Tue, Dec 18, 2012 at 8:10 AM, Toshi Kani <toshi.kani@hp.com> wrote:
->> > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
->> >
->> > So, I would propose the following changes.
->> >
->> >  - Move the acpi_hot_add_bind() call back to the original place after
->> > the device_attach() call.
->> >  - Rename the name of acpi_hot_add_bind() to something like
->> > acpi_bind_adr_device() since it is no longer hot-add only (and is
->> > specific to _ADR devices).
->> >  - Create its pair function, acpi_unbind_adr_device(), which is called
->> > from acpi_bus_remove().  When a constructor interface is introduced, its
->> > destructor should be introduced as well.
->> >  - Remove the binding procedure from acpi_pci_root_add().  This should
->> > be done in patch [2/6].
+On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
+>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+>> of incompressible pages") which caused invalid memory references
+>> during disk write. Invalid references could occur in two cases:
+>>  - Incoming data expands on compression: In this case, reference was
+>> made to kunmap()'ed bio page.
+>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+>> case, reference was made to a kfree()'ed buffer.
 >>
->> i think we should put jiang four patches before Rafael's patches.
+>> Fixes bug 50081:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
 >>
->> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-jiang-hotplug
+>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
+>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
+>>
+>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
+>>                               # zram_decompress_page() function
+>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+>> Reported-by: Tomas M <tomas@slax.org>
+>> Reviewed-by: Minchan Kim <minchan@kernel.org>
+>> ---
+>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+>>  1 file changed, 24 insertions(+), 15 deletions(-)
 >
-> Thanks for the pointer!  Oh, I did not know that pci_dev gets removed
-> before acpi_bus_trim() is called...
+> This patch fails to apply to 3.6.10:
+>
+> patching file drivers/staging/zram/zram_drv.c
+> Hunk #1 succeeded at 282 (offset 17 lines).
+> Hunk #2 FAILED at 286.
+> Hunk #3 succeeded at 319 (offset 17 lines).
+> Hunk #4 succeeded at 340 (offset 17 lines).
+> Hunk #5 succeeded at 353 (offset 17 lines).
+> Hunk #6 succeeded at 368 (offset 17 lines).
+> Hunk #7 succeeded at 385 (offset 17 lines).
+> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
+>
+> Please redo this patch and resend it if you wish for it to be applied to
+> the 3.6-stable tree.
+>
+>
 
-yes. that is
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=8b4b836d8c56c290bc80ffa0b08b91fb3fe38867
+Please apply this patch to stable tree asap.
 
-> I looked at Jiang's last two
-> patches for the bind update, and they look good to me.
->
-> Thanks,
-> -Toshi
->
+As mentioned in changelog above, this patch depends on 37b51fd: zram: factor-out
+zram_decompress_page() function. You will not get any rejects after
+this patch is
+applied.
+
+ - Nitin
