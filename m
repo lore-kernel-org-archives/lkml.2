@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab2LRPq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:46:59 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:51413 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab2LRPq4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:46:56 -0500
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [patch 3/7] mm: vmscan: clarify how swappiness, highest
- priority, memcg interact
-Thread-Topic: [patch 3/7] mm: vmscan: clarify how swappiness, highest
- priority, memcg interact
-Thread-Index: AQHN3II/O6dqwebIPkiSLfmFB0XPrJgdYnYg
-Date: Mon, 17 Dec 2012 19:37:55 +0000
-Message-ID: <8631DC5930FA9E468F04F3FD3A5D007214AD80D6@USINDEM103.corp.hds.com>
-References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
- <1355767957-4913-4-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1355767957-4913-4-git-send-email-hannes@cmpxchg.org>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932238Ab2LRPrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:47:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932088Ab2LRPrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 10:47:23 -0500
+Date: Tue, 18 Dec 2012 16:47:10 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 07/14] perf ui/hist: Add support for event group view
+Message-ID: <20121218154710.GN1283@krava.brq.redhat.com>
+References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
+ <1355726345-29553-8-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-18_05:2012-12-18,2012-12-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1212180106
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355726345-29553-8-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 01:12 PM, Johannes Weiner wrote:
-> A swappiness of 0 has a slightly different meaning for global reclaim 
-> (may swap if file cache really low) and memory cgroup reclaim (never 
-> swap, ever).
+On Mon, Dec 17, 2012 at 03:38:58PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> In addition, global reclaim at highest priority will scan all LRU 
-> lists equal to their size and ignore other balancing heuristics.
-> UNLESS swappiness forbids swapping, then the lists are balanced based 
-> on recent reclaim effectiveness.  UNLESS file cache is running low, 
-> then anonymous pages are force-scanned.
-> 
-> This (total mess of a) behaviour is implicit and not obvious from the 
-> way the code is organized.  At least make it apparent in the code flow 
-> and document the conditions.  It will be it easier to come up with 
-> sane semantics later.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Show group members' overhead also when showing the leader's if event
+> group is enabled.  Use macro for defining hpp functions which looks
+> almost identical.
 
-Reviewed-by: Satoru Moriya <satoru.moriya@hds.com>
+SNIP
 
+> -
+> -static int hpp__color_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
+> -				  struct perf_hpp *hpp, struct hist_entry *he)
+> +static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+> +			      u64 (*get_field)(struct hist_entry *),
+> +			      const char *fmt, hpp_snprint_fn print_fn)
+
+it's hard to tell from diff, but the function looks like this (group part):
+
+        if (symbol_conf.event_group) {
+                int prev_idx, idx_delta, i;
+                struct perf_evsel *evsel = hists_to_evsel(hists);
+                struct hist_entry *pair;
+                int nr_members = evsel->nr_members;
+
+                if (nr_members <= 1)
+                        return ret;
+
+                prev_idx = perf_evsel__group_idx(evsel);
+
+                list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+                        u64 period = get_field(pair);
+                        u64 total = pair->hists->stats.total_period;
+
+                        if (!total)
+                                continue;
+
+                        evsel = hists_to_evsel(pair->hists);
+                        idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
+
+                        for (i = 0; i < idx_delta; i++) {
+                                ret += print_fn(hpp->buf + ret, hpp->size - ret,
+                                                fmt, 0.0);
+                        }
+
+                        ret += print_fn(hpp->buf + ret, hpp->size - ret,
+                                        fmt, 100.0 * period / total);
+
+                        prev_idx += 1 + idx_delta;
+                }
+
+                idx_delta = nr_members - prev_idx - 1;
+
+                for (i = 0; i < idx_delta; i++) {
+                        ret += print_fn(hpp->buf + ret, hpp->size - ret,
+                                        fmt, 0.0);
+                }
+        }
+
+The temporary array (initial send) was more clear to me.. but if
+this is the preffered way I wont object, since this is another place
+that would benefit from hist_entries array linking.. when (and if)
+there's ever patch for that ;-)
+
+I think this code now suffers from mischosen data layer
+
+jirka
