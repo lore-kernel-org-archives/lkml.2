@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab2LRTOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:14:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754517Ab2LRTOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:14:04 -0500
-Date: Tue, 18 Dec 2012 20:10:13 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>, bigeasy@linutronix.de,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org,
-        benh@kernel.crashing.org, mingo@elte.hu, anton@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] uprobes/powerpc: Make use of generic routines
-	to enable single step
-Message-ID: <20121218191013.GA26913@redhat.com>
-References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150946.7727.82735.stgit@suzukikp> <20121214200241.GA27195@redhat.com> <20121218053603.GB6116@in.ibm.com>
+	id S1755628Ab2LRTOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:14:32 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:56282 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab2LRTOa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:14:30 -0500
+Date: Tue, 18 Dec 2012 11:14:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 12/12] cfq-iosched: add hierarchical cfq_group statistics
+Message-ID: <20121218191425.GO1844@htj.dyndns.org>
+References: <1355524885-22719-1-git-send-email-tj@kernel.org>
+ <1355524885-22719-13-git-send-email-tj@kernel.org>
+ <20121218191117.GD24050@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121218053603.GB6116@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121218191117.GD24050@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18, Ananth N Mavinakayanahalli wrote:
->
-> On Fri, Dec 14, 2012 at 09:02:41PM +0100, Oleg Nesterov wrote:
-> > >
-> > > -	uprobe_restore_context_sstep(&utask->autask);
-> > > +	uprobe_restore_context_sstep(&utask->autask, regs);
-> >
-> > I am not sure ppc needs this, but note that x86 does a bit more.
-> >
-> > Not only we need to restore the "single-step" state, we need to
-> > send SIGTRAP if it was not set by us. The same for _skip_sstep.
->
-> Do you mean restoring the TF equivalent on powerpc to what it was before?
->
-> If so, powerpc has always been unique in this aspect -- the single-step
-> exception handler *always* resets the sstep bit in MSR. Any user needing
-> to continue single-stepping has to explicitly set it again.
+Hello, Vivek.
 
-I meant another thing.
+On Tue, Dec 18, 2012 at 02:11:17PM -0500, Vivek Goyal wrote:
+> All these stats needs to be mentioned in blkio-controller.txt file to 
+> keep that file uptodate.
+> 
+> I think it also needs another word about nature of hierarchical stats.
+> That is they represent current view of the system and don't store the
+> history. So if a cgroup was created, did some IO and it was removed, we
+> lost that history. Deleted cgroup's parent will have no history of
+> stats of deleted cgroup.
 
-Suppose that, say, gdb tries to single-step over the probed insn.
-In this case we need to send SIGTRAP after xol/emulate. Please look at
-send_sig(SIGTRAP) in arch/x86/kernel/uprobes.c:arch_uprobe_post_xol()
-and arch_uprobe_skip_sstep().
+Haven't thought about that.  That's nasty.
 
-Oleg.
+> Hence these stats can't be used for things like billing purposes.
+> 
+> IIRC, this is different from the way we collect hierarhical stats for
+> memory controller.
+> 
+> But I kind of like this because stat update overhead does not increase
+> with depth of hierarchy. Primarily stat reader pays the price of
+> traversing through all the stats.
 
+Yeah, hmmm, maybe we should add another set of counters to carry stats
+from dead ones?  Avoiding hierarchical accounting overhead in hot path
+while remembering by-gones shouldn't be that hard.  Will work on that.
+
+Thanks.
+
+-- 
+tejun
