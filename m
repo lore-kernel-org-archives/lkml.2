@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2LRUrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 15:47:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58526 "EHLO mail.skyhub.de"
+	id S1755388Ab2LRUti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 15:49:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33649 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab2LRUrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 15:47:20 -0500
-Date: Tue, 18 Dec 2012 21:47:16 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] scripts: add checkmaintainers.py
-Message-ID: <20121218204716.GJ31255@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Joe Perches <joe@perches.com>, Michal Marek <mmarek@suse.cz>,
-	Cesar Eduardo Barros <cesarb@cesarb.net>,
-	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>
-References: <50CEF080.8010208@suse.cz>
- <20121217102714.GB31947@liondog.tnic>
- <1355758544.13361.14.camel@joe-AO722>
- <20121217170011.GC31866@liondog.tnic>
- <1355770579.13361.41.camel@joe-AO722>
- <1355771383.13361.44.camel@joe-AO722>
- <20121218182838.GF31255@liondog.tnic>
- <1355859281.30366.29.camel@joe-AO722>
- <20121218203159.GI31255@liondog.tnic>
- <1355862997.30366.36.camel@joe-AO722>
+	id S1754556Ab2LRUth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 15:49:37 -0500
+Message-ID: <50D0D6D1.70400@zytor.com>
+Date: Tue, 18 Dec 2012 12:49:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1355862997.30366.36.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Wessel, Jason" <jason.wessel@windriver.com>
+Subject: Re: [PATCH v7 06/27] x86, 64bit: early #PF handler set page table
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <1355814959-10573-7-git-send-email-yinghai@kernel.org> <CAE9FiQXrpQtZ7Sq=xfjscKjKzZ6P89uPG0bByER8q48jEgYx_g@mail.gmail.com>
+In-Reply-To: <CAE9FiQXrpQtZ7Sq=xfjscKjKzZ6P89uPG0bByER8q48jEgYx_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 12:36:37PM -0800, Joe Perches wrote:
-> You renamed README which is one of the filenames used
-> when checkpatch verifies the top-level dir kernel tree.
-> 
-> Don't do that, README is a required filename.
+On 12/18/2012 12:43 PM, Yinghai Lu wrote:
+> On Mon, Dec 17, 2012 at 11:15 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> -v8: we need to keep that handler alive until init_mem_mapping and don't
+>>       let early_trap_init to trash that early #PF handler.
+>>       So split early_trap_pf_init out and move it down. - Yinghai
+>
+> Peter,
+>
+> looks like moving down early_trap_init would break kgdb.
+>
+> we could make temporary early pgt cover 1G, and kernel and stop updating later.
+>
+> please check attached patch.
+>
+> init_mem_mapping need to be change a little: map BRK at first then switch pgt.
+>
+> Thanks
+>
+> Yinghai
+>
 
-$ git mv scripts/checkpatch{,-2}.pl
-$ git diff --cached HEAD -- | ./scripts/checkpatch-2.pl --strict -
-ERROR: Does not appear to be a unified-diff format patch
+That is putting the cart before the horse.  What is the specific 
+requirement with kgdb here (I didn't see any email on that, please don't 
+have private back conversations)?  Either way, however, kgdb is a tool 
+to debug the kernel... having it a barrier for proper functionality of 
+the kernel is not acceptable.
 
-total: 1 errors, 0 warnings, 0 checks, 0 lines checked
-
-Your patch has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
- [ adjust .git/hooks/pre-commit to use the new ./scripts/checkpatch-2.pl script
-   name]
-
-$ git commit -a
-scripts/checkpatch-2.pl:2685: space before tab in indent.
-+                                               $ok = 1;
-scripts/checkpatch-2.pl:2691: space before tab in indent.
-+                                               $ok = 1;
-
-No joy :(
-
-Let's try another file:
-
-$ git mv arch/x86/Kconfig{,.old}
-$ git diff --cached HEAD -- | ./scripts/checkpatch.pl --strict -
-ERROR: Does not appear to be a unified-diff format patch
-
-total: 1 errors, 0 warnings, 0 checks, 0 lines checked
-
-Your patch has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
-$ git commit -a
-arch/x86/Kconfig.old:451: trailing whitespace.
-+         Internet Device(MID) platform.
-
-Oh well, enough games for today.
+	-hpa
 
 -- 
-Regards/Gruss,
-    Boris.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
