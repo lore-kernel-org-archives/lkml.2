@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2LRLrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 06:47:31 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:24222 "EHLO
+	id S1754687Ab2LRLvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 06:51:24 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45166 "EHLO
 	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066Ab2LRLr3 (ORCPT
+	with ESMTP id S1754094Ab2LRLvW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 06:47:29 -0500
-Date: Tue, 18 Dec 2012 12:46:40 +0100
+	Tue, 18 Dec 2012 06:51:22 -0500
+Date: Tue, 18 Dec 2012 12:51:05 +0100
 From: Jean Delvare <khali@linux-fr.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Ryan Mallon <rmallon@gmail.com>, Joe Perches <joe@perches.com>,
-        walter harms <wharms@bfs.de>, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
-        shubhrajyoti@ti.com, linux-media@vger.kernel.org,
+To: Amaury =?ISO-8859-1?B?RGVjcuptZQ==?= <amaury.decreme@gmail.com>
+Cc: "Wolfram Sang" <w.sang@pengutronix.de>, nelson@sis.com,
+        mhoffman@lightlink.com, amalysh@web.de, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for 
- i2c_msg initialization
-Message-ID: <20121218124640.5b1e7176@endymion.delvare>
-In-Reply-To: <alpine.DEB.2.02.1210110836030.2010@hadrien>
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr>
-	<5071AEF3.6080108@bfs.de>
-	<alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6>
-	<5071B834.1010200@bfs.de>
-	<alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6>
-	<1349633780.15802.8.camel@joe-AO722>
-	<alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6>
-	<1349645970.15802.12.camel@joe-AO722>
-	<alpine.DEB.2.02.1210072342460.2745@localhost6.localdomain6>
-	<1349646718.15802.16.camel@joe-AO722>
-	<20121007225639.364a41b4@infradead.org>
-	<50723661.6040107@gmail.com>
-	<alpine.DEB.2.02.1210081028340.1989@hadrien>
-	<20121009203238.63d2275f@infradead.org>
-	<alpine.DEB.2.02.1210110836030.2010@hadrien>
+Subject: Re: [PATCH resend 0/2] I2C: sis630: add sis964 support
+Message-ID: <20121218125105.25c2cbb6@endymion.delvare>
+In-Reply-To: <1346204115-30293-1-git-send-email-amaury.decreme@gmail.com>
+References: <1346204115-30293-1-git-send-email-amaury.decreme@gmail.com>
 X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+Hi Amaury,
 
-On Thu, 11 Oct 2012 08:45:43 +0200 (CEST), Julia Lawall wrote:
-> I found 6 cases where there are more than 2 messages in the array.  I
-> didn't check how many cases where there are two messages but there is
-> something other than one read and one write.
+On Wed, 29 Aug 2012 03:35:13 +0200, Amaury Decrême wrote:
+> This serie of patches brings SIS964 support to i2c-sis630.
 > 
-> Perhaps a reasonable option would be to use
+> The SiS datasheets have been used.
 > 
-> I2C_MSG_READ
-> I2C_MSG_WRITE
-> I2C_MSG_READ_OP
-> I2C_MSG_WRITE_OP
+> The SIS964 isn't part of the SIS96X family and behaves differently.
+> For i2c, this array show the differences between sis630 and sis964.
+> 	+------------------------+--------------------+-------------------+
+> 	|                        |     SIS630/730     |      SIS964       |
+> 	+------------------------+--------------------+-------------------+
+> 	| Clock                  | 14kHz/56kHz        | 55.56kHz/27.78kHz |
+> 	| SMBus registers offset | 0x80               | 0xE0              |
+> 	| SMB_CNT                | Bit 1 = Slave Busy | Bit 1 = Bus probe |
+> 	| SMB_COUNT              | 4:0 bits           | 5:0 bits          |
+> 	+------------------------+--------------------+-------------------+
 > 
-> The last two are for the few cases where more flags are specified.  As
-> compared to the original proposal of I2C_MSG_OP, these keep the READ or
-> WRITE idea in the macro name.  The additional argument to the OP macros
-> would be or'd with the read or write (nothing to do in this case) flags as
-> appropriate.
+> The other differences doesn't affect the functions provided by the original
+> i2c-sis630 driver.
 > 
-> Mauro proposed INIT_I2C_READ_SUBADDR for the very common case where a
-> message array has one read and one write.  I think that putting one
-> I2C_MSG_READ and one I2C_MSG_WRITE in this case is readable enough, and
-> avoids the need to do something special for the cases that don't match the
-> expectations of INIT_I2C_READ_SUBADDR.
+> The first patch is mandatory as it adds supports for SIS964 bus.
+> The second patch is optional. It depends on the first patch.
 > 
-> I propose not to do anything for the moment either for sizes or for
-> message or buffer arrays that contain only one element.
+> Amaury Decrême (2):
+>   I2C: sis630: sis964 bus
+>   I2C: sis630: Cleaning and cosmetics
+> 
+>  Documentation/i2c/busses/i2c-sis630 |   17 +-
+>  drivers/i2c/busses/Kconfig          |    4 +-
+>  drivers/i2c/busses/i2c-sis630.c     |  445 +++++++++++++++++++++--------------
+>  3 files changed, 278 insertions(+), 188 deletions(-)
 
-Please note that I resigned from my position of i2c subsystem
-maintainer, so I will not handle this. If you think this is important,
-you'll have to resubmit and Wolfram will decide what he wants to do
-about it.
+I reviewed these two patches 2 months ago, but did not hear back from
+you since then. Do you plan to resubmit these patches with the
+improvements I suggested? I would hate to see your work time and mine
+wasted.
 
+Thanks,
 -- 
 Jean Delvare
