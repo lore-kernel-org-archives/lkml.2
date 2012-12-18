@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2LRLcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 06:32:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44979 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006Ab2LRLcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 06:32:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,308,1355126400"; 
-   d="scan'208";a="258883155"
-Date: Tue, 18 Dec 2012 11:34:59 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <wmb@firmworks.com>
-Subject: Re: [PATCH V2] serial: tegra: add serial driver
-Message-ID: <20121218113459.5ce6f4a5@bob.linux.org.uk>
-In-Reply-To: <1355813993-24867-1-git-send-email-ldewangan@nvidia.com>
-References: <1355813993-24867-1-git-send-email-ldewangan@nvidia.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754387Ab2LRLnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 06:43:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35174 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab2LRLnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 06:43:07 -0500
+Message-ID: <50D056A5.3040501@kernel.dk>
+Date: Tue, 18 Dec 2012 12:42:29 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [boot crash] Re: [GIT PULL[ block drivers bits for 3.8
+References: <50CF89EB.2030109@kernel.dk> <20121218092554.GA3823@gmail.com>
+In-Reply-To: <20121218092554.GA3823@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012 12:29:53 +0530
-Laxman Dewangan <ldewangan@nvidia.com> wrote:
-
-> Nvidia's Tegra has multiple uart controller which supports:
-> - APB dma based controller fifo read/write.
-> - End Of Data interrupt in incoming data to know whether end
->   of frame achieve or not.
-> - Hw controlled RTS and CTS flow control to reduce SW overhead.
+On 2012-12-18 10:25, Ingo Molnar wrote:
 > 
-> Add serial driver to use all above feature.
+> * Jens Axboe <axboe@kernel.dk> wrote:
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>> Hi Linus,
+>>
+>> Now that the core bits are in, here are the driver bits for 3.8. The
+>> branch contains:
+> 
+> FYI, I'm getting a divide-by-zero boot crash (serial log capture 
+> below) with the attached config.
+> 
+> Reproduced with 848b81415c42.
+> 
+> The bug might have gone upstream between 8874e81 (Linus's tree 
+> from yesterday) and 848b81415c42 (Linus's tree from today). Or 
+> it's from earlier and I only triggered it today.
+> 
+> ( Note that every log line is duplicated, haven't tracked that
+>   down yet, earlyprintk=,keep might be busted. )
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+Bah. Does the below fix it up for you?
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index acb4f7b..067f195 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1188,12 +1188,13 @@ static inline int queue_discard_alignment(struct request_queue *q)
+ 
+ static inline int queue_limit_discard_alignment(struct queue_limits *lim, sector_t sector)
+ {
+-	sector_t alignment = sector << 9;
+-	alignment = sector_div(alignment, lim->discard_granularity);
++	sector_t alignment;
+ 
+-	if (!lim->max_discard_sectors)
++	if (!lim->max_discard_sectors || !lim->discard_granularity)
+ 		return 0;
+ 
++	alignment = sector << 9;
++	alignment = sector_div(alignment, lim->discard_granularity);
+ 	alignment = lim->discard_granularity + lim->discard_alignment - alignment;
+ 	return sector_div(alignment, lim->discard_granularity);
+ }
+
+-- 
+Jens Axboe
+
