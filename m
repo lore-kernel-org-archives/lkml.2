@@ -1,106 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2LRHV3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:21:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30234 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab2LRHQ1 (ORCPT
+	id S1754614Ab2LRHVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:21:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38983 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2LRHQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:16:27 -0500
+	Tue, 18 Dec 2012 02:16:26 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v7 09/27] x86: add get_ramdisk_image/size()
-Date: Mon, 17 Dec 2012 23:15:41 -0800
-Message-Id: <1355814959-10573-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v7 05/27] x86, realmode: Separate real_mode reserve and setup
+Date: Mon, 17 Dec 2012 23:15:37 -0800
+Message-Id: <1355814959-10573-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
 References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There several places to find ramdisk information early for reserving
-and relocating.
+After we switch to use #PF handler help to set page table, init_level4_pgt
+will have entries set after init_mem_mapping.
+We need to move coping init_level4_pgt to trampoline_pgd after than.
 
-Use functions to make code more readable and consistent.
+So separate reserve_real_mode out
 
-Later will add ext_ramdisk_image/size in those functions to support
-loading ramdisk above 4g.
+Move the setup after init_mem_mapping()
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/realmode.h |    3 ++-
+ arch/x86/kernel/setup.c         |    4 +++-
+ arch/x86/realmode/init.c        |   30 +++++++++++++++++++-----------
+ 3 files changed, 24 insertions(+), 13 deletions(-)
 
+diff --git a/arch/x86/include/asm/realmode.h b/arch/x86/include/asm/realmode.h
+index fe1ec5b..9c6b890 100644
+--- a/arch/x86/include/asm/realmode.h
++++ b/arch/x86/include/asm/realmode.h
+@@ -58,6 +58,7 @@ extern unsigned char boot_gdt[];
+ extern unsigned char secondary_startup_64[];
+ #endif
+ 
+-extern void __init setup_real_mode(void);
++void reserve_real_mode(void);
++void setup_real_mode(void);
+ 
+ #endif /* _ARCH_X86_REALMODE_H */
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 1b8a8cc..644a123 100644
+index 81ea5a5..01b22d0 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -294,12 +294,25 @@ static void __init reserve_brk(void)
+@@ -913,10 +913,12 @@ void __init setup_arch(char **cmdline_p)
+ 	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
+ 			(max_pfn_mapped<<PAGE_SHIFT) - 1);
  
- #ifdef CONFIG_BLK_DEV_INITRD
+-	setup_real_mode();
++	reserve_real_mode();
  
-+static u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	init_mem_mapping();
+ 
++	setup_real_mode();
 +
-+	return ramdisk_image;
+ 	memblock.current_limit = get_max_mapped();
+ 	dma_contiguous_reserve(0);
+ 
+diff --git a/arch/x86/realmode/init.c b/arch/x86/realmode/init.c
+index 815eec1..8893bae 100644
+--- a/arch/x86/realmode/init.c
++++ b/arch/x86/realmode/init.c
+@@ -8,9 +8,26 @@
+ struct real_mode_header *real_mode_header;
+ u32 *trampoline_cr4_features;
+ 
+-void __init setup_real_mode(void)
++void __init reserve_real_mode(void)
+ {
+ 	phys_addr_t mem;
++	unsigned char *base;
++	size_t size = PAGE_ALIGN(real_mode_blob_end - real_mode_blob);
++
++	/* Has to be in very low memory so we can execute real-mode AP code. */
++	mem = memblock_find_in_range(0, 1<<20, size, PAGE_SIZE);
++	if (!mem)
++		panic("Cannot allocate trampoline\n");
++
++	base = __va(mem);
++	memblock_reserve(mem, size);
++	real_mode_header = (struct real_mode_header *) base;
++	printk(KERN_DEBUG "Base memory trampoline at [%p] %llx size %zu\n",
++	       base, (unsigned long long)mem, size);
 +}
-+static u64 __init get_ramdisk_size(void)
++
++void __init setup_real_mode(void)
 +{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	return ramdisk_size;
-+}
-+
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -338,8 +351,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
+ 	u16 real_mode_seg;
+ 	u32 *rel;
+ 	u32 count;
+@@ -25,16 +42,7 @@ void __init setup_real_mode(void)
+ 	u64 efer;
+ #endif
  
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image();
-+	ramdisk_size  = get_ramdisk_size();
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -363,8 +376,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-	/* Has to be in very low memory so we can execute real-mode AP code. */
+-	mem = memblock_find_in_range(0, 1<<20, size, PAGE_SIZE);
+-	if (!mem)
+-		panic("Cannot allocate trampoline\n");
+-
+-	base = __va(mem);
+-	memblock_reserve(mem, size);
+-	real_mode_header = (struct real_mode_header *) base;
+-	printk(KERN_DEBUG "Base memory trampoline at [%p] %llx size %zu\n",
+-	       base, (unsigned long long)mem, size);
++	base = (unsigned char *)real_mode_header;
  
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -376,8 +389,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
+ 	memcpy(base, real_mode_blob, size);
  
 -- 
 1.7.10.4
