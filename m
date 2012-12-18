@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab2LRQuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 11:50:11 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:49936 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932278Ab2LRQuJ (ORCPT
+	id S932343Ab2LRQw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 11:52:29 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46647 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab2LRQw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 11:50:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <50D056A5.3040501@kernel.dk>
-References: <50CF89EB.2030109@kernel.dk> <20121218092554.GA3823@gmail.com> <50D056A5.3040501@kernel.dk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 18 Dec 2012 08:49:48 -0800
-X-Google-Sender-Auth: -E8GhW4jDuk9AJK5HWLfBWEDeFc
-Message-ID: <CA+55aFzhfknCd-JERhrDfkOhdm_eytoVBYA42ex2K+BghBaBKQ@mail.gmail.com>
-Subject: Re: [boot crash] Re: [GIT PULL[ block drivers bits for 3.8
-To: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@fusionio.com>,
-        Neil Brown <neilb@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Dec 2012 11:52:28 -0500
+From: Ravishankar N <cyberax82@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ravishankar N <cyberax82@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH 1/1] fat:fix incorrect function comment
+Date: Tue, 18 Dec 2012 22:20:19 +0530
+Message-Id: <1355849419-26403-1-git-send-email-cyberax82@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 3:42 AM, Jens Axboe <axboe@kernel.dk> wrote:
->
-> Bah. Does the below fix it up for you?
+fat_search_long() returns 0 on success, -ENOENT/ENOMEM on failure.Change
+the function comment accordingly.
 
-Grr. This is still bullshit.
+While at it, fix some trivial typos.
+	modified:   fs/fat/dir.c
+	modified:   fs/fat/inode.c
+	modified:   fs/fat/misc.c
 
-Doing this:
-
-    alignment = sector << 9;
-
-is fundamentally crap, because 'sector_t' may well be 32-bit
-(non-large-block device case). And we're supposed (surprise surprise)
-to be able to handle devices larger than 4GB in size.
-
-So doing *any* of these calculations in bytes is pure and utter crap.
-You need to do them in sectors. That's what "sector_t" means, and
-that's damn well how everything should work. Anything that works in
-bytes is simply pure crap. And don't talk to me about 64-bit math and
-doing it in "u64" or "loff_t", that's just utterly moronic too.
-
-Besides, "sector_div()" is only sensible when you're looking for the
-remainder of a sector number. That's true in the first case (sector
-really is a sector number - it's the starting sector of the
-partition), but the source of alignment and granularity are actually
-just "unsigned int" (and that's in bytes, not sectors), so using
-sector_t afterwards is crazy too. You should have used just '%'.
-Looking around, there are other places where this idiocy happens too
-(blkdev_issue_discard() seems to think the granularity/alignments are
-sector_t's too, for example).
-
-Anyway, here's a patch to fix the crazy types and the bogus second
-"sector_div()". It's whitespace-damaged, because not only have I not
-tested it, I also think somebody needs to look at things in general.
-The whole "discard_alignment" handling is extremely odd. I don't think
-it should be called "alignment" at all - because it isn't. It's an
-alignment *offset*. Look at the normal (non-discard) case, where it's
-called "alignment_offset" like it should be.
-
-So the math is confused, the types are confused, and the naming is
-confused. Please, somebody check this out, because now *I* am
-confused.
-
-And btw, that whole commit happened too f*cking late too. When I get a
-pull request, it should damn well have been tested already, and it
-should have been developed *before* the merge window started. Not the
-day before the pull request.
-
-I'm grumpy, because all of this code is UTTER SH*T, and it was sent to me. Why?
-
-                Linus
-
+Signed-off-by: Ravishankar N <cyberax82@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 ---
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index acb4f7bbbd32..c23cae25a0c0 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1188,14 +1188,25 @@ static inline int
-queue_discard_alignment(struct request_queue *q)
+ fs/fat/dir.c   |    7 +++----
+ fs/fat/inode.c |    2 +-
+ fs/fat/misc.c  |    1 -
+ 3 files changed, 4 insertions(+), 6 deletions(-)
 
- static inline int queue_limit_discard_alignment(struct queue_limits
-*lim, sector_t sector)
- {
--       sector_t alignment = sector << 9;
--       alignment = sector_div(alignment, lim->discard_granularity);
-+       /* Why are these in bytes, not sectors? */
-+       unsigned int alignment, granularity, offset;
-
-        if (!lim->max_discard_sectors)
-                return 0;
-
--       alignment = lim->discard_granularity + lim->discard_alignment
-- alignment;
--       return sector_div(alignment, lim->discard_granularity);
-+       alignment = lim->discard_alignment >> 9;
-+       granularity = lim->discard_granularity >> 9;
-+       if (!alignment || !granularity)
-+               return 0;
-+
-+       /* Offset of the partition start in 'granularity' sectors */
-+       offset = sector_div(sector, granularity);
-+
-+       /* And why do we do this modulus *again* in blkdev_issue_discard()? */
-+       offset = (granularity + alignment - offset) % granularity;
-+
-+       /* Turn it back into bytes, gaah */
-+       return offset << 9;
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index 2a18234..b56e61a 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -461,8 +461,7 @@ static int fat_parse_short(struct super_block *sb,
  }
+ 
+ /*
+- * Return values: negative -> error, 0 -> not found, positive -> found,
+- * value is the total amount of slots, including the shortname entry.
++ * Return values: negative -> error/not found, 0 -> found.
+  */
+ int fat_search_long(struct inode *inode, const unsigned char *name,
+ 		    int name_len, struct fat_slot_info *sinfo)
+@@ -1176,7 +1175,7 @@ static int fat_add_new_entries(struct inode *dir, void *slots, int nr_slots,
+ 
+ 	/*
+ 	 * The minimum cluster size is 512bytes, and maximum entry
+-	 * size is 32*slots (672bytes).  So, iff the cluster size is
++	 * size is 32*slots (672bytes).  So, if the cluster size is
+ 	 * 512bytes, we may need two clusters.
+ 	 */
+ 	size = nr_slots * sizeof(struct msdos_dir_entry);
+@@ -1255,7 +1254,7 @@ int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
+ 
+ 	sinfo->nr_slots = nr_slots;
+ 
+-	/* First stage: search free direcotry entries */
++	/* First stage: search free directory entries */
+ 	free_slots = nr_bhs = 0;
+ 	bh = prev = NULL;
+ 	pos = 0;
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 3580681..f8f4916 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1344,7 +1344,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 	sbi->dir_entries = get_unaligned_le16(&b->dir_entries);
+ 	if (sbi->dir_entries & (sbi->dir_per_block - 1)) {
+ 		if (!silent)
+-			fat_msg(sb, KERN_ERR, "bogus directroy-entries per block"
++			fat_msg(sb, KERN_ERR, "bogus directory-entries per block"
+ 			       " (%u)", sbi->dir_entries);
+ 		brelse(bh);
+ 		goto out_invalid;
+diff --git a/fs/fat/misc.c b/fs/fat/misc.c
+index 5eb600d..e29ec41 100644
+--- a/fs/fat/misc.c
++++ b/fs/fat/misc.c
+@@ -135,7 +135,6 @@ int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster)
+ 		}
+ 		if (ret < 0)
+ 			return ret;
+-//		fat_cache_add(inode, new_fclus, new_dclus);
+ 	} else {
+ 		MSDOS_I(inode)->i_start = new_dclus;
+ 		MSDOS_I(inode)->i_logstart = new_dclus;
+-- 
+1.7.7
 
- static inline int bdev_discard_alignment(struct block_device *bdev)
