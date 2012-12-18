@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab2LRHVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:21:34 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38989 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab2LRHQ1 (ORCPT
+	id S1754549Ab2LRHVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:21:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30231 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab2LRHQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Dec 2012 02:16:27 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,119 +13,130 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
-Date: Mon, 17 Dec 2012 23:15:32 -0800
-Message-Id: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v7 08/27] x86: Merge early_reserve_initrd for 32bit and 64bit
+Date: Mon, 17 Dec 2012 23:15:40 -0800
+Message-Id: <1355814959-10573-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have limit kdump reseved under 896M, because kexec has the limitation.
-and also bzImage need to stay under 4g.
+They are the same, could move them out from head32/64.c to setup.c.
 
-To make kexec/kdump could use range above 4g, we need to make bzImage and
-ramdisk could be loaded above 4g.
-During booting bzImage will be unpacked on same postion and stay high.
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first to hold the location, and just
+need to make sure we reserve them before we are using memblock to find
+free mem to use.
 
-The patches add fields in setup_header and boot_params to
-1. get info about ramdisk position info above 4g from bootloader/kexec
-2. get info about cmd_line_ptr info above 4g from bootloader/kexec
-3. set xloadflags bit0 in header for bzImage and bootloader/kexec load
-   could check that to decide if it could to put bzImage high.
-4. use sentinel to make sure ext_* fields in boot_params could be used.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+---
+ arch/x86/kernel/head32.c |   11 -----------
+ arch/x86/kernel/head64.c |   11 -----------
+ arch/x86/kernel/setup.c  |   22 ++++++++++++++++++----
+ 3 files changed, 18 insertions(+), 26 deletions(-)
 
-This patches is tested with kexec tools with local changes and they are sent
-to kexec list later.
-
-could be found at:
-
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
-
-and it is on top of linus's tree 2012-12-17
-plus tip:x86/mm, tip:x86/urgent, tip:x86/mm2
-
--v2: add ext_cmd_line_ptr support, and handle boot_param/cmd_line is above
-     4G case.
--v3: according to hpa, use xloadflags instead code32_start_offset.
-     0x200 will not be changed...
--v4: move ext_ramdisk_image/ext_ramdisk_size/ext_cmd_line_ptr to boot_params.
-     add handling cross GB boundary case.
--v5: put spare pages in BRK,so could avoid wasting about 4 pages.
-     add check for bit USE_EXT_BOOT_PARAMS in xloadflags
--v6: use sentinel according to HPA
-     add kdump load high support.
--v7: move sentinel from 0x1f0 to 0x1ef... according to HPA.
-     Use HPA's #PF handler version instead of ioremap.
-
-H. Peter Anvin (1):
-  x86, 64bit: early #PF handler set page table
-
-Yinghai Lu (26):
-  x86, mm: Fix page table early allocation offset checking
-  x86, mm: make pgd next calculation consistent with pud/pmd
-  x86, realmode: set real_mode permissions early
-  x86, realmode: use init_level4_pgt to set trapmoline_pgt directly
-  x86, realmode: Separate real_mode reserve and setup
-  x86, 64bit: Print init kernel lowmap correctly
-  x86: Merge early_reserve_initrd for 32bit and 64bit
-  x86: add get_ramdisk_image/size()
-  x86, boot: add get_cmd_line_ptr()
-  x86, boot: move checking of cmd_line_ptr out of common path
-  x86, boot: pass cmd_line_ptr with unsigned long
-  x86, boot: move verify_cpu.S and no_longmode after 0x200
-  x86, boot: Move lldt/ltr out of 64bit code section
-  x86, kexec: remove 1024G limitation for kexec buffer on 64bit
-  x86, kexec: set ident mapping for kernel that is above max_pfn
-  x86, kexec: Merge ident_mapping_init and init_level4_page
-  x86, kexec: only set ident mapping for ram.
-  x86, boot: add fields to support load bzImage and ramdisk above 4G
-  x86, boot: update comments about entries for 64bit image
-  x86, boot: Not need to check setup_header version
-  mm: Add alloc_bootmem_low_pages_nopanic()
-  x86: Don't panic if can not alloc buffer for swiotlb
-  x86: Add swiotlb force off support
-  x86, kdump: remove crashkernel range find limit for 64bit
-  x86: add Crash kernel low reservation
-  x86: Merge early kernel reserve for 32bit and 64bit
-
- Documentation/kernel-parameters.txt     |   10 ++
- Documentation/x86/boot.txt              |   53 ++++++-
- Documentation/x86/zero-page.txt         |    4 +
- arch/x86/boot/boot.h                    |   18 ++-
- arch/x86/boot/cmdline.c                 |   12 +-
- arch/x86/boot/compressed/cmdline.c      |   12 +-
- arch/x86/boot/compressed/head_64.S      |   48 ++++---
- arch/x86/boot/compressed/misc.c         |   12 ++
- arch/x86/boot/header.S                  |   12 +-
- arch/x86/boot/setup.ld                  |    7 +
- arch/x86/include/asm/kexec.h            |    6 +-
- arch/x86/include/asm/page.h             |    4 +
- arch/x86/include/asm/pgtable_64_types.h |    4 +
- arch/x86/include/asm/processor.h        |    1 +
- arch/x86/include/asm/realmode.h         |    3 +-
- arch/x86/include/uapi/asm/bootparam.h   |   13 +-
- arch/x86/kernel/head32.c                |   20 ---
- arch/x86/kernel/head64.c                |  115 +++++++++++-----
- arch/x86/kernel/head_64.S               |  202 +++++++++++++++------------
- arch/x86/kernel/machine_kexec_64.c      |  228 ++++++++++++++-----------------
- arch/x86/kernel/pci-swiotlb.c           |   15 +-
- arch/x86/kernel/setup.c                 |  140 ++++++++++++++-----
- arch/x86/kernel/traps.c                 |    9 ++
- arch/x86/mm/init.c                      |   11 +-
- arch/x86/mm/init_64.c                   |   12 +-
- arch/x86/realmode/init.c                |   37 +++--
- drivers/iommu/amd_iommu.c               |    1 +
- include/linux/bootmem.h                 |    5 +
- include/linux/kexec.h                   |    3 +
- include/linux/swiotlb.h                 |    3 +-
- kernel/kexec.c                          |   34 ++++-
- lib/swiotlb.c                           |   20 ++-
- mm/bootmem.c                            |    8 ++
- mm/nobootmem.c                          |    8 ++
- 34 files changed, 713 insertions(+), 377 deletions(-)
-
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index e175548..b071d41 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -33,17 +33,6 @@ void __init i386_start_kernel(void)
+ 	memblock_reserve(__pa_symbol(_text),
+ 			 (unsigned long)__bss_stop - (unsigned long)_text);
+ 
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 46e509e..0aff120 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -162,17 +162,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	memblock_reserve(__pa_symbol(_text),
+ 			 (unsigned long)__bss_stop - (unsigned long)_text);
+ 
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+-		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	reserve_ebda_region();
+ 
+ 	/*
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 04797e78..1b8a8cc 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -360,6 +360,19 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
+ 
+ 	return mapped_pages << PAGE_SHIFT;
+ }
++static void __init early_reserve_initrd(void)
++{
++	/* Assume only end is not page aligned */
++	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
++
++	if (!boot_params.hdr.type_of_loader ||
++	    !ramdisk_image || !ramdisk_size)
++		return;		/* No initrd provided by bootloader */
++
++	memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
++}
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+@@ -386,10 +399,6 @@ static void __init reserve_initrd(void)
+ 	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
+ 				PFN_DOWN(ramdisk_end))) {
+ 		/* All are mapped, easy case */
+-		/*
+-		 * don't need to reserve again, already reserved early
+-		 * in i386_start_kernel
+-		 */
+ 		initrd_start = ramdisk_image + PAGE_OFFSET;
+ 		initrd_end = initrd_start + ramdisk_size;
+ 		return;
+@@ -400,6 +409,9 @@ static void __init reserve_initrd(void)
+ 	memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
+ }
+ #else
++static void __init early_reserve_initrd(void)
++{
++}
+ static void __init reserve_initrd(void)
+ {
+ }
+@@ -661,6 +673,8 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
+ {
++	early_reserve_initrd();
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
 -- 
 1.7.10.4
 
