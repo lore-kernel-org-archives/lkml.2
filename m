@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab2LRBwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:52:46 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:45959 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab2LRBwp (ORCPT
+	id S1754078Ab2LRB5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:57:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36760 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab2LRB5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:52:45 -0500
-Message-ID: <1355795109.5681.9.camel@phoenix>
-Subject: [PATCH] iio: dac: ad5446: Don't set error code to voltage_uv
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 18 Dec 2012 09:45:09 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 17 Dec 2012 20:57:07 -0500
+Date: Tue, 18 Dec 2012 01:57:05 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
+Message-ID: <20121218015705.GH4939@ZenIV.linux.org.uk>
+References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator_get_voltage() may return negative error code.
-Add error checking to avoid setting error code to voltage_uv.
+On Mon, Dec 17, 2012 at 05:10:21PM -0800, Andy Lutomirski wrote:
+> I want to change inode->i_flags access to be atomic -- there are some
+> locking oddities right now, I think, and I want to use a new inode
+> flag to signal mtime updates from page_mkwrite.  The problem is that
+> i_flags is an unsigned int, and making it an unsigned long seems like
+> a waste, but there aren't any u32 atomic bitops.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/iio/dac/ad5446.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/iio/dac/ad5446.c b/drivers/iio/dac/ad5446.c
-index 3310cbb..607378f 100644
---- a/drivers/iio/dac/ad5446.c
-+++ b/drivers/iio/dac/ad5446.c
-@@ -226,7 +226,11 @@ static int __devinit ad5446_probe(struct device *dev, const char *name,
- 		if (ret)
- 			goto error_put_reg;
- 
--		voltage_uv = regulator_get_voltage(reg);
-+		ret = regulator_get_voltage(reg);
-+		if (ret)
-+			goto error_disable_reg;
-+
-+		voltage_uv = ret;
- 	}
- 
- 	indio_dev = iio_device_alloc(sizeof(*st));
--- 
-1.7.9.5
-
-
-
+... and atomic accesses cost more.  A lot more on some architectures.
+FWIW, atomic_t *is* 32bit on 32bit architectures, which still doesn't
+make it a good idea.
