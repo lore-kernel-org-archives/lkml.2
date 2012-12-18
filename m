@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2LRHxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:53:32 -0500
+	id S1754396Ab2LRHxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:53:40 -0500
 Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41749 "EHLO
 	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab2LRHxa (ORCPT
+	with ESMTP id S1754270Ab2LRHxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:53:30 -0500
+	Tue, 18 Dec 2012 02:53:34 -0500
 X-Greylist: delayed 1593 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 02:53:30 EST
-Date: Tue, 18 Dec 2012 16:27:27 +0900
+Date: Tue, 18 Dec 2012 16:30:45 +0900
 From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 To: mtosatti@redhat.com, gleb@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] KVM: MMU: Remove unused parameter level from
- __rmap_write_protect()
-Message-Id: <20121218162727.d8a39304.yoshikawa_takuya_b1@lab.ntt.co.jp>
+Subject: [PATCH 7/7] KVM: Conditionally reschedule when
+ kvm_mmu_slot_remove_write_access() takes a long time
+Message-Id: <20121218163045.3f1c169e.yoshikawa_takuya_b1@lab.ntt.co.jp>
 In-Reply-To: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
 References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -25,44 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No longer need to care about the mapping level in this function.
+If the userspace starts dirty logging for a large slot, say 64GB of
+memory, kvm_mmu_slot_remove_write_access() needs to hold mmu_lock for
+a long time such as tens of milliseconds.  This patch controls the lock
+hold time by asking the scheduler if we need to reschedule for others.
+
+One penalty for this is that we need to flush TLBs before releasing
+mmu_lock.  But since holding mmu_lock for a long time does affect not
+only the guest, vCPU threads in other words, but also the host as a
+whole, we should pay for that.
+
+In practice, the cost will not be so high because we can protect a fair
+amount of memory before being rescheduled: on my test environment,
+cond_resched_lock() was called only once for protecting 12GB of memory
+even without THP.  We can also revisit Avi's "unlocked TLB flush" work
+later for completely suppressing extra TLB flushes if needed.
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 ---
- arch/x86/kvm/mmu.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kvm/mmu.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 01d7c2a..bee3509 100644
+index b7a1235..a32e8cf 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1142,7 +1142,7 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
- }
- 
- static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
--				 int level, bool pt_protect)
-+				 bool pt_protect)
- {
- 	u64 *sptep;
- 	struct rmap_iterator iter;
-@@ -1180,7 +1180,7 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
- 	while (mask) {
- 		rmapp = __gfn_to_rmap(slot->base_gfn + gfn_offset + __ffs(mask),
- 				      PT_PAGE_TABLE_LEVEL, slot);
--		__rmap_write_protect(kvm, rmapp, PT_PAGE_TABLE_LEVEL, false);
-+		__rmap_write_protect(kvm, rmapp, false);
- 
- 		/* clear the first set bit */
- 		mask &= mask - 1;
-@@ -1199,7 +1199,7 @@ static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
- 	for (i = PT_PAGE_TABLE_LEVEL;
- 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
- 		rmapp = __gfn_to_rmap(gfn, i, slot);
--		write_protected |= __rmap_write_protect(kvm, rmapp, i, true);
-+		write_protected |= __rmap_write_protect(kvm, rmapp, true);
+@@ -4212,6 +4212,11 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ 		for (index = 0; index <= last_index; ++index, ++rmapp) {
+ 			if (*rmapp)
+ 				__rmap_write_protect(kvm, rmapp, false);
++
++			if (need_resched() || spin_needbreak(&kvm->mmu_lock)) {
++				kvm_flush_remote_tlbs(kvm);
++				cond_resched_lock(&kvm->mmu_lock);
++			}
+ 		}
  	}
  
- 	return write_protected;
 -- 
 1.7.5.4
 
