@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2LRTWE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:22:04 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:53936 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab2LRTWB (ORCPT
+	id S1754484Ab2LRTXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:23:13 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:44730 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab2LRTXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:22:01 -0500
-Date: Tue, 18 Dec 2012 11:21:55 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 12/12] cfq-iosched: add hierarchical cfq_group statistics
-Message-ID: <20121218192155.GQ1844@htj.dyndns.org>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
- <1355524885-22719-13-git-send-email-tj@kernel.org>
- <20121218191117.GD24050@redhat.com>
- <20121218191425.GO1844@htj.dyndns.org>
- <20121218191854.GB25908@redhat.com>
+	Tue, 18 Dec 2012 14:23:11 -0500
+Message-ID: <50D0C29D.3030209@kernel.org>
+Date: Tue, 18 Dec 2012 19:23:09 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121218191854.GB25908@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iio: dac: ad5446: Don't set error code to voltage_uv
+References: <1355801617.11880.1.camel@phoenix>
+In-Reply-To: <1355801617.11880.1.camel@phoenix>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 02:18:54PM -0500, Vivek Goyal wrote:
-> > Yeah, hmmm, maybe we should add another set of counters to carry stats
-> > from dead ones?  Avoiding hierarchical accounting overhead in hot path
-> > while remembering by-gones shouldn't be that hard.  Will work on that.
+On 12/18/2012 03:33 AM, Axel Lin wrote:
+> regulator_get_voltage() may return negative error code.
+> Add error checking to avoid setting error code to voltage_uv.
 > 
-> So are you planning to migrate the stats to parent when a cgroup is being
-> deleted?  That should make sure we don't do hierarhical update.
-
-Yeah, something like that.  The current statistics being !hierarchical
-means that we need to keep them separate from the actual stats, so
-it'll end up with another set of stats.  Kinda nasty but I don't see
-any better way out.
-
-Thanks.
-
--- 
-tejun
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+added to fixes-togreg branch of iio.git
+> ---
+> Sorry. Just found I made the same mistake again.
+> Here is v2, should check if ret is negative value.
+>  drivers/iio/dac/ad5446.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iio/dac/ad5446.c b/drivers/iio/dac/ad5446.c
+> index 3310cbb..607378f 100644
+> --- a/drivers/iio/dac/ad5446.c
+> +++ b/drivers/iio/dac/ad5446.c
+> @@ -226,7 +226,11 @@ static int __devinit ad5446_probe(struct device *dev, const char *name,
+>  		if (ret)
+>  			goto error_put_reg;
+>  
+> -		voltage_uv = regulator_get_voltage(reg);
+> +		ret = regulator_get_voltage(reg);
+> +		if (ret < 0)
+> +			goto error_disable_reg;
+> +
+> +		voltage_uv = ret;
+>  	}
+>  
+>  	indio_dev = iio_device_alloc(sizeof(*st));
+> 
