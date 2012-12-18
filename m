@@ -1,63 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab2LRVEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 16:04:55 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:42508 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab2LRVEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 16:04:54 -0500
-Date: Tue, 18 Dec 2012 13:04:49 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2] firmware: make sure paths remain relative
-Message-ID: <20121218210449.GA3329@www.outflux.net>
+	id S1754690Ab2LRVHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 16:07:35 -0500
+Received: from [216.32.181.182] ([216.32.181.182]:51730 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751345Ab2LRVHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 16:07:33 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1155h)
+X-WSS-ID: 0MF8VY2-02-11T-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: Borislav Petkov <bp@alien8.de>, Doug Thompson <dougthompson@xmission.com>
+CC: <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 1/2] MCE, AMD: Make MC2 decoding part of amd_decoder_ops as well
+Date: Tue, 18 Dec 2012 15:06:10 -0600
+Message-ID: <1355864771-13839-2-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355864771-13839-1-git-send-email-jacob.shin@amd.com>
+References: <1355864771-13839-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices have configurable firmware locations. If these configuration
-mechanisms are exposed to unprivileged userspace, it may be possible to
-load firmware from an unexpected location. To minimize the risk of this,
-make sure the string "../" does not appear in the firmware name. This
-means that neither the users of request_firmware, nor the uevent handler
-have to do this filtering themselves.
+Currently only AMD Family 15h processors have special handling for MC2
+errors, since upcoming Family 16h will also need unique handling,
+let's make MC2 handling part of amd_decoder_ops.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
-v2:
- - add dev_err on failure, suggested by Ming Lei.
----
- drivers/base/firmware_class.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/edac/mce_amd.c |   56 +++++++++++++++++++++++++-----------------------
+ drivers/edac/mce_amd.h |    1 +
+ 2 files changed, 30 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index d814603..b7e095b 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -814,6 +814,12 @@ _request_firmware_prepare(const struct firmware **firmware_p, const char *name,
- 	if (!firmware_p)
- 		return ERR_PTR(-EINVAL);
+diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+index ad63757..e4752be 100644
+--- a/drivers/edac/mce_amd.c
++++ b/drivers/edac/mce_amd.c
+@@ -399,12 +399,9 @@ static void decode_mc1_mce(struct mce *m)
+ 		pr_emerg(HW_ERR "Corrupted MC1 MCE info?\n");
+ }
  
-+	if (strstr(name, "../")) {
-+		dev_err(device, "%s: parent directory in firmware name (%s)\n",
-+			__func__, name);
-+		return ERR_PTR(-EINVAL);
-+	}
+-static void decode_mc2_mce(struct mce *m)
++static bool k8_mc2_mce(u16 ec, u8 xec)
+ {
+-	u16 ec = EC(m->status);
+-	u8 xec = XEC(m->status, xec_mask);
+-
+-	pr_emerg(HW_ERR "MC2 Error");
++	bool ret = true;
+ 
+ 	if (xec == 0x1)
+ 		pr_cont(" in the write data buffers.\n");
+@@ -429,24 +426,18 @@ static void decode_mc2_mce(struct mce *m)
+ 				pr_cont(": %s parity/ECC error during data "
+ 					"access from L2.\n", R4_MSG(ec));
+ 			else
+-				goto wrong_mc2_mce;
++				ret = false;
+ 		} else
+-			goto wrong_mc2_mce;
++			ret = false;
+ 	} else
+-		goto wrong_mc2_mce;
+-
+-	return;
++		ret = false;
+ 
+- wrong_mc2_mce:
+-	pr_emerg(HW_ERR "Corrupted MC2 MCE info?\n");
++	return ret;
+ }
+ 
+-static void decode_f15_mc2_mce(struct mce *m)
++static bool f15h_mc2_mce(u16 ec, u8 xec)
+ {
+-	u16 ec = EC(m->status);
+-	u8 xec = XEC(m->status, xec_mask);
+-
+-	pr_emerg(HW_ERR "MC2 Error: ");
++	bool ret = true;
+ 
+ 	if (TLB_ERROR(ec)) {
+ 		if (xec == 0x0)
+@@ -454,10 +445,10 @@ static void decode_f15_mc2_mce(struct mce *m)
+ 		else if (xec == 0x1)
+ 			pr_cont("Poison data provided for TLB fill.\n");
+ 		else
+-			goto wrong_f15_mc2_mce;
++			ret = false;
+ 	} else if (BUS_ERROR(ec)) {
+ 		if (xec > 2)
+-			goto wrong_f15_mc2_mce;
++			ret = false;
+ 
+ 		pr_cont("Error during attempted NB data read.\n");
+ 	} else if (MEM_ERROR(ec)) {
+@@ -471,14 +462,22 @@ static void decode_f15_mc2_mce(struct mce *m)
+ 			break;
+ 
+ 		default:
+-			goto wrong_f15_mc2_mce;
++			ret = false;
+ 		}
+ 	}
+ 
+-	return;
++	return ret;
++}
 +
- 	*firmware_p = firmware = kzalloc(sizeof(*firmware), GFP_KERNEL);
- 	if (!firmware) {
- 		dev_err(device, "%s: kmalloc(struct firmware) failed\n",
++static void decode_mc2_mce(struct mce *m)
++{
++	u16 ec = EC(m->status);
++	u8 xec = XEC(m->status, xec_mask);
+ 
+- wrong_f15_mc2_mce:
+-	pr_emerg(HW_ERR "Corrupted MC2 MCE info?\n");
++	pr_emerg(HW_ERR "MC2 Error: ");
++
++	if (!fam_ops->mc2_mce(ec, xec))
++		pr_cont(HW_ERR "Corrupted MC2 MCE info?\n");
+ }
+ 
+ static void decode_mc3_mce(struct mce *m)
+@@ -702,10 +701,7 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
+ 		break;
+ 
+ 	case 2:
+-		if (c->x86 == 0x15)
+-			decode_f15_mc2_mce(m);
+-		else
+-			decode_mc2_mce(m);
++		decode_mc2_mce(m);
+ 		break;
+ 
+ 	case 3:
+@@ -783,33 +779,39 @@ static int __init mce_amd_init(void)
+ 	case 0xf:
+ 		fam_ops->mc0_mce = k8_mc0_mce;
+ 		fam_ops->mc1_mce = k8_mc1_mce;
++		fam_ops->mc2_mce = k8_mc2_mce;
+ 		break;
+ 
+ 	case 0x10:
+ 		fam_ops->mc0_mce = f10h_mc0_mce;
+ 		fam_ops->mc1_mce = k8_mc1_mce;
++		fam_ops->mc2_mce = k8_mc2_mce;
+ 		break;
+ 
+ 	case 0x11:
+ 		fam_ops->mc0_mce = k8_mc0_mce;
+ 		fam_ops->mc1_mce = k8_mc1_mce;
++		fam_ops->mc2_mce = k8_mc2_mce;
+ 		break;
+ 
+ 	case 0x12:
+ 		fam_ops->mc0_mce = f12h_mc0_mce;
+ 		fam_ops->mc1_mce = k8_mc1_mce;
++		fam_ops->mc2_mce = k8_mc2_mce;
+ 		break;
+ 
+ 	case 0x14:
+ 		nb_err_cpumask  = 0x3;
+ 		fam_ops->mc0_mce = f14h_mc0_mce;
+ 		fam_ops->mc1_mce = f14h_mc1_mce;
++		fam_ops->mc2_mce = k8_mc2_mce;
+ 		break;
+ 
+ 	case 0x15:
+ 		xec_mask = 0x1f;
+ 		fam_ops->mc0_mce = f15h_mc0_mce;
+ 		fam_ops->mc1_mce = f15h_mc1_mce;
++		fam_ops->mc2_mce = f15h_mc2_mce;
+ 		break;
+ 
+ 	default:
+diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
+index 6796799..000f6e2 100644
+--- a/drivers/edac/mce_amd.h
++++ b/drivers/edac/mce_amd.h
+@@ -78,6 +78,7 @@ extern const char * const ii_msgs[];
+ struct amd_decoder_ops {
+ 	bool (*mc0_mce)(u16, u8);
+ 	bool (*mc1_mce)(u16, u8);
++	bool (*mc2_mce)(u16, u8);
+ };
+ 
+ void amd_report_gart_errors(bool);
 -- 
 1.7.9.5
 
 
--- 
-Kees Cook
-Chrome OS Security
