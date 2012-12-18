@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab2LRVYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 16:24:23 -0500
-Received: from mailout02.t-online.de ([194.25.134.17]:42147 "EHLO
-	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab2LRVYO (ORCPT
+	id S1755352Ab2LRVav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 16:30:51 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:10739 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754203Ab2LRVat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 16:24:14 -0500
-Message-ID: <50D0DEF3.3060501@t-online.de>
-Date: Tue, 18 Dec 2012 22:24:03 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 18 Dec 2012 16:30:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqYMABXg0FB5LGZj/2dsb2JhbABFhVKyVYV+F3OCHgEBBScTHCMQCAMOCi4UJQMhE4gSuEoUjDWDYmEDlgmJToZ7gwg
+Date: Wed, 19 Dec 2012 08:30:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
+Message-ID: <20121218213043.GF15182@dastard>
+References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+ <20121218015705.GH4939@ZenIV.linux.org.uk>
+ <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [BUG v3.7.0] soft lockup - CPU#0 stuck for 23s
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ID: TvZLwiZQwhfzGxRyKXLWFKfgU5xZGKDajzk-fzLnbrYofwmu0L4kNpMd8EOT542gG8
-X-TOI-MSGID: 7046cda9-7c9b-4182-b1dc-8ab64c77c37e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Someone might be interested ...
+On Mon, Dec 17, 2012 at 06:42:44PM -0800, Andy Lutomirski wrote:
+> On Mon, Dec 17, 2012 at 5:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > On Mon, Dec 17, 2012 at 05:10:21PM -0800, Andy Lutomirski wrote:
+> >> I want to change inode->i_flags access to be atomic -- there are some
+> >> locking oddities right now, I think, and I want to use a new inode
+> >> flag to signal mtime updates from page_mkwrite.  The problem is that
+> >> i_flags is an unsigned int, and making it an unsigned long seems like
+> >> a waste, but there aren't any u32 atomic bitops.
+> >
+> > ... and atomic accesses cost more.  A lot more on some architectures.
+> > FWIW, atomic_t *is* 32bit on 32bit architectures, which still doesn't
+> > make it a good idea.
+> 
+> Are atomic_set_mask and atomic_clear_mask as fast as set_bit and
+> friends on all archs?
+> 
+> In any case, i_flags looks like it's rarely written, so I find it a
+> bit hard to believe that making it atomic would hurt.  Isn't
+> atomic_read equivalent to non-atomic reads everywhere?
+> 
+> I want page_mkwrite to set a flag (without taking i_mutex) but *not*
+> call file_update_time and then to have the writeback paths update the
+> inode time.
 
-A kernel build in parallel to a dvb-s recording resulted in the following log entry:
+Deadlocks ahoy!
 
-[117284.040009] BUG: soft lockup - CPU#0 stuck for 23s! [cc1:2657]
-[117284.040009] Modules linked in: ipt_MASQUERADE xt_pkttype xt_TCPMSS xt_tcpudp xt_LOG xt_limit iptable_nat nf_nat_ipv4 nf_nat pppoe pppox af_packet ppp_generic slhc ir_kbd_i2c binfmt_misc snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw 
-ipt_REJECT iptable_raw iptable_filter ip6table_mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables x_tables ipv6 isl6421 cx24116 cx88_dvb videobuf_dvb ir_lirc_codec dvb_core lirc_dev ir_rc5_decoder 
-rc_hauppauge snd_hda_codec_realtek tuner snd_hda_intel snd_hda_codec cx8800 cx8802 snd_hwdep cx88xx snd_rme96 snd_pcm rc_core snd_timer snd tveeprom v4l2_common soundcore snd_page_alloc videodev videobuf_dma_sg videobuf_core btcx_risc
-[117284.040009] irq event stamp: 0
-[117284.040009] hardirqs last  enabled at (0): [<  (null)>] (null)
-[117284.040009] hardirqs last disabled at (0): [<c012412c>] copy_process+0x482/0x103d
-[117284.040009] softirqs last  enabled at (0): [<c012412c>] copy_process+0x482/0x103d
-[117284.040009] softirqs last disabled at (0): [<  (null)>] (null)
-[117284.040009] Pid: 2657, comm: cc1 Not tainted 3.7.0-main #18 /i915GMm-HFS
-[117284.040009] EIP: 0073:[<406ffb37>] EFLAGS: 00000246 CPU: 0
-[117284.040009] EIP is at 0x406ffb37
-[117284.040009] EAX: 00000000 EBX: 407f7ff4 ECX: 407f93c0 EDX: 407f93c0
-[117284.040009] ESI: 08afc380 EDI: 000004e0 EBP: 00000001 ESP: bf897834
-[117284.040009]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 007b
-[117284.040009] Process cc1 (pid: 2657, ti=f3224000 task=d11ec060 task.ti=f3224000)
-[117284.040009]
+We don't currently take the i_mutex anywhere in the writeback path
+as the writeback path is nested inside the i_mutex. Hence this seems
+like an extremely dangerous thing to do...
 
-system: Pentium-M Dothan, 2GHz, 2GB, kernel 3.7.0, openSuSE 12.1, Xorg fresh git.
+> (This, along with stable pages, is the major cause of
+> long sleeps in my application.)  OTOH, maybe I should just use i_state
+> and i_lock for this.
 
-cu,
-  Knut
+Or, perhaps, export O_CMTIME to fcntl and/or open?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
