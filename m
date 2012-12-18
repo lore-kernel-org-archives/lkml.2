@@ -1,134 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab2LRNZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 08:25:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17979 "EHLO mx1.redhat.com"
+	id S1754841Ab2LRNdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 08:33:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754123Ab2LRNZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 08:25:17 -0500
-Date: Tue, 18 Dec 2012 15:25:03 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Subject: Re: [ PATCH] Add rcu user eqs exception hooks for async page fault
-Message-ID: <20121218132503.GK11016@redhat.com>
-References: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
- <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
- <20121128135345.GG928@redhat.com>
- <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
- <20121129110717.GA9711@redhat.com>
- <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
- <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
- <20121203095708.GO8731@redhat.com>
- <1354588513.2649.10.camel@ThinkPad-T5421.cn.ibm.com>
+	id S1754573Ab2LRNdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 08:33:08 -0500
+Date: Tue, 18 Dec 2012 15:36:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of
+ buffers
+Message-ID: <20121218133606.GC26110@redhat.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
+ <1355833972-20319-2-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354588513.2649.10.camel@ThinkPad-T5421.cn.ibm.com>
+In-Reply-To: <1355833972-20319-2-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 10:35:13AM +0800, Li Zhong wrote:
-> This patch adds user eqs exception hooks for async page fault page not
-> present code path, to exit the user eqs and re-enter it as necessary.
-> 
-> Async page fault is different from other exceptions that it may be
-> triggered from idle process, so we still need rcu_irq_enter() and
-> rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
-> that needs use rcu.
-> 
-> As Frederic pointed out it would be safest and simplest to protect the
-> whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
-> code there deeply for potential RCU uses and ensure it will never be
-> extended later to use RCU.".
-> 
-> However, We'd better re-enter the cpu idle eqs if we get the exception
-> in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt().
-> 
-> So the patch does what Frederic suggested for rcu_irq_*() API usage
-> here, except that I moved the rcu_irq_*() pair originally in
-> do_async_page_fault() into kvm_async_pf_task_wait().
-> 
-> That's because, I think it's better to have rcu_irq_*() pairs to be in
-> one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
-> kvm_async_pf_task_wait() has other callers, which might cause
-> rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
-> which is illegal if the cpu happens to be in rcu idle state.
-> 
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Applied, thanks. Will land in -rc hopefully.
+Some comments without arguing about whether the performance
+benefit is worth it.
 
-> ---
->  arch/x86/kernel/kvm.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 08b973f..e99af60 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -43,6 +43,7 @@
->  #include <asm/apicdef.h>
->  #include <asm/hypervisor.h>
->  #include <asm/kvm_guest.h>
-> +#include <asm/rcu.h>
+On Tue, Dec 18, 2012 at 01:32:48PM +0100, Paolo Bonzini wrote:
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index cf8adb1..39d56c4 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -7,6 +7,7 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/device.h>
+>  #include <linux/mod_devicetable.h>
+> +#include <linux/dma-direction.h>
+>  #include <linux/gfp.h>
 >  
->  static int kvmapf = 1;
+>  /**
+> @@ -40,6 +41,26 @@ int virtqueue_add_buf(struct virtqueue *vq,
+>  		      void *data,
+>  		      gfp_t gfp);
 >  
-> @@ -121,6 +122,8 @@ void kvm_async_pf_task_wait(u32 token)
->  	struct kvm_task_sleep_node n, *e;
->  	DEFINE_WAIT(wait);
->  
-> +	rcu_irq_enter();
+> +struct virtqueue_buf {
+> +	struct virtqueue *vq;
+> +	struct vring_desc *indirect, *tail;
+
+This is wrong: virtio.h does not include virito_ring.h,
+and it shouldn't by design depend on it.
+
+> +	int head;
+> +};
 > +
->  	spin_lock(&b->lock);
->  	e = _find_apf_task(b, token);
->  	if (e) {
-> @@ -128,6 +131,8 @@ void kvm_async_pf_task_wait(u32 token)
->  		hlist_del(&e->link);
->  		kfree(e);
->  		spin_unlock(&b->lock);
+
+Can't we track state internally to the virtqueue?
+Exposing it seems to buy us nothing since you can't
+call add_buf between start and end anyway.
+
+
+> +int virtqueue_start_buf(struct virtqueue *_vq,
+> +			struct virtqueue_buf *buf,
+> +			void *data,
+> +			unsigned int count,
+> +			unsigned int count_sg,
+> +			gfp_t gfp);
 > +
-> +		rcu_irq_exit();
->  		return;
->  	}
+> +void virtqueue_add_sg(struct virtqueue_buf *buf,
+> +		      struct scatterlist sgl[],
+> +		      unsigned int count,
+> +		      enum dma_data_direction dir);
+> +
+
+And idea: in practice virtio scsi seems to always call sg_init_one, no?
+So how about we pass in void* or something and avoid using sg and count?
+This would make it useful for -net BTW.
+
+> +void virtqueue_end_buf(struct virtqueue_buf *buf);
+> +
+>  void virtqueue_kick(struct virtqueue *vq);
 >  
-> @@ -152,13 +157,16 @@ void kvm_async_pf_task_wait(u32 token)
->  			/*
->  			 * We cannot reschedule. So halt.
->  			 */
-> +			rcu_irq_exit();
->  			native_safe_halt();
-> +			rcu_irq_enter();
->  			local_irq_disable();
->  		}
->  	}
->  	if (!n.halted)
->  		finish_wait(&n.wq, &wait);
->  
-> +	rcu_irq_exit();
->  	return;
->  }
->  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> @@ -252,10 +260,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->  		break;
->  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
->  		/* page is swapped out by the host. */
-> -		rcu_irq_enter();
-> +		exception_enter(regs);
->  		exit_idle();
->  		kvm_async_pf_task_wait((u32)read_cr2());
-> -		rcu_irq_exit();
-> +		exception_exit(regs);
->  		break;
->  	case KVM_PV_REASON_PAGE_READY:
->  		rcu_irq_enter();
+>  bool virtqueue_kick_prepare(struct virtqueue *vq);
 > -- 
-> 1.7.11.4
-
---
-			Gleb.
+> 1.7.1
+> 
