@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab2LRPds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:33:48 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:46216 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab2LRPdp (ORCPT
+	id S932186Ab2LRPeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:34:08 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:31722 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab2LRPeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:33:45 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-5a-50d08cd83eb5
+	Tue, 18 Dec 2012 10:34:05 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-8e-50d08cea69a7
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
@@ -15,62 +15,110 @@ Cc: linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         thomas.abraham@linaro.org, rob.herring@calxeda.com,
         grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
         p.paneri@samsung.com
-Subject: [PATCH 0/2] ARM: Exynos5250: Enabling samsung usb phy
-Date: Tue, 18 Dec 2012 21:09:40 +0530
-Message-id: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH 1/2] ARM: Exynos5250: Enabling samsung-usbphy driver
+Date: Tue, 18 Dec 2012 21:09:41 +0530
+Message-id: <1355845182-14104-2-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
+In-reply-to: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
+References: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsWyRsSkVvdGz4UAg5/HuSwu75rDZjHj/D4m
-	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgyvg+Q7NgKUfF7b3CDYxd7F2MnBwSAiYSS/9N
-	hrLFJC7cW8/WxcjFISSwlFHi4qx9zDBFp378YoFILGKU2DVjKhNIQkhgMpPE4feqIDabgK5E
-	09tdjCC2iICqxOe2BewgDcwCfUwSF4/tBVshLGAnsfrRIRYQmwWo6OGa+UBxDg5eAQ+Jl5+9
-	IZYpSLy5/YwZokRA4ttkkHIOoLisxKYDzCAjJQROsElMfDSNEaJeUuLgihssExgFFzAyrGIU
-	TS1ILihOSs810itOzC0uzUvXS87P3cQIDLHT/55J72Bc1WBxiFGAg1GJh/dn/PkAIdbEsuLK
-	3EOMEhzMSiK8Cq0XAoR4UxIrq1KL8uOLSnNSiw8x+gBdMpFZSjQ5Hxj+eSXxhsYm5qbGppZG
-	RmampjiElcR5mz1SAoQE0hNLUrNTUwtSi2DGMXFwSjUwGvbPLzigqph+9xPDWTN+33PWXK7q
-	NSvas4wXHU79du/+bInYeg2jFzfbvVsvqfLdL9ugKP1gu+gjbenPjr+XX47Vv/abpVq6seqJ
-	y5bG/g1H7F5xPjoiwmrKP+eZJqul41m1H+cvHA3lXDfH+k5RsE+q38IHH40vTLkZIiE9V8zx
-	OpP4OrkYJZbijERDLeai4kQAr18mbl4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t9jAd3rPRcCDF7csbC4vGsOm8WM8/uY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkVvdVz4UAg+e91haXd81hs5hxfh+T
+	xaJlrcwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZXxdsoOpYI5QxYZzC9kaGNfydzFyckgImEgs
+	aDvICGGLSVy4t56ti5GLQ0hgKaPEhivTGGGKDv08zgiRWMQo8f/6DXaQhJDAZCaJhi3pIDab
+	gK5E09tdYA0iAqoSn9sWsIM0MAv0MUlcPLYXyOHgEBZwkXh+mhWkhgWoZuOX/SwgNq+Ah8Sm
+	1i9QyxQk3tx+xgxicwp4Sixs+gW1y0Pi8Mt5UL0CEt8mH2IBGSkhICux6QAzyCoJgcdsEv87
+	9kLNkZQ4uOIGywRG4QWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxAsPy9L9n0jsYVzVY
+	HGIU4GBU4uH9GX8+QIg1say4MvcQowQHs5IIr0LrhQAh3pTEyqrUovz4otKc1OJDjD5Al0xk
+	lhJNzgfGTF5JvKGxibmpsamlkZGZqSkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjBL5
+	kuqP3lz3TeFd89Pb35tvXabM7HU8Z4SumGRdbUsM2ByjK7xc5kJtgNQG8VihQpEzy+RkRDxz
+	J8pLv9NVnRp+8PO/aNaFCcE902zuqEryPrj7nXX1neOaXkuX6QQXHHp2yX+Z8uo20XOVM/ZG
+	Z2gk3o0PK56V+tzrgkVS9Y+Ss+fT6z9NUWIpzkg01GIuKk4EAMIebMx4AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAd1XPRcCDL6t1LG4vGsOm8WM8/uY
 	LBYta2V2YPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
-	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj+wzN
-	gqUcFbf3CjcwdrF3MXJySAiYSJz68YsFwhaTuHBvPVsXIxeHkMAiRoldM6YygSSEBCYzSRx+
-	rwpiswnoSjS93cUIYosIqEp8blvADtLALNDHJHHx2F6wqcICdhKrHx0Cm8oCVPRwzXygOAcH
-	r4CHxMvP3hDLFCTe3H7GPIGRewEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4AB+Jr2D
-	cVWDxSFGAQ5GJR7en/HnA4RYE8uKK3MPMUpwMCuJ8Cq0XggQ4k1JrKxKLcqPLyrNSS0+xOgD
-	tHwis5Rocj4wuvJK4g2NTcxNjU0tTSxMzCxxCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRq
-	YOw7oMYUpvjC8mOlKIdWlNYfbw850e09zp7sAgnies0a7xOjnq+3STD5NvXGmrlvitYbSn3y
-	/s7bfEdorxTzu+OCsgEV/s/W8ClG/393Vnvxkifp6/IfWt5YO3uPctTVG5y66wTam/M8GWLn
-	blnPGiE6p2ii5Wod2zueJw6vm7l3x9TMf4F7niqxFGckGmoxFxUnAgBVooUAjQIAAA==
+	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj65Id
+	TAVzhCo2nFvI1sC4lr+LkZNDQsBE4tDP44wQtpjEhXvr2boYuTiEBBYxSvy/foMdJCEkMJlJ
+	omFLOojNJqAr0fR2F1iDiICqxOe2BewgDcwCfUwSF4/tBXI4OIQFXCSen2YFqWEBqtn4ZT8L
+	iM0r4CGxqfUL1DIFiTe3nzGD2JwCnhILm35B7fKQOPxyHusERt4FjAyrGEVTC5ILipPSc430
+	ihNzi0vz0vWS83M3MYKD/pn0DsZVDRaHGAU4GJV4eH/Gnw8QYk0sK67MPcQowcGsJMKr0Hoh
+	QIg3JbGyKrUoP76oNCe1+BCjD9BVE5mlRJPzgRGZVxJvaGxibmpsamliYWJmiUNYSZy32SMl
+	QEggPbEkNTs1tSC1CGYcEwenVAPj9NMbTaNtQ0U/v+aczHspv3d+z+uTHW90vbO7VmXf0znG
+	09Tf476g8U7EXf7L+U/OP01h5GAL8Op99kHi+Huz2ibX19Hp0jGXJDUaH0Qd432Xfopngtuz
+	I2pMD0tXTXm5myMl0KilzuLXbJWWeQfSZNevF+r9sySv/OP5Y38jV0y+FS0bZOmtxFKckWio
+	xVxUnAgAglHoKacCAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set enables the samsung-usbphy driver on exynos5250,
-which enables the support for USB2 type and USB3 type phys.
-The corresponding phy driver patches are available at:
- 1) https://lkml.org/lkml/2012/12/18/201
- 2) https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-December/024559.html
+Adding usbphy node for Exynos5250 along with the
+necessary device data to be parsed.
 
-Tested this patch-set on exynos5250 with following patch-sets for
-USB 2.0 and USB 3.0:
- - https://patchwork.kernel.org/patch/1794651/
- - https://lkml.org/lkml/2012/12/18/201
- - https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-December/024559.html
- - http://comments.gmane.org/gmane.linux.usb.general/76352
- - https://lkml.org/lkml/2012/12/13/492
-
-Vivek Gautam (2):
-  ARM: Exynos5250: Enabling samsung-usbphy driver
-  ARM: Exynos5250: Enabling USB 3.0 phy for samsung-usbphy driver
-
- arch/arm/boot/dts/exynos5250.dtsi       |   23 +++++++++++++++++++++++
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+ arch/arm/boot/dts/exynos5250.dtsi       |   22 ++++++++++++++++++++++
  arch/arm/mach-exynos/include/mach/map.h |    1 +
  arch/arm/mach-exynos/mach-exynos5-dt.c  |    2 ++
- 3 files changed, 26 insertions(+), 0 deletions(-)
+ 3 files changed, 25 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 581e57a..bbdb2c2 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -299,6 +299,28 @@
+ 		rx-dma-channel = <&pdma0 11>; /* preliminary */
+ 	};
+ 
++	phy_h0: usbdev_phyctrl@10040704 {
++		compatible = "samsung,usbdev-phyctrl";
++		samsung,phyhandle-reg = <0x10040704>;
++	};
++
++	phy_h1: usbhost_phyctrl@10040708 {
++		compatible = "samsung,usbhost-phyctrl";
++		samsung,phyhandle-reg = <0x10040708>;
++	};
++
++	phy_h2: usbhost_phycfg@10050230 {
++		compatible = "samsung,usb-phycfg";
++		samsung,phyhandle-reg = <0x10050230>;
++	};
++
++	usbphy@12130000 {
++		compatible = "samsung,exynos5250-usbphy";
++		reg = <0x12130000 0x100>;
++		samsung,usb-phyhandle = <&phy_h0 &phy_h1 &phy_h2>;
++		samsung,enable-mask = <1>;
++	};
++
+ 	amba {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
+index cbb2852..778348e 100644
+--- a/arch/arm/mach-exynos/include/mach/map.h
++++ b/arch/arm/mach-exynos/include/mach/map.h
+@@ -201,6 +201,7 @@
+ #define EXYNOS4_PA_EHCI			0x12580000
+ #define EXYNOS4_PA_OHCI			0x12590000
+ #define EXYNOS4_PA_HSPHY		0x125B0000
++#define EXYNOS5_PA_HSPHY		0x12130000
+ #define EXYNOS4_PA_MFC			0x13400000
+ 
+ #define EXYNOS4_PA_UART			0x13800000
+diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+index 462e5ac..24e7529 100644
+--- a/arch/arm/mach-exynos/mach-exynos5-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+@@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
+ 				"samsung-i2s.1", NULL),
+ 	OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
+ 				"samsung-i2s.2", NULL),
++	OF_DEV_AUXDATA("samsung,exynos5250-usbphy", EXYNOS5_PA_HSPHY,
++				"s3c-usbphy", NULL),
+ 	{},
+ };
+ 
 -- 
 1.7.6.5
 
