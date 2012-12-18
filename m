@@ -1,141 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2LRGta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 01:49:30 -0500
-Received: from 5.mo2.mail-out.ovh.net ([87.98.181.248]:51996 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751507Ab2LRGt2 (ORCPT
+	id S1752477Ab2LRGvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 01:51:15 -0500
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:46179 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab2LRGvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 01:49:28 -0500
-X-Greylist: delayed 2698 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 01:49:28 EST
-Date: Tue, 18 Dec 2012 07:47:23 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Dongjin Kim <tobetter@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        thomas.abraham@linaro.org, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH 1/4] ODROID-X: dts: Add board dts file for ODROID-X
-Message-ID: <20121218064723.GN23971@game.jcrosoft.org>
-References: <1355774107-364-1-git-send-email-tobetter@gmail.com>
- <1355774107-364-2-git-send-email-tobetter@gmail.com>
- <CAOesGMgZWNiCmTFGvr--zKf+vS51hX5jPnD+NZq8OvGFLS9rJA@mail.gmail.com>
- <20121218060009.GK23971@game.jcrosoft.org>
- <CAOesGMj05zX=h+79t=-GPO3YCL1R-ognrPEn7EEyw0CTdCvkHg@mail.gmail.com>
+	Tue, 18 Dec 2012 01:51:14 -0500
+X-manitu-Original-Sender-IP: 79.230.55.182
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <50D01256.1020105@grandegger.com>
+Date: Tue, 18 Dec 2012 07:51:02 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMj05zX=h+79t=-GPO3YCL1R-ognrPEn7EEyw0CTdCvkHg@mail.gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 1291970144348121903
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehkedrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehkedrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+To: Roland Stigge <stigge@antcom.de>
+CC: rmallon@gmail.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        broonie@opensource.wolfsonmicro.com, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        daniel-gl@gmx.net, sr@denx.de, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, highguy@gmail.com
+Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
+References: <1355495185-24220-1-git-send-email-stigge@antcom.de> <50CB68AB.5070806@grandegger.com> <50CBBB25.20002@antcom.de> <50CF03FB.2030100@grandegger.com> <50CF0744.7040404@grandegger.com> <50CF1EF1.2070601@antcom.de> <50CF237E.5020409@antcom.de> <50CF4838.9000401@grandegger.com> <50CF5327.6070205@antcom.de> <50CF584E.1040601@grandegger.com> <50CF5E45.5030104@antcom.de> <50CF76D3.9030708@grandegger.com> <50CF8FA9.8050609@antcom.de>
+In-Reply-To: <50CF8FA9.8050609@antcom.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:14 Mon 17 Dec     , Olof Johansson wrote:
-> On Mon, Dec 17, 2012 at 10:00 PM, Jean-Christophe PLAGNIOL-VILLARD
-> <plagnioj@jcrosoft.com> wrote:
-> > On 17:56 Mon 17 Dec     , Olof Johansson wrote:
-> >> On Mon, Dec 17, 2012 at 11:55 AM, Dongjin Kim <tobetter@gmail.com> wrote:
-> >> > Add initial dtb file for Hardkernel's ODROID-X board based on EXYNOS4412 SoC.
-> >> >
-> >> > Signed-off-by: Dongjin Kim <tobetter@gmail.com>
-> >> > ---
-> >> >  arch/arm/boot/dts/Makefile               |    1 +
-> >> >  arch/arm/boot/dts/exynos4412-odroidx.dts |   52 ++++++++++++++++++++++++++++++
-> >> >  2 files changed, 53 insertions(+)
-> >> >  create mode 100644 arch/arm/boot/dts/exynos4412-odroidx.dts
-> >> >
-> >> > diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> >> > index ca6fb8e..3355af9 100644
-> >> > --- a/arch/arm/boot/dts/Makefile
-> >> > +++ b/arch/arm/boot/dts/Makefile
-> >> > @@ -45,6 +45,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
-> >> >         exynos5250-smdk5250.dtb \
-> >> >         exynos5440-ssdk5440.dtb \
-> >> >         exynos4412-smdk4412.dtb \
-> >> > +       exynos4412-odroidx.dtb \
-> >>
-> >> Please add them alphabetically, so before smdk.
-> > we need to drop the \ \ stuff it will end with merge conflict
-> > as if you add 2 dtb at the end you will end with 2 patch that touch the same
-> > previous line
+On 12/17/2012 10:33 PM, Roland Stigge wrote:
+> On 17/12/12 20:47, Wolfgang Grandegger wrote:
+>> On 12/17/2012 07:02 PM, Roland Stigge wrote:
+>>> On 12/17/2012 06:37 PM, Wolfgang Grandegger wrote:
+>>>> 	/* Do synchronous data output with a single write access */
+>>>> 	__raw_writel(~mask, pio + PIO_OWDR);
+>>>> 	__raw_writel(mask, pio + PIO_OWER);
+>>>> 	__raw_writel(val, pio + PIO_ODSR);
+>>>>
+>>>> For caching we would need a storage. Not sure if it's worth compared to
+>>>> a context switch into the kernel.
+>>>
+>>> Block GPIO is not only for you in userspace. ;-) You can also implement
+>>> efficient n-bit bus I/O in kernel drivers, n-bit-banging. :-) So not
+>>> always context switches involved.
+>>
+>> OK, what do you think about the following untested patch:
 > 
-> ..which is why the dts files should be added alphabetically instead of
-> just appended to the list.
-we need to drop this \
-
-and use this syntax and keep ordered
-dtb-$() +=
-
+> Looks good!
 > 
-> >> > diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
-> >> > new file mode 100644
-> >> > index 0000000..786ddd7
-> >> > --- /dev/null
-> >> > +++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
-> >> > @@ -0,0 +1,52 @@
-> >> > +/*
-> >> > + * Hardkernel's Exynos4412 based ODROID-X board device tree source
-> >> > + *
-> >> > + * Copyright (c) 2012-2013 Dongjin Kim <tobetter@gmail.com>
-> >>
-> >> Are you from the future?
-> >>
-> >> > + *
-> >> > + * Device tree source file for Hardkernel's ODROID-X board which is based on
-> >> > + * Samsung's Exynos4412 SoC.
-> >> > + *
-> >> > + * This program is free software; you can redistribute it and/or modify
-> >> > + * it under the terms of the GNU General Public License version 2 as
-> >> > + * published by the Free Software Foundation.
-> >> > +*/
-> >> > +
-> >> > +/dts-v1/;
-> >> > +/include/ "exynos4412.dtsi"
-> >> > +
-> >> > +/ {
-> >> > +       model = "Hardkernel ODROID-X board based on Exynos4412";
-> >> > +       compatible = "samsung,exynos4412";
-> >>
-> >> It should have a more specific compatible value first, i.e.
-> >> "hardkernel,odroid-x" or similar.
-> >>
-> >>
-> >> > +       memory {
-> >> > +               reg = <0x40000000 0x40000000>;
-> >> > +       };
-> >> > +
-> >> > +       chosen {
-> >> > +               bootargs ="root=/dev/mmcblk0p3 rw console=ttySAC1,115200 init=/sbin/init delay=2";
-> >>
-> >> Bootargs should be passed in from u-boot, don't specify them in the
-> >> static device tree.
-> >
-> > why not we can choose to have a default cmdline and even usit as a complement
-> > of the bootloader one
-> >
-> > it's up to the dts maintainer to choose
-> 
-> The chance of having a valid generic command line that will work for
-> everyone with that hardware is fairly small, especially on more
-> generic systems that might have a regular distro installed on them.
+> Why "untested"? ;-)
 
-this does not hurt anyone 99% of the people will overwrite you can just see as
-a cmdline example
+Because I didn't have a chance to test it yet. Will do tomorrow.
 
-Best Regards,
-J.
+Wolfgang.
+
