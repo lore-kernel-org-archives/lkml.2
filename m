@@ -1,96 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2LROKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 09:10:35 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:56971 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755000Ab2LROKe (ORCPT
+	id S1754922Ab2LROMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 09:12:18 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:45396 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab2LROMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 09:10:34 -0500
-Date: Tue, 18 Dec 2012 15:10:14 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
-        Lin.Lei@huawei.com, greg@kroah.com, neil.yi@huawei.com,
-        wangyuhua@huawei.com, huqiao36@huawei.com, balbi@ti.com
-Subject: Re: [PATCH 2/2]linux-usb:optimize to match the Huawei USB storage
- devices and support new switch command
-Message-ID: <20121218141013.GB4939@breakpoint.cc>
-References: <fdcd8d23149d.149dfdcd8d23@huawei.com>
- <fdcdb3e12b55.2b55fdcdb3e1@huawei.com>
+	Tue, 18 Dec 2012 09:12:15 -0500
+X-Greylist: delayed 1537 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 09:12:15 EST
+Message-ID: <50D073BC.3040607@gmail.com>
+Date: Tue, 18 Dec 2012 07:46:36 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fdcdb3e12b55.2b55fdcdb3e1@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from
+ DT
+References: <1355725087-11363-1-git-send-email-hdoyu@nvidia.com><1355725087-11363-4-git-send-email-hdoyu@nvidia.com><50CF258E.2080207@gmail.com> <20121218.112129.1344593225772728837.hdoyu@nvidia.com>
+In-Reply-To: <20121218.112129.1344593225772728837.hdoyu@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 10:44:19AM +0800, fangxiaozhi 00110321 wrote:
-> diff -uprN linux-3.7_bak/drivers/usb/storage/initializers.c linux-3.7/drivers/usb/storage/initializers.c
-> --- linux-3.7_bak/drivers/usb/storage/initializers.c	2012-12-11 09:56:11.000000000 +0800
-> +++ linux-3.7/drivers/usb/storage/initializers.c	2012-12-17 11:12:12.000000000 +0800
->  	US_DEBUGP("Huawei mode set result is %d\n", result);
->  	return 0;
->  }
-> +
-> +/* Find the supported Huawei USB dongles */
-> +static int usb_stor_huawei_dongles_pid(struct us_data *us)
-> +{
-> +	struct usb_interface_descriptor *idesc;
-> +	int idProduct;
-> +	
-> +	idesc = &us->pusb_intf->cur_altsetting->desc;
-> +	idProduct = us->pusb_dev->descriptor.idProduct;
-> +	if (idesc && idesc->bInterfaceNumber == 0) {
-> +		if ((idProduct == 0x1001)
-> +			|| (idProduct == 0x1003)
-> +			|| (idProduct == 0x1004)
-> +			|| (idProduct >= 0x1401 && idProduct < 0x1501)
-> +			|| (idProduct > 0x1504 && idProduct <= 0x1600)
-> +			|| (idProduct >= 0x1c02 && idProduct <= 0x2202)) {
-> +			return 1;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int usb_stor_huawei_scsi_init(struct us_data *us)
-> +{
-> +	int result = 0;
-> +	int act_len = 0;
-> +	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
-> +			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+On 12/18/2012 03:21 AM, Hiroshi Doyu wrote:
+> Hi Rob,
+> 
+> Rob Herring <robherring2@gmail.com> wrote @ Mon, 17 Dec 2012 15:00:46 +0100:
+> 
+>> On 12/17/2012 12:18 AM, Hiroshi Doyu wrote:
+>>> Set Snoop Control Unit(SCU) register base address dynamically from DT.
+>>>
+>>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>>> ---
+>>>  arch/arm/mach-tegra/platsmp.c |   23 ++++++++++++++++++++---
+>>>  1 file changed, 20 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+>>> index 1b926df..45c0b79 100644
+>>> --- a/arch/arm/mach-tegra/platsmp.c
+>>> +++ b/arch/arm/mach-tegra/platsmp.c
+>>> @@ -18,6 +18,8 @@
+>>>  #include <linux/jiffies.h>
+>>>  #include <linux/smp.h>
+>>>  #include <linux/io.h>
+>>> +#include <linux/of.h>
+>>> +#include <linux/of_address.h>
+>>>  
+>>>  #include <asm/cacheflush.h>
+>>>  #include <asm/hardware/gic.h>
+>>> @@ -36,7 +38,7 @@
+>>>  
+>>>  extern void tegra_secondary_startup(void);
+>>>  
+>>> -static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
+>>> +static void __iomem *scu_base;
+>>>  
+>>>  #define EVP_CPU_RESET_VECTOR \
+>>>  	(IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE) + 0x100)
+>>> @@ -143,14 +145,28 @@ done:
+>>>  	return status;
+>>>  }
+>>>  
+>>> +static const struct of_device_id cortex_a9_scu_match[] __initconst = {
+>>> +	{ .compatible = "arm,cortex-a9-scu", },
+>>> +	{}
+>>> +};
+>>> +
+>>>  /*
+>>>   * Initialise the CPU possible map early - this describes the CPUs
+>>>   * which may be present or become present in the system.
+>>>   */
+>>>  static void __init tegra_smp_init_cpus(void)
+>>>  {
+>>> -	unsigned int i, ncores = scu_get_core_count(scu_base);
+>>> +	struct device_node *np;
+>>> +	unsigned int i, ncores = 1;
+>>> +
+>>> +	np = of_find_matching_node(NULL, cortex_a9_scu_match);
+>>> +	if (!np)
+>>> +		return;
+>>> +	scu_base = of_iomap(np, 0);
+>>
+>> Did you actually test this? Unless something changed, ioremap does not
+>> work this early. The only reason to have it mapped this early is to get
+>> the core count, but that doesn't work on A15 or A7. So we really need to
+>> get core count/mask in a standard way. At least some work to get core
+>> count from DT went into 3.8.
+>>
+>> BTW, you can get the scu address on the A9 by reading cp15 register:
+>>
+>> 	/* Get SCU base */
+>> 	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
+>>
+>> It's still probably good to have the DT node, but the reg property can
+>> be optional in this case.
+> 
+> I'm simply wondering, if the above cp15 works with Cortex-A9, do we
+> still need SCU DT node? At least from Cortex-A15 TRM, it seems that
+> SCU is tighly integrated into CPU core and it doesn't have any user
+> control. So Cortex-A15 doesn't seem to need to configure SCU. For
+> Cortex-A7, I haven't yet found S/W configurable register definitions
+> in TRM. So if neither of A15/A7 need SCU base, would the above cp15
+> intructions be enough?
 
-Has this something to do with the SPACE command as defined in SSC-2? I don't
-see the code (0x6 here) to be defined. But then you name is rewind.
+The A15/A7 still have the register for the other peripherals like the
+GIC, but there are no SCU registers or other way to get a core count
+from the h/w.
 
-> +	struct bulk_cb_wrap *bcbw = (struct bulk_cb_wrap *) us->iobuf;
-> +	
-> +	memset(bcbw, 0, sizeof(struct bulk_cb_wrap));
-> +	bcbw->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-> +	bcbw->Tag = 0;
-> +	bcbw->DataTransferLength = 0;
-> +	bcbw->Flags = bcbw->Lun = 0;
+The DT node could be used to determine if you have an SCU or not. I just
+used the cpu node compatible value to determine that.
 
-A memset() followed by an init of each member of the struct. Could please
-chose one side?
+>> We need to move away from having the DT matching code within the
+>> platforms. This should all be moved to the scu code in a scu_of_init
+>> function that could be called from common code.
+> 
+> True if SCU DT node is still necessary.
 
-> +	bcbw->Length = sizeof(rewind_cmd);
-> +	memcpy(bcbw->CDB, rewind_cmd, sizeof(rewind_cmd));
-> +
-> +	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, &bcbw,
-> +					US_BULK_CS_WRAP_LEN, &act_len);
+Well, reading the cp15 register and mapping the registers could be
+common code independent of DT. I'm not sure if there are non-A9
+implementations of the SCU which don't have the cp15 register.
 
-I am a little confused here. Shouldn't this be bcbw aka us->iobuf and not
-&bcbw ?
-
-And shouldn't you read something from the us->recv_bulk_pipe after that?
-
-> +	US_DEBUGP("transfer actual length=%d, result=%d\n", act_len, result);
-> +	return result;
-> +}
-> +
-
-Sebastian
+Rob
