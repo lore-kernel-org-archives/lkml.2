@@ -1,109 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab2LRG5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 01:57:54 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:41992 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2LRG5v (ORCPT
+	id S1754115Ab2LRG6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 01:58:22 -0500
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:46751 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab2LRG6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 01:57:51 -0500
-X-Greylist: delayed 511 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 01:57:51 EST
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
-        sanjay@google.com, Paul Turner <pjt@google.com>,
-        David Rientjes <rientjes@google.com>,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [RFC v4 3/3] add PGVOLATILE vmstat count
-Date: Tue, 18 Dec 2012 15:47:54 +0900
-Message-Id: <1355813274-571-4-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355813274-571-1-git-send-email-minchan@kernel.org>
-References: <1355813274-571-1-git-send-email-minchan@kernel.org>
+	Tue, 18 Dec 2012 01:58:21 -0500
+X-manitu-Original-Sender-IP: 79.230.55.182
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <50D01402.9090301@grandegger.com>
+Date: Tue, 18 Dec 2012 07:58:10 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Roland Stigge <stigge@antcom.de>, rmallon@gmail.com,
+        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        broonie@opensource.wolfsonmicro.com, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        daniel-gl@gmx.net, sr@denx.de, linux-arm-kernel@lists.infradead.org,
+        highguy@gmail.com
+Subject: Re: [PATCH RESEND 0/6 v10] gpio: Add block GPIO
+References: <50CBBB25.20002@antcom.de> <50CF03FB.2030100@grandegger.com> <50CF0744.7040404@grandegger.com> <50CF1EF1.2070601@antcom.de> <50CF237E.5020409@antcom.de> <50CF4838.9000401@grandegger.com> <50CF5327.6070205@antcom.de> <50CF584E.1040601@grandegger.com> <50CF5E45.5030104@antcom.de> <50CF76D3.9030708@grandegger.com> <20121218055525.GJ23971@game.jcrosoft.org>
+In-Reply-To: <20121218055525.GJ23971@game.jcrosoft.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add pgvolatile vmstat so admin can see how many of volatile
-pages are discarded by VM until now. It could be a good indicator of
-patch effect during test but still not sure we need it in real practice.
-Will rethink it.
+On 12/18/2012 06:55 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 20:47 Mon 17 Dec     , Wolfgang Grandegger wrote:
+>> On 12/17/2012 07:02 PM, Roland Stigge wrote:
+>>> On 12/17/2012 06:37 PM, Wolfgang Grandegger wrote:
+>>>> 	/* Do synchronous data output with a single write access */
+>>>> 	__raw_writel(~mask, pio + PIO_OWDR);
+>>>> 	__raw_writel(mask, pio + PIO_OWER);
+>>>> 	__raw_writel(val, pio + PIO_ODSR);
+>>>>
+>>>> For caching we would need a storage. Not sure if it's worth compared to
+>>>> a context switch into the kernel.
+>>>
+>>> Block GPIO is not only for you in userspace. ;-) You can also implement
+>>> efficient n-bit bus I/O in kernel drivers, n-bit-banging. :-) So not
+>>> always context switches involved.
+>>
+>> OK, what do you think about the following untested patch:
+>>
+>> From b44cad16cbbca84715dffd4cb5268497216add25 Mon Sep 17 00:00:00 2001
+>> From: Wolfgang Grandegger <wg@grandegger.com>
+>> Date: Mon, 3 Dec 2012 08:31:55 +0100
+>> Subject: [PATCH 1/2] gpio: add GPIO block callback functions for AT91
+>>
+>> Signed-off-by: Wolfgang Grandegger <wg@grandegger.com>
+>> ---
+>>  arch/arm/mach-at91/gpio.c |   29 +++++++++++++++++++++++++++++
+>>  1 file changed, 29 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
+>> index be42cf0..cf6bd45 100644
+>> --- a/arch/arm/mach-at91/gpio.c
+>> +++ b/arch/arm/mach-at91/gpio.c
+>> @@ -42,13 +42,16 @@ struct at91_gpio_chip {
+>>  	void __iomem		*regbase;	/* PIO bank virtual address */
+>>  	struct clk		*clock;		/* associated clock */
+>>  	struct irq_domain	*domain;	/* associated irq domain */
+>> +	unsigned long		mask_shadow;	/* synchronous data output */
+>>  };
+>>  
+>>  #define to_at91_gpio_chip(c) container_of(c, struct at91_gpio_chip, chip)
+>>  
+>>  static void at91_gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip);
+>>  static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val);
+>> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val);
+>>  static int at91_gpiolib_get(struct gpio_chip *chip, unsigned offset);
+>> +static unsigned long at91_gpiolib_get_block(struct gpio_chip *chip, unsigned long mask);
+>>  static int at91_gpiolib_direction_output(struct gpio_chip *chip,
+>>  					 unsigned offset, int val);
+>>  static int at91_gpiolib_direction_input(struct gpio_chip *chip,
+>> @@ -62,7 +65,9 @@ static int at91_gpiolib_to_irq(struct gpio_chip *chip, unsigned offset);
+>>  			.direction_input  = at91_gpiolib_direction_input, \
+>>  			.direction_output = at91_gpiolib_direction_output, \
+>>  			.get		  = at91_gpiolib_get,		\
+>> +			.get_block	  = at91_gpiolib_get_block,	\
+>>  			.set		  = at91_gpiolib_set,		\
+>> +			.set_block	  = at91_gpiolib_set_block,	\
+>>  			.dbg_show	  = at91_gpiolib_dbg_show,	\
+>>  			.to_irq		  = at91_gpiolib_to_irq,	\
+>>  			.ngpio		  = nr_gpio,			\
+>> @@ -896,6 +901,16 @@ static int at91_gpiolib_get(struct gpio_chip *chip, unsigned offset)
+>>  	return (pdsr & mask) != 0;
+>>  }
+>>  
+>> +static unsigned long at91_gpiolib_get_block(struct gpio_chip *chip, unsigned long mask)
+>> +{
+>> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+>> +	void __iomem *pio = at91_gpio->regbase;
+>> +	u32 pdsr;
+>> +
+>> +	pdsr = __raw_readl(pio + PIO_PDSR);
+>> +	return pdsr & mask;
+>> +}
+>> +
+>>  static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val)
+>>  {
+>>  	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+>> @@ -905,6 +920,20 @@ static void at91_gpiolib_set(struct gpio_chip *chip, unsigned offset, int val)
+>>  	__raw_writel(mask, pio + (val ? PIO_SODR : PIO_CODR));
+>>  }
+>>  
+>> +static void at91_gpiolib_set_block(struct gpio_chip *chip, unsigned long mask, unsigned long val)
+>> +{
+>> +	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
+>> +	void __iomem *pio = at91_gpio->regbase;
+>> +
+>> +	/* Do synchronous data output with a single write access */
+>> +	if (mask != at91_gpio->mask_shadow) {
+>> +		at91_gpio->mask_shadow = mask;
+>> +		__raw_writel(~mask, pio + PIO_OWDR);
+>> +		__raw_writel(mask, pio + PIO_OWER);
+>> +	}
+>> +	__raw_writel(val, pio + PIO_ODSR);
+>> +}
+> this driver is only for old at91 platfrom if you touch at91 you need to update
+> the pinctrl too
 
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: sanjay@google.com
-Cc: Paul Turner <pjt@google.com>
-CC: David Rientjes <rientjes@google.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Robert Love <rlove@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Mike Hommey <mh@glandium.org>
-Cc: Taras Glek <tglek@mozilla.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/vm_event_item.h |    2 +-
- mm/vmscan.c                   |    1 +
- mm/vmstat.c                   |    1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+Well, the patch is for the hardware I have at hand and I can test. There
+are many other GPIO hardware interfaces which could be enhanced with
+block gpio. Roland only did it for the interfaces in driver/gpio. Also,
+I think, an ACK for this patch series would be nice before we continue.
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 3d31145..f83c3d2 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -23,7 +23,7 @@
- 
- enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGALLOC),
--		PGFREE, PGACTIVATE, PGDEACTIVATE,
-+		PGFREE, PGVOLATILE, PGACTIVATE, PGDEACTIVATE,
- 		PGFAULT, PGMAJFAULT,
- 		FOR_ALL_ZONES(PGREFILL),
- 		FOR_ALL_ZONES(PGSTEAL_KSWAPD),
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index cfe95d3..1ec7345 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -794,6 +794,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		if (page_mapped(page) && mapping) {
- 			switch (try_to_unmap(page, ttu_flags)) {
- 			case SWAP_DISCARD:
-+				count_vm_event(PGVOLATILE);
- 				goto discard_page;
- 			case SWAP_FAIL:
- 				goto activate_locked;
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index c737057..9fd8ead 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -747,6 +747,7 @@ const char * const vmstat_text[] = {
- 	TEXTS_FOR_ZONES("pgalloc")
- 
- 	"pgfree",
-+	"pgvolatile",
- 	"pgactivate",
- 	"pgdeactivate",
- 
--- 
-1.7.9.5
+Wolfgang.
 
