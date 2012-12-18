@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab2LRKFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 05:05:36 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:49904 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab2LRKFe (ORCPT
+	id S1754675Ab2LRKHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 05:07:12 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:49608 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab2LRKHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 05:05:34 -0500
+	Tue, 18 Dec 2012 05:07:10 -0500
+X-Greylist: delayed 1133 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 05:07:09 EST
+Message-ID: <50D039FF.5090006@openvz.org>
+Date: Tue, 18 Dec 2012 13:40:15 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
-In-Reply-To: <20121218105223.0184d4a3@endymion.delvare>
-References: <1355778259-8445-1-git-send-email-laurent.navet@gmail.com>
-	<20121218105223.0184d4a3@endymion.delvare>
-Date: Tue, 18 Dec 2012 11:05:33 +0100
-Message-ID: <CAH7P7Nhz2FpBct4afvAXU2Zgi-yA4TkJj7CtYMaW7pXr6weZig@mail.gmail.com>
-Subject: Re: [PATCH] driver i2c-nforce2: fix pointer CodingStyle issues
-From: Laurent Navet <laurent.navet@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Hugh Dickins <hughd@google.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] mm/swap: abort swapoff after disk error
+References: <20121214110110.8181.70783.stgit@zurg> <alpine.LNX.2.00.1212171953070.5927@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1212171953070.5927@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+Hugh Dickins wrote:
+> On Fri, 14 Dec 2012, Konstantin Khlebnikov wrote:
+>
+>> Content of non-uptodate pages completely random, we cannot expose them into
+>> userspace. This leads to information leak and will crash userspace for sure.
+>
+> Good find, yes, it's very wrong as is.  But, sorry, I don't like your fix
+> - better than ignoring the issue as at present, but not the right answer.
+>
+>> Probably we can reuse hwpoison entries here, but tmpfs already too complex.
+>
+> HWpoison entries?  They're for when that page of RAM is bad, but this is
+> quite a different case: the page is fine and can perfectly well be freed
+> and reused - what's bad is the data currently in it.
+>
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> Original-patch-by: Alexey Kuznetsov<kuznet@ms2.inr.ac.ru>
+>> Cc: Andrew Morton<akpm@linux-foundation.org>
+>> Cc: Hugh Dickins<hughd@google.com>
+>> Cc: Andi Kleen<andi@firstfloor.org>
+>> ---
+>>   mm/swapfile.c |   16 ++++++++++++++++
+>>   1 file changed, 16 insertions(+)
+>>
+>> diff --git a/mm/swapfile.c b/mm/swapfile.c
+>> index e97a0e5..98fc2fd 100644
+>> --- a/mm/swapfile.c
+>> +++ b/mm/swapfile.c
+>> @@ -1127,6 +1127,22 @@ int try_to_unuse(unsigned int type, bool frontswap,
+>>   		wait_on_page_writeback(page);
+>>
+>>   		/*
+>> +		 * If read failed we cannot map not-uptodate page to
+>> +		 * user space. Actually, we are in serious troubles,
+>> +		 * we do not even know what process to kill. So, the only
+>
+> try_to_unuse() is all about locating exactly where this page belongs;
+> and if the user is lucky, the page in question won't even be needed again
+> before the process exits, so nothing should be killed at this point.
+>
+>
+>> +		 * variant remains: to stop swapoff() and allow someone
+>> +		 * to kill processes to zap invalid pages.
+>
+> No, we should not abort swapoff: there's every reason to continue,
+> to make sure that this unreliable area can be taken out of service.
+>
+>> +		 *
+>> +		 * TODO replace page with hwpoison entry in pte and shmem.
+>
+> Instead of blindly going ahead and inserting ptes pointing to the
+> !PageUptodate page, unuse_pte() and shmem_unuse_inode() should insert
+> a substitute bad swapentry, to generate SIGBUS if it's accessed.
+>
+> swp_entry(1, 0) might serve, but there's probably a few mods needed
+> here and there; and getting the details right (e.g. memcg charges)
+> will need care.
+>
+> Not as straightforward as your block below, I admit.  I wonder if you
+> posted that just to stir me to do better: or can you take it further?
 
-> This is correct, however there are several other checkpatch errors and
-> warnings in this file and I would appreciate if you could fix them as
-> well. I'm not asking that you fix them all, but please consider fixing
-> the following:
->
-> WARNING: space prohibited between function name and open parenthesis '('
-> #63: FILE: i2c/busses/i2c-nforce2.c:63:
-> +MODULE_AUTHOR ("Hans-Frieder Vogt <hfvogt@gmx.net>");
->
-> WARNING: suspect code indent for conditional statements (24, 33)
-> #226: FILE: i2c/busses/i2c-nforce2.c:226:
-> +			if (read_write == I2C_SMBUS_WRITE) {
-> +				 outb_p(data->word, NVIDIA_SMB_DATA);
->
-> WARNING: line over 80 characters
-> #275: FILE: i2c/busses/i2c-nforce2.c:275:
-> +			data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA+1) << 8);
->
-> WARNING: quoted string split across lines
-> #282: FILE: i2c/busses/i2c-nforce2.c:282:
-> +				dev_err(&adap->dev, "Transaction failed "
-> +					"(received block size: 0x%02x)\n",
->
-> WARNING: space prohibited between function name and open parenthesis '('
-> #330: FILE: i2c/busses/i2c-nforce2.c:330:
-> +MODULE_DEVICE_TABLE (pci, nforce2_ids);
->
-> WARNING: line over 80 characters
-> #380: FILE: i2c/busses/i2c-nforce2.c:380:
-> +	dev_info(&smbus->adapter.dev, "nForce2 SMBus adapter at %#x\n",
-> smbus->base);
->
-> ERROR: space required before the open parenthesis '('
-> #395: FILE: i2c/busses/i2c-nforce2.c:395:
-> +	switch(dev->device) {
->
-> These are simple coding style issues, very easy to fix.
+I found this patch in our kernel tree. For some reason it wasn't sent
+to mainline. So I decided to send it as is to not lose it for a few more
+years. Using here hwpoison was just a guess. Your bad-swap-entry is much
+more accurate solution. Seems like here is no rush, this bug was here from
+the beginning, so I'll handle it. Thanks for your advice.
 
-i have planned fixing these too, do you prefer one patch fixing all or
-multiple patches (one per error/warning type )?
-
-regards,
-Laurent.
+>
+> Thanks,
+> Hugh
+>
+>> +		 */
+>> +		if (unlikely(!PageUptodate(page))) {
+>> +			unlock_page(page);
+>> +			page_cache_release(page);
+>> +			retval = -EIO;
+>> +			break;
+>> +		}
+>> +
+>> +		/*
+>>   		 * Remove all references to entry.
+>>   		 */
+>>   		swcount = *swap_map;
