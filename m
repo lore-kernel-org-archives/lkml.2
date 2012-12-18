@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2LRPGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:06:37 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44950 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834Ab2LRPGg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:06:36 -0500
-From: Juergen Beisert <jbe@pengutronix.de>
-Organization: Pengutronix - Linux Solutions for Science and Industry
-To: linux-kernel@vger.kernel.org
-Subject: Strange results of DIV_ROUND_CLOSEST
-Date: Tue, 18 Dec 2012 16:03:41 +0100
-User-Agent: KMail/1.9.10
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1755235Ab2LRPHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:07:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755142Ab2LRPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 10:07:18 -0500
+Date: Tue, 18 Dec 2012 10:07:02 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Steve French <smfrench@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: [PATCH] cifs: Do not enable debugging code by default
+Message-ID: <20121218100702.478fc1b1@tlielax.poochiereds.net>
+In-Reply-To: <20121218144452.GB31255@liondog.tnic>
+References: <1355737085-6671-1-git-send-email-bp@alien8.de>
+	<CAH2r5mt=4ZoGR_4hP52uHsZabXpPfh1sa1X0GSg6W4=fawNFnA@mail.gmail.com>
+	<20121218071317.01cbc41b@tlielax.poochiereds.net>
+	<20121218144452.GB31255@liondog.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212181603.42094.jbe@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: jbe@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+On Tue, 18 Dec 2012 15:44:52 +0100
+Borislav Petkov <bp@alien8.de> wrote:
 
-commit 263a523d18bca306016d75f5c8d5c57c37fe52fb changes the code of 
-DIV_ROUND_CLOSEST in include/linux/kernel.h to fix a compile time warning.
+> On Tue, Dec 18, 2012 at 07:13:17AM -0500, Jeff Layton wrote:
+> > I agree that we often need cifsFYI debug info in order to troubleshoot
+> > problems. The question here though is whether compiling those in ought
+> > to be the default.
+> >
+> > In generic distro kernels, I think we do want that turned on even in
+> > non-debug kernels. On an embedded arch, it's less compelling.
+> >
+> > Might it make sense to couple this change with a change to the
+> > CONFIG_CIFS_DEBUG help text? Something like:
+> >
+> > "This option defaults to 'N', but enabling this is strongly encouraged
+> > unless memory is severely constrained."
+> 
+> ... or we make it default n if EMBEDDED, otherwise default y + changing
+> the help text?
+> 
+> > Then we can just try to make sure non-embedded distros enable it.
+> 
+> Yeah, I don't think distros look at the help text... or?
+> 
 
-But now feeding in a zero into this macro results into 4198403. Tested with 
-gcc 4.4.3 and 4.7.2, on arch x86 and ARM.
+Yeah, not many do, but presumably they'll set it once and forget about
+it. Once someone straightens them out, they should rarely break.
 
-I can reproduce this behaviour, when my ADC delivers a '0' value in the driver 
-drivers/hwmon/s3c-hwmon.c in function s3c_hwmon_ch_show() with a current 
-3.7.1 kernel. The value is correct again, when the ADC delivers at least 
-a '1'.
+OTOH, the value of defaulting to "N" is pretty low here. Maybe it would
+just be best to just drop this patch and have the embedded folks turn
+this off on their own.
 
-Any ideas how to fix it correctly?
-
-jbe
 -- 
-Pengutronix e.K.                              | Juergen Beisert             |
-Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
+Jeff Layton <jlayton@redhat.com>
