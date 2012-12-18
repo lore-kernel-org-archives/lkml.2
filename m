@@ -1,202 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2LRKnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 05:43:47 -0500
-Received: from forward5h.mail.yandex.net ([84.201.186.23]:57559 "EHLO
-	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2LRKnp (ORCPT
+	id S1754637Ab2LRKqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 05:46:33 -0500
+Received: from outgoing.email.vodafone.de ([139.7.28.128]:47103 "EHLO
+	outgoing.email.vodafone.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754570Ab2LRKqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 05:43:45 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Steven Rostedt <rostedt@goodmis.org>, Yong Zhang <yong.zhang0@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <1353011758.18025.123.camel@gandalf.local.home>
-References: <1334519122.8698.3.camel@hp>
-	 <1334592379.28106.4.camel@gandalf.stny.rr.com>
-	 <1334773976.28106.49.camel@gandalf.stny.rr.com>
-	 <1334783815.28106.56.camel@gandalf.stny.rr.com> <20120419085440.GC3963@zhy>
-	 <69791338569116@web3f.yandex.ru> <20120604052755.GA28710@zhy> <1353011758.18025.123.camel@gandalf.local.home>
-Subject: Re: [sched/rt] Optimization of function pull_rt_task()
+	Tue, 18 Dec 2012 05:46:30 -0500
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 05:46:30 EST
+X-Authentication-Info: Sender authenticated as deathsimple@vodafone.de (using CRAM-MD5)
+Message-ID: <50D0473D.9060106@vodafone.de>
+Date: Tue, 18 Dec 2012 11:36:45 +0100
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Message-Id: <1675831355827421@web30h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 18 Dec 2012 14:43:41 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: David Airlie <airlied@linux.ie>, Jerome Glisse <jglisse@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] drm/radeon: return 0 on successful gpu reset
+References: <1355779884.1414.14.camel@x61.thuisdomein>
+In-Reply-To: <1355779884.1414.14.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 17.12.2012 22:31, Paul Bolle wrote:
+> On an (outdated) laptop the radeon driver (almost always) prints, during
+> the first resume of each session:
+>      [drm] crtc 1 is connected to a TV
+>
+> This message is a bit puzzling as, as far as I know, no TV has ever
+> been connected to this laptop. Anyhow, before v3.5, if that happened the
+> radeon driver then printed an error during all following resumes:
+>      [drm:radeon_cs_ioctl] *ERROR* Failed to parse relocation -35!
+>
+> (-35 is -EDEADLK.) But the resume would succeed and the driver seemed to
+> run without too much trouble. From v3.5 onwards things changed. If the
+> (puzzling) message about crtc 1 was printed on first resume the laptop
+> would simply hang on second resume. Only a manual power off would then
+> be possible. In that case nothing of interest would be found in the
+> (truncated) logs.  And, most annoyingly, the hang would never happen if
+> the laptop was booted with, say, "console=ttyS0,115200n8" added to the
+> kernel command line.
+>
+> I bisected the hang to commit 6c6f478370eccfbfafbdc6fc55c0def03e58f124
+> ("drm/radeon: rework recursive gpu reset handling"), which was added in
+> the v3.5 release cycle. After discovering that and poking at the driver
+> it turned out that this hang is triggered by radeon_cs_handle_lockup()
+> returning -EAGAIN after successfully resetting the gpu. Simply returning
+> 0 makes the hang disappear (and makes the drm error reappear).
+>
+> Nothing in the code or the commit explanation clarifies why -EAGAIN
+> should be returned on successful gpu reset. So I suggest
+> radeon_cs_handle_lockup() simply returns what radeon_gpu_reset()
+> returns, eg 0 (on success) or a negative error code (on failure).
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) This exact patch is untested (but I run something comparable).
+>
+> 1) Sent as an RFC because I do not understand why this laptop (almost
+> always) prints the "crtc 1" message on first resume. Note that another
+> workaround for this hang is simply booting with "radeon.tv=0".
+Alex should probably take a look into this, since he probably is the one 
+with the deepest knowledge of the display engine. My best guess is that 
+it is just some error while probing for an attached TV and actually 
+isn't so bad after all.
+
+> 2) Also sent as an RFC because I have no idea whatsoever why returning
+> -EAGAIN will hang the machine. I guess it's returned to userland by
+> radeon_cs_ioctl(). What code uses that ioctl? And what does that code do
+> on -EAGAIN that hangs this laptop?
+
+EAGAIN just tells userspace to reissue the requested system call. When a 
+system call is interrupted (either by a signal or in our case a GPU 
+lockup) it aborts and EGAIN is returned to userspace, telling userspace 
+that it should try again. So by just returning 0 userspace things that 
+our system call was executed and doesn't try it again.
+
+So you just prevented the normal reissuing of the system call and so 
+also prevented whatever this command submission should be doing in the 
+first place.
+
+> 3) A third reason to send this as an RFC is that I also have no idea why
+> this hang doesn't happen when booting with "console=ttyS0,115200n8" or
+> even "console=tty0"! But I guess I'm now allowed to call this hang a
+> Heisenbug.
+"Heisenbug" ? LOL, I need to remember that.
+
+But anyway it is not so unusual seeing a bug like this, cause it is 
+possible (but highly unlikely) that actually trying to print an error 
+message can cause a lockup.
+
+You should definitely try Alex latest drm-fixes-3.8 branch 
+(git://people.freedesktop.org/~agd5f/linux) since the possibility is 
+quite high that we already have fixed that bug. If that doesn't helps 
+then please open a bug report and leave me a note so that I can 
+investigate further.
+
+Christian.
 
 
-16.11.2012, 00:36, "Steven Rostedt" <rostedt@goodmis.org>:
-> Doing my INBOX maintenance (clean up), I've stumbled on this thread
-> again. I'm not sure the changes here are hopeless.
 >
-> On Mon, 2012-06-04 at 13:27 +0800, Yong Zhang wrote:
+>   drivers/gpu/drm/radeon/radeon_cs.c |    5 +----
+>   1 files changed, 1 insertions(+), 4 deletions(-)
 >
->> šOn Fri, Jun 01, 2012 at 08:45:16PM +0400, Kirill Tkhai wrote:
->>> š19.04.2012, 12:54, "Yong Zhang" <yong.zhang0@gmail.com>:
->>>> šOn Wed, Apr 18, 2012 at 05:16:55PM -0400, Steven Rostedt wrote:
->>>>> š?On Wed, 2012-04-18 at 14:32 -0400, Steven Rostedt wrote:
->>>>>> š?On Mon, 2012-04-16 at 12:06 -0400, Steven Rostedt wrote:
->>>>>>> š?On Sun, 2012-04-15 at 23:45 +0400, Kirill Tkhai wrote:
->>>>>>>> š?The condition (src_rq->rt.rt_nr_running) is weak because it doesn't
->>>>>>>> š?consider the cases when src_rq has only processes bound to it (when
->>>>>>>> š?single cpu is allowed). It may be running kernel thread like
->>>>>>>> š?migration/x etc.
->>>>>>>>
->>>>>>>> š?So it's better to use more stronger condition which is able to exclude
->>>>>>>> š?above conditions. The function has_pushable_tasks() complitely does
->>>>>>>> š?this. A task may be pullable for another cpu rq only if he is pushable
->>>>>>>> š?for his own queue.
->>>>>>> š?I considered this before, and for some reason I never did the change.
->>>>>>> š?I'll have to think about it. It seems like this would be the obvious
->>>>>>> š?case, but I think there was something not so obvious that caused issues.
->>>>>>> š?But I don't remember what it was.
->>>>>>>
->>>>>>> š?I'll have to rethink this again.
->>>>>> š?I can't find anything wrong with this change. Maybe things change, or I
->>>>>> š?was thinking of another change.
->>>>>>
->>>>>> š?I'll apply it and start running my tests against it.
->>>>> š?Not only does this seem to work fine, I took it one step further :-)
->>>> šHmm... throttle doesn't handle the pushable list, so we may find a
->>>> šthrottled task by pick_next_pushable_task().
->>>>
->>>> šThanks,
->>>> šYong
->>> šI don't complitelly understand throttle logic.
->>>
->>> šIs the source patch not-appliable the same reason?
->> šI guess so.
->>
->> šYour patch will change the semantic of pick_next_pushable_task().
->
-> Looking at the original patch, I don't see how it changes the semantics
-> (although mine may have). The original patch was:
->
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1729,7 +1729,7 @@ static int pull_rt_task(struct rq *this_rq)
-> šššššššššššššššš/*
-> ššššššššššššššššš* Are there still pullable RT tasks?
-> ššššššššššššššššš*/
-> - ššššššššššššššif (src_rq->rt.rt_nr_running <= 1)
-> + ššššššššššššššif (!has_pushable_tasks(src_rq))
-> ššššššššššššššššššššššššgoto skip;
->
-> ššššššššššššššššp = pick_next_highest_task_rt(src_rq, this_cpu);
->
-> And I still don't see a problem with this. If a rq has no pushable
-> tasks, then we shouldn't bother trying to pull from it (no task can
-> migrate).
->
-> Thus, the original patch, I believe should be applied without question.
->
-> Now, about my patch, the one that made pick_next_highest_task_rt into
-> just:
->
-> static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
-> {
-> šššššššstruct plist_head *head = &rq->rt.pushable_tasks;
-> šššššššstruct task_struct *next;
->
-> šššššššplist_for_each_entry(next, head, pushable_tasks) {
-> ššššššššššššššif (pick_rt_task(rq, next, cpu))
-> ššššššššššššššššššššššreturn next;
-> ššššššš}
->
-> šššššššreturn NULL;
-> }
->
-> You said could pick a task from a throttled rq. I'm not sure that is
-> different than what we have now. As the current
-> pick_next_highest_task_rt() just does a loop over the leaf_rt_rqs which
-> includes throttled rqs. That's because a throttled rq will not dequeue
-> the rt_rq from the leaf_rt_rq list if the rt_rq has rt_nr_running != 0.
+> diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
+> index 41672cc..a302c00 100644
+> --- a/drivers/gpu/drm/radeon/radeon_cs.c
+> +++ b/drivers/gpu/drm/radeon/radeon_cs.c
+> @@ -486,11 +486,8 @@ out:
+>   
+>   static int radeon_cs_handle_lockup(struct radeon_device *rdev, int r)
+>   {
+> -	if (r == -EDEADLK) {
+> +	if (r == -EDEADLK)
+>   		r = radeon_gpu_reset(rdev);
+> -		if (!r)
+> -			r = -EAGAIN;
+> -	}
+>   	return r;
+>   }
+>   
 
-Yes, there is no connection between logic of pushable tasks and throttling at the moment.
-These activities are independent. ( I tried to connect them at the patch:
-http://lkml.indiana.edu/hypermail/linux/kernel/1211.2/03750.html )
-
-I think, there is no problem.
-
-Kirill
-
->
-> I'm still thinking about adding both patches.
->
-> -- Steve
->
->> šThanks,
->> šYong
->>> šKirill
->>>>> š?Peter, do you see anything wrong with this patch?
->>>>>
->>>>> š?-- Steve
->>>>>
->>>>> š?diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->>>>> š?index 61e3086..b44fd1b 100644
->>>>> š?--- a/kernel/sched/rt.c
->>>>> š?+++ b/kernel/sched/rt.c
->>>>> š?@@ -1416,39 +1416,15 @@ static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
->>>>> š??/* Return the second highest RT task, NULL otherwise */
->>>>> š??static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
->>>>> š??{
->>>>> š?- struct task_struct *next = NULL;
->>>>> š?- struct sched_rt_entity *rt_se;
->>>>> š?- struct rt_prio_array *array;
->>>>> š?- struct rt_rq *rt_rq;
->>>>> š?- int idx;
->>>>> š?+ struct plist_head *head = &rq->rt.pushable_tasks;
->>>>> š?+ struct task_struct *next;
->>>>>
->>>>> š?- for_each_leaf_rt_rq(rt_rq, rq) {
->>>>> š?- array = &rt_rq->active;
->>>>> š?- idx = sched_find_first_bit(array->bitmap);
->>>>> š?-next_idx:
->>>>> š?- if (idx >= MAX_RT_PRIO)
->>>>> š?- continue;
->>>>> š?- if (next && next->prio <= idx)
->>>>> š?- continue;
->>>>> š?- list_for_each_entry(rt_se, array->queue + idx, run_list) {
->>>>> š?- struct task_struct *p;
->>>>> š?-
->>>>> š?- if (!rt_entity_is_task(rt_se))
->>>>> š?- continue;
->>>>> š?-
->>>>> š?- p = rt_task_of(rt_se);
->>>>> š?- if (pick_rt_task(rq, p, cpu)) {
->>>>> š?- next = p;
->>>>> š?- break;
->>>>> š?- }
->>>>> š?- }
->>>>> š?- if (!next) {
->>>>> š?- idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
->>>>> š?- goto next_idx;
->>>>> š?- }
->>>>> š?+ plist_for_each_entry(next, head, pushable_tasks) {
->>>>> š?+ if (pick_rt_task(rq, next, cpu))
->>>>> š?+ return next;
->>>>> š??????????}
->>>>>
->>>>> š?- return next;
->>>>> š?+ return NULL;
->>>>> š??}
->>>>>
->>>>> š??static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
->>>>>
->>>>> š?--
->>>>> š?To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>> š?the body of a message to majordomo@vger.kernel.org
->>>>> š?More majordomo info at ?http://vger.kernel.org/majordomo-info.html
->>>>> š?Please read the FAQ at ?http://www.tux.org/lkml/
->>>> š--
->>>> šOnly stand for myself
->>> š--
->>> šTo unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> šthe body of a message to majordomo@vger.kernel.org
->>> šMore majordomo info at šhttp://vger.kernel.org/majordomo-info.html
->>> šPlease read the FAQ at šhttp://www.tux.org/lkml/
