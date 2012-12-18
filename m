@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab2LRHTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:19:38 -0500
-Received: from mail.hosting365.ie ([82.195.128.132]:60487 "HELO
-	mail.hosting365.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754330Ab2LRHTg (ORCPT
+	id S1754554Ab2LRHT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:19:57 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:39046 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab2LRHQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:19:36 -0500
-X-Greylist: delayed 1203 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 02:19:35 EST
-Message-ID: <20121218065926.sgyogexuftsxwgw@82.195.128.132>
-Date: Tue, 18 Dec 2012 06:59:26 +0000
-From: WUMT <eilish.mcguinness@continuumltd.com>
-To: undisclosed-recipients:;
-Subject: Fund Alert!!
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+	Tue, 18 Dec 2012 02:16:33 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v7 18/27] x86, kexec: only set ident mapping for ram.
+Date: Mon, 17 Dec 2012 23:15:50 -0800
+Message-Id: <1355814959-10573-19-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We should not set mapping for all under max_pfn.
+That causes same problem that is fixed by
 
+	x86, mm: Only direct map addresses that are marked as E820_RAM
 
-Dear Friend:
+This patch expose pfn_mapped array, and only set ident mapping for range
+in that array.
 
-The first $5,000.00 was sent today. My working partner has
-helped me to send the first $5,000.00 to you through western union. So
-contact our Western Union claims Agent to pick up this $5,000 now:
-Contact person: Mr. Kelly Omar, TEL: +2347066669146. E-mail:
-(transferagent66@ymail.com) Ask him to give you the MTCN,
-Sender Name to pick the $5,000.00. I told him
-to keep sending you $5,000.00 daily until the payment of
-$1.500,000.00 is completed.Again forward him your Full Name,
-Telephone number and address so that he will be sure.
-Thanks.
-NOTE: Due to poor network service Here You may receive
-this Notification
-as junk/spam
+This patch rely on new ident_mapping_init that could handle sharing
+pgd/pud between different calling.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/page.h        |    4 ++++
+ arch/x86/kernel/machine_kexec_64.c |   13 ++++++++++---
+ arch/x86/mm/init.c                 |    4 ++--
+ 3 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 3698a6a..c878924 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -17,6 +17,10 @@
+ 
+ struct page;
+ 
++#include <linux/range.h>
++extern struct range pfn_mapped[];
++extern int nr_pfn_mapped;
++
+ static inline void clear_user_page(void *page, unsigned long vaddr,
+ 				   struct page *pg)
+ {
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index a0bf7fb..cc6d0e3 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -157,9 +157,16 @@ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+ 
+ 	level4p = (pgd_t *)__va(start_pgtable);
+ 	clear_page(level4p);
+-	result = ident_mapping_init(image, level4p, 0, max_pfn << PAGE_SHIFT);
+-	if (result)
+-		return result;
++
++	for (i = 0; i < nr_pfn_mapped; i++) {
++		mstart = pfn_mapped[i].start << PAGE_SHIFT;
++		mend   = pfn_mapped[i].end << PAGE_SHIFT;
++
++		result = ident_mapping_init(image, level4p, mstart, mend);
++
++		if (result)
++			return result;
++	}
+ 
+ 	/*
+ 	 * segments's mem ranges could be outside 0 ~ max_pfn,
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index ab26a15..d704b36 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -300,8 +300,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	return nr_range;
+ }
+ 
+-static struct range pfn_mapped[E820_X_MAX];
+-static int nr_pfn_mapped;
++struct range pfn_mapped[E820_X_MAX];
++int nr_pfn_mapped;
+ 
+ static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+ {
+-- 
+1.7.10.4
+
