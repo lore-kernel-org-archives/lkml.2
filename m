@@ -1,123 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2LRR5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:57:41 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:33188 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2LRR5k (ORCPT
+	id S1753927Ab2LRR54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:57:56 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37383 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab2LRR5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:57:40 -0500
-X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 12:57:39 EST
-MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E0AAA1@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E0AAA1@DQHE02.ent.ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 18 Dec 2012 09:50:08 -0800
-Message-ID: <CAK5ve-KcCbgcHSRiMX0t3vxXNk=BOXBVm=e820K=KLs5nGRzBg@mail.gmail.com>
-Subject: Re: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Dec 2012 12:57:55 -0500
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
+Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Bernd Krumboeck <b.krumboeck@gmail.com>, linux-kernel@vger.kernel.org,
+        Bernd Krumboeck <krumboeck@universalnet.at>,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH 10/10] can: usb_8dev: add LED trigger support
+Date: Tue, 18 Dec 2012 18:51:04 +0100
+Message-Id: <1355853064-18144-11-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
+References: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim
+From: Bernd Krumboeck <b.krumboeck@gmail.com>
 
-This patchset looks good, but I need some time to review it more
-carefully especially during this merge window + holiday time.
+Add support for canbus activity led indicators on usb_8dev devices by
+calling appropriate can_led functions.
 
-Thanks,
--Bryan
+These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
+otherwise.
 
-On Wed, Dec 12, 2012 at 5:59 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> LP5521, LP5523 and L55231 have common features as below.
->
->  Register access via the I2C.
->  Device initialization/de-initialization.
->  Create LED class devices for multiple output channels.
->  Device attributes for user-space interface.
->
-> Therefore, this patch-set removes duplicate code for LP5521/5523 driver and
-> makes coherent driver structure, named lp55xx.
->
-> All patches have been tested in LP5521, LP5523 and LP55231 evaluation boards.
->
-> You can also pull from the location below.
-> This branch is based on 'for-next' branch of linux-leds.
->
->   https://github.com/milokim/lp55xx.git lp55xx
->
-> Cleanups before adding new driver architecture
->   leds-lp55xx: cleanup init_device() in lp5521/5523
->   leds-lp55xx: cleanup deinit_device() in lp5521/5523
->   leds-lp55xx: cleanup init leds in lp5521/5523
->   leds-lp55xx: cleanup deinit leds in lp5521/5523
->   leds-lp55xx: add device reset function in lp5521/5523
->   leds-lp55xx: do chip specific configuration on device init
->
-> Replace lp5521, lp5523 driver with new lp55xx driver architecture
->   leds-lp55xx: add new common driver for lp5521/5523
->   leds-lp55xx: replace name of data structure
->   leds-lp55xx: use common lp55xx data structure in _probe()
->   leds-lp55xx: use lp55xx common init function in _probe()
->   leds-lp55xx: use lp55xx common deinit function
->   leds-lp55xx: use lp55xx common led registration function
->   leds-lp55xx: use lp55xx_init_led() common function
->   leds-lp55xx: use lp55xx_set_brightness() for brightness control
->   leds-lp55xx: provide common LED current setting
->   leds-lp55xx: use lp55xx_unregister_leds()
->   leds-lp55xx: fix error condition in lp55xx_register_leds()
->   leds-lp55xx: add new lp55xx_register_sysfs() for FW interface
->
-> Adding the firmware interface
->   leds-lp55xx: support firmware interface
->   leds-lp55xx: use generic firmware interface
->
-> Cleanups lp5521, lp5523 device attributes
->   leds-lp55xx: support device specific attibutes
->   leds-lp55xx: use common driver function for adding attributes
->
-> Others
->   leds-lp55xx: code refactoring on selftest function
->   leds-lp55xx: add unregister dev attr function
->   leds-lp55xx: clean up _remove()
->   leds-lp55xx: clean up unused data and functions
->   leds-lp55xx: clean up definitions
->   leds-lp55xx: clean up headers
->   leds-lp5521: recovers previous driver patch for return value
->   leds-lp5521/5523: use new lp55xx common header
->   leds-lp5521/5523: add author and copyright description
->   leds-lp55xx: fix problem on removing LED attributes
->   Documentation: leds: update LP55xx family devices
->
->  Documentation/leds/00-INDEX                  |    2 +
->  Documentation/leds/leds-lp5521.txt           |   63 +-
->  Documentation/leds/leds-lp5523.txt           |   27 +-
->  Documentation/leds/leds-lp55xx.txt           |  111 +++
->  arch/arm/mach-omap2/board-rx51-peripherals.c |    8 +-
->  arch/arm/mach-ux500/board-mop500.c           |   14 +-
->  drivers/leds/Kconfig                         |   15 +-
->  drivers/leds/Makefile                        |    1 +
->  drivers/leds/leds-lp5521.c                   |  944 +++++++----------------
->  drivers/leds/leds-lp5523.c                   | 1050 +++++++-------------------
->  drivers/leds/leds-lp55xx-common.c            |  519 +++++++++++++
->  drivers/leds/leds-lp55xx-common.h            |  133 ++++
->  include/linux/leds-lp5521.h                  |   73 --
->  include/linux/leds-lp5523.h                  |   49 --
->  include/linux/platform_data/leds-lp55xx.h    |   87 +++
->  15 files changed, 1410 insertions(+), 1686 deletions(-)
->  create mode 100644 Documentation/leds/leds-lp55xx.txt
->  create mode 100644 drivers/leds/leds-lp55xx-common.c
->  create mode 100644 drivers/leds/leds-lp55xx-common.h
->  delete mode 100644 include/linux/leds-lp5521.h
->  delete mode 100644 include/linux/leds-lp5523.h
->  create mode 100644 include/linux/platform_data/leds-lp55xx.h
->
-> --
-> 1.7.9.5
->
-> Best Regards,
-> Milo
->
+Signed-off-by: Bernd Krumboeck <krumboeck@universalnet.at>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+---
+ drivers/net/can/usb/usb_8dev.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/net/can/usb/usb_8dev.c b/drivers/net/can/usb/usb_8dev.c
+index 660b4f87..b4bb1a6 100644
+--- a/drivers/net/can/usb/usb_8dev.c
++++ b/drivers/net/can/usb/usb_8dev.c
+@@ -33,6 +33,7 @@
+ #include <linux/can.h>
+ #include <linux/can/dev.h>
+ #include <linux/can/error.h>
++#include <linux/can/led.h>
+ 
+ /* driver constants */
+ #define MAX_RX_URBS			10
+@@ -504,6 +505,8 @@ static void usb_8dev_rx_can_msg(struct usb_8dev_priv *priv,
+ 
+ 		stats->rx_packets++;
+ 		stats->rx_bytes += cf->can_dlc;
++
++		can_led_event(priv->netdev, CAN_LED_EVENT_RX);
+ 	} else {
+ 		netdev_warn(priv->netdev, "frame type %d unknown",
+ 			 msg->type);
+@@ -606,6 +609,8 @@ static void usb_8dev_write_bulk_callback(struct urb *urb)
+ 
+ 	can_get_echo_skb(netdev, context->echo_index);
+ 
++	can_led_event(netdev, CAN_LED_EVENT_TX);
++
+ 	/* Release context */
+ 	context->echo_index = MAX_TX_URBS;
+ 
+@@ -830,6 +835,8 @@ static int usb_8dev_open(struct net_device *netdev)
+ 	if (err)
+ 		return err;
+ 
++	can_led_event(netdev, CAN_LED_EVENT_OPEN);
++
+ 	/* finally start device */
+ 	err = usb_8dev_start(priv);
+ 	if (err) {
+@@ -882,6 +889,8 @@ static int usb_8dev_close(struct net_device *netdev)
+ 
+ 	close_candev(netdev);
+ 
++	can_led_event(netdev, CAN_LED_EVENT_STOP);
++
+ 	return err;
+ }
+ 
+@@ -990,6 +999,8 @@ static int usb_8dev_probe(struct usb_interface *intf,
+ 			 (version>>8) & 0xff, version & 0xff);
+ 	}
+ 
++	devm_can_led_init(netdev);
++
+ 	return 0;
+ 
+ cleanup_cmd_msg_buffer:
+-- 
+1.7.12.1
+
