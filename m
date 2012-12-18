@@ -1,54 +1,560 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab2LRInI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 03:43:08 -0500
-Received: from szxga04-in.huawei.com ([119.145.14.67]:37520 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab2LRInG (ORCPT
+	id S1754606Ab2LRIqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 03:46:51 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:64565 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab2LRIqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 03:43:06 -0500
-Date: Tue, 18 Dec 2012 09:42:49 +0100
-From: Claudio Fontana <Claudio.Fontana@huawei.com>
-Subject: [PATCH RESEND 4] ARM: plat-versatile: move secondary CPU startup into
- cpuinit
-In-reply-to: <50B47C31.2040709@huawei.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Christoffer Dall <c.dall@virtualopensystems.com>
-Message-id: <50D02C89.9030307@huawei.com>
+	Tue, 18 Dec 2012 03:46:49 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-50-50d02d77845a
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>, "'Joe Perches'" <joe@perches.com>,
+        "'Devendra Naga'" <devendra.aaru@gmail.com>,
+        "'Ilho Lee'" <ilho215.lee@samsung.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH v2] backlight: add lms501kf03 LCD driver
+Date: Tue, 18 Dec 2012 17:46:46 +0900
+Message-id: <005201cddcfc$36ac4020$a404c060$%han@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-References: <50B47C31.2040709@huawei.com>
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3c/DaIUczqbMUEQCm1DQXsOVsvQQ==
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zA91y3QsBBq/+Wltc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MGVeusBTMSqn40PuIsYHxZ0AXIyeHhICJRNvc36wQtpjEhXvr
+	2boYuTiEBJYxSvw9084MU/T082oWiMR0RokJ59dBObOZJI6d3Q9WxSagJvHly2F2EFtEIEKi
+	ecYsZpAiZoFDQB3zmsASwgIWEg0bV7GB2CwCqhJ7by5n7GLk4OAVsJVYezETJMwrICjxY/I9
+	FhCbWUBLYvO2JlYIW15i85q3zCDlEgLqEo/+6oKYIgJ6EtefGEFUiEjse/GOEWK4gMS3yYdY
+	IKplJTYdgHqlm11i7aZ0CFtS4uCKGywTGMVmIdk7C8neWUj2zkKyYQEjyypG0dSC5ILipPRc
+	I73ixNzi0rx0veT83E2MkDiR3sG4qsHiEKMAB6MSD+/P+PMBQqyJZcWVucDQ4GBWEuHlV78Q
+	IMSbklhZlVqUH19UmpNafIjRB+jwicxSosn5wBjOK4k3NDY2MTMxNTG3NDU3xSGsJM7b7JES
+	ICSQnliSmp2aWpBaBDOOiYNTqoEx4cfurqkT9Xdq3TOYvv3N7nbv629fOx9KCpnlz5XXx5Pt
+	ns2iH6qrdb5y3UFfT/fFh7+elfQ4s/b4jiW/f5f8fNDQevJowcp4r/nGry8oXfSWEV2+Y9rD
+	uzIBX26ETPyabv4uqewkL0PTUZuJ8cdb17+ZOvvUoRsH5I4d9F6nP+PRHguGF4G9yUosxRmJ
+	hlrMRcWJAMaraTjAAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jQd1y3QsBBi9vyVtc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjBlXrrAUzEqp+ND7iLGB
+	8WdAFyMnh4SAicTTz6tZIGwxiQv31rN1MXJxCAlMZ5SYcH4dC4Qzm0ni2Nn9zCBVbAJqEl++
+	HGYHsUUEIiSaZ8xiBiliFjgE1DGvCSwhLGAh0bBxFRuIzSKgKrH35nLGLkYODl4BW4m1FzNB
+	wrwCghI/Jt8D28wsoCWxeVsTK4QtL7F5zVtmkHIJAXWJR391QUwRAT2J60+MICpEJPa9eMc4
+	gVFgFpJBs5AMmoVk0CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfhM+kdjKsa
+	LA4xCnAwKvHw/ow/HyDEmlhWXJkL9B4Hs5IIL7/6hQAh3pTEyqrUovz4otKc1OJDjD5Ab05k
+	lhJNzgemiLySeENjEzMjSyMzCyMTc3McwkrivM0eKQFCAumJJanZqakFqUUw45g4OKUaGI2u
+	KL869ezpN9Z3ZqkS87ksL/YHvDkjc3dDg7tf++8DahNfdbwtSP8Q+2jl62yzon8LlEWeH5Es
+	iLZedn+p28xD8Xb3vG9oOPukzfX6Wt65X/yo8J63LPJeIT6iCd/YHilO4FxaqVnE+TfrfUGD
+	yMSsHVkPQyJlv9Uxbk1apKRd6nWJLaT0hRJLcUaioRZzUXEiANFEkE/wAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the lms501kf03 LCD panel driver. The lms501kf03 LCD panel (800
+x 480) driver uses 3-wired SPI inteface.
 
-Using __CPUINIT instead of __INIT puts the secondary CPU startup code
-into the "right" section: it will not be freed in hotplug configurations,
-allowing hot-add of cpus, while still getting freed in non-hotplug configs.
+Signed-off-by: Ilho Lee <Ilho215.lee@samsung.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+Change since v1:
+- remove redundant return variables
+- use -EINVAL instead of -EFAULT
+- add a more detailed description of 120ms delay time
+- replace unsigned short arrays with unsigned char arrays
 
-Tested successfully on Fast-Models and on Arndale for VCPU hotplug. 
+ drivers/video/backlight/Kconfig      |    8 +
+ drivers/video/backlight/Makefile     |    1 +
+ drivers/video/backlight/lms501kf03.c |  444 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 453 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/video/backlight/lms501kf03.c
 
-Signed-off-by: Claudio Fontana <claudio.fontana@huawei.com>
-Tested-by: Claudio Fontana <claudio.fontana@huawei.com>
-
-diff --git a/arch/arm/plat-versatile/headsmp.S b/arch/arm/plat-versatile/headsmp.S
-index dd703ef..19fe180 100644
---- a/arch/arm/plat-versatile/headsmp.S
-+++ b/arch/arm/plat-versatile/headsmp.S
-@@ -11,7 +11,7 @@
- #include <linux/linkage.h>
- #include <linux/init.h>
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 765a945..081d6cf 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -126,6 +126,14 @@ config LCD_AMS369FG06
+ 	  If you have an AMS369FG06 AMOLED Panel, say Y to enable its
+ 	  LCD control driver.
  
--	__INIT
-+	__CPUINIT
++config LCD_LMS501KF03
++	tristate "LMS501KF03 LCD Driver"
++	depends on SPI
++	default n
++	help
++	  If you have an LMS501KF03 LCD Panel, say Y to enable its
++	  LCD control driver.
++
+ endif # LCD_CLASS_DEVICE
  
- /*
-  * Realview/Versatile Express specific entry point for secondary CPUs.
+ #
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index e7ce729..d02a728 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_LCD_TOSA)		   += tosa_lcd.o
+ obj-$(CONFIG_LCD_S6E63M0)	+= s6e63m0.o
+ obj-$(CONFIG_LCD_LD9040)	+= ld9040.o
+ obj-$(CONFIG_LCD_AMS369FG06)	+= ams369fg06.o
++obj-$(CONFIG_LCD_LMS501KF03)	+= lms501kf03.o
+ 
+ obj-$(CONFIG_BACKLIGHT_CLASS_DEVICE) += backlight.o
+ obj-$(CONFIG_BACKLIGHT_ATMEL_PWM)    += atmel-pwm-bl.o
+diff --git a/drivers/video/backlight/lms501kf03.c b/drivers/video/backlight/lms501kf03.c
+new file mode 100644
+index 0000000..af7979d
+--- /dev/null
++++ b/drivers/video/backlight/lms501kf03.c
+@@ -0,0 +1,444 @@
++/*
++ * lms501kf03 TFT LCD panel driver.
++ *
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ * Author: Jingoo Han  <jg1.han@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/backlight.h>
++#include <linux/delay.h>
++#include <linux/fb.h>
++#include <linux/gpio.h>
++#include <linux/lcd.h>
++#include <linux/module.h>
++#include <linux/spi/spi.h>
++#include <linux/wait.h>
++
++#define COMMAND_ONLY		0x00
++#define DATA_ONLY		0x01
++
++struct lms501kf03 {
++	struct device			*dev;
++	struct spi_device		*spi;
++	unsigned int			power;
++	struct lcd_device		*ld;
++	struct lcd_platform_data	*lcd_pd;
++};
++
++static const unsigned char seq_password[] = {
++	0xb9, 0xff, 0x83, 0x69,
++};
++
++static const unsigned char seq_power[] = {
++	0xb1, 0x01, 0x00, 0x34, 0x06, 0x00, 0x14, 0x14, 0x20, 0x28,
++	0x12, 0x12, 0x17, 0x0a, 0x01, 0xe6, 0xe6, 0xe6, 0xe6, 0xe6,
++};
++
++static const unsigned char seq_display[] = {
++	0xb2, 0x00, 0x2b, 0x03, 0x03, 0x70, 0x00, 0xff, 0x00, 0x00,
++	0x00, 0x00, 0x03, 0x03, 0x00, 0x01,
++};
++
++static const unsigned char seq_rgb_if[] = {
++	0xb3, 0x09,
++};
++
++static const unsigned char seq_display_inv[] = {
++	0xb4, 0x01, 0x08, 0x77, 0x0e, 0x06,
++};
++
++static const unsigned char seq_vcom[] = {
++	0xb6, 0x4c, 0x2e,
++};
++
++static const unsigned char seq_gate[] = {
++	0xd5, 0x00, 0x05, 0x03, 0x29, 0x01, 0x07, 0x17, 0x68, 0x13,
++	0x37, 0x20, 0x31, 0x8a, 0x46, 0x9b, 0x57, 0x13, 0x02, 0x75,
++	0xb9, 0x64, 0xa8, 0x07, 0x0f, 0x04, 0x07,
++};
++
++static const unsigned char seq_panel[] = {
++	0xcc, 0x02,
++};
++
++static const unsigned char seq_col_mod[] = {
++	0x3a, 0x77,
++};
++
++static const unsigned char seq_w_gamma[] = {
++	0xe0, 0x00, 0x04, 0x09, 0x0f, 0x1f, 0x3f, 0x1f, 0x2f, 0x0a,
++	0x0f, 0x10, 0x16, 0x18, 0x16, 0x17, 0x0d, 0x15, 0x00, 0x04,
++	0x09, 0x0f, 0x38, 0x3f, 0x20, 0x39, 0x0a, 0x0f, 0x10, 0x16,
++	0x18, 0x16, 0x17, 0x0d, 0x15,
++};
++
++static const unsigned char seq_rgb_gamma[] = {
++	0xc1, 0x01, 0x03, 0x07, 0x0f, 0x1a, 0x22, 0x2c, 0x33, 0x3c,
++	0x46, 0x4f, 0x58, 0x60, 0x69, 0x71, 0x79, 0x82, 0x89, 0x92,
++	0x9a, 0xa1, 0xa9, 0xb1, 0xb9, 0xc1, 0xc9, 0xcf, 0xd6, 0xde,
++	0xe5, 0xec, 0xf3, 0xf9, 0xff, 0xdd, 0x39, 0x07, 0x1c, 0xcb,
++	0xab, 0x5f, 0x49, 0x80, 0x03, 0x07, 0x0f, 0x19, 0x20, 0x2a,
++	0x31, 0x39, 0x42, 0x4b, 0x53, 0x5b, 0x63, 0x6b, 0x73, 0x7b,
++	0x83, 0x8a, 0x92, 0x9b, 0xa2, 0xaa, 0xb2, 0xba, 0xc2, 0xca,
++	0xd0, 0xd8, 0xe1, 0xe8, 0xf0, 0xf8, 0xff, 0xf7, 0xd8, 0xbe,
++	0xa7, 0x39, 0x40, 0x85, 0x8c, 0xc0, 0x04, 0x07, 0x0c, 0x17,
++	0x1c, 0x23, 0x2b, 0x34, 0x3b, 0x43, 0x4c, 0x54, 0x5b, 0x63,
++	0x6a, 0x73, 0x7a, 0x82, 0x8a, 0x91, 0x98, 0xa1, 0xa8, 0xb0,
++	0xb7, 0xc1, 0xc9, 0xcf, 0xd9, 0xe3, 0xea, 0xf4, 0xff, 0x00,
++	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++};
++
++static const unsigned char seq_up_dn[] = {
++	0x36, 0x10,
++};
++
++static const unsigned char seq_sleep_in[] = {
++	0x10,
++};
++
++static const unsigned char seq_sleep_out[] = {
++	0x11,
++};
++
++static const unsigned char seq_display_on[] = {
++	0x29,
++};
++
++static const unsigned char seq_display_off[] = {
++	0x10,
++};
++
++static int lms501kf03_spi_write_byte(struct lms501kf03 *lcd, int addr, int data)
++{
++	u16 buf[1];
++	struct spi_message msg;
++
++	struct spi_transfer xfer = {
++		.len		= 2,
++		.tx_buf		= buf,
++	};
++
++	buf[0] = (addr << 8) | data;
++
++	spi_message_init(&msg);
++	spi_message_add_tail(&xfer, &msg);
++
++	return spi_sync(lcd->spi, &msg);
++}
++
++static int lms501kf03_spi_write(struct lms501kf03 *lcd, unsigned char address,
++				unsigned char command)
++{
++	return lms501kf03_spi_write_byte(lcd, address, command);
++}
++
++static int lms501kf03_panel_send_sequence(struct lms501kf03 *lcd,
++					const unsigned char *wbuf,
++					unsigned int len)
++{
++	int ret = 0, i = 0;
++
++	while (i < len) {
++		if (i == 0)
++			ret = lms501kf03_spi_write(lcd, COMMAND_ONLY, wbuf[i]);
++		else
++			ret = lms501kf03_spi_write(lcd, DATA_ONLY, wbuf[i]);
++		if (ret)
++			break;
++		i += 1;
++	}
++
++	return ret;
++}
++
++static int lms501kf03_ldi_init(struct lms501kf03 *lcd)
++{
++	int ret, i;
++	static const unsigned char *init_seq[] = {
++		seq_password,
++		seq_power,
++		seq_display,
++		seq_rgb_if,
++		seq_display_inv,
++		seq_vcom,
++		seq_gate,
++		seq_panel,
++		seq_col_mod,
++		seq_w_gamma,
++		seq_rgb_gamma,
++		seq_sleep_out,
++	};
++
++	static const unsigned int size_seq[] = {
++		ARRAY_SIZE(seq_password),
++		ARRAY_SIZE(seq_power),
++		ARRAY_SIZE(seq_display),
++		ARRAY_SIZE(seq_rgb_if),
++		ARRAY_SIZE(seq_display_inv),
++		ARRAY_SIZE(seq_vcom),
++		ARRAY_SIZE(seq_gate),
++		ARRAY_SIZE(seq_panel),
++		ARRAY_SIZE(seq_col_mod),
++		ARRAY_SIZE(seq_w_gamma),
++		ARRAY_SIZE(seq_rgb_gamma),
++		ARRAY_SIZE(seq_sleep_out),
++	};
++
++	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
++		ret = lms501kf03_panel_send_sequence(lcd, init_seq[i],
++						size_seq[i]);
++		if (ret)
++			break;
++	}
++	/*
++	 * According to the datasheet, 120ms delay time is required.
++	 * After sleep out sequence, command is blocked for 120ms.
++	 * Thus, LDI should wait for 120ms.
++	 */
++	msleep(120);
++
++	return ret;
++}
++
++static int lms501kf03_ldi_enable(struct lms501kf03 *lcd)
++{
++	return lms501kf03_panel_send_sequence(lcd, seq_display_on,
++					ARRAY_SIZE(seq_display_on));
++}
++
++static int lms501kf03_ldi_disable(struct lms501kf03 *lcd)
++{
++	return lms501kf03_panel_send_sequence(lcd, seq_display_off,
++					ARRAY_SIZE(seq_display_off));
++}
++
++static int lms501kf03_power_is_on(int power)
++{
++	return (power) <= FB_BLANK_NORMAL;
++}
++
++static int lms501kf03_power_on(struct lms501kf03 *lcd)
++{
++	int ret = 0;
++	struct lcd_platform_data *pd;
++
++	pd = lcd->lcd_pd;
++
++	if (!pd->power_on) {
++		dev_err(lcd->dev, "power_on is NULL.\n");
++		return -EINVAL;
++	} else {
++		pd->power_on(lcd->ld, 1);
++		msleep(pd->power_on_delay);
++	}
++
++	if (!pd->reset) {
++		dev_err(lcd->dev, "reset is NULL.\n");
++		return -EINVAL;
++	} else {
++		pd->reset(lcd->ld);
++		msleep(pd->reset_delay);
++	}
++
++	ret = lms501kf03_ldi_init(lcd);
++	if (ret) {
++		dev_err(lcd->dev, "failed to initialize ldi.\n");
++		return ret;
++	}
++
++	ret = lms501kf03_ldi_enable(lcd);
++	if (ret) {
++		dev_err(lcd->dev, "failed to enable ldi.\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++static int lms501kf03_power_off(struct lms501kf03 *lcd)
++{
++	int ret = 0;
++	struct lcd_platform_data *pd;
++
++	pd = lcd->lcd_pd;
++
++	ret = lms501kf03_ldi_disable(lcd);
++	if (ret) {
++		dev_err(lcd->dev, "lcd setting failed.\n");
++		return -EIO;
++	}
++
++	msleep(pd->power_off_delay);
++
++	pd->power_on(lcd->ld, 0);
++
++	return 0;
++}
++
++static int lms501kf03_power(struct lms501kf03 *lcd, int power)
++{
++	int ret = 0;
++
++	if (lms501kf03_power_is_on(power) &&
++		!lms501kf03_power_is_on(lcd->power))
++		ret = lms501kf03_power_on(lcd);
++	else if (!lms501kf03_power_is_on(power) &&
++		lms501kf03_power_is_on(lcd->power))
++		ret = lms501kf03_power_off(lcd);
++
++	if (!ret)
++		lcd->power = power;
++
++	return ret;
++}
++
++static int lms501kf03_get_power(struct lcd_device *ld)
++{
++	struct lms501kf03 *lcd = lcd_get_data(ld);
++
++	return lcd->power;
++}
++
++static int lms501kf03_set_power(struct lcd_device *ld, int power)
++{
++	struct lms501kf03 *lcd = lcd_get_data(ld);
++
++	if (power != FB_BLANK_UNBLANK && power != FB_BLANK_POWERDOWN &&
++		power != FB_BLANK_NORMAL) {
++		dev_err(lcd->dev, "power value should be 0, 1 or 4.\n");
++		return -EINVAL;
++	}
++
++	return lms501kf03_power(lcd, power);
++}
++
++static struct lcd_ops lms501kf03_lcd_ops = {
++	.get_power = lms501kf03_get_power,
++	.set_power = lms501kf03_set_power,
++};
++
++static int lms501kf03_probe(struct spi_device *spi)
++{
++	struct lms501kf03 *lcd = NULL;
++	struct lcd_device *ld = NULL;
++	int ret = 0;
++
++	lcd = devm_kzalloc(&spi->dev, sizeof(struct lms501kf03), GFP_KERNEL);
++	if (!lcd)
++		return -ENOMEM;
++
++	/* lms501kf03 lcd panel uses 3-wire 9-bit SPI Mode. */
++	spi->bits_per_word = 9;
++
++	ret = spi_setup(spi);
++	if (ret < 0) {
++		dev_err(&spi->dev, "spi setup failed.\n");
++		return ret;
++	}
++
++	lcd->spi = spi;
++	lcd->dev = &spi->dev;
++
++	lcd->lcd_pd = spi->dev.platform_data;
++	if (!lcd->lcd_pd) {
++		dev_err(&spi->dev, "platform data is NULL\n");
++		return -EINVAL;
++	}
++
++	ld = lcd_device_register("lms501kf03", &spi->dev, lcd,
++				&lms501kf03_lcd_ops);
++	if (IS_ERR(ld))
++		return PTR_ERR(ld);
++
++	lcd->ld = ld;
++
++	if (!lcd->lcd_pd->lcd_enabled) {
++		/*
++		 * if lcd panel was off from bootloader then
++		 * current lcd status is powerdown and then
++		 * it enables lcd panel.
++		 */
++		lcd->power = FB_BLANK_POWERDOWN;
++
++		lms501kf03_power(lcd, FB_BLANK_UNBLANK);
++	} else {
++		lcd->power = FB_BLANK_UNBLANK;
++	}
++
++	dev_set_drvdata(&spi->dev, lcd);
++
++	dev_info(&spi->dev, "lms501kf03 panel driver has been probed.\n");
++
++	return 0;
++}
++
++static int lms501kf03_remove(struct spi_device *spi)
++{
++	struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
++
++	lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
++	lcd_device_unregister(lcd->ld);
++
++	return 0;
++}
++
++#if defined(CONFIG_PM)
++static unsigned int before_power;
++
++static int lms501kf03_suspend(struct spi_device *spi, pm_message_t mesg)
++{
++	struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
++
++	dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
++
++	before_power = lcd->power;
++
++	/*
++	 * when lcd panel is suspend, lcd panel becomes off
++	 * regardless of status.
++	 */
++	return lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
++}
++
++static int lms501kf03_resume(struct spi_device *spi)
++{
++	struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
++
++	lcd->power = FB_BLANK_POWERDOWN;
++
++	return lms501kf03_power(lcd, FB_BLANK_UNBLANK);
++}
++#else
++#define lms501kf03_suspend	NULL
++#define lms501kf03_resume	NULL
++#endif
++
++void lms501kf03_shutdown(struct spi_device *spi)
++{
++	struct lms501kf03 *lcd = dev_get_drvdata(&spi->dev);
++
++	lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
++}
++
++static struct spi_driver lms501kf03_driver = {
++	.driver = {
++		.name	= "lms501kf03",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= lms501kf03_probe,
++	.remove		= lms501kf03_remove,
++	.shutdown	= lms501kf03_shutdown,
++	.suspend	= lms501kf03_suspend,
++	.resume		= lms501kf03_resume,
++};
++
++module_spi_driver(lms501kf03_driver);
++
++MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
++MODULE_DESCRIPTION("lms501kf03 LCD Driver");
++MODULE_LICENSE("GPL");
 -- 
-1.7.12.1
+1.7.2.5
 
 
