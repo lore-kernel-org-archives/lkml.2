@@ -1,152 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751096Ab2LRFC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 00:02:58 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:28703 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab2LRFC5 (ORCPT
+	id S1751394Ab2LRFEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 00:04:32 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:56780 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2LRFEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 00:02:57 -0500
-X-Spam-Score: -100.7
-Message-ID: <50CFF937.3020101@asianux.com>
-Date: Tue, 18 Dec 2012 13:03:51 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 18 Dec 2012 00:04:30 -0500
+X-Greylist: delayed 952 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 00:04:29 EST
+Date: Tue, 18 Dec 2012 12:40:21 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, bp@alien8.de, yann.morin.1998@free.fr,
+        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
+        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
+        bpoirier@suse.de
+Subject: [PATCH 1/2 v2] menuconfig: Add Save/Load buttons
+Message-ID: <20121218044021.GA7475@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+	rdunlap@xenotime.net, bp@alien8.de, yann.morin.1998@free.fr,
+	sakiwit@gmail.com, lacombar@gmail.com,
+	lucas.demarchi@profusion.mobi, dave@gnu.org,
+	paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.ramirez@copitl.com>
-CC: "l >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] drivers/staging/tidspbridge:  strcpy and strncpy,
-  src length checking issue.
-References: <50CFD786.5010101@asianux.com>
-In-Reply-To: <50CFD786.5010101@asianux.com>
-X-Forwarded-Message-Id: <50CFD786.5010101@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Omar Ramirez Luna:
+If menuconfig have Save/Load button like alternative
+.config editors, xconfig, nconfig, etc.We will have
+a obvious benefit when use menuconfig just like
+when we use others, we can Save/Load our .config quickly
+and conveniently.
 
-  excuse me to bother you (maybe you are busy in these days).
-  please help checking this suggestion when you have free time.
+This patch add the Save/Load button for menuconfig.
 
-  my suggestion may be not valid (I already have at least 9 fault which
-I made)
-  for example of my fault:
-    A) net/atm:  "%pM means format this pointer as a mac address", thank
-Chas Williams
-    B) net/tipc: "TIPC_MAX_IF_NAME is not TIPC_MAX_LINK_NAME", thank Xue
-Ying
-    C) net/core: "not see 'if (PAGE_SIZE - len < 3)' ", find by myself
-    D) MAINTAINER: "tty != serial",  thank Jiri Slaby and Joe Perches
-    E) drvers/staging/telephony: "torvalds' tree is different with next
-tree", thank devendra.aaru
-    F) drivers/staging/telephony: "we should probably fix it for older
-kernels", thank Dan Carpenter
-    G) drivers/usb/core: "doing DMA on the stack violates the DMA
-rules", thank Oliver Neukum
-    H) arch/blackfin/kernel: "%8s is used to take up the same space",
-thank Mike Frysinger and Steven Miao
-    I) drivers/usb/host: "usb_hcd_giveback_urb set urb->hcpriv to NULL",
-thank Alan Stern
+[remove trailing space while at it for below line:
+"*)  Formerly when I used Page Down and Page Up, the cursor would be set"
+]
 
-  finding and solving issues is a way (not a goal) to provide
-contributes to Open Source.
-  so I hope:
-    When you have free time, also can provide your contributes to Open
-Source, too.
+Changes:
+V1-V2:
+1:use PATH_MAX instead of hard code suggested by Yann E. MORIN
+2:drop the spurious empty-line removal suggested by Yann E. MORIN
 
-  thanks.
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ scripts/kconfig/lxdialog/menubox.c | 20 +++++++++++---------
+ scripts/kconfig/mconf.c            | 30 +++++++++++++++++++++++++-----
+ 2 files changed, 36 insertions(+), 14 deletions(-)
 
-
-By the way:
-  this week, I need work for 2 patches which relative with usb sub-system.
-  if still get no reply for tidspbridge until next week.
-    I should work for it, it is my duty (since I have provided
-'suggestion' to it).
-    "work for it" means:
-       if tidspbridge is still useful
-         I need construct relative environments for unit test.
-         then provide relative patches.
-       else (useless)
-         I need delete it from Open Source.
-         (since it can not pass compiling, and no response from
-*@ti.com, it almost means useless)
-         (at least, fix the 2 compiling issues which I have suggested,
-can pass compiling)
-
-
-  welcome any other members to giving suggestions and completions
-(especially from *@ti.com)
-
-
-  Regards
-
-gchen.
-
-
-于 2012年12月14日 11:50, Chen Gang 写道:
-> Hello Omar Ramirez Luna:
-> 
->   in drivers/staging/tidspbridge/rmgr/proc.c:
-> 
->     if strlen(drv_datap->base_img) == size, will pass checking (line 397)
->     the size is the full length of exec_file (line 382, line 468..469)
->     strcpy causes issue: src len is strlen(drv_datap->base_img) + '\0'. (line 400)
-> 
->     strncpy seems also has issue: need use size instead of strlen(iva_img) + 1. (line 402..403)
-> 
->   please help to check, thanks.
-> 
-> gchen.
-> 
-> 
->  380 static int get_exec_file(struct cfg_devnode *dev_node_obj,
->  381                                 struct dev_object *hdev_obj,
->  382                                 u32 size, char *exec_file)
->  383 {
->  384         u8 dev_type;
->  385         s32 len;
->  386         struct drv_data *drv_datap = dev_get_drvdata(bridge);
->  387 
->  388         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
->  389 
->  390         if (!exec_file)
->  391                 return -EFAULT;
->  392 
->  393         if (dev_type == DSP_UNIT) {
->  394                 if (!drv_datap || !drv_datap->base_img)
->  395                         return -EFAULT;
->  396 
->  397                 if (strlen(drv_datap->base_img) > size)
->  398                         return -EINVAL;
->  399 
->  400                 strcpy(exec_file, drv_datap->base_img);
->  401         } else if (dev_type == IVA_UNIT && iva_img) {
->  402                 len = strlen(iva_img);
->  403                 strncpy(exec_file, iva_img, len + 1);
->  404         } else {
->  405                 return -ENOENT;
->  406         }
->  407 
->  408         return 0;
->  409 }
->  410 
->  ...
-> 
->  465         /* Get the default executable for this board... */
->  466         dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
->  467         p_proc_object->processor_id = dev_type;
->  468         status = get_exec_file(dev_node_obj, hdev_obj, sizeof(sz_exec_file),
->  469                                sz_exec_file);
-> 
-
-
+diff --git a/scripts/kconfig/lxdialog/menubox.c b/scripts/kconfig/lxdialog/menubox.c
+index 1d60473..8b534d5 100644
+--- a/scripts/kconfig/lxdialog/menubox.c
++++ b/scripts/kconfig/lxdialog/menubox.c
+@@ -26,7 +26,7 @@
+  *
+  *    *)  A bugfix for the Page-Down problem
+  *
+- *    *)  Formerly when I used Page Down and Page Up, the cursor would be set 
++ *    *)  Formerly when I used Page Down and Page Up, the cursor would be set
+  *        to the first position in the menu box.  Now lxdialog is a bit
+  *        smarter and works more like other menu systems (just have a look at
+  *        it).
+@@ -154,12 +154,14 @@ static void print_arrows(WINDOW * win, int item_no, int scroll, int y, int x,
+  */
+ static void print_buttons(WINDOW * win, int height, int width, int selected)
+ {
+-	int x = width / 2 - 16;
++	int x = width / 2 - 26;
+ 	int y = height - 2;
+ 
+ 	print_button(win, gettext("Select"), y, x, selected == 0);
+ 	print_button(win, gettext(" Exit "), y, x + 12, selected == 1);
+ 	print_button(win, gettext(" Help "), y, x + 24, selected == 2);
++	print_button(win, gettext(" Save "), y, x + 36, selected == 3);
++	print_button(win, gettext(" Load "), y, x + 48, selected == 4);
+ 
+ 	wmove(win, y, x + 1 + 12 * selected);
+ 	wrefresh(win);
+@@ -372,7 +374,7 @@ do_resize:
+ 		case TAB:
+ 		case KEY_RIGHT:
+ 			button = ((key == KEY_LEFT ? --button : ++button) < 0)
+-			    ? 2 : (button > 2 ? 0 : button);
++			    ? 4 : (button > 4 ? 0 : button);
+ 
+ 			print_buttons(dialog, height, width, button);
+ 			wrefresh(menu);
+@@ -399,17 +401,17 @@ do_resize:
+ 				return 2;
+ 			case 's':
+ 			case 'y':
+-				return 3;
++				return 5;
+ 			case 'n':
+-				return 4;
++				return 6;
+ 			case 'm':
+-				return 5;
++				return 7;
+ 			case ' ':
+-				return 6;
++				return 8;
+ 			case '/':
+-				return 7;
++				return 9;
+ 			case 'z':
+-				return 8;
++				return 10;
+ 			case '\n':
+ 				return button;
+ 			}
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 53975cf..9fb90f0 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -280,6 +280,7 @@ static struct menu *current_menu;
+ static int child_count;
+ static int single_menu_mode;
+ static int show_all_options;
++static int save_and_exit;
+ 
+ static void conf(struct menu *menu, struct menu *active_menu);
+ static void conf_choice(struct menu *menu);
+@@ -651,6 +652,12 @@ static void conf(struct menu *menu, struct menu *active_menu)
+ 				show_helptext(_("README"), _(mconf_readme));
+ 			break;
+ 		case 3:
++			conf_save();
++			break;
++		case 4:
++			conf_load();
++			break;
++		case 5:
+ 			if (item_is_tag('t')) {
+ 				if (sym_set_tristate_value(sym, yes))
+ 					break;
+@@ -658,24 +665,24 @@ static void conf(struct menu *menu, struct menu *active_menu)
+ 					show_textbox(NULL, setmod_text, 6, 74);
+ 			}
+ 			break;
+-		case 4:
++		case 6:
+ 			if (item_is_tag('t'))
+ 				sym_set_tristate_value(sym, no);
+ 			break;
+-		case 5:
++		case 7:
+ 			if (item_is_tag('t'))
+ 				sym_set_tristate_value(sym, mod);
+ 			break;
+-		case 6:
++		case 8:
+ 			if (item_is_tag('t'))
+ 				sym_toggle_tristate_value(sym);
+ 			else if (item_is_tag('m'))
+ 				conf(submenu, NULL);
+ 			break;
+-		case 7:
++		case 9:
+ 			search_conf();
+ 			break;
+-		case 8:
++		case 10:
+ 			show_all_options = !show_all_options;
+ 			break;
+ 		}
+@@ -702,6 +709,17 @@ static void show_helptext(const char *title, const char *text)
+ 	show_textbox(title, text, 0, 0);
+ }
+ 
++static void conf_message_callback(const char *fmt, va_list ap)
++{
++	char buf[PATH_MAX+1];
++
++	vsnprintf(buf, sizeof(buf), fmt, ap);
++	if (save_and_exit)
++		printf("%s", buf);
++	else
++		show_textbox(NULL, buf, 6, 60);
++}
++
+ static void show_help(struct menu *menu)
+ {
+ 	struct gstr help = str_new();
+@@ -870,6 +888,7 @@ static int handle_exit(void)
+ {
+ 	int res;
+ 
++	save_and_exit = 1;
+ 	dialog_clear();
+ 	if (conf_get_changed())
+ 		res = dialog_yesno(NULL,
+@@ -941,6 +960,7 @@ int main(int ac, char **av)
+ 	}
+ 
+ 	set_config_filename(conf_get_configname());
++	conf_set_message_callback(conf_message_callback);
+ 	do {
+ 		conf(&rootmenu, NULL);
+ 		res = handle_exit();
 -- 
-Chen Gang
-
-Asianux Corporation
-
-
+1.7.11.1.116.g8228a23
