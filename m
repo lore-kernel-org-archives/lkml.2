@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab2LRNLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 08:11:49 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:35877 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754708Ab2LRNLs (ORCPT
+	id S1754828Ab2LRNL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 08:11:58 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:59277 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754795Ab2LRNLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 08:11:48 -0500
+	Tue, 18 Dec 2012 08:11:55 -0500
 From: Loic Pallardy <loic.pallardy-ext@stericsson.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
@@ -24,80 +24,163 @@ Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
         STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
         Loic Pallardy <loic.pallardy-ext@stericsson.com>,
         Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: [PATCH 0/9] drivers: mailbox: framework creation
-Date: Tue, 18 Dec 2012 14:10:03 +0100
-Message-ID: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
+Subject: [PATCH 2/9] mailbox: split internal header from API header
+Date: Tue, 18 Dec 2012 14:10:05 +0100
+Message-ID: <1355836212-17956-3-git-send-email-loic.pallardy-ext@stericsson.com>
 X-Mailer: git-send-email 1.7.11.1
+In-Reply-To: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
+References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP and ST-Ericsson platforms are both using mailbox to communicate
-with some coprocessors.
-Based on OMAP existing mailbox framework, this series proposes a
-generic framework, living under drivers/mailbox.
-
-This series:
-- moves omap-mailbox framework to a newly drivers/mailbox folder
-  (part of plat-omap code cleaning)
-- creates API header file
-- replaces "omap" prefix by "mailbox"
-- opens interface and make framework independent from omap HW
-- adapts existing omap1 and omap2 drivers to new changes
-- creates dbx500 mailbox driver for ST-Ericsson platforms
+Now internal structures can remain hidden to the user and just API
+related functions and defines are made available.
 
 Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
-Signed-off-by: Loic Pallardy <loic.pallardy@st.com>
-
-Based on 3.7-rc7.
-
-Loic Pallardy (9):
-  mailbox: OMAP: introduce mailbox framework
-  mailbox: split internal header from API header
-  mailbox: rename omap_mbox in mailbox
-  mailbox: create opened message type
-  mailbox: change protection mechanisms
-  mailbox: add shared memory mailbox type
-  mailbox: add IRQF_NO_SUSPEND flag
-  mailbox: add no_irq send message
-  mailbox: create dbx500 mailbox driver
-
- arch/arm/configs/omap1_defconfig                   |   3 +-
- arch/arm/mach-omap1/Makefile                       |   4 -
- arch/arm/mach-omap1/mailbox.c                      | 199 -------
- arch/arm/mach-omap2/Makefile                       |   3 -
- arch/arm/mach-omap2/devices.c                      |   4 +-
- arch/arm/plat-omap/Kconfig                         |  16 -
- arch/arm/plat-omap/Makefile                        |   3 -
- arch/arm/plat-omap/include/plat/mailbox.h          | 105 ----
- arch/arm/plat-omap/mailbox.c                       | 435 ---------------
- drivers/Kconfig                                    |   2 +
- drivers/Makefile                                   |   1 +
- drivers/mailbox/Kconfig                            |  51 ++
- drivers/mailbox/Makefile                           |   5 +
- drivers/mailbox/mailbox-dbx500.c                   | 601 +++++++++++++++++++++
- drivers/mailbox/mailbox-omap1.c                    | 222 ++++++++
- .../mailbox.c => drivers/mailbox/mailbox-omap2.c   | 230 ++++----
- drivers/mailbox/mailbox.c                          | 551 +++++++++++++++++++
- drivers/mailbox/mailbox.h                          |  66 +++
- include/linux/mailbox.h                            |  36 ++
- include/linux/platform_data/mailbox-dbx500.h       |  13 +
- 20 files changed, 1672 insertions(+), 878 deletions(-)
- delete mode 100644 arch/arm/mach-omap1/mailbox.c
- delete mode 100644 arch/arm/plat-omap/include/plat/mailbox.h
- delete mode 100644 arch/arm/plat-omap/mailbox.c
- create mode 100644 drivers/mailbox/Kconfig
- create mode 100644 drivers/mailbox/Makefile
- create mode 100644 drivers/mailbox/mailbox-dbx500.c
- create mode 100644 drivers/mailbox/mailbox-omap1.c
- rename arch/arm/mach-omap2/mailbox.c => drivers/mailbox/mailbox-omap2.c (56%)
- create mode 100644 drivers/mailbox/mailbox.c
- create mode 100644 drivers/mailbox/mailbox.h
+---
+ drivers/mailbox/mailbox.c | 34 ++++++++++++++++++++++++++++++++++
+ drivers/mailbox/mailbox.h | 44 +-------------------------------------------
+ include/linux/mailbox.h   | 18 ++++++++++++++++++
+ 3 files changed, 53 insertions(+), 43 deletions(-)
  create mode 100644 include/linux/mailbox.h
- create mode 100644 include/linux/platform_data/mailbox-dbx500.h
 
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index aec291d0..8cb3b15 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -116,6 +116,40 @@ out:
+ }
+ EXPORT_SYMBOL(omap_mbox_msg_send);
+ 
++void omap_mbox_save_ctx(struct omap_mbox *mbox)
++{
++	if (!mbox->ops->save_ctx) {
++		dev_err(mbox->dev, "%s:\tno save\n", __func__);
++		return;
++	}
++
++	mbox->ops->save_ctx(mbox);
++}
++EXPORT_SYMBOL(omap_mbox_save_ctx);
++
++void omap_mbox_restore_ctx(struct omap_mbox *mbox)
++{
++	if (!mbox->ops->restore_ctx) {
++		dev_err(mbox->dev, "%s:\tno restore\n", __func__);
++		return;
++	}
++
++	mbox->ops->restore_ctx(mbox);
++}
++EXPORT_SYMBOL(omap_mbox_restore_ctx);
++
++void omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
++{
++	mbox->ops->enable_irq(mbox, irq);
++}
++EXPORT_SYMBOL(omap_mbox_enable_irq);
++
++void omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
++{
++	mbox->ops->disable_irq(mbox, irq);
++}
++EXPORT_SYMBOL(omap_mbox_disable_irq);
++
+ static void mbox_tx_tasklet(unsigned long tx_data)
+ {
+ 	struct omap_mbox *mbox = (struct omap_mbox *)tx_data;
+diff --git a/drivers/mailbox/mailbox.h b/drivers/mailbox/mailbox.h
+index 88a9f6a..bf3c1b4 100644
+--- a/drivers/mailbox/mailbox.h
++++ b/drivers/mailbox/mailbox.h
+@@ -8,13 +8,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ #include <linux/kfifo.h>
+-
+-typedef u32 mbox_msg_t;
+-struct omap_mbox;
+-
+-typedef int __bitwise omap_mbox_irq_t;
+-#define IRQ_TX ((__force omap_mbox_irq_t) 1)
+-#define IRQ_RX ((__force omap_mbox_irq_t) 2)
++#include <linux/mailbox.h>
+ 
+ typedef int __bitwise omap_mbox_type_t;
+ #define OMAP_MBOX_TYPE1 ((__force omap_mbox_type_t) 1)
+@@ -61,45 +55,9 @@ struct omap_mbox {
+ 	struct blocking_notifier_head   notifier;
+ };
+ 
+-int omap_mbox_msg_send(struct omap_mbox *, mbox_msg_t msg);
+ void omap_mbox_init_seq(struct omap_mbox *);
+ 
+-struct omap_mbox *omap_mbox_get(const char *, struct notifier_block *nb);
+-void omap_mbox_put(struct omap_mbox *mbox, struct notifier_block *nb);
+-
+ int omap_mbox_register(struct device *parent, struct omap_mbox **);
+ int omap_mbox_unregister(void);
+ 
+-static inline void omap_mbox_save_ctx(struct omap_mbox *mbox)
+-{
+-	if (!mbox->ops->save_ctx) {
+-		dev_err(mbox->dev, "%s:\tno save\n", __func__);
+-		return;
+-	}
+-
+-	mbox->ops->save_ctx(mbox);
+-}
+-
+-static inline void omap_mbox_restore_ctx(struct omap_mbox *mbox)
+-{
+-	if (!mbox->ops->restore_ctx) {
+-		dev_err(mbox->dev, "%s:\tno restore\n", __func__);
+-		return;
+-	}
+-
+-	mbox->ops->restore_ctx(mbox);
+-}
+-
+-static inline void omap_mbox_enable_irq(struct omap_mbox *mbox,
+-		omap_mbox_irq_t irq)
+-{
+-	mbox->ops->enable_irq(mbox, irq);
+-}
+-
+-static inline void omap_mbox_disable_irq(struct omap_mbox *mbox,
+-		omap_mbox_irq_t irq)
+-{
+-	mbox->ops->disable_irq(mbox, irq);
+-}
+-
+ #endif /* MAILBOX_H */
+diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
+new file mode 100644
+index 0000000..78ef848
+--- /dev/null
++++ b/include/linux/mailbox.h
+@@ -0,0 +1,18 @@
++/* mailbox.h */
++
++typedef u32 mbox_msg_t;
++struct omap_mbox;
++
++typedef int __bitwise omap_mbox_irq_t;
++#define IRQ_TX ((__force omap_mbox_irq_t) 1)
++#define IRQ_RX ((__force omap_mbox_irq_t) 2)
++
++int omap_mbox_msg_send(struct omap_mbox *, mbox_msg_t msg);
++
++struct omap_mbox *omap_mbox_get(const char *, struct notifier_block *nb);
++void omap_mbox_put(struct omap_mbox *mbox, struct notifier_block *nb);
++
++void omap_mbox_save_ctx(struct omap_mbox *mbox);
++void omap_mbox_restore_ctx(struct omap_mbox *mbox);
++void omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq);
++void omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq);
 -- 
 1.7.11.1
 
