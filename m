@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2LRReQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:34:16 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53353 "EHLO
+	id S932232Ab2LRReO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:34:14 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:64537 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab2LRReM (ORCPT
+	with ESMTP id S1754484Ab2LRReM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Dec 2012 12:34:12 -0500
 From: Tony Prisk <linux@prisktech.co.nz>
 To: kernel-janitors@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH RESEND 1/6] clk: omap: Fix incorrect usage of IS_ERR_OR_NULL
-Date: Wed, 19 Dec 2012 06:34:03 +1300
-Message-Id: <1355852048-23188-2-git-send-email-linux@prisktech.co.nz>
+        Tony Prisk <linux@prisktech.co.nz>, Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH RESEND 3/6] clk: exynos: Fix incorrect usage of IS_ERR_OR_NULL
+Date: Wed, 19 Dec 2012 06:34:05 +1300
+Message-Id: <1355852048-23188-4-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
 References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
@@ -26,42 +30,52 @@ Resend to include mailing lists.
 Replace IS_ERR_OR_NULL with IS_ERR on clk_get results.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Acked-by: Tony Lindgren <tony@atomide.com>
+CC: Inki Dae <inki.dae@samsung.com>
+CC: Joonyoung Shim <jy0922.shim@samsung.com>
+CC: Seung-Woo Kim <sw0312.kim@samsung.com>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+CC: dri-devel@lists.freedesktop.org
 ---
- arch/arm/plat-omap/dmtimer.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/exynos/exynos_hdmi.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index 938b50a..e5e150d 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -143,7 +143,7 @@ int omap_dm_timer_prepare(struct omap_dm_timer *timer)
- 	 */
- 	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET)) {
- 		timer->fclk = clk_get(&timer->pdev->dev, "fck");
--		if (WARN_ON_ONCE(IS_ERR_OR_NULL(timer->fclk))) {
-+		if (WARN_ON_ONCE(IS_ERR(timer->fclk))) {
- 			timer->fclk = NULL;
- 			dev_err(&timer->pdev->dev, ": No fclk handle.\n");
- 			return -EINVAL;
-@@ -418,7 +418,7 @@ int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source)
- 		return pdata->set_timer_src(timer->pdev, source);
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 2c115f8..557ef2f 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -2167,27 +2167,27 @@ static int __devinit hdmi_resources_init(struct hdmi_context *hdata)
  
- 	fclk = clk_get(&timer->pdev->dev, "fck");
--	if (IS_ERR_OR_NULL(fclk)) {
-+	if (IS_ERR(fclk)) {
- 		pr_err("%s: fck not found\n", __func__);
- 		return -EINVAL;
+ 	/* get clocks, power */
+ 	res->hdmi = clk_get(dev, "hdmi");
+-	if (IS_ERR_OR_NULL(res->hdmi)) {
++	if (IS_ERR(res->hdmi)) {
+ 		DRM_ERROR("failed to get clock 'hdmi'\n");
+ 		goto fail;
  	}
-@@ -438,7 +438,7 @@ int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source)
+ 	res->sclk_hdmi = clk_get(dev, "sclk_hdmi");
+-	if (IS_ERR_OR_NULL(res->sclk_hdmi)) {
++	if (IS_ERR(res->sclk_hdmi)) {
+ 		DRM_ERROR("failed to get clock 'sclk_hdmi'\n");
+ 		goto fail;
  	}
- 
- 	parent = clk_get(&timer->pdev->dev, parent_name);
--	if (IS_ERR_OR_NULL(parent)) {
-+	if (IS_ERR(parent)) {
- 		pr_err("%s: %s not found\n", __func__, parent_name);
- 		ret = -EINVAL;
- 		goto out;
+ 	res->sclk_pixel = clk_get(dev, "sclk_pixel");
+-	if (IS_ERR_OR_NULL(res->sclk_pixel)) {
++	if (IS_ERR(res->sclk_pixel)) {
+ 		DRM_ERROR("failed to get clock 'sclk_pixel'\n");
+ 		goto fail;
+ 	}
+ 	res->sclk_hdmiphy = clk_get(dev, "sclk_hdmiphy");
+-	if (IS_ERR_OR_NULL(res->sclk_hdmiphy)) {
++	if (IS_ERR(res->sclk_hdmiphy)) {
+ 		DRM_ERROR("failed to get clock 'sclk_hdmiphy'\n");
+ 		goto fail;
+ 	}
+ 	res->hdmiphy = clk_get(dev, "hdmiphy");
+-	if (IS_ERR_OR_NULL(res->hdmiphy)) {
++	if (IS_ERR(res->hdmiphy)) {
+ 		DRM_ERROR("failed to get clock 'hdmiphy'\n");
+ 		goto fail;
+ 	}
 -- 
 1.7.9.5
 
