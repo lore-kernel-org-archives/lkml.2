@@ -1,137 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab2LRNP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 08:15:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32842 "EHLO mga09.intel.com"
+	id S1754818Ab2LRNZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 08:25:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17979 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754742Ab2LRNP4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 08:15:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,309,1355126400"; 
-   d="scan'208";a="235672448"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V1 1/2] Xen acpi memory hotplug driver
-Thread-Topic: [PATCH V1 1/2] Xen acpi memory hotplug driver
-Thread-Index: AQHN1IPpUNtbxbdZSkG9MqBQJp2L85gVdm/ggALVLaCABk6VoA==
-Date: Tue, 18 Dec 2012 13:15:52 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353AD822@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923353942F9@SHSMSX101.ccr.corp.intel.com>
-	<20121128192601.GA15871@phenom.dumpdata.com>
-	<DE8DF0795D48FD4CA783C40EC829233539AC1D@SHSMSX101.ccr.corp.intel.com>
-	<20121205174307.GC16072@phenom.dumpdata.com>
-	<DE8DF0795D48FD4CA783C40EC82923353A2366@SHSMSX101.ccr.corp.intel.com>
-	<20121207140528.GA3140@phenom.dumpdata.com>
-	<DE8DF0795D48FD4CA783C40EC82923353A7C7B@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923353A9E57@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353A9E57@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754123Ab2LRNZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 08:25:17 -0500
+Date: Tue, 18 Dec 2012 15:25:03 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
+Subject: Re: [ PATCH] Add rcu user eqs exception hooks for async page fault
+Message-ID: <20121218132503.GK11016@redhat.com>
+References: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+ <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+ <20121128135345.GG928@redhat.com>
+ <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+ <20121129110717.GA9711@redhat.com>
+ <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
+ <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+ <20121203095708.GO8731@redhat.com>
+ <1354588513.2649.10.camel@ThinkPad-T5421.cn.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354588513.2649.10.camel@ThinkPad-T5421.cn.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Liu, Jinsong wrote:
-> Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>> On Thu, Dec 06, 2012 at 04:27:36AM +0000, Liu, Jinsong wrote:
->>>>>>>> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig index
->>>>>>>> 126d8ce..abd0396 100644 --- a/drivers/xen/Kconfig
->>>>>>>> +++ b/drivers/xen/Kconfig
->>>>>>>> @@ -206,4 +206,15 @@ config XEN_MCE_LOG
->>>>>>>>  	  Allow kernel fetching MCE error from Xen platform and
->>>>>>>>  	  converting it into Linux mcelog format for mcelog tools
->>>>>>>> 
->>>>>>>> +config XEN_ACPI_MEMORY_HOTPLUG
->>>>>>>> +	bool "Xen ACPI memory hotplug"
->>>>>>> 
->>>>>>> There should be a way to make this a module.
->>>>>> 
->>>>>> I have some concerns to make it a module:
->>>>>> 1. xen and native memhotplug driver both work as module, while
->>>>>> we need early load xen driver. 
->>>>>> 2. if possible, a xen stub driver may solve load sequence issue,
->>>>>>   but it may involve other issues * if xen driver load then
->>>>>> unload, native driver may have chance to load successfully;
->>>>> 
->>>>> The stub driver would still "occupy" the ACPI bus for the memory
->>>>> hotplug PnP, so I think this would not be a problem.
->>>>> 
->>>> 
->>>> I'm not quite clear your mean here, do you mean it has
->>>> 1. xen_stub driver + xen_memhoplug driver, then xen_strub driver
->>>> unload and entirely replaced by xen_memhotplug driver, or
->>>> 2. xen_stub driver (w/ stub ops) + xen_memhotplug ops (not driver),
->>>> then xen_stub driver keep occupying but its stub ops later replaced
->>>> by xen_memhotplug ops?
->>> 
->>> #2
->>>> 
->>>> If in way #1, it has risk that native driver may load (if xen
->>>> driver unload). If in way #2, xen_memhotplug ops lose the chance to
->>>> probe/add/bind existed memory devices (since it's done when driver
->>>> registerred).
->>> 
->>> Could the stub driver have a queue of events?
->> 
->> If so, why not do 'real' add ops (like our patch did, to build-in
->> xen memory hotplug logic)? I'm not quite clear your purpose of
->> insisting module -- what's advantage of module you prefer?
->> 
->>> 
->>>> 
->>>>>>   * if xen driver load --> unload --> load again, then it will
->>>>>> lose hotplug notification during unload period;
->>>>> 
->>>>> Sure. But I think we can do it with this driver? After all the
->>>>> function of it is to just tell the firmware to turn on/off sockets
->>>>> - and if we miss one notification we won't take advantage of the
->>>>> power savings - but we can do that later on.
->>>>> 
->>>> 
->>>> Not only inform firmware.
->>>> Hotplug notify callback will invoke acpi_bus_add -> ... ->
->>>> implicitly invoke drv->ops.add method to add the hotadded memory
->>>> device.
->>> 
->>> Gotcha.
->> 
->> ? So it will lose the notification and no way to add the new memory
->> device in the future. 
->> 
->> Xen memory hotplug logic consist of 2 parts:
->> 1) driver logic (.add/.remove etc)
->> 2) notification install/callback logic
->> If you want to use 'xen_stub driver + .add/.remove ops', then
->> notification install/callback logic would implement with xen_stub
->> driver (means in build-in part, otherwise it would lose notification
->> when the ops unload) --> but that would make xen_stub in big build-in
->> size.
+On Tue, Dec 04, 2012 at 10:35:13AM +0800, Li Zhong wrote:
+> This patch adds user eqs exception hooks for async page fault page not
+> present code path, to exit the user eqs and re-enter it as necessary.
 > 
-> How about
-> * build-in part: xen_stub driver (stub .add to record what matched
-> cpu devices) + notification install/callback; 
-> * module part: .add/.remove ops;
-> w/ it, native driver has no chance to load and no hotplug event lose,
-> and approximately 1/3 code is build-in and 2/3 are module. 
+> Async page fault is different from other exceptions that it may be
+> triggered from idle process, so we still need rcu_irq_enter() and
+> rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
+> that needs use rcu.
 > 
-> I think it will work but I'm not quite sure, at least we can have a
-> try/test? 
+> As Frederic pointed out it would be safest and simplest to protect the
+> whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
+> code there deeply for potential RCU uses and ensure it will never be
+> extended later to use RCU.".
 > 
-> Thanks,
-> Jinsong
+> However, We'd better re-enter the cpu idle eqs if we get the exception
+> in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt().
 > 
+> So the patch does what Frederic suggested for rcu_irq_*() API usage
+> here, except that I moved the rcu_irq_*() pair originally in
+> do_async_page_fault() into kvm_async_pf_task_wait().
+> 
+> That's because, I think it's better to have rcu_irq_*() pairs to be in
+> one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
+> kvm_async_pf_task_wait() has other callers, which might cause
+> rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
+> which is illegal if the cpu happens to be in rcu idle state.
+> 
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Applied, thanks. Will land in -rc hopefully.
 
-Thoughts? If you think it's OK, I will update later.
+> ---
+>  arch/x86/kernel/kvm.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index 08b973f..e99af60 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -43,6 +43,7 @@
+>  #include <asm/apicdef.h>
+>  #include <asm/hypervisor.h>
+>  #include <asm/kvm_guest.h>
+> +#include <asm/rcu.h>
+>  
+>  static int kvmapf = 1;
+>  
+> @@ -121,6 +122,8 @@ void kvm_async_pf_task_wait(u32 token)
+>  	struct kvm_task_sleep_node n, *e;
+>  	DEFINE_WAIT(wait);
+>  
+> +	rcu_irq_enter();
+> +
+>  	spin_lock(&b->lock);
+>  	e = _find_apf_task(b, token);
+>  	if (e) {
+> @@ -128,6 +131,8 @@ void kvm_async_pf_task_wait(u32 token)
+>  		hlist_del(&e->link);
+>  		kfree(e);
+>  		spin_unlock(&b->lock);
+> +
+> +		rcu_irq_exit();
+>  		return;
+>  	}
+>  
+> @@ -152,13 +157,16 @@ void kvm_async_pf_task_wait(u32 token)
+>  			/*
+>  			 * We cannot reschedule. So halt.
+>  			 */
+> +			rcu_irq_exit();
+>  			native_safe_halt();
+> +			rcu_irq_enter();
+>  			local_irq_disable();
+>  		}
+>  	}
+>  	if (!n.halted)
+>  		finish_wait(&n.wq, &wait);
+>  
+> +	rcu_irq_exit();
+>  	return;
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+> @@ -252,10 +260,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  		break;
+>  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+>  		/* page is swapped out by the host. */
+> -		rcu_irq_enter();
+> +		exception_enter(regs);
+>  		exit_idle();
+>  		kvm_async_pf_task_wait((u32)read_cr2());
+> -		rcu_irq_exit();
+> +		exception_exit(regs);
+>  		break;
+>  	case KVM_PV_REASON_PAGE_READY:
+>  		rcu_irq_enter();
+> -- 
+> 1.7.11.4
 
-Thanks,
-Jinsong
+--
+			Gleb.
