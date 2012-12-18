@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2LRRf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:35:56 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:62592 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab2LRReN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:34:13 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of IS_ERR_OR_NULL
-Date: Wed, 19 Dec 2012 06:34:08 +1300
-Message-Id: <1355852048-23188-7-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
-References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
+	id S1755282Ab2LRRg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:36:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751270Ab2LRRg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 12:36:26 -0500
+Date: Tue, 18 Dec 2012 14:35:50 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 3/3] perf tests: Add event parsing test for '*:*'
+ tracepoints
+Message-ID: <20121218173550.GA27243@infradead.org>
+References: <1355749718-4355-1-git-send-email-jolsa@redhat.com>
+ <1355749718-4355-4-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355749718-4355-4-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resend to include mailing lists.
+Em Mon, Dec 17, 2012 at 02:08:38PM +0100, Jiri Olsa escreveu:
+> Adding event parsing test for '*:*' tracepoints. Checking the
+> count matches all the tracepoints available plus current
+> standard tracepoint perf_event_attr check.
+> 
+> This test exposes warnings from traceevent lib about not being
+> able to parse some tracepoints' format data. Exposing these
+> messages in the automated test suite will probably speed up
+> the fix ;-)
 
-Replace IS_ERR_OR_NULL with IS_ERR on clk_get results.
+Ok, merged, now where is that speedup? ;-)
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-CC: Kyungmin Park <kyungmin.park@samsung.com>
-CC: Tomasz Stanislawski <t.stanislaws@samsung.com>
-CC: linux-media@vger.kernel.org
----
- drivers/media/platform/s5p-g2d/g2d.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/media/platform/s5p-g2d/g2d.c b/drivers/media/platform/s5p-g2d/g2d.c
-index 1bfbc32..dcd5335 100644
---- a/drivers/media/platform/s5p-g2d/g2d.c
-+++ b/drivers/media/platform/s5p-g2d/g2d.c
-@@ -715,7 +715,7 @@ static int g2d_probe(struct platform_device *pdev)
- 	}
- 
- 	dev->clk = clk_get(&pdev->dev, "sclk_fimg2d");
--	if (IS_ERR_OR_NULL(dev->clk)) {
-+	if (IS_ERR(dev->clk)) {
- 		dev_err(&pdev->dev, "failed to get g2d clock\n");
- 		return -ENXIO;
- 	}
-@@ -727,7 +727,7 @@ static int g2d_probe(struct platform_device *pdev)
- 	}
- 
- 	dev->gate = clk_get(&pdev->dev, "fimg2d");
--	if (IS_ERR_OR_NULL(dev->gate)) {
-+	if (IS_ERR(dev->gate)) {
- 		dev_err(&pdev->dev, "failed to get g2d clock gate\n");
- 		ret = -ENXIO;
- 		goto unprep_clk;
--- 
-1.7.9.5
-
+- Arnaldo
