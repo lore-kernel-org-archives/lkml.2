@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2LRSxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 13:53:10 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:44494 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751348Ab2LRSxI (ORCPT
+	id S1755548Ab2LRS7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 13:59:49 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:61576 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755531Ab2LRS7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 13:53:08 -0500
-X-Greylist: delayed 1018 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 13:53:08 EST
-Message-ID: <50D0B5A2.2010707@fb.com>
-Date: Tue, 18 Dec 2012 10:27:46 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 18 Dec 2012 13:59:48 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        <sanjay@google.com>, Paul Turner <pjt@google.com>,
-        David Rientjes <rientjes@google.com>,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v4 0/3] Support volatile for anonymous range
-References: <1355813274-571-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1355813274-571-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Spam-Reason: safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-18_08:2012-12-18,2012-12-18,1970-01-01 signatures=0
+In-Reply-To: <1355847041.18964.369.camel@misato.fc.hp.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+	<1525730.exQ7msTINR@vostro.rjw.lan>
+	<1355789297.18964.334.camel@misato.fc.hp.com>
+	<4082842.31rfDviYHK@vostro.rjw.lan>
+	<1355847041.18964.369.camel@misato.fc.hp.com>
+Date: Tue, 18 Dec 2012 10:59:46 -0800
+X-Google-Sender-Auth: KyHeTf0dwXNIKo1KNwt9T34lHpo
+Message-ID: <CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
+Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from
+ probing ACPI drivers
+From: Yinghai Lu <yinghai@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/12 10:47 PM, Minchan Kim wrote:
+On Tue, Dec 18, 2012 at 8:10 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
+>
+> So, I would propose the following changes.
+>
+>  - Move the acpi_hot_add_bind() call back to the original place after
+> the device_attach() call.
+>  - Rename the name of acpi_hot_add_bind() to something like
+> acpi_bind_adr_device() since it is no longer hot-add only (and is
+> specific to _ADR devices).
+>  - Create its pair function, acpi_unbind_adr_device(), which is called
+> from acpi_bus_remove().  When a constructor interface is introduced, its
+> destructor should be introduced as well.
+>  - Remove the binding procedure from acpi_pci_root_add().  This should
+> be done in patch [2/6].
 
-> I hope more inputs from user-space allocator people and test patch
-> with their allocator because it might need design change of arena
-> management for getting real vaule.
+i think we should put jiang four patches before Rafael's patches.
 
-jemalloc knows how to handle MADV_FREE on platforms that support it. 
-This looks similar (we'll need a SIGBUS handler that does the right 
-thing = zero the page + mark it as non-volatile in the common case).
-
-All of this of course assumes that apps madvise the kernel through APIs 
-exposed by the malloc implementation - not via a raw syscall.
-
-In other words, some new user space code needs to be written to test 
-this out fully. Sounds feasible though.
-
-  -Arun
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-jiang-hotplug
