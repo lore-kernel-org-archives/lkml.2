@@ -1,172 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab2LRGzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 01:55:05 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:58147 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2LRGzD (ORCPT
+	id S1754046Ab2LRG4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 01:56:07 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61533 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab2LRG4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 01:55:03 -0500
-Date: Mon, 17 Dec 2012 22:55:02 -0800
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org
-Subject: [GIT PULL] ARM: arm-soc fixes for 3.8
-Message-ID: <20121218065502.GA12865@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Dec 2012 01:56:05 -0500
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
+        sanjay@google.com, Paul Turner <pjt@google.com>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [RFC v4 0/3] Support volatile for anonymous range
+Date: Tue, 18 Dec 2012 15:47:51 +0900
+Message-Id: <1355813274-571-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This is still RFC because we need more input from user-space
+people and discussion about interface/reclaim policy of volatile
+pages and I want to expand this concept to tmpfs volatile range
+if it is possbile without big performance drop of anonymous volatile
+rnage (Let's define our term. anon volatile VS tmpfs volatile? John?)
 
+NOTE: I didn't consider THP/KSM so for test, you should disable them.
 
-The following changes since commit fa4c95bfdb85d568ae327d57aa33a4f55bab79c4:
+I hope more inputs from user-space allocator people and test patch
+with their allocator because it might need design change of arena
+management for getting real vaule.
 
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs (2012-12-17 08:27:59 -0800)
+Changelog from v4
 
-are available in the git repository at:
+ * Add new system call mvolatile/mnovolatile
+ * Add sigbus when user try to access volatile range
+ * Rebased on v3.7
+ * Applied bug fix from John Stultz, Thanks!
 
+Changelog from v3
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes
+ * Removing madvise(addr, length, MADV_NOVOLATILE).
+ * add vmstat about the number of discarded volatile pages
+ * discard volatile pages without promotion in reclaim path
 
-for you to fetch changes up to 4d1839138220e7e35bf9e31c854e4e0196dea7a1:
+This is based on v3.7
 
-  Merge tag 'ep93xx-fixes-for-3.8' of git://github.com/RyanMallon/linux-ep93xx into fixes (2012-12-17 18:42:30 -0800)
+- What's the mvolatile(addr, length)?
 
-----------------------------------------------------------------
+  It's a hint that user deliver to kernel so kernel can *discard*
+  pages in a range anytime.
 
-ARM: arm-soc fixes for 3.8
+- What happens if user access page(ie, virtual address) discarded
+  by kernel?
 
-This is a batch of fixes for arm-soc platforms, most of it is for OMAP
-but there are others too (i.MX, Tegra, ep93xx). Fixes warnings, some
-broken platforms and drivers, etc. A bit all over the map really.
+  The user can encounter SIGBUS.
 
-----------------------------------------------------------------
-Fabio Estevam (2):
-      ARM: dts: mx27: Fix the AIPI bus for FEC
-      ARM: imx: Move platform-mx2-emma to arch/arm/mach-imx/devices
+- What should user do for avoding SIGBUS?
+  He should call mnovolatie(addr, length) before accessing the range
+  which was called by mvolatile.
 
-Florian Fainelli (1):
-      ARM: ep93xx: properly wait for UART FIFO to be empty
+- What happens if user access page(ie, virtual address) doesn't
+  discarded by kernel?
 
-Hiroshi Doyu (1):
-      amba: tegra-ahb: Fix warning w/o PM_SLEEP
+  The user can see old data without page fault.
 
-Javier Martinez Canillas (1):
-      ARM: OMAP2+: common: remove use of vram
+- What's different with madvise(DONTNEED)?
 
-Jon Hunter (11):
-      ARM: OMAP2+: Fix realtime_counter_init warning in timer.c
-      ARM: AM335x: Fix warning in timer.c
-      ARM: OMAP2420: Fix ethernet support for OMAP2420 H4
-      ARM: OMAP: Remove debug-devices.c
-      ARM: dts: OMAP2420: Correct H4 board memory size
-      ARM: dts: Add build target for omap4-panda-a4
-      ARM: OMAP4: Update timer clock aliases
-      ARM: OMAP4: Add function table for non-M4X dplls
-      ARM: OMAP4: Enhance support for DPLLs with 4X multiplier
-      ARM: OMAP4460: Workaround ABE DPLL failing to turn-on
-      ARM: OMAP4: Fix EMU clock domain always on
+  System call semantic
 
-Linus Walleij (2):
-      ARM: u300: delete custom pin hog code
-      ARM: ux500: fix missing include
+  DONTNEED makes sure user always can see zero-fill pages after
+  he calls madvise while mvolatile can see old data or encounter
+  SIGBUS.
 
-Maxime Ripard (1):
-      ARM: sunxi: Change device tree naming scheme for sunxi
+  Internal implementation
 
-Oleg Matcovschi (1):
-      OMAP2+: mux: Fixed gpio mux mode analysis
+  The madvise(DONTNEED) should zap all mapped pages in range so
+  overhead is increased linearly with the number of mapped pages.
+  Even, if user access zapped pages as write mode, page fault +
+  page allocation + memset should be happened.
 
-Olof Johansson (7):
-      ARM: exynos: Fix warning due to missing 'inline' in stub
-      ARM: davinci: fix build break due to missing include
-      Merge tag 'tegra-for-3.8-fixes-for-rc1' of git://git.kernel.org/.../swarren/linux-tegra into fixes
-      Merge tag 'omap-fixes-a-for-v3.8-window' of git://git.kernel.org/.../pjw/omap-pending into fixes
-      Merge tag 'omap-for-v3.8/fixes-for-merge-window-v4-signed' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'imx-fixes-rc' of git://git.pengutronix.de/git/imx/linux-2.6 into fixes
-      Merge tag 'ep93xx-fixes-for-3.8' of git://github.com/RyanMallon/linux-ep93xx into fixes
+  The mvolatile just marks the flag in a range(ie, VMA) instead of
+  zapping all of pte in the vma so it doesn't touch ptes any more.
 
-Paul Walmsley (3):
-      ARM: OMAP4: clock data: div_iva_hs_clk is a power-of-two divider
-      ARM: OMAP4: clock data: DPLLs are missing bypass clocks in their parent lists
-      ARM: OMAP3/4: cpuidle: fix sparse and checkpatch warnings
+- What's the benefit compared to DONTNEED?
 
-Roger Quadros (1):
-      mfd: omap-usb-host: get rid of cpu_is_omap..() macros
+  1. The system call overhead is smaller because mvolatile just marks
+     the flag to VMA instead of zapping all the page in a range so
+     overhead should be very small.
 
-Sascha Hauer (1):
-      ARM i.MX51 clock: Fix regression since enabling MIPI/HSP clocks
+  2. It has a chance to eliminate overheads (ex, zapping pte + page fault
+     + page allocation + memset(PAGE_SIZE)) if memory pressure isn't
+     severe.
 
-Sivaram Nair (2):
-      ARM: tegra: select correct parent clk for pll_p
-      ARM: tegra: fix comment in dsib clk set_parent
+  3. It has a potential to zap all ptes and free the pages if memory
+     pressure is severe so reclaim overhead could be disappear - TODO
 
-Tomi Valkeinen (1):
-      OMAP: board-files: fix i2c_bus for tfp410
+- Isn't there any drawback?
 
-Tony Lindgren (3):
-      Merge branch 'fixes-timer-build' of git://github.com/jonhunter/linux into omap-for-v3.8/fixes-for-merge-window
-      ARM: OMAP: Move plat/omap-serial.h to include/linux/platform_data/serial-omap.h
-      Merge branch 'omap-for-v3.8/fixes-for-merge-window' into omap-for-v3.8/fixes-for-merge-window-v2
+  Madvise(DONTNEED) doesn't need exclusive mmap_sem so concurrent page
+  fault of other threads could be allowed. But m[no]volatile needs
+  exclusive mmap_sem so other thread would be blocked if they try to
+  access not-yet-mapped pages. That's why I design m[no]volatile
+  overhead should be small as far as possible.
 
-Vaibhav Hiremath (1):
-      ARM: OMAP2+: Fix sparse warnings in timer.c
+  It could suffer from max rss usage increasement because madvise(DONTNEED)
+  deallocates pages instantly when the system call is issued while mvoatile
+  delays it until memory pressure happens so if memory pressure is severe by
+  max rss incresement, system would suffer. First of all, allocator needs
+  some balance logic for that or kernel might handle it by zapping pages
+  although user calls mvolatile if memory pressure is severe.
+  The problem is how we know memory pressure is severe.
+  One of solution is to see kswapd is active or not. Another solution is
+  Anton's mempressure so allocator can handle it.
 
- arch/arm/boot/dts/Makefile                         |  5 +-
- arch/arm/boot/dts/imx27-3ds.dts                    |  8 +-
- arch/arm/boot/dts/imx27-phytec-phycore.dts         | 13 +--
- arch/arm/boot/dts/imx27.dtsi                       | 11 ++-
- arch/arm/boot/dts/omap2420-h4.dts                  |  2 +-
- arch/arm/boot/dts/sun4i-cubieboard.dts             |  4 +-
- arch/arm/boot/dts/sun5i-olinuxino.dts              |  4 +-
- arch/arm/mach-davinci/board-da850-evm.c            |  1 +
- arch/arm/mach-ep93xx/include/mach/uncompress.h     | 10 +--
- arch/arm/mach-exynos/common.h                      |  2 +-
- arch/arm/mach-imx/clk-imx51-imx53.c                | 16 ++++
- .../devices/platform-mx2-emma.c                    |  4 +-
- arch/arm/mach-omap2/Kconfig                        |  3 +-
- arch/arm/mach-omap2/board-3430sdp.c                |  1 +
- arch/arm/mach-omap2/board-am3517evm.c              |  1 +
- arch/arm/mach-omap2/board-cm-t35.c                 |  1 +
- arch/arm/mach-omap2/board-devkit8000.c             |  1 +
- arch/arm/mach-omap2/board-h4.c                     | 83 +++++--------------
- arch/arm/mach-omap2/board-omap3evm.c               |  1 +
- arch/arm/mach-omap2/board-omap3stalker.c           |  1 +
- arch/arm/mach-omap2/cclock44xx_data.c              | 78 +++++++++++++++---
- arch/arm/mach-omap2/clock.h                        | 10 +++
- arch/arm/mach-omap2/clockdomain.c                  |  3 +-
- arch/arm/mach-omap2/common.c                       |  3 -
- arch/arm/mach-omap2/cpuidle34xx.c                  | 14 ++--
- arch/arm/mach-omap2/cpuidle44xx.c                  | 28 ++++---
- arch/arm/mach-omap2/dpll3xxx.c                     | 46 +++++++----
- arch/arm/mach-omap2/dpll44xx.c                     | 64 ++++++++++++---
- arch/arm/mach-omap2/mux.c                          | 10 +--
- arch/arm/mach-omap2/mux.h                          | 20 +++--
- arch/arm/mach-omap2/mux34xx.c                      |  2 +-
- arch/arm/mach-omap2/serial.c                       |  3 +-
- arch/arm/mach-omap2/timer.c                        |  6 +-
- arch/arm/mach-omap2/usb-host.c                     |  4 +
- arch/arm/mach-tegra/common.c                       |  2 +-
- arch/arm/mach-tegra/tegra30_clocks.c               |  4 +-
- arch/arm/mach-u300/core.c                          | 34 --------
- arch/arm/mach-ux500/devices-db8500.h               |  1 +
- arch/arm/plat-omap/Makefile                        |  1 -
- arch/arm/plat-omap/debug-devices.c                 | 92 ----------------------
- arch/arm/plat-omap/include/plat/debug-devices.h    |  2 -
- drivers/amba/tegra-ahb.c                           |  2 +
- drivers/mfd/omap-usb-host.c                        |  3 +-
- drivers/tty/serial/omap-serial.c                   |  3 +-
- .../linux/platform_data/serial-omap.h              |  0
- include/linux/platform_data/usb-omap.h             |  3 +
- include/video/omap-panel-tfp410.h                  |  2 +-
- 47 files changed, 308 insertions(+), 304 deletions(-)
- rename arch/arm/{plat-mxc => mach-imx}/devices/platform-mx2-emma.c (94%)
- delete mode 100644 arch/arm/plat-omap/debug-devices.c
- delete mode 100644 arch/arm/plat-omap/include/plat/debug-devices.h
- rename arch/arm/plat-omap/include/plat/omap-serial.h => include/linux/platform_data/serial-omap.h (100%)
+- What's for targetting?
+
+  Firstly, user-space allocator like ptmalloc, tcmalloc or heap management
+  of virtual machine like Dalvik. Also, it comes in handy for embedded
+  which doesn't have swap device so they can't reclaim anonymous pages.
+  By discarding instead of swapout, it could be used in the non-swap system.
+  For it, we have to age anon lru list although we don't have swap because
+  I don't want to discard volatile pages by top priority when memory pressure
+  happens as volatile in this patch means "We don't need to swap out because
+  user can handle the situation which data are disappear suddenly", NOT
+  "They are useless so hurry up to reclaim them". So I want to apply same
+  aging rule of nomal pages to them.
+
+  Anonymous page background aging of non-swap system would be a trade-off
+  for getting good feature. Even, we had done it two years ago until merge
+  [1] and I believe gain of this patch will beat loss of anon lru aging's
+  overead once all of allocator start to use madvise.
+  (This patch doesn't include background aging in case of non-swap system
+  but it's trivial if we decide)
+
+  As another choice, we can zap the range like madvise(DONTNEED) when mvolatile
+  is called if we don't have swap space.
+
+- Stupid performance test
+  I attach test program/script which are utter crap and I don't expect
+  current smart allocator never have done it so we need more practical data
+  with real allocator.
+
+  KVM - 8 core, 2G
+
+VOLATILE test
+13.16user 7.58system 0:06.04elapsed 343%CPU (0avgtext+0avgdata 2624096maxresident)k
+0inputs+0outputs (0major+164050minor)pagefaults 0swaps
+
+DONTNEED test
+23.30user 228.92system 0:33.10elapsed 762%CPU (0avgtext+0avgdata 213088maxresident)k
+0inputs+0outputs (0major+16384210minor)pagefaults 0swaps
+
+  x86-64 - 12 core, 2G
+
+VOLATILE test
+33.38user 0.44system 0:02.87elapsed 1178%CPU (0avgtext+0avgdata 3935008maxresident)k
+0inputs+0outputs (0major+245989minor)pagefaults 0swaps
+
+DONTNEED test
+28.02user 41.25system 0:05.80elapsed 1192%CPU (0avgtext+0avgdata 387776maxresident)k
+
+[1] 74e3f3c3, vmscan: prevent background aging of anon page in no swap system
+
+Any comments are welcome!
+
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: sanjay@google.com
+Cc: Paul Turner <pjt@google.com>
+CC: David Rientjes <rientjes@google.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Minchan Kim (3):
+  Introduce new system call mvolatile
+  Discard volatile page
+  add PGVOLATILE vmstat count
+
+ arch/x86/syscalls/syscall_64.tbl |    3 +-
+ include/linux/mm.h               |    1 +
+ include/linux/mm_types.h         |    2 +
+ include/linux/rmap.h             |    3 +
+ include/linux/syscalls.h         |    2 +
+ include/linux/vm_event_item.h    |    2 +-
+ mm/Makefile                      |    4 +-
+ mm/huge_memory.c                 |    9 +-
+ mm/ksm.c                         |    3 +-
+ mm/memory.c                      |    2 +
+ mm/migrate.c                     |    6 +-
+ mm/mlock.c                       |    5 +-
+ mm/mmap.c                        |    2 +-
+ mm/mvolatile.c                   |  396 ++++++++++++++++++++++++++++++++++++++
+ mm/rmap.c                        |   97 +++++++++-
+ mm/vmscan.c                      |    4 +
+ mm/vmstat.c                      |    1 +
+ 17 files changed, 527 insertions(+), 15 deletions(-)
+ create mode 100644 mm/mvolatile.c
+
+================== 8< =============================
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <pthread.h>
+#include <sched.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+
+#define SYS_mvolatile 313
+#define SYS_mnovolatile 314
+
+#define ALLOC_SIZE (8 << 20)
+#define MAP_SIZE  (ALLOC_SIZE * 10)
+#define PAGE_SIZE (1 << 12)
+#define RETRY 100
+
+pthread_barrier_t barrier;
+int mode;
+#define VOLATILE_MODE 1
+
+static int mvolatile(void *addr, size_t length)
+{
+	return syscall(SYS_mvolatile, addr, length);
+}
+
+static int mnovolatile(void *addr, size_t length)
+{
+	return syscall(SYS_mnovolatile, addr, length);
+}
+
+void *thread_entry(void *data)
+{
+	unsigned long i;
+	cpu_set_t set;
+	int cpu = *(int*)data;
+	void *mmap_area;
+	int retry = RETRY;
+
+	CPU_ZERO(&set);
+	CPU_SET(cpu, &set);
+	sched_setaffinity(0, sizeof(set), &set);
+
+	mmap(NULL, PAGE_SIZE, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+	mmap_area = mmap(NULL, MAP_SIZE, PROT_READ|PROT_WRITE,
+					MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+	if (mmap_area == MAP_FAILED) {
+		fprintf(stderr, "Fail to mmap [%d]\n", *(int*)data);
+		exit(1);
+	}
+
+	pthread_barrier_wait(&barrier);
+
+	while(retry--) {
+		if (mode == VOLATILE_MODE) {
+			mvolatile(mmap_area, MAP_SIZE);
+			for (i = 0; i < MAP_SIZE; i+= ALLOC_SIZE) {
+				mnovolatile(mmap_area + i, ALLOC_SIZE);
+				memset(mmap_area + i, i, ALLOC_SIZE);
+				mvolatile(mmap_area + i, ALLOC_SIZE);
+			}
+		} else {
+			for (i = 0; i < MAP_SIZE; i += ALLOC_SIZE) {
+				memset(mmap_area + i, i, ALLOC_SIZE);
+				madvise(mmap_area + i, ALLOC_SIZE, MADV_DONTNEED);
+			}
+		}
+	}
+	return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+	int i, nr_thread;
+	int *data;
+
+	if (argc < 3)
+		return 1;
+
+	nr_thread = atoi(argv[1]);
+	mode = atoi(argv[2]);
+
+	pthread_t *thread = malloc(sizeof(pthread_t) * nr_thread);
+	data = malloc(sizeof(int) * nr_thread);
+	pthread_barrier_init(&barrier, NULL, nr_thread);
+
+	for (i = 0; i < nr_thread; i++) {
+		data[i] = i;
+		if (pthread_create(&thread[i], NULL, thread_entry, &data[i])) {
+			perror("Fail to create thread\n");
+			exit(1);
+		}
+	}
+
+	for (i = 0; i < nr_thread; i++) {
+		if (pthread_join(thread[i], NULL))
+			perror("Fail to join thread\n");
+		printf("[%d] thread done\n", i);
+	}
+
+	return 0;
+}
+-- 
+1.7.9.5
+
