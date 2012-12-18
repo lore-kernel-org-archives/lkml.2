@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab2LRCmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 21:42:38 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:27025 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab2LRCmZ (ORCPT
+	id S1754307Ab2LRCnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 21:43:07 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:38217 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab2LRCnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 21:42:25 -0500
-From: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-To: <linux-usb@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <zihan@huawei.com>, <Lin.Lei@huawei.com>,
-        <greg@kroah.com>, <neil.yi@huawei.com>, <wangyuhua@huawei.com>,
-        <huqiao36@huawei.com>, <balbi@ti.com>
-Message-ID: <fdcd8d23149d.149dfdcd8d23@huawei.com>
-Date: Tue, 18 Dec 2012 10:42:12 +0800
-X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
+	Mon, 17 Dec 2012 21:43:06 -0500
+X-Greylist: delayed 5543 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 21:43:06 EST
 MIME-Version: 1.0
-Content-Language: zh-CN
-Subject: [PATCH 1/2]linux-usb:Define a new macro for USB storage match
- rules
-X-Accept-Language: zh-CN
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-CFilter-Loop: Reflected
+In-Reply-To: <20121218015705.GH4939@ZenIV.linux.org.uk>
+References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+ <20121218015705.GH4939@ZenIV.linux.org.uk>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 17 Dec 2012 18:42:44 -0800
+Message-ID: <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
+Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: fangxiaozhi <huananhu@huawei.com>
+On Mon, Dec 17, 2012 at 5:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Dec 17, 2012 at 05:10:21PM -0800, Andy Lutomirski wrote:
+>> I want to change inode->i_flags access to be atomic -- there are some
+>> locking oddities right now, I think, and I want to use a new inode
+>> flag to signal mtime updates from page_mkwrite.  The problem is that
+>> i_flags is an unsigned int, and making it an unsigned long seems like
+>> a waste, but there aren't any u32 atomic bitops.
+>
+> ... and atomic accesses cost more.  A lot more on some architectures.
+> FWIW, atomic_t *is* 32bit on 32bit architectures, which still doesn't
+> make it a good idea.
 
-1. Define a new macro for USB storage match rules: 
-    matching with Vendor ID and interface descriptors.
+Are atomic_set_mask and atomic_clear_mask as fast as set_bit and
+friends on all archs?
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
---------------------------------------------------------------------
+In any case, i_flags looks like it's rarely written, so I find it a
+bit hard to believe that making it atomic would hurt.  Isn't
+atomic_read equivalent to non-atomic reads everywhere?
 
-diff -uprN linux-3.7_bak/drivers/usb/storage/usb.c linux-3.7/drivers/usb/storage/usb.c
---- linux-3.7_bak/drivers/usb/storage/usb.c	2012-12-11 09:56:11.000000000 +0800
-+++ linux-3.7/drivers/usb/storage/usb.c	2012-12-12 11:46:06.000000000 +0800
-@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
- 	.useTransport = use_transport,	\
- }
- 
-+#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
-+		    vendor_name, product_name, use_protocol, use_transport, \
-+		    init_function, Flags) \
-+{ \
-+	.vendorName = vendor_name,	\
-+	.productName = product_name,	\
-+	.useProtocol = use_protocol,	\
-+	.useTransport = use_transport,	\
-+	.initFunction = init_function,	\
-+}
-+
- static struct us_unusual_dev us_unusual_dev_list[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -131,6 +142,7 @@ static struct us_unusual_dev for_dynamic
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- #ifdef CONFIG_LOCKDEP
- 
-diff -uprN linux-3.7_bak/drivers/usb/storage/usual-tables.c linux-3.7/drivers/usb/storage/usual-tables.c
---- linux-3.7_bak/drivers/usb/storage/usual-tables.c	2012-12-11 09:56:11.000000000 +0800
-+++ linux-3.7/drivers/usb/storage/usual-tables.c	2012-12-13 20:51:27.000000000 +0800
-@@ -41,6 +41,19 @@
- #define USUAL_DEV(useProto, useTrans) \
- { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans) }
- 
-+/* Define the device is matched with Vendor ID and interface descriptors */
-+#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-+			vendorName, productName, useProtocol, useTransport, \
-+			initFunction, flags) \
-+{ \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+				| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor    = (id_vendor), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr), \
-+	.driver_info = (flags) }
-+
- struct usb_device_id usb_storage_usb_ids[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -50,6 +63,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- /*
-  * The table of devices to ignore
+I want page_mkwrite to set a flag (without taking i_mutex) but *not*
+call file_update_time and then to have the writeback paths update the
+inode time.  (This, along with stable pages, is the major cause of
+long sleeps in my application.)  OTOH, maybe I should just use i_state
+and i_lock for this.
 
+
+--Andy
