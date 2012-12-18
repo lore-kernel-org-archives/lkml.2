@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab2LRS7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 13:59:49 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:61576 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531Ab2LRS7s (ORCPT
+	id S1755564Ab2LRTD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:03:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:34551 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab2LRTD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 13:59:48 -0500
+	Tue, 18 Dec 2012 14:03:57 -0500
+Date: Tue, 18 Dec 2012 22:03:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: kernel-janitors@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH RESEND 3/6] clk: exynos: Fix incorrect usage of
+ IS_ERR_OR_NULL
+Message-ID: <20121218190334.GK5032@mwanda>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
+ <1355852048-23188-4-git-send-email-linux@prisktech.co.nz>
+ <20121218183944.GH5032@mwanda>
+ <1355856767.23479.3.camel@gitbox>
 MIME-Version: 1.0
-In-Reply-To: <1355847041.18964.369.camel@misato.fc.hp.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
-	<1525730.exQ7msTINR@vostro.rjw.lan>
-	<1355789297.18964.334.camel@misato.fc.hp.com>
-	<4082842.31rfDviYHK@vostro.rjw.lan>
-	<1355847041.18964.369.camel@misato.fc.hp.com>
-Date: Tue, 18 Dec 2012 10:59:46 -0800
-X-Google-Sender-Auth: KyHeTf0dwXNIKo1KNwt9T34lHpo
-Message-ID: <CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
-Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from
- probing ACPI drivers
-From: Yinghai Lu <yinghai@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355856767.23479.3.camel@gitbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 8:10 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
->
-> So, I would propose the following changes.
->
->  - Move the acpi_hot_add_bind() call back to the original place after
-> the device_attach() call.
->  - Rename the name of acpi_hot_add_bind() to something like
-> acpi_bind_adr_device() since it is no longer hot-add only (and is
-> specific to _ADR devices).
->  - Create its pair function, acpi_unbind_adr_device(), which is called
-> from acpi_bus_remove().  When a constructor interface is introduced, its
-> destructor should be introduced as well.
->  - Remove the binding procedure from acpi_pci_root_add().  This should
-> be done in patch [2/6].
+I don't care either way, but being different from the documentation
+is less bad than crashing which is what your patch does.  Please
+be more careful in the future.
 
-i think we should put jiang four patches before Rafael's patches.
+regards,
+dan carpenter
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-jiang-hotplug
