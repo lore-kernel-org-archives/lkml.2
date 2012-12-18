@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2LRHVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:21:31 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38996 "EHLO
+	id S1754599Ab2LRHVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:21:37 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38985 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab2LRHQ1 (ORCPT
+	with ESMTP id S1754131Ab2LRHQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:16:27 -0500
+	Tue, 18 Dec 2012 02:16:26 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v7 11/27] x86, boot: move checking of cmd_line_ptr out of common path
-Date: Mon, 17 Dec 2012 23:15:43 -0800
-Message-Id: <1355814959-10573-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v7 01/27] x86, mm: Fix page table early allocation offset checking
+Date: Mon, 17 Dec 2012 23:15:33 -0800
+Message-Id: <1355814959-10573-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
 References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmdline.c::__cmdline_find_option... are shared between
-16-bit setup code and 32/64 bit decompressor code.
+During debug load kernel above 4G, found one page if is not used in BRK
+and it should be with early page allocation.
 
-for 32/64 only path via kexec, we should not check if ptr less 1M.
-as those cmdline could be put above 1M, or even 4G.
-
-Move out accessible checking out of __cmdline_find_option()
-So decompressor in misc.c can parse cmdline correctly.
+Fix that checking and also add print out for every allocation from BRK
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/boot/boot.h    |   14 ++++++++++++--
- arch/x86/boot/cmdline.c |    8 ++++----
- 2 files changed, 16 insertions(+), 6 deletions(-)
+ arch/x86/mm/init.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 18997e5..7fadf80 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -289,12 +289,22 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
- int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
- static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	return __cmdline_find_option(boot_params.hdr.cmd_line_ptr, option, buffer, bufsize);
-+	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+	if (cmd_line_ptr >= 0x100000)
-+		return -1;      /* inaccessible */
-+
-+	return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
- }
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 6f85de8..c4293cf 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -47,7 +47,7 @@ __ref void *alloc_low_pages(unsigned int num)
+ 						__GFP_ZERO, order);
+ 	}
  
- static inline int cmdline_find_option_bool(const char *option)
- {
--	return __cmdline_find_option_bool(boot_params.hdr.cmd_line_ptr, option);
-+	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+	if (cmd_line_ptr >= 0x100000)
-+		return -1;      /* inaccessible */
-+
-+	return __cmdline_find_option_bool(cmd_line_ptr, option);
- }
+-	if ((pgt_buf_end + num) >= pgt_buf_top) {
++	if ((pgt_buf_end + num) > pgt_buf_top) {
+ 		unsigned long ret;
+ 		if (min_pfn_mapped >= max_pfn_mapped)
+ 			panic("alloc_low_page: ran out of memory");
+@@ -61,6 +61,8 @@ __ref void *alloc_low_pages(unsigned int num)
+ 	} else {
+ 		pfn = pgt_buf_end;
+ 		pgt_buf_end += num;
++		printk(KERN_DEBUG "BRK [%#010lx, %#010lx] PGTABLE\n",
++			pfn << PAGE_SHIFT, (pgt_buf_end << PAGE_SHIFT) - 1);
+ 	}
  
- 
-diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
-index 6b3b6f7..768f00f 100644
---- a/arch/x86/boot/cmdline.c
-+++ b/arch/x86/boot/cmdline.c
-@@ -41,8 +41,8 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
- 		st_bufcpy	/* Copying this to buffer */
- 	} state = st_wordstart;
- 
--	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--		return -1;	/* No command line, or inaccessible */
-+	if (!cmdline_ptr)
-+		return -1;      /* No command line */
- 
- 	cptr = cmdline_ptr & 0xf;
- 	set_fs(cmdline_ptr >> 4);
-@@ -111,8 +111,8 @@ int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
- 		st_wordskip,	/* Miscompare, skip */
- 	} state = st_wordstart;
- 
--	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--		return -1;	/* No command line, or inaccessible */
-+	if (!cmdline_ptr)
-+		return -1;      /* No command line */
- 
- 	cptr = cmdline_ptr & 0xf;
- 	set_fs(cmdline_ptr >> 4);
+ 	for (i = 0; i < num; i++) {
 -- 
 1.7.10.4
 
