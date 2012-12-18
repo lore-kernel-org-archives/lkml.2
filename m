@@ -1,71 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2LRILv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 03:11:51 -0500
-Received: from relay.parallels.com ([195.214.232.42]:39227 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab2LRILu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 03:11:50 -0500
-Message-ID: <50D02550.3090903@parallels.com>
-Date: Tue, 18 Dec 2012 12:12:00 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754493Ab2LRINq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 03:13:46 -0500
+Received: from canardo.mork.no ([148.122.252.1]:59518 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209Ab2LRINo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 03:13:44 -0500
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Norbert Warmuth <nwarmuth@t-online.de>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [regression][PATCH v3] watchdog: Fix disable/enable regression
+Date: Tue, 18 Dec 2012 09:13:09 +0100
+Message-Id: <1355818389-18717-1-git-send-email-bjorn@mork.no>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <87y5h1c70y.fsf@nemi.mork.no>
+References: <87y5h1c70y.fsf@nemi.mork.no>
 MIME-Version: 1.0
-To: Brian Foster <bfoster@redhat.com>
-CC: <miklos@szeredi.hu>, <dev@parallels.com>, <xemul@parallels.com>,
-        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH 5/6] fuse: truncate file if async dio failed
-References: <20121214151424.27155.45971.stgit@maximpc.sw.ru> <20121214152113.27155.58793.stgit@maximpc.sw.ru> <50CB8931.2000305@redhat.com> <50CF288E.8060002@parallels.com> <50CF6CB6.5030703@redhat.com>
-In-Reply-To: <50CF6CB6.5030703@redhat.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-12/17/2012 11:04 PM, Brian Foster пишет:
-> On 12/17/2012 09:13 AM, Maxim V. Patlasov wrote:
->> Hi,
->>
->> 12/15/2012 12:16 AM, Brian Foster пишет:
->>> On 12/14/2012 10:21 AM, Maxim V. Patlasov wrote:
-> ...
->>>> +
->>> fuse_do_truncate() looks fairly close to fuse_do_setattr(). Is there any
->>> reason we couldn't make fuse_do_setattr() non-static, change the dentry
->>> parameter to an inode and use that?
->> fuse_do_setattr() performs extra checks that fuse_do_truncate() needn't.
->> Some of them are harmless, some not: fuse_allow_task() may return 0 if
->> task credentials changed. E.g. super-user successfully opened a file,
->> then setuid(other_user_uid), then write(2) to the file. write(2) doesn't
->> check uid, but fuse_do_truncate() - via fuse_allow_task() - does.
->>
-> Conversely, what about the extra error handling bits in
-> fuse_do_setattr() that do not appear in fuse_do_truncate() (i.e., the
-> inode mode check, the change attributes call, updating the inode size,
-> etc.)? It seems like we would want some of that code here.
+commit 8d451690 ("watchdog: Fix CPU hotplug regression") cause
+an oops or hard lockup when doing
 
-Yes, they won't harm.
+ echo 0 > /proc/sys/kernel/nmi_watchdog
+ echo 1 > /proc/sys/kernel/nmi_watchdog
 
->
-> fuse_setattr() is the only caller of fuse_do_setattr(), so why not embed
-> some of the initial checks (such as fuse_allow_task()) there? I suppose
-> we could pull out some of the error handling checks there as well if
-> they are considered harmful to this post-write error truncate situation.
+and the kernel is booted with nmi_watchdog=1 (default)
 
-Makes sense. I like it especially because it allows to avoid code 
-duplication (handling FUSE_SETATTR fuse-request).
+Running laptop-mode-tools and disconnecting/connecting AC power
+will cause this to trigger, making it a common failure scenario
+on laptops.
 
-> FWIW, I just tested a quick change that pulls up the fuse_allow_task()
-> check (via instrumenting a write error) and it seems to work as
-> expected. I can forward a patch if interested...
+Instead of bailing out of watchdog_disable() when !watchdog_enabled
+we can initialize the hrtimer regardless of watchdog_enabled status.
+This makes it safe to call watchdog_disable() in the nmi_watchdog=0
+case, without the negative effect on the enabled => disabled =>
+enabled case.
 
-I did exactly the same before sending previous email :) In my tests it 
-works as expected too (modulo fuse_allow_task() that we can move up). 
-I'll re-send corrected patch soon.
+All these tests pass with this patch:
+- nmi_watchdog=1
+  echo 0 > /proc/sys/kernel/nmi_watchdog
+  echo 1 > /proc/sys/kernel/nmi_watchdog
 
-Thanks,
-Maxim
+- nmi_watchdog=0
+  echo 0 > /sys/devices/system/cpu/cpu1/online
+
+- nmi_watchdog=0
+  echo mem > /sys/power/state
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51661
+
+Cc: <stable@vger.kernel.org> # v3.7
+Cc: Norbert Warmuth <nwarmuth@t-online.de>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+---
+v3:
+  added Bugzilla reference and additional recipients
+  rebased on current mainline
+v2:
+  implemented an alternate workaround for the original problem.
+
+Hello,
+
+Sorry for nagging, but this patch or some other fix should be applied
+to mainline ASAP so it can be included in the 3.7 stable series. 3.7.0
+and 3.7.1 dies when plugging AC power on a large number of laptop
+systems.
+
+I will not claim to understand this code, but it seemed to me like the
+original problem was caused by the missing initialization of the hrtimer
+in the disabled case. Calling hrtimer_cancel() on an initialized timer
+not running should be perfectly OK.  And watchdog_nmi_disable() will 
+not do anything unless the event is initialized.  So this patch looks
+like a fix.
+
+At least it survives both the original test cases and the post v3.7-rc8
+regression test case.
+
+
+Bjørn
+
+ kernel/watchdog.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 997c6a1..75a2ab3 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -344,6 +344,10 @@ static void watchdog_enable(unsigned int cpu)
+ {
+ 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+ 
++	/* kick off the timer for the hardlockup detector */
++	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hrtimer->function = watchdog_timer_fn;
++
+ 	if (!watchdog_enabled) {
+ 		kthread_park(current);
+ 		return;
+@@ -352,10 +356,6 @@ static void watchdog_enable(unsigned int cpu)
+ 	/* Enable the perf event */
+ 	watchdog_nmi_enable(cpu);
+ 
+-	/* kick off the timer for the hardlockup detector */
+-	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	hrtimer->function = watchdog_timer_fn;
+-
+ 	/* done here because hrtimer_start can only pin to smp_processor_id() */
+ 	hrtimer_start(hrtimer, ns_to_ktime(sample_period),
+ 		      HRTIMER_MODE_REL_PINNED);
+@@ -369,9 +369,6 @@ static void watchdog_disable(unsigned int cpu)
+ {
+ 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+ 
+-	if (!watchdog_enabled)
+-		return;
+-
+ 	watchdog_set_prio(SCHED_NORMAL, 0);
+ 	hrtimer_cancel(hrtimer);
+ 	/* disable the perf event */
+-- 
+1.7.10.4
+
