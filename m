@@ -1,58 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab2LRGCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 01:02:20 -0500
-Received: from smtp.xy24.at ([85.126.109.136]:45240 "EHLO renate.xy24.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750950Ab2LRGCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 01:02:12 -0500
-Message-ID: <92a8e5e68e38c059d3a29b5ed4252da8.squirrel@webmail.universalnet.at>
-In-Reply-To: <20121217214222.GA3539@balto.lan>
-References: <1355656113-9562-1-git-send-email-fabio.baltieri@gmail.com>
-    <1355656113-9562-2-git-send-email-fabio.baltieri@gmail.com>
-    <50CEC9B0.3040503@universalnet.at> <20121217174121.GA16327@balto.lan>
-    <86fd45485e2016d2c5ad27f28669195e.squirrel@webmail.universalnet.at>
-    <20121217214222.GA3539@balto.lan>
-Date: Tue, 18 Dec 2012 07:02:02 +0100
-Subject: Re: [PATCH 1/9] can: add tx/rx LED trigger support
-From: =?iso-8859-1?Q?=22Bernd_Krumb=F6ck=22?= <krumboeck@universalnet.at>
-To: "Fabio Baltieri" <fabio.baltieri@gmail.com>,
-        =?iso-8859-1?Q?=22Bernd_Krumb=F6ck=22?= <krumboeck@universalnet.at>,
-        "Marc Kleine-Budde" <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        "Kurt Van Dijck" <kurt.van.dijck@eia.be>,
-        "Wolfgang Grandegger" <wg@grandegger.com>,
-        "Oliver Hartkopp" <socketcan@hartkopp.net>,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.20
+	id S1751639Ab2LRGOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 01:14:09 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:47660 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab2LRGOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 01:14:07 -0500
+X-Greylist: delayed 15446 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 01:14:07 EST
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.4 (renate.xy24.at [127.0.0.1]); Tue, 18 Dec 2012 07:02:03 +0100 (CET)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20121218060009.GK23971@game.jcrosoft.org>
+References: <1355774107-364-1-git-send-email-tobetter@gmail.com>
+	<1355774107-364-2-git-send-email-tobetter@gmail.com>
+	<CAOesGMgZWNiCmTFGvr--zKf+vS51hX5jPnD+NZq8OvGFLS9rJA@mail.gmail.com>
+	<20121218060009.GK23971@game.jcrosoft.org>
+Date: Mon, 17 Dec 2012 22:14:05 -0800
+Message-ID: <CAOesGMj05zX=h+79t=-GPO3YCL1R-ognrPEn7EEyw0CTdCvkHg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ODROID-X: dts: Add board dts file for ODROID-X
+From: Olof Johansson <olof@lixom.net>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Dongjin Kim <tobetter@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio!
+On Mon, Dec 17, 2012 at 10:00 PM, Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com> wrote:
+> On 17:56 Mon 17 Dec     , Olof Johansson wrote:
+>> On Mon, Dec 17, 2012 at 11:55 AM, Dongjin Kim <tobetter@gmail.com> wrote:
+>> > Add initial dtb file for Hardkernel's ODROID-X board based on EXYNOS4412 SoC.
+>> >
+>> > Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+>> > ---
+>> >  arch/arm/boot/dts/Makefile               |    1 +
+>> >  arch/arm/boot/dts/exynos4412-odroidx.dts |   52 ++++++++++++++++++++++++++++++
+>> >  2 files changed, 53 insertions(+)
+>> >  create mode 100644 arch/arm/boot/dts/exynos4412-odroidx.dts
+>> >
+>> > diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> > index ca6fb8e..3355af9 100644
+>> > --- a/arch/arm/boot/dts/Makefile
+>> > +++ b/arch/arm/boot/dts/Makefile
+>> > @@ -45,6 +45,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+>> >         exynos5250-smdk5250.dtb \
+>> >         exynos5440-ssdk5440.dtb \
+>> >         exynos4412-smdk4412.dtb \
+>> > +       exynos4412-odroidx.dtb \
+>>
+>> Please add them alphabetically, so before smdk.
+> we need to drop the \ \ stuff it will end with merge conflict
+> as if you add 2 dtb at the end you will end with 2 patch that touch the same
+> previous line
 
-> On Mon, Dec 17, 2012 at 09:20:57PM +0100, "Bernd Krumböck" wrote:
->> > If you think it's useful for USB controller, just tell me or modify
->> the
->> > driver by yourself!  As you see the patch is really easy.
+..which is why the dts files should be added alphabetically instead of
+just appended to the list.
+
+>> > diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
+>> > new file mode 100644
+>> > index 0000000..786ddd7
+>> > --- /dev/null
+>> > +++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
+>> > @@ -0,0 +1,52 @@
+>> > +/*
+>> > + * Hardkernel's Exynos4412 based ODROID-X board device tree source
+>> > + *
+>> > + * Copyright (c) 2012-2013 Dongjin Kim <tobetter@gmail.com>
 >>
->> At least it is useful for the usb_8dev driver. I'll write a patch.
+>> Are you from the future?
 >>
->> Photo of the device:
->> http://www.8devices.com/product/2/usb2can
+>> > + *
+>> > + * Device tree source file for Hardkernel's ODROID-X board which is based on
+>> > + * Samsung's Exynos4412 SoC.
+>> > + *
+>> > + * This program is free software; you can redistribute it and/or modify
+>> > + * it under the terms of the GNU General Public License version 2 as
+>> > + * published by the Free Software Foundation.
+>> > +*/
+>> > +
+>> > +/dts-v1/;
+>> > +/include/ "exynos4412.dtsi"
+>> > +
+>> > +/ {
+>> > +       model = "Hardkernel ODROID-X board based on Exynos4412";
+>> > +       compatible = "samsung,exynos4412";
+>>
+>> It should have a more specific compatible value first, i.e.
+>> "hardkernel,odroid-x" or similar.
+>>
+>>
+>> > +       memory {
+>> > +               reg = <0x40000000 0x40000000>;
+>> > +       };
+>> > +
+>> > +       chosen {
+>> > +               bootargs ="root=/dev/mmcblk0p3 rw console=ttySAC1,115200 init=/sbin/init delay=2";
+>>
+>> Bootargs should be passed in from u-boot, don't specify them in the
+>> static device tree.
 >
-> Sure that it's needed?  That status LED is probably controlled directly
-> by the firmware itself.  Anyway I think it makes sense to support all
-> the mainline drivers and I'm really happy if you test the patch on
-> your hardware!
+> why not we can choose to have a default cmdline and even usit as a complement
+> of the bootloader one
+>
+> it's up to the dts maintainer to choose
 
-Yes, it is controlled by the firmware, but it does not show rx/tx. Whereas
-my OpenWRT hardware has enough leds. ;-)
+The chance of having a valid generic command line that will work for
+everyone with that hardware is fairly small, especially on more
+generic systems that might have a regular distro installed on them.
 
-regards,
-Bernd
+
+-Olof
