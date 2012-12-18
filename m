@@ -1,91 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab2LRPpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:45:18 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:53916 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab2LRPpP (ORCPT
+	id S932189Ab2LRPqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:46:54 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:43358 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609Ab2LRPqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:45:15 -0500
+	Tue, 18 Dec 2012 10:46:53 -0500
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 10:46:53 EST
+Date: Tue, 18 Dec 2012 07:40:30 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] memcg: don't register hotcpu notifier from ->css_alloc()
+Message-ID: <20121218154030.GC10220@mtj.dyndns.org>
+References: <20121214012436.GA25481@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Tue, 18 Dec 2012 10:44:49 -0500
-Message-ID: <CA+1xoqeRfg7iY_vS7nVG6W7hqLOmVUmJaz-c4_Sr3h_XMg++sg@mail.gmail.com>
-Subject: Re: [PATCH v2 00/11] tty: Fix buffer work access-after-free
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ilya Zykov <ilya@ilyx.ru>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121214012436.GA25481@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 1:22 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> I wasn't sure if this is something to squeeze into 3.8, so don't yell
-> if not. At least Sasha can apply this and re-test against trinity.
->
-> Changes in v2:
->
-> - Please review "tty: Don't flush buffer when closing ldisc".
->   This patch replaces the earlier
->   "tty: Don't reschedule buffer work while closing". The text of
->   this commit details why not calling n_tty_flush_buffer() is the
->   correct thing to do, so I won't repeat it here.
->
-> - Jiri's debug patch "tty: debug buffer work race with tty free"
->   has been included (albeit a slightly different version)
->   Jiri, please sign off (or point out what you'd like changed).
->
-> - The test jig has been included in the commit message for
->   "tty: Don't flush buffer when closing ldisc" as Alan requested.
->
-> - Ilya Zykov was added as the Signed-off-by: for the test jig in
->   that same commit message.
->
-> - Sasha Levin was added as the Reported-by: in that same patch.
->
->
-> This patch series addresses the causes of flush_to_ldisc accessing
-> the tty after freeing.
->
-> The most common cause stems from the n_tty_close() path spuriously
-> scheduling buffer work, when the ldisc has already been halted.
-> This is fixed in 'tty: Don't flush buffer when closing ldisc'
+648bb56d07 ("cgroup: lock cgroup_mutex in cgroup_init_subsys()") made
+cgroup_init_subsys() grab cgroup_mutex before invoking ->css_alloc()
+for the root css.  Because memcg registers hotcpu notifier from
+->css_alloc() for the root css, this introduced circular locking
+dependency between cgroup_mutex and cpu hotplug.
 
-I'm still seeing that warning with the new patch series:
+Fix it by moving hotcpu notifier registration to a subsys initcall.
 
-[  549.561769] ------------[ cut here ]------------
-[  549.598755] WARNING: at drivers/tty/n_tty.c:160 n_tty_set_room+0xff/0x130()
-[  549.604058] scheduling buffer work for halted ldisc
-[  549.607741] Pid: 9417, comm: trinity-child28 Tainted: G      D W
-3.7.0-next-20121217-sasha-00023-g8689ef9 #219
-[  549.652580] Call Trace:
-[  549.662754]  [<ffffffff81c432cf>] ? n_tty_set_room+0xff/0x130
-[  549.665458]  [<ffffffff8110cae7>] warn_slowpath_common+0x87/0xb0
-[  549.668257]  [<ffffffff8110cb71>] warn_slowpath_fmt+0x41/0x50
-[  549.671007]  [<ffffffff81c432cf>] n_tty_set_room+0xff/0x130
-[  549.673268]  [<ffffffff81c44597>] reset_buffer_flags+0x137/0x150
-[  549.675607]  [<ffffffff81c45b71>] n_tty_open+0x131/0x1c0
-[  549.677699]  [<ffffffff81c47824>] tty_ldisc_open.isra.5+0x54/0x70
-[  549.680147]  [<ffffffff81c482bf>] tty_ldisc_hangup+0x11f/0x1e0
-[  549.682409]  [<ffffffff81c3fa17>] __tty_hangup+0x137/0x440
-[  549.684634]  [<ffffffff81c3fd49>] tty_vhangup+0x9/0x10
-[  549.686443]  [<ffffffff81c4a42c>] pty_close+0x14c/0x160
-[  549.688446]  [<ffffffff81c41225>] tty_release+0xd5/0x490
-[  549.690460]  [<ffffffff8127d8a2>] __fput+0x122/0x250
-[  549.692577]  [<ffffffff8127d9d9>] ____fput+0x9/0x10
-[  549.694534]  [<ffffffff811348c2>] task_work_run+0xb2/0xf0
-[  549.696349]  [<ffffffff81113c6d>] do_exit+0x36d/0x580
-[  549.698286]  [<ffffffff8107d964>] ? syscall_trace_enter+0x24/0x2e0
-[  549.702729]  [<ffffffff81113f4a>] do_group_exit+0x8a/0xc0
-[  549.706775]  [<ffffffff81113f92>] sys_exit_group+0x12/0x20
-[  549.711088]  [<ffffffff83cfab18>] tracesys+0xe1/0xe6
-[  549.728001] ---[ end trace 73eb41728f11f87e ]---
+  ======================================================
+  [ INFO: possible circular locking dependency detected ]
+  3.7.0-rc4-work+ #42 Not tainted
+  -------------------------------------------------------
+  bash/645 is trying to acquire lock:
+   (cgroup_mutex){+.+.+.}, at: [<ffffffff8110c5b7>] cgroup_lock+0x17/0x20
+
+  but task is already holding lock:
+   (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8109300f>] cpu_hotplug_begin+0x2f/0x60
+
+  which lock already depends on the new lock.
 
 
-Thanks,
-Sasha
+  the existing dependency chain (in reverse order) is:
+
+ -> #1 (cpu_hotplug.lock){+.+.+.}:
+         [<ffffffff810f8357>] lock_acquire+0x97/0x1e0
+         [<ffffffff81be4701>] mutex_lock_nested+0x61/0x3b0
+         [<ffffffff810930fc>] get_online_cpus+0x3c/0x60
+         [<ffffffff811152fb>] rebuild_sched_domains_locked+0x1b/0x70
+         [<ffffffff81116718>] cpuset_write_resmask+0x298/0x2c0
+         [<ffffffff8110f70f>] cgroup_file_write+0x1ef/0x300
+         [<ffffffff811c3b78>] vfs_write+0xa8/0x160
+         [<ffffffff811c3e82>] sys_write+0x52/0xa0
+         [<ffffffff81be89c2>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (cgroup_mutex){+.+.+.}:
+         [<ffffffff810f74de>] __lock_acquire+0x14ce/0x1d20
+         [<ffffffff810f8357>] lock_acquire+0x97/0x1e0
+         [<ffffffff81be4701>] mutex_lock_nested+0x61/0x3b0
+         [<ffffffff8110c5b7>] cgroup_lock+0x17/0x20
+         [<ffffffff81116deb>] cpuset_handle_hotplug+0x1b/0x560
+         [<ffffffff8111744e>] cpuset_update_active_cpus+0xe/0x10
+         [<ffffffff810d0587>] cpuset_cpu_inactive+0x47/0x50
+         [<ffffffff810c1476>] notifier_call_chain+0x66/0x150
+         [<ffffffff810c156e>] __raw_notifier_call_chain+0xe/0x10
+         [<ffffffff81092fa0>] __cpu_notify+0x20/0x40
+         [<ffffffff81b9827e>] _cpu_down+0x7e/0x2f0
+         [<ffffffff81b98526>] cpu_down+0x36/0x50
+         [<ffffffff81b9c12d>] store_online+0x5d/0xe0
+         [<ffffffff816b6ef8>] dev_attr_store+0x18/0x30
+         [<ffffffff8123bb50>] sysfs_write_file+0xe0/0x150
+         [<ffffffff811c3b78>] vfs_write+0xa8/0x160
+         [<ffffffff811c3e82>] sys_write+0x52/0xa0
+         [<ffffffff81be89c2>] system_call_fastpath+0x16/0x1b
+  other info that might help us debug this:
+
+   Possible unsafe locking scenario:
+
+         CPU0                    CPU1
+         ----                    ----
+    lock(cpu_hotplug.lock);
+                                 lock(cgroup_mutex);
+                                 lock(cpu_hotplug.lock);
+    lock(cgroup_mutex);
+
+   *** DEADLOCK ***
+
+  5 locks held by bash/645:
+   #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8123bab8>] sysfs_write_file+0x48/0x150
+   #1:  (s_active#42){.+.+.+}, at: [<ffffffff8123bb38>] sysfs_write_file+0xc8/0x150
+   #2:  (x86_cpu_hotplug_driver_mutex){+.+...}, at: [<ffffffff81079277>] cpu_hotplug_driver_lock+0x1
++7/0x20
+   #3:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff81093157>] cpu_maps_update_begin+0x17/0x20
+   #4:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8109300f>] cpu_hotplug_begin+0x2f/0x60
+
+  stack backtrace:
+  Pid: 645, comm: bash Not tainted 3.7.0-rc4-work+ #42
+  Call Trace:
+   [<ffffffff81bdadfd>] print_circular_bug+0x28e/0x29f
+   [<ffffffff810f74de>] __lock_acquire+0x14ce/0x1d20
+   [<ffffffff810f8357>] lock_acquire+0x97/0x1e0
+   [<ffffffff81be4701>] mutex_lock_nested+0x61/0x3b0
+   [<ffffffff8110c5b7>] cgroup_lock+0x17/0x20
+   [<ffffffff81116deb>] cpuset_handle_hotplug+0x1b/0x560
+   [<ffffffff8111744e>] cpuset_update_active_cpus+0xe/0x10
+   [<ffffffff810d0587>] cpuset_cpu_inactive+0x47/0x50
+   [<ffffffff810c1476>] notifier_call_chain+0x66/0x150
+   [<ffffffff810c156e>] __raw_notifier_call_chain+0xe/0x10
+   [<ffffffff81092fa0>] __cpu_notify+0x20/0x40
+   [<ffffffff81b9827e>] _cpu_down+0x7e/0x2f0
+   [<ffffffff81b98526>] cpu_down+0x36/0x50
+   [<ffffffff81b9c12d>] store_online+0x5d/0xe0
+   [<ffffffff816b6ef8>] dev_attr_store+0x18/0x30
+   [<ffffffff8123bb50>] sysfs_write_file+0xe0/0x150
+   [<ffffffff811c3b78>] vfs_write+0xa8/0x160
+   [<ffffffff811c3e82>] sys_write+0x52/0xa0
+   [<ffffffff81be89c2>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+---
+Michal, if it looks okay, can you please route this patch?
+
+Thanks.
+
+ mm/memcontrol.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 12307b3..7d8a27f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4982,7 +4982,6 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+ 						&per_cpu(memcg_stock, cpu);
+ 			INIT_WORK(&stock->work, drain_local_stock);
+ 		}
+-		hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
+ 	} else {
+ 		parent = mem_cgroup_from_cont(cont->parent);
+ 		memcg->use_hierarchy = parent->use_hierarchy;
+@@ -5644,6 +5643,19 @@ struct cgroup_subsys mem_cgroup_subsys = {
+ 	.use_id = 1,
+ };
+ 
++/*
++ * The rest of init is performed during ->css_alloc() for root css which
++ * happens before initcalls.  hotcpu_notifier() can't be done together as
++ * it would introduce circular locking by adding cgroup_lock -> cpu hotplug
++ * dependency.  Do it from a subsys_initcall().
++ */
++static int __init mem_cgroup_init(void)
++{
++	hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
++	return 0;
++}
++subsys_initcall(mem_cgroup_init);
++
+ #ifdef CONFIG_MEMCG_SWAP
+ static int __init enable_swap_account(char *s)
+ {
