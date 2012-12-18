@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab2LRTuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:50:35 -0500
-Received: from plane.gmane.org ([80.91.229.3]:50245 "EHLO plane.gmane.org"
+	id S1753833Ab2LRTwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:52:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab2LRTue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:50:34 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: rh <richard_hubbe11@lavabit.com>
-Subject: Re: FYI, nouveau nv17 stopped working in 3.7
-Date: Tue, 18 Dec 2012 11:50:19 -0800
-Message-ID: <20121218115019.c75bb9d1dea07bbf93319b22@lavabit.com>
-References: <20121213140229.d47b2a1584ef1c59ed76bc0c@lavabit.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753932Ab2LRTwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:52:34 -0500
+Message-ID: <50D0BD39.8030208@redhat.com>
+Date: Tue, 18 Dec 2012 17:00:09 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Borislav Petkov <bp@alien8.de>, Jacob Shin <jacob.shin@amd.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] MCE, AMD: MCE decoding support for AMD Family 16h
+References: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>  <1355773188-5241-2-git-send-email-jacob.shin@amd.com>  <20121218171915.GE31255@liondog.tnic> <1355855069.30366.14.camel@joe-AO722>  <20121218183330.GH31255@liondog.tnic> <1355855866.30366.21.camel@joe-AO722>
+In-Reply-To: <1355855866.30366.21.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip70-185-179-140.sb.sd.cox.net
-User-Agent: dsodnetnin
-X-Mailer: EZnn0.37p
-X-Newsreader: EZnn0.37p
-X-Gmane-NNTP-Posting-Host: EZnn0.37p
-Original-Received: from slem by 1.1 with local
-X-No-Archive: yes
-Archive: no
-X-Archive: expiry=11
-X-Archive: encrypt
-X-Operating-System: Barebones_6.1
-X-Gmane-NNTP-Posting-Host: 192.168.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Dec 2012 14:02:29 -0800
-rh <richard_hubbe11@lavabit.com> wrote:
+Em 18-12-2012 16:37, Joe Perches escreveu:
+> On Tue, 2012-12-18 at 19:33 +0100, Borislav Petkov wrote:
+>> On Tue, Dec 18, 2012 at 10:24:29AM -0800, Joe Perches wrote:
+>>> or without all the unnecessary parens and using char:
+>>>
+>>> 			pr_cont("%cBUFF parity error\n", xec == 4 ? 'I' : 'O');
+>>
+>> Char is fine, the parens make this more readable when you look at it
+>> again after a couple of months :-).
+>
+> <shrug>
+>
+> I think the unnecessary parens make it _less_ readable
+> because you need to parse more stuff and it's easy to
+> misplace those parens.
 
-> During boot, at the point when some graphics stuff happens, I lose the
-> screen. Graphics looks to be stuck somewhere. The system boots but
-> just can't see anything.  No console.
-> 
-> It's all fine in 3.6.7. Nothing jumped out from the boot log.
-> It may be that in my haste configuring the kernel with make oldconfig
-> I hit enter on one of the cases where new features default to "y".
-> 
+I agree with Boris: the parenthesis at the test (xec == 4) makes it
+easier to read, IMO.
 
-Seems to be a regression, the symptoms described here apply to what
-I see (...or don't see).
-
-http://article.gmane.org/gmane.linux.kernel/1269631
-
+Regards,
+Mauro
