@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab2LRL7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 06:59:33 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49294 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab2LRL7c (ORCPT
+	id S1754730Ab2LRMFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 07:05:10 -0500
+Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:56723 "EHLO
+	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754123Ab2LRMFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 06:59:32 -0500
-Date: Tue, 18 Dec 2012 12:59:26 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] at24: make module parameters changeable via sysfs
-Message-ID: <20121218115926.GD2612@pengutronix.de>
-References: <1347443012-21302-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20120914102536.1ebd248d@endymion.delvare>
- <20121218125315.5adb1fef@endymion.delvare>
+	Tue, 18 Dec 2012 07:05:08 -0500
+Message-ID: <50D05BF3.3070807@linux-ipv6.org>
+Date: Tue, 18 Dec 2012 21:05:07 +0900
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Organization: USAGI Project
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Hf61M2y+wYpnELGG"
-Content-Disposition: inline
-In-Reply-To: <20121218125315.5adb1fef@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: stanley zhou <stanleyru@hotmail.com>
+CC: davem@davemloft.net, w.sang@pengutronix.de, laurent.navet@gmail.com,
+        ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, khali@linux-fr.org, firedtoad@gmail.com,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Subject: Re: [IPv6] crashed when __ip6_del_rt()
+References: <50CF84A5.7030706@linux-ipv6.org>,<50D04B4B.7060002@linux-ipv6.org>,<BAY173-W1475D04C810BF9A1D71FB8B0310@phx.gbl> <BAY173-W14E9D67B7924486F0518F0B0310@phx.gbl>
+In-Reply-To: <BAY173-W14E9D67B7924486F0518F0B0310@phx.gbl>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+stanley zhou wrote:
 
---Hf61M2y+wYpnELGG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> when call write_lock_bh() table is null cause crash in __ip6_del_rt().
+> kernel version is 2.6.30.10
+:
+> static int __ip6_del_rt(struct rt6_info *rt, struct nl_info *info)
+> {
+> int err;
+> struct fib6_table *table;
+> struct net *net = dev_net(rt->rt6i_dev);
+> 
+> if (rt == net->ipv6.ip6_null_entry) {
+> +++err = -ENOENT;
+> +++goto out;
+> --- return -ENOENT;
+> }
+> 
+> table = rt->rt6i_table;
+> write_lock_bh(&table->tb6_lock);
+> err = fib6_del(rt, info);
+> write_unlock_bh(&table->tb6_lock);
+> +++out:
+> dst_release(&rt->u.dst);
+> return err;
+> } 
+>  
+
+I think this is what commit 6825a26c ("ipv6: release reference of
+ip6_null_entry's dst entry in __ip6_del_rt") by Gao feng
+<gaofeng@cn.fujitsu.com> does, which is already in v3.7.
+
+Are you suggesting that we should have this in -stable tree as well?
+
+--yoshfuji
 
 
-> I reviewed this patch 3 months ago and did not hear back. Are you going
-> to update this patch and resubmit, or should I just drop it?
-
-Uwe is on holiday. I'll take care about it if the need is still there...
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---Hf61M2y+wYpnELGG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlDQWp4ACgkQD27XaX1/VRu1rwCgrIFK/d/fIEA8aY6ARUtMqlPc
-YtMAn2ZsmIzZNgQ8CUU6mi7JcrY9IVvj
-=sQHH
------END PGP SIGNATURE-----
-
---Hf61M2y+wYpnELGG--
