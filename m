@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab2LRQdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 11:33:16 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34662 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab2LRQdO (ORCPT
+	id S932288Ab2LRQer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 11:34:47 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:63565 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab2LRQeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 11:33:14 -0500
-Message-ID: <50D09AC7.9050503@wwwdotorg.org>
-Date: Tue, 18 Dec 2012 09:33:11 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 18 Dec 2012 11:34:44 -0500
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: phy: tegra: Using devm API for memory allocation
-References: <1355811683-29981-1-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1355811683-29981-1-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
+Date: Tue, 18 Dec 2012 17:08:49 +0100
+Message-ID: <CA+xc3O3TCCD4cabkoB2+yU-7Xe+VUzpOAyWPrhjZSXfecjxcOA@mail.gmail.com>
+Subject: [ANNOUNCE] Kconfiglib: a flexible Python Kconfig parser and library -
+ now on GitHub
+From: Ulf Magnusson <ulfalizer.lkml2@gmail.com>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 11:21 PM, Venu Byravarasu wrote:
-> Using devm_kzalloc for allocating memory needed for PHY
-> pointer and hence removing kfree calls to PHY pointer.
+Hi,
 
-Since the kfree() here used to be in tegra_usb_phy_close() rather than
-any remove() function, does it actually make sense to use
-devm_kzalloc(); would plain using kzalloc() instead, and not removing
-the kfree() calls, be better?
+Kconfiglib is a flexible Python Kconfig parser and library, first introduced in
+https://lkml.org/lkml/2011/2/1/439. I have updated it for Linux 3.7.0 and put
+it on GitHub at https://github.com/ulfalizer/Kconfiglib, making some
+improvements in the process:
 
-When the PHY code gets converted to be an actual probed driver, then
-perhaps using devm will make sense.
+ - The installation has been simplified. No need to copy anything anywhere now,
+   and just a trivial single-block Makefile patch to apply. (The patch adds a
+   few convenient make targets that also help us pick up ARCH, SRCARCH, and
+   KERNELVERSION from the environment.)
+
+ - The API has been cleaned up and made more consistent by renaming a few
+   functions.
+
+ - The entire API is now covered by an extensive suite of selftests in addition
+   to the automatic compatibility tests.
+
+The only failures in the test suite as of 3.7.0 (848b81415c42ff) are due to a
+bug that makes scripts/kconfig/conf generate an incorrect configuration for
+some Blackfin defconfigs (https://lkml.org/lkml/2012/12/5/458). This causes
+failures in the Kconfiglib test suite since it automatically compares the
+output from Kconfiglib with that from scripts/kconfig/conf and Kconfiglib does
+not have the same bug.
+
+Note: I do not have plans to get this into the kernel.
+
+Feedback welcome!
+/Ulf
