@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2LRRGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:06:31 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:47218 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2LRRG2 (ORCPT
+	id S1754932Ab2LRRQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:16:14 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:52842 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2LRRQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:06:28 -0500
-Date: Tue, 18 Dec 2012 21:06:24 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/2] Add kcmp.2 manpage
-Message-ID: <20121218170624.GA7148@moon>
-References: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
- <1342995307-884-2-git-send-email-gorcunov@openvz.org>
- <CAKgNAkj-=wLEM+SjA_S8GUp0+0o5R4NuDH4fL-8H-pKCKdLryA@mail.gmail.com>
+	Tue, 18 Dec 2012 12:16:13 -0500
+X-Originating-IP: 108.223.40.66
+Date: Tue, 18 Dec 2012 09:16:20 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Strange results of DIV_ROUND_CLOSEST
+Message-ID: <20121218171620.GA19972@roeck-us.net>
+References: <201212181603.42094.jbe@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKgNAkj-=wLEM+SjA_S8GUp0+0o5R4NuDH4fL-8H-pKCKdLryA@mail.gmail.com>
+In-Reply-To: <201212181603.42094.jbe@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 05:54:49PM +0100, Michael Kerrisk (man-pages) wrote:
-> Hello Cyrill,
+On Tue, Dec 18, 2012 at 04:03:41PM +0100, Juergen Beisert wrote:
+> Hi list,
 > 
-> On Mon, Jul 23, 2012 at 12:15 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > NAME
-> >        kcmp - compare if two processes do share a particular kernel resource
+> commit 263a523d18bca306016d75f5c8d5c57c37fe52fb changes the code of 
+> DIV_ROUND_CLOSEST in include/linux/kernel.h to fix a compile time warning.
 > 
-> Very late follow up on this page, sorry. You didn't provide a
-> copyright or license for this page. Could you please supply that
-> information. See http://www.kernel.org/doc/man-pages/licenses.html .
+> But now feeding in a zero into this macro results into 4198403. Tested with 
+> gcc 4.4.3 and 4.7.2, on arch x86 and ARM.
+> 
+> I can reproduce this behaviour, when my ADC delivers a '0' value in the driver 
+> drivers/hwmon/s3c-hwmon.c in function s3c_hwmon_ch_show() with a current 
+> 3.7.1 kernel. The value is correct again, when the ADC delivers at least 
+> a '1'.
+> 
+> Any ideas how to fix it correctly?
+> 
+Odd one. I ran the macro through a large number of values and divisors as well
+as various optimization options, with different compilers, and always get
+correct results.
 
-Sure, gimme some time to update it...
+What are your compile options, and what are the channel multiplier and dividers
+set to ?
 
-	Cyrill
+Thanks,
+Guenter
