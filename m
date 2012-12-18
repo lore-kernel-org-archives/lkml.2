@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab2LRHyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:54:35 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41749 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285Ab2LRHxh (ORCPT
+	id S1754424Ab2LRHzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:55:01 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:37936 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab2LRHy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:53:37 -0500
-X-Greylist: delayed 1593 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 02:53:30 EST
-Date: Tue, 18 Dec 2012 16:29:26 +0900
-From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-To: mtosatti@redhat.com, gleb@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] KVM: Make kvm_mmu_change_mmu_pages() take mmu_lock by
- itself
-Message-Id: <20121218162926.9e826d90.yoshikawa_takuya_b1@lab.ntt.co.jp>
-In-Reply-To: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 18 Dec 2012 02:54:58 -0500
+Message-ID: <1355817292.32595.2.camel@phoenix>
+Subject: [PATCH] clk: max77686: Remove unnecessary NULL checking for
+ container_of()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 18 Dec 2012 15:54:52 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No reason to make callers take mmu_lock since we do not need to protect
-kvm_mmu_change_mmu_pages() and kvm_mmu_slot_remove_write_access()
-together by mmu_lock in kvm_arch_commit_memory_region(): the former
-calls kvm_mmu_commit_zap_page() and flushes TLBs by itself.
+container_of() never returns NULL, thus remove the NULL checking for it.
+Also rename get_max77686_clk() to to_max77686_clk() for better readability.
 
-Note: we do not need to protect kvm->arch.n_requested_mmu_pages by
-mmu_lock as can be seen from the fact that it is read locklessly.
-
-Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/x86/kvm/mmu.c |    4 ++++
- arch/x86/kvm/x86.c |    9 ++++-----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ drivers/clk/clk-max77686.c |   30 ++++++++----------------------
+ 1 file changed, 8 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index bb964b3..fc7d84a 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2143,6 +2143,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
- 	 * change the value
- 	 */
+diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
+index 8944214..3680f66 100644
+--- a/drivers/clk/clk-max77686.c
++++ b/drivers/clk/clk-max77686.c
+@@ -44,48 +44,34 @@ struct max77686_clk {
+ 	struct clk_lookup *lookup;
+ };
  
-+	spin_lock(&kvm->mmu_lock);
-+
- 	if (kvm->arch.n_used_mmu_pages > goal_nr_mmu_pages) {
- 		while (kvm->arch.n_used_mmu_pages > goal_nr_mmu_pages &&
- 			!list_empty(&kvm->arch.active_mmu_pages)) {
-@@ -2157,6 +2159,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
- 	}
- 
- 	kvm->arch.n_max_mmu_pages = goal_nr_mmu_pages;
-+
-+	spin_unlock(&kvm->mmu_lock);
+-static struct max77686_clk *get_max77686_clk(struct clk_hw *hw)
++static struct max77686_clk *to_max77686_clk(struct clk_hw *hw)
+ {
+ 	return container_of(hw, struct max77686_clk, hw);
  }
  
- int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 9451efa..d9d0f6b 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3270,12 +3270,10 @@ static int kvm_vm_ioctl_set_nr_mmu_pages(struct kvm *kvm,
- 		return -EINVAL;
+ static int max77686_clk_prepare(struct clk_hw *hw)
+ {
+-	struct max77686_clk *max77686;
+-	int ret;
+-
+-	max77686 = get_max77686_clk(hw);
+-	if (!max77686)
+-		return -ENOMEM;
+-
+-	ret = regmap_update_bits(max77686->iodev->regmap,
+-		MAX77686_REG_32KHZ, max77686->mask, max77686->mask);
++	struct max77686_clk *max77686 = to_max77686_clk(hw);
  
- 	mutex_lock(&kvm->slots_lock);
--	spin_lock(&kvm->mmu_lock);
- 
- 	kvm_mmu_change_mmu_pages(kvm, kvm_nr_mmu_pages);
- 	kvm->arch.n_requested_mmu_pages = kvm_nr_mmu_pages;
- 
--	spin_unlock(&kvm->mmu_lock);
- 	mutex_unlock(&kvm->slots_lock);
- 	return 0;
+-	return ret;
++	return regmap_update_bits(max77686->iodev->regmap,
++				  MAX77686_REG_32KHZ, max77686->mask,
++				  max77686->mask);
  }
-@@ -6894,7 +6892,6 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 	if (!kvm->arch.n_requested_mmu_pages)
- 		nr_mmu_pages = kvm_mmu_calculate_mmu_pages(kvm);
  
--	spin_lock(&kvm->mmu_lock);
- 	if (nr_mmu_pages)
- 		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
- 	/*
-@@ -6903,9 +6900,11 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 	 * not be created until the end of the logging.
- 	 */
- 	if ((mem->flags & KVM_MEM_LOG_DIRTY_PAGES) &&
--	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES))
-+	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES)) {
-+		spin_lock(&kvm->mmu_lock);
- 		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
--	spin_unlock(&kvm->mmu_lock);
-+		spin_unlock(&kvm->mmu_lock);
-+	}
- 	/*
- 	 * If memory slot is created, or moved, we need to clear all
- 	 * mmio sptes.
+ static void max77686_clk_unprepare(struct clk_hw *hw)
+ {
+-	struct max77686_clk *max77686;
+-
+-	max77686 = get_max77686_clk(hw);
+-	if (!max77686)
+-		return;
++	struct max77686_clk *max77686 = to_max77686_clk(hw);
+ 
+ 	regmap_update_bits(max77686->iodev->regmap,
+-		MAX77686_REG_32KHZ, max77686->mask, ~max77686->mask);
++			   MAX77686_REG_32KHZ, max77686->mask, 0);
+ }
+ 
+ static int max77686_clk_is_enabled(struct clk_hw *hw)
+ {
+-	struct max77686_clk *max77686;
++	struct max77686_clk *max77686 = to_max77686_clk(hw);
+ 	int ret;
+ 	u32 val;
+ 
+-	max77686 = get_max77686_clk(hw);
+-	if (!max77686)
+-		return -ENOMEM;
+-
+ 	ret = regmap_read(max77686->iodev->regmap,
+ 				MAX77686_REG_32KHZ, &val);
+ 
 -- 
-1.7.5.4
+1.7.9.5
+
+
 
