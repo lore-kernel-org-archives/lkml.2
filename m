@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab2LRHHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 02:07:52 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5057 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab2LRHHv (ORCPT
+	id S1754042Ab2LRHMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 02:12:54 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12834 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab2LRHMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 02:07:51 -0500
+	Tue, 18 Dec 2012 02:12:52 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 17 Dec 2012 23:07:50 -0800
-Message-ID: <50D0163F.3030806@nvidia.com>
-Date: Tue, 18 Dec 2012 12:37:43 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ARM: tegra30: Add support for Uart clock source divider
- as 15.1
-References: <1355746101-15291-1-git-send-email-ldewangan@nvidia.com> <1355746101-15291-2-git-send-email-ldewangan@nvidia.com> <50CF91F7.5010402@wwwdotorg.org> <50D009E0.3050409@nvidia.com> <50D00C1D.9090100@nvidia.com>
-In-Reply-To: <50D00C1D.9090100@nvidia.com>
+	by hqnvupgp08.nvidia.com on Mon, 17 Dec 2012 23:12:52 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <swarren@wwwdotorg.org>, <stern@rowland.harvard.edu>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: host: tegra: make use of PHY pointer of HCD
+Date: Tue, 18 Dec 2012 12:25:36 +0530
+Message-ID: <1355813736-2487-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 December 2012 11:54 AM, Laxman Dewangan wrote:
-> On Tuesday 18 December 2012 11:44 AM, Prashant Gaikwad wrote:
->> On Tuesday 18 December 2012 03:13 AM, Stephen Warren wrote:
->>> On 12/17/2012 05:08 AM, Laxman Dewangan wrote:
->>>> Tegra20 uart clock source have the 15.1 clock divider in place of
->>> That says Tegra20, but ...
->>>
->>>> 7.1. Add support for 15.1 clock divider and change the uart clock divider
->>>> flag to DIV_U151.
->>>>     arch/arm/mach-tegra/clock.h               |    3 +-
->>>>     arch/arm/mach-tegra/tegra30_clocks.c      |   70 ++++++++++++++++++++++------
->>>>     arch/arm/mach-tegra/tegra30_clocks_data.c |   10 ++--
->>> ... the patch only modifies Tegra30. Do both Tegra20 and Tegra30 have
->>> this feature; should both clock drivers be updated?
->>>
->>> BTW, Prashant is reworking the Tegra clock support to be modular, rather
->>> than having a single monolithic "Tegra clock" type, and also moving the
->>> code to drivers/clk. This patch will conflict signifcantly with that.
->>> Please work with him to integrate this patch into his rework series,
->>> either before or after his changes, and have him include the patch when
->>> he posts his series. You'll also need to think about whether/how your
->>> and his series depend on each-other.
->>>
->>> ... but: Is this a pure bug-fix? If so, I guess this patch should be
->>> applied before Prashant's patches, and this patch also Cc: stable?
->> My clock driver rework includes this fix. Divider supports both DIVU71
->> and DIVU151.
->> UART divider is set to DIVU151.
-> Prashant,
-> I like to go this patch as first patch towards bug fixes rather than
-> after moving the clock. The reason is that we will pull this change in
-> our downstream and will be available in our K3.7 code.
+As pointer to PHY structure can be stored in struct usb_hcd
+making use of it, to call PHY APIs.
 
-Laxman,
+Call to usb_phy_shutdown() is moved up in tegra_ehci_remove(),
+so that to avoid dereferencing of hcd after its freed up.
 
-We are not going to use ccf in our downstream kernel port to K3.7. How 
-does that help pushing in upstream?
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+This patch depends on patch http://marc.info/?l=linux-kernel&m=135581274019690&w=2.
+Without above patch applied, phy->notify_connect & phy->notify_disconnect are
+set to some unknown values, which need not be NULL.
+This creates problem when hcd->phy pointer is initialized hub_port_init() in hub.c
+calls usb_phy_notify_connect().
 
->
->
+Stephen,
+Can you plz take this patch through tegra tree, so as to take care of the dependencies?
+
+ drivers/usb/host/ehci-tegra.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index aca6606..5b2c48d 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -53,7 +53,7 @@ static void tegra_ehci_power_up(struct usb_hcd *hcd)
+ 
+ 	clk_prepare_enable(tegra->emc_clk);
+ 	clk_prepare_enable(tegra->clk);
+-	usb_phy_set_suspend(&tegra->phy->u_phy, 0);
++	usb_phy_set_suspend(hcd->phy, 0);
+ 	tegra->host_resumed = 1;
+ }
+ 
+@@ -62,7 +62,7 @@ static void tegra_ehci_power_down(struct usb_hcd *hcd)
+ 	struct tegra_ehci_hcd *tegra = dev_get_drvdata(hcd->self.controller);
+ 
+ 	tegra->host_resumed = 0;
+-	usb_phy_set_suspend(&tegra->phy->u_phy, 1);
++	usb_phy_set_suspend(hcd->phy, 1);
+ 	clk_disable_unprepare(tegra->clk);
+ 	clk_disable_unprepare(tegra->emc_clk);
+ }
+@@ -716,9 +716,14 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 		goto fail_io;
+ 	}
+ 
+-	usb_phy_init(&tegra->phy->u_phy);
++	hcd->phy = &tegra->phy->u_phy;
++	err = usb_phy_init(hcd->phy);
++	if (err) {
++		dev_err(&pdev->dev, "Failed to initialize phy\n");
++		goto fail;
++	}
+ 
+-	err = usb_phy_set_suspend(&tegra->phy->u_phy, 0);
++	err = usb_phy_set_suspend(hcd->phy, 0);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to power on the phy\n");
+ 		goto fail;
+@@ -764,7 +769,7 @@ fail:
+ 	if (!IS_ERR_OR_NULL(tegra->transceiver))
+ 		otg_set_host(tegra->transceiver->otg, NULL);
+ #endif
+-	usb_phy_shutdown(&tegra->phy->u_phy);
++	usb_phy_shutdown(hcd->phy);
+ fail_io:
+ 	clk_disable_unprepare(tegra->emc_clk);
+ fail_emc_clk:
+@@ -787,12 +792,10 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+ 	if (!IS_ERR_OR_NULL(tegra->transceiver))
+ 		otg_set_host(tegra->transceiver->otg, NULL);
+ #endif
+-
++	usb_phy_shutdown(hcd->phy);
+ 	usb_remove_hcd(hcd);
+ 	usb_put_hcd(hcd);
+ 
+-	usb_phy_shutdown(&tegra->phy->u_phy);
+-
+ 	clk_disable_unprepare(tegra->clk);
+ 
+ 	clk_disable_unprepare(tegra->emc_clk);
+-- 
+1.7.0.4
 
