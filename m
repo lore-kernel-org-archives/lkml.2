@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab2LRPeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:34:08 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:31722 "EHLO
+	id S932211Ab2LRPed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:34:33 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:31804 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2LRPeF (ORCPT
+	with ESMTP id S932088Ab2LRPeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:34:05 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-8e-50d08cea69a7
+	Tue, 18 Dec 2012 10:34:31 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-ef-50d08d056334
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
@@ -15,110 +15,65 @@ Cc: linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         thomas.abraham@linaro.org, rob.herring@calxeda.com,
         grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
         p.paneri@samsung.com
-Subject: [PATCH 1/2] ARM: Exynos5250: Enabling samsung-usbphy driver
-Date: Tue, 18 Dec 2012 21:09:41 +0530
-Message-id: <1355845182-14104-2-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH 2/2] ARM: Exynos5250: Enabling USB 3.0 phy for samsung-usbphy
+ driver
+Date: Tue, 18 Dec 2012 21:09:42 +0530
+Message-id: <1355845182-14104-3-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
 References: <1355845182-14104-1-git-send-email-gautam.vivek@samsung.com>
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkVvdVz4UAg+e91haXd81hs5hxfh+T
-	xaJlrcwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZXxdsoOpYI5QxYZzC9kaGNfydzFyckgImEgs
-	aDvICGGLSVy4t56ti5GLQ0hgKaPEhivTGGGKDv08zgiRWMQo8f/6DXaQhJDAZCaJhi3pIDab
-	gK5E09tdYA0iAqoSn9sWsIM0MAv0MUlcPLYXyOHgEBZwkXh+mhWkhgWoZuOX/SwgNq+Ah8Sm
-	1i9QyxQk3tx+xgxicwp4Sixs+gW1y0Pi8Mt5UL0CEt8mH2IBGSkhICux6QAzyCoJgcdsEv87
-	9kLNkZQ4uOIGywRG4QWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxAsPy9L9n0jsYVzVY
-	HGIU4GBU4uH9GX8+QIg1say4MvcQowQHs5IIr0LrhQAh3pTEyqrUovz4otKc1OJDjD5Al0xk
-	lhJNzgfGTF5JvKGxibmpsamlkZGZqSkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjBL5
-	kuqP3lz3TeFd89Pb35tvXabM7HU8Z4SumGRdbUsM2ByjK7xc5kJtgNQG8VihQpEzy+RkRDxz
-	J8pLv9NVnRp+8PO/aNaFCcE902zuqEryPrj7nXX1neOaXkuX6QQXHHp2yX+Z8uo20XOVM/ZG
-	Z2gk3o0PK56V+tzrgkVS9Y+Ss+fT6z9NUWIpzkg01GIuKk4EAMIebMx4AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAd1XPRcCDL6t1LG4vGsOm8WM8/uY
-	LBYta2V2YPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
-	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj65Id
-	TAVzhCo2nFvI1sC4lr+LkZNDQsBE4tDP44wQtpjEhXvr2boYuTiEBBYxSvy/foMdJCEkMJlJ
-	omFLOojNJqAr0fR2F1iDiICqxOe2BewgDcwCfUwSF4/tBXI4OIQFXCSen2YFqWEBqtn4ZT8L
-	iM0r4CGxqfUL1DIFiTe3nzGD2JwCnhILm35B7fKQOPxyHusERt4FjAyrGEVTC5ILipPSc430
-	ihNzi0vz0vWS83M3MYKD/pn0DsZVDRaHGAU4GJV4eH/Gnw8QYk0sK67MPcQowcGsJMKr0Hoh
-	QIg3JbGyKrUoP76oNCe1+BCjD9BVE5mlRJPzgRGZVxJvaGxibmpsamliYWJmiUNYSZy32SMl
-	QEggPbEkNTs1tSC1CGYcEwenVAPj9NMbTaNtQ0U/v+aczHspv3d+z+uTHW90vbO7VmXf0znG
-	09Tf476g8U7EXf7L+U/OP01h5GAL8Op99kHi+Huz2ibX19Hp0jGXJDUaH0Qd432Xfopngtuz
-	I2pMD0tXTXm5myMl0KilzuLXbJWWeQfSZNevF+r9sySv/OP5Y38jV0y+FS0bZOmtxFKckWio
-	xVxUnAgAglHoKacCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkSpe190KAwbQrVhaXd81hs5hxfh+T
+	xaJlrcwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZez6VlDwhLVibnMHawPjA5YuRk4OCQETidXb
+	NkHZYhIX7q1n62Lk4hASWMoo8eXVWXaYohtztjOB2EICixglbs7ygCiazCTxpOsII0iCTUBX
+	ountLjBbREBV4nPbAnaQImaBPiaJi8f2gk0SFgiTeDz3GNg6FqCi80d3gk3lFfCQ2HLuKCPE
+	NgWJN7efMYPYnAKeEgubfrFDbPaQOPxyHitEr4DEt8mHgOZwANXLSmw6wAyyS0LgPpvE8mmf
+	2CDmSEocXHGDZQKj8AJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYgWF5+t8z6R2Mqxos
+	DjEKcDAq8fD+jD8fIMSaWFZcmXuIUYKDWUmEV6H1QoAQb0piZVVqUX58UWlOavEhRh+gSyYy
+	S4km5wNjJq8k3tDYxNzU2NTSyMjM1BSHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGRvl5
+	FcEqIjGVIlPqavYy1+1ytY3ztFhRMsvmwqyydVNKDlqv+baPY6FRW3RQwZHrB+Wy3ayDDe/U
+	aZ9PmxVWHPbtpILYFcueUzs+Wns27LH0+btkvu6k+QJa+41d8y8d3qdw+WDFBo+Z2gm6u82U
+	1/rYhref3ji/bdLnz9HKtZXBSpMZDAXeKLEUZyQaajEXFScCAEU94s94AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAV3W3gsBBhsP6lpc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
+	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ix61tB
+	wRPWirnNHawNjA9Yuhg5OSQETCRuzNnOBGGLSVy4t54NxBYSWMQocXOWRxcjF5A9mUniSdcR
+	RpAEm4CuRNPbXWC2iICqxOe2BewgRcwCfUwSF4/tZQdJCAuESTyeewxsAwtQ0fmjO8E28Ap4
+	SGw5d5QRYpuCxJvbz5hBbE4BT4mFTb/YITZ7SBx+OY91AiPvAkaGVYyiqQXJBcVJ6blGesWJ
+	ucWleel6yfm5mxjBQf9MegfjqgaLQ4wCHIxKPLw/488HCLEmlhVX5h5ilOBgVhLhVWi9ECDE
+	m5JYWZValB9fVJqTWnyI0QfoqonMUqLJ+cCIzCuJNzQ2MTc1NrU0sTAxs8QhrCTO2+yREiAk
+	kJ5YkpqdmlqQWgQzjomDU6qBMUsw7e+ppVt/PFqwoyGkZPn1+EIhzvky4poc8z/o8v6w+XL3
+	6J71TmXOQlLz1KRM2C461f04sVHjb8akde+1S9t5l62MiQo8vFTnmOT6Bawnbr5rvhHJqDtR
+	2UvNL1W9vWuC1dLWO3ql8+8lXfp/bNI6w1d75flb353NZ9lqxx+f/PTYRlblRiWW4oxEQy3m
+	ouJEANlxpDenAgAA
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding usbphy node for Exynos5250 along with the
-necessary device data to be parsed.
+Adding base address information required for enabling
+USB 3.0 DRD phy on exynos5250 SOC.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- arch/arm/boot/dts/exynos5250.dtsi       |   22 ++++++++++++++++++++++
- arch/arm/mach-exynos/include/mach/map.h |    1 +
- arch/arm/mach-exynos/mach-exynos5-dt.c  |    2 ++
- 3 files changed, 25 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/exynos5250.dtsi |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 581e57a..bbdb2c2 100644
+index bbdb2c2..07b7477 100644
 --- a/arch/arm/boot/dts/exynos5250.dtsi
 +++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -299,6 +299,28 @@
- 		rx-dma-channel = <&pdma0 11>; /* preliminary */
+@@ -316,7 +316,8 @@
+ 
+ 	usbphy@12130000 {
+ 		compatible = "samsung,exynos5250-usbphy";
+-		reg = <0x12130000 0x100>;
++		reg = <0x12130000 0x100>,
++		      <0x12100000 0x100>;
+ 		samsung,usb-phyhandle = <&phy_h0 &phy_h1 &phy_h2>;
+ 		samsung,enable-mask = <1>;
  	};
- 
-+	phy_h0: usbdev_phyctrl@10040704 {
-+		compatible = "samsung,usbdev-phyctrl";
-+		samsung,phyhandle-reg = <0x10040704>;
-+	};
-+
-+	phy_h1: usbhost_phyctrl@10040708 {
-+		compatible = "samsung,usbhost-phyctrl";
-+		samsung,phyhandle-reg = <0x10040708>;
-+	};
-+
-+	phy_h2: usbhost_phycfg@10050230 {
-+		compatible = "samsung,usb-phycfg";
-+		samsung,phyhandle-reg = <0x10050230>;
-+	};
-+
-+	usbphy@12130000 {
-+		compatible = "samsung,exynos5250-usbphy";
-+		reg = <0x12130000 0x100>;
-+		samsung,usb-phyhandle = <&phy_h0 &phy_h1 &phy_h2>;
-+		samsung,enable-mask = <1>;
-+	};
-+
- 	amba {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index cbb2852..778348e 100644
---- a/arch/arm/mach-exynos/include/mach/map.h
-+++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -201,6 +201,7 @@
- #define EXYNOS4_PA_EHCI			0x12580000
- #define EXYNOS4_PA_OHCI			0x12590000
- #define EXYNOS4_PA_HSPHY		0x125B0000
-+#define EXYNOS5_PA_HSPHY		0x12130000
- #define EXYNOS4_PA_MFC			0x13400000
- 
- #define EXYNOS4_PA_UART			0x13800000
-diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index 462e5ac..24e7529 100644
---- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
- 				"samsung-i2s.1", NULL),
- 	OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
- 				"samsung-i2s.2", NULL),
-+	OF_DEV_AUXDATA("samsung,exynos5250-usbphy", EXYNOS5_PA_HSPHY,
-+				"s3c-usbphy", NULL),
- 	{},
- };
- 
 -- 
 1.7.6.5
 
