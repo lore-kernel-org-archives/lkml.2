@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2LRRwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 12:52:33 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35888 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab2LRRwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 12:52:31 -0500
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org
-Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Bernd Krumboeck <b.krumboeck@gmail.com>, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH 07/10] can: c_can: add LED trigger support
-Date: Tue, 18 Dec 2012 18:51:01 +0100
-Message-Id: <1355853064-18144-8-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
-References: <1355853064-18144-1-git-send-email-fabio.baltieri@gmail.com>
+	id S1753830Ab2LRRwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 12:52:47 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:41085 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752299Ab2LRRwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 12:52:45 -0500
+Date: Tue, 18 Dec 2012 11:52:43 -0600
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux-kernel <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: [Patch][resend] SGI-XP: Handle non-fatal traps.
+Message-ID: <20121218175243.GP3452@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for canbus activity led indicators on c_can devices by
-calling appropriate can_led functions.
 
-These are only enabled when CONFIG_CAN_LEDS is Y, becomes no-op
-otherwise.
+We found a user code which was raising a divide-by-zero trap.  That trap
+would lead to XPC connections between system-partitions being torn down
+due to the die_chain notifier callouts it received.
 
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Cc: AnilKumar Ch <anilkumar@ti.com>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+This also revealed a different issue where multiple callers into
+xpc_die_deactivate() would all attempt to do the disconnect in parallel
+which would sometimes lock up but often overwhelm the console on very
+large machines as each would print at least one line of output at the
+end of the deactivate.
+
+I reviewed all the users of the die_chain notifier and changed the code
+to ignore the notifier callouts for reasons which will not actually lead
+to a system to continue on to call die().
+
+
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>
+Cc: <stable@kernel.org>
+Signed-off-by: Robin Holt <holt@sgi.com>
+
 ---
- drivers/net/can/c_can/c_can.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 5233b8f..57eb1e7 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -39,6 +39,7 @@
- #include <linux/can.h>
- #include <linux/can/dev.h>
- #include <linux/can/error.h>
-+#include <linux/can/led.h>
- 
- #include "c_can.h"
- 
-@@ -477,6 +478,8 @@ static int c_can_read_msg_object(struct net_device *dev, int iface, int ctrl)
- 	stats->rx_packets++;
- 	stats->rx_bytes += frame->can_dlc;
- 
-+	can_led_event(dev, CAN_LED_EVENT_RX);
-+
- 	return 0;
- }
- 
-@@ -751,6 +754,7 @@ static void c_can_do_tx(struct net_device *dev)
- 					C_CAN_IFACE(MSGCTRL_REG, 0))
- 					& IF_MCONT_DLC_MASK;
- 			stats->tx_packets++;
-+			can_led_event(dev, CAN_LED_EVENT_TX);
- 			c_can_inval_msg_object(dev, 0, msg_obj_no);
- 		} else {
- 			break;
-@@ -1115,6 +1119,8 @@ static int c_can_open(struct net_device *dev)
- 
- 	napi_enable(&priv->napi);
- 
-+	can_led_event(dev, CAN_LED_EVENT_OPEN);
-+
- 	/* start the c_can controller */
- 	c_can_start(dev);
- 
-@@ -1143,6 +1149,8 @@ static int c_can_close(struct net_device *dev)
- 	c_can_reset_ram(priv, false);
- 	c_can_pm_runtime_put_sync(priv);
- 
-+	can_led_event(dev, CAN_LED_EVENT_STOP);
-+
- 	return 0;
- }
- 
-@@ -1268,6 +1276,8 @@ int register_c_can_dev(struct net_device *dev)
- 	err = register_candev(dev);
- 	if (err)
- 		c_can_pm_runtime_disable(priv);
-+	else
-+		devm_can_led_init(dev);
- 
- 	return err;
- }
--- 
-1.7.12.1
+This is essentially a resend.  Originally, I sent it to Thomas and Ingo as
+they had originally worked with Dean Nelson in his effort to get this area
+of code included.  It is not entirely x86 specific so I am assuming that
+is why I have not seen any action on the patch and am resending to Andrew.
 
+ drivers/misc/sgi-xp/xpc_main.c |   32 ++++++++++++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 2 deletions(-)
+
+--- linux.orig/drivers/misc/sgi-xp/xpc_main.c
++++ linux/drivers/misc/sgi-xp/xpc_main.c
+@@ -53,6 +53,8 @@
+ #include <linux/kthread.h>
+ #include "xpc.h"
+ 
++#include <asm/traps.h>
++
+ /* define two XPC debug device structures to be used with dev_dbg() et al */
+ 
+ struct device_driver xpc_dbg_name = {
+@@ -1079,6 +1081,9 @@ xpc_system_reboot(struct notifier_block
+ 	return NOTIFY_DONE;
+ }
+ 
++/* Used to only allow one cpu to complete disconnect */
++static unsigned int xpc_die_disconnecting;
++
+ /*
+  * Notify other partitions to deactivate from us by first disengaging from all
+  * references to our memory.
+@@ -1092,6 +1097,9 @@ xpc_die_deactivate(void)
+ 	long keep_waiting;
+ 	long wait_to_print;
+ 
++	if (cmpxchg(&xpc_die_disconnecting, 0, 1))
++		return;
++
+ 	/* keep xpc_hb_checker thread from doing anything (just in case) */
+ 	xpc_exiting = 1;
+ 
+@@ -1159,7 +1167,7 @@ xpc_die_deactivate(void)
+  * about the lack of a heartbeat.
+  */
+ static int
+-xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
++xpc_system_die(struct notifier_block *nb, unsigned long event, void *_die_args)
+ {
+ #ifdef CONFIG_IA64		/* !!! temporary kludge */
+ 	switch (event) {
+@@ -1191,7 +1199,27 @@ xpc_system_die(struct notifier_block *nb
+ 		break;
+ 	}
+ #else
+-	xpc_die_deactivate();
++	struct die_args *die_args = _die_args;
++
++	switch (event) {
++	case DIE_TRAP:
++		if (die_args->trapnr == X86_TRAP_DF)
++			xpc_die_deactivate();
++
++		if (((die_args->trapnr == X86_TRAP_MF) ||
++		     (die_args->trapnr == X86_TRAP_XF)) &&
++		    !user_mode_vm(die_args->regs))
++			xpc_die_deactivate();
++
++		break;
++	case DIE_INT3:
++	case DIE_DEBUG:
++		break;
++	case DIE_OOPS:
++	case DIE_GPF:
++	default:
++		xpc_die_deactivate();
++	}
+ #endif
+ 
+ 	return NOTIFY_DONE;
