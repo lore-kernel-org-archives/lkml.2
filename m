@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab2LRQFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 11:05:46 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:43150 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755101Ab2LRQFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 11:05:45 -0500
-Date: Tue, 18 Dec 2012 11:05:44 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-cc: swarren@wwwdotorg.org, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb: host: tegra: make use of PHY pointer of HCD
-In-Reply-To: <1355813736-2487-1-git-send-email-vbyravarasu@nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1212181105210.1604-100000@iolanthe.rowland.org>
+	id S932169Ab2LRQJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 11:09:09 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55637 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755122Ab2LRQJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 11:09:04 -0500
+Message-ID: <50D0951E.7060503@imgtec.com>
+Date: Tue, 18 Dec 2012 16:09:02 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>
+Subject: Re: [PATCH v2 00/44] Meta Linux Kernel Port
+References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <20121205171131.GV4939@ZenIV.linux.org.uk> <20121205183923.GY4939@ZenIV.linux.org.uk>
+In-Reply-To: <20121205183923.GY4939@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2012_12_18_16_09_03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012, Venu Byravarasu wrote:
+On 05/12/12 18:39, Al Viro wrote:
+> On Wed, Dec 05, 2012 at 05:11:32PM +0000, Al Viro wrote:
+>> On Wed, Dec 05, 2012 at 04:08:18PM +0000, James Hogan wrote:
+>>
+>>> other work not included:
+>>> * switch to generic kernel_{thread,execve} (will be posted separately to
+>>>   aid review)
+>>
+>>> other changes:
+>> ...
+>>> * switch to generic sys_execve
+>>
+>> ... which should've broken your kernel_execve().
+> 
+> BTW, one general note: lose the magical 7th argument.  In the few syscalls
+> that do need pt_regs, you can bloody well use current_pt_regs() instead;
+> it's what, (register & constant) + constant?  Passing it as explicit
+> argument is saving at most two arithmetical insns on those syscalls.
+> Moreover, for fork/clone/vfork we really don't need it until copy_thread();
+> one of the changes in -next kills passing pt_regs * to do_fork() and through
+> all that call chain (furthermore, if you make that
+> 	childregs->ctx.AX[0].U0 = ALIGN(usp, 8);
+> in copy_thread() conditional on usp != 0, you can go with generic
+> variants from kernel/fork.c; again, see linux-next for examples of that).
+> What's left?  sigreturn and sigaltstack?
+> 
+> Seriously, drop that struct pt_regs *; it makes things uglier, (slightly)
+> hurts the syscall overhead and doesn't help the few syscalls that even
+> look at that argument.
+> 
 
-> As pointer to PHY structure can be stored in struct usb_hcd
-> making use of it, to call PHY APIs.
-> 
-> Call to usb_phy_shutdown() is moved up in tegra_ehci_remove(),
-> so that to avoid dereferencing of hcd after its freed up.
-> 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
-> This patch depends on patch http://marc.info/?l=linux-kernel&m=135581274019690&w=2.
-> Without above patch applied, phy->notify_connect & phy->notify_disconnect are
-> set to some unknown values, which need not be NULL.
-> This creates problem when hcd->phy pointer is initialized hub_port_init() in hub.c
-> calls usb_phy_notify_connect().
-> 
-> Stephen,
-> Can you plz take this patch through tegra tree, so as to take care of the dependencies?
+Done (with generic clone), thanks for pointing out the linux-next
+changes. I'll base the next patchset on -next.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Thanks for all the review comments so far, they're much appreciated.
+
+Cheers
+James
 
