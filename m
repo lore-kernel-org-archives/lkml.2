@@ -1,257 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab2LRNup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 08:50:45 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:39673 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab2LRNun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 08:50:43 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-be-50d074b15466
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        thomas.abraham@linaro.org, t.figa@samsung.com, ben-linux@fluff.org,
-        broonie@opensource.wolfsonmicro.com, l.majewski@samsung.com,
-        kyungmin.park@samsung.com, grant.likely@secretlab.ca, heiko@sntech.de,
-        p.paneri@samsung.com
-Subject: [PATCH v2] usb: phy: samsung: Add support to set pmu isolation
-Date: Tue, 18 Dec 2012 19:26:06 +0530
-Message-id: <1355838966-11269-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1355810167-18425-2-git-send-email-gautam.vivek@samsung.com>
-References: <1355810167-18425-2-git-send-email-gautam.vivek@samsung.com>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsWyRsSkWndjyYUAg959khaXd81hs5hxfh+T
-	xaJlrcwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZbyed4m54JZBRd/Bl4wNjOfVuxg5OSQETCS2
-	bF3HBGGLSVy4t56ti5GLQ0hgKaPEuo4PLDBFL04uYYJILGKU2PTwGCuEM5lJYuGcX2wgVWwC
-	uhJNb3cxgtgiArISh6/8ZgYpYhbYySyx9F4/WJGwgLvEhMcvmUFsFgFViY87P4Pt5hXwkPh3
-	cznUHQoSb24/A6vhFPCUuNfawApiCwHVXDl1nxWiV0Di2+RDQOdxANXLSmw6ALZLQuAxm8Tb
-	TU+hzpaUOLjiBssERuEFjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MQJD8/S/Z1I7GFc2
-	WBxiFOBgVOLhvZF/IUCINbGsuDL3EKMEB7OSCO+bOKAQb0piZVVqUX58UWlOavEhRh+gSyYy
-	S4km5wPjJq8k3tDYxNzU2NTSyMjM1BSHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGxiqH
-	FAbzn7cmnLrg+lr9wnO12TFqkU7uCvvYW5yu9ddsVL7sNl8/5gnf7vN1STP52hc0f2u86P36
-	QeeGPB+9jnldW/bFiv1auzfAZVNacNrBrN3Tii++31aYoOvYOz+ibF7do3cnmSs8Dx7MrRQQ
-	aC7Levts9mGVSOFVp+fxf3upwlG6uWnvHiWW4oxEQy3mouJEAM7zQwR6AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jAd2NJRcCDPZeYLS4vGsOm8WM8/uY
-	LBYta2V2YPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
-	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj9bxL
-	zAW3DCr6Dr5kbGA8r97FyMkhIWAi8eLkEiYIW0ziwr31bF2MXBxCAosYJTY9PMYK4Uxmklg4
-	5xcbSBWbgK5E09tdjCC2iICsxOErv5lBipgFdjJLLL3XD1YkLOAuMeHxS2YQm0VAVeLjzs9g
-	K3gFPCT+3VwOtU5B4s3tZ2A1nAKeEvdaG1hBbCGgmiun7rNOYORdwMiwilE0tSC5oDgpPddQ
-	rzgxt7g0L10vOT93EyM48J9J7WBc2WBxiFGAg1GJh/dG/oUAIdbEsuLK3EOMEhzMSiK8b+KA
-	QrwpiZVVqUX58UWlOanFhxh9gK6ayCwlmpwPjMq8knhDYxNzU2NTSxMLEzNLHMJK4rzNHikB
-	QgLpiSWp2ampBalFMOOYODilGhhndElYX1hUXJpiojD50tOrNUfK9l/rE+jRKPeTb38YMfUN
-	67qtvxIalDjv5M3yTJ1Y+DVDacf2freFtl3K4o8+zUrp5eDZO59rt95OD8FtfC8iQwUNRHJb
-	8hrmsPWZJH5ayaOdOWfdk6U7L5r4/N8QUL02Wi/Xx+Dioerttg39q7673/12K1aJpTgj0VCL
-	uag4EQA1/9CnqQIAAA==
-X-CFilter-Loop: Reflected
+	id S1754952Ab2LRNyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 08:54:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754411Ab2LRNyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 08:54:37 -0500
+Date: Tue, 18 Dec 2012 15:57:36 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
+Message-ID: <20121218135736.GF26110@redhat.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
+ <1355833972-20319-6-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355833972-20319-6-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to parse device node data in order to get
-required properties to set pmu isolation for usb-phy.
+On Tue, Dec 18, 2012 at 01:32:52PM +0100, Paolo Bonzini wrote:
+> This patch adds queue steering to virtio-scsi.  When a target is sent
+> multiple requests, we always drive them to the same queue so that FIFO
+> processing order is kept.  However, if a target was idle, we can choose
+> a queue arbitrarily.  In this case the queue is chosen according to the
+> current VCPU, so the driver expects the number of request queues to be
+> equal to the number of VCPUs.  This makes it easy and fast to select
+> the queue, and also lets the driver optimize the IRQ affinity for the
+> virtqueues (each virtqueue's affinity is set to the CPU that "owns"
+> the queue).
+> 
+> The speedup comes from improving cache locality and giving CPU affinity
+> to the virtqueues, which is why this scheme was selected.  Assuming that
+> the thread that is sending requests to the device is I/O-bound, it is
+> likely to be sleeping at the time the ISR is executed, and thus executing
+> the ISR on the same processor that sent the requests is cheap.
+> 
+> However, the kernel will not execute the ISR on the "best" processor
+> unless you explicitly set the affinity.  This is because in practice
+> you will have many such I/O-bound processes and thus many otherwise
+> idle processors.  Then the kernel will execute the ISR on a random
+> processor, rather than the one that is sending requests to the device.
+> 
+> The alternative to per-CPU virtqueues is per-target virtqueues.  To
+> achieve the same locality, we could dynamically choose the virtqueue's
+> affinity based on the CPU of the last task that sent a request.  This
+> is less appealing because we do not set the affinity directly---we only
+> provide a hint to the irqbalanced running in userspace.  Dynamically
+> changing the affinity only works if the userspace applies the hint
+> fast enough.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	v1->v2: improved comments and commit messages, added memory barriers
+> 
+>  drivers/scsi/virtio_scsi.c |  234 +++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 201 insertions(+), 33 deletions(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 4f6c6a3..ca9d29d 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -26,6 +26,7 @@
+>  
+>  #define VIRTIO_SCSI_MEMPOOL_SZ 64
+>  #define VIRTIO_SCSI_EVENT_LEN 8
+> +#define VIRTIO_SCSI_VQ_BASE 2
+>  
+>  /* Command queue element */
+>  struct virtio_scsi_cmd {
+> @@ -57,24 +58,57 @@ struct virtio_scsi_vq {
+>  	struct virtqueue *vq;
+>  };
+>  
+> -/* Per-target queue state */
+> +/*
+> + * Per-target queue state.
+> + *
+> + * This struct holds the data needed by the queue steering policy.  When a
+> + * target is sent multiple requests, we need to drive them to the same queue so
+> + * that FIFO processing order is kept.  However, if a target was idle, we can
+> + * choose a queue arbitrarily.  In this case the queue is chosen according to
+> + * the current VCPU, so the driver expects the number of request queues to be
+> + * equal to the number of VCPUs.  This makes it easy and fast to select the
+> + * queue, and also lets the driver optimize the IRQ affinity for the virtqueues
+> + * (each virtqueue's affinity is set to the CPU that "owns" the queue).
+> + *
+> + * An interesting effect of this policy is that only writes to req_vq need to
+> + * take the tgt_lock.  Read can be done outside the lock because:
+> + *
+> + * - writes of req_vq only occur when atomic_inc_return(&tgt->reqs) returns 1.
+> + *   In that case, no other CPU is reading req_vq: even if they were in
+> + *   virtscsi_queuecommand_multi, they would be spinning on tgt_lock.
+> + *
+> + * - reads of req_vq only occur when the target is not idle (reqs != 0).
+> + *   A CPU that enters virtscsi_queuecommand_multi will not modify req_vq.
+> + *
+> + * Similarly, decrements of reqs are never concurrent with writes of req_vq.
+> + * Thus they can happen outside the tgt_lock, provided of course we make reqs
+> + * an atomic_t.
+> + */
+>  struct virtio_scsi_target_state {
+> -	/* Never held at the same time as vq_lock.  */
+> +	/* This spinlock ever held at the same time as vq_lock.  */
+>  	spinlock_t tgt_lock;
+> +
+> +	/* Count of outstanding requests.  */
+> +	atomic_t reqs;
+> +
+> +	/* Currently active virtqueue for requests sent to this target.  */
+> +	struct virtio_scsi_vq *req_vq;
+>  };
+>  
+>  /* Driver instance state */
+>  struct virtio_scsi {
+>  	struct virtio_device *vdev;
+>  
+> -	struct virtio_scsi_vq ctrl_vq;
+> -	struct virtio_scsi_vq event_vq;
+> -	struct virtio_scsi_vq req_vq;
+> -
+>  	/* Get some buffers ready for event vq */
+>  	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
+>  
+>  	struct virtio_scsi_target_state *tgt;
+> +
+> +	u32 num_queues;
+> +
+> +	struct virtio_scsi_vq ctrl_vq;
+> +	struct virtio_scsi_vq event_vq;
+> +	struct virtio_scsi_vq req_vqs[];
+>  };
+>  
+>  static struct kmem_cache *virtscsi_cmd_cache;
+> @@ -109,6 +143,7 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+>  	struct virtio_scsi_cmd *cmd = buf;
+>  	struct scsi_cmnd *sc = cmd->sc;
+>  	struct virtio_scsi_cmd_resp *resp = &cmd->resp.cmd;
+> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>  
+>  	dev_dbg(&sc->device->sdev_gendev,
+>  		"cmd %p response %u status %#02x sense_len %u\n",
+> @@ -163,6 +198,8 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+>  
+>  	mempool_free(cmd, virtscsi_cmd_pool);
+>  	sc->scsi_done(sc);
+> +
+> +	atomic_dec(&tgt->reqs);
+>  }
+>  
+>  static void virtscsi_vq_done(struct virtio_scsi *vscsi, struct virtqueue *vq,
+> @@ -182,11 +219,45 @@ static void virtscsi_req_done(struct virtqueue *vq)
+>  {
+>  	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+>  	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	int index = vq->index - VIRTIO_SCSI_VQ_BASE;
+> +	struct virtio_scsi_vq *req_vq = &vscsi->req_vqs[index];
+>  	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&vscsi->req_vq.vq_lock, flags);
+> +	/*
+> +	 * Read req_vq before decrementing the reqs field in
+> +	 * virtscsi_complete_cmd.
+> +	 *
+> +	 * With barriers:
+> +	 *
+> +	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
+> +	 * 	------------------------------------------------------------
+> +	 * 	lock vq_lock
+> +	 * 	read req_vq
+> +	 * 	read reqs (reqs = 1)
+> +	 * 	write reqs (reqs = 0)
+> +	 * 				increment reqs (reqs = 1)
+> +	 * 				write req_vq
+> +	 *
+> +	 * Possible reordering without barriers:
+> +	 *
+> +	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
+> +	 * 	------------------------------------------------------------
+> +	 * 	lock vq_lock
+> +	 * 	read reqs (reqs = 1)
+> +	 * 	write reqs (reqs = 0)
+> +	 * 				increment reqs (reqs = 1)
+> +	 * 				write req_vq
+> +	 * 	read (wrong) req_vq
+> +	 *
+> +	 * We do not need a full smp_rmb, because req_vq is required to get
+> +	 * to tgt->reqs: tgt is &vscsi->tgt[sc->device->id], where sc is stored
+> +	 * in the virtqueue as the user token.
+> +	 */
+> +	smp_read_barrier_depends();
+> +
+> +	spin_lock_irqsave(&req_vq->vq_lock, flags);
+>  	virtscsi_vq_done(vscsi, vq, virtscsi_complete_cmd);
+> -	spin_unlock_irqrestore(&vscsi->req_vq.vq_lock, flags);
+> +	spin_unlock_irqrestore(&req_vq->vq_lock, flags);
+>  };
+>  
+>  static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+> @@ -424,11 +495,12 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+>  	return ret;
+>  }
+>  
+> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+> +				 struct virtio_scsi_target_state *tgt,
+> +				 struct scsi_cmnd *sc)
+>  {
+> -	struct virtio_scsi *vscsi = shost_priv(sh);
+> -	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+>  	struct virtio_scsi_cmd *cmd;
+> +	struct virtio_scsi_vq *req_vq;
+>  	int ret;
+>  
+>  	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+> @@ -461,7 +533,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+>  
+> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
+> +	req_vq = ACCESS_ONCE(tgt->req_vq);
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
+This ACCESS_ONCE without a barrier looks strange to me.
+Can req_vq change? Needs a comment.
 
-Changes from v1:
- - Changed the name of property for phy handler from'samsung,usb-phyctrl'
-   to 'samsung,usb-phyhandle' to make it look more generic.
- - Similarly 'samsung,phyctrl-reg' is changed to 'samsung,phyhandle-reg'
- - Added a check for 'samsung,usb-phyhandle' before getting node from
-   phandle.
- - Putting the node using 'of_node_put()' which had been missed.
- - Adding necessary check for the pointer in 'samsung_usbphy_set_isolation()'
-   to avoid any NULL pointer dereferencing.
- - Unmapping the register ioremapped in 'samsung_usbphy_parse_dt_param()'.
+> +	if (virtscsi_kick_cmd(tgt, req_vq, cmd,
+>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+>  			      GFP_ATOMIC) == 0)
+>  		ret = 0;
+> @@ -472,6 +545,48 @@ out:
+>  	return ret;
+>  }
+>  
+> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
+> +					struct scsi_cmnd *sc)
+> +{
+> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+> +
+> +	atomic_inc(&tgt->reqs);
+
+And here we don't have barrier after atomic? Why? Needs a comment.
+
+> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+> +}
+> +
+> +static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
+> +				       struct scsi_cmnd *sc)
+> +{
+> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+> +	unsigned long flags;
+> +	u32 queue_num;
+> +
+> +	/*
+> +	 * Using an atomic_t for tgt->reqs lets the virtqueue handler
+> +	 * decrement it without taking the spinlock.
+> +	 *
+> +	 * We still need a critical section to prevent concurrent submissions
+> +	 * from picking two different req_vqs.
+> +	 */
+> +	spin_lock_irqsave(&tgt->tgt_lock, flags);
+> +	if (atomic_inc_return(&tgt->reqs) == 1) {
+> +		queue_num = smp_processor_id();
+> +		while (unlikely(queue_num >= vscsi->num_queues))
+> +			queue_num -= vscsi->num_queues;
+> +
+> +		/*
+> +		 * Write reqs before writing req_vq, matching the
+> +		 * smp_read_barrier_depends() in virtscsi_req_done.
+> +		 */
+> +		smp_wmb();
+> +		tgt->req_vq = &vscsi->req_vqs[queue_num];
+> +	}
+> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+> +}
+> +
+>  static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+>  {
+>  	DECLARE_COMPLETION_ONSTACK(comp);
+> @@ -541,12 +656,26 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
+>  	return virtscsi_tmf(vscsi, cmd);
+>  }
+>  
+> -static struct scsi_host_template virtscsi_host_template = {
+> +static struct scsi_host_template virtscsi_host_template_single = {
+>  	.module = THIS_MODULE,
+>  	.name = "Virtio SCSI HBA",
+>  	.proc_name = "virtio_scsi",
+> -	.queuecommand = virtscsi_queuecommand,
+>  	.this_id = -1,
+> +	.queuecommand = virtscsi_queuecommand_single,
+> +	.eh_abort_handler = virtscsi_abort,
+> +	.eh_device_reset_handler = virtscsi_device_reset,
+> +
+> +	.can_queue = 1024,
+> +	.dma_boundary = UINT_MAX,
+> +	.use_clustering = ENABLE_CLUSTERING,
+> +};
+> +
+> +static struct scsi_host_template virtscsi_host_template_multi = {
+> +	.module = THIS_MODULE,
+> +	.name = "Virtio SCSI HBA",
+> +	.proc_name = "virtio_scsi",
+> +	.this_id = -1,
+> +	.queuecommand = virtscsi_queuecommand_multi,
+>  	.eh_abort_handler = virtscsi_abort,
+>  	.eh_device_reset_handler = virtscsi_device_reset,
+>  
+> @@ -572,16 +701,27 @@ static struct scsi_host_template virtscsi_host_template = {
+>  				  &__val, sizeof(__val)); \
+>  	})
+>  
+> +
+>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+> -			     struct virtqueue *vq)
+> +			     struct virtqueue *vq, bool affinity)
+>  {
+>  	spin_lock_init(&virtscsi_vq->vq_lock);
+>  	virtscsi_vq->vq = vq;
+> +	if (affinity)
+> +		virtqueue_set_affinity(vq, vq->index - VIRTIO_SCSI_VQ_BASE);
+
+I've been thinking about how set_affinity
+interacts with online/offline CPUs.
+Any idea?
 
 
- .../devicetree/bindings/usb/samsung-usbphy.txt     |   12 +++
- drivers/usb/phy/samsung-usbphy.c                   |   94 ++++++++++++++++++--
- 2 files changed, 98 insertions(+), 8 deletions(-)
+>  }
+>  
+> -static void virtscsi_init_tgt(struct virtio_scsi_target_state *tgt)
+> +static void virtscsi_init_tgt(struct virtio_scsi *vscsi, int i)
+>  {
+> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[i];
+>  	spin_lock_init(&tgt->tgt_lock);
+> +	atomic_set(&tgt->reqs, 0);
+> +
+> +	/*
+> +	 * The default is unused for multiqueue, but with a single queue
+> +	 * or target we use it in virtscsi_queuecommand.
+> +	 */
+> +	tgt->req_vq = &vscsi->req_vqs[0];
+>  }
+>  
+>  static void virtscsi_scan(struct virtio_device *vdev)
+> @@ -609,28 +749,41 @@ static int virtscsi_init(struct virtio_device *vdev,
+>  			 struct virtio_scsi *vscsi, int num_targets)
+>  {
+>  	int err;
+> -	struct virtqueue *vqs[3];
+>  	u32 i, sg_elems;
+> +	u32 num_vqs;
+> +	vq_callback_t **callbacks;
+> +	const char **names;
+> +	struct virtqueue **vqs;
+>  
+> -	vq_callback_t *callbacks[] = {
+> -		virtscsi_ctrl_done,
+> -		virtscsi_event_done,
+> -		virtscsi_req_done
+> -	};
+> -	const char *names[] = {
+> -		"control",
+> -		"event",
+> -		"request"
+> -	};
+> +	num_vqs = vscsi->num_queues + VIRTIO_SCSI_VQ_BASE;
+> +	vqs = kmalloc(num_vqs * sizeof(struct virtqueue *), GFP_KERNEL);
+> +	callbacks = kmalloc(num_vqs * sizeof(vq_callback_t *), GFP_KERNEL);
+> +	names = kmalloc(num_vqs * sizeof(char *), GFP_KERNEL);
+> +
+> +	if (!callbacks || !vqs || !names) {
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	callbacks[0] = virtscsi_ctrl_done;
+> +	callbacks[1] = virtscsi_event_done;
+> +	names[0] = "control";
+> +	names[1] = "event";
+> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++) {
+> +		callbacks[i] = virtscsi_req_done;
+> +		names[i] = "request";
+> +	}
+>  
+>  	/* Discover virtqueues and write information to configuration.  */
+> -	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
+> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
+>  	if (err)
+>  		return err;
+>  
+> -	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
+> -	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
+> -	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
+> +	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0], false);
+> +	virtscsi_init_vq(&vscsi->event_vq, vqs[1], false);
+> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++)
+> +		virtscsi_init_vq(&vscsi->req_vqs[i - VIRTIO_SCSI_VQ_BASE],
+> +				 vqs[i], vscsi->num_queues > 1);
 
-diff --git a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-index 7b26e2d..a7b28b2 100644
---- a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-+++ b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-@@ -9,3 +9,15 @@ Required properties:
- - compatible : should be "samsung,exynos4210-usbphy"
- - reg : base physical address of the phy registers and length of memory mapped
- 	region.
-+
-+Optional properties:
-+- samsung,usb-phyhandle : should point to usb-phyhandle sub-node which provides
-+			binding data to enable/disable device PHY handled by
-+			PMU register.
-+
-+			Required properties:
-+			- compatible : should be "samsung,usbdev-phyctrl" for
-+					DEVICE type phy.
-+			- samsung,phyhandle-reg: base physical address of
-+						PHY_CONTROL register in PMU.
-+- samsung,enable-mask : should be '1'
-diff --git a/drivers/usb/phy/samsung-usbphy.c b/drivers/usb/phy/samsung-usbphy.c
-index 5c5e1bb5..4ceabe3 100644
---- a/drivers/usb/phy/samsung-usbphy.c
-+++ b/drivers/usb/phy/samsung-usbphy.c
-@@ -72,6 +72,8 @@ enum samsung_cpu_type {
-  * @dev: The parent device supplied to the probe function
-  * @clk: usb phy clock
-  * @regs: usb phy register memory base
-+ * @devctrl_reg: usb device phy-control pmu register memory base
-+ * @en_mask: enable mask
-  * @ref_clk_freq: reference clock frequency selection
-  * @cpu_type: machine identifier
-  */
-@@ -81,12 +83,73 @@ struct samsung_usbphy {
- 	struct device	*dev;
- 	struct clk	*clk;
- 	void __iomem	*regs;
-+	void __iomem	*devctrl_reg;
-+	u32		en_mask;
- 	int		ref_clk_freq;
- 	int		cpu_type;
- };
- 
- #define phy_to_sphy(x)		container_of((x), struct samsung_usbphy, phy)
- 
-+static int samsung_usbphy_parse_dt_param(struct samsung_usbphy *sphy)
-+{
-+	struct device_node *usb_phyctrl;
-+	u32 reg;
-+	int lenp;
-+
-+	if (!sphy->dev->of_node) {
-+		sphy->devctrl_reg = NULL;
-+		return -ENODEV;
-+	}
-+
-+	if (of_get_property(sphy->dev->of_node, "samsung,usb-phyhandle", &lenp)) {
-+		usb_phyctrl = of_parse_phandle(sphy->dev->of_node,
-+						"samsung,usb-phyhandle", 0);
-+		if (!usb_phyctrl) {
-+			dev_warn(sphy->dev, "Can't get usb-phy handle\n");
-+			sphy->devctrl_reg = NULL;
-+		}
-+
-+		of_property_read_u32(usb_phyctrl, "samsung,phyhandle-reg", &reg);
-+
-+		sphy->devctrl_reg = ioremap(reg, SZ_4);
-+
-+		of_property_read_u32(sphy->dev->of_node, "samsung,enable-mask",
-+							&sphy->en_mask);
-+		of_node_put(usb_phyctrl);
-+	} else {
-+		dev_warn(sphy->dev, "Can't get usb-phy handle\n");
-+		sphy->devctrl_reg = NULL;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Set isolation here for phy.
-+ * SOCs control this by controlling corresponding PMU registers
-+ */
-+static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, int on)
-+{
-+	void __iomem *usb_phyctrl_reg;
-+	u32 en_mask = sphy->en_mask;
-+	u32 reg;
-+
-+	usb_phyctrl_reg = sphy->devctrl_reg;
-+
-+	if (!usb_phyctrl_reg) {
-+		dev_warn(sphy->dev, "Can't set pmu isolation\n");
-+		return;
-+	}
-+
-+	reg = readl(usb_phyctrl_reg);
-+
-+	if (on)
-+		writel(reg & ~en_mask, usb_phyctrl_reg);
-+	else
-+		writel(reg | en_mask, usb_phyctrl_reg);
-+}
-+
- /*
-  * Returns reference clock frequency selection value
-  */
-@@ -199,6 +262,8 @@ static int samsung_usbphy_init(struct usb_phy *phy)
- 	/* Disable phy isolation */
- 	if (sphy->plat && sphy->plat->pmu_isolation)
- 		sphy->plat->pmu_isolation(false);
-+	else
-+		samsung_usbphy_set_isolation(sphy, false);
- 
- 	/* Initialize usb phy registers */
- 	samsung_usbphy_enable(sphy);
-@@ -228,6 +293,8 @@ static void samsung_usbphy_shutdown(struct usb_phy *phy)
- 	/* Enable phy isolation */
- 	if (sphy->plat && sphy->plat->pmu_isolation)
- 		sphy->plat->pmu_isolation(true);
-+	else
-+		samsung_usbphy_set_isolation(sphy, true);
- 
- 	clk_disable_unprepare(sphy->clk);
- }
-@@ -249,17 +316,12 @@ static inline int samsung_usbphy_get_driver_data(struct platform_device *pdev)
- static int __devinit samsung_usbphy_probe(struct platform_device *pdev)
- {
- 	struct samsung_usbphy *sphy;
--	struct samsung_usbphy_data *pdata;
-+	struct samsung_usbphy_data *pdata = pdev->dev.platform_data;
- 	struct device *dev = &pdev->dev;
- 	struct resource *phy_mem;
- 	void __iomem	*phy_base;
- 	struct clk *clk;
--
--	pdata = pdev->dev.platform_data;
--	if (!pdata) {
--		dev_err(&pdev->dev, "%s: no platform data defined\n", __func__);
--		return -EINVAL;
--	}
-+	int ret;
- 
- 	phy_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!phy_mem) {
-@@ -283,7 +345,20 @@ static int __devinit samsung_usbphy_probe(struct platform_device *pdev)
- 		return PTR_ERR(clk);
- 	}
- 
--	sphy->dev		= &pdev->dev;
-+	sphy->dev = &pdev->dev;
-+
-+	ret = samsung_usbphy_parse_dt_param(sphy);
-+	if (ret) {
-+		/* fallback to pdata */
-+		if (!pdata) {
-+			dev_err(&pdev->dev,
-+				"%s: no device data found\n", __func__);
-+			return -ENODEV;
-+		} else {
-+			sphy->plat = pdata;
-+		}
-+	}
-+
- 	sphy->plat		= pdata;
- 	sphy->regs		= phy_base;
- 	sphy->clk		= clk;
-@@ -305,6 +380,9 @@ static int __exit samsung_usbphy_remove(struct platform_device *pdev)
- 
- 	usb_remove_phy(&sphy->phy);
- 
-+	if (sphy->devctrl_reg)
-+		iounmap(sphy->devctrl_reg);
-+
- 	return 0;
- }
- 
--- 
-1.7.6.5
+So affinity is true if >1 vq? I am guessing this is not
+going to do the right thing unless you have at least
+as many vqs as CPUs.
 
+>  
+>  	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+>  	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+> @@ -647,11 +800,14 @@ static int virtscsi_init(struct virtio_device *vdev,
+>  		goto out;
+>  	}
+>  	for (i = 0; i < num_targets; i++)
+> -		virtscsi_init_tgt(&vscsi->tgt[i]);
+> +		virtscsi_init_tgt(vscsi, i);
+>  
+>  	err = 0;
+>  
+>  out:
+> +	kfree(names);
+> +	kfree(callbacks);
+> +	kfree(vqs);
+>  	if (err)
+>  		virtscsi_remove_vqs(vdev);
+>  	return err;
+> @@ -664,11 +820,22 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
+>  	int err;
+>  	u32 sg_elems, num_targets;
+>  	u32 cmd_per_lun;
+> +	u32 num_queues;
+> +	struct scsi_host_template *hostt;
+> +
+> +	/* We need to know how many queues before we allocate.  */
+> +	num_queues = virtscsi_config_get(vdev, num_queues) ?: 1;
+>  
+>  	/* Allocate memory and link the structs together.  */
+>  	num_targets = virtscsi_config_get(vdev, max_target) + 1;
+> -	shost = scsi_host_alloc(&virtscsi_host_template, sizeof(*vscsi));
+>  
+> +	if (num_queues == 1)
+> +		hostt = &virtscsi_host_template_single;
+> +	else
+> +		hostt = &virtscsi_host_template_multi;
+> +
+> +	shost = scsi_host_alloc(hostt,
+> +		sizeof(*vscsi) + sizeof(vscsi->req_vqs[0]) * num_queues);
+>  	if (!shost)
+>  		return -ENOMEM;
+>  
+> @@ -676,6 +843,7 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
+>  	shost->sg_tablesize = sg_elems;
+>  	vscsi = shost_priv(shost);
+>  	vscsi->vdev = vdev;
+> +	vscsi->num_queues = num_queues;
+>  	vdev->priv = shost;
+>  
+>  	err = virtscsi_init(vdev, vscsi, num_targets);
+> -- 
+> 1.7.1
