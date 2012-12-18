@@ -1,39 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab2LRBUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:20:22 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:15123 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2LRBTr (ORCPT
+	id S1754035Ab2LRBUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:20:44 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:53252 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2LRBUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:19:47 -0500
-Message-ID: <50CFC4B0.4010905@tilera.com>
-Date: Mon, 17 Dec 2012 20:19:44 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Simon Marchi <simon.marchi@polymtl.ca>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/3] arch/tile: implement user_regset interface on
- tile
-References: <1355792891-16145-1-git-send-email-simon.marchi@polymtl.ca>
-In-Reply-To: <1355792891-16145-1-git-send-email-simon.marchi@polymtl.ca>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Dec 2012 20:20:42 -0500
+Message-ID: <50cfc313.6831b60a.0bc4.0604@mx.google.com>
+Date: Mon, 17 Dec 2012 17:12:51 -0800 (PST)
+From: rob@landley.net
+Subject: [PATCH 3/3] convert headers_install.pl->headers_install.sh
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2012 8:08 PM, Simon Marchi wrote:
-> This is a basic implementation of user_regset for the tile
-> architecture. It reuses the basic blocks that were already there.
->
-> Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
+From: Rob Landley <rob@landley.net>
 
-Thanks, I'll take this into the tile tree for this merge window.
+Remove perl from make headers_install by replacing a perl script (doing
+a simple regex search and replace) with a smaller, faster, simpler,
+POSIX-2008 shell script implementation.  The new shell script is a single
+for loop calling sed and piping its output through unifdef to produce the
+target file.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Signed-off-by: Rob Landley <rob@landley.net>
+---
 
+ scripts/Makefile.headersinst |    4 +-
+ scripts/headers_install.pl   |   63 ---------------------------------
+ scripts/headers_install.sh   |   43 ++++++++++++++++++++++
+ 3 files changed, 45 insertions(+), 65 deletions(-)
+
+diff -ruN linux-3.1/scripts/headers_install.sh linux-2.6.30/scripts/headers_install.sh
+--- linux-3.1/scripts/headers_install.sh
++++ linux/scripts/headers_install.sh
+@@ -0,0 +1,43 @@
++#!/bin/sh
++
++if [ $# -lt 1 ]
++then
++	echo "Usage: headers_install.sh OUTDIR [FILES...]
++	echo
++	echo "Prepares kernel header files for use by user space, by removing"
++	echo "all compiler.h definitions and #includes, removing any"
++	echo "#ifdef __KERNEL__ sections, and putting __underscores__ around"
++	echo "asm/inline/volatile keywords."
++	echo
++	echo "OUTDIR: directory to write each userspace header FILE to."
++	echo "FILES:  list of header files to operate on."
++
++	exit 1
++fi
++
++# Grab arguments
++
++OUTDIR="$1"
++shift
++
++# Iterate through files listed on command line
++
++FILE=
++trap 'rm -f "$OUTDIR/$FILE" "$OUTDIR/$FILE.sed"' EXIT
++for i in "$@"
++do
++	FILE="$(basename "$i")"
++	sed -r \
++		-e 's/([ \t(])(__user|__force|__iomem)[ \t]/\1/g' \
++		-e 's/__attribute_const__([ \t]|$)/\1/g' \
++		-e 's@^#include <linux/compiler.h>@@' \
++		-e 's/(^|[^a-zA-Z0-9])__packed([^a-zA-Z0-9_]|$)/\1__attribute__((packed))\2/g' \
++		-e 's/(^|[ \t])(inline|asm|volatile)([ \t(]|$)/\1__\2__\3/g' \
++		-e 's@#(ifndef|define|endif /[*]) _UAPI@#\1 @' \
++		"$i" > "$OUTDIR/$FILE.sed" || exit 1
++	scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$OUTDIR/$FILE.sed" \
++		> "$OUTDIR/$FILE"
++	[ $? -gt 1 ] && exit 1
++	rm -f "$OUTDIR/$FILE.sed"
++done
++trap - EXIT
+diff -ruN linux-3.1/scripts/Makefile.headersinst
+--- linux-3.1/scripts/Makefile.headersinst
++++ linux/scripts/Makefile.headersinst
+@@ -55,7 +55,7 @@
+ quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
+                             file$(if $(word 2, $(all-files)),s))
+       cmd_install = \
+-        $(PERL) $< $(installdir) $(SRCARCH) $(input-files); \
++        $(CONFIG_SHELL) $< $(installdir) $(input-files); \
+         for F in $(wrapper-files); do                                   \
+                 echo "\#include <asm-generic/$$F>" > $(installdir)/$$F;    \
+         done;                                                           \
+@@ -83,7 +83,7 @@
+ 	@:
+ 
+ targets += $(install-file)
+-$(install-file): scripts/headers_install.pl $(input-files) FORCE
++$(install-file): scripts/headers_install.sh $(input-files) FORCE
+ 	$(if $(unwanted),$(call cmd,remove),)
+ 	$(if $(wildcard $(dir $@)),,$(shell mkdir -p $(dir $@)))
+ 	$(call if_changed,install)
+--- a/scripts/headers_install.pl
++++ /dev/null
+@@ -1,63 +0,0 @@
+-#!/usr/bin/perl -w
+-#
+-# headers_install prepare the listed header files for use in
+-# user space and copy the files to their destination.
+-#
+-# Usage: headers_install.pl readdir installdir arch [files...]
+-# installdir: dir to install the files to
+-# arch:       current architecture
+-#             arch is used to force a reinstallation when the arch
+-#             changes because kbuild then detect a command line change.
+-# files:      list of files to check
+-#
+-# Step in preparation for users space:
+-# 1) Drop all use of compiler.h definitions
+-# 2) Drop include of compiler.h
+-# 3) Drop all sections defined out by __KERNEL__ (using unifdef)
+-
+-use strict;
+-
+-my ($installdir, $arch, @files) = @ARGV;
+-
+-my $unifdef = "scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__";
+-
+-foreach my $filename (@files) {
+-	my $file = $filename;
+-	$file =~ s!^.*/!!;
+-
+-	my $tmpfile = "$installdir/$file.tmp";
+-
+-	open(my $in, '<', $filename)
+-	    or die "$filename: $!\n";
+-	open(my $out, '>', $tmpfile)
+-	    or die "$tmpfile: $!\n";
+-	while (my $line = <$in>) {
+-		$line =~ s/([\s(])__user\s/$1/g;
+-		$line =~ s/([\s(])__force\s/$1/g;
+-		$line =~ s/([\s(])__iomem\s/$1/g;
+-		$line =~ s/\s__attribute_const__\s/ /g;
+-		$line =~ s/\s__attribute_const__$//g;
+-		$line =~ s/\b__packed\b/__attribute__((packed))/g;
+-		$line =~ s/^#include <linux\/compiler.h>//;
+-		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
+-		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
+-		$line =~ s/(^|\s|[(])(volatile)\b(\s|[(]|$)/$1__$2__$3/g;
+-		$line =~ s/#ifndef _UAPI/#ifndef /;
+-		$line =~ s/#define _UAPI/#define /;
+-		$line =~ s!#endif /[*] _UAPI!#endif /* !;
+-		printf {$out} "%s", $line;
+-	}
+-	close $out;
+-	close $in;
+-
+-	system $unifdef . " $tmpfile > $installdir/$file";
+-	# unifdef will exit 0 on success, and will exit 1 when the
+-	# file was processed successfully but no changes were made,
+-	# so abort only when it's higher than that.
+-	my $e = $? >> 8;
+-	if ($e > 1) {
+-		die "$tmpfile: $!\n";
+-	}
+-	unlink $tmpfile;
+-}
+-exit 0;
