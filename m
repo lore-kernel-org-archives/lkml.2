@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab2LRPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:47:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab2LRPrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:47:23 -0500
-Date: Tue, 18 Dec 2012 16:47:10 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 07/14] perf ui/hist: Add support for event group view
-Message-ID: <20121218154710.GN1283@krava.brq.redhat.com>
-References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
- <1355726345-29553-8-git-send-email-namhyung@kernel.org>
+	id S932254Ab2LRPrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:47:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25939 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab2LRPro (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 10:47:44 -0500
+Date: Tue, 18 Dec 2012 10:47:37 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V1 1/2] Xen acpi memory hotplug driver
+Message-ID: <20121218154737.GB13450@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353942F9@SHSMSX101.ccr.corp.intel.com>
+ <20121128192601.GA15871@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233539AC1D@SHSMSX101.ccr.corp.intel.com>
+ <20121205174307.GC16072@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923353A2366@SHSMSX101.ccr.corp.intel.com>
+ <20121207140528.GA3140@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923353A7C7B@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923353A9E57@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923353AD822@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355726345-29553-8-git-send-email-namhyung@kernel.org>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353AD822@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 03:38:58PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+> >>>> Not only inform firmware.
+> >>>> Hotplug notify callback will invoke acpi_bus_add -> ... ->
+> >>>> implicitly invoke drv->ops.add method to add the hotadded memory
+> >>>> device.
+> >>> 
+> >>> Gotcha.
+> >> 
+> >> ? So it will lose the notification and no way to add the new memory
+> >> device in the future. 
+> >> 
+> >> Xen memory hotplug logic consist of 2 parts:
+> >> 1) driver logic (.add/.remove etc)
+> >> 2) notification install/callback logic
+> >> If you want to use 'xen_stub driver + .add/.remove ops', then
+> >> notification install/callback logic would implement with xen_stub
+> >> driver (means in build-in part, otherwise it would lose notification
+> >> when the ops unload) --> but that would make xen_stub in big build-in
+> >> size.
+> > 
+> > How about
+> > * build-in part: xen_stub driver (stub .add to record what matched
+> > cpu devices) + notification install/callback; 
+> > * module part: .add/.remove ops;
+> > w/ it, native driver has no chance to load and no hotplug event lose,
+> > and approximately 1/3 code is build-in and 2/3 are module. 
+> > 
+> > I think it will work but I'm not quite sure, at least we can have a
+> > try/test? 
+> > 
+> > Thanks,
+> > Jinsong
+> > 
 > 
-> Show group members' overhead also when showing the leader's if event
-> group is enabled.  Use macro for defining hpp functions which looks
-> almost identical.
+> Thoughts? If you think it's OK, I will update later.
 
-SNIP
-
-> -
-> -static int hpp__color_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
-> -				  struct perf_hpp *hpp, struct hist_entry *he)
-> +static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-> +			      u64 (*get_field)(struct hist_entry *),
-> +			      const char *fmt, hpp_snprint_fn print_fn)
-
-it's hard to tell from diff, but the function looks like this (group part):
-
-        if (symbol_conf.event_group) {
-                int prev_idx, idx_delta, i;
-                struct perf_evsel *evsel = hists_to_evsel(hists);
-                struct hist_entry *pair;
-                int nr_members = evsel->nr_members;
-
-                if (nr_members <= 1)
-                        return ret;
-
-                prev_idx = perf_evsel__group_idx(evsel);
-
-                list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-                        u64 period = get_field(pair);
-                        u64 total = pair->hists->stats.total_period;
-
-                        if (!total)
-                                continue;
-
-                        evsel = hists_to_evsel(pair->hists);
-                        idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
-
-                        for (i = 0; i < idx_delta; i++) {
-                                ret += print_fn(hpp->buf + ret, hpp->size - ret,
-                                                fmt, 0.0);
-                        }
-
-                        ret += print_fn(hpp->buf + ret, hpp->size - ret,
-                                        fmt, 100.0 * period / total);
-
-                        prev_idx += 1 + idx_delta;
-                }
-
-                idx_delta = nr_members - prev_idx - 1;
-
-                for (i = 0; i < idx_delta; i++) {
-                        ret += print_fn(hpp->buf + ret, hpp->size - ret,
-                                        fmt, 0.0);
-                }
-        }
-
-The temporary array (initial send) was more clear to me.. but if
-this is the preffered way I wont object, since this is another place
-that would benefit from hist_entries array linking.. when (and if)
-there's ever patch for that ;-)
-
-I think this code now suffers from mischosen data layer
-
-jirka
+Pls try. I am just thinking that the less we of code that has to be built-in - the
+better.
+> 
+> Thanks,
+> Jinsong
