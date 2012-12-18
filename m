@@ -1,122 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab2LREct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 23:32:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56713 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544Ab2LREcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 23:32:47 -0500
-Date: Tue, 18 Dec 2012 15:32:16 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        "Jianpeng Ma" <majianpeng@gmail.com>
-Subject: [PULL REQUEST] md update for 3.8
-Message-ID: <20121218153216.75ba7831@notabene.brown>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/1Zp8ZAQjgYxctpLg_JEQioz"; protocol="application/pgp-signature"
+	id S1753923Ab2LREky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 23:40:54 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:54004 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LREkw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 23:40:52 -0500
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 23:40:51 EST
+From: Kevin Cernekee <cernekee@gmail.com>
+To: pablo@netfilter.org
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Gabor Juhos <juhosg@openwrt.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH v4] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945 IP phones
+Date: Mon, 17 Dec 2012 20:33:58 -0800
+Message-Id: <1355805238-2460-1-git-send-email-cernekee@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/1Zp8ZAQjgYxctpLg_JEQioz
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Most SIP devices use a source port of 5060/udp on SIP requests, so the
+response automatically comes back to port 5060:
+
+    phone_ip:5060 -> proxy_ip:5060   REGISTER
+    proxy_ip:5060 -> phone_ip:5060   100 Trying
+
+The newer Cisco IP phones, however, use a randomly chosen high source
+port for the SIP request but expect the response on port 5060:
+
+    phone_ip:49173 -> proxy_ip:5060  REGISTER
+    proxy_ip:5060 -> phone_ip:5060   100 Trying
+
+Standard Linux NAT, with or without nf_nat_sip, will send the reply back
+to port 49173, not 5060:
+
+    phone_ip:49173 -> proxy_ip:5060  REGISTER
+    proxy_ip:5060 -> phone_ip:49173  100 Trying
+
+But the phone is not listening on 49173, so it will never see the reply.
+
+This patch modifies nf_*_sip to work around this quirk by extracting
+the SIP response port from the Via: header, iff the source IP in the
+packet header matches the source IP in the SIP request.
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>
+---
 
 
-Hi Linus,
-  Not much for md this time round.
+Baseline: git://1984.lsi.us.es/nf-next
 
-Thanks,
-NeilBrown
+v3->v4 changes:
 
-The following changes since commit 874807a83139abc094f939e93623c5623573d543:
+Fix patch context and APIs to match the current Linux tree.  These
+changes are from OpenWRT (Gabor?) and David W.
 
-  md/raid1{,0}: fix deadlock in bitmap_unplug. (2012-11-27 12:14:40 +1100)
+v4 was tested with Cisco 7945 (high UDP destination port) and Snom m9
+(normal "symmetric" UDP destination port), both on IPv4 only.
 
-are available in the git repository at:
+I've been running a recent OpenWRT port of this patch (Attitude Adjustment
+release, 3.3 kernel) for ~2mo, with both phones as clients.
 
-  git://neil.brown.name/md/ tags/md-3.8
 
-for you to fetch changes up to a9add5d92b64ea57fb4c3b557c3891cdeb15fa0c:
+ include/linux/netfilter/nf_conntrack_sip.h |    3 +++
+ net/netfilter/nf_conntrack_sip.c           |   17 +++++++++++++++++
+ net/netfilter/nf_nat_sip.c                 |   27 ++++++++++++++++++++++++---
+ 3 files changed, 44 insertions(+), 3 deletions(-)
 
-  md/raid5: add blktrace calls (2012-12-18 10:22:21 +1100)
+diff --git a/include/linux/netfilter/nf_conntrack_sip.h b/include/linux/netfilter/nf_conntrack_sip.h
+index 387bdd0..ba7f571 100644
+--- a/include/linux/netfilter/nf_conntrack_sip.h
++++ b/include/linux/netfilter/nf_conntrack_sip.h
+@@ -4,12 +4,15 @@
+ 
+ #include <net/netfilter/nf_conntrack_expect.h>
+ 
++#include <linux/types.h>
++
+ #define SIP_PORT	5060
+ #define SIP_TIMEOUT	3600
+ 
+ struct nf_ct_sip_master {
+ 	unsigned int	register_cseq;
+ 	unsigned int	invite_cseq;
++	__be16		forced_dport;
+ };
+ 
+ enum sip_expectation_classes {
+diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
+index df8f4f2..72a67bb 100644
+--- a/net/netfilter/nf_conntrack_sip.c
++++ b/net/netfilter/nf_conntrack_sip.c
+@@ -1440,8 +1440,25 @@ static int process_sip_request(struct sk_buff *skb, unsigned int protoff,
+ {
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
++	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
++	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
+ 	unsigned int matchoff, matchlen;
+ 	unsigned int cseq, i;
++	union nf_inet_addr addr;
++	__be16 port;
++
++	/* Many Cisco IP phones use a high source port for SIP requests, but
++	 * listen for the response on port 5060.  If we are the local
++	 * router for one of these phones, save the port number from the
++	 * Via: header so that nf_nat_sip can redirect the responses to
++	 * the correct port.
++	 */
++	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
++				    SIP_HDR_VIA_UDP, NULL, &matchoff,
++				    &matchlen, &addr, &port) > 0 &&
++	    port != ct->tuplehash[dir].tuple.src.u.udp.port &&
++	    nf_inet_addr_cmp(&addr, &ct->tuplehash[dir].tuple.src.u3))
++		ct_sip_info->forced_dport = port;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(sip_handlers); i++) {
+ 		const struct sip_handler *handler;
+diff --git a/net/netfilter/nf_nat_sip.c b/net/netfilter/nf_nat_sip.c
+index 16303c7..5951146e 100644
+--- a/net/netfilter/nf_nat_sip.c
++++ b/net/netfilter/nf_nat_sip.c
+@@ -95,6 +95,7 @@ static int map_addr(struct sk_buff *skb, unsigned int protoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
+ 	char buffer[INET6_ADDRSTRLEN + sizeof("[]:nnnnn")];
+ 	unsigned int buflen;
+ 	union nf_inet_addr newaddr;
+@@ -107,7 +108,8 @@ static int map_addr(struct sk_buff *skb, unsigned int protoff,
+ 	} else if (nf_inet_addr_cmp(&ct->tuplehash[dir].tuple.dst.u3, addr) &&
+ 		   ct->tuplehash[dir].tuple.dst.u.udp.port == port) {
+ 		newaddr = ct->tuplehash[!dir].tuple.src.u3;
+-		newport = ct->tuplehash[!dir].tuple.src.u.udp.port;
++		newport = ct_sip_info->forced_dport ? :
++			  ct->tuplehash[!dir].tuple.src.u.udp.port;
+ 	} else
+ 		return 1;
+ 
+@@ -144,6 +146,7 @@ static unsigned int nf_nat_sip(struct sk_buff *skb, unsigned int protoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
+ 	unsigned int coff, matchoff, matchlen;
+ 	enum sip_header_types hdr;
+ 	union nf_inet_addr addr;
+@@ -258,6 +261,21 @@ next:
+ 	    !map_sip_addr(skb, protoff, dataoff, dptr, datalen, SIP_HDR_TO))
+ 		return NF_DROP;
+ 
++	/* Mangle destination port for Cisco phones, then fix up checksums */
++	if (dir == IP_CT_DIR_REPLY && ct_sip_info->forced_dport) {
++		struct udphdr *uh;
++
++		if (!skb_make_writable(skb, skb->len))
++			return NF_DROP;
++
++		uh = (void *)skb->data + protoff;
++		uh->dest = ct_sip_info->forced_dport;
++
++		if (!nf_nat_mangle_udp_packet(skb, ct, ctinfo, protoff,
++					      0, 0, NULL, 0))
++			return NF_DROP;
++	}
++
+ 	return NF_ACCEPT;
+ }
+ 
+@@ -311,8 +329,10 @@ static unsigned int nf_nat_sip_expect(struct sk_buff *skb, unsigned int protoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_ct_sip_master *ct_sip_info = nfct_help_data(ct);
+ 	union nf_inet_addr newaddr;
+ 	u_int16_t port;
++	__be16 srcport;
+ 	char buffer[INET6_ADDRSTRLEN + sizeof("[]:nnnnn")];
+ 	unsigned int buflen;
+ 
+@@ -326,8 +346,9 @@ static unsigned int nf_nat_sip_expect(struct sk_buff *skb, unsigned int protoff,
+ 	/* If the signalling port matches the connection's source port in the
+ 	 * original direction, try to use the destination port in the opposite
+ 	 * direction. */
+-	if (exp->tuple.dst.u.udp.port ==
+-	    ct->tuplehash[dir].tuple.src.u.udp.port)
++	srcport = ct_sip_info->forced_dport ? :
++		  ct->tuplehash[dir].tuple.src.u.udp.port;
++	if (exp->tuple.dst.u.udp.port == srcport)
+ 		port = ntohs(ct->tuplehash[!dir].tuple.dst.u.udp.port);
+ 	else
+ 		port = ntohs(exp->tuple.dst.u.udp.port);
+-- 
+1.7.5.4
 
-----------------------------------------------------------------
-md update for 3.8
-
-Mostly just little fixes.  Probably biggest part is
-AVX accelerated RAID6 calculations.
-
-----------------------------------------------------------------
-Jim Kukunas (1):
-      lib/raid6: Add AVX2 optimized recovery functions
-
-NeilBrown (5):
-      md: removed unused variable in calc_sb_1_csm.
-      md: close race between removing and adding a device.
-      md.c: re-indent various 'switch' statements.
-      md/raid5: use async_tx_quiesce() instead of open-coding it.
-      md/raid5: add blktrace calls
-
-Yuanhan Liu (2):
-      lib/raid6: Add AVX2 optimized gen_syndrome functions
-      lib/raid6: build proper files on corresponding arch
-
-kernelmail (1):
-      md:Add place to update ->recovery_cp.
-
-majianpeng (2):
-      md: Update checkpoint of resync/recovery based on time.
-      md: Use ->curr_resync as last completed request when cleanly aborting=
- resync.
-
- arch/x86/Makefile       |   5 +-
- drivers/md/md.c         | 256 ++++++++++++++++++++------------------
- drivers/md/md.h         |   2 +
- drivers/md/raid5.c      |  43 +++++--
- include/linux/raid/pq.h |   4 +
- lib/raid6/Makefile      |   9 +-
- lib/raid6/algos.c       |  12 ++
- lib/raid6/altivec.uc    |   3 -
- lib/raid6/avx2.c        | 251 +++++++++++++++++++++++++++++++++++++
- lib/raid6/mmx.c         |   2 +-
- lib/raid6/recov_avx2.c  | 323 ++++++++++++++++++++++++++++++++++++++++++++=
-++++
- lib/raid6/recov_ssse3.c |   4 -
- lib/raid6/sse1.c        |   2 +-
- lib/raid6/sse2.c        |   8 +-
- lib/raid6/test/Makefile |  29 ++++-
- lib/raid6/x86.h         |  14 ++-
- 16 files changed, 809 insertions(+), 158 deletions(-)
- create mode 100644 lib/raid6/avx2.c
- create mode 100644 lib/raid6/recov_avx2.c
-
---Sig_/1Zp8ZAQjgYxctpLg_JEQioz
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUM/x0Dnsnt1WYoG5AQLX1A//aTRYoJ8tS3UNG80vaLagCsqDNqh5NWbT
-Wv1Rt0wrYIS0YhY6vKP/4R3BdJ6zX/p/8FPqoTeiD9RuO2349W7hDbGz7Bf9qVLr
-/SuRwic0tQmULMa5TacDJ11Hb4BDDUraYVZVwJcJu/rWayIAq2DPsXuKOu/iw+bI
-75qCEKf6WgYxZtl4hJ+mPuVycgnsWpyrE/hDJM1P18UuTvqNlj0Vde/RUXIgcF/w
-eSXwiRKC30Plspp6wDzEQKPD1dDsJlUYISGeBQ4vEx8V6dArsU2+49Lke6zlR++L
-AWYT2V84gHirAjh/BuI37RdP+/euBuaeuhGo1hhBf3/1UbJlywLFO520/iY1U8RX
-3liaD6w4S8yOCP8JPiwhVhRA9l7eifAZwdWLf+KokhHCQbzzPS+jpifQZ/EPNHrA
-MktxFxIRfAv4fauFwz5NxFmFUZILlbHdE6LnzNubPLzsgsxw7Y2MEBhkaJaQN/Ev
-WLjYuMI8O5HMQLyPrK5g/Wf3nWFpxkfTePh1RHbziLVPqvLdhK+DIaWbkUQ/4lb0
-hT3sAT1vmtYRtyFcp6c7Rcwq1VOR602caLsMCZWWLX4ABvQJHGCD8re99cR2fJYr
-VxW9SkZkP/r8lkbfx5Eq84rWyPR6/KJdEDhfZajGEzA2kJBkTr1DXixs3QlrQSJp
-ppv3GQIp5TY=
-=GzmE
------END PGP SIGNATURE-----
-
---Sig_/1Zp8ZAQjgYxctpLg_JEQioz--
