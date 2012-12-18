@@ -1,119 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab2LRI0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 03:26:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41415 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074Ab2LRI0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 03:26:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,308,1355126400"; 
-   d="scan'208";a="265991507"
-Subject: [PATCH] spi: Add the flag indicate to registe new device as
- children of master or not.
-From: Jun Chen <jun.d.chen@intel.com>
-To: grant.likely@secretlab.ca
-Cc: linux-kernel@vger.kernel.org, jun.d.chen@intel.com,
-        Bi Chao <chao.bi@intel.com>, spi-devel-general@lists.sourceforge.net
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Dec 2012 11:29:34 -0500
-Message-ID: <1355848174.1435.25.camel@chenjun-workstation>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754455Ab2LRI1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 03:27:40 -0500
+Received: from [80.244.247.6] ([80.244.247.6]:56259 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754078Ab2LRI1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 03:27:39 -0500
+Date: Tue, 18 Dec 2012 09:27:34 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Armando Visconti <armando.visconti@st.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH] usb: gadget zero: avoid unnecessary reinit of data in
+ f_sourcesink
+Message-ID: <20121218082734.GA3289@breakpoint.cc>
+References: <1355407879-11784-1-git-send-email-armando.visconti@st.com>
+ <20121217154545.GB5931@breakpoint.cc>
+ <50CF548C.2080500@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50CF548C.2080500@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 17, 2012 at 06:21:16PM +0100, Armando Visconti wrote:
+> >Besides that the patch looks fine :)
+> 
+> Do you mean that 'inited' should be changed with 'initialized'?
+Yes, I do.
 
-Because there are two aim when allocating the new device, one is for children of master,
-other is for master. So this patch add one flag to indicate different purpose.
+> Oh ... my poor english... :(
+Don't worry. Others, including myself, do this from time to time as well :)
 
-Signed-off-by: Bi Chao <chao.bi@intel.com>
-Signed-off-by: Chen Jun <jun.d.chen@intel.com>
----
- drivers/spi/spi.c       |   16 +++++++++++-----
- include/linux/spi/spi.h |    3 ++-
- 2 files changed, 13 insertions(+), 6 deletions(-)
+> 
+> Rgds,
+> Arm
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 718cc1f..06f69ce 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -300,6 +300,8 @@ static DEFINE_MUTEX(board_lock);
- /**
-  * spi_alloc_device - Allocate a new SPI device
-  * @master: Controller to which device is connected
-+ * device_was_children_of_master is flag which the device is registed
-+ * as the children of the bus
-  * Context: can sleep
-  *
-  * Allows a driver to allocate and initialize a spi_device without
-@@ -314,7 +316,8 @@ static DEFINE_MUTEX(board_lock);
-  *
-  * Returns a pointer to the new device, or NULL.
-  */
--struct spi_device *spi_alloc_device(struct spi_master *master)
-+struct spi_device *spi_alloc_device(struct spi_master *master,
-+				bool device_was_children_of_master)
- {
- 	struct spi_device	*spi;
- 	struct device		*dev = master->dev.parent;
-@@ -330,7 +333,10 @@ struct spi_device *spi_alloc_device(struct spi_master *master)
- 	}
- 
- 	spi->master = master;
--	spi->dev.parent = &master->dev;
-+	if (device_was_children_of_master == true)
-+		spi->dev.parent = &master->dev;
-+	else
-+		spi->dev.parent = dev;
- 	spi->dev.bus = &spi_bus_type;
- 	spi->dev.release = spidev_release;
- 	device_initialize(&spi->dev);
-@@ -434,7 +440,7 @@ struct spi_device *spi_new_device(struct spi_master *master,
- 	 * suggests syslogged diagnostics are best here (ugh).
- 	 */
- 
--	proxy = spi_alloc_device(master);
-+	proxy = spi_alloc_device(master, false);
- 	if (!proxy)
- 		return NULL;
- 
-@@ -827,7 +833,7 @@ static void of_register_spi_devices(struct spi_master *master)
- 
- 	for_each_available_child_of_node(master->dev.of_node, nc) {
- 		/* Alloc an spi_device */
--		spi = spi_alloc_device(master);
-+		spi = spi_alloc_device(master, true);
- 		if (!spi) {
- 			dev_err(&master->dev, "spi_device alloc error for %s\n",
- 				nc->full_name);
-@@ -939,7 +945,7 @@ static acpi_status acpi_spi_add_device(acpi_handle handle, u32 level,
- 	if (acpi_bus_get_status(adev) || !adev->status.present)
- 		return AE_OK;
- 
--	spi = spi_alloc_device(master);
-+	spi = spi_alloc_device(master, false);
- 	if (!spi) {
- 		dev_err(&master->dev, "failed to allocate SPI device for %s\n",
- 			dev_name(&adev->dev));
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index fa702ae..43d2f8e 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -838,7 +838,8 @@ spi_register_board_info(struct spi_board_info const *info, unsigned n)
-  * be defined using the board info.
-  */
- extern struct spi_device *
--spi_alloc_device(struct spi_master *master);
-+spi_alloc_device(struct spi_master *master,
-+				bool device_was_children_of_master);
- 
- extern int
- spi_add_device(struct spi_device *spi);
--- 
-1.7.4.1
-
-
-
+Sebastian
