@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab2LRIbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 03:31:44 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:57250 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab2LRIbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 03:31:42 -0500
-X-Greylist: delayed 2933 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 03:31:42 EST
-Date: Mon, 17 Dec 2012 23:34:30 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH] mm: Suppress mm/memory.o warning on older compilers if
- !CONFIG_NUMA_BALANCING
-In-Reply-To: <20121217124949.3024dda3.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1212172306150.29320@chino.kir.corp.google.com>
-References: <20121217114917.GF9887@suse.de> <20121217124949.3024dda3.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754562Ab2LRIeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 03:34:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15759 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754146Ab2LRIeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 03:34:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,308,1355126400"; 
+   d="scan'208";a="258777659"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, spear-devel <spear-devel@list.st.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 2/2] dma: dw_dmac: clear suspend bit during termination
+Date: Tue, 18 Dec 2012 10:33:55 +0200
+Message-Id: <1355819635-18693-2-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355819635-18693-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1355819635-18693-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012, Andrew Morton wrote:
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-> > The kbuild test robot reported the following after the merge of Automatic
-> > NUMA Balancing when cross-compiling for avr32.
-> > 
-> > mm/memory.c: In function 'do_pmd_numa_page':
-> > mm/memory.c:3593: warning: no return statement in function returning non-void
-> > 
-> > The code is unreachable but the avr32 cross-compiler was not new enough
-> > to know that. This patch suppresses the warning.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/memory.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index e6a3b93..23f1fdf 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -3590,6 +3590,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  		     unsigned long addr, pmd_t *pmdp)
-> >  {
-> >  	BUG();
-> > +	return 0;
-> >  }
-> >  #endif /* CONFIG_NUMA_BALANCING */
-> 
-> Odd.  avr32's BUG() includes a call to unreachable(), which should
-> evaluate to "do { } while (1)".  Can you check that this is working?
-> 
-> Perhaps it _is_ working, but the compiler incorrectly thinks that the
-> function can return?
-> 
+The DMA transfer could not be established if previously it was paused and
+terminated. In that case the channel's suspend bit remains set that prevents to
+transfer anything until channel is resumed.
 
-This isn't the typical "control reaches end of non-void function", the 
-warning is merely stating there is no return statement in the function 
-which happens to be the case (and it has nothing to do with avr32, it 
-will be the same on all archs).  This is one of the last things that gcc 
-does after it parses a function declaration and will be emitted with 
--Wreturn-type unless the function in question is main() and it isn't 
-marked with __attribute__((noreturn)).  If you're testing this, try making 
-the function statically defined and it should show up even with 
-do {} while(1).
+The patch adds a code that clears the DWC_CFGL_CH_SUSP bit during termination.
 
-And for CONFIG_BUG=n this ends up being do {} while (0) which is just a 
-no-op and would end up returning that "control reaches end of non-void 
-function" warning.
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/dma/dw_dmac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 687af2a..8d77643 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1059,7 +1059,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 
+ 		dwc_chan_disable(dw, dwc);
+ 
+-		dwc->paused = false;
++		dwc_chan_resume(dwc);
+ 
+ 		/* active_list entries will end up before queued entries */
+ 		list_splice_init(&dwc->queue, &list);
+-- 
+1.7.10.4
+
