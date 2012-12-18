@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2LRMHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 07:07:14 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:37148 "EHLO
+	id S1754734Ab2LRMHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 07:07:44 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:40615 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab2LRMHM (ORCPT
+	with ESMTP id S1754673Ab2LRMHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 07:07:12 -0500
+	Tue, 18 Dec 2012 07:07:43 -0500
 From: Mark Rutland <mark.rutland@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
         tglx@linutronix.de, nico@linaro.org, will.deacon@arm.com,
         marc.zyngier@arm.com, john.stultz@linaro.org,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [RFC PATCH 0/5] clockevents: decouple broadcast mechanism from drivers
-Date: Tue, 18 Dec 2012 12:06:53 +0000
-Message-Id: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
+Subject: [RFC PATCH 1/5] ARM: remove useless guard in smp.c
+Date: Tue, 18 Dec 2012 12:06:54 +0000
+Message-Id: <1355832418-31692-2-git-send-email-mark.rutland@arm.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 18 Dec 2012 12:07:07.0844 (UTC) FILETIME=[339C3040:01CDDD18]
-X-MC-Unique: 112121812070924901
+In-Reply-To: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
+References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
+X-OriginalArrivalTime: 18 Dec 2012 12:07:17.0922 (UTC) FILETIME=[399DF820:01CDDD18]
+X-MC-Unique: 112121812072003201
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qBIC7Kef018301
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qBIC7ioA018305
 
-In some SMP systems, cpu-local timers may stop delivering interrupts
-when in low power states, or not all CPUs may have local timers. To
-support these systems we have a mechanism for broadcasting timer ticks
-to other CPUs. This mechanism relies on the struct
-clock_event_device::broadcast function pointer, which is a
-driver-specific mechanism for broadcasting ticks to other CPUs.
+Currently we only provide an implementation of smp_timer_broadcast in
+smp.c if GENERIC_CLOCKEVENTS_BROADCAST is selected. As
+smp_timer_broadcast is only used in smp.c, smp.c depends on SMP, and
+GENERIC_CLOCKEVENTS_BROADCAST is selected by SMP, this is unnecessary.
 
-As the broadcast mechanism is architecture-specific, placing the
-broadcast function on struct clock_event_device ties each driver to a
-single architecture. Additionally the driver or architecture backend
-must handle the routing of broadcast ticks to the correct
-clock_event_device, leading to duplication of the list of active
-clock_event_devices.
+This patch removes the redundant guard.
 
-These patches introduce a generic mechanism for handling the receipt of
-timer broadcasts, and an optional architecture-specific broadcast
-function which allows drivers to be decoupled from a particular
-architecture will retaining support for timer tick broadcasts. These
-mechanisms are wired up for the arm port, and have been boot-tested on a
-pandaboard.
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+---
+ arch/arm/kernel/smp.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-Thanks,
-Mark.
-
-Mark Rutland (5):
-  ARM: remove useless guard in smp.c
-  clockevents: Add generic timer broadcast receiver
-  ARM: Use generic timer broadcast receive
-  clockevents: Add generic timer broadcast function
-  ARM: Add generic timer broadcast support
-
- arch/arm/Kconfig             |    1 +
- arch/arm/kernel/smp.c        |   15 ++-------------
- include/linux/clockchips.h   |    9 +++++++++
- kernel/time/Kconfig          |    4 ++++
- kernel/time/tick-broadcast.c |   30 ++++++++++++++++++++++++++++++
- 5 files changed, 46 insertions(+), 13 deletions(-)
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index fbc8b26..21954bc 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -473,14 +473,10 @@ static void ipi_timer(void)
+ 	evt->event_handler(evt);
+ }
+ 
+-#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+ static void smp_timer_broadcast(const struct cpumask *mask)
+ {
+ 	smp_cross_call(mask, IPI_TIMER);
+ }
+-#else
+-#define smp_timer_broadcast	NULL
+-#endif
+ 
+ static void broadcast_timer_set_mode(enum clock_event_mode mode,
+ 	struct clock_event_device *evt)
+-- 
+1.7.0.4
 
 
