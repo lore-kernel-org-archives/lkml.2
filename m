@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab2LRWOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:14:54 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:48556 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754203Ab2LRWOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:14:52 -0500
-Message-ID: <1355868892.3982.6.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: Warn on #include <uapi/...
-From: Joe Perches <joe@perches.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 18 Dec 2012 14:14:52 -0800
-In-Reply-To: <14276.1355862945@warthog.procyon.org.uk>
-References: <1355860368.30366.33.camel@joe-AO722>
-	 <9cfc0861cd3ae0a7d4e72056c00b8bebef1490eb.1355853060.git.joe@perches.com>
-	 <6433.1355840610@warthog.procyon.org.uk>
-	 <12373.1355858223@warthog.procyon.org.uk>
-	 <14276.1355862945@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S1755441Ab2LRWRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:17:14 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55307 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab2LRWRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 17:17:13 -0500
+X-IronPort-AV: E=Sophos;i="4.84,311,1355126400"; 
+   d="scan'208";a="14982495"
+Message-ID: <50D0EB67.2060802@codeaurora.org>
+Date: Tue, 18 Dec 2012 14:17:11 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, nico@linaro.org,
+        marc.zyngier@arm.com, will.deacon@arm.com, john.stultz@linaro.org,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/5] clockevents: Add generic timer broadcast receiver
+References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com> <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
+In-Reply-To: <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-18 at 20:35 +0000, David Howells wrote:
-> Joe Perches <joe@perches.com> wrote:
-[]
-> > arch/powerpc/include/asm/kvm_para.h
-> > ...
-> > -#include <linux/types.h>
-> > +#include <uapi/asm/kvm_para.h>
-> 
-> No, that is a correct alteration.
-> 
-> The example I gave was:
-> 
-> 	- #include <asm/epapr_hcalls.h>
-> 	++#include <uapi/asm/epapr_hcalls.h>
-> 
-> which is to be found in arch/powerpc/include/uapi/asm/kvm_para.h.
+On 12/18/12 04:06, Mark Rutland wrote:
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index f113755..c2dd022 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -125,6 +125,21 @@ int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu)
+>  	return ret;
+>  }
+>  
+> +int tick_receive_broadcast(void)
+> +{
+> +	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+> +	struct clock_event_device *evt = td->evtdev;
+> +
+> +	if (!evt)
+> +		return -ENODEV;
+> +
+> +	if (!evt->event_handler)
+> +		return -EINVAL;
+> +
 
-Just to verify, any file in any path [.../]include/uapi/...
-should not itself have a line like '#include <uapi/...' ?
+Does this actually happen? It's not obvious to me how it does.
 
+> +	evt->event_handler(evt);
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Broadcast the event to the cpus, which are set in the mask (mangled).
+>   */
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
