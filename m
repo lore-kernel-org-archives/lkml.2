@@ -1,122 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab2LRBhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:37:40 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:38830 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab2LRBhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:37:38 -0500
-Message-ID: <1355794293.5681.3.camel@phoenix>
-Subject: [PATCH 2/4] regulator: 88pm8607: Use apply_[reg|bit] with regmap
- based voltage_sel operations
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 18 Dec 2012 09:31:33 +0800
-In-Reply-To: <1355794210.5681.1.camel@phoenix>
-References: <1355794210.5681.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754191Ab2LRBhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:37:55 -0500
+Received: from bs1.fjl.org.uk ([84.45.41.196]:59009 "EHLO bs1.fjl.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754002Ab2LRBhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 20:37:52 -0500
+Message-ID: <50CFC8F4.60601@avoncliff.com>
+Date: Tue, 18 Dec 2012 01:37:56 +0000
+From: david <david@avoncliff.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: greg@kroah.com, zbr@ioremap.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] resubmit  w1_therm:Retries:remove old code add CRC
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/88pm8607.c |   43 ++++++++++++------------------------------
- 1 file changed, 12 insertions(+), 31 deletions(-)
+w1_therm includes some obsolete code to detect bad_roms, this is no
+longer relevant.
+The retry code is only used for this bad_rom test, however there is a
+CRC check that detects a bad read, but does not trigger a retry. This
+patch removes all the bad_rom code and uses the CRC check to trigger
+retries.
 
-diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-index 2b55711..9ebdf8c 100644
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -30,8 +30,6 @@ struct pm8607_regulator_info {
- 	unsigned int	*vol_table;
- 	unsigned int	*vol_suspend;
- 
--	int	update_reg;
--	int	update_bit;
- 	int	slope_double;
- };
- 
-@@ -222,29 +220,6 @@ static int pm8607_list_voltage(struct regulator_dev *rdev, unsigned index)
- 	return ret;
- }
- 
--static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+Signed-off-by: David Stevenson <david@avoncliff.com>
+
+diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
+index 92d08e7..5ef583d 100644
+--- a/drivers/w1/slaves/w1_therm.c
++++ b/drivers/w1/slaves/w1_therm.c
+@@ -45,10 +45,6 @@ MODULE_DESCRIPTION("Driver for 1-wire Dallas network protocol, temperature famil
+  static int w1_strong_pullup = 1;
+  module_param_named(strong_pullup, w1_strong_pullup, int, 0);
+  
+-static u8 bad_roms[][9] = {
+-				{0xaa, 0x00, 0x4b, 0x46, 0xff, 0xff, 0x0c, 0x10, 0x87},
+-				{}
+-			};
+  
+  static ssize_t w1_therm_read(struct device *device,
+  	struct device_attribute *attr, char *buf);
+@@ -168,16 +164,6 @@ static inline int w1_convert_temp(u8 rom[9], u8 fid)
+  	return 0;
+  }
+  
+-static int w1_therm_check_rom(u8 rom[9])
 -{
--	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
--	uint8_t val;
--	int ret;
+-	int i;
 -
--	val = (uint8_t)(selector << (ffs(rdev->desc->vsel_mask) - 1));
+-	for (i=0; i<sizeof(bad_roms)/9; ++i)
+-		if (!memcmp(bad_roms[i], rom, 9))
+-			return 1;
 -
--	ret = pm860x_set_bits(info->i2c, rdev->desc->vsel_reg,
--			      rdev->desc->vsel_mask, val);
--	if (ret)
--		return ret;
--	switch (info->desc.id) {
--	case PM8607_ID_BUCK1:
--	case PM8607_ID_BUCK3:
--		ret = pm860x_set_bits(info->i2c, info->update_reg,
--				      1 << info->update_bit,
--				      1 << info->update_bit);
--		break;
--	}
--	return ret;
+-	return 0;
 -}
+  
+  static ssize_t w1_therm_read(struct device *device,
+  	struct device_attribute *attr, char *buf)
+@@ -194,10 +180,11 @@ static ssize_t w1_therm_read(struct device *device,
+  
+  	memset(rom, 0, sizeof(rom));
+  
+-	verdict = 0;
+-	crc = 0;
 -
- static int pm8606_preg_enable(struct regulator_dev *rdev)
- {
- 	struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
-@@ -276,7 +251,7 @@ static int pm8606_preg_is_enabled(struct regulator_dev *rdev)
- 
- static struct regulator_ops pm8607_regulator_ops = {
- 	.list_voltage	= pm8607_list_voltage,
--	.set_voltage_sel = pm8607_set_voltage_sel,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
-@@ -313,11 +288,11 @@ static struct regulator_ops pm8606_preg_ops = {
- 		.n_voltages = ARRAY_SIZE(vreg##_table),			\
- 		.vsel_reg = PM8607_##vreg,				\
- 		.vsel_mask = ARRAY_SIZE(vreg##_table) - 1,		\
-+		.apply_reg = PM8607_##ureg,				\
-+		.apply_bit = (ubit),					\
- 		.enable_reg = PM8607_##ereg,				\
- 		.enable_mask = 1 << (ebit),				\
- 	},								\
--	.update_reg	= PM8607_##ureg,				\
--	.update_bit	= (ubit),					\
- 	.slope_double	= (0),						\
- 	.vol_table	= (unsigned int *)&vreg##_table,		\
- 	.vol_suspend	= (unsigned int *)&vreg##_suspend_table,	\
-@@ -343,9 +318,15 @@ static struct regulator_ops pm8606_preg_ops = {
- }
- 
- static struct pm8607_regulator_info pm8607_regulator_info[] = {
--	PM8607_DVC(BUCK1, GO, 0, SUPPLIES_EN11, 0),
--	PM8607_DVC(BUCK2, GO, 1, SUPPLIES_EN11, 1),
--	PM8607_DVC(BUCK3, GO, 2, SUPPLIES_EN11, 2),
-+	PM8607_DVC(BUCK1, GO, BIT(0), SUPPLIES_EN11, 0),
-+	/*
-+	 * BUCK2 is designed to control voltage of CP domain.
-+	 * Linux only runs in AP side, so we don't need to control BUCK2 in AP
-+	 * side. Thus set the apply bit to be 0 instead of BIT(1) to avoid
-+	 * updating apply_bit for BUCK2.
-+	 */
-+	PM8607_DVC(BUCK2, GO, 0, SUPPLIES_EN11, 1),
-+	PM8607_DVC(BUCK3, GO, BIT(2), SUPPLIES_EN11, 2),
- 
- 	PM8607_LDO(1,         LDO1, 0, SUPPLIES_EN11, 3),
- 	PM8607_LDO(2,         LDO2, 0, SUPPLIES_EN11, 4),
--- 
-1.7.9.5
-
-
-
+  	while (max_trying--) {
++
++		verdict = 0;
++		crc = 0;
++
+  		if (!w1_reset_select_slave(sl)) {
+  			int count = 0;
+  			unsigned int tm = 750;
+@@ -249,7 +236,7 @@ static ssize_t w1_therm_read(struct device *device,
+  			}
+  		}
+  
+-		if (!w1_therm_check_rom(rom))
++		if (verdict)
+  			break;
+  	}
+  
+@@ -260,7 +247,7 @@ static ssize_t w1_therm_read(struct device *device,
+  	if (verdict)
+  		memcpy(sl->rom, rom, sizeof(sl->rom));
+  	else
+-		dev_warn(device, "18S20 doesn't respond to CONVERT_TEMP.\n");
++		dev_warn(device, "Read failed CRC check\n");
+  
+  	for (i = 0; i < 9; ++i)
+  		c -= snprintf(buf + PAGE_SIZE - c, c, "%02x ", sl->rom[i]);
