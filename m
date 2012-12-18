@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab2LRVMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 16:12:10 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:41982 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067Ab2LRVMG (ORCPT
+	id S1754957Ab2LRVPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 16:15:00 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:37902 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751348Ab2LRVOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 16:12:06 -0500
+	Tue, 18 Dec 2012 16:14:55 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvAMAM7b0FB5LGZj/2dsb2JhbABFhVKyVYQAgX4Xc4IeAQEEATocIxAIAw4DAwECAS4UDRgDEw4TiAEDCQWubg2JVRSLTGmDYmEDlDSBVYs4hRGDCA
+Date: Wed, 19 Dec 2012 08:14:51 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: ys <sickamd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] vfs: update atimes over one day in the past or future
+Message-ID: <20121218211451.GE15182@dastard>
+References: <50CC9663.4010200@gmail.com>
+ <20121216021508.GG9806@dastard>
+ <60E209F1-F797-42C2-9F41-43BF7839B2A3@dilger.ca>
 MIME-Version: 1.0
-In-Reply-To: <20121211182720.GC29421@kroah.com>
-References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
-	<20121211182720.GC29421@kroah.com>
-Date: Tue, 18 Dec 2012 13:12:05 -0800
-Message-ID: <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
-Subject: Re: zram: fix invalid memory references during disk write
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <60E209F1-F797-42C2-9F41-43BF7839B2A3@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
->> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
->> of incompressible pages") which caused invalid memory references
->> during disk write. Invalid references could occur in two cases:
->>  - Incoming data expands on compression: In this case, reference was
->> made to kunmap()'ed bio page.
->>  - Partial (non PAGE_SIZE) write with incompressible data: In this
->> case, reference was made to a kfree()'ed buffer.
->>
->> Fixes bug 50081:
->> https://bugzilla.kernel.org/show_bug.cgi?id=50081
->>
->> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
->> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
->>
->> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
->>                               # zram_decompress_page() function
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
->> Reported-by: Tomas M <tomas@slax.org>
->> Reviewed-by: Minchan Kim <minchan@kernel.org>
->> ---
->>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
->>  1 file changed, 24 insertions(+), 15 deletions(-)
->
-> This patch fails to apply to 3.6.10:
->
-> patching file drivers/staging/zram/zram_drv.c
-> Hunk #1 succeeded at 282 (offset 17 lines).
-> Hunk #2 FAILED at 286.
-> Hunk #3 succeeded at 319 (offset 17 lines).
-> Hunk #4 succeeded at 340 (offset 17 lines).
-> Hunk #5 succeeded at 353 (offset 17 lines).
-> Hunk #6 succeeded at 368 (offset 17 lines).
-> Hunk #7 succeeded at 385 (offset 17 lines).
-> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
->
-> Please redo this patch and resend it if you wish for it to be applied to
-> the 3.6-stable tree.
->
->
+On Tue, Dec 18, 2012 at 05:14:57AM -0700, Andreas Dilger wrote:
+> On 2012-12-15, at 19:15, Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > On Sat, Dec 15, 2012 at 11:25:23PM +0800, ys wrote:
+> >> From 3d56c131b58a21c05bcd677b9d2ba915abcbf195 Mon Sep 17 00:00:00 2001
+> >> From: yangsheng <sickamd@gmail.com>
+> >> Date: Sat, 15 Dec 2012 21:46:22 +0800
+> >> Subject: [PATCH] vfs: update atimes over one day in the past or future
+> >> 
+> >> Relatime should update the inode atime if it is more than one day
+> >> in the future.  The original problem seen was a tarball that had
+> >> a bad atime in the distant future, but could also happen if someone
+> >> fat-fingers a "touch".  The future atime will never be fixed.
+> >> 
+> >> Without relatime enabled, a future atime is updated to the current
+> >> kernel time on access.  Relatime is meant to reduce the frequency
+> >> of atime updates, not decide if whether the system clock or the
+> >> inode timestamp is correct or not.
+> >> 
+> >> Signed-off-by: Yang Sheng <sickamd@gmail.com>
+> >> Signed-off-by: Andreas Dilger <adilger@dilger.ca>
+> >> Acked-by: David Chinner <david@fromorbit.com>
+> > 
+> > No I didn't. Please don't add tags that someone has not added
+> > directly in a reply to the original patch.
+> 
+> That's my fault. I thought you'd OK'd the patch with the revised commit comment. 
 
-Please apply this patch to stable tree asap.
+Easy enough to misunderstand. :/
 
-As mentioned in changelog above, this patch depends on 37b51fd: zram: factor-out
-zram_decompress_page() function. You will not get any rejects after
-this patch is
-applied.
+I simply avoid the issue by only adding tags that have been directly
+sent by people...
 
- - Nitin
+> >> CC: stable@vger.kernel.org
+> >> ---
+> >> fs/inode.c | 7 ++++---
+> >> 1 ??????????????????????????? 4 ???(+)????????? 3 ???(-)
+> > 
+> > There's something wrong with the character encoding you are using...
+> 
+> Chinese locale, but probably doesn't matter since text below "---" isn't in the commit anyway?
+
+Yup, but it doesn't inspire confidence that the patch is going to be
+clean when multiple encodings appear in the one message...
+
+> > Also, you've added an extra line of whitespace damage that doesn't
+> > need to be there.....
+> > 
+> > FWIW, could you write a test for xfstests for this behaviour
+> > so we can confirm that we don't break it in future?
+> 
+> Sure, I'll take a crack at that. 
+
+Great. Thanks for the followup, Andreas.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
