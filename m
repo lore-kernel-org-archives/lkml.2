@@ -1,159 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab2LRPP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 10:15:58 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10373 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076Ab2LRPP4 convert rfc822-to-8bit (ORCPT
+	id S932142Ab2LRPR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:17:26 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:42049 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076Ab2LRPRY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 10:15:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 18 Dec 2012 07:15:54 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "robherring2@gmail.com" <robherring2@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Tue, 18 Dec 2012 16:15:46 +0100
-Subject: Re: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from DT
-Thread-Topic: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from
- DT
-Thread-Index: Ac3dMpFFXz47HtoOS2SpXNAByjhyEw==
-Message-ID: <20121218.171546.377156145440622681.hdoyu@nvidia.com>
-References: <50CF258E.2080207@gmail.com><20121218.112129.1344593225772728837.hdoyu@nvidia.com><50D073BC.3040607@gmail.com>
-In-Reply-To: <50D073BC.3040607@gmail.com>
-Accept-Language: en-US
+	Tue, 18 Dec 2012 10:17:24 -0500
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [patch 3/7] mm: vmscan: clarify how swappiness, highest
+ priority, memcg interact
+Thread-Topic: [patch 3/7] mm: vmscan: clarify how swappiness, highest
+ priority, memcg interact
+Thread-Index: AQHN3II/O6dqwebIPkiSLfmFB0XPrJgeqxJQ
+Date: Tue, 18 Dec 2012 15:16:22 +0000
+Message-ID: <8631DC5930FA9E468F04F3FD3A5D007214AD86F1@USINDEM103.corp.hds.com>
+References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
+ <1355767957-4913-4-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1355767957-4913-4-git-send-email-hannes@cmpxchg.org>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-18_05:2012-12-18,2012-12-18,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1212180103
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Herring <robherring2@gmail.com> wrote @ Tue, 18 Dec 2012 14:46:36 +0100:
-
-> On 12/18/2012 03:21 AM, Hiroshi Doyu wrote:
-> > Hi Rob,
-> > 
-> > Rob Herring <robherring2@gmail.com> wrote @ Mon, 17 Dec 2012 15:00:46 +0100:
-> > 
-> >> On 12/17/2012 12:18 AM, Hiroshi Doyu wrote:
-> >>> Set Snoop Control Unit(SCU) register base address dynamically from DT.
-> >>>
-> >>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> >>> ---
-> >>>  arch/arm/mach-tegra/platsmp.c |   23 ++++++++++++++++++++---
-> >>>  1 file changed, 20 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-> >>> index 1b926df..45c0b79 100644
-> >>> --- a/arch/arm/mach-tegra/platsmp.c
-> >>> +++ b/arch/arm/mach-tegra/platsmp.c
-> >>> @@ -18,6 +18,8 @@
-> >>>  #include <linux/jiffies.h>
-> >>>  #include <linux/smp.h>
-> >>>  #include <linux/io.h>
-> >>> +#include <linux/of.h>
-> >>> +#include <linux/of_address.h>
-> >>>  
-> >>>  #include <asm/cacheflush.h>
-> >>>  #include <asm/hardware/gic.h>
-> >>> @@ -36,7 +38,7 @@
-> >>>  
-> >>>  extern void tegra_secondary_startup(void);
-> >>>  
-> >>> -static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
-> >>> +static void __iomem *scu_base;
-> >>>  
-> >>>  #define EVP_CPU_RESET_VECTOR \
-> >>>  	(IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE) + 0x100)
-> >>> @@ -143,14 +145,28 @@ done:
-> >>>  	return status;
-> >>>  }
-> >>>  
-> >>> +static const struct of_device_id cortex_a9_scu_match[] __initconst = {
-> >>> +	{ .compatible = "arm,cortex-a9-scu", },
-> >>> +	{}
-> >>> +};
-> >>> +
-> >>>  /*
-> >>>   * Initialise the CPU possible map early - this describes the CPUs
-> >>>   * which may be present or become present in the system.
-> >>>   */
-> >>>  static void __init tegra_smp_init_cpus(void)
-> >>>  {
-> >>> -	unsigned int i, ncores = scu_get_core_count(scu_base);
-> >>> +	struct device_node *np;
-> >>> +	unsigned int i, ncores = 1;
-> >>> +
-> >>> +	np = of_find_matching_node(NULL, cortex_a9_scu_match);
-> >>> +	if (!np)
-> >>> +		return;
-> >>> +	scu_base = of_iomap(np, 0);
-> >>
-> >> Did you actually test this? Unless something changed, ioremap does not
-> >> work this early. The only reason to have it mapped this early is to get
-> >> the core count, but that doesn't work on A15 or A7. So we really need to
-> >> get core count/mask in a standard way. At least some work to get core
-> >> count from DT went into 3.8.
-> >>
-> >> BTW, you can get the scu address on the A9 by reading cp15 register:
-> >>
-> >> 	/* Get SCU base */
-> >> 	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
-> >>
-> >> It's still probably good to have the DT node, but the reg property can
-> >> be optional in this case.
-> > 
-> > I'm simply wondering, if the above cp15 works with Cortex-A9, do we
-> > still need SCU DT node? At least from Cortex-A15 TRM, it seems that
-> > SCU is tighly integrated into CPU core and it doesn't have any user
-> > control. So Cortex-A15 doesn't seem to need to configure SCU. For
-> > Cortex-A7, I haven't yet found S/W configurable register definitions
-> > in TRM. So if neither of A15/A7 need SCU base, would the above cp15
-> > intructions be enough?
+On 12/17/2012 01:12 PM, Johannes Weiner wrote:
+> A swappiness of 0 has a slightly different meaning for global reclaim 
+> (may swap if file cache really low) and memory cgroup reclaim (never 
+> swap, ever).
 > 
-> The A15/A7 still have the register for the other peripherals like the
-> GIC, but there are no SCU registers or other way to get a core count
-> from the h/w.
+> In addition, global reclaim at highest priority will scan all LRU 
+> lists equal to their size and ignore other balancing heuristics.
+> UNLESS swappiness forbids swapping, then the lists are balanced based 
+> on recent reclaim effectiveness.  UNLESS file cache is running low, 
+> then anonymous pages are force-scanned.
 > 
-> The DT node could be used to determine if you have an SCU or not. I just
-> used the cpu node compatible value to determine that.
-
-Taking a look at A15 TRM again, it seems that A15 can get number of
-processors via(*1):
-
-  asm("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
-
-At least, A15 is ok without SCU/DT to get the number of processors. I
-haven't found the above instruction in A7, but is there any way to get
-the number of core in A7?
-
-If both A15/A7 can get # of CPU cores via coprocessor instruction,
-what others should we take care of with DT node?
-
-*1: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0438e/BABBACEE.html
-
-> >> We need to move away from having the DT matching code within the
-> >> platforms. This should all be moved to the scu code in a scu_of_init
-> >> function that could be called from common code.
-> > 
-> > True if SCU DT node is still necessary.
+> This (total mess of a) behaviour is implicit and not obvious from the 
+> way the code is organized.  At least make it apparent in the code flow 
+> and document the conditions.  It will be it easier to come up with 
+> sane semantics later.
 > 
-> Well, reading the cp15 register and mapping the registers could be
-> common code independent of DT. I'm not sure if there are non-A9
-> implementations of the SCU which don't have the cp15 register.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
+Hmmm, my company's mail server is in trouble... The mail I sent
+yesterday has not been delivered yet.
+
+Anyway, this is good for me.
+Thanks!
+
+Reviewed-by: Satoru Moriya <satoru.moriya@hds.com>
