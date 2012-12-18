@@ -1,123 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab2LRXoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 18:44:44 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:51958 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab2LRXon (ORCPT
+	id S1754935Ab2LRXo6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 18:44:58 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45265 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab2LRXoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 18:44:43 -0500
-X-Greylist: delayed 8256 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 18:44:42 EST
-From: Cong Ding <dinggnu@gmail.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] staging: iio: cleanup ring_sw.c
-Date: Wed, 19 Dec 2012 00:39:59 +0100
-Message-Id: <1355873999-32098-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 18 Dec 2012 18:44:54 -0500
+Date: Wed, 19 Dec 2012 10:44:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Subject: linux-next: manual merge of the slave-dma tree with Linus' tree
+Message-Id: <20121219104446.fdc2f77dd8176f059de63d5e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clean the checkpatch warnings in ring_sw.c. mostly are 80 characters per line
-issue.
+--Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/staging/iio/ring_sw.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+Hi Vinod,
 
-diff --git a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
-index 3a45f9a..4db1cc3 100644
---- a/drivers/staging/iio/ring_sw.c
-+++ b/drivers/staging/iio/ring_sw.c
-@@ -77,7 +77,8 @@ static int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
- 		 * as long as the read pointer is valid before this
- 		 * passes it - guaranteed as set later in this function.
- 		 */
--		ring->half_p = ring->data - ring->buf.length*ring->buf.bytes_per_datum/2;
-+		ring->half_p = ring->data -
-+			ring->buf.length*ring->buf.bytes_per_datum/2;
- 	}
- 	/* Copy data to where ever the current write pointer says */
- 	memcpy(ring->write_p, data, ring->buf.bytes_per_datum);
-@@ -112,8 +113,8 @@ static int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
- 	else if (ring->write_p == ring->read_p) {
- 		change_test_ptr = ring->read_p;
- 		temp_ptr = change_test_ptr + ring->buf.bytes_per_datum;
--		if (temp_ptr
--		    == ring->data + ring->buf.length*ring->buf.bytes_per_datum) {
-+		if (temp_ptr == ring->data +
-+		    ring->buf.length*ring->buf.bytes_per_datum) {
- 			temp_ptr = ring->data;
- 		}
- 		/* We are moving pointer on one because the ring is full.  Any
-@@ -127,7 +128,8 @@ static int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
- 	 * simultaneous read */
- 	/* Also need to use loop count to ensure this only happens once */
- 	ring->half_p += ring->buf.bytes_per_datum;
--	if (ring->half_p == ring->data + ring->buf.length*ring->buf.bytes_per_datum)
-+	if (ring->half_p == ring->data +
-+			ring->buf.length*ring->buf.bytes_per_datum)
- 		ring->half_p = ring->data;
- 	if (ring->half_p == ring->read_p) {
- 		ring->buf.stufftoread = true;
-@@ -153,7 +155,8 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
- 	if (n % ring->buf.bytes_per_datum) {
- 		ret = -EINVAL;
- 		printk(KERN_INFO "Ring buffer read request not whole number of"
--		       "samples: Request bytes %zd, Current bytes per datum %d\n",
-+		       "samples: Request bytes %zd, Current bytes per"
-+		       "datum %d\n",
- 		       n, ring->buf.bytes_per_datum);
- 		goto error_ret;
- 	}
-@@ -193,7 +196,8 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
- 	if (initial_write_p >= initial_read_p)
- 		data_available = initial_write_p - initial_read_p;
- 	else
--		data_available = buffer_size - (initial_read_p - initial_write_p);
-+		data_available = buffer_size -
-+			(initial_read_p - initial_write_p);
- 
- 	if (data_available < bytes_to_rip)
- 		bytes_to_rip = data_available;
-@@ -201,7 +205,8 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
- 	if (initial_read_p + bytes_to_rip >= ring->data + buffer_size) {
- 		max_copied = ring->data + buffer_size - initial_read_p;
- 		memcpy(data, initial_read_p, max_copied);
--		memcpy(data + max_copied, ring->data, bytes_to_rip - max_copied);
-+		memcpy(data + max_copied,
-+				ring->data, bytes_to_rip - max_copied);
- 		end_read_p = ring->data + bytes_to_rip - max_copied;
- 	} else {
- 		memcpy(data, initial_read_p, bytes_to_rip);
-@@ -251,12 +256,10 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
- error_free_data_cpy:
- 	kfree(data);
- error_ret:
--
- 	return ret;
- }
- 
--static int iio_store_to_sw_rb(struct iio_buffer *r,
--			      u8 *data)
-+static int iio_store_to_sw_rb(struct iio_buffer *r, u8 *data)
- {
- 	struct iio_sw_ring_buffer *ring = iio_to_sw_ring(r);
- 	return iio_store_to_sw_ring(ring, data);
-@@ -343,7 +346,7 @@ struct iio_buffer *iio_sw_rb_allocate(struct iio_dev *indio_dev)
- 	struct iio_buffer *buf;
- 	struct iio_sw_ring_buffer *ring;
- 
--	ring = kzalloc(sizeof *ring, GFP_KERNEL);
-+	ring = kzalloc(sizeof(*ring), GFP_KERNEL);
- 	if (!ring)
- 		return NULL;
- 	ring->update_needed = true;
--- 
-1.7.10.4
+Today's linux-next merge of the slave-dma tree got a conflict in
+drivers/dma/dmatest.c between commit 632fd28326c0 ("dmatest: implement
+two helpers to unmap dma memory") from the  tree and commit f04f98e91bd8
+("dmatest: adjust invalid module parameters for number of source
+buffers") from the slave-dma tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/dma/dmatest.c
+index 64b048d,0e2deaa..0000000
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@@ -228,20 -228,13 +228,27 @@@ static void dmatest_callback(void *arg
+  	wake_up_all(done->wait);
+  }
+ =20
+ +static inline void unmap_src(struct device *dev, dma_addr_t *addr, size_t=
+ len,
+ +			     unsigned int count)
+ +{
+ +	while (count--)
+ +		dma_unmap_single(dev, addr[count], len, DMA_TO_DEVICE);
+ +}
+ +
+ +static inline void unmap_dst(struct device *dev, dma_addr_t *addr, size_t=
+ len,
+ +			     unsigned int count)
+ +{
+ +	while (count--)
+ +		dma_unmap_single(dev, addr[count], len, DMA_BIDIRECTIONAL);
+ +}
+ +
++ static unsigned int min_odd(unsigned int x, unsigned int y)
++ {
++ 	unsigned int val =3D min(x, y);
++=20
++ 	return val % 2 ? val : val - 1;
++ }
++=20
+  /*
+   * This function repeatedly tests DMA transfers of various lengths and
+   * offsets for a given operation type until it is told to exit by
+
+--Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ0P/uAAoJEECxmPOUX5FEhn8P/2MxZNrImOO5KEuJNCQPD9ya
+L1+5NGmoOt4qAIN6OZ/a8Bgy9jzIAiLk0NwZ9Ul8SpsHYcGhOMgbgN7e+YdBz050
+mnxFSPCIj0ptCv9+TWyQVKICYgRCZozA0tO7HV8cV5rXF8T3/WiM0hSN7vjA794A
+be/FftA4BUSXmeIbm8aC/h3INCsv0LnMaNOxAdKCLdRk0IQMC2TniqY9Bun37fx9
+KkUnaD8nGVQJFLxisK8ZARjsGkNh/lxbMXTBpQveNsrzQe6RFXhs8wcrkT0FxP48
+5Eguf2zacougf5dbD3jcasd4t0J/Jv4P6Af9wBI15j73r6RIKmOguRxYo+/DEJw9
++39+Vo4GN3w1R1D0zQupVM5e3/WBVWnuJEA/uqchco5NswSmpqE4fxbaRFGF6hoR
+MRc1T0Cw6YfBtjQ1vVq90/QjJQ60/7L2gKBYJkPb/iWUSKN4C9Qwvtd/GkbCsPx/
+8fJ+ytIx1xWV6lXoBqGti6Boov9SBqyEOubOnF4N+3rG9utcs2NjQi8iqFlu+tpG
+dJtTj6rnhPhinNrNDZsZUaevF+aJGyj5AJqkB7hE52j0xw1XOvcA0rO6fULAh2PB
+vi+N1XnRqWw4HyW9HkHIZCXfe1nU/M/KzhQTLptMAQvmDNJlyu8yDSrMbKiWYzvT
+OTt4abELUQas4CO+/qz+
+=bGPI
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ--
