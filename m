@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab2LRTwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:52:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14153 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab2LRTwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:52:34 -0500
-Message-ID: <50D0BD39.8030208@redhat.com>
-Date: Tue, 18 Dec 2012 17:00:09 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Borislav Petkov <bp@alien8.de>, Jacob Shin <jacob.shin@amd.com>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
+	id S1754718Ab2LRTwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:52:49 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:49116 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753999Ab2LRTws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:52:48 -0500
+Message-ID: <1355860368.30366.33.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Warn on #include <uapi/...
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] MCE, AMD: MCE decoding support for AMD Family 16h
-References: <1355773188-5241-1-git-send-email-jacob.shin@amd.com>  <1355773188-5241-2-git-send-email-jacob.shin@amd.com>  <20121218171915.GE31255@liondog.tnic> <1355855069.30366.14.camel@joe-AO722>  <20121218183330.GH31255@liondog.tnic> <1355855866.30366.21.camel@joe-AO722>
-In-Reply-To: <1355855866.30366.21.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Date: Tue, 18 Dec 2012 11:52:48 -0800
+In-Reply-To: <12373.1355858223@warthog.procyon.org.uk>
+References: <9cfc0861cd3ae0a7d4e72056c00b8bebef1490eb.1355853060.git.joe@perches.com>
+	 <6433.1355840610@warthog.procyon.org.uk>
+	 <12373.1355858223@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 18-12-2012 16:37, Joe Perches escreveu:
-> On Tue, 2012-12-18 at 19:33 +0100, Borislav Petkov wrote:
->> On Tue, Dec 18, 2012 at 10:24:29AM -0800, Joe Perches wrote:
->>> or without all the unnecessary parens and using char:
->>>
->>> 			pr_cont("%cBUFF parity error\n", xec == 4 ? 'I' : 'O');
->>
->> Char is fine, the parens make this more readable when you look at it
->> again after a couple of months :-).
->
-> <shrug>
->
-> I think the unnecessary parens make it _less_ readable
-> because you need to parse more stuff and it's easy to
-> misplace those parens.
+On Tue, 2012-12-18 at 19:17 +0000, David Howells wrote:
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > +			if ($path =~ "^uapi/") {
+> > +				ERROR("UAPI_INCLUDE",
+> > +				      "#include should not start with uapi/\n" . $herecurr);
+> >  			}
+> 
+> But does this limit the check only to headers in uapi/ directories?
 
-I agree with Boris: the parenthesis at the test (xec == 4) makes it
-easier to read, IMO.
+No.  I'm confused, I believe your example was:
 
-Regards,
-Mauro
+arch/powerpc/include/asm/kvm_para.h
+@@ -16,77 +16,11 @@
+  *
+  * Authors: Hollis Blanchard <hollisb@us.ibm.com>
+  */
+-
+ #ifndef __POWERPC_KVM_PARA_H__
+ #define __POWERPC_KVM_PARA_H__
+ 
+-#include <linux/types.h>
++#include <uapi/asm/kvm_para.h>
+
+---------------
+
+What do you want this to check?
+
+
