@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2LRAg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 19:36:59 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:42455 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab2LRAg6 (ORCPT
+	id S1753937Ab2LRAiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 19:38:17 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:31203 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752253Ab2LRAiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 19:36:58 -0500
+	Mon, 17 Dec 2012 19:38:16 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/C1vIQjio98/NMRP9ABfUm6oqoruidUsI=
+Date: Mon, 17 Dec 2012 19:38:10 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: Dove: add Cubox sdhci card detect gpio
+Message-ID: <20121218003810.GP21694@titan.lakedaemon.net>
+References: <1355790269-10596-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1355790269-10596-3-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220470F859C@ORSMSX105.amr.corp.intel.com>
-References: <1355654609-16800-1-git-send-email-fenghua.yu@intel.com>
-	<1355654609-16800-9-git-send-email-fenghua.yu@intel.com>
-	<CAE9FiQWFRMpxQTTbS+p21EjBvmetup75zD6ipc3COZg7=KyNig@mail.gmail.com>
-	<50CE4097.2020104@zytor.com>
-	<CAE9FiQXmz07SUEwJdr0QD8Y2Uro6Sizkeg4KfFkJSuQLFW3Fow@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F81EE@ORSMSX105.amr.corp.intel.com>
-	<CAE9FiQUqJVJ6JSeGzFH+OtRA4syrbXZh-RJLSghvB8fdBt97oQ@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F8584@ORSMSX105.amr.corp.intel.com>
-	<CAE9FiQVQMumUSgJ91rT5Zr2_Q=Wk=jBy+MEA3Li0Y215OHQT_Q@mail.gmail.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C71220470F859C@ORSMSX105.amr.corp.intel.com>
-Date: Mon, 17 Dec 2012 16:36:56 -0800
-X-Google-Sender-Auth: lNZcJTwzMQReAhNpxUAqpv84k8s
-Message-ID: <CAE9FiQXyHXgR3O0BW7TdckpO4UOytfXysgVJ-D8D7yzMTW__Sg@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] x86/head64.c: Early update ucode in 64-bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355790269-10596-3-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 4:32 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->> >
->> it has to be after #PF handler set page table patch...
->>
->> otherwise when ramdisk is above 1G, customer will get early PF
->> exception.
->
-> In old kernel, where can I put load_ucode_bsp()? Is calling load_ucode_bsp() after relocate_initrd() earliest place?
+Sebastian,
 
-after init_memory_mapping.
+On Tue, Dec 18, 2012 at 01:24:29AM +0100, Sebastian Hesselbarth wrote:
+> Card detect for sdhci on Cubox is connected to the wrong pin
+> (sdio1_cd instead of sdio0_cd). With support for cd-gpios and
+> pinctrl add the corresponding properties to DT for Cubox.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove-cubox.dts |   14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+> index fed7d3f..cdee96f 100644
+> --- a/arch/arm/boot/dts/dove-cubox.dts
+> +++ b/arch/arm/boot/dts/dove-cubox.dts
+> @@ -26,10 +26,15 @@
+>  };
+>  
+>  &uart0 { status = "okay"; };
+> -&sdio0 { status = "okay"; };
+>  &sata0 { status = "okay"; };
+>  &i2c0 { status = "okay"; };
+>  
+> +&sdio0 {
+> +	status = "okay";
+> +	/* sdio0 card detect is connected to wrong pin on CuBox */
+> +	cd-gpios = <&gpio0 12 1>;
+
+this looks like a fix that should be merged into v3.8, I'll cue it up
+for v3.8-rc2.
+
+thx,
+
+Jason.
+
+> +};
+> +
+>  &spi0 {
+>  	status = "okay";
+>  
+> @@ -42,9 +47,14 @@
+>  };
+>  
+>  &pinctrl {
+> -	pinctrl-0 = <&pmx_gpio_18>;
+> +	pinctrl-0 = <&pmx_gpio_12 &pmx_gpio_18>;
+>  	pinctrl-names = "default";
+>  
+> +	pmx_gpio_12: pmx-gpio-12 {
+> +		marvell,pins = "mpp12";
+> +		marvell,function = "gpio";
+> +	};
+> +
+>  	pmx_gpio_18: pmx-gpio-18 {
+>  		marvell,pins = "mpp18";
+>  		marvell,function = "gpio";
+> -- 
+> 1.7.10.4
+> 
