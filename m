@@ -1,96 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2LRWnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 17:43:35 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48230 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab2LRWne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 17:43:34 -0500
-Date: Tue, 18 Dec 2012 23:43:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-Message-ID: <20121218224331.GB4937@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+	id S1754490Ab2LRWra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 17:47:30 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:45366 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab2LRWr2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 17:47:28 -0500
+Date: Tue, 18 Dec 2012 23:47:26 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: linux-usb@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>,
+        Tony Olech <tony.olech@elandigitalsystems.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: [PATCH][resend] MMC, vub300: Resolve mem leak in vub300_probe() and
+ simplify the code a bit
+Message-ID: <alpine.LNX.2.00.1212182340280.14788@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 11:15:32PM -0800, Yinghai Lu wrote:
-> Now we have limit kdump reseved under 896M, because kexec has the limitation.
-> and also bzImage need to stay under 4g.
-> 
-> To make kexec/kdump could use range above 4g, we need to make bzImage and
-> ramdisk could be loaded above 4g.
-> During booting bzImage will be unpacked on same postion and stay high.
-> 
-> The patches add fields in setup_header and boot_params to
-> 1. get info about ramdisk position info above 4g from bootloader/kexec
-> 2. get info about cmd_line_ptr info above 4g from bootloader/kexec
-> 3. set xloadflags bit0 in header for bzImage and bootloader/kexec load
->    could check that to decide if it could to put bzImage high.
-> 4. use sentinel to make sure ext_* fields in boot_params could be used.
-> 
-> This patches is tested with kexec tools with local changes and they are sent
-> to kexec list later.
-> 
-> could be found at:
-> 
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
-> 
-> and it is on top of linus's tree 2012-12-17
-> plus tip:x86/mm, tip:x86/urgent, tip:x86/mm2
+In drivers/mmc/host/vub300.c::vub300_probe() we need both
+'command_out_urb' and 'command_res_urb'. Currently we fail to free the
+former if allocating the latter fails. Fix that and simplify the code
+a bit at the same time by just doing both allocations and if either
+fails then free both - usb_free_urb() deals gracefully with NULL
+pointers, so this is safe.
 
-Ok, I have a question. So I started reviewing those and then a couple of
-days later you've sent a new patchset and have ignored all the review
-comments I made. They weren't a lot but still.
+We also initialize 'retval' to '-ENOMEM' when we declare the variable,
+so there's no reason to re-set it to '-ENOMEM' before jumping to
+'error0:' when one of the initial usb_alloc_urb() calls fail().
 
-So now that I see this new one, I'm not really inclined to look at it
-anymore because if you ignore that feedback again, then I'm clearly
-wasting my time. And I don't want to waste my time. I could be out
-fishing for all I know, instead of sitting in front of the crate here.
+Also rename the 'error[0145]:' labels to be just 'error0' and
+'error1'.
 
-So please, would you be so nice and tell me which is it:
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/mmc/host/vub300.c |   29 +++++++++++------------------
+ 1 files changed, 11 insertions(+), 18 deletions(-)
 
-* you're not at all interested in feedback
+ This is a resend. I originally submitted this back in January: 
+ http://lkml.indiana.edu/hypermail/linux/kernel/1201.3/00305.html
+ but got no response.
 
-* you're not interested in *my* feedback, specifically
+ Note:
+ I have no real way to actually test this patch, so it is compile tested
+ only. Please review carefully before applying.
+ Also please keep me on Cc: when replying.
 
-* you don't care about properly written commit messages, as long as they work
+diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
+index cb9f361..3f59fe1 100644
+--- a/drivers/mmc/host/vub300.c
++++ b/drivers/mmc/host/vub300.c
+@@ -2116,23 +2116,18 @@ static int vub300_probe(struct usb_interface *interface,
+ 		 udev->descriptor.idVendor, udev->descriptor.idProduct,
+ 		 manufacturer, product, serial_number);
+ 	command_out_urb = usb_alloc_urb(0, GFP_KERNEL);
+-	if (!command_out_urb) {
+-		retval = -ENOMEM;
+-		dev_err(&udev->dev, "not enough memory for command_out_urb\n");
+-		goto error0;
+-	}
+ 	command_res_urb = usb_alloc_urb(0, GFP_KERNEL);
+-	if (!command_res_urb) {
++	if (!command_res_urb || !command_out_urb) {
+ 		retval = -ENOMEM;
+-		dev_err(&udev->dev, "not enough memory for command_res_urb\n");
+-		goto error1;
++		dev_err(&udev->dev, "not enough memory for command urbs\n");
++		goto error0;
+ 	}
+ 	/* this also allocates memory for our VUB300 mmc host device */
+ 	mmc = mmc_alloc_host(sizeof(struct vub300_mmc_host), &udev->dev);
+ 	if (!mmc) {
+ 		retval = -ENOMEM;
+ 		dev_err(&udev->dev, "not enough memory for the mmc_host\n");
+-		goto error4;
++		goto error0;
+ 	}
+ 	/* MMC core transfer sizes tunable parameters */
+ 	mmc->caps = 0;
+@@ -2285,7 +2280,7 @@ static int vub300_probe(struct usb_interface *interface,
+ 		dev_err(&vub300->udev->dev,
+ 		    "Could not find two sets of bulk-in/out endpoint pairs\n");
+ 		retval = -EINVAL;
+-		goto error5;
++		goto error1;
+ 	}
+ 	retval =
+ 		usb_control_msg(vub300->udev, usb_rcvctrlpipe(vub300->udev, 0),
+@@ -2294,14 +2289,14 @@ static int vub300_probe(struct usb_interface *interface,
+ 				0x0000, 0x0000, &vub300->hc_info,
+ 				sizeof(vub300->hc_info), HZ);
+ 	if (retval < 0)
+-		goto error5;
++		goto error1;
+ 	retval =
+ 		usb_control_msg(vub300->udev, usb_rcvctrlpipe(vub300->udev, 0),
+ 				SET_ROM_WAIT_STATES,
+ 				USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+ 				firmware_rom_wait_states, 0x0000, NULL, 0, HZ);
+ 	if (retval < 0)
+-		goto error5;
++		goto error1;
+ 	dev_info(&vub300->udev->dev,
+ 		 "operating_mode = %s %s %d MHz %s %d byte USB packets\n",
+ 		 (mmc->caps & MMC_CAP_SDIO_IRQ) ? "IRQs" : "POLL",
+@@ -2316,14 +2311,14 @@ static int vub300_probe(struct usb_interface *interface,
+ 				0x0000, 0x0000, &vub300->system_port_status,
+ 				sizeof(vub300->system_port_status), HZ);
+ 	if (retval < 0) {
+-		goto error4;
++		goto error0;
+ 	} else if (sizeof(vub300->system_port_status) == retval) {
+ 		vub300->card_present =
+ 			(0x0001 & vub300->system_port_status.port_flags) ? 1 : 0;
+ 		vub300->read_only =
+ 			(0x0010 & vub300->system_port_status.port_flags) ? 1 : 0;
+ 	} else {
+-		goto error4;
++		goto error0;
+ 	}
+ 	usb_set_intfdata(interface, vub300);
+ 	INIT_DELAYED_WORK(&vub300->pollwork, vub300_pollwork_thread);
+@@ -2351,17 +2346,15 @@ static int vub300_probe(struct usb_interface *interface,
+ 			 interface_to_InterfaceNumber(interface));
+ 	mmc_add_host(mmc);
+ 	return 0;
+-error5:
++error1:
+ 	mmc_free_host(mmc);
+ 	/*
+ 	 * and hence also frees vub300
+ 	 * which is contained at the end of struct mmc
+ 	 */
+-error4:
++error0:
+ 	usb_free_urb(command_res_urb);
+-error1:
+ 	usb_free_urb(command_out_urb);
+-error0:
+ 	usb_put_dev(udev);
+ 	return retval;
+ }
+-- 
+1.7.1
 
-* writing proper commit messages is for pussies
-
-* ... anything else I can't think of.
-
-
-So I'd appreciate it if you stated which is it. I mean, it makes a very
-little sense, if any, to waste each-other's time and therefore, stating
-it out in the open is definitely and constructively more helpful. This
-way we all know where we're headed.
-
-Thanks a lot for your time.
 
 -- 
-Regards/Gruss,
-    Boris.
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
