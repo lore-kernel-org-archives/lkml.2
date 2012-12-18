@@ -1,69 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab2LROtB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 09:49:01 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:50207
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932095Ab2LROs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 09:48:59 -0500
-X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03a.oce.net;RD:smtp02.oce.com;EFVD:NLI
-X-SpamScore: 17
-X-BigFish: VS17(zzzz1ce5h1202h1e76h1d1ah1cabh1d2ahzz8275bh8275dhz2ei87h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758hff4m129fs1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: <linux-serial@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [PATCH] tty: Only wakeup the line discipline idle queue when queue is active
-Date: Tue, 18 Dec 2012 15:48:50 +0100
-Message-ID: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 18 Dec 2012 14:48:54.0834 (UTC) FILETIME=[CD6D5120:01CDDD2E]
+	id S1755165Ab2LRPB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 10:01:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47158 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755004Ab2LRPBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 10:01:25 -0500
+Date: Tue, 18 Dec 2012 17:03:27 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
+Message-ID: <20121218150327.GB27400@redhat.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
+ <1355833972-20319-6-git-send-email-pbonzini@redhat.com>
+ <20121218135736.GF26110@redhat.com>
+ <50D078C8.208@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: oce.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D078C8.208@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before waking up the tty line discipline idle queue first check if the queue is
-active (non empty). This prevents unnecessary entering the critical section in
-the wake_up() function and therefore avoid needless scheduling overhead on a
-PREEMPT_RT system caused by two processes being in the same critical section.
+On Tue, Dec 18, 2012 at 03:08:08PM +0100, Paolo Bonzini wrote:
+> Il 18/12/2012 14:57, Michael S. Tsirkin ha scritto:
+> >> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+> >> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+> >> +				 struct virtio_scsi_target_state *tgt,
+> >> +				 struct scsi_cmnd *sc)
+> >>  {
+> >> -	struct virtio_scsi *vscsi = shost_priv(sh);
+> >> -	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+> >>  	struct virtio_scsi_cmd *cmd;
+> >> +	struct virtio_scsi_vq *req_vq;
+> >>  	int ret;
+> >>  
+> >>  	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+> >> @@ -461,7 +533,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+> >>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+> >>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+> >>  
+> >> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
+> >> +	req_vq = ACCESS_ONCE(tgt->req_vq);
+> > 
+> > This ACCESS_ONCE without a barrier looks strange to me.
+> > Can req_vq change? Needs a comment.
+> 
+> Barriers are needed to order two things.  Here I don't have the second thing
+> to order against, hence no barrier.
+> 
+> Accessing req_vq lockless is safe, and there's a comment about it, but you
+> still want ACCESS_ONCE to ensure the compiler doesn't play tricks.
 
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
----
+That's just it.
+Why don't you want compiler to play tricks?
 
- Remark:
- This patch has kind of a long history... I first tried to prevent the critical
- section in the wakeup() function itself by a change in the scheduler. But after
- review remarks from Oleg Nesterov it turned out that using the
- waitqueue_active() was a much nicer way to prevent it. See also
- https://lkml.org/lkml/2012/10/25/159
+ACCESS_ONCE is needed if the value can change
+while you access it, this helps ensure
+a consistent value is evalutated.
 
- drivers/tty/tty_ldisc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+If it can you almost always need a barrier. If it doesn't
+you don't need ACCESS_ONCE.
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index c578229..e96d187 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -64,7 +64,9 @@ static void put_ldisc(struct tty_ldisc *ld)
- 		return;
- 	}
- 	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
--	wake_up(&ld->wq_idle);
-+
-+	if (waitqueue_active(&ld->wq_idle))
-+		wake_up(&ld->wq_idle);
- }
- 
- /**
+>  It
+> shouldn't be necessary, because the critical section of
+> virtscsi_queuecommand_multi will already include the appropriate
+> compiler barriers,
+
+So if there's a barrier then pls add a comment saying where
+it is.
+
+> but it is actually clearer this way to me. :)
+
+No barriers are needed I think because
+when you queue command req is incremented to req_vq
+can not change. But this also means ACCESS_ONCE
+is not needed either.
+
+> >> +	if (virtscsi_kick_cmd(tgt, req_vq, cmd,
+> >>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+> >>  			      GFP_ATOMIC) == 0)
+> >>  		ret = 0;
+> >> @@ -472,6 +545,48 @@ out:
+> >>  	return ret;
+> >>  }
+> >>  
+> >> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
+> >> +					struct scsi_cmnd *sc)
+> >> +{
+> >> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> >> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+> >> +
+> >> +	atomic_inc(&tgt->reqs);
+> > 
+> > And here we don't have barrier after atomic? Why? Needs a comment.
+> 
+> Because we don't write req_vq, so there's no two writes to order.  Barrier
+> against what?
+
+Between atomic update and command. Once you queue command it
+can complete and decrement reqs, if this happens before
+increment reqs can become negative even.
+
+> >> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+> >> +}
+> >> +
+> >> +static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
+> >> +				       struct scsi_cmnd *sc)
+> >> +{
+> >> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> >> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
+> >> +	unsigned long flags;
+> >> +	u32 queue_num;
+> >> +
+> >> +	/*
+> >> +	 * Using an atomic_t for tgt->reqs lets the virtqueue handler
+> >> +	 * decrement it without taking the spinlock.
+> >> +	 *
+> >> +	 * We still need a critical section to prevent concurrent submissions
+> >> +	 * from picking two different req_vqs.
+> >> +	 */
+> >> +	spin_lock_irqsave(&tgt->tgt_lock, flags);
+> >> +	if (atomic_inc_return(&tgt->reqs) == 1) {
+> >> +		queue_num = smp_processor_id();
+> >> +		while (unlikely(queue_num >= vscsi->num_queues))
+> >> +			queue_num -= vscsi->num_queues;
+> >> +
+> >> +		/*
+> >> +		 * Write reqs before writing req_vq, matching the
+> >> +		 * smp_read_barrier_depends() in virtscsi_req_done.
+> >> +		 */
+> >> +		smp_wmb();
+> >> +		tgt->req_vq = &vscsi->req_vqs[queue_num];
+> >> +	}
+> >> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
+> >> +	return virtscsi_queuecommand(vscsi, tgt, sc);
+> >> +}
+> >> +
+> >>  static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+> >>  {
+> >>  	DECLARE_COMPLETION_ONSTACK(comp);
+> >> @@ -541,12 +656,26 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
+> >>  	return virtscsi_tmf(vscsi, cmd);
+> >>  }
+> >>  
+> >> -static struct scsi_host_template virtscsi_host_template = {
+> >> +static struct scsi_host_template virtscsi_host_template_single = {
+> >>  	.module = THIS_MODULE,
+> >>  	.name = "Virtio SCSI HBA",
+> >>  	.proc_name = "virtio_scsi",
+> >> -	.queuecommand = virtscsi_queuecommand,
+> >>  	.this_id = -1,
+> >> +	.queuecommand = virtscsi_queuecommand_single,
+> >> +	.eh_abort_handler = virtscsi_abort,
+> >> +	.eh_device_reset_handler = virtscsi_device_reset,
+> >> +
+> >> +	.can_queue = 1024,
+> >> +	.dma_boundary = UINT_MAX,
+> >> +	.use_clustering = ENABLE_CLUSTERING,
+> >> +};
+> >> +
+> >> +static struct scsi_host_template virtscsi_host_template_multi = {
+> >> +	.module = THIS_MODULE,
+> >> +	.name = "Virtio SCSI HBA",
+> >> +	.proc_name = "virtio_scsi",
+> >> +	.this_id = -1,
+> >> +	.queuecommand = virtscsi_queuecommand_multi,
+> >>  	.eh_abort_handler = virtscsi_abort,
+> >>  	.eh_device_reset_handler = virtscsi_device_reset,
+> >>  
+> >> @@ -572,16 +701,27 @@ static struct scsi_host_template virtscsi_host_template = {
+> >>  				  &__val, sizeof(__val)); \
+> >>  	})
+> >>  
+> >> +
+> >>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+> >> -			     struct virtqueue *vq)
+> >> +			     struct virtqueue *vq, bool affinity)
+> >>  {
+> >>  	spin_lock_init(&virtscsi_vq->vq_lock);
+> >>  	virtscsi_vq->vq = vq;
+> >> +	if (affinity)
+> >> +		virtqueue_set_affinity(vq, vq->index - VIRTIO_SCSI_VQ_BASE);
+> > 
+> > I've been thinking about how set_affinity
+> > interacts with online/offline CPUs.
+> > Any idea?
+> 
+> No, I haven't tried.
+
+We need a TODO, for -net too.
+
+> >>  
+> >>  	/* Discover virtqueues and write information to configuration.  */
+> >> -	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
+> >> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
+> >>  	if (err)
+> >>  		return err;
+> >>  
+> >> -	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
+> >> -	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
+> >> -	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
+> >> +	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0], false);
+> >> +	virtscsi_init_vq(&vscsi->event_vq, vqs[1], false);
+> >> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++)
+> >> +		virtscsi_init_vq(&vscsi->req_vqs[i - VIRTIO_SCSI_VQ_BASE],
+> >> +				 vqs[i], vscsi->num_queues > 1);
+> > 
+> > So affinity is true if >1 vq? I am guessing this is not
+> > going to do the right thing unless you have at least
+> > as many vqs as CPUs.
+> 
+> Yes, and then you're not setting up the thing correctly.
+
+Why not just check instead of doing the wrong thing?
+
+> Isn't the same thing true for virtio-net mq?
+> 
+> Paolo
+
+Last I looked it checked vi->max_queue_pairs == num_online_cpus().
+This is even too aggressive I think, max_queue_pairs >=
+num_online_cpus() should be enough.
+
 -- 
-1.7.9.5
-
-
+MST
