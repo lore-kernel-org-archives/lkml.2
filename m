@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab2LRXo6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 18:44:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45265 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab2LRXoy (ORCPT
+	id S1754888Ab2LRXrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 18:47:24 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:47465 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab2LRXrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 18:44:54 -0500
-Date: Wed, 19 Dec 2012 10:44:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: linux-next: manual merge of the slave-dma tree with Linus' tree
-Message-Id: <20121219104446.fdc2f77dd8176f059de63d5e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ"
+	Tue, 18 Dec 2012 18:47:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <4447450.z46Q2xYLQX@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <3027479.MToB281uxK@vostro.rjw.lan>
+ <1355868912.18964.381.camel@misato.fc.hp.com> <4447450.z46Q2xYLQX@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 18 Dec 2012 16:19:55 -0700
+Message-ID: <CAErSpo63cQJskAJKBwai6ipToVHEEwCWXeRfBOzF29Ds29MTbA@mail.gmail.com>
+Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from
+ probing ACPI drivers
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 18, 2012 at 4:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, December 18, 2012 03:15:12 PM Toshi Kani wrote:
+>> On Tue, 2012-12-18 at 22:57 +0100, Rafael J. Wysocki wrote:
+>> > On Tuesday, December 18, 2012 09:10:41 AM Toshi Kani wrote:
+>> > > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
+>>  :
+>> > > We need to decide which module is responsible for calling .bind().  I
+>> > > think it should be the ACPI scan module, not the ACPI PCI root bridge
+>> > > driver, because:
+>> > >  - bind() needs to be called when _ADR device is added.  The ACPI scan
+>> > > module can scan any devices, while the PCI root driver can only scan
+>> > > when it is added.
+>> > >  - acpi_bus_remove() calls unbind() at hot-remove.  The same module
+>> > > should be responsible for both bind() and unbind() handling.
+>> > >  - It is cleaner to keep struct acpi_device_ops interface to be called
+>> > > by the ACPI core.
+>> >
+>> > I agree with that. :-)
+>> >
+>> > Moreover, I don't think we need acpi_pci_bind() and acpi_pci_unbind() at all.
+>> >
+>> > > So, I would propose the following changes.
+>> > >
+>> > >  - Move the acpi_hot_add_bind() call back to the original place after
+>> > > the device_attach() call.
+>> > >  - Rename the name of acpi_hot_add_bind() to something like
+>> > > acpi_bind_adr_device() since it is no longer hot-add only (and is
+>> > > specific to _ADR devices).
+>> > >  - Create its pair function, acpi_unbind_adr_device(), which is called
+>> > > from acpi_bus_remove().  When a constructor interface is introduced, its
+>> > > destructor should be introduced as well.
+>> > >  - Remove the binding procedure from acpi_pci_root_add().  This should
+>> > > be done in patch [2/6].
+>> >
+>> > Well, what about moving the code from acpi_pci_bind()/acpi_pci_unbind()
+>> > somewhere else and removing those things altogether?
+>>
+>> Sounds nice.  It will be bonus point if you can do that. :-)
+>
+> I think I can, but I need a few more patches on top of what I've already posted
+> to do that.
+>
+> I think that https://patchwork.kernel.org/patch/1889821/ and
+> https://patchwork.kernel.org/patch/1884701/ can stay as they are, since there's
+> some material on top of them already and I'll cut the new patches on top of all
+> that.  I'll repost the whole series some time later this week, stay tuned. :-)
 
-Hi Vinod,
+I haven't follow this closely enough to give useful feedback, but I
+trust that what you're doing is going in the right direction.
 
-Today's linux-next merge of the slave-dma tree got a conflict in
-drivers/dma/dmatest.c between commit 632fd28326c0 ("dmatest: implement
-two helpers to unmap dma memory") from the  tree and commit f04f98e91bd8
-("dmatest: adjust invalid module parameters for number of source
-buffers") from the slave-dma tree.
+The only question I have right now is what I mentioned earlier on IRC,
+namely, the idea of "binding" an ACPI handle or device to a pci_dev,
+and whether there's a way to guarantee that the binding doesn't become
+stale.  For example, if we bind pci_dev A to acpi_device B, I think we
+essentially capture the pointer to B and store that pointer in A.
+Obviously we want to know that the captured pointer in A remains valid
+as long as A exists, but I don't know what assures us of that.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I don't think this is a new question; I have the same question about
+the current code before your changes.  But it seems like you're
+simplifying this area in a way that might make it easier to answer the
+question.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/dma/dmatest.c
-index 64b048d,0e2deaa..0000000
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@@ -228,20 -228,13 +228,27 @@@ static void dmatest_callback(void *arg
-  	wake_up_all(done->wait);
-  }
- =20
- +static inline void unmap_src(struct device *dev, dma_addr_t *addr, size_t=
- len,
- +			     unsigned int count)
- +{
- +	while (count--)
- +		dma_unmap_single(dev, addr[count], len, DMA_TO_DEVICE);
- +}
- +
- +static inline void unmap_dst(struct device *dev, dma_addr_t *addr, size_t=
- len,
- +			     unsigned int count)
- +{
- +	while (count--)
- +		dma_unmap_single(dev, addr[count], len, DMA_BIDIRECTIONAL);
- +}
- +
-+ static unsigned int min_odd(unsigned int x, unsigned int y)
-+ {
-+ 	unsigned int val =3D min(x, y);
-+=20
-+ 	return val % 2 ? val : val - 1;
-+ }
-+=20
-  /*
-   * This function repeatedly tests DMA transfers of various lengths and
-   * offsets for a given operation type until it is told to exit by
-
---Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ0P/uAAoJEECxmPOUX5FEhn8P/2MxZNrImOO5KEuJNCQPD9ya
-L1+5NGmoOt4qAIN6OZ/a8Bgy9jzIAiLk0NwZ9Ul8SpsHYcGhOMgbgN7e+YdBz050
-mnxFSPCIj0ptCv9+TWyQVKICYgRCZozA0tO7HV8cV5rXF8T3/WiM0hSN7vjA794A
-be/FftA4BUSXmeIbm8aC/h3INCsv0LnMaNOxAdKCLdRk0IQMC2TniqY9Bun37fx9
-KkUnaD8nGVQJFLxisK8ZARjsGkNh/lxbMXTBpQveNsrzQe6RFXhs8wcrkT0FxP48
-5Eguf2zacougf5dbD3jcasd4t0J/Jv4P6Af9wBI15j73r6RIKmOguRxYo+/DEJw9
-+39+Vo4GN3w1R1D0zQupVM5e3/WBVWnuJEA/uqchco5NswSmpqE4fxbaRFGF6hoR
-MRc1T0Cw6YfBtjQ1vVq90/QjJQ60/7L2gKBYJkPb/iWUSKN4C9Qwvtd/GkbCsPx/
-8fJ+ytIx1xWV6lXoBqGti6Boov9SBqyEOubOnF4N+3rG9utcs2NjQi8iqFlu+tpG
-dJtTj6rnhPhinNrNDZsZUaevF+aJGyj5AJqkB7hE52j0xw1XOvcA0rO6fULAh2PB
-vi+N1XnRqWw4HyW9HkHIZCXfe1nU/M/KzhQTLptMAQvmDNJlyu8yDSrMbKiWYzvT
-OTt4abELUQas4CO+/qz+
-=bGPI
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Dec_2012_10_44_46_+1100_zxid0oEAu6oN.ItZ--
+Bjorn
