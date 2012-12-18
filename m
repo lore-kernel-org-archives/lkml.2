@@ -1,193 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab2LROI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 09:08:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41199 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754964Ab2LROI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 09:08:28 -0500
-Message-ID: <50D078C8.208@redhat.com>
-Date: Tue, 18 Dec 2012 15:08:08 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755056Ab2LROKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 09:10:35 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:56971 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755000Ab2LROKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 09:10:34 -0500
+Date: Tue, 18 Dec 2012 15:10:14 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
+        Lin.Lei@huawei.com, greg@kroah.com, neil.yi@huawei.com,
+        wangyuhua@huawei.com, huqiao36@huawei.com, balbi@ti.com
+Subject: Re: [PATCH 2/2]linux-usb:optimize to match the Huawei USB storage
+ devices and support new switch command
+Message-ID: <20121218141013.GB4939@breakpoint.cc>
+References: <fdcd8d23149d.149dfdcd8d23@huawei.com>
+ <fdcdb3e12b55.2b55fdcdb3e1@huawei.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
-        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        rusty@rustcorp.com.au, asias@redhat.com, stefanha@redhat.com,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-6-git-send-email-pbonzini@redhat.com> <20121218135736.GF26110@redhat.com>
-In-Reply-To: <20121218135736.GF26110@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fdcdb3e12b55.2b55fdcdb3e1@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/12/2012 14:57, Michael S. Tsirkin ha scritto:
->> -static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
->> +static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
->> +				 struct virtio_scsi_target_state *tgt,
->> +				 struct scsi_cmnd *sc)
->>  {
->> -	struct virtio_scsi *vscsi = shost_priv(sh);
->> -	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
->>  	struct virtio_scsi_cmd *cmd;
->> +	struct virtio_scsi_vq *req_vq;
->>  	int ret;
->>  
->>  	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
->> @@ -461,7 +533,8 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
->>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
->>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
->>  
->> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
->> +	req_vq = ACCESS_ONCE(tgt->req_vq);
-> 
-> This ACCESS_ONCE without a barrier looks strange to me.
-> Can req_vq change? Needs a comment.
+On Tue, Dec 18, 2012 at 10:44:19AM +0800, fangxiaozhi 00110321 wrote:
+> diff -uprN linux-3.7_bak/drivers/usb/storage/initializers.c linux-3.7/drivers/usb/storage/initializers.c
+> --- linux-3.7_bak/drivers/usb/storage/initializers.c	2012-12-11 09:56:11.000000000 +0800
+> +++ linux-3.7/drivers/usb/storage/initializers.c	2012-12-17 11:12:12.000000000 +0800
+>  	US_DEBUGP("Huawei mode set result is %d\n", result);
+>  	return 0;
+>  }
+> +
+> +/* Find the supported Huawei USB dongles */
+> +static int usb_stor_huawei_dongles_pid(struct us_data *us)
+> +{
+> +	struct usb_interface_descriptor *idesc;
+> +	int idProduct;
+> +	
+> +	idesc = &us->pusb_intf->cur_altsetting->desc;
+> +	idProduct = us->pusb_dev->descriptor.idProduct;
+> +	if (idesc && idesc->bInterfaceNumber == 0) {
+> +		if ((idProduct == 0x1001)
+> +			|| (idProduct == 0x1003)
+> +			|| (idProduct == 0x1004)
+> +			|| (idProduct >= 0x1401 && idProduct < 0x1501)
+> +			|| (idProduct > 0x1504 && idProduct <= 0x1600)
+> +			|| (idProduct >= 0x1c02 && idProduct <= 0x2202)) {
+> +			return 1;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int usb_stor_huawei_scsi_init(struct us_data *us)
+> +{
+> +	int result = 0;
+> +	int act_len = 0;
+> +	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
+> +			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-Barriers are needed to order two things.  Here I don't have the second thing
-to order against, hence no barrier.
+Has this something to do with the SPACE command as defined in SSC-2? I don't
+see the code (0x6 here) to be defined. But then you name is rewind.
 
-Accessing req_vq lockless is safe, and there's a comment about it, but you
-still want ACCESS_ONCE to ensure the compiler doesn't play tricks.  It
-shouldn't be necessary, because the critical section of
-virtscsi_queuecommand_multi will already include the appropriate
-compiler barriers, but it is actually clearer this way to me. :)
+> +	struct bulk_cb_wrap *bcbw = (struct bulk_cb_wrap *) us->iobuf;
+> +	
+> +	memset(bcbw, 0, sizeof(struct bulk_cb_wrap));
+> +	bcbw->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+> +	bcbw->Tag = 0;
+> +	bcbw->DataTransferLength = 0;
+> +	bcbw->Flags = bcbw->Lun = 0;
 
->> +	if (virtscsi_kick_cmd(tgt, req_vq, cmd,
->>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
->>  			      GFP_ATOMIC) == 0)
->>  		ret = 0;
->> @@ -472,6 +545,48 @@ out:
->>  	return ret;
->>  }
->>  
->> +static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
->> +					struct scsi_cmnd *sc)
->> +{
->> +	struct virtio_scsi *vscsi = shost_priv(sh);
->> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
->> +
->> +	atomic_inc(&tgt->reqs);
-> 
-> And here we don't have barrier after atomic? Why? Needs a comment.
+A memset() followed by an init of each member of the struct. Could please
+chose one side?
 
-Because we don't write req_vq, so there's no two writes to order.  Barrier
-against what?
+> +	bcbw->Length = sizeof(rewind_cmd);
+> +	memcpy(bcbw->CDB, rewind_cmd, sizeof(rewind_cmd));
+> +
+> +	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, &bcbw,
+> +					US_BULK_CS_WRAP_LEN, &act_len);
 
->> +	return virtscsi_queuecommand(vscsi, tgt, sc);
->> +}
->> +
->> +static int virtscsi_queuecommand_multi(struct Scsi_Host *sh,
->> +				       struct scsi_cmnd *sc)
->> +{
->> +	struct virtio_scsi *vscsi = shost_priv(sh);
->> +	struct virtio_scsi_target_state *tgt = &vscsi->tgt[sc->device->id];
->> +	unsigned long flags;
->> +	u32 queue_num;
->> +
->> +	/*
->> +	 * Using an atomic_t for tgt->reqs lets the virtqueue handler
->> +	 * decrement it without taking the spinlock.
->> +	 *
->> +	 * We still need a critical section to prevent concurrent submissions
->> +	 * from picking two different req_vqs.
->> +	 */
->> +	spin_lock_irqsave(&tgt->tgt_lock, flags);
->> +	if (atomic_inc_return(&tgt->reqs) == 1) {
->> +		queue_num = smp_processor_id();
->> +		while (unlikely(queue_num >= vscsi->num_queues))
->> +			queue_num -= vscsi->num_queues;
->> +
->> +		/*
->> +		 * Write reqs before writing req_vq, matching the
->> +		 * smp_read_barrier_depends() in virtscsi_req_done.
->> +		 */
->> +		smp_wmb();
->> +		tgt->req_vq = &vscsi->req_vqs[queue_num];
->> +	}
->> +	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
->> +	return virtscsi_queuecommand(vscsi, tgt, sc);
->> +}
->> +
->>  static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
->>  {
->>  	DECLARE_COMPLETION_ONSTACK(comp);
->> @@ -541,12 +656,26 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
->>  	return virtscsi_tmf(vscsi, cmd);
->>  }
->>  
->> -static struct scsi_host_template virtscsi_host_template = {
->> +static struct scsi_host_template virtscsi_host_template_single = {
->>  	.module = THIS_MODULE,
->>  	.name = "Virtio SCSI HBA",
->>  	.proc_name = "virtio_scsi",
->> -	.queuecommand = virtscsi_queuecommand,
->>  	.this_id = -1,
->> +	.queuecommand = virtscsi_queuecommand_single,
->> +	.eh_abort_handler = virtscsi_abort,
->> +	.eh_device_reset_handler = virtscsi_device_reset,
->> +
->> +	.can_queue = 1024,
->> +	.dma_boundary = UINT_MAX,
->> +	.use_clustering = ENABLE_CLUSTERING,
->> +};
->> +
->> +static struct scsi_host_template virtscsi_host_template_multi = {
->> +	.module = THIS_MODULE,
->> +	.name = "Virtio SCSI HBA",
->> +	.proc_name = "virtio_scsi",
->> +	.this_id = -1,
->> +	.queuecommand = virtscsi_queuecommand_multi,
->>  	.eh_abort_handler = virtscsi_abort,
->>  	.eh_device_reset_handler = virtscsi_device_reset,
->>  
->> @@ -572,16 +701,27 @@ static struct scsi_host_template virtscsi_host_template = {
->>  				  &__val, sizeof(__val)); \
->>  	})
->>  
->> +
->>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
->> -			     struct virtqueue *vq)
->> +			     struct virtqueue *vq, bool affinity)
->>  {
->>  	spin_lock_init(&virtscsi_vq->vq_lock);
->>  	virtscsi_vq->vq = vq;
->> +	if (affinity)
->> +		virtqueue_set_affinity(vq, vq->index - VIRTIO_SCSI_VQ_BASE);
-> 
-> I've been thinking about how set_affinity
-> interacts with online/offline CPUs.
-> Any idea?
+I am a little confused here. Shouldn't this be bcbw aka us->iobuf and not
+&bcbw ?
 
-No, I haven't tried.
+And shouldn't you read something from the us->recv_bulk_pipe after that?
 
->>  
->>  	/* Discover virtqueues and write information to configuration.  */
->> -	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
->> +	err = vdev->config->find_vqs(vdev, num_vqs, vqs, callbacks, names);
->>  	if (err)
->>  		return err;
->>  
->> -	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
->> -	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
->> -	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
->> +	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0], false);
->> +	virtscsi_init_vq(&vscsi->event_vq, vqs[1], false);
->> +	for (i = VIRTIO_SCSI_VQ_BASE; i < num_vqs; i++)
->> +		virtscsi_init_vq(&vscsi->req_vqs[i - VIRTIO_SCSI_VQ_BASE],
->> +				 vqs[i], vscsi->num_queues > 1);
-> 
-> So affinity is true if >1 vq? I am guessing this is not
-> going to do the right thing unless you have at least
-> as many vqs as CPUs.
+> +	US_DEBUGP("transfer actual length=%d, result=%d\n", act_len, result);
+> +	return result;
+> +}
+> +
 
-Yes, and then you're not setting up the thing correctly.
-
-Isn't the same thing true for virtio-net mq?
-
-Paolo
+Sebastian
