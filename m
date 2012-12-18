@@ -1,154 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab2LRTL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 14:11:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755562Ab2LRTLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 14:11:25 -0500
-Date: Tue, 18 Dec 2012 14:11:17 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 12/12] cfq-iosched: add hierarchical cfq_group statistics
-Message-ID: <20121218191117.GD24050@redhat.com>
-References: <1355524885-22719-1-git-send-email-tj@kernel.org>
- <1355524885-22719-13-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355524885-22719-13-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755621Ab2LRTLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 14:11:51 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:57473 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab2LRTLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 14:11:50 -0500
+Message-ID: <1355857917.24188.3.camel@gitbox>
+Subject: Re: [PATCH RESEND 3/6] clk: exynos: Fix incorrect usage of
+ IS_ERR_OR_NULL
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        Mike Turquette <mturquette@linaro.org>
+Date: Wed, 19 Dec 2012 08:11:57 +1300
+In-Reply-To: <20121218190334.GK5032@mwanda>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
+	 <1355852048-23188-4-git-send-email-linux@prisktech.co.nz>
+	 <20121218183944.GH5032@mwanda> <1355856767.23479.3.camel@gitbox>
+	 <20121218190334.GK5032@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 14, 2012 at 02:41:25PM -0800, Tejun Heo wrote:
-> Unfortunately, at this point, there's no way to make the existing
-> statistics hierarchical without creating nasty surprises for the
-> existing users.  Just create recursive counterpart of the existing
-> stats.
+On Tue, 2012-12-18 at 22:03 +0300, Dan Carpenter wrote:
+> I don't care either way, but being different from the documentation
+> is less bad than crashing which is what your patch does.  Please
+> be more careful in the future.
 > 
+> regards,
+> dan carpenter
 
-Hi Tejun,
+Critism accepted.
 
-All these stats needs to be mentioned in blkio-controller.txt file to 
-keep that file uptodate.
+Given that the driver depends on (PLAT_SAMSUNG || ARCH_MULTIPLATFORM),
+and multiplatform select COMMON_CLK and PLAT_SAMSUNG is selected only by
+ARCH_S3C64XX which has HAVE_CLK I didn't see a problem here.
 
-I think it also needs another word about nature of hierarchical stats.
-That is they represent current view of the system and don't store the
-history. So if a cgroup was created, did some IO and it was removed, we
-lost that history. Deleted cgroup's parent will have no history of
-stats of deleted cgroup.
+Your point is still valid and I will sort it out with Mike first.
 
-Hence these stats can't be used for things like billing purposes.
+Regards
+Tony P
 
-IIRC, this is different from the way we collect hierarhical stats for
-memory controller.
-
-But I kind of like this because stat update overhead does not increase
-with depth of hierarchy. Primarily stat reader pays the price of
-traversing through all the stats.
-
-Thanks
-Vivek
-
- 
-
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  block/cfq-iosched.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 63 insertions(+)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index ceade6e..15cb97e 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1669,6 +1669,26 @@ static int cfqg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
->  	return 0;
->  }
->  
-> +static int cfqg_print_stat_recursive(struct cgroup *cgrp, struct cftype *cft,
-> +				     struct seq_file *sf)
-> +{
-> +	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-> +
-> +	blkcg_print_blkgs(sf, blkcg, blkg_prfill_stat_recursive,
-> +			  &blkcg_policy_cfq, cft->private, false);
-> +	return 0;
-> +}
-> +
-> +static int cfqg_print_rwstat_recursive(struct cgroup *cgrp, struct cftype *cft,
-> +				       struct seq_file *sf)
-> +{
-> +	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-> +
-> +	blkcg_print_blkgs(sf, blkcg, blkg_prfill_rwstat_recursive,
-> +			  &blkcg_policy_cfq, cft->private, true);
-> +	return 0;
-> +}
-> +
->  #ifdef CONFIG_DEBUG_BLK_CGROUP
->  static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
->  				      struct blkg_policy_data *pd, int off)
-> @@ -1740,6 +1760,7 @@ static struct cftype cfq_blkcg_files[] = {
->  		.write_u64 = cfq_set_leaf_weight,
->  	},
->  
-> +	/* statistics, covers only the tasks in the cfqg */
->  	{
->  		.name = "time",
->  		.private = offsetof(struct cfq_group, stats.time),
-> @@ -1780,6 +1801,48 @@ static struct cftype cfq_blkcg_files[] = {
->  		.private = offsetof(struct cfq_group, stats.queued),
->  		.read_seq_string = cfqg_print_rwstat,
->  	},
-> +
-> +	/* the same statictics which cover the cfqg and its descendants */
-> +	{
-> +		.name = "time_recursive",
-> +		.private = offsetof(struct cfq_group, stats.time),
-> +		.read_seq_string = cfqg_print_stat_recursive,
-> +	},
-> +	{
-> +		.name = "sectors_recursive",
-> +		.private = offsetof(struct cfq_group, stats.sectors),
-> +		.read_seq_string = cfqg_print_stat_recursive,
-> +	},
-> +	{
-> +		.name = "io_service_bytes_recursive",
-> +		.private = offsetof(struct cfq_group, stats.service_bytes),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_serviced_recursive",
-> +		.private = offsetof(struct cfq_group, stats.serviced),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_service_time_recursive",
-> +		.private = offsetof(struct cfq_group, stats.service_time),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_wait_time_recursive",
-> +		.private = offsetof(struct cfq_group, stats.wait_time),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_merged_recursive",
-> +		.private = offsetof(struct cfq_group, stats.merged),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_queued_recursive",
-> +		.private = offsetof(struct cfq_group, stats.queued),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
->  #ifdef CONFIG_DEBUG_BLK_CGROUP
->  	{
->  		.name = "avg_queue_size",
-> -- 
-> 1.7.11.7
