@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab2LRFLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 00:11:32 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:37449 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab2LRFLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 00:11:31 -0500
-Message-ID: <50CFFAF7.6070406@in.ibm.com>
-Date: Tue, 18 Dec 2012 10:41:19 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: bigeasy@linutronix.de, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
-        anton@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] uprobes/powerpc: Make use of generic routines
- to enable single step
-References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150946.7727.82735.stgit@suzukikp> <20121214200241.GA27195@redhat.com>
-In-Reply-To: <20121214200241.GA27195@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121805-8256-0000-0000-0000057B6367
+	id S1751720Ab2LRFO0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 00:14:26 -0500
+Received: from mga14.intel.com ([143.182.124.37]:3717 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab2LRFOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 00:14:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,305,1355126400"; 
+   d="scan'208";a="182202475"
+From: Youquan Song <youquan.song@intel.com>
+To: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        mingo@kernel.org, Stephane Eranian <eranian@google.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>, tglx@linutronix.de
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH] x86,perf: Add IvyBridge EP support
+Date: Tue, 18 Dec 2012 12:20:23 -0500
+Message-Id: <1355851223-27705-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2012 01:32 AM, Oleg Nesterov wrote:
-> On 12/03, Suzuki K. Poulose wrote:
->>
->> Replace the ptrace helpers with the powerpc generic routines to
->> enable/disable single step. We save/restore the MSR (and DCBR for BookE)
->> across for the operation. We don't have to disable the single step,
->> as restoring the MSR/DBCR would restore the previous state.
->
-> Obviously I can't review this series (although it looks fine to me).
->
-> Just one note,
->
->> @@ -121,7 +132,7 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
->>
->>   	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
->>
->> -	uprobe_restore_context_sstep(&utask->autask);
->> +	uprobe_restore_context_sstep(&utask->autask, regs);
->
-> I am not sure ppc needs this, but note that x86 does a bit more.
->
-> Not only we need to restore the "single-step" state, we need to
-> send SIGTRAP if it was not set by us. The same for _skip_sstep.
->
-Ok. I will investigate that part and do the necessary.
+Run in perf utility at Ivybridge EP server, encouter "not supported" event
 
-Thanks
-Suzuki
+   <not supported> L1-dcache-loads         
+   <not supported> L1-dcache-load-misses   
+   <not supported> L1-dcache-stores        
+   <not supported> L1-dcache-store-misses  
+   <not supported> L1-dcache-prefetches    
+   <not supported> L1-dcache-prefetch-misses
+
+This patch add the support for this processor.
+
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 324bb52..aea3503 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2075,6 +2075,7 @@ __init int intel_pmu_init(void)
+ 		pr_cont("SandyBridge events, ");
+ 		break;
+ 	case 58: /* IvyBridge */
++	case 62: /* IvyBridge EP */
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
+-- 
+1.6.4.2
 
