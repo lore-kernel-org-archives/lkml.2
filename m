@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab2LRBhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Dec 2012 20:37:55 -0500
-Received: from bs1.fjl.org.uk ([84.45.41.196]:59009 "EHLO bs1.fjl.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab2LRBhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Dec 2012 20:37:52 -0500
-Message-ID: <50CFC8F4.60601@avoncliff.com>
-Date: Tue, 18 Dec 2012 01:37:56 +0000
-From: david <david@avoncliff.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754137Ab2LRBlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Dec 2012 20:41:44 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:64329 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab2LRBln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Dec 2012 20:41:43 -0500
+X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Dec 2012 20:41:42 EST
 MIME-Version: 1.0
-To: greg@kroah.com, zbr@ioremap.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] resubmit  w1_therm:Retries:remove old code add CRC
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+Date: Tue, 18 Dec 2012 09:34:17 +0800
+Message-ID: <CACVXFVNQvwHvJcSzqKv27MH_RgM=e0VvXkLPKCB0i3=Z9_9EXg@mail.gmail.com>
+Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
+From: Ming Lei <tom.leiming@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-w1_therm includes some obsolete code to detect bad_roms, this is no
-longer relevant.
-The retry code is only used for this bad_rom test, however there is a
-CRC check that detects a bad read, but does not trigger a retry. This
-patch removes all the bad_rom code and uses the CRC check to trigger
-retries.
+On Tue, Dec 18, 2012 at 9:10 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> I want to change inode->i_flags access to be atomic -- there are some
+> locking oddities right now, I think, and I want to use a new inode
+> flag to signal mtime updates from page_mkwrite.  The problem is that
+> i_flags is an unsigned int, and making it an unsigned long seems like
+> a waste, but there aren't any u32 atomic bitops.
 
-Signed-off-by: David Stevenson <david@avoncliff.com>
+See below in include/linux/types.h
 
-diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
-index 92d08e7..5ef583d 100644
---- a/drivers/w1/slaves/w1_therm.c
-+++ b/drivers/w1/slaves/w1_therm.c
-@@ -45,10 +45,6 @@ MODULE_DESCRIPTION("Driver for 1-wire Dallas network protocol, temperature famil
-  static int w1_strong_pullup = 1;
-  module_param_named(strong_pullup, w1_strong_pullup, int, 0);
-  
--static u8 bad_roms[][9] = {
--				{0xaa, 0x00, 0x4b, 0x46, 0xff, 0xff, 0x0c, 0x10, 0x87},
--				{}
--			};
-  
-  static ssize_t w1_therm_read(struct device *device,
-  	struct device_attribute *attr, char *buf);
-@@ -168,16 +164,6 @@ static inline int w1_convert_temp(u8 rom[9], u8 fid)
-  	return 0;
-  }
-  
--static int w1_therm_check_rom(u8 rom[9])
--{
--	int i;
--
--	for (i=0; i<sizeof(bad_roms)/9; ++i)
--		if (!memcmp(bad_roms[i], rom, 9))
--			return 1;
--
--	return 0;
--}
-  
-  static ssize_t w1_therm_read(struct device *device,
-  	struct device_attribute *attr, char *buf)
-@@ -194,10 +180,11 @@ static ssize_t w1_therm_read(struct device *device,
-  
-  	memset(rom, 0, sizeof(rom));
-  
--	verdict = 0;
--	crc = 0;
--
-  	while (max_trying--) {
-+
-+		verdict = 0;
-+		crc = 0;
-+
-  		if (!w1_reset_select_slave(sl)) {
-  			int count = 0;
-  			unsigned int tm = 750;
-@@ -249,7 +236,7 @@ static ssize_t w1_therm_read(struct device *device,
-  			}
-  		}
-  
--		if (!w1_therm_check_rom(rom))
-+		if (verdict)
-  			break;
-  	}
-  
-@@ -260,7 +247,7 @@ static ssize_t w1_therm_read(struct device *device,
-  	if (verdict)
-  		memcpy(sl->rom, rom, sizeof(sl->rom));
-  	else
--		dev_warn(device, "18S20 doesn't respond to CONVERT_TEMP.\n");
-+		dev_warn(device, "Read failed CRC check\n");
-  
-  	for (i = 0; i < 9; ++i)
-  		c -= snprintf(buf + PAGE_SIZE - c, c, "%02x ", sl->rom[i]);
+typedef struct {
+        int counter;
+} atomic_t;
+
+#ifdef CONFIG_64BIT
+typedef struct {
+        long counter;
+} atomic64_t;
+#endif
+
+
+
+Thanks,
+-- 
+Ming Lei
