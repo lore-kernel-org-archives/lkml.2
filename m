@@ -1,160 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab2LSFhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 00:37:48 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:35978 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2LSFhj (ORCPT
+	id S1751341Ab2LSFiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 00:38:52 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19709 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2LSFim convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 00:37:39 -0500
-Message-ID: <50D15231.2060602@linux.vnet.ibm.com>
-Date: Wed, 19 Dec 2012 11:05:45 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Wed, 19 Dec 2012 00:38:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 18 Dec 2012 21:36:20 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Date: Wed, 19 Dec 2012 11:08:34 +0530
+Subject: RE: [PATCH] usb: phy: tegra: Using devm API for memory allocation
+Thread-Topic: [PATCH] usb: phy: tegra: Using devm API for memory allocation
+Thread-Index: Ac3dPWWQMnRDaS8ASzGOAV4V619fDQAbWp3Q
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E19E0BFC4@BGMAIL02.nvidia.com>
+References: <1355811683-29981-1-git-send-email-vbyravarasu@nvidia.com>
+ <50D09AC7.9050503@wwwdotorg.org>
+In-Reply-To: <50D09AC7.9050503@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
- target runqueue has one task
-References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121214002944.GB17513@amt.cnet> <50CB487C.5000209@linux.vnet.ibm.com>
-In-Reply-To: <50CB487C.5000209@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121905-5140-0000-0000-00000286296E
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I forgot to do TO to Ingo last time]
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Tuesday, December 18, 2012 10:03 PM
+> To: Venu Byravarasu
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH] usb: phy: tegra: Using devm API for memory allocation
+> 
+> On 12/17/2012 11:21 PM, Venu Byravarasu wrote:
+> > Using devm_kzalloc for allocating memory needed for PHY
+> > pointer and hence removing kfree calls to PHY pointer.
+> 
+> Since the kfree() here used to be in tegra_usb_phy_close() rather than
+> any remove() function, does it actually make sense to use
+> devm_kzalloc(); would plain using kzalloc() instead, and not removing
+> the kfree() calls, be better?
+> 
+ 
+Stephen,
+As you mentioned I can replace kmalloc with kzalloc in the original code 
+and push an updated patch.
+However, I just wanted to understand if there exists any issue
+in using devm_kzalloc instead of kzalloc?
 
-Ingo,
-  Could you please take this into x86 tree.
-This is
-Acked-by: Andrew Jones <drjones@redhat.com>
-Tested-by: Chegu Vinod <chegu_vinod@hp.com>
-
-Marcelo, do you want to add your Acked-by/Reviewed-by?
-
-On 12/14/2012 09:10 PM, Raghavendra K T wrote:
-> Hi Ingo,
->
-> Could you please take this into x86 tree?
->
-> Thanks,
-> On 12/14/2012 05:59 AM, Marcelo Tosatti wrote:
->> Raghavendra,
->>
->> Please get this integrate through x86 tree (Ingo CC'ed).
->>
->> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
->>> From: Peter Zijlstra <peterz@infradead.org>
->>>
->>> In case of undercomitted scenarios, especially in large guests
->>> yield_to overhead is significantly high. when run queue length of
->>> source and target is one, take an opportunity to bail out and return
->>> -ESRCH. This return condition can be further exploited to quickly come
->>> out of PLE handler.
->>>
->>> (History: Raghavendra initially worked on break out of kvm ple
->>> handler upon
->>>   seeing source runqueue length = 1, but it had to export rq length).
->>>   Peter came up with the elegant idea of return -ESRCH in scheduler
->>> core.
->>>
->>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>> Raghavendra, Checking the rq length of target vcpu condition
->>> added.(thanks Avi)
->>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>> ---
->>>
->>>   kernel/sched/core.c |   25 +++++++++++++++++++------
->>>   1 file changed, 19 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 2d8927f..fc219a5 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
->>>    * It's the caller's job to ensure that the target task struct
->>>    * can't go away on us before we can do any checks.
->>>    *
->>> - * Returns true if we indeed boosted the target task.
->>> + * Returns:
->>> + *    true (>0) if we indeed boosted the target task.
->>> + *    false (0) if we failed to boost the target.
->>> + *    -ESRCH if there's no task to yield to.
->>>    */
->>>   bool __sched yield_to(struct task_struct *p, bool preempt)
->>>   {
->>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p,
->>> bool preempt)
->>>
->>>   again:
->>>       p_rq = task_rq(p);
->>> +    /*
->>> +     * If we're the only runnable task on the rq and target rq also
->>> +     * has only one task, there's absolutely no point in yielding.
->>> +     */
->>> +    if (rq->nr_running == 1 && p_rq->nr_running == 1) {
->>> +        yielded = -ESRCH;
->>> +        goto out_irq;
->>> +    }
->>> +
->>>       double_rq_lock(rq, p_rq);
->>>       while (task_rq(p) != p_rq) {
->>>           double_rq_unlock(rq, p_rq);
->>> @@ -4310,13 +4322,13 @@ again:
->>>       }
->>>
->>>       if (!curr->sched_class->yield_to_task)
->>> -        goto out;
->>> +        goto out_unlock;
->>>
->>>       if (curr->sched_class != p->sched_class)
->>> -        goto out;
->>> +        goto out_unlock;
->>>
->>>       if (task_running(p_rq, p) || p->state)
->>> -        goto out;
->>> +        goto out_unlock;
->>>
->>>       yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->>>       if (yielded) {
->>> @@ -4329,11 +4341,12 @@ again:
->>>               resched_task(p_rq->curr);
->>>       }
->>>
->>> -out:
->>> +out_unlock:
->>>       double_rq_unlock(rq, p_rq);
->>> +out_irq:
->>>       local_irq_restore(flags);
->>>
->>> -    if (yielded)
->>> +    if (yielded > 0)
->>>           schedule();
->>>
->>>       return yielded;
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->
-
+> When the PHY code gets converted to be an actual probed driver, then
+> perhaps using devm will make sense.
