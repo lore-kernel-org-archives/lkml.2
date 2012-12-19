@@ -1,70 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab2LSLIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 06:08:10 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47327 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab2LSLIF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 06:08:05 -0500
-Message-ID: <1355915233.5273.23.camel@cumari.coelho.fi>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-From: Luciano Coelho <coelho@ti.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Felipe Balbi <balbi@ti.com>, <svenkatr@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <cjb@laptop.org>, <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Date: Wed, 19 Dec 2012 13:07:13 +0200
-In-Reply-To: <50D19D54.2000307@ti.com>
-References: <1352968293.10872.51.camel@cumari.coelho.fi>
-	  <20121218095450.GB27751@arwen.pp.htv.fi>
-	  <20121219094552.GN4985@opensource.wolfsonmicro.com>
-	  <50D19040.5090404@ti.com>
-	  <20121219100909.GO4985@opensource.wolfsonmicro.com>
-	  <50D19463.5010605@ti.com>
-	  <20121219103206.GQ4985@opensource.wolfsonmicro.com>
-	 <1355913954.5273.21.camel@cumari.coelho.fi> <50D19D54.2000307@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1752493Ab2LSLIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 06:08:40 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37583 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab2LSLIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 06:08:32 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from probing ACPI drivers
+Date: Wed, 19 Dec 2012 12:13:45 +0100
+Message-ID: <9914743.4VRVUiabDD@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAErSpo63cQJskAJKBwai6ipToVHEEwCWXeRfBOzF29Ds29MTbA@mail.gmail.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <4447450.z46Q2xYLQX@vostro.rjw.lan> <CAErSpo63cQJskAJKBwai6ipToVHEEwCWXeRfBOzF29Ds29MTbA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-19 at 11:56 +0100, Peter Ujfalusi wrote:
-> On 12/19/2012 11:45 AM, Luciano Coelho wrote:
-> >> Well, we still haven't got the foggiest idea what the actual problem is
-> >> beyond that it's probably related to the 32kHz clock in some way (unless
-> >> it was one of the other reverts that coincidentally made a difference,
-> >> but we don't know what they were) so it's unlikely that just randomly
-> >> implementing clock support is going to fix anything immediately here.
-> > 
-> > This is exactly what I had to revert (as I mentioned in the other email,
-> > I had to revert the other patches otherwise compilation would break):
-> > 
-> > 0e8e5c34 "regulator: twl: Remove references to 32kHz clock from DT bindings"
-> > e76ab829 "regulator: twl: Remove references to the twl4030 regulator"
-> > 029dd3ce "regulator: twl: Remove another unused variable warning"
+On Tuesday, December 18, 2012 04:19:55 PM Bjorn Helgaas wrote:
+> On Tue, Dec 18, 2012 at 4:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Tuesday, December 18, 2012 03:15:12 PM Toshi Kani wrote:
+> >> On Tue, 2012-12-18 at 22:57 +0100, Rafael J. Wysocki wrote:
+> >> > On Tuesday, December 18, 2012 09:10:41 AM Toshi Kani wrote:
+> >> > > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
+> >>  :
+> >> > > We need to decide which module is responsible for calling .bind().  I
+> >> > > think it should be the ACPI scan module, not the ACPI PCI root bridge
+> >> > > driver, because:
+> >> > >  - bind() needs to be called when _ADR device is added.  The ACPI scan
+> >> > > module can scan any devices, while the PCI root driver can only scan
+> >> > > when it is added.
+> >> > >  - acpi_bus_remove() calls unbind() at hot-remove.  The same module
+> >> > > should be responsible for both bind() and unbind() handling.
+> >> > >  - It is cleaner to keep struct acpi_device_ops interface to be called
+> >> > > by the ACPI core.
+> >> >
+> >> > I agree with that. :-)
+> >> >
+> >> > Moreover, I don't think we need acpi_pci_bind() and acpi_pci_unbind() at all.
+> >> >
+> >> > > So, I would propose the following changes.
+> >> > >
+> >> > >  - Move the acpi_hot_add_bind() call back to the original place after
+> >> > > the device_attach() call.
+> >> > >  - Rename the name of acpi_hot_add_bind() to something like
+> >> > > acpi_bind_adr_device() since it is no longer hot-add only (and is
+> >> > > specific to _ADR devices).
+> >> > >  - Create its pair function, acpi_unbind_adr_device(), which is called
+> >> > > from acpi_bus_remove().  When a constructor interface is introduced, its
+> >> > > destructor should be introduced as well.
+> >> > >  - Remove the binding procedure from acpi_pci_root_add().  This should
+> >> > > be done in patch [2/6].
+> >> >
+> >> > Well, what about moving the code from acpi_pci_bind()/acpi_pci_unbind()
+> >> > somewhere else and removing those things altogether?
+> >>
+> >> Sounds nice.  It will be bonus point if you can do that. :-)
+> >
+> > I think I can, but I need a few more patches on top of what I've already posted
+> > to do that.
+> >
+> > I think that https://patchwork.kernel.org/patch/1889821/ and
+> > https://patchwork.kernel.org/patch/1884701/ can stay as they are, since there's
+> > some material on top of them already and I'll cut the new patches on top of all
+> > that.  I'll repost the whole series some time later this week, stay tuned. :-)
 > 
-> Yeah. 32k clock is not provided by twl.
-> 
-> As I said I need to take a look at CCF to see if it already there. If it is
-> clock driver + mapping + patch for wl12xx should fix the issue you are facing.
-> 
-> > Let me know if you need more info.
-> 
-> BTW: have you happened to ubdate u-boot recently? There is a nice easter egg
-> added there:
-> f3f98bb ARM: OMAP4/5: Do not configure non essential pads, clocks, dplls.
-> 
-> Which means that _essential_ clocks and pads are no longer configured.
+> I haven't follow this closely enough to give useful feedback, but I
+> trust that what you're doing is going in the right direction.
 
-Actually no, I haven't updated my u-boot for a while.  I'll check if
-that improves things.
+Cool. :-)
 
---
-Luca.
+> The only question I have right now is what I mentioned earlier on IRC,
+> namely, the idea of "binding" an ACPI handle or device to a pci_dev,
+> and whether there's a way to guarantee that the binding doesn't become
+> stale.  For example, if we bind pci_dev A to acpi_device B, I think we
+> essentially capture the pointer to B and store that pointer in A.
+> Obviously we want to know that the captured pointer in A remains valid
+> as long as A exists, but I don't know what assures us of that.
 
+This really is a bit more complicated.
+
+First, what we store in A is not a pointer to B, but rather the corresponding
+ACPICA handle, which is guaranteed to live longer that B itself.
+
+Second, we not only store the B's handle in A, but also a pointer to A in B
+(in the physical_node_list list).  Moreover, we create the "firmware_node"
+sysfs file under A and a "physical_node" sysfs file under B.
+
+All of that becomes invalid when either A or B is removed without notice.
+
+For the removal of A we have acpi_platform_notify() that calls
+acpi_unbind_one() which kills all of that stuff, so as long as A is removed
+earlier than B, we have no problems.
+
+For the removal of B, however, we seem to assume that if the device is
+ejectable, there will be an ACPI driver bound to B (ie. the struct acpi_device)
+that will take care of the removal of the physical nodes associated with it
+before B itself is removed.  At least that's my understanding of the current
+code.  Moreover, I'm not sure if this assumption is universally satisfied.
+
+> I don't think this is a new question; I have the same question about
+> the current code before your changes.  But it seems like you're
+> simplifying this area in a way that might make it easier to answer the
+> question.
+
+Well, my patches are not likely to make things worse in this area. :-)
+
+Anyway, I think we should make acpi_bus_scan(), or even acpi_bus_add() after
+my changes, mutually exclusive with acpi_bus_trim(), because that will ensure
+that we won't be removing ACPI device objects while setting them up (or the
+other way around).  That would require us to redesign some ACPI drivers first,
+though, because they call acpi_bus_trim() in their initialization code paths
+(I don't really think they should be doing that).
+
+Moreover, I think we should make the ACPI core trigger the removal of all
+physical nodes (As) associated with the given ACPI node (B) after calling
+device_release_driver() in acpi_bus_remove().  That will ensure that all
+physical nodes are gone along with all the binding-related stuff (thanks to
+acpi_platform_notify()) before the ACPI node is removed.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
