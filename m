@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab2LSWY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:24:28 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:42815 "EHLO mxout2.iskon.hr"
+	id S1751607Ab2LSW0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:26:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47391 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab2LSWYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:24:08 -0500
-X-Remote-IP: 213.191.128.133
-Date: Wed, 19 Dec 2012 23:24:00 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1751352Ab2LSW0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 17:26:15 -0500
+Message-ID: <50D23EE8.7030904@zytor.com>
+Date: Wed, 19 Dec 2012 14:25:44 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-References: <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org> <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to> <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com> <50C32D32.6040800@iskon.hr> <50C3AF80.8040700@iskon.hr> <alpine.LFD.2.02.1212081651270.4593@air.linux-foundation.org> <20121210110337.GH1009@suse.de> <20121210163904.GA22101@cmpxchg.org> <20121210180141.GK1009@suse.de> <50C62AE6.3030000@iskon.hr> <CA+55aFwNE2y5t2uP3esCnHsaNo0NTDnGvzN6KF0qTw_y+QbtFA@mail.gmail.com> <50C6477A.4090005@iskon.hr> <50C67C13.6090702@iskon.hr>
-In-Reply-To: <50C67C13.6090702@iskon.hr>
-Message-ID: <50D23E80.3010408@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jacob Shin <jacob.shin@amd.com>
+CC: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+References: <CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com> <CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com> <50CCCFD0.7030704@linux.intel.com> <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com> <50CCEE49.3080801@zytor.com> <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com> <50CCF6F6.4020107@zytor.com> <CAE9FiQULAJhPUw62UVjyBakn-YcK8x0pzDgRi+FdJXS-_ekABg@mail.gmail.com> <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie>
+In-Reply-To: <20121219220504.GA32212@jshin-Toonie>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Subject: Re: kswapd craziness in 3.7
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121219 #8791803, check: 20121219 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40501 [Dec 20 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.12.2012 01:19, Zlatko Calusic wrote:
->> On 10.12.2012 20:13, Linus Torvalds wrote:
->>>
->>> It's worth giving this as much testing as is at all possible, but at
->>> the same time I really don't think I can delay 3.7 any more without
->>> messing up the holiday season too much. So unless something obvious
->>> pops up, I will do the release tonight. So testing will be minimal -
->>> but it's not like we haven't gone back-and-forth on this several times
->>> already, and we revert to *mostly* the same old state as 3.6 anyway,
->>> so it should be fairly safe.
->>>
+On 12/19/2012 02:05 PM, Jacob Shin wrote:
+> On Wed, Dec 19, 2012 at 01:48:33PM -0800, H. Peter Anvin wrote:
+>> There are a few very serious problems we need to figure out related to generalizing very early boot.  If this range gets mapped, will the CPU treat it as WB?  If so, with what consequences for either the HT region or the hole below it?
 >
-> So, here's what I found. In short: close, but no cigar!
+> Hm .. I guess I need to read the whole email thread .. but if you can
+> explain it in short, what are the problems?
 >
-> Kswapd is certainly no more CPU pig, and memory seems to be utilized
-> properly (the kernel still likes to keep 400MB free, somebody else can
-> confirm if that's to be expected on a 4GB THP-enabled machine). So it
-> looks very decent, and much better than anything I run in last 10 days,
-> barring !THP kernel.
+> Yes the CPU treats it as WB because the region is under TOM2, so by
+> default it is WB, and also when you create direct mapping page tables,
+> the PATs mark them as WB.
 >
-> What remains a mystery is that kswapd occassionaly still likes to get
-> stuck in a D state, only now it recovers faster than before (sometimes
-> in a matter of seconds, but sometimes it takes a few minutes). Now, I
-> admit it's a small, maybe even cosmetic issue. But, it could also be a
-> warning sign of a bigger problem that will reveal itself on a more
-> loaded machine.
+> What we have seen is that even though the kernel never generate memory
+> accesses in the hole (since E820 says that it is not RAM) when kernel
+> read/writes memory near the hole, the CPU was prefetching into the
+> hole because PATs say that it is WB. This resulted in MCE because
+> there is no physical RAM there.
 >
 
-Ha, I nailed it!
+IOW, epic f*ckup.
 
-The cigar aka the explanation together with a patch will follow shortly 
-in a separate topic.
+The problem is that before we have awareness of the memory map, we need 
+to map things in order to access them.  This is a big problem and right 
+now there are ridiculous heuristics.  I have been working on mapping on 
+demand, but there are concerns about the boundaries (i.e. what happens 
+if the mapping spill over into a pit like this.)
 
-It's a genuine bug that has been with us for a long long time.
+This kind of stuff is really not acceptable.  A region which will cause 
+malfunction if prefetched should not be WB in the MTRR system (I include 
+TOM* in that.)  The real question is what we can do to mitigate the damage.
+
+	-hpa
+
 -- 
-Zlatko
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
