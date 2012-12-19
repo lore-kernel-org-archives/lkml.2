@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2LSHDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 02:03:11 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44350 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab2LSHCz (ORCPT
+	id S1752615Ab2LSHDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 02:03:15 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:32888 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab2LSHDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 02:02:55 -0500
-X-AuditID: 85900ec0-d4a78b900000152f-43-50d1669d5038
-Subject: [PATCH v3 -tip 2/4] tracing: replace static old_tracer with strcmp
+	Wed, 19 Dec 2012 02:03:04 -0500
+X-AuditID: 85900ec0-d5479b900000152f-44-50d166a41c50
+Subject: [PATCH v3 -tip 3/4] tracing: make a snapshot feature available from
+ userspace
 To: rostedt@goodmis.org
 From: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Cc: masami.hiramatsu.pt@hitachi.com, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Date: Wed, 19 Dec 2012 16:02:43 +0900
-Message-ID: <20121219070243.31200.73060.stgit@liselsia>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        yrl.pp-manager.tt@hitachi.com, masami.hiramatsu.pt@hitachi.com,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Wed, 19 Dec 2012 16:02:48 +0900
+Message-ID: <20121219070248.31200.57980.stgit@liselsia>
 In-Reply-To: <20121219070218.31200.64647.stgit@liselsia>
 References: <20121219070218.31200.64647.stgit@liselsia>
 User-Agent: StGit/0.16
@@ -27,89 +29,337 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, read functions for trace buffer use static "old_tracer"
-for detecting changes of current tracer. This is because we can
-assume that these functions are used from only one file ("trace").
+Ftrace has a snapshot feature available from kernel space and
+latency tracers (e.g. irqsoff) are using it. This patch enables
+user applictions to take a snapshot via debugfs.
 
-But we are adding snapshot feature for ftrace, then those functions
-are called from two files. So we remove all static "old_tracer", and
-replace those with string comparison between current and previous
-tracers.
+Add "snapshot" debugfs file in "tracing" directory.
+
+  snapshot:
+    This is used to take a snapshot and to read the output of the
+    snapshot.
+
+     # echo 1 > snapshot
+
+    This will allocate the spare buffer for snapshot (if it is
+    not allocated), and take a snapshot.
+
+     # cat snapshot
+
+    This will show contents of the snapshot.
+
+     # echo 0 > snapshot
+
+    This will free the snapshot if it is allocated.
+
+    Any other positive values will clear the snapshot contents if
+    the snapshot is allocated, or return EINVAL if it is not allocated.
 
 Signed-off-by: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: David Sharp <dhsharp@google.com>
 Cc: linux-kernel@vger.kernel.org
 ---
- kernel/trace/trace.c |   18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ include/linux/ftrace_event.h |    3 +
+ kernel/trace/Kconfig         |   10 +++
+ kernel/trace/trace.c         |  134 ++++++++++++++++++++++++++++++++++++++----
+ kernel/trace/trace.h         |    1 
+ 4 files changed, 136 insertions(+), 12 deletions(-)
 
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index a3d4895..9bebadd 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -84,6 +84,9 @@ struct trace_iterator {
+ 	long			idx;
+ 
+ 	cpumask_var_t		started;
++
++	/* it's true when current open file is snapshot */
++	bool			snapshot;
+ };
+ 
+ enum trace_iter_flags {
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 5d89335..82a8ff5 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -250,6 +250,16 @@ config FTRACE_SYSCALLS
+ 	help
+ 	  Basic tracer to catch the syscall entry and exit events.
+ 
++config TRACER_SNAPSHOT
++	bool "Create a snapshot trace buffer"
++	select TRACER_MAX_TRACE
++	help
++	  Allow tracing users to take snapshot of the current buffer using the
++	  ftrace interface, e.g.:
++
++	      echo 1 > /sys/kernel/debug/tracing/snapshot
++	      cat snapshot
++
+ config TRACE_BRANCH_PROFILING
+ 	bool
+ 	select GENERIC_TRACER
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a8ce008..8d05a44 100644
+index 8d05a44..0e5abce 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -1948,7 +1948,6 @@ void tracing_iter_reset(struct trace_iterator *iter, int cpu)
- static void *s_start(struct seq_file *m, loff_t *pos)
+@@ -709,7 +709,7 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ 		return;
+ 
+ 	WARN_ON_ONCE(!irqs_disabled());
+-	if (!current_trace->use_max_tr) {
++	if (!current_trace->allocated_snapshot) {
+ 		WARN_ON_ONCE(1);
+ 		return;
+ 	}
+@@ -739,7 +739,7 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ 		return;
+ 
+ 	WARN_ON_ONCE(!irqs_disabled());
+-	if (!current_trace->use_max_tr) {
++	if (!current_trace->allocated_snapshot) {
+ 		WARN_ON_ONCE(1);
+ 		return;
+ 	}
+@@ -1960,7 +1960,11 @@ static void *s_start(struct seq_file *m, loff_t *pos)
+ 		*iter->trace = *current_trace;
+ 	mutex_unlock(&trace_types_lock);
+ 
+-	atomic_inc(&trace_record_cmdline_disabled);
++	if (iter->snapshot && iter->trace->use_max_tr)
++		return ERR_PTR(-EBUSY);
++
++	if (!iter->snapshot)
++		atomic_inc(&trace_record_cmdline_disabled);
+ 
+ 	if (*pos != iter->pos) {
+ 		iter->ent = NULL;
+@@ -1999,7 +2003,11 @@ static void s_stop(struct seq_file *m, void *p)
  {
  	struct trace_iterator *iter = m->private;
--	static struct tracer *old_tracer;
- 	int cpu_file = iter->cpu_file;
- 	void *p = NULL;
- 	loff_t l = 0;
-@@ -1956,10 +1955,9 @@ static void *s_start(struct seq_file *m, loff_t *pos)
  
- 	/* copy the tracer to avoid using a global lock all around */
- 	mutex_lock(&trace_types_lock);
--	if (unlikely(old_tracer != current_trace && current_trace)) {
--		old_tracer = current_trace;
-+	if (unlikely(current_trace &&
-+		     strcmp(iter->trace->name, current_trace->name) != 0))
- 		*iter->trace = *current_trace;
--	}
- 	mutex_unlock(&trace_types_lock);
+-	atomic_dec(&trace_record_cmdline_disabled);
++	if (iter->snapshot && iter->trace->use_max_tr)
++		return;
++
++	if (!iter->snapshot)
++		atomic_dec(&trace_record_cmdline_disabled);
+ 	trace_access_unlock(iter->cpu_file);
+ 	trace_event_read_unlock();
+ }
+@@ -2434,7 +2442,7 @@ static const struct seq_operations tracer_seq_ops = {
+ };
  
- 	atomic_inc(&trace_record_cmdline_disabled);
-@@ -3481,7 +3479,6 @@ tracing_read_pipe(struct file *filp, char __user *ubuf,
- 		  size_t cnt, loff_t *ppos)
+ static struct trace_iterator *
+-__tracing_open(struct inode *inode, struct file *file)
++__tracing_open(struct inode *inode, struct file *file, bool snapshot)
  {
- 	struct trace_iterator *iter = filp->private_data;
--	static struct tracer *old_tracer;
- 	ssize_t sret;
+ 	long cpu_file = (long) inode->i_private;
+ 	struct trace_iterator *iter;
+@@ -2467,10 +2475,11 @@ __tracing_open(struct inode *inode, struct file *file)
+ 	if (!zalloc_cpumask_var(&iter->started, GFP_KERNEL))
+ 		goto fail;
  
- 	/* return any leftover data */
-@@ -3493,10 +3490,9 @@ tracing_read_pipe(struct file *filp, char __user *ubuf,
+-	if (current_trace && current_trace->print_max)
++	if ((current_trace && current_trace->print_max) || snapshot)
+ 		iter->tr = &max_tr;
+ 	else
+ 		iter->tr = &global_trace;
++	iter->snapshot = snapshot;
+ 	iter->pos = -1;
+ 	mutex_init(&iter->mutex);
+ 	iter->cpu_file = cpu_file;
+@@ -2487,8 +2496,9 @@ __tracing_open(struct inode *inode, struct file *file)
+ 	if (trace_clocks[trace_clock_id].in_ns)
+ 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
  
- 	/* copy the tracer to avoid using a global lock all around */
- 	mutex_lock(&trace_types_lock);
--	if (unlikely(old_tracer != current_trace && current_trace)) {
--		old_tracer = current_trace;
-+	if (unlikely(current_trace &&
-+		     strcmp(iter->trace->name, current_trace->name) != 0))
- 		*iter->trace = *current_trace;
--	}
+-	/* stop the trace while dumping */
+-	tracing_stop();
++	/* stop the trace while dumping if we are not opening "snapshot" */
++	if (!iter->snapshot)
++		tracing_stop();
+ 
+ 	if (iter->cpu_file == TRACE_PIPE_ALL_CPU) {
+ 		for_each_tracing_cpu(cpu) {
+@@ -2551,8 +2561,9 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 	if (iter->trace && iter->trace->close)
+ 		iter->trace->close(iter);
+ 
+-	/* reenable tracing if it was previously enabled */
+-	tracing_start();
++	if (!iter->snapshot)
++		/* reenable tracing if it was previously enabled */
++		tracing_start();
  	mutex_unlock(&trace_types_lock);
  
- 	/*
-@@ -3652,7 +3648,6 @@ static ssize_t tracing_splice_read_pipe(struct file *filp,
- 		.ops		= &tracing_pipe_buf_ops,
- 		.spd_release	= tracing_spd_release_pipe,
- 	};
--	static struct tracer *old_tracer;
- 	ssize_t ret;
- 	size_t rem;
- 	unsigned int i;
-@@ -3662,10 +3657,9 @@ static ssize_t tracing_splice_read_pipe(struct file *filp,
+ 	mutex_destroy(&iter->mutex);
+@@ -2580,7 +2591,7 @@ static int tracing_open(struct inode *inode, struct file *file)
+ 	}
  
- 	/* copy the tracer to avoid using a global lock all around */
- 	mutex_lock(&trace_types_lock);
--	if (unlikely(old_tracer != current_trace && current_trace)) {
--		old_tracer = current_trace;
-+	if (unlikely(current_trace &&
-+		     strcmp(iter->trace->name, current_trace->name) != 0))
- 		*iter->trace = *current_trace;
--	}
- 	mutex_unlock(&trace_types_lock);
+ 	if (file->f_mode & FMODE_READ) {
+-		iter = __tracing_open(inode, file);
++		iter = __tracing_open(inode, file, false);
+ 		if (IS_ERR(iter))
+ 			ret = PTR_ERR(iter);
+ 		else if (trace_flags & TRACE_ITER_LATENCY_FMT)
+@@ -3211,7 +3222,7 @@ static int tracing_set_tracer(const char *buf)
+ 	trace_branch_disable();
+ 	if (current_trace && current_trace->reset)
+ 		current_trace->reset(tr);
+-	if (current_trace && current_trace->use_max_tr) {
++	if (current_trace && current_trace->allocated_snapshot) {
+ 		/*
+ 		 * We don't free the ring buffer. instead, resize it because
+ 		 * The max_tr ring buffer has some state (e.g. ring->clock) and
+@@ -3219,6 +3230,8 @@ static int tracing_set_tracer(const char *buf)
+ 		 */
+ 		ring_buffer_resize(max_tr.buffer, 1, RING_BUFFER_ALL_CPUS);
+ 		set_buffer_entries(&max_tr, 1);
++		tracing_reset_online_cpus(&max_tr);
++		current_trace->allocated_snapshot = false;
+ 	}
+ 	destroy_trace_option_files(topts);
  
- 	mutex_lock(&iter->mutex);
+@@ -3231,6 +3244,7 @@ static int tracing_set_tracer(const char *buf)
+ 						   RING_BUFFER_ALL_CPUS);
+ 		if (ret < 0)
+ 			goto out;
++		t->allocated_snapshot = true;
+ 	}
+ 
+ 	if (t->init) {
+@@ -4052,6 +4066,87 @@ static int tracing_clock_open(struct inode *inode, struct file *file)
+ 	return single_open(file, tracing_clock_show, NULL);
+ }
+ 
++#ifdef CONFIG_TRACER_SNAPSHOT
++static int tracing_snapshot_open(struct inode *inode, struct file *file)
++{
++	struct trace_iterator *iter;
++	int ret = 0;
++
++	if (file->f_mode & FMODE_READ) {
++		iter = __tracing_open(inode, file, true);
++		if (IS_ERR(iter))
++			ret = PTR_ERR(iter);
++	}
++	return ret;
++}
++
++static ssize_t
++tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
++		       loff_t *ppos)
++{
++	unsigned long val;
++	int ret;
++
++	ret = tracing_update_buffers();
++	if (ret < 0)
++		return ret;
++
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
++		return ret;
++
++	mutex_lock(&trace_types_lock);
++
++	if (current_trace && current_trace->use_max_tr) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	switch (val) {
++	case 0:
++		if (current_trace->allocated_snapshot) {
++			/* free spare buffer */
++			ring_buffer_resize(max_tr.buffer, 1,
++					   RING_BUFFER_ALL_CPUS);
++			set_buffer_entries(&max_tr, 1);
++			tracing_reset_online_cpus(&max_tr);
++			current_trace->allocated_snapshot = false;
++		}
++		break;
++	case 1:
++		if (!current_trace->allocated_snapshot) {
++			/* allocate spare buffer */
++			ret = resize_buffer_duplicate_size(&max_tr,
++					&global_trace, RING_BUFFER_ALL_CPUS);
++			if (ret < 0)
++				break;
++			current_trace->allocated_snapshot = true;
++		}
++
++		local_irq_disable();
++		/* Now, we're going to swap */
++		update_max_tr(&global_trace, current, smp_processor_id());
++		local_irq_enable();
++		break;
++	default:
++		if (current_trace->allocated_snapshot)
++			tracing_reset_online_cpus(&max_tr);
++		else
++			ret = -EINVAL;
++		break;
++	}
++
++	if (ret >= 0) {
++		*ppos += cnt;
++		ret = cnt;
++	}
++out:
++	mutex_unlock(&trace_types_lock);
++	return ret;
++}
++#endif /* CONFIG_TRACER_SNAPSHOT */
++
++
+ static const struct file_operations tracing_max_lat_fops = {
+ 	.open		= tracing_open_generic,
+ 	.read		= tracing_max_lat_read,
+@@ -4108,6 +4203,16 @@ static const struct file_operations trace_clock_fops = {
+ 	.write		= tracing_clock_write,
+ };
+ 
++#ifdef CONFIG_TRACER_SNAPSHOT
++static const struct file_operations snapshot_fops = {
++	.open		= tracing_snapshot_open,
++	.read		= seq_read,
++	.write		= tracing_snapshot_write,
++	.llseek		= tracing_seek,
++	.release	= tracing_release,
++};
++#endif /* CONFIG_TRACER_SNAPSHOT */
++
+ struct ftrace_buffer_info {
+ 	struct trace_array	*tr;
+ 	void			*spare;
+@@ -4899,6 +5004,11 @@ static __init int tracer_init_debugfs(void)
+ 			&ftrace_update_tot_cnt, &tracing_dyn_info_fops);
+ #endif
+ 
++#ifdef CONFIG_TRACER_SNAPSHOT
++	trace_create_file("snapshot", 0644, d_tracer,
++			  (void *) TRACE_PIPE_ALL_CPU, &snapshot_fops);
++#endif
++
+ 	create_trace_options_dir();
+ 
+ 	for_each_tracing_cpu(cpu)
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index c75d798..512afe5 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -287,6 +287,7 @@ struct tracer {
+ 	struct tracer_flags	*flags;
+ 	bool			print_max;
+ 	bool			use_max_tr;
++	bool			allocated_snapshot;
+ };
+ 
+ 
 
