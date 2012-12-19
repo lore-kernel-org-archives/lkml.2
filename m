@@ -1,73 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750949Ab2LSFRj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 00:17:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27762 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab2LSFRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 00:17:35 -0500
-Date: Wed, 19 Dec 2012 13:15:19 +0800
-From: Dong Zhu <bluezhudong@gmail.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] timekeeping: avoid adjust kernel time once hwclock
- kept in UTC time
-Message-ID: <20121219051518.GA8584@zhudong.nay.redhat.com>
-References: <20121206140334.GA24261@zhudong.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206140334.GA24261@zhudong.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751042Ab2LSFck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 00:32:40 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:35434 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab2LSFcd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 00:32:33 -0500
+X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 00:32:32 EST
+Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have
+ plenty
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20121217155416.GC25432@dhcp22.suse.cz>
+References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
+	 <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
+	 <50C8FCE0.1060408@redhat.com> <20121212222844.GA10257@cmpxchg.org>
+	 <20121213145514.GD21644@dhcp22.suse.cz> <50CD2232.8020909@gmail.com>
+	 <20121217155416.GC25432@dhcp22.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Dec 2012 00:21:55 -0500
+Message-ID: <1355894515.1657.2.camel@kernel-VirtualBox>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 10:03:34PM +0800, Dong Zhu wrote:
-> From c126376cf1837b0956e0268056db61870fbbc1d4 Mon Sep 17 00:00:00 2001
-> From: Dong Zhu <bluezhudong@gmail.com>
-> Date: Thu, 6 Dec 2012 21:45:00 +0800
-> Subject: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept in
->  UTC time
+On Mon, 2012-12-17 at 16:54 +0100, Michal Hocko wrote:
+> On Sun 16-12-12 09:21:54, Simon Jeons wrote:
+> > On 12/13/2012 10:55 PM, Michal Hocko wrote:
+> > >On Wed 12-12-12 17:28:44, Johannes Weiner wrote:
+> > >>On Wed, Dec 12, 2012 at 04:53:36PM -0500, Rik van Riel wrote:
+> > >>>On 12/12/2012 04:43 PM, Johannes Weiner wrote:
+> > >>>>dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
+> > >>>>a point of not going for anonymous memory while there is still enough
+> > >>>>inactive cache around.
+> > >>>>
+> > >>>>The check was added only for global reclaim, but it is just as useful
+> > >>>>for memory cgroup reclaim.
+> > >>>>
+> > >>>>Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > >>>>---
+> > >>>>  mm/vmscan.c | 19 ++++++++++---------
+> > >>>>  1 file changed, 10 insertions(+), 9 deletions(-)
+> > >>>>
+> > >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > >>>>index 157bb11..3874dcb 100644
+> > >>>>--- a/mm/vmscan.c
+> > >>>>+++ b/mm/vmscan.c
+> > >>>>@@ -1671,6 +1671,16 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+> > >>>>  		denominator = 1;
+> > >>>>  		goto out;
+> > >>>>  	}
+> > >>>>+	/*
+> > >>>>+	 * There is enough inactive page cache, do not reclaim
+> > >>>>+	 * anything from the anonymous working set right now.
+> > >>>>+	 */
+> > >>>>+	if (!inactive_file_is_low(lruvec)) {
+> > >>>>+		fraction[0] = 0;
+> > >>>>+		fraction[1] = 1;
+> > >>>>+		denominator = 1;
+> > >>>>+		goto out;
+> > >>>>+	}
+> > >>>>
+> > >>>>  	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
+> > >>>>  		get_lru_size(lruvec, LRU_INACTIVE_ANON);
+> > >>>>@@ -1688,15 +1698,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+> > >>>>  			fraction[1] = 0;
+> > >>>>  			denominator = 1;
+> > >>>>  			goto out;
+> > >>>>-		} else if (!inactive_file_is_low_global(zone)) {
+> > >>>>-			/*
+> > >>>>-			 * There is enough inactive page cache, do not
+> > >>>>-			 * reclaim anything from the working set right now.
+> > >>>>-			 */
+> > >>>>-			fraction[0] = 0;
+> > >>>>-			fraction[1] = 1;
+> > >>>>-			denominator = 1;
+> > >>>>-			goto out;
+> > >>>>  		}
+> > >>>>  	}
+> > >>>>
+> > >>>>
+> > >>>I believe the if() block should be moved to AFTER
+> > >>>the check where we make sure we actually have enough
+> > >>>file pages.
+> > >>You are absolutely right, this makes more sense.  Although I'd figure
+> > >>the impact would be small because if there actually is that little
+> > >>file cache, it won't be there for long with force-file scanning... :-)
+> > >Yes, I think that the result would be worse (more swapping) so the
+> > >change can only help.
+> > >
+> > >>I moved the condition, but it throws conflicts in the rest of the
+> > >>series.  Will re-run tests, wait for Michal and Mel, then resend.
+> > >Yes the patch makes sense for memcg as well. I guess you have tested
+> > >this primarily with memcg. Do you have any numbers? Would be nice to put
+> > >them into the changelog if you have (it should help to reduce swapping
+> > >with heavy streaming IO load).
+> > >
+> > >Acked-by: Michal Hocko <mhocko@suse.cz>
+> > 
+> > Hi Michal,
+> > 
+> > I still can't understand why "The goto out means that it should be
+> > fine either way.",
 > 
-> If the Hardware Clock kept in local time,kernel will adjust the time
-> to be UTC time.But if Hardware Clock kept in UTC time,system will make
-> a dummy settimeofday call first (sys_tz.tz_minuteswest = 0) to make sure
-> the time is not shifted,so at this point I think maybe it is not necessary
-> to set the kernel time once the sys_tz.tz_minuteswest is zero.
+> Not sure I understand your question. goto out just says that either page
+> cache is low or inactive file LRU is too small. And it works for both
+> memcg and global because the page cache is low condition is evaluated
+> only for the global reclaim and always before inactive file is small.
+> Makes more sense?
+
+Hi Michal,
+
+I confuse of Gorman's comments below, why the logic change still fine.  
+
+Current
+  low_file      inactive_is_high        force reclaim anon
+  low_file      !inactive_is_high       force reclaim anon
+  !low_file     inactive_is_high        force reclaim file
+  !low_file     !inactive_is_high       normal split
+
+Your patch
+
+  low_file      inactive_is_high        force reclaim anon
+  low_file      !inactive_is_high       force reclaim anon
+  !low_file     inactive_is_high        force reclaim file
+  !low_file     !inactive_is_high       normal split
+
+However, if you move the inactive_file_is_low check down you get
+
+Moving the check
+  low_file      inactive_is_high        force reclaim file
+  low_file      !inactive_is_high       force reclaim anon
+  !low_file     inactive_is_high        force reclaim file
+  !low_file     !inactive_is_high       normal split
+
 > 
-> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
-> ---
->  kernel/time.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/time.c b/kernel/time.c
-> index d226c6a..0b592ce 100644
-> --- a/kernel/time.c
-> +++ b/kernel/time.c
-> @@ -134,9 +134,11 @@ static inline void warp_clock(void)
->  {
->  	struct timespec adjust;
->  
-> -	adjust = current_kernel_time();
-> -	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
-> -	do_settimeofday(&adjust);
-> +	if (sys_tz.tz_minuteswest) {
-> +		adjust = current_kernel_time();
-> +		adjust.tv_sec += sys_tz.tz_minuteswest * 60;
-> +		do_settimeofday(&adjust);
-> +	}
->  }
->  
->  /*
-> -- 
-> 1.7.11.7
+> > could you explain to me, sorry for my stupid. :-)
 > 
 
-Hi,
 
-Any comments ? 
-
--- 
-Best Regards,
-Dong Zhu
