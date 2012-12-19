@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754Ab2LSRUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 12:20:00 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51914 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab2LSRTx (ORCPT
+	id S1755774Ab2LSRUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 12:20:05 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:49057 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab2LSRT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 12:19:53 -0500
+	Wed, 19 Dec 2012 12:19:56 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/4] ARM: ux500: Provide a means to obtain the SMSC9115 clock when DT is enabled
-Date: Wed, 19 Dec 2012 17:19:44 +0000
-Message-Id: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3/4] clk: ux500: Provide an alias for the SMSC911x Ethernet chip
+Date: Wed, 19 Dec 2012 17:19:46 +0000
+Message-Id: <1355937587-31730-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device Tree names devices differently to how some frameworks expect
-them. Until we can move a platform over to the new way of obtaining
-resources, we have to use the OF_DEV_AUXDATA() macros to craft a
-device name which can be used in searches during allocation time.
+In the case of some of the ux500 platforms, an Ethernet chip is
+placed on an extended bus which is traditionally used as a NAND
+flash chip placeholder. The p3_pclk0 clock is used to control it,
+so we are required to provide and easy way to access it from the
+SMSC911x driver. We do this using an alias provided by this patch.
 
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/cpu-db8500.c |    1 +
+ drivers/clk/ux500/u8500_clk.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index db0bb75..dfb68ce 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -284,6 +284,7 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80128000, "nmk-i2c.2", NULL),
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80110000, "nmk-i2c.3", NULL),
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
-+	OF_DEV_AUXDATA("smsc,lan9115", 0x50000000, "smsc911x", NULL),
- 	/* Requires device name bindings. */
- 	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
- 	/* Requires clock name and DMA bindings. */
+diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+index a601802..9d9add1 100644
+--- a/drivers/clk/ux500/u8500_clk.c
++++ b/drivers/clk/ux500/u8500_clk.c
+@@ -325,6 +325,7 @@ void u8500_clk_init(void)
+ 	clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", U8500_CLKRST3_BASE,
+ 				BIT(0), 0);
+ 	clk_register_clkdev(clk, "fsmc", NULL);
++	clk_register_clkdev(clk, NULL, "smsc911x");
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", U8500_CLKRST3_BASE,
+ 				BIT(1), 0);
 -- 
 1.7.9.5
 
