@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab2LSX44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:56:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48121 "EHLO mail.zytor.com"
+	id S1752012Ab2LSX5y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:57:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48139 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab2LSX4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:56:48 -0500
-Message-ID: <50D25426.5020804@zytor.com>
-Date: Wed, 19 Dec 2012 15:56:22 -0800
+	id S1751274Ab2LSX5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 18:57:48 -0500
+Message-ID: <50D25464.6040007@zytor.com>
+Date: Wed, 19 Dec 2012 15:57:24 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jacob Shin <jacob.shin@amd.com>
-CC: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+To: Borislav Petkov <bp@alien8.de>, Jacob Shin <jacob.shin@amd.com>,
+        Yinghai Lu <yinghai@kernel.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         "Yu, Fenghua" <fenghua.yu@intel.com>,
         "mingo@kernel.org" <mingo@kernel.org>,
@@ -24,43 +24,29 @@ CC: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
         Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
 Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
  ucode on Intel's CPU
-References: <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com> <50CCF6F6.4020107@zytor.com> <CAE9FiQULAJhPUw62UVjyBakn-YcK8x0pzDgRi+FdJXS-_ekABg@mail.gmail.com> <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie> <50D23EE8.7030904@zytor.com> <20121219225155.GK24895@liondog.tnic> <20121219225941.GB2968@jshin-Toonie> <20121219230329.GM24895@liondog.tnic> <20121219232134.GA4816@jshin-Toonie>
-In-Reply-To: <20121219232134.GA4816@jshin-Toonie>
+References: <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie> <50D23EE8.7030904@zytor.com> <20121219225155.GK24895@liondog.tnic> <20121219225941.GB2968@jshin-Toonie> <20121219230329.GM24895@liondog.tnic> <50D24C25.5050604@zytor.com> <20121219234054.GA6130@jshin-Toonie> <50D252B6.6050802@zytor.com> <20121219235537.GP24895@liondog.tnic>
+In-Reply-To: <20121219235537.GP24895@liondog.tnic>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 03:21 PM, Jacob Shin wrote:
-> On Thu, Dec 20, 2012 at 12:03:29AM +0100, Borislav Petkov wrote:
->> On Wed, Dec 19, 2012 at 04:59:41PM -0600, Jacob Shin wrote:
->>> I can check but right, they might be used up. But even if we had slots
->>> available, the memory range that needs to be covered is in large
->>> enough address and aligned in such a way that you cannot cover it with
->>> variable range MTRRs.
->>
->> Actually, if I'm not mistaken, you only need to cover the HT hole with
->> one MTRR - the rest remains WB. And in order the mask bits to work, we
->> could make it a little bigger - we waste some memory but that's nothing
->> in comparison to the MCE.
+On 12/19/2012 03:55 PM, Borislav Petkov wrote:
+> On Wed, Dec 19, 2012 at 03:50:14PM -0800, H. Peter Anvin wrote:
+>> We are trying to discuss mitigation strategies with you, but you
+>> haven't really given us any useful information, e.g. what happens near
+>> the various boundaries of the hole, what could trigger prefeching into
+>> the range, and what it would take to fix the BIOSes.
 >
-> Actually all memory hole above 4GB and under TOM2 needs to be marked
-> as UC, if the kernel just blanket calls init_memory_mapping from 4GB
-> to top of memory.
+> Another thing we could do (I admit it is ugly) is to add a quirk to the
+> #MC handler and detect that specific condition by looking at the address
+> reported in MCi_ADDR and exit early by not panicking the system.
 >
-> Right we would be loosing memory, and I think depending on the
-> alignment of the boundary and how many MTRRs you have avaiable to use,
-> significant chunks of memory could be lost. I need to go refresh on
-> how variable range MTRRs are programmed, it has been a while.
+> Again, this is ugly but a possibility, still.
 >
 
-In this particular case an MTRR at 0xe000000000 would lose 896 MB of 
-RAM, or just under 0.1% of the total.
-
-If it is only the HT region that causes trouble and not the rest of the 
-hole you could just plant an MTRR at 0xfc00000000 and not lose any 
-memory at all.
+I would really, really hate to have to deal with an early MCE handler, too.
 
 	-hpa
 
