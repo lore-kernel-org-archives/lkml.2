@@ -1,96 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab2LSUn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:43:29 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39835 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab2LSUnX (ORCPT
+	id S1755408Ab2LSUph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:45:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45052 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab2LSUpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:43:23 -0500
-Date: Wed, 19 Dec 2012 15:42:38 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Daniel Berrange <berrange@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
- core_pattern-set-core-helpers-root-and-namespace-to-crashing-process .patch
- added to -mm tree
-Message-ID: <20121219204238.GA4390@hmsreliant.think-freely.org>
-References: <20121217123428.GA1957@redhat.com>
- <20121217150559.GD25322@hmsreliant.think-freely.org>
- <20121217160408.GA20166@redhat.com>
- <20121217183925.GE25322@hmsreliant.think-freely.org>
- <20121218200604.GA28834@redhat.com>
- <20121218201900.GA10059@hmsreliant.think-freely.org>
- <20121219162230.GA17514@redhat.com>
+	Wed, 19 Dec 2012 15:45:30 -0500
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, jgarzik@redhat.com,
+        JBottomley@Parallels.com, Milan Broz <mbroz@redhat.com>
+Subject: Re: [v3.7 Regression]  [SCSI] sd: Implement support for WRITE SAME
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <50CB8C74.3090102@canonical.com>
+	<yq11uesdzya.fsf@sermon.lab.mkp.net> <50D0C971.1000907@canonical.com>
+	<yq1bodq7zdv.fsf@sermon.lab.mkp.net>
+	<20121219195801.GA14456@redhat.com>
+Date: Wed, 19 Dec 2012 15:45:25 -0500
+In-Reply-To: <20121219195801.GA14456@redhat.com> (Mike Snitzer's message of
+	"Wed, 19 Dec 2012 14:58:01 -0500")
+Message-ID: <yq14njh7ouy.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121219162230.GA17514@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 05:22:30PM +0100, Oleg Nesterov wrote:
-> On 12/18, Neil Horman wrote:
-> >
-> > On Tue, Dec 18, 2012 at 09:06:04PM +0100, Oleg Nesterov wrote:
-> > > > Perhaps its best just to restrict this patch to adjusting the root fs location
-> > > > for the chroot case.
-> > >
-> > > Probably... at least for the start.
-> > >
-> > > BTW. Of course this is subjective, but personally I think that "||"
-> > > looks strange. Perhaps it would be better to add something like
-> > > --croot argument?
-> > >
-> > The || is ambiguous with its simmilarity to a shell 'or' command,
-> 
-> Ah, I didn't mean this.
-> 
-> I meant, this is not flexible. We can implement --croot, then we can
-> (may be) add --switch_ns. If you use "||" now for chroot, what will you
-> do for switch_ns?
-> 
-> > but I don't
-> > think the --croot argument is much better on that front, as that then becomes
-> > ambiguous with arguments supplied to the pipe reader directly.
-> 
-> Not sure I understand... why?
-> 
-> > The token should
-> > be leading the pipe_reader string in core_pattern to indicate a change in
-> > environment independent of the executable path.
-> 
-> Do you mean that || at the front is more "visible" ? True, but I am
-> not sure this is that important.
-> 
-All I really meant was that placing the token for croot at the front of the
-pattern would be more readable as it disambiguates its meaning from the rest of
-the command.
+>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
 
-> But I won't insist.
-> 
-I wouldn't worry about it.  After looking over the changes Eric just had merged
-for 3.8 I'm becomming more convinced that this isn't really needed anymore. With
-his changes, we can migrate a process between all available namespaces
-dynamically in user space.  With that functionality we can just write a setns
-administrative utility to make this all work. I've started that work here:
-http://marc.info/?l=util-linux-ng&m=135594402801895&w=2
+Mike> But do we know mount to somwhow be issuing WRITE SAME requests?
 
-all thats arguably left after that is to make core_pattern a per-container
-(possibly per mount namespace?).  My patch doesn't do that. But its something I
-can look into.
+I'm assuming that ext4 is somehow calling sb_issue_zeroout().
 
-Neil
- 
-> Oleg.
-> 
-> 
+
+Mike> Martin, why is it you weren't able to reproduce (I haven't
+Mike> attempted yet)?
+
+Dunno.
+
+But regardless of any bugs, WRITE SAME will still need some special
+attention in the context of dm-crypt.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
