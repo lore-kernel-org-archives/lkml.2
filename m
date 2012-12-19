@@ -1,235 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab2LSOLs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:11:48 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52416 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab2LSOLo convert rfc822-to-8bit (ORCPT
+	id S1755233Ab2LSOMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:12:48 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19571 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2LSOMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:11:44 -0500
+	Wed, 19 Dec 2012 09:12:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 19 Dec 2012 06:11:02 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regmap: irq: enable wake support by default
+Date: Wed, 19 Dec 2012 19:42:28 +0530
+Message-ID: <1355926348-16100-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <505A1C0D.3050906@suse.cz>
-References: <505A1C0D.3050906@suse.cz>
-Date: Wed, 19 Dec 2012 15:05:34 +0100
-Message-ID: <CA+HkQJs1ycDqGwxxZ-6LphP5Kpm-Hx1e4-GJEMGVqX0KEn_POQ@mail.gmail.com>
-Subject: Re: tty ldisc: Close/Reopen race prevention should check the proper flag
-From: =?UTF-8?Q?D=C5=BEiugas_Baltr=C5=ABnas?= <dziugas@simula.no>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Shachar Shemesh <shachar@liveu.tv>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+regmap-irq framework is used vastly by mfd drivers and some of
+devices like TPS65910, TPS80036 do not support the wake base
+register to enable wake.
 
-It appears that the original patch [1] was committed in 3.6 tree, but
-not in 3.2. Therefore I can confirm that with the 3.2.33 kernel and
-without having the patch applied, I still see the pppd process going
-into the "uninterruptible sleep" state occasionally. I'm using Huawei
-3G modems (E173u-2, E3131, E353u-2) and typically I'm facing the issue
-when there is a poor radio signal. My watchdog daemon forks pppd
-process using the following command line:
+Currently wake in regmap-irq only supported if client driver
+passes the wake base register.
 
-pppd /dev/ttyUSB0 460800 unit 0 connect "/usr/sbin/chat -V -v -s ABORT
-'BUSY' ABORT 'NO CARRIER' ABORT 'VOICE' ABORT 'NO DIALTONE' ABORT 'NO
-DIAL TONE' ABORT 'NO ANSWER' ABORT 'DELAYED' REPORT CONNECT TIMEOUT 6
-'' 'ATQ0' 'OK-AT-OK' 'ATZ' TIMEOUT 3 'OK\d-AT-OK' 'ATI' 'OK' 'ATZ'
-'OK' 'ATQ0 V1 E1 S0=0 &C1 &D2' 'OK-AT-OK'
-'AT+CGDCONT=1,\"IP\",\"internet\"' 'OK' 'AT+CGREG=2' 'OK' 'ATD*99#'
-TIMEOUT 30 CONNECT ''" nodetach debug lock crtscts modem noauth novj
-nobsdcomp nodefaultroute noipdefault lcp-echo-interval 2
-lcp-echo-failure 3 child-timeout 5
+As the regmap-irq is mostly used by mfd devices and it is require
+to have wake support from these devices in most of use cases,
+enabling wake support by default in regmap-irq.
 
-The same watchdog daemon monitors whether a pppX interface has an IP
-address assigned and if not, it sends the SIGTERM signal to the pppd
-process, waits for it to exit and then restarts it by forking another
-pppd instance. This is usually (but now always) the case when the pppd
-process is blocked in the "uninterruptible sleep" state and the kernel
-message (INFO: task pppd:PID blocked for more than 120 seconds).
-Additionally, both with and without the patch applied, chat process
-(forked by pppd) is usually left orphan and ignores SIGTERM (but dies
-after SIGKILL).
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/base/regmap/regmap-irq.c |   18 ++++++------------
+ 1 files changed, 6 insertions(+), 12 deletions(-)
 
-I'm wondering if there are any reasons why this patch is not present
-in the 3.2 tree and I'm also looking forward for the 'right' patch to
-address the issue. When the pppd process is the "uninterruptible
-sleep" state, the only workaround that we have is to reset modems
-using a secondary serial interface for AT commands, so that the USB
-device reconnection is triggered.
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 5972ad9..9129493 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -129,16 +129,15 @@ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
+ 	struct regmap *map = d->map;
+ 	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
+ 
+-	if (!d->chip->wake_base)
+-		return -EINVAL;
+-
+ 	if (on) {
+-		d->wake_buf[irq_data->reg_offset / map->reg_stride]
+-			&= ~irq_data->mask;
++		if (d->wake_buf)
++			d->wake_buf[irq_data->reg_offset / map->reg_stride]
++				&= ~irq_data->mask;
+ 		d->wake_count++;
+ 	} else {
+-		d->wake_buf[irq_data->reg_offset / map->reg_stride]
+-			|= irq_data->mask;
++		if (d->wake_buf)
++			d->wake_buf[irq_data->reg_offset / map->reg_stride]
++				|= irq_data->mask;
+ 		d->wake_count--;
+ 	}
+ 
+@@ -316,11 +315,6 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 
+ 	d->irq_chip = regmap_irq_chip;
+ 	d->irq_chip.name = chip->name;
+-	if (!chip->wake_base) {
+-		d->irq_chip.irq_set_wake = NULL;
+-		d->irq_chip.flags |= IRQCHIP_MASK_ON_SUSPEND |
+-				     IRQCHIP_SKIP_SET_WAKE;
+-	}
+ 	d->irq = irq;
+ 	d->map = map;
+ 	d->chip = chip;
+-- 
+1.7.1.1
 
-Regards,
-Džiugas Baltrūnas
-
-[1] https://github.com/torvalds/linux/commit/40c9f61eae9098212b6906f29f30f08f7a19b5e2
-
-On 19 September 2012 21:25, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 07/10/2012 06:54 AM, Shachar Shemesh wrote:
->> From: Shachar Shemesh <shachar@liveu.tv>
->>
->> Commit acfa747b introduced the TTY_HUPPING flag to distinguish
->> closed TTY from currently closing ones. The test in tty_set_ldisc
->> still remained pointing at the old flag. This causes pppd to
->> sometimes lapse into uninterruptible sleep when killed and
->> restarted.
->>
->> Signed-off-by: Shachar Shemesh <shachar@liveu.tv>
->> ---
->> Tested with 3.2.20 kernel.
->>
->> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
->> index 24b95db..a662a24 100644
->> --- a/drivers/tty/tty_ldisc.c
->> +++ b/drivers/tty/tty_ldisc.c
->> @@ -658,7 +658,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
->>               goto enable;
->>       }
->>
->> -     if (test_bit(TTY_HUPPED, &tty->flags)) {
->> +     if (test_bit(TTY_HUPPING, &tty->flags)) {
->>               /* We were raced by the hangup method. It will have stomped
->>                  the ldisc data and closed the ldisc down */
->>               clear_bit(TTY_LDISC_CHANGING, &tty->flags);
->
-> Yes, that makes the issue go away, but does not seem to be right too.
-> There are two issues I see:
-> * TTY_HUPPED has no use now. That is incorrect. Here should be a test
-> for both flags, I think.
-> * The change forces the set_ldisc path to always re-open the ldisc even
-> if it the terminal is HUPPED.
->
-> The bug is not in the kernel. It was in login(1) (util-linux). And it
-> should be fixed by now. See:
-> http://git.kernel.org/?p=utils/util-linux/util-linux.git;a=commitdiff;h=2e7035646eb85851171cc2e989bfa858a4f00cd4
->
->
-> I'm for an in-fact revert of the patch. But temporarily I would still
-> return EIO. However let's do it even after the reopen is done, so that
-> we get rid of the user-visible regression. Like in the attached patch.
-> The regression was introduced by commit c65c9bc3e (tty: rewrite the
-> ldisc locking). That is !three! years ago. And that is suspicious in itself.
->
->
-> BTW Why pppd thinks it is a good idea to ignore EIO from TIOCSETD ioctl?
->
-> regards,
->
->
-> >From b3e5a7f778be46b4b8dd38d5565010755ccafd67 Mon Sep 17 00:00:00 2001
-> From: Jiri Slaby <jslaby@suse.cz>
-> Date: Wed, 19 Sep 2012 20:23:59 +0200
-> Subject: [PATCH 1/1] TTY: forbid setting ldisc on HUPPED tty, step 1
->
-> Commit c65c9bc3e (tty: rewrite the ldisc locking) introduced a check
-> into tty_set_ldisc whether the terminal is already hung. In that case
-> it returns -EIO.
->
-> Later, commit aa3c8af86 (tty ldisc: Close/Reopen race prevention
-> should check the proper flag) effectively disabled the check by
-> replacing HUPPED by HUPPING flag. Those are two different flags and
-> the former check was actually correct. In principle we revert here to
-> the previous behavior plus we add a check if we are HUPPING. Because
-> it makes no sense to change ldisc when some other thread is making a
-> HUP but it had to unlock BTM temporarily.
->
-> The bug which commit aa3c8af86 above tried to avoid lays in fact in
-> login(1). It was fixed by util-linux commit 2e7035646 (login: close
-> tty before vhangup()) already. It was reproducible for example by the
-> following setup:
-> 1) add a user ppp with shell set to /usr/bin/pppd
-> 2) run agetty on ttyS0 to wait for a user
-> 3) user connects via modem on ttyS0, types ppp to getty
-> 4) 'login ppp' is executed
-> 5) login performs hangup without properly closing ttyS0
-> 6) login executes pppd
-> 7) pppd does TIOCSETD attempt to N_PPP
-> 8) kernel denies step 7) as ttyS0 is HUPPED
-> 9) pppd calls some N_PPP ldisc's ioctls regardless -- uninterruptible
->    sleep in tty_ioctl, trying to have a ref on tty->ldisc
->
-> Now to sum up the fixes:
-> * The fix in util-linux is that 5 is changed to properly close all
->   ttyS0 instances.
-> * The workaround from commit aa3c8af86 was that 8) succeeds.
-> * This patch is the same as aa3c8af86 except we still return -EIO and
->   warn the user this will not be supported in the future. This is
->   because we do not want to have a user-visible regression here.
->
-> "Step 1" because step two would be to immediatelly return -EIO like in
-> the attached false branch in the patch.
->
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Shachar Shemesh <shachar@liveu.tv>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> ---
->  drivers/tty/tty_ldisc.c | 37 ++++++++++++++++++++++++++++---------
->  1 file changed, 28 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-> index f4e6754..7cca3fd 100644
-> --- a/drivers/tty/tty_ldisc.c
-> +++ b/drivers/tty/tty_ldisc.c
-> @@ -563,6 +563,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
->         struct tty_ldisc *o_ldisc, *new_ldisc;
->         int work, o_work = 0;
->         struct tty_struct *o_tty;
-> +       int retval_hupped = 0;
->
->         new_ldisc = tty_ldisc_get(ldisc);
->         if (IS_ERR(new_ldisc))
-> @@ -659,14 +660,32 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
->                 goto enable;
->         }
->
-> -       if (test_bit(TTY_HUPPING, &tty->flags)) {
-> -               /* We were raced by the hangup method. It will have stomped
-> -                  the ldisc data and closed the ldisc down */
-> -               clear_bit(TTY_LDISC_CHANGING, &tty->flags);
-> -               mutex_unlock(&tty->ldisc_mutex);
-> -               tty_ldisc_put(new_ldisc);
-> -               tty_unlock(tty);
-> -               return -EIO;
-> +       if (test_bit(TTY_HUPPED, &tty->flags) ||
-> +                       test_bit(TTY_HUPPING, &tty->flags)) {
-> +               /*
-> +                * Until login(1) is fixed everywhere, let's fall through.
-> +                * Change to goto with -EIO after 3.10.
-> +                */
-> +               if (1) {
-> +                       char ttyn[64], comm[TASK_COMM_LEN];
-> +                       printk_ratelimited(KERN_WARNING "%s: %s calls TIOCSETD on a hung TTY (%s). This is deprecated and will stop working soon.\n",
-> +                                       __func__, get_task_comm(comm, current),
-> +                                       tty_name(tty, ttyn));
-> +                       retval_hupped = -EIO;
-> +               } else {
-> +                       /*
-> +                        * We were raced by the hangup method. It will have
-> +                        * stomped the ldisc data and closed the ldisc down
-> +                        */
-> +                       tty_ldisc_put(new_ldisc);
-> +                       retval = -EIO;
-> +                       /*
-> +                        * We have to enable the original ldisc so that
-> +                        * processes see N_TTY and fail instead of waiting
-> +                        * infinitely.
-> +                        */
-> +                       goto enable;
-> +               }
->         }
->
->         /* Shutdown the current discipline. */
-> @@ -709,7 +728,7 @@ enable:
->                 schedule_work(&o_tty->port->buf.work);
->         mutex_unlock(&tty->ldisc_mutex);
->         tty_unlock(tty);
-> -       return retval;
-> +       return retval ? : retval_hupped;
->  }
->
->  /**
-> --
-> 1.7.12
->
