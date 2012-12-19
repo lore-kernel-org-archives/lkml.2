@@ -1,176 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab2LSUPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:15:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35382 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2LSUPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:15:44 -0500
-Date: Wed, 19 Dec 2012 15:14:48 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Olaf Hering <olaf@aepfle.de>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xen/blkback: prevent repeated backend_changed invocations
-Message-ID: <20121219201448.GH15037@phenom.dumpdata.com>
-References: <1355259026-16946-1-git-send-email-olaf@aepfle.de>
- <50C9FC0302000078000B0344@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C9FC0302000078000B0344@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1752010Ab2LSUXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:23:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46287 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab2LSUXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 15:23:17 -0500
+Date: Wed, 19 Dec 2012 12:22:58 -0800
+Message-Id: <201212192022.qBJKMw3a021950@tazenda.hos.anvin.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Additional x86/nuke386 for v3.8-rc1
+Cc: Alan Cox <alan@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 03:02:11PM +0000, Jan Beulich wrote:
-> >>> On 11.12.12 at 21:50, Olaf Hering <olaf@aepfle.de> wrote:
-> > backend_changed might be called multiple times, which will leak
-> > be->mode. Make sure it will be called only once. Remove some unneeded
-> > checks. Also the be->mode string was leaked, release the memory on
-> > device shutdown.
-> 
-> So I decided to make an attempt myself, retaining the current
-> behavior of allowing multiple calls, yet not having to sprinkle
-> around multiple kfree()-s for be->mode. Slightly re-structuring
-> the function made this pretty strait forward.
+Hi Linus,
 
-<nods> Would it be possible to post a patch?
+One final 386 removal patch.
 
-> 
-> Jan
-> 
-> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> > ---
-> > 
-> > incorporate all comments from Jan.
-> > fold the oneline change to xen_blkbk_remove into this change
-> > now its compile tested.
-> > 
-> >  drivers/block/xen-blkback/xenbus.c | 69 ++++++++++++++++++--------------------
-> >  1 file changed, 33 insertions(+), 36 deletions(-)
-> > 
-> > diff --git a/drivers/block/xen-blkback/xenbus.c 
-> > b/drivers/block/xen-blkback/xenbus.c
-> > index f58434c..5ca77c3 100644
-> > --- a/drivers/block/xen-blkback/xenbus.c
-> > +++ b/drivers/block/xen-blkback/xenbus.c
-> > @@ -28,6 +28,7 @@ struct backend_info {
-> >  	unsigned		major;
-> >  	unsigned		minor;
-> >  	char			*mode;
-> > +	unsigned		alive;
-> >  };
-> >  
-> >  static struct kmem_cache *xen_blkif_cachep;
-> > @@ -366,6 +367,7 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
-> >  		be->blkif = NULL;
-> >  	}
-> >  
-> > +	kfree(be->mode);
-> >  	kfree(be);
-> >  	dev_set_drvdata(&dev->dev, NULL);
-> >  	return 0;
-> > @@ -501,10 +503,14 @@ static void backend_changed(struct xenbus_watch *watch,
-> >  		= container_of(watch, struct backend_info, backend_watch);
-> >  	struct xenbus_device *dev = be->dev;
-> >  	int cdrom = 0;
-> > -	char *device_type;
-> > +	char *device_type, *p;
-> > +	long handle;
-> >  
-> >  	DPRINTK("");
-> >  
-> > +	if (be->alive)
-> > +		return;
-> > +
-> >  	err = xenbus_scanf(XBT_NIL, dev->nodename, "physical-device", "%x:%x",
-> >  			   &major, &minor);
-> >  	if (XENBUS_EXIST_ERR(err)) {
-> > @@ -520,12 +526,7 @@ static void backend_changed(struct xenbus_watch *watch,
-> >  		return;
-> >  	}
-> >  
-> > -	if ((be->major || be->minor) &&
-> > -	    ((be->major != major) || (be->minor != minor))) {
-> > -		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not 
-> > supported.\n",
-> > -			be->major, be->minor, major, minor);
-> > -		return;
-> > -	}
-> > +	be->alive = 1;
-> >  
-> >  	be->mode = xenbus_read(XBT_NIL, dev->nodename, "mode", NULL);
-> >  	if (IS_ERR(be->mode)) {
-> > @@ -541,39 +542,35 @@ static void backend_changed(struct xenbus_watch *watch,
-> >  		kfree(device_type);
-> >  	}
-> >  
-> > -	if (be->major == 0 && be->minor == 0) {
-> > -		/* Front end dir is a number, which is used as the handle. */
-> > -
-> > -		char *p = strrchr(dev->otherend, '/') + 1;
-> > -		long handle;
-> > -		err = strict_strtoul(p, 0, &handle);
-> > -		if (err)
-> > -			return;
-> > -
-> > -		be->major = major;
-> > -		be->minor = minor;
-> > +	/* Front end dir is a number, which is used as the handle. */
-> > +	p = strrchr(dev->otherend, '/') + 1;
-> > +	err = strict_strtoul(p, 0, &handle);
-> > +	if (err)
-> > +		return;
-> >  
-> > -		err = xen_vbd_create(be->blkif, handle, major, minor,
-> > -				 (NULL == strchr(be->mode, 'w')), cdrom);
-> > -		if (err) {
-> > -			be->major = 0;
-> > -			be->minor = 0;
-> > -			xenbus_dev_fatal(dev, err, "creating vbd structure");
-> > -			return;
-> > -		}
-> > +	be->major = major;
-> > +	be->minor = minor;
-> >  
-> > -		err = xenvbd_sysfs_addif(dev);
-> > -		if (err) {
-> > -			xen_vbd_free(&be->blkif->vbd);
-> > -			be->major = 0;
-> > -			be->minor = 0;
-> > -			xenbus_dev_fatal(dev, err, "creating sysfs entries");
-> > -			return;
-> > -		}
-> > +	err = xen_vbd_create(be->blkif, handle, major, minor,
-> > +			 (NULL == strchr(be->mode, 'w')), cdrom);
-> > +	if (err) {
-> > +		be->major = 0;
-> > +		be->minor = 0;
-> > +		xenbus_dev_fatal(dev, err, "creating vbd structure");
-> > +		return;
-> > +	}
-> >  
-> > -		/* We're potentially connected now */
-> > -		xen_update_blkif_status(be->blkif);
-> > +	err = xenvbd_sysfs_addif(dev);
-> > +	if (err) {
-> > +		xen_vbd_free(&be->blkif->vbd);
-> > +		be->major = 0;
-> > +		be->minor = 0;
-> > +		xenbus_dev_fatal(dev, err, "creating sysfs entries");
-> > +		return;
-> >  	}
-> > +
-> > +	/* We're potentially connected now */
-> > +	xen_update_blkif_status(be->blkif);
-> >  }
-> >  
-> >  
-> > -- 
-> > 1.8.0.1
-> 
-> 
+The following changes since commit 11af32b69ef7ee64c7d8848cad71a6f3749d9e37:
+
+  x86, 386 removal: Document Nx586 as a 386 and thus unsupported (2012-11-29 13:28:39 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/nuke386
+
+The head of this tree is bc3eba60682750dd7b45ea616d65c926fc3b8be8.
+
+H. Peter Anvin (1):
+      x86, 386 removal: Remove support for IRQ 13 FPU error reporting
+
+ arch/x86/kernel/cpu/proc.c |  7 +------
+ arch/x86/kernel/irqinit.c  | 40 ----------------------------------------
+ arch/x86/kernel/traps.c    |  6 ------
+ 3 files changed, 1 insertion(+), 52 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index fbd8955..3286a92 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -26,11 +26,6 @@ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
+ #ifdef CONFIG_X86_32
+ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ {
+-	/*
+-	 * We use exception 16 if we have hardware math and we've either seen
+-	 * it or the CPU claims it is internal
+-	 */
+-	int fpu_exception = c->hard_math && (ignore_fpu_irq || cpu_has_fpu);
+ 	seq_printf(m,
+ 		   "fdiv_bug\t: %s\n"
+ 		   "hlt_bug\t\t: %s\n"
+@@ -45,7 +40,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 		   c->f00f_bug ? "yes" : "no",
+ 		   c->coma_bug ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+-		   fpu_exception ? "yes" : "no",
++		   c->hard_math ? "yes" : "no",
+ 		   c->cpuid_level,
+ 		   c->wp_works_ok ? "yes" : "no");
+ }
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 6e03b0d..7dc4e45 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -42,39 +42,6 @@
+  * (these are usually mapped into the 0x30-0xff vector range)
+  */
+ 
+-#ifdef CONFIG_X86_32
+-/*
+- * Note that on a 486, we don't want to do a SIGFPE on an irq13
+- * as the irq is unreliable, and exception 16 works correctly
+- * (ie as explained in the intel literature). On a 386, you
+- * can't use exception 16 due to bad IBM design, so we have to
+- * rely on the less exact irq13.
+- *
+- * Careful.. Not only is IRQ13 unreliable, but it is also
+- * leads to races. IBM designers who came up with it should
+- * be shot.
+- */
+-
+-static irqreturn_t math_error_irq(int cpl, void *dev_id)
+-{
+-	outb(0, 0xF0);
+-	if (ignore_fpu_irq || !boot_cpu_data.hard_math)
+-		return IRQ_NONE;
+-	math_error(get_irq_regs(), 0, X86_TRAP_MF);
+-	return IRQ_HANDLED;
+-}
+-
+-/*
+- * New motherboards sometimes make IRQ 13 be a PCI interrupt,
+- * so allow interrupt sharing.
+- */
+-static struct irqaction fpu_irq = {
+-	.handler = math_error_irq,
+-	.name = "fpu",
+-	.flags = IRQF_NO_THREAD,
+-};
+-#endif
+-
+ /*
+  * IRQ2 is cascade interrupt to second interrupt controller
+  */
+@@ -242,13 +209,6 @@ void __init native_init_IRQ(void)
+ 		setup_irq(2, &irq2);
+ 
+ #ifdef CONFIG_X86_32
+-	/*
+-	 * External FPU? Set up irq13 if so, for
+-	 * original braindamaged IBM FERR coupling.
+-	 */
+-	if (boot_cpu_data.hard_math && !cpu_has_fpu)
+-		setup_irq(FPU_IRQ, &fpu_irq);
+-
+ 	irq_ctx_init(smp_processor_id());
+ #endif
+ }
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 8276dc6..4e1478c 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -69,9 +69,6 @@
+ 
+ asmlinkage int system_call(void);
+ 
+-/* Do we ignore FPU interrupts ? */
+-char ignore_fpu_irq;
+-
+ /*
+  * The IDT has to be page-aligned to simplify the Pentium
+  * F0 0F bug workaround.
+@@ -564,9 +561,6 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+ 
+ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
+ {
+-#ifdef CONFIG_X86_32
+-	ignore_fpu_irq = 1;
+-#endif
+ 	exception_enter(regs);
+ 	math_error(regs, error_code, X86_TRAP_MF);
+ 	exception_exit(regs);
