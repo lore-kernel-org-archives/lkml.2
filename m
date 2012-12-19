@@ -1,563 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab2LSPEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:04:47 -0500
-Received: from 2.mo2.mail-out.ovh.net ([188.165.53.149]:38627 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750996Ab2LSPEh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:04:37 -0500
-X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 10:04:37 EST
-Message-ID: <50D1CACC.8090309@overkiz.com>
-Date: Wed, 19 Dec 2012 15:10:20 +0100
-From: Boris BREZILLON <linux-arm@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755501Ab2LSPE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:04:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35856 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab2LSPEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 10:04:41 -0500
+Date: Wed, 19 Dec 2012 16:04:37 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH v2] mm: limit mmu_gather batching to fix soft lockups on
+ !CONFIG_PREEMPT
+Message-ID: <20121219150423.GA12888@dhcp22.suse.cz>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+ <20121218140219.45867ddd.akpm@linux-foundation.org>
+ <20121218235042.GA10350@dhcp22.suse.cz>
+ <20121218160030.baf723aa.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v3] pwm: atmel: add Timer Counter Block PWM driver
-References: <1355742810-4241-1-git-send-email-linux-arm@overkiz.com> <20121219112610.GA22613@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121219112610.GA22613@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 14619247341372093462
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomhepuehorhhishcuueftgfgkkffnnffqpfcuoehlihhnuhigqdgrrhhmsehovhgvrhhkihiirdgtohhmqeenucfjughrpefkfffhfgggvffufhgjtgfgsehtjegrtddtfedu
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomhepuehorhhishcuueftgfgkkffnnffqpfcuoehlihhnuhigqdgrrhhmsehovhgvrhhkihiirdgtohhmqeenucfjughrpefkfffhfgggvffufhgjtgfgsehtjegrtddtfedu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121218160030.baf723aa.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/12/2012 12:26, Thierry Reding wrote:
-> On Mon, Dec 17, 2012 at 12:13:30PM +0100, Boris BREZILLON wrote:
->> Hello,
->>
->> This patch adds a PWM driver based on Atmel Timer Counter Block.
->> Timer Counter Block is used in Waveform generator mode.
->>
->> A Timer Counter Block provides up to 6 PWM devices grouped by 2:
->> * group 0 = PWM 0 and 1
->> * group 1 = PWM 1 and 2
->> * group 2 = PMW 3 and 4
->>
->> PWM devices in a given group must be configured with the same
->> period value.
->> If a PWM device in a group tries to change the period value and
->> the other device is already configured with a different value an
->> error will be returned.
->>
->> This driver requires device tree support.
->> The Timer Counter Block number used to create a PWM chip is
->> given by tc-block field in an "atmel,pwm-tcb" compatible node.
+On Tue 18-12-12 16:00:30, Andrew Morton wrote:
+> On Wed, 19 Dec 2012 00:50:42 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> The device tree binding says that the compatible value should be
-> "atmel,tcb-pwm", not "atmel,pwm-tcb".
+> > On Tue 18-12-12 14:02:19, Andrew Morton wrote:
+> > > On Tue, 18 Dec 2012 17:11:28 +0100
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+> > > > pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+> > > > are done.
+> > > > 
+> > > > This works just fine most of the time but we can get in troubles with
+> > > > non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY) on
+> > > > large machines where too aggressive batching might lead to soft lockups during
+> > > > process exit path (exit_mmap) because there are no scheduling points down the
+> > > > free_pages_and_swap_cache path and so the freeing can take long enough to
+> > > > trigger the soft lockup.
+> > > > 
+> > > > The lockup is harmless except when the system is setup to panic on
+> > > > softlockup which is not that unusual.
+> > > > 
+> > > > The simplest way to work around this issue is to explicitly cond_resched per
+> > > > batch in tlb_flush_mmu (1020 pages on x86_64).
+> > > > 
+> > > > ...
+> > > >
+> > > > --- a/mm/memory.c
+> > > > +++ b/mm/memory.c
+> > > > @@ -239,6 +239,7 @@ void tlb_flush_mmu(struct mmu_gather *tlb)
+> > > >  	for (batch = &tlb->local; batch; batch = batch->next) {
+> > > >  		free_pages_and_swap_cache(batch->pages, batch->nr);
+> > > >  		batch->nr = 0;
+> > > > +		cond_resched();
+> > > >  	}
+> > > >  	tlb->active = &tlb->local;
+> > > >  }
+> > > 
+> > > tlb_flush_mmu() has a large number of callsites (or callsites which
+> > > call callers, etc), many in arch code.  It's not at all obvious that
+> > > tlb_flush_mmu() is never called from under spinlock?
+> > 
+> > free_pages_and_swap_cache calls lru_add_drain which in turn calls
+> > put_cpu (aka preempt_enable) which is a scheduling point for
+> > CONFIG_PREEMPT.
 > 
->> diff --git a/Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt
->> new file mode 100644
->> index 0000000..bd99fdd
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt
->> @@ -0,0 +1,18 @@
->> +Atmel TCB PWM controller
->> +
->> +Required properties:
->> +- compatible: should be "atmel,tcb-pwm"
->> +- #pwm-cells: should be 3.  The first cell specifies the per-chip index
-> 
-> "Should be 3." Capital S since you terminate the sentence with a full
-> stop.
-> 
->> +  of the PWM to use, the second cell is the period in nanoseconds and
->> +  bit 0 in the third cell is used to encode the polarity of PWM output.
->> +  Set bit 0 of the third in PWM specifier to 1 for inverse polarity &
-> 
-> "of the third cell"
-> 
->> +  set to 0 for normal polarity.
->> +- tc-block: the Timer Counter block to use as a PWM chip.
-> 
-> Also: "The Timer Counter..." because of the terminating full stop.
-> 
->> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
->> index e513cd9..2f4941b 100644
->> --- a/drivers/pwm/Kconfig
->> +++ b/drivers/pwm/Kconfig
->> @@ -37,6 +37,18 @@ config PWM_AB8500
->>  	  To compile this driver as a module, choose M here: the module
->>  	  will be called pwm-ab8500.
->>  
->> +config PWM_ATMEL_TCB
->> +	tristate "TC Block PWM"
->> +	depends on ATMEL_TCLIB && OF
->> +	help
->> +	  Generic PWM framework driver for Atmel Timer Counter Block.
->> +
->> +	  A Timer Counter Block provides 6 PWM devices grouped by 2.
->> +	  Devices in a given group must have the same period.
->> +
->> +	  To compile this driver as a module, choose M here: the module
->> +	  will be called pwm-atmel-tc.
-> 
-> The Makefile says it is called pwm-atmel-tc_b_.
-> 
->> diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
-> [...]
->> +static int atmel_tcb_pwm_set_polarity(struct pwm_chip *chip,
->> +					  struct pwm_device *pwm,
->> +					  enum pwm_polarity polarity)
-> 
-> The arguments are no longer properly aligned.
-> 
->> +static int atmel_tcb_pwm_request(struct pwm_chip *chip,
->> +					  struct pwm_device *pwm)
-> 
-> Same here.
-> 
->> +	} else
->> +		cmr = 0;
->> +	cmr |= ATMEL_TC_WAVE | ATMEL_TC_WAVESEL_UP_AUTO | ATMEL_TC_EEVT_XC0;
-> 
-> There should be a blank line between the above two lines for better
-> readability.
-> 
->> +	/* If duty is 0 reverse polarity */
->> +	if (tcbpwm->duty == 0)
->> +		polarity = !polarity;
->> +
->> +	if (polarity == PWM_POLARITY_INVERSED) {
->> +		if (index == 0)
->> +			newcmr |= ATMEL_TC_ASWTRG_CLEAR;
->> +		else
->> +			newcmr |= ATMEL_TC_BSWTRG_CLEAR;
->> +	} else {
->> +		if (index == 0)
->> +			newcmr |= ATMEL_TC_ASWTRG_SET;
->> +		else
->> +			newcmr |= ATMEL_TC_BSWTRG_SET;
->> +	}
->> +
->> +	spin_lock(&tcbpwmc->lock);
->> +	cmr = __raw_readl(regs + ATMEL_TC_REG(group, CMR));
->> +
->> +	/* flush old setting */
->> +	if (index == 0)
->> +		cmr &= ~(ATMEL_TC_ACPA | ATMEL_TC_ACPC |
->> +				ATMEL_TC_AEEVT | ATMEL_TC_ASWTRG);
->> +	else
->> +		cmr &= ~(ATMEL_TC_BCPB | ATMEL_TC_BCPC |
->> +				ATMEL_TC_BEEVT | ATMEL_TC_BSWTRG);
-> 
-> These should be aligned differently:
-> 
-> 		cmr &= ~(ATMEL_TC_ACPA | ATMEL_TC_ACPC | ATMEL_TC_AEEVT |
-> 			 ATMEL_TC_ASWTRG);
-> 
-> Although maybe you should define a mask for this since you reuse the
-> exact same sequence in atmel_tcb_pwm_enable().
-> 
->> +
->> +	/* configure new setting */
->> +	cmr |= newcmr;
->> +	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
-> 
-> I wonder why you bother setting newcmr and OR'ing it into cmr. Couldn't
-> you just mask all previous settings in cmr first, then OR the new bits?
+> No, that inference doesn't work.  Because preempt_enable() inside
+> spinlock is OK - it will not call schedule() because
+> current->preempt_count is still elevated (by spin_lock).
 
-I did this to keep the locked portion of code as small as possible:
-I prepare the mask to apply to cmr register before getting the lock.
+Bahh, you are right. I was checking the callsites when patching our
+internal kernel and it was really tedious so I thought this would be
+easier to show.
+Now when thinking about it some more it would be much safer to not
+cond_resched unconditionally because this has a potential to blow up at
+random places/archs. It sounds much more appropriate to kill the problem
+where it started - an unbounded amount of batches. What do you think
+about the following?
+---
+>From 658db334f7bef87168c3e8bc9b4a486e0055eabd Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Tue, 18 Dec 2012 17:02:20 +0100
+Subject: [PATCH] mm: limit mmu_gather batching to fix soft lockups on
+ !CONFIG_PREEMPT
 
-But I can do it this way if you prefer:
+Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+are done.
 
-	spin_lock(&tcbpwmc->lock);
-	cmr = __raw_readl(regs + ATMEL_TC_REG(group, CMR));
+This works just fine most of the time but we can get in troubles with
+non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
+on large machines where too aggressive batching might lead to soft
+lockups during process exit path (exit_mmap) because there are no
+scheduling points down the free_pages_and_swap_cache path and so the
+freeing can take long enough to trigger the soft lockup.
 
-	/* flush old setting and set the new one */
-	if (index == 0) {
-		cmr &= ~ATMEL_TC_A_MASK;
-		if (polarity == PWM_POLARITY_INVERSED)
-			cmr |= ATMEL_TC_ASWTRG_CLEAR;
-		else
-			cmr |= ATMEL_TC_ASWTRG_SET;
-	} else {
-		cmr &= ~ATMEL_TC_B_MASK;
-		if (polarity == PWM_POLARITY_INVERSED)
-			cmr |= ATMEL_TC_BSWTRG_CLEAR;
-		else
-			cmr |= ATMEL_TC_BSWTRG_SET;
-	}
+The lockup is harmless except when the system is setup to panic on
+softlockup which is not that unusual.
 
-	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
+The simplest way to work around this issue is to limit the maximum
+number of batches in a single mmu_gather for !CONFIG_PREEMPT kernels.
+Let's use 1G of resident memory for the limit for now. This shouldn't
+make the batching less effective and it shouldn't trigger lockups as
+well because freeing 262144 should be OK.
 
-> 
->> +
->> +	/*
->> +	 * Use software trigger to apply the new setting.
->> +	 * If both pwm devices in this group are disabled we stop the clock.
-> 
-> "both PWM devices"
-> 
->> +	 */
->> +	if (!(cmr & (ATMEL_TC_ACPC | ATMEL_TC_BCPC)))
->> +		__raw_writel(ATMEL_TC_SWTRG | ATMEL_TC_CLKDIS,
->> +				regs + ATMEL_TC_REG(group, CCR));
->> +	else
->> +		__raw_writel(ATMEL_TC_SWTRG, regs +
->> +				ATMEL_TC_REG(group, CCR));
->> +	spin_unlock(&tcbpwmc->lock);
-> 
-> This could use another blank line.
-> 
->> +	/*
->> +	 * If duty is 0 or equal to period there's no need to register
->> +	 * a specific action on RA/RB and RC compare.
->> +	 * The output will be configured on software trigger and keep
->> +	 * this config till next config call.
->> +	 */
->> +	if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0) {
->> +		if (polarity == PWM_POLARITY_INVERSED) {
->> +			if (index == 0)
->> +				newcmr |=
->> +					ATMEL_TC_ACPA_SET | ATMEL_TC_ACPC_CLEAR;
->> +			else
->> +				newcmr |=
->> +					ATMEL_TC_BCPB_SET | ATMEL_TC_BCPC_CLEAR;
->> +		} else {
->> +			if (index == 0)
->> +				newcmr |=
->> +					ATMEL_TC_ACPA_CLEAR | ATMEL_TC_ACPC_SET;
->> +			else
->> +				newcmr |=
->> +					ATMEL_TC_BCPB_CLEAR | ATMEL_TC_BCPC_SET;
-> 
-> If you can get rid of newcmr and OR directly into cmr instead, these
-> will fit on one line.
+The following lockup has been reported for 3.0 kernel with a huge process
+(in order of hundreds gigs but I do know any more details).
 
-I'm not sure I understand how you would do this.
-Here is the same function without the newcmr variable:
+[65674.040540] BUG: soft lockup - CPU#56 stuck for 22s! [kernel:31053]
+[65674.040544] Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc mptctl mptbase autofs4 binfmt_misc dm_round_robin dm_multipath bonding cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq mperf microcode fuse loop osst sg sd_mod crc_t10dif st qla2xxx scsi_transport_fc scsi_tgt netxen_nic i7core_edac iTCO_wdt joydev e1000e serio_raw pcspkr edac_core iTCO_vendor_support acpi_power_meter rtc_cmos hpwdt hpilo button container usbhid hid dm_mirror dm_region_hash dm_log linear uhci_hcd ehci_hcd usbcore usb_common scsi_dh_emc scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh dm_snapshot pcnet32 mii edd dm_mod raid1 ext3 mbcache jbd fan thermal processor thermal_sys hwmon cciss scsi_mod
+[65674.040602] Supported: Yes
+[65674.040604] CPU 56
+[65674.040639] Pid: 31053, comm: kernel Not tainted 3.0.31-0.9-default #1 HP ProLiant DL580 G7
+[65674.040643] RIP: 0010:[<ffffffff81443a88>]  [<ffffffff81443a88>] _raw_spin_unlock_irqrestore+0x8/0x10
+[65674.040656] RSP: 0018:ffff883ec1037af0  EFLAGS: 00000206
+[65674.040657] RAX: 0000000000000e00 RBX: ffffea01a0817e28 RCX: ffff88803ffd9e80
+[65674.040659] RDX: 0000000000000200 RSI: 0000000000000206 RDI: 0000000000000206
+[65674.040661] RBP: 0000000000000002 R08: 0000000000000001 R09: ffff887ec724a400
+[65674.040663] R10: 0000000000000000 R11: dead000000200200 R12: ffffffff8144c26e
+[65674.040665] R13: 0000000000000030 R14: 0000000000000297 R15: 000000000000000e
+[65674.040667] FS:  00007ed834282700(0000) GS:ffff88c03f200000(0000) knlGS:0000000000000000
+[65674.040669] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[65674.040671] CR2: 000000000068b240 CR3: 0000003ec13c5000 CR4: 00000000000006e0
+[65674.040673] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[65674.040675] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[65674.040678] Process kernel (pid: 31053, threadinfo ffff883ec1036000, task ffff883ebd5d4100)
+[65674.040680] Stack:
+[65674.042972]  ffffffff810fc935 ffff88a9f1e182b0 0000000000000206 0000000000000009
+[65674.042978]  0000000000000000 ffffea01a0817e60 ffffea0211d3a808 ffffea0211d3a840
+[65674.042983]  ffffea01a0827a28 ffffea01a0827a60 ffffea0288a598c0 ffffea0288a598f8
+[65674.042989] Call Trace:
+[65674.045765]  [<ffffffff810fc935>] release_pages+0xc5/0x260
+[65674.045779]  [<ffffffff811289dd>] free_pages_and_swap_cache+0x9d/0xc0
+[65674.045786]  [<ffffffff81115d6c>] tlb_flush_mmu+0x5c/0x80
+[65674.045791]  [<ffffffff8111628e>] tlb_finish_mmu+0xe/0x50
+[65674.045796]  [<ffffffff8111c65d>] exit_mmap+0xbd/0x120
+[65674.045805]  [<ffffffff810582d9>] mmput+0x49/0x120
+[65674.045813]  [<ffffffff8105cbb2>] exit_mm+0x122/0x160
+[65674.045818]  [<ffffffff8105e95a>] do_exit+0x17a/0x430
+[65674.045824]  [<ffffffff8105ec4d>] do_group_exit+0x3d/0xb0
+[65674.045831]  [<ffffffff8106f7c7>] get_signal_to_deliver+0x247/0x480
+[65674.045840]  [<ffffffff81002931>] do_signal+0x71/0x1b0
+[65674.045845]  [<ffffffff81002b08>] do_notify_resume+0x98/0xb0
+[65674.045853]  [<ffffffff8144bb60>] int_signal+0x12/0x17
+[65674.046737] DWARF2 unwinder stuck at int_signal+0x12/0x17
 
-static int atmel_tcb_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-{
-	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
-	struct atmel_tcb_pwm_device *tcbpwm = pwm_get_chip_data(pwm);
-	struct atmel_tc *tc = tcbpwmc->tc;
-	void __iomem *regs = tc->regs;
-	unsigned group = pwm->hwpwm / 2;
-	unsigned index = pwm->hwpwm % 2;
-	u32 cmr;
-	enum pwm_polarity polarity = tcbpwm->polarity;
+Changes since v1
+- do not cond_resched in tlb_flush_mmu as we do not want to limit this
+  interface for non atomic contexts and limit batching instead.
 
-	/* If duty is 0 reverse polarity */
-	if (tcbpwm->duty == 0)
-		polarity = !polarity;
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: stable@vger.kernel.org # 3.0 and higher
+---
+ include/asm-generic/tlb.h |   14 ++++++++++++++
+ mm/memory.c               |    4 ++++
+ 2 files changed, 18 insertions(+)
 
-	spin_lock(&tcbpwmc->lock);
-	cmr = __raw_readl(regs + ATMEL_TC_REG(group, CMR));
+diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+index ed6642a..5843f59 100644
+--- a/include/asm-generic/tlb.h
++++ b/include/asm-generic/tlb.h
+@@ -78,6 +78,19 @@ struct mmu_gather_batch {
+ #define MAX_GATHER_BATCH	\
+ 	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+ 
++/*
++ * Limit the maximum number of mmu_gather batches for non-preemptible kernels
++ * to reduce a risk of soft lockups on huge machines when a lot of memory is
++ * zapped during unmapping.
++ * 1GB of resident memory should be safe to free up at once even without
++ * explicit preemption point.
++ */
++#if defined(CONFIG_PREEMPT_COUNT)
++#define MAX_GATHER_BATCH_COUNT	(UINT_MAX)
++#else
++#define MAX_GATHER_BATCH_COUNT	(((1UL<<(30-PAGE_SHIFT))/MAX_GATHER_BATCH))
++#endif
++
+ /* struct mmu_gather is an opaque type used by the mm code for passing around
+  * any data needed by arch specific code for tlb_remove_page.
+  */
+@@ -96,6 +109,7 @@ struct mmu_gather {
+ 	struct mmu_gather_batch *active;
+ 	struct mmu_gather_batch	local;
+ 	struct page		*__pages[MMU_GATHER_BUNDLE];
++	unsigned int		batch_count;
+ };
+ 
+ #define HAVE_GENERIC_MMU_GATHER
+diff --git a/mm/memory.c b/mm/memory.c
+index 1f6cae4..d4aebd9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -183,10 +183,14 @@ static int tlb_next_batch(struct mmu_gather *tlb)
+ 		return 1;
+ 	}
+ 
++	if (tlb->batch_count == MAX_GATHER_BATCH_COUNT)
++		return 0;
++
+ 	batch = (void *)__get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
+ 	if (!batch)
+ 		return 0;
+ 
++	tlb->batch_count++;
+ 	batch->next = NULL;
+ 	batch->nr   = 0;
+ 	batch->max  = MAX_GATHER_BATCH;
+-- 
+1.7.10.4
 
-	/* flush old setting and set the new one */
-	cmr &= ~ATMEL_TC_TCCLKS;
-	if (index == 0) {
-		cmr &= ~ATMEL_TC_A_MASK;
-
-		/* Set CMR flags according to given polarity */
-		if (polarity == PWM_POLARITY_INVERSED) {
-			cmr |= ATMEL_TC_ASWTRG_CLEAR;
-
-			/*
-			 * If duty is 0 or equal to period there's no need to register
-			 * a specific action on RA/RB and RC compare.
-			 * The output will be configured on software trigger and keep
-			 * this config till next config call.
-			 */
-			if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0)
-				cmr |= ATMEL_TC_ACPA_SET | ATMEL_TC_ACPC_CLEAR;
-		} else {
-			cmr |= ATMEL_TC_ASWTRG_SET;
-			if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0)
-				cmr |= ATMEL_TC_ACPA_CLEAR | ATMEL_TC_ACPC_SET;
-		}
-	} else {
-		cmr &= ~ATMEL_TC_B_MASK;
-		if (polarity == PWM_POLARITY_INVERSED) {
-			cmr |= ATMEL_TC_BSWTRG_CLEAR;
-			if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0)
-				cmr |= ATMEL_TC_BCPB_SET | ATMEL_TC_BCPC_CLEAR;
-		} else {
-			cmr |= ATMEL_TC_BSWTRG_SET;
-			if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0)
-				cmr |= ATMEL_TC_BCPA_CLEAR | ATMEL_TC_BCPC_SET;
-		}
-	}
-
-	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
-
-	if (index == 0)
-		__raw_writel(tcbpwm->duty, regs + ATMEL_TC_REG(group, RA));
-	else
-		__raw_writel(tcbpwm->duty, regs + ATMEL_TC_REG(group, RB));
-
-	__raw_writel(tcbpwm->period, regs + ATMEL_TC_REG(group, RC));
-
-	/* Use software trigger to apply the new setting */
-	__raw_writel(ATMEL_TC_CLKEN | ATMEL_TC_SWTRG,
-			regs + ATMEL_TC_REG(group, CCR));
-	spin_unlock(&tcbpwmc->lock);
-	return 0;
-}
-
-
-Is that what you're expecting?
-
-> 
->> +		}
->> +	}
->> +
->> +	newcmr |= tcbpwm->clk;
->> +
->> +	spin_lock(&tcbpwmc->lock);
->> +	cmr = __raw_readl(regs + ATMEL_TC_REG(group, CMR));
->> +
->> +	/* flush old setting */
->> +	cmr &= ~ATMEL_TC_TCCLKS;
->> +	if (index == 0)
->> +		cmr &= ~(ATMEL_TC_ACPA | ATMEL_TC_ACPC |
->> +				ATMEL_TC_AEEVT | ATMEL_TC_ASWTRG);
->> +	else
->> +		cmr &= ~(ATMEL_TC_BCPB | ATMEL_TC_BCPC |
->> +				ATMEL_TC_BEEVT | ATMEL_TC_BSWTRG);
->> +
->> +	/* configure new setting */
->> +	cmr |= newcmr;
->> +	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
->> +
->> +	if (index == 0)
->> +		__raw_writel(tcbpwm->duty, regs + ATMEL_TC_REG(group, RA));
->> +	else
->> +		__raw_writel(tcbpwm->duty, regs + ATMEL_TC_REG(group, RB));
->> +	__raw_writel(tcbpwm->period, regs + ATMEL_TC_REG(group, RC));
-> 
-> Could use another blank line.
-> 
->> +static int atmel_tcb_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		int duty_ns, int period_ns)
-> 
-> These aren't properly aligned.
-> 
->> +{
->> +	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
->> +	struct atmel_tcb_pwm_device *tcbpwm = pwm_get_chip_data(pwm);
->> +	unsigned group = pwm->hwpwm / 2;
->> +	unsigned index = pwm->hwpwm % 2;
->> +	struct atmel_tcb_pwm_device *atcbpwm = NULL;
->> +	struct atmel_tc *tc = tcbpwmc->tc;
->> +	int i;
->> +	int slowclk = 0;
->> +	unsigned period;
->> +	unsigned duty;
->> +	unsigned rate = clk_get_rate(tc->clk[group]);
->> +	unsigned long long min;
->> +	unsigned long long max;
->> +
->> +	/*
->> +	 * Find best clk divisor:
->> +	 * the smallest divisor which can fulfill the period_ns requirements.
->> +	 */
->> +	for (i = 0; i < 5; ++i) {
->> +		if (atmel_tc_divisors[i] == 0) {
->> +			slowclk = i;
->> +			continue;
->> +		}
->> +		min = div_u64((unsigned long long)1000000000 *
->> +						atmel_tc_divisors[i],
->> +						rate);
-> 
-> Maybe use NSEC_PER_SEC instead? Like this:
-> 
-> 		min = div_u64((u64)NSEC_PER_SEC * atmel_tc_divisors[i], rate);
-> 
->> +		max = min << tc->tcb_config->counter_width;
->> +		if (max >= period_ns)
->> +			break;
->> +	}
->> +
->> +	/*
->> +	 * If none of the divisor are small enough to represent period_ns
->> +	 * take slow clock (32KHz).
->> +	 */
->> +	if (i == 5) {
->> +		i = slowclk;
->> +		rate = 32768;
->> +		min = div_u64(1000000000, rate);
-> 
-> Again this is NSEC_PER_SEC.
-> 
->> +		max = min << 16;
->> +
->> +		/* If period is too big return ERANGE error */
->> +		if (max < period_ns)
->> +			return -ERANGE;
->> +	}
->> +
->> +	duty = div_u64(duty_ns, min);
->> +	period = div_u64(period_ns, min);
->> +
->> +	if (index == 0)
->> +		atcbpwm = tcbpwmc->pwms[pwm->hwpwm + 1];
->> +	else
->> +		atcbpwm = tcbpwmc->pwms[pwm->hwpwm - 1];
->> +
->> +	/*
->> +	 * Check that associated PWM (if present) is configured
->> +	 * with the same period.
->> +	 * If not, return an error.
->> +	 */
->> +	if ((atcbpwm && atcbpwm->duty > 0 &&
->> +			atcbpwm->duty != atcbpwm->period) &&
->> +		(atcbpwm->clk != i || atcbpwm->period != period)) {
->> +		dev_err(chip->dev, "failed to configure period_ns\n");
->> +		return -EINVAL;
->> +	}
-> 
-> I had to read this a couple of times to figure out that what you check
-> for is consistency with the settings of the second PWM of the same
-> group. Maybe you can make this a bit clearer in the comment.
-> "associated PWM" is a bit vague. Also maybe the error message should
-> mention that the reason why the period cannot be configured is that the
-> settings for this PWM are incompatible with those of the sibling.
-> 
-> Also, the atcbpwm->clk field seems to refer to a divider, so renaming it
-> to atcbpwm->div might be more appropriate.
-> 
->> +
->> +	tcbpwm->period = period;
->> +	tcbpwm->clk = i;
->> +	tcbpwm->duty = duty;
->> +
->> +	/* If the PWM is enabled, call enable to apply the new conf */
->> +	if (test_bit(PWMF_ENABLED, &pwm->flags))
->> +		atmel_tcb_pwm_enable(chip, pwm);
->> +
->> +	return 0;
->> +}
->> +
->> +static const struct pwm_ops atmel_tcb_pwm_ops = {
->> +	.set_polarity = atmel_tcb_pwm_set_polarity,
->> +	.request = atmel_tcb_pwm_request,
->> +	.free = atmel_tcb_pwm_free,
->> +	.config = atmel_tcb_pwm_config,
->> +	.enable = atmel_tcb_pwm_enable,
->> +	.disable = atmel_tcb_pwm_disable,
->> +};
-> 
-> Can you put these in the same order as defined by struct pwm_ops?
-> 
->> +
->> +static int atmel_tcb_pwm_probe(struct platform_device *pdev)
->> +{
->> +	struct atmel_tcb_pwm_chip *tcbpwm;
->> +	struct device_node *np = pdev->dev.of_node;
->> +	struct atmel_tc *tc;
->> +	int err;
->> +	int tcblock;
->> +
->> +	err = of_property_read_u32(np, "tc-block", &tcblock);
->> +	if (err < 0) {
->> +		dev_err(&pdev->dev,
->> +				"failed to get tc block number from device tree (error: %d)\n",
->> +				err);
-> 
-> These should align with &pdev->dev.
-> 
->> +		return err;
->> +	}
->> +
->> +	tc = atmel_tc_alloc(tcblock, "tcb-pwm");
->> +	if (tc == NULL) {
->> +		dev_err(&pdev->dev, "failed to allocate Timer Counter Block\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	tcbpwm = devm_kzalloc(&pdev->dev, sizeof(*tcbpwm), GFP_KERNEL);
->> +	if (tcbpwm == NULL) {
->> +		dev_err(&pdev->dev, "failed to allocate memory\n");
->> +		return -ENOMEM;
->> +	}
-> 
-> Shouldn't you free tc in this case?
-> 
->> +
->> +	tcbpwm->chip.dev = &pdev->dev;
->> +	tcbpwm->chip.ops = &atmel_tcb_pwm_ops;
->> +	tcbpwm->chip.of_xlate = of_pwm_xlate_with_flags;
->> +	tcbpwm->chip.of_pwm_n_cells = 3;
->> +	tcbpwm->chip.base = -1;
->> +	tcbpwm->chip.npwm = NPWM;
->> +	tcbpwm->tc = tc;
->> +
->> +	spin_lock_init(&tcbpwm->lock);
->> +
->> +	err = pwmchip_add(&tcbpwm->chip);
->> +	if (err < 0) {
->> +		devm_kfree(&pdev->dev, tcbpwm);
-> 
-> No need to call this. The whole point of the device-managed functions is
-> that you don't have to care about the cleanup in the error path. However
-> the atmel_tc_alloc() doesn't seem to be managed, so you should probably
-> call atmel_tc_free() to release it, right?
-> 
->> +		return err;
->> +	}
->> +
->> +	dev_dbg(&pdev->dev, "pwm probe successful\n");
-> 
-> I think this can go away now. The kernel will tell you if the driver
-> can't be probed successfully, so keeping this isn't useful.
-> 
->> +	platform_set_drvdata(pdev, tcbpwm);
->> +
->> +	return 0;
->> +}
->> +
->> +static int atmel_tcb_pwm_remove(struct platform_device *pdev)
->> +{
->> +	struct atmel_tcb_pwm_chip *tcbpwm = platform_get_drvdata(pdev);
->> +	int err;
->> +
->> +	err = pwmchip_remove(&tcbpwm->chip);
->> +	if (err < 0)
->> +		return err;
->> +
->> +	atmel_tc_free(tcbpwm->tc);
->> +
->> +	dev_dbg(&pdev->dev, "pwm driver removed\n");
-> 
-> Same here, it can go away.
-> 
->> +	devm_kfree(&pdev->dev, tcbpwm);
-> 
-> Again, kfree() will automatically be called on tcbpwm once the .remove()
-> function exits.
-> 
->> +
->> +	return 0;
->> +}
->> +
->> +static struct of_device_id atmel_tcb_pwm_dt_ids[] = {
-> 
-> This should probably be "static const". I just noticed that not all
-> drivers do this, but they should.
-> 
-> Thierry
-> 
+-- 
+Michal Hocko
+SUSE Labs
