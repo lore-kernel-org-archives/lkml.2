@@ -1,142 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab2LSSfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:35:33 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:38365 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab2LSSf1 (ORCPT
+	id S1754847Ab2LSSgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:36:07 -0500
+Received: from mailserver6.natinst.com ([130.164.80.6]:37105 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab2LSSf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:35:27 -0500
-Date: Wed, 19 Dec 2012 13:32:20 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-12-19
-Message-ID: <20121219183220.GB1912@tuxdriver.com>
+	Wed, 19 Dec 2012 13:35:59 -0500
+Date: Wed, 19 Dec 2012 12:36:17 -0600
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
+Message-ID: <20121219183617.GC1005@beefymiracle.amer.corp.natinst.com>
+References: <1355778135-32458-1-git-send-email-sboyd@codeaurora.org>
+ <1355778135-32458-5-git-send-email-sboyd@codeaurora.org>
+ <20121219172619.GB1005@beefymiracle.amer.corp.natinst.com>
+ <50D2056E.9000507@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+In-Reply-To: <50D2056E.9000507@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 12/19/2012 12:35:55 PM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 12/19/2012 12:35:55 PM,
+	Serialize complete at 12/19/2012 12:35:55 PM
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-19_08:2012-12-19,2012-12-19,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 19, 2012 at 10:20:30AM -0800, Stephen Boyd wrote:
+> On 12/19/12 09:26, Josh Cartwright wrote:
+> > On Mon, Dec 17, 2012 at 01:02:15PM -0800, Stephen Boyd wrote:
+[..]
+> 
+> Can you show the code at those line numbers? There are quite a few
+> WARN_ONs in that code and it's possible the WARN_ON is the one
+> introduced in this patch.
 
---vtzGhvizbBRQ85DL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It looks like we're not hitting the WARN_ON() you added, but several of
+the other ones.
 
-Dave,
+> >    ------------[ cut here ]------------
+> >    WARNING: at drivers/clk/clk-zynq.c:159 zynq_periph_clk_setup+0x190/0x248()
+> >    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
+> >    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
+> >    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193520>] (zynq_periph_clk_setup+0x190/0x248)
+> >    [<c0193520>] (zynq_periph_clk_setup+0x190/0x248) from [<c0192944>] (of_clk_init+0x30/0x58)
+> >    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
+> >    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
+> >    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
+> >    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
+> >    ---[ end trace 1b75b31a2719ed1c ]---
 
-Please pull these fixes for the 3.8 stream.
+zynq_periph_clk_setup:
+156 >-------periph->gates[0] = clk_register_gate(NULL, name, np->name, 0,
+157 >------->------->------->------->-------     periph->clk_ctrl, 0, 0,
+158 >------->------->------->------->-------     &periph->clkact_lock);
+159 >-------if (WARN_ON(IS_ERR(periph->gates[0])))
+160 >------->-------return;
 
-Gabor Juhos provides and rt2x00 fix to properly clear-out the skb->cb
-for reporting tx_status.  Recent changes made this necessary where it
-previously was not.
+> >    ------------[ cut here ]------------
+> >    WARNING: at drivers/clk/clk-zynq.c:296 zynq_cpu_clk_setup+0x1e0/0x26c()
+> >    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
+> >    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
+> >    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c)
+> >    [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
+> >    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
+> >    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
+> >    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
+> >    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
+> >    ---[ end trace 1b75b31a2719ed1d ]---
 
-Vladimir Kondratiev gives us a fix for a build issue that caused some
-ath9k devices to be skipped in the build based on unrelated config
-choices.
+zynq_cpu_subclk_setup:
+295 >-------clk = clk_register(NULL, &subclk->hw);
+296 >-------if (WARN_ON(IS_ERR(clk)))
+297 >------->-------goto err_clk_register;
 
-Please let me know if there are problems!
+> >    ------------[ cut here ]------------
+> >    WARNING: at drivers/clk/clk-zynq.c:347 zynq_cpu_clk_setup+0x210/0x26c()
+> >    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
+> >    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
+> >    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c)
+> >    [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
+> >    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
+> >    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
+> >    [<c0185d54>] (time_init+0x28/0x30) fr m [<c0183650>] (start_kernel+0x1a8/0x2c0)
+> >    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
+> >    ---[ end trace 1b75b31a2719ed1e ]---
 
-Thanks,
+zynq_cpu_clk_setup:
+345 >-------for (i = 0; i < 4; i++) {
+346 >------->-------cpuclk->subclks[i] = zynq_cpu_subclk_setup(np, i, clk_621);
+347 >------->-------if (WARN_ON(IS_ERR(cpuclk->subclks[i])))
+348 >------->------->-------return;
+349 >-------}
 
-John
+The third warning is a bit redundant, it is triggered by the same conditions
+that triggered the second warning.
 
----
-
-The following changes since commit c1e37ea287979052e3eab441e58da3899a8e2389:
-
-  net: fec: forbid FEC_PTP on SoCs that do not support (2012-12-18 16:26:18=
- -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
-
-for you to fetch changes up to d67df2b9edfc42ccc0a9ee5332e2821d487d6b3b:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
-nville/wireless into for-davem (2012-12-19 13:00:00 -0500)
-
-----------------------------------------------------------------
-
-Gabor Juhos (1):
-      rt2x00: zero-out rx_status
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Vladimir Kondratiev (1):
-      wireless: fix Atheros drivers compilation
-
- drivers/net/wireless/Makefile           | 2 +-
- drivers/net/wireless/rt2x00/rt2x00dev.c | 8 ++++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/Makefile b/drivers/net/wireless/Makefile
-index 062dfdf..67156ef 100644
---- a/drivers/net/wireless/Makefile
-+++ b/drivers/net/wireless/Makefile
-@@ -47,7 +47,7 @@ obj-$(CONFIG_RT2X00)	+=3D rt2x00/
-=20
- obj-$(CONFIG_P54_COMMON)	+=3D p54/
-=20
--obj-$(CONFIG_ATH_COMMON)	+=3D ath/
-+obj-$(CONFIG_ATH_CARDS)		+=3D ath/
-=20
- obj-$(CONFIG_MAC80211_HWSIM)	+=3D mac80211_hwsim.o
-=20
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless=
-/rt2x00/rt2x00dev.c
-index 4ffb6a5..44f8b3f 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -685,6 +685,14 @@ void rt2x00lib_rxdone(struct queue_entry *entry, gfp_t=
- gfp)
- 	 * to mac80211.
- 	 */
- 	rx_status =3D IEEE80211_SKB_RXCB(entry->skb);
-+
-+	/* Ensure that all fields of rx_status are initialized
-+	 * properly. The skb->cb array was used for driver
-+	 * specific informations, so rx_status might contain
-+	 * garbage.
-+	 */
-+	memset(rx_status, 0, sizeof(*rx_status));
-+
- 	rx_status->mactime =3D rxdesc.timestamp;
- 	rx_status->band =3D rt2x00dev->curr_band;
- 	rx_status->freq =3D rt2x00dev->curr_freq;
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---vtzGhvizbBRQ85DL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0gg0AAoJEJctW/TcYTgGexIP/0Qm5wLE7PuKV+NXfoPyySv6
-sp4ZkXsboZ0HXjZBjD1pn4aBjzU4G67tRThmHvWlIwaYgWXY3aDwXpvsy+JRCzTh
-xoFlp83u2wmIJSKoTiF9HEThPH65pQszAvn7AuzMIERnr1KexE0Iy9M5bIPOgGzm
-H4aOIGfITeh3SZa3NtschWGSbSAnJZfka123IuYNVGG5CVaq2B6yyzh3Ut+CdnEh
-xlaQ+ppoL0FyBykxou7B1proMzIvca1Ul2pp9sXgMPAqmNkAJi6Wnu46Q/hQKy3J
-7dIJhY86oFGQnmpdh/X5NMqTV2iSyOnKj+ZvSzR7X1VavKcAXqEUHEld7tcpdILn
-unAoIHDDSPq+Cfw7uD4Z1hpP7zYZRJ69MSr8ZcpulGe7b6jhbYD0deJeE5wz2Blg
-1frW6KeoXNczCdEUySIpGvYGSZLWy/1Pnh1sW7pk2n3zUlyoRP8bjyOLbBTdPC3Q
-1nfpSBiobQizQ8xvBC5YVv7FN0FHK67NsV5R1A+f8O+0hObYGg/f2SwMuT1oefqT
-ZarLR+m7a9MEBSzPY8aYbj9sVOnSrnQqP/aLKv1qjl3zVtIe0YyyQQWTgA85iOIM
-bL7ScFcsunOSrN47ZjKCxwMh8EuchcE8kj6FKfeMOO7qumfCVktK3ykVBohv1aCe
-jy4YE+nmPlnGSxtpvnbq
-=wDOd
------END PGP SIGNATURE-----
-
---vtzGhvizbBRQ85DL--
+	  Josh
