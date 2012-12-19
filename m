@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab2LSUbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:31:32 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42874 "EHLO
+	id S1752892Ab2LSUbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:31:46 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42877 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2LSUb0 (ORCPT
+	with ESMTP id S1752467Ab2LSUbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:31:26 -0500
-Subject: [PATCH 0/2] goldfish: base support
+	Wed, 19 Dec 2012 15:31:37 -0500
+Subject: [PATCH 1/2] goldfish: definitions for Goldfish on x86 platforms
 To: x86@kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Wed, 19 Dec 2012 20:34:05 +0000
-Message-ID: <20121219203018.9208.67869.stgit@bob.linux.org.uk>
+Date: Wed, 19 Dec 2012 20:34:20 +0000
+Message-ID: <20121219203418.9208.21038.stgit@bob.linux.org.uk>
+In-Reply-To: <20121219203018.9208.67869.stgit@bob.linux.org.uk>
+References: <20121219203018.9208.67869.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,27 +22,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the base component of the Goldfish virtual android device on x86 systems.
+From: Jun Nakajima <jnakajim@gmail.com>
 
-These need to be merged first so the driver support can follow
+Based on code by Jun Nakajima but stripped of all the old x86 mach-foo
+stuff and turned into a single include file for the Goldfish virtual bus
+layer
 
-
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
+Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
+Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
+Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
+[Ported to 3.7 and reorganised so that we can keep most of the code
+ shared properly]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
-Jun Nakajima (2):
-      goldfish: definitions for Goldfish on x86 platforms
-      goldfish: add the goldfish virtual bus
-
-
- arch/x86/Kconfig                     |   12 ++
- arch/x86/include/asm/goldfish.h      |   33 ++++
- drivers/platform/Makefile            |    1 
- drivers/platform/goldfish/Makefile   |    4 +
- drivers/platform/goldfish/pdev_bus.c |  265 ++++++++++++++++++++++++++++++++++
- 5 files changed, 315 insertions(+)
+ arch/x86/Kconfig                |   12 ++++++++++++
+ arch/x86/include/asm/goldfish.h |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
  create mode 100644 arch/x86/include/asm/goldfish.h
- create mode 100644 drivers/platform/goldfish/Makefile
- create mode 100644 drivers/platform/goldfish/pdev_bus.c
 
--- 
-Signature
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 2b8f547..df468c3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -321,6 +321,10 @@ config X86_BIGSMP
+ 	---help---
+ 	  This option is needed for the systems that have more than 8 CPUs
+ 
++config GOLDFISH
++       def_bool y
++       depends on X86_GOLDFISH
++
+ if X86_32
+ config X86_EXTENDED_PLATFORM
+ 	bool "Support for extended (non-PC) x86 platforms"
+@@ -403,6 +407,14 @@ config X86_UV
+ # Following is an alphabetically sorted list of 32 bit extended platforms
+ # Please maintain the alphabetic order if and when there are additions
+ 
++config X86_GOLDFISH
++       bool "Goldfish (Virtual Platform)"
++       depends on X86_32
++       ---help---
++	 Enable support for the Goldfish virtual platform used primarily
++	 for Android development. Unless you are building for the Android
++	 Goldfish emulator say N here.
++
+ config X86_INTEL_CE
+ 	bool "CE4100 TV platform"
+ 	depends on PCI
+diff --git a/arch/x86/include/asm/goldfish.h b/arch/x86/include/asm/goldfish.h
+new file mode 100644
+index 0000000..8d2c559
+--- /dev/null
++++ b/arch/x86/include/asm/goldfish.h
+@@ -0,0 +1,33 @@
++/*
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (C) 2012 Intel, Corp.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __X86_ARCH_HARDWARE_H
++#define __X86_ARCH_HARDWARE_H
++
++/*
++ * Where in virtual memory the IO devices (timers, system controllers
++ * and so on)
++ */
++
++#define GOLDFISH_IO_SIZE	0x00800000	/* How much? */
++#define GOLDFISH_IO_START	0xff000000	/* PA of IO */
++
++#define GOLDFISH_PDEV_BUS_BASE	(0x1000)
++#define GOLDFISH_PDEV_BUS_END	(0x100)
++#define GOLDFISH_PDEV_BUS_IRQ	(4)
++
++#define GOLDFISH_TTY_BASE	(0x2000)
++
++#endif
+
