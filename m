@@ -1,263 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2LSAsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 19:48:01 -0500
-Received: from [12.239.217.82] ([12.239.217.82]:37442 "EHLO
-	venom.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755118Ab2LSArz (ORCPT
+	id S1755293Ab2LSAzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 19:55:55 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59755 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab2LSAzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 19:47:55 -0500
-From: Christopher Heiny <cheiny@synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 01/05] input: RMI4 header file
-Date: Tue, 18 Dec 2012 16:46:32 -0800
-Message-Id: <1355877996-1433-2-git-send-email-cheiny@synaptics.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1355877996-1433-1-git-send-email-cheiny@synaptics.com>
-References: <1355877996-1433-1-git-send-email-cheiny@synaptics.com>
+	Tue, 18 Dec 2012 19:55:52 -0500
+Date: Wed, 19 Dec 2012 11:55:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Subject: linux-next: build failure after merge of the fsnotify tree
+Message-Id: <20121219115543.c76d0f1ecc12a54438151865@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Dec_2012_11_55_43_+1100_OJ/HWctrC_m_LiwM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to the changes described in part 0/5, this fixes some cut&paste
-issues in the comments for module_rmi_function_driver.
+--Signature=_Wed__19_Dec_2012_11_55_43_+1100_OJ/HWctrC_m_LiwM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Joeri de Gram <j.de.gram@gmail.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Hi Eric,
 
+After merging the fsnotify tree, today's linux-next build
+(powerpc_ppc64_defconfig) failed like this:
+
+fs/notify/fdinfo.c: In function 'show_fdinfo':
+fs/notify/fdinfo.c:30:18: error: 'struct fsnotify_group' has no member name=
+d 'mark_lock'
+fs/notify/fdinfo.c:36:20: error: 'struct fsnotify_group' has no member name=
+d 'mark_lock'
+
+Caused by commit 986ab09807ca ("fsnotify: use a mutex instead of a
+spinlock to protect a groups mark list") interacting with commit
+be77196b809c ("fs, notify: add procfs fdinfo helper") from Linus' tree
+(via Andrew' tree).
+
+I added the following merge fix patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 19 Dec 2012 11:53:20 +1100
+Subject: [PATCH] fsnotify: cope with change from spinlock to mutex
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ fs/notify/fdinfo.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- include/linux/rmi.h |   95 +++++++++++++++++++++++----------------------------
- 1 files changed, 43 insertions(+), 52 deletions(-)
+diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
+index 514c4b8..238a593 100644
+--- a/fs/notify/fdinfo.c
++++ b/fs/notify/fdinfo.c
+@@ -27,13 +27,13 @@ static int show_fdinfo(struct seq_file *m, struct file =
+*f,
+ 	struct fsnotify_mark *mark;
+ 	int ret =3D 0;
+=20
+-	spin_lock(&group->mark_lock);
++	mutex_lock(&group->mark_mutex);
+ 	list_for_each_entry(mark, &group->marks_list, g_list) {
+ 		ret =3D show(m, mark);
+ 		if (ret)
+ 			break;
+ 	}
+-	spin_unlock(&group->mark_lock);
++	mutex_unlock(&group->mark_mutex);
+ 	return ret;
+ }
+=20
+--=20
+1.7.10.280.gaa39
 
-diff --git a/include/linux/rmi.h b/include/linux/rmi.h
-index daca41b..eec926f 100644
---- a/include/linux/rmi.h
-+++ b/include/linux/rmi.h
-@@ -2,25 +2,16 @@
-  * Copyright (c) 2011, 2012 Synaptics Incorporated
-  * Copyright (c) 2011 Unixphere
-  *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-  */
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
- #ifndef _RMI_H
- #define _RMI_H
- #include <linux/kernel.h>
- #include <linux/cdev.h>
-+#include <linux/debugfs.h>
- #include <linux/device.h>
- #include <linux/interrupt.h>
- #include <linux/input.h>
-@@ -31,7 +22,6 @@
- #include <linux/stat.h>
- #include <linux/types.h>
- #include <linux/wait.h>
--#include <linux/debugfs.h>
+--Signature=_Wed__19_Dec_2012_11_55_43_+1100_OJ/HWctrC_m_LiwM
+Content-Type: application/pgp-signature
 
- extern struct bus_type rmi_bus_type;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-@@ -73,7 +63,7 @@ enum rmi_attn_polarity {
-  *               automatically enabled for this sensor.
-  */
- struct rmi_f11_2d_axis_alignment {
--	bool swap_axes;
-+	u32 swap_axes;
- 	bool flip_x;
- 	bool flip_y;
- 	int clip_X_low;
-@@ -82,7 +72,6 @@ struct rmi_f11_2d_axis_alignment {
- 	int clip_Y_high;
- 	int offset_X;
- 	int offset_Y;
--	int rel_report_enabled;
- 	u8 delta_x_threshold;
- 	u8 delta_y_threshold;
- };
-@@ -105,6 +94,7 @@ enum rmi_f11_sensor_type {
+iQIcBAEBCAAGBQJQ0RCPAAoJEECxmPOUX5FEjFEP/R7xBsT/hpTTbpGzgZ68qBhx
+7UU4iB77wVU7gUCNJeg32kpjAEcBpnmrjl9wY/C0K3dJYRAhlKQgRS9bbAtJIgyz
+VIm8JalwX3KTIYvaVFWamvXD2PASzcW+xfTw2SbgptoIo5zo8ovNUFZFDJqSdo40
+hcOkZTWAZCMCMDcm36DP9MOX9jLHqyX/dPAVNMkuBQUjEgEIWBRBRDYJnDsENpDm
+fumXFhkL9VcBME48FXNwzN0ffm2GD1QqQ0UFJRa3VByPyGaHi2W/riMMcooXpb21
+2P6nHCPw2Jj2Jsj6M5SFs9Wrj87R73DmNnyeWDJi8kQEzgeN8rNty8aQI359Y3cN
+jK/8RLKiXEqVdvfYZcqsCN83lPL50wktVd8fB6qwGkXs3H5ebDb7faqXA5Tn9XLR
+tAFvZg0k8+QvtkNBl7sF3L3CMa35vrICCysE91X2/cNWvjY/lG/9DwIjzrdUcoyV
+gf37pDUhCLPOmWnPb5a4kqxk15u+YMSJmXsHedfPBaivVZV+B654XgMpIe8ZQFKJ
+gXefCWzm52n2vOpnMiW069dP/EcPWdGKDMsKJt9iKnugYNyFQZXHrZuK9rp8aS2x
+ZgQmlXPDUUgIlkoLhACw5GMdKObNOgAYVOHt1YZmt3IL9QIo53vQr2XSI9yaWHU5
+PvLQEIcltzBHydLUI6XP
+=pzGp
+-----END PGP SIGNATURE-----
 
- /**
-  * struct rmi_f11_sensor_data - overrides defaults for a single F11 2D sensor.
-+ *
-  * @axis_align - provides axis alignment overrides (see above).
-  * @type_a - all modern RMI F11 firmwares implement Multifinger Type B
-  * protocol.  Set this to true to force MF Type A behavior, in case you find
-@@ -338,13 +328,14 @@ struct rmi_function_descriptor {
- 	u8 function_version;
- };
-
--struct rmi_function;
-+struct rmi_function_dev;
- struct rmi_device;
-
- /**
-- * struct rmi_function_handler - driver routines for a particular RMI function.
-+ * struct rmi_function_driver - driver routines for a particular RMI function.
-  *
-  * @func: The RMI function number
-+ * @probe: Called when the handler is successfully matched to a function device.
-  * @reset: Called when a reset of the touch sensor is detected.  The routine
-  * should perform any out-of-the-ordinary reset handling that might be
-  * necessary.  Restoring of touch sensor configuration registers should be
-@@ -361,37 +352,31 @@ struct rmi_device;
-  *
-  * All callbacks are expected to return 0 on success, error code on failure.
-  */
--struct rmi_function_handler {
-+struct rmi_function_driver {
- 	struct device_driver driver;
-
- 	u8 func;
--	int (*probe)(struct rmi_function *fn);
--	void (*remove)(struct rmi_function *fn);
--	int (*config)(struct rmi_function *fn);
--	int (*reset)(struct rmi_function *fn);
--	int (*attention)(struct rmi_function *fn, unsigned long *irq_bits);
-+	int (*probe)(struct rmi_function_dev *fc);
-+	int (*remove)(struct rmi_function_dev *fc);
-+	int (*config)(struct rmi_function_dev *fc);
-+	int (*reset)(struct rmi_function_dev *fc);
-+	int (*attention)(struct rmi_function_dev *fc,
-+				unsigned long *irq_bits);
- #ifdef CONFIG_PM
--	int (*suspend)(struct rmi_function *fn);
--	int (*resume)(struct rmi_function *fn);
-+	int (*suspend)(struct rmi_function_dev *fc);
-+	int (*resume)(struct rmi_function_dev *fc);
- #endif
- };
-
--#define to_rmi_function_handler(d) \
--		container_of(d, struct rmi_function_handler, driver)
--
--int __must_check __rmi_register_function_handler(struct rmi_function_handler *,
--						 struct module *, const char *);
--#define rmi_register_function_handler(handler) \
--	__rmi_register_function_handler(handler, THIS_MODULE, KBUILD_MODNAME)
--
--void rmi_unregister_function_handler(struct rmi_function_handler *);
-+#define to_rmi_function_driver(d) \
-+		container_of(d, struct rmi_function_driver, driver);
-
- /**
-- * struct rmi_function - represents the implementation of an RMI4
-- * function for a particular device (basically, a driver for that RMI4 function)
-+ * struct rmi_function_dev - represents an a particular RMI4 function on a given
-+ * RMI4 sensor.
-  *
-  * @fd: The function descriptor of the RMI function
-- * @rmi_dev: Pointer to the RMI device associated with this function container
-+ * @rmi_dev: Pointer to the RMI device associated with this function device
-  * @dev: The device associated with this particular function.
-  *
-  * @num_of_irqs: The number of irqs needed by this function
-@@ -400,11 +385,12 @@ void rmi_unregister_function_handler(struct rmi_function_handler *);
-  * interrupt handling.
-  * @data: Private data pointer
-  *
-- * @list: Used to create a list of function containers.
-+ * @list: Used to create a list of function devices.
-  * @debugfs_root: used during debugging
-  *
-  */
--struct rmi_function {
-+struct rmi_function_dev {
-+
- 	struct rmi_function_descriptor fd;
- 	struct rmi_device *rmi_dev;
- 	struct device dev;
-@@ -414,13 +400,19 @@ struct rmi_function {
- 	void *data;
- 	struct list_head list;
-
--#ifdef CONFIG_RMI4_DEBUG
- 	struct dentry *debugfs_root;
--#endif
- };
-
--#define to_rmi_function(d) \
--		container_of(d, struct rmi_function, dev)
-+#define to_rmi_function_dev(d) \
-+		container_of(d, struct rmi_function_dev, dev);
-+
-+
-+int __must_check __rmi_register_function_driver(struct rmi_function_driver *,
-+						 struct module *, const char *);
-+#define rmi_register_function_driver(handler) \
-+	__rmi_register_function_driver(handler, THIS_MODULE, KBUILD_MODNAME)
-+
-+void rmi_unregister_function_driver(struct rmi_function_driver *);
-
- /**
-  * struct rmi_driver - driver for an RMI4 sensor on the RMI bus.
-@@ -446,6 +438,7 @@ struct rmi_driver {
- 	int (*store_productid)(struct rmi_device *rmi_dev);
- 	int (*set_input_params)(struct rmi_device *rmi_dev,
- 			struct input_dev *input);
-+	int (*remove)(struct rmi_device *rmi_dev);
- 	void *data;
- };
-
-@@ -528,9 +521,7 @@ struct rmi_device {
- 	struct rmi_driver *driver;
- 	struct rmi_phys_device *phys;
-
--#ifdef CONFIG_RMI4_DEBUG
- 	struct dentry *debugfs_root;
--#endif
- };
-
- #define to_rmi_device(d) container_of(d, struct rmi_device, dev);
-@@ -601,17 +592,17 @@ void rmi_unregister_phys_device(struct rmi_phys_device *phys);
- int rmi_for_each_dev(void *data, int (*func)(struct device *dev, void *data));
-
- /**
-- * module_serio_driver() - Helper macro for registering a serio driver
-- * @__serio_driver: serio_driver struct
-+ * module_rmi_function_driver() - Helper macro for registering a function driver
-+ * @__rmi_driver: rmi_function_driver struct
-  *
-- * Helper macro for serio drivers which do not do anything special in
-+ * Helper macro for RMI4 function drivers which do not do anything special in
-  * module init/exit. This eliminates a lot of boilerplate. Each module
-  * may only use this macro once, and calling it replaces module_init()
-  * and module_exit().
-  */
--#define module_rmi_driver(__rmi_driver)			\
-+#define module_rmi_function_driver(__rmi_driver)	\
- 	module_driver(__rmi_driver,			\
--		      rmi_register_function_handler,	\
--		      rmi_unregister_function_handler)
-+		      rmi_register_function_driver,	\
-+		      rmi_unregister_function_driver)
-
- #endif
+--Signature=_Wed__19_Dec_2012_11_55_43_+1100_OJ/HWctrC_m_LiwM--
