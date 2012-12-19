@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab2LSWNl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:13:41 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:38290 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2LSWNc (ORCPT
+	id S1751693Ab2LSWNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:13:55 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:36290 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2LSWNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:13:32 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio-ich: Add missing spinlock init
-To: Peter Tyser <ptyser@xes-inc.com>, Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	Wed, 19 Dec 2012 17:13:49 -0500
+Date: Wed, 19 Dec 2012 17:13:47 -0500 (EST)
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
         Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <1355932316.21821.31.camel@petert>
-References: <20121216213140.22954434@endymion.delvare> <1355932316.21821.31.camel@petert>
-Date: Wed, 19 Dec 2012 22:13:28 +0000
-Message-Id: <20121219221328.4CD923E0AD6@localhost>
+Message-ID: <1032450702.626703.1355955227194.JavaMail.root@mail.savoirfairelinux.com>
+In-Reply-To: <20121219171600.7B0EF3E0C5A@localhost>
+Subject: Re: [PATCH v2] gpio: add TS-5500 DIO blocks support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.88.110.46]
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 09:51:56 -0600, Peter Tyser <ptyser@xes-inc.com> wrote:
-> On Sun, 2012-12-16 at 21:31 +0100, Jean Delvare wrote:
-> > As reported by CONFIG_DEBUG_SPINLOCK=y.
-> > 
-> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> > Cc: Peter Tyser <ptyser@xes-inc.com>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Cc: stable@vger.kernel.org [v3.5+]
-> > ---
-> 
-> Acked-by: Peter Tyser <ptyser@xes-inc.com>
-> 
+Hi Grant,
 
-Applied, thanks.
+> Please take a look at either send me a follow-on patch to convert it
+> to use gpio-generic, or tell my why gpio-generic isn't appropriate here.
 
-g.
+The gpio-generic driver is not appropriate here because Technologic Systems
+x86-based platforms do not use a typical GPIO implementation. 
+To name a few specificities:
+- The GPIOs are available through ioport and not iomem
+- There are input-only/output-only/input-output lines on the same block
+- The number of GPIOs differs between blocks (currently 11, 13 and 14 pins)
+- A single bit in a control register drives the direction of 4 input/output
+  lines, while the register's other bits have different functions.
 
+IMHO these considerations justify a specific GPIO driver to support these
+Technologic Systems pin blocks.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Regards,
+Vivien
