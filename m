@@ -1,78 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab2LSESA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 23:18:00 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36072 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab2LSERx (ORCPT
+	id S1754819Ab2LSEVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 23:21:53 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:39201
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753923Ab2LSEVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 23:17:53 -0500
+	Tue, 18 Dec 2012 23:21:45 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432I4015Izz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h906i1155h)
+Date: Tue, 18 Dec 2012 20:21:29 -0800
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Josh Cartwright <josh.cartwright@ni.com>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>,
+        <monstr@monstr.eu>, John Linn <john.linn@xilinx.com>, <git@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/7] arm: zynq: timer: Replace PSS through PS
+References: <1355876199-23788-1-git-send-email-soren.brinkmann@xilinx.com>
+ <ee701193-af05-4e73-9376-42a4c6ac3c01@CO9EHSMHS032.ehs.local>
+ <20121219023120.GE27963@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
-In-Reply-To: <1355819384-25983-1-git-send-email-sonnyrao@chromium.org>
-References: <1355819384-25983-1-git-send-email-sonnyrao@chromium.org>
-Date: Tue, 18 Dec 2012 20:17:53 -0800
-X-Google-Sender-Auth: k_domNe9f7SuMtVOVluJT5QZrnc
-Message-ID: <CADGdYn6P8T9AKBpHV+uz6avh0+8uWQ+qnKyCjYsYdHQRpPriRg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] cpufreq: can't raise max frequency with cpu_thermal
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Doug Anderson <dianders@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20121219023120.GE27963@beefymiracle.amer.corp.natinst.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <fa221d49-1a55-4c24-820c-8f7b6995027c@AM1EHSMHS017.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 12:29 AM, Sonny Rao <sonnyrao@chromium.org> wrote:
-> The cpu_thermal generic thermal management code has a bug where once
-> max cpu frequency has been lowered in sysfs (scaling_max_freq) it is
-> not possible to raise the max back up later.  The bug is that the
-> notifer gets called by __cpufreq_set_policy() before the user policy
-> max is raised, and is incorrectly trying to enforce the max frequency
-> policy even when we are trying to change the policy.  It is also not
-> clear why this driver is looking at the user policy since it is
-> primarily supposed to enforce thermal policy, not user set policy.
+Hi Josh,
 
-Hi Sunny,
+On Tue, Dec 18, 2012 at 08:31:20PM -0600, Josh Cartwright wrote:
+> On Tue, Dec 18, 2012 at 04:16:33PM -0800, Soren Brinkmann wrote:
+> > The acronym PSS is deprecated by Xilinx. The correct term, which is
+> > also used in Xilinx documentation is PS (processing system).
+> > This is just a search and replace:
+> >  - s/PSS/PS/g
+> >  - s/pss/ps/g
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> [..]
+> > --- a/arch/arm/mach-zynq/timer.c
+> > +++ b/arch/arm/mach-zynq/timer.c
+> > @@ -35,17 +35,17 @@
+> >   * Timer Register Offset Definitions of Timer 1, Increment base address by 4
+> >   * and use same offsets for Timer 2
+> >   */
+> > -#define XTTCPSS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
+> > -#define XTTCPSS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW */
+> > -#define XTTCPSS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
+> > -#define XTTCPSS_INTR_VAL_OFFSET		0x24 /* Interval Count Reg, RW */
+> > -#define XTTCPSS_MATCH_1_OFFSET		0x30 /* Match 1 Value Reg, RW */
+> > -#define XTTCPSS_MATCH_2_OFFSET		0x3C /* Match 2 Value Reg, RW */
+> > -#define XTTCPSS_MATCH_3_OFFSET		0x48 /* Match 3 Value Reg, RW */
+> > -#define XTTCPSS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO */
+> > -#define XTTCPSS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW */
+> > -
+> > -#define XTTCPSS_CNT_CNTRL_DISABLE_MASK	0x1
+> > +#define XTTCPS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
+> > +#define XTTCPS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW */
+> > +#define XTTCPS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
+> > +#define XTTCPS_INTR_VAL_OFFSET		0x24 /* Interval Count Reg, RW */
+> > +#define XTTCPS_MATCH_1_OFFSET		0x30 /* Match 1 Value Reg, RW */
+> > +#define XTTCPS_MATCH_2_OFFSET		0x3C /* Match 2 Value Reg, RW */
+> > +#define XTTCPS_MATCH_3_OFFSET		0x48 /* Match 3 Value Reg, RW */
+> > +#define XTTCPS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO */
+> > +#define XTTCPS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW */
+> > +
+> > +#define XTTCPS_CNT_CNTRL_DISABLE_MASK	0x1
+> >  
+> >  /* Setup the timers to use pre-scaling, using a fixed value for now that will
+> >   * work across most input frequency, but it may need to be more dynamic
+> > @@ -57,72 +57,72 @@
+> >  #define CNT_CNTRL_RESET		(1<<4)
+> >  
+> >  /**
+> > - * struct xttcpss_timer - This definition defines local timer structure
+> > + * struct xttcps_timer - This definition defines local timer structure
+> >   *
+> >   * @base_addr:	Base address of timer
+> >   **/
+> > -struct xttcpss_timer {
+> > +struct xttcps_timer {
+> >  	void __iomem	*base_addr;
+> >  };
+> >  
+> > -struct xttcpss_timer_clocksource {
+> > -	struct xttcpss_timer	xttc;
+> > +struct xttcps_timer_clocksource {
+> > +	struct xttcps_timer	xttc;
+> >  	struct clocksource	cs;
+> >  };
+> >  
+> > -#define to_xttcpss_timer_clksrc(x) \
+> > -		container_of(x, struct xttcpss_timer_clocksource, cs)
+> > +#define to_xttcps_timer_clksrc(x) \
+> > +		container_of(x, struct xttcps_timer_clocksource, cs)
+> >  
+> > -struct xttcpss_timer_clockevent {
+> > -	struct xttcpss_timer		xttc;
+> > +struct xttcps_timer_clockevent {
+> > +	struct xttcps_timer		xttc;
+> >  	struct clock_event_device	ce;
+> >  	struct clk			*clk;
+> >  };
+> >  
+> > -#define to_xttcpss_timer_clkevent(x) \
+> > -		container_of(x, struct xttcpss_timer_clockevent, ce)
+> > +#define to_xttcps_timer_clkevent(x) \
+> > +		container_of(x, struct xttcps_timer_clockevent, ce)
+> >  
+> >  /**
+> > - * xttcpss_set_interval - Set the timer interval value
+> > + * xttcps_set_interval - Set the timer interval value
+> >   *
+> >   * @timer:	Pointer to the timer instance
+> >   * @cycles:	Timer interval ticks
+> >   **/
+> > -static void xttcpss_set_interval(struct xttcpss_timer *timer,
+> > +static void xttcps_set_interval(struct xttcps_timer *timer,
+> >  					unsigned long cycles)
+> 
+> Stylistic nit, but if we're going to be making cosmetic changes of this
+> sort, I'd personally like to see the arguments lined up properly:
+> 
+> static void xttcps_set_interval(struct xttcps_timer *timer,
+> 				unsigned long cycles)
+I actually don't like that because it's rather high maintenance to align
+arguments like this - and keeping them that way. I usually rely on vim with
+smartindent set to produce reasonable indent levels.
 
-I am not sure if this change is needed.
-There is a check in cpufreq_thermal_notifier function to return 0 if
-notify_device == NOTIFY_INVALID. So the user will be always able to
-change the max frequency in normal situation. Did you tested this for
-some corner cases?
-The reason behind putting this check is that I don't want to override
-the user constraints.
+And reviewing the coding guideline, I'd even say it's not encouraged:
+	"Descendants are always substantially shorter than the parent and
+	are placed substantially to the right. The same applies to function
+	headers with a long argument list."
 
-Thanks,
-Amit Daniel
+	Thanks,
+	Soren
 
->
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> ---
->  drivers/thermal/cpu_cooling.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-> index 836828e..63bc708 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -219,10 +219,6 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
->         if (cpumask_test_cpu(policy->cpu, &notify_device->allowed_cpus))
->                 max_freq = notify_device->cpufreq_val;
->
-> -       /* Never exceed user_policy.max*/
-> -       if (max_freq > policy->user_policy.max)
-> -               max_freq = policy->user_policy.max;
-> -
->         if (policy->max != max_freq)
->                 cpufreq_verify_within_limits(policy, 0, max_freq);
->
-> --
-> 1.7.7.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
