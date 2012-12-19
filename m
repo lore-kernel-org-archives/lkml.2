@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab2LSL1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 06:27:15 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:47862 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab2LSL1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 06:27:03 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3] of: Output devicetree alias names in uevent
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Brown <davidb@codeaurora.org>, mbohan@codeaurora.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-In-Reply-To: <1354834541-26765-1-git-send-email-stepanm@codeaurora.org>
-References: <20121206192500.0BF073E3A5E@localhost> <1354834541-26765-1-git-send-email-stepanm@codeaurora.org>
-Date: Wed, 19 Dec 2012 11:26:55 +0000
-Message-Id: <20121219112655.AC0503E0AD7@localhost>
+	id S1755146Ab2LSL1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 06:27:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754742Ab2LSL12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 06:27:28 -0500
+Date: Wed, 19 Dec 2012 12:27:18 +0100
+From: Stefan Hajnoczi <stefanha@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        mst@redhat.com, rusty@rustcorp.com.au, asias@redhat.com,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 5/5] virtio-scsi: introduce multiqueue support
+Message-ID: <20121219112718.GB5832@stefanha-thinkpad.redhat.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
+ <1355833972-20319-6-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355833972-20319-6-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  6 Dec 2012 14:55:41 -0800, Stepan Moskovchenko <stepanm@codeaurora.org> wrote:
-> In some situations, userspace may want to resolve a
-> device by function and logical number (ie, "serial0")
-> rather than by the base address or full device path. Being
-> able to resolve a device by alias frees userspace from the
-> burden of otherwise having to maintain a mapping between
-> device addresses and their logical assignments on each
-> platform when multiple instances of the same hardware block
-> are present in the system.
-> 
-> Although the uevent device attribute contains devicetree
-> compatible information and the full device path, the uevent
-> does not list the alises that may have been defined for the
-> device.
-> 
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+On Tue, Dec 18, 2012 at 01:32:52PM +0100, Paolo Bonzini wrote:
+>  struct virtio_scsi_target_state {
+> -	/* Never held at the same time as vq_lock.  */
+> +	/* This spinlock ever held at the same time as vq_lock.  */
 
-I've picked this up into my devicetree/next branch. It will get pushed out to linux-next after the merge window closes.
-
-Thanks,
-g.
-
+s/ever/is never/
