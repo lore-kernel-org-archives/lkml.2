@@ -1,124 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205Ab2LSXBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:01:44 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:58772 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2LSXBg (ORCPT
+	id S1751923Ab2LSXB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:01:59 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:39832 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab2LSXBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:01:36 -0500
-X-Originating-IP: 108.223.40.66
-Date: Wed, 19 Dec 2012 15:01:44 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        lm-sensors@lm-sensors.org, Juergen Beisert <jbe@pengutronix.de>
-Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
- divisors
-Message-ID: <20121219230144.GB26863@roeck-us.net>
-References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
- <20121219232115.727a2e91@endymion.delvare>
+	Wed, 19 Dec 2012 18:01:48 -0500
+Message-ID: <50D24687.3060706@ahsoftware.de>
+Date: Wed, 19 Dec 2012 23:58:15 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121002 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121219232115.727a2e91@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Vincent Palatin <vpalatin@chromium.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
+Subject: Re: [rtc-linux] [PATCH] rtc: recycle id when unloading a rtc driver
+References: <1343951605-25722-1-git-send-email-vpalatin@chromium.org> <20121218164659.a3d3655a.akpm@linux-foundation.org> <50D16EA3.8040803@ahsoftware.de> <20121218234543.786a2211.akpm@linux-foundation.org> <50D1730D.7010108@ahsoftware.de> <20121219002722.87438a08.akpm@linux-foundation.org> <50D180E6.3010305@ahsoftware.de> <20121219143725.3f49598c.akpm@linux-foundation.org>
+In-Reply-To: <20121219143725.3f49598c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 11:21:15PM +0100, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Wed, 19 Dec 2012 06:40:15 -0800, Guenter Roeck wrote:
-> > Commit 263a523 fixes a warning seen with W=1 due to change in
-> > DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
-> > with unsigned divisors to unsigned, even if the dividend is signed and
-> > negative (for example, -10 / 5U = 858993457). The C standard says "If one
-> > operand has unsigned int type, the other operand is converted to unsigned
-> > int", so the compiler is not to blame.
-> 
-> This is surprising to say the least. But if the C standard says so...
-> 
-Agreed, but it is how it is.
+Am 19.12.2012 23:37, schrieb Andrew Morton:
 
-> I wouldn't be surprised if there are bugs because of this in the kernel
-> and in other projects.
+> I think I'll do this:
 > 
-Might easily be. This might make a good interview question - I suspect many
-if not most engineers would fail it. At least I would have until yesterday :).
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: revert "rtc: recycle id when unloading a rtc driver"
 
-> > As a result, DIV_ROUND_CLOSEST(0, 2U) and similar operations now return
-> > bad values, since the automatic conversion of expressions such as "0 - 2U/2"
-> > to unsigned was not taken into account.
-> > 
-> > Fix by checking for the divisor variable type when deciding which operation
-> > to perform. This fixes DIV_ROUND_CLOSEST(0, 2U), but still returns bad values
-> > for negative dividends divided by unsigned divisors. Mark the latter case as
-> > unsupported.
-> 
-> True but this last issue isn't specific to the DIV_ROUND_CLOSEST
-> implementation, it would also happen with a simple division.
-> 
-Correct, which is why I did not try to fix it. Still worth mentioning, though,
-in my opinion.
+Thanks a lot, I just haven't seen the stuff got broken with 3.7 as I
+haven't played much with RTCs before (just used them). So I didn't
+looked at the git history and fixed it myself just to find out Lothar
+already had send a patch. ;)
 
-> > Reported-by: Juergen Beisert <jbe@pengutronix.de>
-> > Tested-by: Juergen Beisert <jbe@pengutronix.de>
-> > Cc: Jean Delvare <khali@linux-fr.org>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> > v2: Description update (v1 wasn't supposed to make it to lkml)
-> > 
-> >  include/linux/kernel.h |    6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> > index d97ed58..45726dc 100644
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
-> > @@ -77,13 +77,15 @@
-> >  
-> >  /*
-> >   * Divide positive or negative dividend by positive divisor and round
-> > - * to closest integer. Result is undefined for negative divisors.
-> > + * to closest integer. Result is undefined for negative divisors and
-> > + * for negative dividends if the divisor variable type is unsigned.
-> 
-> Thinking a bit more about this... Documenting the non-working cases is
-> great, however I don't really expect all developers to pay attention. I
-> can also imagine variable types changing from signed to unsigned later,
-> and never thinking this can introduce a bug.
-> 
-> So, is there nothing we can do to spot at least the second issue at
-> build time? For regular division there's nothing we can do (although I
-> don't understand why gcc doesn't warn...) but here we get the
-> opportunity to report the issue, let's take it.
-> 
-> And given that the divisor is almost always a constant,
-> maybe we can check for negative divisors too, this would be safer and
-> the code size increase would probably be very small in practice.
-> Opinions?
-> 
-Agreed, though we should fix the problem now and think about reporting
-afterwards.
+And for the symmetrie between register/unregister (moving
+ida_simple_remove() from release() to unregister()) I'm not exactly sure
+if that wouldn't break something. Also it looks like anything which
+still would use the ID will fail after unregister (because unregister
+cleans up a lot), I'm not quite sure. So just reverting it looks like a
+save bet.
 
-Guenter
+Regards,
 
-> >   */
-> >  #define DIV_ROUND_CLOSEST(x, divisor)(			\
-> >  {							\
-> >  	typeof(x) __x = x;				\
-> >  	typeof(divisor) __d = divisor;			\
-> > -	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
-> > +	(((typeof(x))-1) > 0 ||				\
-> > +	 ((typeof(divisor))-1) > 0 || (__x) > 0) ?	\
-> >  		(((__x) + ((__d) / 2)) / (__d)) :	\
-> >  		(((__x) - ((__d) / 2)) / (__d));	\
-> >  }							\
-> 
-> Looks good.
-> 
-> -- 
-> Jean Delvare
-> 
+Alexander
