@@ -1,102 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab2LSHak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 02:30:40 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:56112 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232Ab2LSHaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 02:30:35 -0500
-Date: Tue, 18 Dec 2012 23:30:18 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Anton Blanchard <anton@au1.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        robert.richter@amd.com, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] perf: Create a sysfs entry for Power event format
-Message-ID: <20121219073018.GD30790@us.ibm.com>
-References: <20121219072646.GA30580@us.ibm.com>
+	id S1752202Ab2LSHfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 02:35:55 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49769 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2LSHfu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 02:35:50 -0500
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: Strange results of DIV_ROUND_CLOSEST
+Date: Wed, 19 Dec 2012 08:32:53 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+References: <201212181603.42094.jbe@pengutronix.de> <201212182204.56523.jbe@pengutronix.de> <20121219014556.GA17257@roeck-us.net>
+In-Reply-To: <20121219014556.GA17257@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20121219072646.GA30580@us.ibm.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121907-5806-0000-0000-00001D2A0584
+Message-Id: <201212190832.54104.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Guenter,
 
-Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-which describes the format of a POWER cpu.
+Guenter Roeck wrote:
+> On Tue, Dec 18, 2012 at 10:04:56PM +0100, Juergen Beisert wrote:
+> > Guenter Roeck wrote:
+> > > On Tue, Dec 18, 2012 at 04:03:41PM +0100, Juergen Beisert wrote:
+> > > > commit 263a523d18bca306016d75f5c8d5c57c37fe52fb changes the code of
+> > > > DIV_ROUND_CLOSEST in include/linux/kernel.h to fix a compile time
+> > > > warning.
+> > > >
+> > > > But now feeding in a zero into this macro results into 4198403.
+> > > > Tested with gcc 4.4.3 and 4.7.2, on arch x86 and ARM.
+> > > >
+> > > > I can reproduce this behaviour, when my ADC delivers a '0' value in
+> > > > the driver drivers/hwmon/s3c-hwmon.c in function s3c_hwmon_ch_show()
+> > > > with a current 3.7.1 kernel. The value is correct again, when the ADC
+> > > > delivers at least a '1'.
+> > > >
+> > > > Any ideas how to fix it correctly?
+> > >
+> > > Odd one. I ran the macro through a large number of values and divisors
+> > > as well as various optimization options, with different compilers, and
+> > > always get correct results.
+> > >
+> > > What are your compile options, and what are the channel multiplier and
+> > > dividers set to ?
+> >
+> > Refer the lines 177 to 182 in drivers/hwmon/s3c-hwmon.c. "cfg->mult" is
+> > '3300' in my case, and "cfg->div" is '1023'. And whenever
+> > s3c_hwmon_read_ch() returns '0' line 184 returns '4198403' since
+> > Linux-3.6. checked with my gcc-4.6.2 cross compiler for Linux-3.6 and
+> > with gcc-4.6.2 for Linux-3.7.
+> >
+> > I did a quick test with this macro on my host with gcc-4.4.3 and a simple
+> > userland program and surprise, surprise:
+> >
+> > result = DIV_ROUND_CLOSEST(0, 1023);
+> >
+> > works as expected (result is 0), but
+> >
+> > int x = 0;
+> > unsigned y = 1023;
+> > result = DIV_ROUND_CLOSEST(x, y);
+> >
+> > gives me result = 4198403!
+>
+> Can you test the following patch ?
+>
+> From d4a639c6ace7cb0de247f59c38abac72d671f135 Mon Sep 17 00:00:00 2001
+> From: Guenter Roeck <linux@roeck-us.net>
+> Date: Tue, 18 Dec 2012 15:48:44 -0800
+> Subject: [PATCH] linux/kernel.h: Fix DIV_ROUND_CLOSEST for unsigned
+> divisors
+>
+> Commit 263a523 fixes a warning seen with W=1 due to change in
+> DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
+> with unsigned divisors to unsigned, even if the dividend is signed and
+> negative (-10 / 5U = 858993457). As a result, DIV_ROUND_CLOSEST(0, 2U)
+> and similar operations now return bad data.
+>
+> Fix by checking for the divisor variable type when deciding which operation
+> to perform. This fixes DIV_ROUND_CLOSEST(0, 2U), but still returns bad data
+> for negative dividends divided by unsigned divisors. Mark the latter case
+> as unsupported.
+>
+> Reported-by: Juergen Beisert <jbe@pengutronix.de>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> An alternative would be to always convert divisors to signed:
+>  	int __d = (int)divisor;			\
+> Not sure if that would be better.
+>
+>  include/linux/kernel.h |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index d97ed58..45726dc 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -77,13 +77,15 @@
+>
+>  /*
+>   * Divide positive or negative dividend by positive divisor and round
+> - * to closest integer. Result is undefined for negative divisors.
+> + * to closest integer. Result is undefined for negative divisors and
+> + * for negative dividends if the divisor variable type is unsigned.
+>   */
+>  #define DIV_ROUND_CLOSEST(x, divisor)(			\
+>  {							\
+>  	typeof(x) __x = x;				\
+>  	typeof(divisor) __d = divisor;			\
+> -	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
+> +	(((typeof(x))-1) > 0 ||				\
+> +	 ((typeof(divisor))-1) > 0 || (__x) > 0) ?	\
+>  		(((__x) + ((__d) / 2)) / (__d)) :	\
+>  		(((__x) - ((__d) / 2)) / (__d));	\
+>  }							\
 
-The format of the event is the same for all POWER cpus at least in
-(Power6, Power7), so bulk of this change is common in the code common
-to POWER cpus.
+You can add my "tested-by: Juergen Beisert <jbe@pengutronix.de>". With this 
+patch at least my S3C2440 ADC driver reports correct values again. Keep in 
+mind it should also be fixed in the stable 3.6/3.7 kernel.
 
-This code is based on corresponding code in x86.
-
-Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR() rather than duplicating it.
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/perf_event_server.h |    6 ++++++
- arch/powerpc/perf/core-book3s.c              |   12 ++++++++++++
- arch/powerpc/perf/power7-pmu.c               |    1 +
- 3 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 4315bc9..f8f7240 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -136,3 +136,9 @@ extern ssize_t power_events_sysfs_show(struct device *dev,
- 
- #define	POWER_EVENT_ATTR(_name, _id)	EVENT_ATTR(PM_##_name, _id, _p)
- #define	POWER_EVENT_PTR(_id)		EVENT_PTR(_id, _p)
-+
-+/*
-+ * Format of a perf event is the same on all POWER cpus. Declare a
-+ * common sysfs attribute group that individual POWER cpus can share.
-+ */
-+extern struct attribute_group power_pmu_format_group;
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index fa476d5..4ae044b 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1315,6 +1315,18 @@ ssize_t power_events_sysfs_show(struct device *dev,
- 	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
- }
- 
-+PMU_FORMAT_ATTR(event, "config:0-20");
-+
-+static struct attribute *power_pmu_format_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+struct attribute_group power_pmu_format_group = {
-+	.name = "format",
-+	.attrs = power_pmu_format_attr,
-+};
-+
- struct pmu power_pmu = {
- 	.pmu_enable	= power_pmu_enable,
- 	.pmu_disable	= power_pmu_disable,
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index 5627940..5fb3c9b 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -410,6 +410,7 @@ static struct attribute_group power7_pmu_events_group = {
- };
- 
- static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power_pmu_format_group,
- 	&power7_pmu_events_group,
- 	NULL,
- };
+Regards,
+Juergen
 -- 
-1.7.1
-
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
