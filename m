@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab2LSXH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:07:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44550 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab2LSXHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:07:18 -0500
-Date: Wed, 19 Dec 2012 15:07:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'Devendra Naga'" <devendra.aaru@gmail.com>,
-        "'Ilho Lee'" <ilho215.lee@samsung.com>
-Subject: Re: [PATCH v2] backlight: add lms501kf03 LCD driver
-Message-Id: <20121219150716.d37f5e75.akpm@linux-foundation.org>
-In-Reply-To: <005201cddcfc$36ac4020$a404c060$%han@samsung.com>
-References: <005201cddcfc$36ac4020$a404c060$%han@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752019Ab2LSXKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:10:30 -0500
+Received: from gate.crashing.org ([63.228.1.57]:59217 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926Ab2LSXKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 18:10:23 -0500
+Message-ID: <1355958613.5397.54.camel@pasglop>
+Subject: Re: [git pull] Please pull powerpc.git next branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Date: Thu, 20 Dec 2012 10:10:13 +1100
+In-Reply-To: <CA+55aFw-cRskrvW07FVJd9HfrBhn41Ogi1Vv_v1U12zahzFu=A@mail.gmail.com>
+References: <1355517897.19932.136.camel@pasglop>
+	 <1355787094.5397.30.camel@pasglop>
+	 <CA+55aFw-cRskrvW07FVJd9HfrBhn41Ogi1Vv_v1U12zahzFu=A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012 17:46:46 +0900
-Jingoo Han <jg1.han@samsung.com> wrote:
+On Tue, 2012-12-18 at 10:02 -0800, Linus Torvalds wrote:
 
-> Add the lms501kf03 LCD panel driver. The lms501kf03 LCD panel (800
-> x 480) driver uses 3-wired SPI inteface.
+> Anyway, I've pulled it in, but got a conflict on the kernel_thread
+> cleanups from Al. And since the conflict was in the powerpc assembly
+> code that I don't really know the details of, I did the
+> straightforward resolve of it, but I'd like you to check it out.
+> 
+> (I haven't pushed it out yet, I'm waiting for the allmodconfig to
+> finish compiling, so if you see this email quickly, but don't see the
+> powerpc merge yet, just wait a few minutes)
 
-Looks OK.
+Sorry for the delay, I verified that it looked right yesterday but
+didn't manage to actually test it until today due to a problem with our
+test farm. It's all good, thanks !
 
-> +static unsigned int before_power;
+Cheers,
+Ben.
 
-This is unused.  Can I zap it?
-
-
---- a/drivers/video/backlight/lms501kf03.c~backlight-add-lms501kf03-lcd-driver-fix
-+++ a/drivers/video/backlight/lms501kf03.c
-@@ -388,7 +388,6 @@ static int lms501kf03_remove(struct spi_
- }
- 
- #if defined(CONFIG_PM)
--static unsigned int before_power;
- 
- static int lms501kf03_suspend(struct spi_device *spi, pm_message_t mesg)
- {
-@@ -396,8 +395,6 @@ static int lms501kf03_suspend(struct spi
- 
- 	dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
- 
--	before_power = lcd->power;
--
- 	/*
- 	 * when lcd panel is suspend, lcd panel becomes off
- 	 * regardless of status.
-_
 
