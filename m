@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab2LSKgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 05:36:51 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:27125 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab2LSKgo convert rfc822-to-8bit (ORCPT
+	id S1754631Ab2LSKhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 05:37:17 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:54110 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab2LSKhM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 05:36:44 -0500
-From: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
+	Wed, 19 Dec 2012 05:37:12 -0500
+Date: Wed, 19 Dec 2012 10:37:08 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "jarkko.sakkinen@intel.com" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>
-Subject: RE: Why Linux kernel forced to enter X2APIC mode( just because of
- booting cpu has supported x2apic) without depending on BIOS' setting in
- MSR->x2apic enablement bit ?
-Thread-Topic: Why Linux kernel forced to enter X2APIC mode( just because of
- booting cpu has supported x2apic) without depending on BIOS' setting in
- MSR->x2apic enablement bit ?
-Thread-Index: Ac3dBDEGb3itVOfRRseMR0luplSOQwAQ8+AAACKpTSA=
-Date: Wed, 19 Dec 2012 10:36:00 +0000
-Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F91F2222@G1W3649.americas.hpqcorp.net>
-References: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net>
- <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
-In-Reply-To: <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.193.232.27]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "nico@linaro.org" <nico@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>
+Subject: Re: [RFC PATCH 4/5] clockevents: Add generic timer broadcast
+ function
+Message-ID: <20121219103708.GE32484@e106331-lin.cambridge.arm.com>
+References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
+ <1355832418-31692-5-git-send-email-mark.rutland@arm.com>
+ <50D0EB69.10901@codeaurora.org>
 MIME-Version: 1.0
+In-Reply-To: <50D0EB69.10901@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 19 Dec 2012 10:37:09.0179 (UTC) FILETIME=[CC2B08B0:01CDDDD4]
+X-MC-Unique: 112121910371006101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai , 
-	
-Actually ,my question like this: 
-OS can really enable x2apic correctly without BIOS' help in this case : 
-BIOS has claimed definitely it doesn't enable x2apic ,but OS feel it can enable x2apic(based on BSP supports x2apic) ).
+On Tue, Dec 18, 2012 at 10:17:13PM +0000, Stephen Boyd wrote:
+> Minor nit
+> 
+> On 12/18/12 04:06, Mark Rutland wrote:
+> > diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> > index c2dd022..ec22a80 100644
+> > --- a/kernel/time/tick-broadcast.c
+> > +++ b/kernel/time/tick-broadcast.c
+> > @@ -86,6 +87,12 @@ int tick_is_broadcast_device(struct clock_event_device *dev)
+> >  	return (dev && tick_broadcast_device.evtdev == dev);
+> >  }
+> >  
+> > +static void err_broadcast(const struct cpumask *mask)
+> > +{
+> > +	pr_crit_once("Attempted to broadcast tick, but no broadcast mechanism "
+> > +		     "present. Some CPUs may be unresponsive.");
+> 
+> This is missing a newline. You may also want to put the string on a
+> single line so we can easily grep for it in the sources.
 
-If Linux don't need BIOS' help , how did linux kernel reach this action? 
-I am reading this related code, I just see Linux kernel judge cpu_has_x2apic() ,if yes, it will set MSR, certainly , IR works right. 
-We can think BIOS' supporting is not necessary ? 
+Whoops, fixed. I'll change both strings to be single line.
 
-Thanks very much . 
--- Bob(LinBao Zhang)
-HP linux kernel enginner
+> > @@ -105,6 +112,14 @@ int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu)
+> >  	 */
+> >  	if (!tick_device_is_functional(dev)) {
+> >  		dev->event_handler = tick_handle_periodic;
+> > +		if (!dev->broadcast)
+> > +			dev->broadcast = tick_broadcast;
+> > +		if (!dev->broadcast) {
+> > +			pr_warn_once("%s depends on broadcast, but no "
+> > +				     "broadcast function available\n",
+> 
+> Same one line comment here. I thought checkpatch didn't complain anymore.
+
+In fact it actively warns. Not sure how I missed that.
+
+Thanks,
+Mark.
+
 
