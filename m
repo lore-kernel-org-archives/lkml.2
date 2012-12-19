@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab2LSXXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:23:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39776 "EHLO mga02.intel.com"
+	id S1752081Ab2LSXZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:25:26 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:56925 "EHLO mxout2.iskon.hr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab2LSXXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:23:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,320,1355126400"; 
-   d="scan'208";a="236664200"
-Message-ID: <50D24C83.3080906@linux.intel.com>
-Date: Wed, 19 Dec 2012 15:23:47 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751259Ab2LSXZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 18:25:19 -0500
+X-Remote-IP: 213.191.128.133
+Date: Thu, 20 Dec 2012 00:25:13 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-To: Jacob Shin <jacob.shin@amd.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Yinghai Lu <yinghai@kernel.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-References: <50CCCFD0.7030704@linux.intel.com> <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com> <50CCEE49.3080801@zytor.com> <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com> <50CCF6F6.4020107@zytor.com> <CAE9FiQULAJhPUw62UVjyBakn-YcK8x0pzDgRi+FdJXS-_ekABg@mail.gmail.com> <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie> <50D23EE8.7030904@zytor.com> <20121219225505.GA2968@jshin-Toonie>
-In-Reply-To: <20121219225505.GA2968@jshin-Toonie>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+CC: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <50D24AF3.1050809@iskon.hr>
+In-Reply-To: <50D24AF3.1050809@iskon.hr>
+Message-ID: <50D24CD9.8070507@iskon.hr>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o congestion
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121219 #8791803, check: 20121219 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40505 [Dec 20 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 02:55 PM, Jacob Shin wrote:
-> 
-> Well, really the problem is with any memory hole above 4GB that is too
-> big to be covered by variable range MTRRs as UC. Because the kernel
-> use to just simply do init_memory_mapping for 4GB ~ top of memory,
-> any memory hole above 4GB are marked as WB in PATs.
-> 
-> How is this handled in Intel architecture? If there are memory holes
-> that are too big to be covered by variable range MTRRs as UC, are
-> there other MTRR like CPU registers that the BIOS programs?
-> 
+On a 4GB RAM machine, where Normal zone is much smaller than
+DMA32 zone, the Normal zone gets fragmented in time. This requires
+relatively more pressure in balance_pgdat to get the zone above the
+required watermark. Unfortunately, the congestion_wait() call in there
+slows it down for a completely wrong reason, expecting that there's
+a lot of writeback/swapout, even when there's none (much more common).
+After a few days, when fragmentation progresses, this flawed logic
+translates to a very high CPU iowait times, even though there's no
+I/O congestion at all. If THP is enabled, the problem occurs sooner,
+but I was able to see it even on !THP kernels, just by giving it a bit
+more time to occur.
 
-Intel CPUs don't have the TOM augmentation to the MTRR mechanism, and so
-MTRRs need to explicitly enable caching of memory rather than the other
-way around.
+The proper way to deal with this is to not wait, unless there's
+congestion. Thanks to Mel Gorman, we already have the function that
+perfectly fits the job. The patch was tested on a machine which
+nicely revealed the problem after only 1 day of uptime, and it's been
+working great.
 
-	-hpa
+Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
+---
+ mm/vmscan.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index b7ed376..4588d1d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2546,7 +2546,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 							int *classzone_idx)
+ {
+-	int all_zones_ok;
++	struct zone *unbalanced_zone;
+ 	unsigned long balanced;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+@@ -2580,7 +2580,7 @@ loop_again:
+ 		unsigned long lru_pages = 0;
+ 		int has_under_min_watermark_zone = 0;
+ 
+-		all_zones_ok = 1;
++		unbalanced_zone = NULL;
+ 		balanced = 0;
+ 
+ 		/*
+@@ -2719,7 +2719,7 @@ loop_again:
+ 			}
+ 
+ 			if (!zone_balanced(zone, testorder, 0, end_zone)) {
+-				all_zones_ok = 0;
++				unbalanced_zone = zone;
+ 				/*
+ 				 * We are still under min water mark.  This
+ 				 * means that we have a GFP_ATOMIC allocation
+@@ -2752,7 +2752,7 @@ loop_again:
+ 				pfmemalloc_watermark_ok(pgdat))
+ 			wake_up(&pgdat->pfmemalloc_wait);
+ 
+-		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
++		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+ 			break;		/* kswapd: all done */
+ 		/*
+ 		 * OK, kswapd is getting into trouble.  Take a nap, then take
+@@ -2762,7 +2762,7 @@ loop_again:
+ 			if (has_under_min_watermark_zone)
+ 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+ 			else
+-				congestion_wait(BLK_RW_ASYNC, HZ/10);
++				wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
+ 		}
+ 
+ 		/*
+@@ -2781,7 +2781,7 @@ out:
+ 	 * high-order: Balanced zones must make up at least 25% of the node
+ 	 *             for the node to be balanced
+ 	 */
+-	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))) {
++	if (unbalanced_zone && (!order || !pgdat_balanced(pgdat, balanced, *classzone_idx))) {
+ 		cond_resched();
+ 
+ 		try_to_freeze();
+-- 1.7.10.4
+
+-- 
+Zlatko (this time with proper Signed-off-by line)
