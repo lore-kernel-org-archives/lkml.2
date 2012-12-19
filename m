@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab2LSVur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 16:50:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33888 "EHLO mx1.redhat.com"
+	id S1751380Ab2LSVzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 16:55:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:47427 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab2LSVun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 16:50:43 -0500
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH] PCI: Work around Stratus ftServer broken PCIe hierarchy
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, astarta@rat.ru, ddutile@redhat.com,
-        james.paradis@stratus.com, matthew.r.wilcox@intel.com,
-        prarit@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 19 Dec 2012 14:50:05 -0700
-Message-ID: <20121219215005.17785.47831.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
+	id S1750974Ab2LSVzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 16:55:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,320,1355126400"; 
+   d="scan'208";a="264646988"
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 3/3] perf tool: Add non arch events for SandyBridge microarchitecture
+References: <1355751425-7993-1-git-send-email-jolsa@redhat.com>
+	<1355751425-7993-4-git-send-email-jolsa@redhat.com>
+Date: Wed, 19 Dec 2012 13:55:43 -0800
+In-Reply-To: <1355751425-7993-4-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Mon, 17 Dec 2012 14:37:05 +0100")
+Message-ID: <m2zk19d7vk.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, another report surfaced indicating Stratus ftServer platforms
-were exhibiting similar failures as has occurred in the past [1].
+Jiri Olsa <jolsa@redhat.com> writes:
 
-  In late 2011 we started seeing issues with Stratus ftServer systems.
-  The typical failure was that USB and network devices were not being
-  seen.  Research uncovered that the failure was due to the platform's PCI
-  Express hierarchy  not conforming to the PCI Express specification [2]
-  which commit f07852d exposed.
+> Adding non architectural event aliases for Sandy Bridge
+> microarchitecture.
 
-  The following are known Stratus ftServer platforms whose PCI hierarchies
-  are broken:
+"SandyBridge" is not necessarily unique. There are flavours
+of sandy bridge with slightly different events (e.g. in offcore)
+Also there's uncores too, which are very different between
+different SandyBridges.
 
-  Stratus ftServer ????
-  +-07.0-[01-76]--+-00.0-[02-76]--+-00.0-[03-3c]--+-00.0-[04-09]..
-                                                  \-01.0-[0a-0d]--+-[USB]
-                                                                  +-[NIC]
-                                                                  +-..
+I would merge all these little files into a single file.
+I don't think anyone wants hundreds of new files for this, 
+if you do it for multiple CPUs.
 
-  Stratus ftServer 6400
-  [0000:00]-+-...-00.0-[03]-00.0-[04]-+-00.0-[05]---00.0-[06]..
-            |  |                      |
-            |  |                      \-01.0-[2c]-+-00.0 [USB]
-            |  |                                  +-00.1 [USB]
-            |  |                                  \-1f.0 [ISA]
+Besides it would waste insane amounts of space on most file systems
+without tail packing -- each of your little files takes 4K plus an inode
+and directory entry.
 
-  Stratus ftServer 4500
-  Stratus ftServer 6310
+Intel normally uses a spreadsheet CSV format.
 
-  As a solution, commit 284f5f9 was introduced.
+Best would be probably to just teach perf about reading one of those
+standard formats, then they could be just downloaded somewhere.
+I have some python scripts that do it as a wrapper.
 
-Looking into this again it looks as if the quirk introduced in 284f5f9 is
-not making the correct DMI based check.  This patch fixes the DMI 'vendor'
-based check to match "Stratus", not "ftServer".  It also augments the
-checking to include matching the DMI based 'product name' to "ftServer".
-This quirk should now trigger for all Stratus ftServer platforms which I
-was able to confirm by testing on a Stratus ftServer 6400 system with the
-following 'dmidecode' output:
-  System Information
-        Manufacturer: Stratus
-        Product Name: ftServer 6400
+-Andi
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=51331
-[2] PCI Express specification, r3.0, Section 7.3.1
-
-Reported-by: Fadeeva Marina <astarta@rat.ru>
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
-
- arch/x86/pci/common.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 720e973..487d9f3 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -433,7 +433,8 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 		.callback = set_scan_all,
- 		.ident = "Stratus/NEC ftServer",
- 		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "ftServer"),
-+			DMI_MATCH(DMI_SYS_VENDOR, "Stratus"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "ftServer"),
- 		},
- 	},
- 	{}
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
