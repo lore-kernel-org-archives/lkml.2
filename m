@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab2LSASB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 19:18:01 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:55759 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab2LSASA (ORCPT
+	id S1755075Ab2LSASd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 19:18:33 -0500
+Received: from [213.199.154.140] ([213.199.154.140]:28308 "EHLO
+	db3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754977Ab2LSASb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 19:18:00 -0500
-X-Greylist: delayed 1183 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 19:17:59 EST
-Date: Wed, 19 Dec 2012 00:50:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] mm: cond_resched in tlb_flush_mmu to fix soft lockups on
- !CONFIG_PREEMPT
-Message-ID: <20121218235042.GA10350@dhcp22.suse.cz>
-References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
- <20121218140219.45867ddd.akpm@linux-foundation.org>
+	Tue, 18 Dec 2012 19:18:31 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh95h668h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h906i1155h)
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>,
+        <monstr@monstr.eu>, John Linn <john.linn@xilinx.com>
+CC: <git@xilinx.com>, <josh.cartwright@ni.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH 2/7] arm: zynq: timer: Remove unnecessary register write
+Date: Tue, 18 Dec 2012 16:16:34 -0800
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1355876199-23788-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1355876199-23788-1-git-send-email-soren.brinkmann@xilinx.com>
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121218140219.45867ddd.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Message-ID: <26c7059f-09d2-4b0a-83a8-e27d10fbd100@DB3EHSMHS008.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-12-12 14:02:19, Andrew Morton wrote:
-> On Tue, 18 Dec 2012 17:11:28 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > Since e303297 (mm: extended batches for generic mmu_gather) we are batching
-> > pages to be freed until either tlb_next_batch cannot allocate a new batch or we
-> > are done.
-> > 
-> > This works just fine most of the time but we can get in troubles with
-> > non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY) on
-> > large machines where too aggressive batching might lead to soft lockups during
-> > process exit path (exit_mmap) because there are no scheduling points down the
-> > free_pages_and_swap_cache path and so the freeing can take long enough to
-> > trigger the soft lockup.
-> > 
-> > The lockup is harmless except when the system is setup to panic on
-> > softlockup which is not that unusual.
-> > 
-> > The simplest way to work around this issue is to explicitly cond_resched per
-> > batch in tlb_flush_mmu (1020 pages on x86_64).
-> > 
-> > ...
-> >
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -239,6 +239,7 @@ void tlb_flush_mmu(struct mmu_gather *tlb)
-> >  	for (batch = &tlb->local; batch; batch = batch->next) {
-> >  		free_pages_and_swap_cache(batch->pages, batch->nr);
-> >  		batch->nr = 0;
-> > +		cond_resched();
-> >  	}
-> >  	tlb->active = &tlb->local;
-> >  }
-> 
-> tlb_flush_mmu() has a large number of callsites (or callsites which
-> call callers, etc), many in arch code.  It's not at all obvious that
-> tlb_flush_mmu() is never called from under spinlock?
+Acknowedging an interrupt requires to read the interrupt register
+only. The write was only required to work around a bug in
+the QEMU implementation of the TTC, which is fixed.
 
-free_pages_and_swap_cache calls lru_add_drain which in turn calls
-put_cpu (aka preempt_enable) which is a scheduling point for
-CONFIG_PREEMPT. There are more down the call chain probably. None of
-them for non-preempt kernel.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+---
+@Peter: I took over your ACK, since it's the same change we applied to the
+Xilinx tree a couple of weeks ago. Let me know if this should be removed.
+
+ arch/arm/mach-zynq/timer.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
+index 570491d..f1d224b 100644
+--- a/arch/arm/mach-zynq/timer.c
++++ b/arch/arm/mach-zynq/timer.c
+@@ -121,8 +121,7 @@ static irqreturn_t xttcps_clock_event_interrupt(int irq, void *dev_id)
+ 	struct xttcps_timer *timer = &xttce->xttc;
+ 
+ 	/* Acknowledge the interrupt and call event handler */
+-	__raw_writel(__raw_readl(timer->base_addr + XTTCPS_ISR_OFFSET),
+-			timer->base_addr + XTTCPS_ISR_OFFSET);
++	__raw_readl(timer->base_addr + XTTCPS_ISR_OFFSET);
+ 
+ 	xttce->ce.event_handler(&xttce->ce);
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.8.0.2
+
+
