@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab2LSPuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:50:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33862 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab2LSPuM (ORCPT
+	id S1755561Ab2LSPxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:53:46 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:34566 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab2LSPxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:50:12 -0500
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        c.gmeiner@bachmann.info
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
-Subject: [PATCH] at24: extend driver to allow writing via i2c_smbus_write_byte_data
-Date: Wed, 19 Dec 2012 17:07:09 +0100
-Message-Id: <1355933229-25865-1-git-send-email-christian.gmeiner@gmail.com>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
+	Wed, 19 Dec 2012 10:53:40 -0500
+Message-ID: <50D1E300.4000006@vflare.org>
+Date: Wed, 19 Dec 2012 07:53:36 -0800
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: zram: fix invalid memory references during disk write
+References: <1354257909-2380-1-git-send-email-ngupta@vflare.org> <20121211182720.GC29421@kroah.com> <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com> <20121219034949.GA22281@kroah.com> <50D16AF8.7030401@vflare.org> <20121219150826.GA23953@kroah.com>
+In-Reply-To: <20121219150826.GA23953@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a at24 EEPROM connected via i2c bus provided by ISCH i2c
-bus driver. This bus driver does not support
-I2C_FUNC_SMBUS_WRITE_I2C_BLOCK and so I was looking for a way
-to be able to write the eeprom. This patch adds support for
-I2C_SMBUS_BYTE_DATA writing via i2c_smbus_write_byte_data.
-It is quite slow, but it works.
+On 12/19/2012 07:08 AM, Greg KH wrote:
+> On Tue, Dec 18, 2012 at 11:21:28PM -0800, Nitin Gupta wrote:
+>> On 12/18/2012 07:49 PM, Greg KH wrote:
+>>> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
+>>>> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>>>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
+>>>>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+>>>>>> of incompressible pages") which caused invalid memory references
+>>>>>> during disk write. Invalid references could occur in two cases:
+>>>>>>  - Incoming data expands on compression: In this case, reference was
+>>>>>> made to kunmap()'ed bio page.
+>>>>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+>>>>>> case, reference was made to a kfree()'ed buffer.
+>>>>>>
+>>>>>> Fixes bug 50081:
+>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
+>>>>>>
+>>>>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
+>>>>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
+>>>>>>
+>>>>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
+>>>>>>                               # zram_decompress_page() function
+>>>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>>>>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+>>>>>> Reported-by: Tomas M <tomas@slax.org>
+>>>>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
+>>>>>> ---
+>>>>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+>>>>>>  1 file changed, 24 insertions(+), 15 deletions(-)
+>>>>>
+>>>>> This patch fails to apply to 3.6.10:
+>>>>>
+>>>>> patching file drivers/staging/zram/zram_drv.c
+>>>>> Hunk #1 succeeded at 282 (offset 17 lines).
+>>>>> Hunk #2 FAILED at 286.
+>>>>> Hunk #3 succeeded at 319 (offset 17 lines).
+>>>>> Hunk #4 succeeded at 340 (offset 17 lines).
+>>>>> Hunk #5 succeeded at 353 (offset 17 lines).
+>>>>> Hunk #6 succeeded at 368 (offset 17 lines).
+>>>>> Hunk #7 succeeded at 385 (offset 17 lines).
+>>>>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
+>>>>>
+>>>>> Please redo this patch and resend it if you wish for it to be applied to
+>>>>> the 3.6-stable tree.
+>>>>>
+>>>>>
+>>>>
+>>>> Please apply this patch to stable tree asap.
+>>>
+>>> 3.6 is now end-of-life, there will not be any more releases for that
+>>> kernel series anymore, sorry.
+>>>
+>>
+>> Then please apply to 3.7.
+> 
+> That is impossible to do so, for the obvious reason.
+> 
 
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
----
- drivers/misc/eeprom/at24.c | 35 +++++++++++++++++++++++++++++------
- 1 file changed, 29 insertions(+), 6 deletions(-)
+I meant to include it in whatever 3.7.x is released in future. Or put it
+in staging, so it may eventually make it to mainline (by 3.8?).
 
-diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
-index 2baeec5..723b411 100644
---- a/drivers/misc/eeprom/at24.c
-+++ b/drivers/misc/eeprom/at24.c
-@@ -56,6 +56,7 @@ struct at24_data {
- 	struct at24_platform_data chip;
- 	struct memory_accessor macc;
- 	int use_smbus;
-+	int use_smbuse_write;
- 
- 	/*
- 	 * Lock protects against activities from other Linux tasks,
-@@ -324,7 +325,7 @@ static ssize_t at24_eeprom_write(struct at24_data *at24, const char *buf,
- {
- 	struct i2c_client *client;
- 	struct i2c_msg msg;
--	ssize_t status;
-+	ssize_t status = 0;
- 	unsigned long timeout, write_time;
- 	unsigned next_page;
- 
-@@ -365,9 +366,18 @@ static ssize_t at24_eeprom_write(struct at24_data *at24, const char *buf,
- 	timeout = jiffies + msecs_to_jiffies(write_timeout);
- 	do {
- 		write_time = jiffies;
--		if (at24->use_smbus) {
--			status = i2c_smbus_write_i2c_block_data(client,
--					offset, count, buf);
-+		if (at24->use_smbuse_write) {
-+			switch (at24->use_smbuse_write) {
-+			case I2C_SMBUS_I2C_BLOCK_DATA:
-+				status = i2c_smbus_write_i2c_block_data(client,
-+						offset, count, buf);
-+				break;
-+			case I2C_SMBUS_BYTE_DATA:
-+				status = i2c_smbus_write_byte_data(client,
-+						offset, buf[0]);
-+				break;
-+			}
-+
- 			if (status == 0)
- 				status = count;
- 		} else {
-@@ -484,6 +494,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	struct at24_platform_data chip;
- 	bool writable;
- 	int use_smbus = 0;
-+	int use_smbus_write = 0;
- 	struct at24_data *at24;
- 	int err;
- 	unsigned i, num_addresses;
-@@ -547,6 +558,18 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		}
- 	}
- 
-+	/* Use I2C operations unless we're stuck with SMBus extensions. */
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		if (!i2c_check_functionality(client->adapter,
-+				I2C_FUNC_SMBUS_WRITE_I2C_BLOCK)) {
-+			use_smbus_write = I2C_SMBUS_I2C_BLOCK_DATA;
-+		} else if (i2c_check_functionality(client->adapter,
-+				I2C_FUNC_SMBUS_WRITE_BYTE_DATA)) {
-+			use_smbus_write = I2C_SMBUS_BYTE_DATA;
-+			chip.page_size = 1;
-+		}
-+	}
-+
- 	if (chip.flags & AT24_FLAG_TAKE8ADDR)
- 		num_addresses = 8;
- 	else
-@@ -562,6 +585,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 	mutex_init(&at24->lock);
- 	at24->use_smbus = use_smbus;
-+	at24->use_smbuse_write = use_smbus_write;
- 	at24->chip = chip;
- 	at24->num_addresses = num_addresses;
- 
-@@ -579,8 +603,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 	writable = !(chip.flags & AT24_FLAG_READONLY);
- 	if (writable) {
--		if (!use_smbus || i2c_check_functionality(client->adapter,
--				I2C_FUNC_SMBUS_WRITE_I2C_BLOCK)) {
-+		if (!use_smbus || use_smbus_write) {
- 
- 			unsigned write_max = chip.page_size;
- 
--- 
-1.7.12.2.421.g261b511
+
+Nitin
 
