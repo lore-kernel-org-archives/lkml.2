@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab2LSEXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 23:23:48 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:40316
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753923Ab2LSEXm (ORCPT
+	id S1751026Ab2LSEn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 23:43:58 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:49528 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab2LSEnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 23:23:42 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1454I1432I4015Izz1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h906i1155h)
-Date: Tue, 18 Dec 2012 20:23:32 -0800
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Josh Cartwright <josh.cartwright@ni.com>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>,
-        <monstr@monstr.eu>, John Linn <john.linn@xilinx.com>, <git@xilinx.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/7] Updates for Zynq's timer driver
-References: <bfaf054c-2b45-458e-a67f-f9d1c982ec51@TX2EHSMHS017.ehs.local>
- <20121219025945.GF27963@beefymiracle.amer.corp.natinst.com>
+	Tue, 18 Dec 2012 23:43:49 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>,
+        Daniel Berrange <berrange@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+References: <20121217123428.GA1957@redhat.com>
+	<20121217150559.GD25322@hmsreliant.think-freely.org>
+	<20121217160408.GA20166@redhat.com>
+	<20121217183925.GE25322@hmsreliant.think-freely.org>
+	<20121218200604.GA28834@redhat.com>
+	<20121218201900.GA10059@hmsreliant.think-freely.org>
+	<874njj3x9d.fsf@xmission.com>
+	<20121218215316.GA4329@neilslaptop.think-freely.org>
+Date: Tue, 18 Dec 2012 20:43:37 -0800
+In-Reply-To: <20121218215316.GA4329@neilslaptop.think-freely.org> (Neil
+	Horman's message of "Tue, 18 Dec 2012 16:53:16 -0500")
+Message-ID: <87obhq1wjq.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20121219025945.GF27963@beefymiracle.amer.corp.natinst.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <32732a9b-d3a7-498f-a3d0-9f0c4f0bf8b2@CO9EHSMHS032.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19XdIzZj+KMil2BLw047+S4oaeP8Qj9S/s=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.5 XMGappySubj_01 Very gappy subject
+	*  0.1 XMSubLong Long Subject
+	*  1.0 XMGappySubj_02 Gappier still
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Neil Horman <nhorman@tuxdriver.com>
+X-Spam-Relay-Country: 
+Subject: Re: + core_pattern-set-core-helpers-root-and-namespace-to-crashing-process .patch added to -mm tree
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+Neil Horman <nhorman@tuxdriver.com> writes:
 
-On Tue, Dec 18, 2012 at 08:59:45PM -0600, Josh Cartwright wrote:
-> On Tue, Dec 18, 2012 at 04:16:32PM -0800, Soren Brinkmann wrote:
-> > I started to put some effort on syncing the Xilinx Linux tree with mainline and
-> > the timer driver is my first victim.
-> > Most commits are fixing style issues or clean up. Functionality is touched only
-> > in patches #2 and #7.
-> > 
-> > Some patches are present in almost identically in the Xilinx Linux tree and I
-> > took over 'Ackec-by' lines from those commits.
-> > 
-> > 	Soren
-> > 
-> > Soren Brinkmann (7):
-> >   arm: zynq: timer: Replace PSS through PS
-> >   arm: zynq: timer: Remove unnecessary register write
-> >   arm: zynq: timer: Remove unused #defines
-> >   arm: zynq: timer: Align columns
-> >   arm: zynq: timer: Remove redundant #includes
-> >   arm: zynq: timer: Fix comment style
-> >   arm: zynq: timer: Set clock_event cpumask
-> 
-> Hey Soren-
-> 
-> I had a look through this patchset and besides the stylistic nit in
-> patch 1, everything looks good to me.  Feel free to add my Reviewed-by.
-> 
-> Also, you seem to have neglected linux-arm-kernel from CC, you'll likely
-> want to repost there.
-Thanks, for reviewing and the heads up. I'll add the reviewed-by lines and
-repost including linux-arm-kernel.
+> On Tue, Dec 18, 2012 at 12:45:18PM -0800, Eric W. Biederman wrote:
 
-	Soren
+>> The code for setns to change the pid namespace just merged.
+>> 
+> Can you post a link to the merge commit for reference so I can take a look at
+> it?
 
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=6a2b60b17b3e48a418695a94bd2420f6ab32e519
 
+>> If we just want one pattern we should be able to to robustly implement
+>> this in userspace with the existing functionality.  With the caveat that
+>> we need to get some pid namespace and user namespace bugs in the core
+>> pattern generation fixed.  But we need to fix those bugs anyway.
+>> 
+> Then perhaps the right thing to do here is in fact just make core_pattern a
+> per-namespace sysctl.  I only took a brief look, but I was unable to find an
+> example of such a per-namespace systctl.  Do we already have the infrastructure
+> to do such a thing?  I didn't think we did.
+
+We do have the infrastructure for a per namespace sysctls.  Right now we
+only have per network namespace sysctls.  It is on my wish list to use
+the infrastructure a little more extensively and convert /proc/sys into
+a symlink to /proc/<pid>/sys and reduce the amount of magic in /proc for
+sysctls.
+
+We also have per namespace sysctls that do magic based upon current.
+Since that pattern is has more magic I don't recommend it over the long
+term.
+
+Of course there is the question which namespace the sysctl should be
+tied to, and what the other namespaces should be set to.  Shrug.
+
+Eric
