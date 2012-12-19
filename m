@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751019Ab2LSEx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 23:53:59 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48028 "EHLO e7.ny.us.ibm.com"
+	id S1750949Ab2LSFRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 00:17:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27762 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721Ab2LSExx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 23:53:53 -0500
-Date: Wed, 19 Dec 2012 10:23:44 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>, bigeasy@linutronix.de,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org,
-        benh@kernel.crashing.org, mingo@elte.hu, anton@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] uprobes/powerpc: Make use of generic routines to
-	enable single step
-Message-ID: <20121219045344.GA13702@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150946.7727.82735.stgit@suzukikp> <20121214200241.GA27195@redhat.com> <20121218053603.GB6116@in.ibm.com> <20121218191013.GA26913@redhat.com>
+	id S1750709Ab2LSFRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 00:17:35 -0500
+Date: Wed, 19 Dec 2012 13:15:19 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] timekeeping: avoid adjust kernel time once hwclock
+ kept in UTC time
+Message-ID: <20121219051518.GA8584@zhudong.nay.redhat.com>
+References: <20121206140334.GA24261@zhudong.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121218191013.GA26913@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12121904-5806-0000-0000-00001D28FB80
+In-Reply-To: <20121206140334.GA24261@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 08:10:13PM +0100, Oleg Nesterov wrote:
-> On 12/18, Ananth N Mavinakayanahalli wrote:
-> >
-> > On Fri, Dec 14, 2012 at 09:02:41PM +0100, Oleg Nesterov wrote:
-> > > >
-> > > > -	uprobe_restore_context_sstep(&utask->autask);
-> > > > +	uprobe_restore_context_sstep(&utask->autask, regs);
-> > >
-> > > I am not sure ppc needs this, but note that x86 does a bit more.
-> > >
-> > > Not only we need to restore the "single-step" state, we need to
-> > > send SIGTRAP if it was not set by us. The same for _skip_sstep.
-> >
-> > Do you mean restoring the TF equivalent on powerpc to what it was before?
-> >
-> > If so, powerpc has always been unique in this aspect -- the single-step
-> > exception handler *always* resets the sstep bit in MSR. Any user needing
-> > to continue single-stepping has to explicitly set it again.
+On Thu, Dec 06, 2012 at 10:03:34PM +0800, Dong Zhu wrote:
+> From c126376cf1837b0956e0268056db61870fbbc1d4 Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com>
+> Date: Thu, 6 Dec 2012 21:45:00 +0800
+> Subject: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept in
+>  UTC time
 > 
-> I meant another thing.
+> If the Hardware Clock kept in local time,kernel will adjust the time
+> to be UTC time.But if Hardware Clock kept in UTC time,system will make
+> a dummy settimeofday call first (sys_tz.tz_minuteswest = 0) to make sure
+> the time is not shifted,so at this point I think maybe it is not necessary
+> to set the kernel time once the sys_tz.tz_minuteswest is zero.
 > 
-> Suppose that, say, gdb tries to single-step over the probed insn.
-> In this case we need to send SIGTRAP after xol/emulate. Please look at
-> send_sig(SIGTRAP) in arch/x86/kernel/uprobes.c:arch_uprobe_post_xol()
-> and arch_uprobe_skip_sstep().
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>  kernel/time.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/time.c b/kernel/time.c
+> index d226c6a..0b592ce 100644
+> --- a/kernel/time.c
+> +++ b/kernel/time.c
+> @@ -134,9 +134,11 @@ static inline void warp_clock(void)
+>  {
+>  	struct timespec adjust;
+>  
+> -	adjust = current_kernel_time();
+> -	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+> -	do_settimeofday(&adjust);
+> +	if (sys_tz.tz_minuteswest) {
+> +		adjust = current_kernel_time();
+> +		adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+> +		do_settimeofday(&adjust);
+> +	}
+>  }
+>  
+>  /*
+> -- 
+> 1.7.11.7
+> 
 
-Agreed. Thanks for the clarification Oleg.
+Hi,
 
-Ananth
+Any comments ? 
 
+-- 
+Best Regards,
+Dong Zhu
