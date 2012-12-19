@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab2LSPHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:07:43 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:60250 "EHLO mail.skyhub.de"
+	id S1755487Ab2LSPH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:07:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51123 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab2LSPHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:07:36 -0500
-Date: Wed, 19 Dec 2012 16:07:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] scripts: add checkmaintainers.py
-Message-ID: <20121219150732.GD24895@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Joe Perches <joe@perches.com>, Michal Marek <mmarek@suse.cz>,
-	Cesar Eduardo Barros <cesarb@cesarb.net>,
-	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>
-References: <1355758544.13361.14.camel@joe-AO722>
- <20121217170011.GC31866@liondog.tnic>
- <1355770579.13361.41.camel@joe-AO722>
- <1355771383.13361.44.camel@joe-AO722>
- <20121218182838.GF31255@liondog.tnic>
- <1355859281.30366.29.camel@joe-AO722>
- <20121218203159.GI31255@liondog.tnic>
- <1355862997.30366.36.camel@joe-AO722>
- <20121218204716.GJ31255@liondog.tnic>
- <1355866399.3297.2.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1355866399.3297.2.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755303Ab2LSPHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 10:07:47 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/3] Revert "perf: Require exclude_guest to use PEBS - kernel side enforcement"
+Date: Wed, 19 Dec 2012 16:07:20 +0100
+Message-Id: <1355929642-28392-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1355929642-28392-1-git-send-email-jolsa@redhat.com>
+References: <1355929642-28392-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 01:33:19PM -0800, Joe Perches wrote:
-> On Tue, 2012-12-18 at 21:47 +0100, Borislav Petkov wrote:
-> > Oh well, enough games for today.
-> 
-> Maybe try this tomorrow?
+This reverts commit 20b279ddb38ca42f8863cec07b4d45ec24589f13.
 
-$ git diff --cached HEAD -- | ./scripts/checkpatch.pl --strict -
-Use of uninitialized value $herecurr in concatenation (.) or string at ./scripts/checkpatch.pl line 1333.
-CHECK: Patch renames arch/x86/Kconfig to arch/x86/Kconfig.old, update MAINTAINERS?
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-yes, except the warning.
-
-$ git commit -a
-arch/x86/Kconfig.old:451: trailing whitespace.
-+         Internet Device(MID) platform.
-
-This doesn't seem to work although I have the same pre-commit hook as
-the above line: " git diff --cached HEAD -- | ./scripts/checkpatch.pl --strict -"
-
-$ git diff --cached HEAD
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig.old
-similarity index 100%
-rename from arch/x86/Kconfig
-rename to arch/x86/Kconfig.old
-
-and this is probably the reason - you said checkpatch needs an unified
-diff after the initial lines.
-
-So this is getting closer except checkpatch needs to still warn in the
-case where there's no unified diff following *but* a single file rename.
-
-Thanks.
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4428fd1..6774c17 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -340,9 +340,6 @@ int x86_setup_perfctr(struct perf_event *event)
+ 		/* BTS is currently only allowed for user-mode. */
+ 		if (!attr->exclude_kernel)
+ 			return -EOPNOTSUPP;
+-
+-		if (!attr->exclude_guest)
+-			return -EOPNOTSUPP;
+ 	}
+ 
+ 	hwc->config |= config;
+@@ -385,9 +382,6 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 	if (event->attr.precise_ip) {
+ 		int precise = 0;
+ 
+-		if (!event->attr.exclude_guest)
+-			return -EOPNOTSUPP;
+-
+ 		/* Support for constant skid */
+ 		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
+ 			precise++;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.11.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
