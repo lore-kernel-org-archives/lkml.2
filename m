@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2LSTSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 14:18:16 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:51240 "EHLO quartz.orcorp.ca"
+	id S1753465Ab2LSTVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 14:21:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54137 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab2LSTSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 14:18:03 -0500
-Date: Wed, 19 Dec 2012 12:18:00 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] of: Support a PCI device that is compatible with
- 'simple-bus'
-Message-ID: <20121219191800.GA1169@obsidianresearch.com>
-References: <20121210215119.GA32011@obsidianresearch.com>
- <20121214202629.BD40C3E0BDD@localhost>
- <20121214215814.GA14149@obsidianresearch.com>
- <20121219125451.3F1FB3E0AD7@localhost>
+	id S1751139Ab2LSTVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 14:21:00 -0500
+Date: Wed, 19 Dec 2012 20:14:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121219191436.GA25829@redhat.com>
+References: <50C8C4A5.4080104@linux.vnet.ibm.com> <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <50D0CCB3.10105@linux.vnet.ibm.com> <20121219163900.GA18516@redhat.com> <50D2047A.1040606@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121219125451.3F1FB3E0AD7@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <50D2047A.1040606@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 12:54:51PM +0000, Grant Likely wrote:
- 
-> Then it sounds like you really don't want PCI addressing in the
-> children. It sounds like the children addresses need to be in the form
-> [bar#] [offset-from-base-of-bar]. In that case, you need the
-> appropriate
+On 12/19, Srivatsa S. Bhat wrote:
+>
+> BTW, there is a small problem with the synchronize_sched() approach:
+> We can't generalize the synchronization scheme as a generic percpu rwlock
+> because the writer's role is split into 2, the first part (the one having
+> synchronize_sched()) which should be run in process context, and the
+> second part (the rest of it), which can be run in atomic context.
 
-They should be interchangeable - in 99% of cases with multiple BARs
-each BAR will be a different address type, so tagging by address type
-or tagging by bar number is basically the same. I started with the 3
-dw format only because that made sense to me and tried to make that
-work. As it turns out the 2dw or 1dw format works fine out without any
-patching and has the same basic functionality via the ranges
-remapping.
+Yes,
 
-> ranges entries to translate from each bar to the PCI address space,
-> which is exactly what other users are doing. Whether your address format
-> uses 2 cells or 3, it shouldn't matter. The translation mechanism is
-> the
+> That is, needing the writer to be able to sleep (due to synchronize_sched())
+> will make the locking scheme unusable (in other usecases) I think. And
+> the split (blocking and non-blocking part) itself seems hard to express
+> as a single writer API.
 
-It does matter, I could not make 3 cells work, I sent you the various
-approaches I tested that fix this, but they were not terribly
-general.. I'm still very unclear what the root problem is, though..
+I do not think this is the problem.
 
-> In both cases, the type of transfer is encoded by the BAR address and
-> does not get exposed to the child device. Exposing the PCI flags into
-> the child bus(es) really isn't a very good idea because they don't make
-> sense in that context. It may seem expedient, but it will be fragile.
+We need 2 helpers for writer, the 1st one does synchronize_sched() and the
+2nd one takes rwlock. A generic percpu_write_lock() simply calls them both.
 
-Well, it makes as much sense as for a PCI driver - each of the three
-transfer types has different coding requirements in the driver, so
-each of the three type must be kept separate.
+In fact I think that the 1st helper should not do synchronize_sched(),
+and (say) cpu_hotplug_begin() should call it itself. Because if we also
+change cpu_hotplug_begin() to use percpu_rw_sem we do not want to do
+synchronize_sched() twice. But lets ignore this for now.
 
-I haven't looked super closely at this, but the basic desire is to
-have IORESOURCE_PREFETCH tagged on the struct resource that reaches
-the platform driver. 'get_flags' for a non-PCI addresses scheme always
-returns IORESOURCE_MEM, and translating through a ranges doesn't
-appear to fix that. This is where 3dw is desirable because it uses a
-get_flags that understands the three resource types.
+But,
 
-> I apologize if I'm being dense here and missing something about why you
-> need to use PCI addressing on a non-PCI bus segment. Please let me know
-> if I'm missing something important.
+> Hmmm.. so what do we do? Shall we say "We anyway have to do smp_rmb() in the
+> reader in the fast path. Instead let's do a full smp_mb() and get rid of
+> the synchronize_sched() in the writer, and thereby expose this synchronization
+> scheme as generic percpu rwlocks?" Or should we rather use synchronize_sched()
+> and keep this synchronization scheme restricted to CPU hotplug only?
 
-I think you've got it basically right. I misunderstood some of what
-you were originally saying about using ranges from your earlier
-mail. What you described is fine for IORESOURCE_MEM style regions, and
-I've confirmed that it works OK in my cases.
+Oh, I do not know ;)
 
-Regards,
-Jason
+To me, the main question is: can we use synchronize_sched() in cpu_down?
+It is slow.
+
+Oleg.
+
