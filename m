@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab2LSQAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 11:00:42 -0500
-Received: from anubis.se.axis.com ([195.60.68.12]:60541 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab2LSQAg (ORCPT
+	id S1755616Ab2LSQCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 11:02:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22933 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab2LSQCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 11:00:36 -0500
-Date: Wed, 19 Dec 2012 17:00:33 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] rtc-pcf8523: Add low battery voltage support
-Message-ID: <20121219160033.GF14217@axis.com>
-References: <20121219140456.GA14217@axis.com>
- <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
- <20121219151054.GB14217@axis.com>
- <20121219151937.GA21212@avionic-0098.adnet.avionic-design.de>
- <20121219153432.GC14217@axis.com>
- <20121219154828.GA32019@avionic-0098.adnet.avionic-design.de>
+	Wed, 19 Dec 2012 11:02:15 -0500
+Message-ID: <50D1E4EB.6000200@oracle.com>
+Date: Wed, 19 Dec 2012 11:01:47 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121219154828.GA32019@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at block/genhd.c:1574 disk_clear_events()
+References: <20121219095241.GA27310@localhost> <20121219095632.GA27488@localhost>
+In-Reply-To: <20121219095632.GA27488@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements reading of the battery voltage low signal for
-rtc-pcf8523.
+On 12/19/2012 04:56 AM, Fengguang Wu wrote:
+> Sasha,
+> 
+> However note that this warning does not show up in next-20121219.
+> 
+> Thanks,
+> Fengguang
+> 
+> On Wed, Dec 19, 2012 at 05:52:41PM +0800, Fengguang Wu wrote:
+>> Hi Sasha,
+>>
+>> I got the below warning and it's bisected to
+>>
+>> commit 42f8570f437b65aaf3ef176a38ad7d7fc5847d8b
+>> Author: Sasha Levin <sasha.levin@oracle.com>
+>> Date:   Mon Dec 17 10:01:23 2012 -0500
+>>
+>>     workqueue: use new hashtable implementation
 
-The bit is read-only and cannot be cleared by software, so no
-clear-function is implemented.
+Hi Fengguang,
 
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
----
-diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
-index be05a64..acede49 100644
---- a/drivers/rtc/rtc-pcf8523.c
-+++ b/drivers/rtc/rtc-pcf8523.c
-@@ -23,6 +23,7 @@
- #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
- #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
- #define REG_CONTROL3_PM_MASK 0xe0
-+#define REG_CONTROL3_BLF (1 << 2) /* battery low bit, read-only */
- 
- #define REG_SECONDS  0x03
- #define REG_SECONDS_OS (1 << 7)
-@@ -250,9 +252,35 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	return pcf8523_start_rtc(client);
- }
- 
-+static int pcf8523_rtc_ioctl(struct device *dev, unsigned int cmd,
-+			     unsigned long arg)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	u8 value;
-+	int ret = 0, err;
-+
-+	switch (cmd) {
-+	case RTC_VL_READ:
-+		err = pcf8523_read(client, REG_CONTROL3, &value);
-+		if (err < 0)
-+			return err;
-+
-+		if (value & REG_CONTROL3_BLF)
-+			ret = 1;
-+
-+		if (copy_to_user((void __user *)arg, &ret, sizeof(int)))
-+			return -EFAULT;
-+
-+		return 0;
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+}
-+
- static const struct rtc_class_ops pcf8523_rtc_ops = {
- 	.read_time = pcf8523_rtc_read_time,
- 	.set_time = pcf8523_rtc_set_time,
-+	.ioctl = pcf8523_rtc_ioctl,
- };
- 
- static int pcf8523_probe(struct i2c_client *client,
+I'm slightly confused here: afaik what you're testing is Linus's git HEAD, right? (I
+got that from 3.7.0-01930-gbff6343).
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Tejun stated that he queued that commit for 3.9, and indeed I don't see it in Linus's
+master as of today.
+
+Therefore, I'm not quite sure how you're hitting it in your bisection - the only place
+that commit is supposed to be at is in Tejun's -next/linux-next trees.
+
+
+Thanks,
+Sasha
