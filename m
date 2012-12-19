@@ -1,61 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab2LSIem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 03:34:42 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:58864 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752768Ab2LSIec (ORCPT
+	id S1753343Ab2LSIkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 03:40:53 -0500
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:43310 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab2LSIkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 03:34:32 -0500
-Date: Wed, 19 Dec 2012 09:34:30 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        Huqiao <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>
-Subject: Re: [PATCH 2/2]linux-usb:optimize to match the Huawei USB storage
- devices and support new switch command
-Message-ID: <20121219083430.GB3400@breakpoint.cc>
-References: <fdcd8d23149d.149dfdcd8d23@huawei.com>
- <fdcdb3e12b55.2b55fdcdb3e1@huawei.com>
- <20121218141013.GB4939@breakpoint.cc>
- <910F9D9E13B84F4C8FA771DC9BDE99F326FCB006@szxeml546-mbs.china.huawei.com>
+	Wed, 19 Dec 2012 03:40:46 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AthMAMd80VBV5qjOPGdsb2JhbABEhVKFI7MeFwMBAQEBODSCHgEBBAEnExwjBQsIA0YUJQoaE4gNCrglFJAZYQOSV4MyhXuNQw
+X-IronPort-AV: E=Sophos;i="4.84,315,1355094000"; 
+   d="scan'208";a="471981586"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 19 Dec 2012 09:41:13 +0100
+To: Christophe TORDEUX <christophe@tordeux.net>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tai-hwa Liang <avatar@sentelic.com>, Oskari Saarenmaa <os@ohmu.fi>,
+        Paul Fox <pgf@laptop.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH 01/01] Input multitouch: fix horizontal
+ two-finger-scrolling on Sentelic touchpads
+Message-ID: <20121219084113.GA2758@polaris.bitmath.org>
+References: <20121212012135.GA9043@sherka.no-ip.biz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F326FCB006@szxeml546-mbs.china.huawei.com>
+In-Reply-To: <20121212012135.GA9043@sherka.no-ip.biz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 03:13:32AM +0000, Fangxiaozhi (Franko) wrote:
-> 	By the way, I found the kernel is updated to 3.7.1 today. So I have to update my patch based on 3.7.1, and resubmit it?
-> 	Right?
+Hi Christophe,
 
-You should rebase your patch on top of Greg's usb-next branch of his usb tree.
- http://git.kernel.org/?p=linux/kernel/git/gregkh/usb.git;a=shortlog;h=refs/heads/usb-next
+> Fix horizontal two-finger scrolling on Sentelic touchpads. Currently
+> horizontal two-fingers scrolling does not work with these touchpads.
+> The patch also makes vertical two-finger scrolling smoother in some
+> applications e.g. Firefox.
+> 
+> Signed-off-by: Christophe TORDEUX <christophe@tordeux.net>
+> ----
+> 
+> This patch was inspired by the reading of
+> drivers/input/mouse/synaptics.c. It is known to work (tested) on
+> Sentelic touchpads version STL3888_C0. Very probably works on all later
+> versions, and possibly works on some earlier versions of the hardware in
+> question.
 
-but I guess that there are hardly any changes in that area. The last change in
-drivers/usb/storage/initializers.* is yours "USB: usb-storage fails to attach
-to Huawei Datacard cdrom device".
+Thanks for the patch. I would prefer it if this driver was converted
+to use input_mt_assign_slots() instead.
 
-If you call ./scripts/get_maintainer.pl on your patch you should learn that
-you miss
-|Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-|usb-storage@lists.one-eyed-alien.net
+> 
+> diff -uprN -X vanilla/linux-3.7-rc8/Documentation/dontdiff 
+> vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.c 
+> linux-3.7-rc8/drivers/input/mouse/sentelic.c
+> --- vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.c	2012-12-11 04:32:44.476930522 +0100
+> +++ linux-3.7-rc8/drivers/input/mouse/sentelic.c	2012-12-12 01:16:41.766018017 +0100
+> @@ -706,8 +706,10 @@ static psmouse_ret_t fsp_process_byte(st
+>  	struct input_dev *dev = psmouse->dev;
+>  	struct fsp_data *ad = psmouse->private;
+>  	unsigned char *packet = psmouse->packet;
+> +	unsigned char *last_packet = ad->last_pkt;
+>  	unsigned char button_status = 0, lscroll = 0, rscroll = 0;
+>  	unsigned short abs_x, abs_y, fgrs = 0;
+> +	unsigned short last_abs_x, last_abs_y;
+>  	int rel_x, rel_y;
+>  
+>  	if (psmouse->pktcnt < 4)
+> @@ -734,6 +736,9 @@ static psmouse_ret_t fsp_process_byte(st
+>  
+>  		abs_x = GET_ABS_X(packet);
+>  		abs_y = GET_ABS_Y(packet);
+> +		last_abs_x = GET_ABS_X(last_packet);
+> +		last_abs_y = GET_ABS_Y(last_packet);
+> +		memcpy(ad->last_pkt, packet, psmouse->pktcnt);
 
-> > And shouldn't you read something from the us->recv_bulk_pipe after
-> > that?
-> 	Well, because our device will re-connect to switch the ports if it receives the command.
-> 	So it is not necessary to read the response of the command.
+Why not save the variables instead of the array?
 
-Hmm. I guess this for Matthew / Greg to decide, I don't insist on anything.
-Maybe a comment would be nice because now it looks, atleast to me, that
-something is missing.
+>  
+>  		if (packet[0] & FSP_PB0_MFMC) {
+>  			/*
+> @@ -753,10 +758,19 @@ static psmouse_ret_t fsp_process_byte(st
+>  					 */
+>  					fgrs = 1;
+>  					fsp_set_slot(dev, 0, false, 0, 0);
+> +
+> +					/* We don't need to re-order
+> +					 * coordinates if last finger
+> +					 * was same finger
+> +					 */
+> +					last_abs_x = abs_x;
+> +					last_abs_y = abs_y;
+>  				}
+>  				ad->last_mt_fgr = 2;
+>  
+> -				fsp_set_slot(dev, 1, fgrs == 2, abs_x, abs_y);
+> +				fsp_set_slot(dev, 1, fgrs == 2,
+> +						max(abs_x, last_abs_x),
+> +						max(abs_y, last_abs_y));
 
-Sebastian
+Relying on the box (x1, y1, max(x1, x2), max(y1, y2)) seems to assume
+a lot about the behavior of the device.
+
+>  			} else {
+>  				/* 1st finger */
+>  				if (ad->last_mt_fgr == 1) {
+> @@ -767,9 +781,18 @@ static psmouse_ret_t fsp_process_byte(st
+>  					 */
+>  					fgrs = 1;
+>  					fsp_set_slot(dev, 1, false, 0, 0);
+> +
+> +					/* We don't need to re-order
+> +					 * coordinates if last finger
+> +					 * was same finger
+> +					 */
+> +					last_abs_x = abs_x;
+> +					last_abs_y = abs_y;
+>  				}
+>  				ad->last_mt_fgr = 1;
+> -				fsp_set_slot(dev, 0, fgrs != 0, abs_x, abs_y);
+> +				fsp_set_slot(dev, 0, fgrs != 0,
+> +						min(abs_x, last_abs_x),
+> +						min(abs_y, last_abs_y));
+>  			}
+>  		} else {
+>  			/* SFAC packet */
+> @@ -788,12 +811,18 @@ static psmouse_ret_t fsp_process_byte(st
+>  			if (abs_x != 0 && abs_y != 0)
+>  				fgrs = 1;
+>  
+> +			/* We don't need to re-order
+> +			 * coordinates of SFAC packets
+> +			 */
+> +			last_abs_x = abs_x;
+> +			last_abs_y = abs_y;
+> +
+>  			fsp_set_slot(dev, 0, fgrs > 0, abs_x, abs_y);
+>  			fsp_set_slot(dev, 1, false, 0, 0);
+>  		}
+>  		if (fgrs > 0) {
+> -			input_report_abs(dev, ABS_X, abs_x);
+> -			input_report_abs(dev, ABS_Y, abs_y);
+> +			input_report_abs(dev, ABS_X, min(abs_x, last_abs_x));
+> +			input_report_abs(dev, ABS_Y, min(abs_y, last_abs_y));
+
+Looks like this point could differ from the reported MT positions.
+
+>  		}
+>  		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+>  		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
+> diff -uprN -X vanilla/linux-3.7-rc8/Documentation/dontdiff vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.h linux-3.7-rc8/drivers/input/mouse/sentelic.h
+> --- vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.h	2012-12-11 04:32:44.476930522 +0100
+> +++ linux-3.7-rc8/drivers/input/mouse/sentelic.h	2012-12-12 01:16:41.954018011 +0100
+> @@ -117,6 +117,7 @@ struct fsp_data {
+>  	unsigned char	last_reg;	/* Last register we requested read from */
+>  	unsigned char	last_val;
+>  	unsigned int	last_mt_fgr;	/* Last seen finger(multitouch) */
+> +	unsigned char	last_pkt[8];    /* Last packet we processed from fsp */
+>  };
+>  
+>  #ifdef CONFIG_MOUSE_PS2_SENTELIC
+
+Thanks.
+Henrik
+
