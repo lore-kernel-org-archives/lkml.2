@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab2LSNTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 08:19:05 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:45504 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab2LSNSz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 08:18:55 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH - v2] spi: davinci: add OF support for the spi controller
-To: Murali Karicheri <m-karicheri2@ti.com>, rob.herring@calxeda.com,
-        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-keystone@list.ti.com
-Cc: Murali Karicheri <m-karicheri2@ti.com>
-In-Reply-To: <20121215002758.14D223E0BEC@localhost>
-References: <1355260839-29865-1-git-send-email-m-karicheri2@ti.com> <20121215002758.14D223E0BEC@localhost>
-Date: Wed, 19 Dec 2012 13:18:50 +0000
-Message-Id: <20121219131850.E421B3E0AD7@localhost>
+	id S1755232Ab2LSNTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 08:19:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab2LSNTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 08:19:37 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <836be70329567778096e6a5b9e898a85238b382c.1355879564.git.joe@perches.com>
+References: <836be70329567778096e6a5b9e898a85238b382c.1355879564.git.joe@perches.com> <28860.1355870146@warthog.procyon.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] checkpatch: Warn on uapi #includes that #include <uapi/...
+Date: Wed, 19 Dec 2012 13:18:48 +0000
+Message-ID: <12465.1355923128@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Dec 2012 00:27:58 +0000, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, 11 Dec 2012 16:20:39 -0500, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> > This adds OF support to DaVinci SPI controller to configure platform
-> > data through device bindings. Also replaces clk_enable() with
-> > of clk_prepare_enable() as well as clk_disable() with
-> > clk_disable_unprepare().
-> > 
-> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> > Reviewed-by : Grant Likely <grant.likely@secretlab.ca>
+Joe Perches <joe@perches.com> wrote:
+
+> Avoid specifying internal uapi #include paths with uapi/...
+> as userspace should not use and never see that.
 > 
-> Applied, thanks.
+> Neaten message line wrapping above.
 > 
-> I did remove the OF_ALIAS_N property though. I know the COMPATIBLE one
-> uses it, but it is actually kind of redundant since it can also be
-> determined by counting the number of OF_ALIAS_* entries, and having the
-> _N one in there means extra work needs to be done to filter it out.
-> 
-> Also, I had to add a #ifndef _LINUX_OF_PRIVATE_H wrapper around the
-> whole header file. This is needed for all header files to protect
-> against multiple includes.
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Ummm.... oops. I replied to the wrong email when applying another patch.
-Sorry for the noise.
-
-But I have applied your patch now. It will appear in linux-next after
-the merge window closes.
-
-g.
-
+Acked-by: David Howells <dhowells@redhat.com>
