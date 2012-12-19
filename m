@@ -1,41 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab2LSW0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:26:35 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:46446 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2LSW01 (ORCPT
+	id S1751925Ab2LSW1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:27:00 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:40412 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab2LSW0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:26:27 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 00/21] gpio: ab8500: Bring AB8500 back to life
-To: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org
-In-Reply-To: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
-References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
-Date: Wed, 19 Dec 2012 22:26:23 +0000
-Message-Id: <20121219222623.3182B3E0AD6@localhost>
+	Wed, 19 Dec 2012 17:26:53 -0500
+Date: Wed, 19 Dec 2012 14:26:51 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/15] mm/huge_memory: use new hashtable implementation
+In-Reply-To: <1355756497-15834-4-git-send-email-sasha.levin@oracle.com>
+Message-ID: <alpine.DEB.2.00.1212191416410.32757@chino.kir.corp.google.com>
+References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com> <1355756497-15834-4-git-send-email-sasha.levin@oracle.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Dec 2012 16:19:18 +0000, Lee Jones <lee.jones@linaro.org> wrote:
-> The ab8500 GPIO driver is currently 'BROKEN', due to a lack of
-> updates and recent frame-work adoption. This patch-set aims to
-> bring the driver back to life so we may make use of it again.
-> 
-> This first stage is to bring it into line with ST-Ericsson's
-> internal track, which has been keeping up-to-date. After these
-> patches have been accepted I will then overhaul the driver to
-> use the most recent APIs and frame-works, such as pinctrl and
-> Device Tree.
-> 
-> Please give these patches an easy ride. I know they're not
-> perfect, but they do provide a great base on with I can form
-> the overhaul. Thanks for your understanding.
+On Mon, 17 Dec 2012, Sasha Levin wrote:
 
-Since it's already broken, I'll probably pick up the majority of these
-as long as they make the world better. I'll reply to each in turn.
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 827d9c8..2a0ef01 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/mman.h>
+>  #include <linux/pagemap.h>
+>  
+> +#include <linux/hashtable.h>
+>  #include <asm/tlb.h>
+>  #include <asm/pgalloc.h>
+>  #include "internal.h"
 
-g.
+Why group this with the asm includes?
 
+> @@ -61,12 +62,12 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+>  static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
+>  
+>  static int khugepaged(void *none);
+> -static int mm_slots_hash_init(void);
+>  static int khugepaged_slab_init(void);
+>  static void khugepaged_slab_free(void);
+>  
+
+You're removing khugepaged_slab_free() too.
+
+> -#define MM_SLOTS_HASH_HEADS 1024
+> -static struct hlist_head *mm_slots_hash __read_mostly;
+> +#define MM_SLOTS_HASH_BITS 10
+> +static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
+> +
+
+What happened to the __read_mostly?
+
+This used to be dynamically allocated and would save the 8KB that you 
+statically allocate if transparent hugepages cannot be used.  The generic 
+hashtable implementation does not support dynamic allocation?
+
+>  static struct kmem_cache *mm_slot_cache __read_mostly;
+>  
+>  /**
+> @@ -633,12 +634,6 @@ static int __init hugepage_init(void)
+>  	if (err)
+>  		goto out;
+>  
+> -	err = mm_slots_hash_init();
+> -	if (err) {
+> -		khugepaged_slab_free();
+
+This is the only use of khugepaged_slab_free(), so the function should be 
+removed as well.
+
+> -		goto out;
+> -	}
+> -
+>  	register_shrinker(&huge_zero_page_shrinker);
+>  
+>  	/*
+> @@ -1821,47 +1816,23 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
+>  	kmem_cache_free(mm_slot_cache, mm_slot);
+>  }
+>  
+> -static int __init mm_slots_hash_init(void)
+> -{
+> -	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
+> -				GFP_KERNEL);
+> -	if (!mm_slots_hash)
+> -		return -ENOMEM;
+> -	return 0;
+> -}
+> -
+> -#if 0
+> -static void __init mm_slots_hash_free(void)
+> -{
+> -	kfree(mm_slots_hash);
+> -	mm_slots_hash = NULL;
+> -}
+> -#endif
+> -
+>  static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+>  {
+> -	struct mm_slot *mm_slot;
+> -	struct hlist_head *bucket;
+> +	struct mm_slot *slot;
+>  	struct hlist_node *node;
+>  
+> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
+> -				% MM_SLOTS_HASH_HEADS];
+> -	hlist_for_each_entry(mm_slot, node, bucket, hash) {
+> -		if (mm == mm_slot->mm)
+> -			return mm_slot;
+> -	}
+> +	hash_for_each_possible(mm_slots_hash, slot, node, hash, (unsigned long) mm)
+> +		if (slot->mm == mm)
+> +			return slot;
+
+Why these other changes (the naming of the variable, the ordering of the 
+conditional)?
+
+> +
+>  	return NULL;
+>  }
+>  
+>  static void insert_to_mm_slots_hash(struct mm_struct *mm,
+>  				    struct mm_slot *mm_slot)
+>  {
+> -	struct hlist_head *bucket;
+> -
+> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
+> -				% MM_SLOTS_HASH_HEADS];
+>  	mm_slot->mm = mm;
+> -	hlist_add_head(&mm_slot->hash, bucket);
+> +	hash_add(mm_slots_hash, &mm_slot->hash, (long)mm);
+>  }
+>  
+>  static inline int khugepaged_test_exit(struct mm_struct *mm)
+> @@ -1930,7 +1901,7 @@ void __khugepaged_exit(struct mm_struct *mm)
+>  	spin_lock(&khugepaged_mm_lock);
+>  	mm_slot = get_mm_slot(mm);
+>  	if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
+> -		hlist_del(&mm_slot->hash);
+> +		hash_del(&mm_slot->hash);
+>  		list_del(&mm_slot->mm_node);
+>  		free = 1;
+>  	}
+> @@ -2379,7 +2350,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
+>  
+>  	if (khugepaged_test_exit(mm)) {
+>  		/* free mm_slot */
+> -		hlist_del(&mm_slot->hash);
+> +		hash_del(&mm_slot->hash);
+>  		list_del(&mm_slot->mm_node);
+>  
+>  		/*
