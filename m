@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab2LSDyM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 22:54:12 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:45589 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab2LSDyA (ORCPT
+	id S1754740Ab2LSD57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 22:57:59 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:34108 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab2LSD5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 22:54:00 -0500
+	Tue, 18 Dec 2012 22:57:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121215172805.GA20393@liondog.tnic>
+In-Reply-To: <20121216174943.GB20393@liondog.tnic>
 References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
-	<1355436141-8668-5-git-send-email-yinghai@kernel.org>
-	<20121215172805.GA20393@liondog.tnic>
-Date: Tue, 18 Dec 2012 19:53:59 -0800
-X-Google-Sender-Auth: iNVM_Xv65mGrnr13ntXsWJ5HZ7o
-Message-ID: <CAE9FiQVPpKR6M2ZxAa4X1n1d5AZ54HfLHkHqhg7OroBYaBDGfA@mail.gmail.com>
-Subject: Re: [PATCH v6 04/27] x86, boot: Move lldt/ltr out of 64bit code section
+	<1355436141-8668-6-git-send-email-yinghai@kernel.org>
+	<20121216174943.GB20393@liondog.tnic>
+Date: Tue, 18 Dec 2012 19:57:51 -0800
+X-Google-Sender-Auth: cIgDcaQ5lm1vRAFUD0onMGkdR9c
+Message-ID: <CAE9FiQXb3hLUeuOZuwN62mJhF29T-PyZ7Q82-rk1bYL0jJJFFw@mail.gmail.com>
+Subject: Re: [PATCH v6 05/27] x86, 64bit: clear ident mapping when kernel is
+ above 512G
 From: Yinghai Lu <yinghai@kernel.org>
 To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 9:28 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Dec 13, 2012 at 02:01:58PM -0800, Yinghai Lu wrote:
->> commit 08da5a2ca
+On Sun, Dec 16, 2012 at 9:49 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Dec 13, 2012 at 02:01:59PM -0800, Yinghai Lu wrote:
+>> After following patch:
+>>       x86, 64bit: Set extra ident mapping for whole kernel range
 >>
->>     x86_64: Early segment setup for VT
->>
->> add lldt/ltr to clean more segments.
->>
->> Those code are put in code64, and it is using gdt that is only
->> loaded from code32 path.
->>
->> That breaks booting with 64bit bootloader that does not go through
->> code32 path. It get at startup_64 directly,  and it has different
->> gdt.
->>
->> Move those lines into code32 after their gdt is loaded.
+>> We have extra ident mapping for kernel that is loaded above 1G.
 >
-> Let me rewrite that commit message for ya, you tell me whether I got it
-> right:
+> What?
 >
-> "08da5a2ca479 ("x86_64: Early segment setup for VT") sets up LDT and TR
-> into a valid state in order to speed up boot decompression under VT. The
-> code which loads the GDT is executed in the 32-bit startup code while
-> the above change in the 64-bit part.
+> /me looks at next patch
 >
-> However, this breaks 64-bit bootloaders which jump straight to the
-> 64-bit startup entry point and thus skip LDR and TR setup because they
-> use a different GDT.
+> Aaah, the *next* patch adds an extra ident mapping. Why don't you say
+> so?
 >
-> Fix this by moving the LDT and TR setup to the 32-bit section."
+>> So need to clear extra pgd entry when kernel is loaded above 512g.
 >
-> Is that correct?
-yes
+> Why then isn't that patch following the next patch instead of coming
+> before it?
 
-update to:
+make the transition smooth.
 
----
-Subject: [PATCH] x86, boot: Move lldt/ltr out of 64bit code section
+zap_ident is after setting in head_64.S
 
-commit 08da5a2ca
+anyway the whole zap_ident get deleted and we don't need this patch anymore.
 
-    x86_64: Early segment setup for VT
-
-sets up LDT and TR into a valid state in order to speed up boot
-decompression under VT.
-
-Those code are put in code64, and it is using GDT that is only
-loaded from code32 path.
-
-That breaks booting with 64bit bootloader that does not go through
-code32 path and jump to startup_64 directly, and it has different
-GDT.
-
-Move those lines into code32 after their GDT is loaded.
----
+Yinghai
