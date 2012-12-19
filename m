@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab2LSSHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:07:23 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41280 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab2LSSHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:07:17 -0500
-Message-ID: <50D2023F.1000609@ti.com>
-Date: Wed, 19 Dec 2012 23:36:55 +0530
-From: R Sricharan <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752269Ab2LSSKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:10:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43981 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab2LSSKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 13:10:36 -0500
+Message-ID: <50D20316.7020205@kernel.dk>
+Date: Wed, 19 Dec 2012 19:10:30 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: Luciano Coelho <coelho@ti.com>, <balbi@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, <svenkatr@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <cjb@laptop.org>, <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-References: <1352968293.10872.51.camel@cumari.coelho.fi>  <20121218095450.GB27751@arwen.pp.htv.fi>  <20121219094552.GN4985@opensource.wolfsonmicro.com>  <50D19040.5090404@ti.com>  <20121219100909.GO4985@opensource.wolfsonmicro.com>  <50D19463.5010605@ti.com>  <20121219103206.GQ4985@opensource.wolfsonmicro.com>  <1355913954.5273.21.camel@cumari.coelho.fi> <50D19D54.2000307@ti.com>  <20121219130128.GC17993@arwen.pp.htv.fi> <50D1C652.3050607@ti.com> <1355925504.5273.26.camel@cumari.coelho.fi> <50D1C957.8090201@ti.com>
-In-Reply-To: <50D1C957.8090201@ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Shaohua Li <shli@fusionio.com>, Neil Brown <neilb@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [boot crash] Re: [GIT PULL[ block drivers bits for 3.8
+References: <50CF89EB.2030109@kernel.dk> <20121218092554.GA3823@gmail.com> <50D056A5.3040501@kernel.dk> <CA+55aFzhfknCd-JERhrDfkOhdm_eytoVBYA42ex2K+BghBaBKQ@mail.gmail.com> <50D1D373.5060301@kernel.dk> <CA+55aFx71aA5_eX1=DjKG-Wd0u9YeryD6FeAk9HJ1DnxRTwPoA@mail.gmail.com>
+In-Reply-To: <CA+55aFx71aA5_eX1=DjKG-Wd0u9YeryD6FeAk9HJ1DnxRTwPoA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2012-12-19 17:29, Linus Torvalds wrote:
+>> Of course it's been tested. Granted it got moved over too late (as 1 of
+>> 2 that did), but I've run the branch on a multitude of systems.
+>> Apparently none of them hit the case of having a zero granularity
+>> reported, so never hit the bug.
+> 
+> I presumably happens on pretty much anything that doesn't have
+> discard. Of course, I've personally gotten rid of any rotating devices
+> I have, but it still sounds like there's a big testing hole somewhere.
 
-On Wednesday 19 December 2012 07:34 PM, Benoit Cousson wrote:
-> On 12/19/2012 02:58 PM, Luciano Coelho wrote:
->> On Wed, 2012-12-19 at 14:51 +0100, Benoit Cousson wrote:
->>> On 12/19/2012 02:01 PM, Felipe Balbi wrote:
->>>> On Wed, Dec 19, 2012 at 11:56:20AM +0100, Peter Ujfalusi wrote:
->>>>> BTW: have you happened to ubdate u-boot recently? There is a nice easter egg
->>>>> added there:
->>>>> f3f98bb ARM: OMAP4/5: Do not configure non essential pads, clocks, dplls.
->>>>>
->>>>> Which means that _essential_ clocks and pads are no longer configured.
->>>>
->>>> anything essential you can list ?
->>>
->>> Yeah, that u-boot version is just unusable at all with any mainline
->>> kernel, since we are still missing pads conf for every drivers.
->>>
->>> Regarding the 32k clock, I noticed as well that the OMAP4460 panda
->>> u-boot is the only one to enable it at boot time, and thus this is the
->>> only board that can probe the wilink chip properly as of today.
->>
->> Do you mean that with the latest mainline u-boot all boards will have
->> trouble except panda?
->
-> I don't know since the u-boot mainline has never ever supported properly
-> the SDP4430, I stopped wasting my time with that code a long time ago.
-> But the braves who tried using the latest u-boot mainline code that does
-> not configure anything anymore had some troubles...
->
-   Configuring every pad and clocks in the u-boot was removed to
-   force kernel drivers to fix up things. Dependency on boot loader
-   was always a problem. Bootloader should not configure anything apart
-   from what is required for boot.
+It doesn't, though it seems so. Otherwise I definitely would have seen
+it. It only happens if discard max sectors is set, but alignment isn't.
+I suspect because that first divide is ordered after the
+!max_discard_sectors check. At least here.
 
-Regards,
-  Sricharan
+And I suspect we would have seen a lot more reports if it DID trigger
+on anything that didn't have discard :-)
 
+-- 
+Jens Axboe
 
