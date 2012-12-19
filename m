@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2LSSKo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:10:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43981 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2LSSKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:10:36 -0500
-Message-ID: <50D20316.7020205@kernel.dk>
-Date: Wed, 19 Dec 2012 19:10:30 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Shaohua Li <shli@fusionio.com>, Neil Brown <neilb@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1752306Ab2LSSOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:14:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750859Ab2LSSN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 13:13:58 -0500
+Date: Wed, 19 Dec 2012 19:14:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Serge Hallyn <serge@hallyn.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [boot crash] Re: [GIT PULL[ block drivers bits for 3.8
-References: <50CF89EB.2030109@kernel.dk> <20121218092554.GA3823@gmail.com> <50D056A5.3040501@kernel.dk> <CA+55aFzhfknCd-JERhrDfkOhdm_eytoVBYA42ex2K+BghBaBKQ@mail.gmail.com> <50D1D373.5060301@kernel.dk> <CA+55aFx71aA5_eX1=DjKG-Wd0u9YeryD6FeAk9HJ1DnxRTwPoA@mail.gmail.com>
-In-Reply-To: <CA+55aFx71aA5_eX1=DjKG-Wd0u9YeryD6FeAk9HJ1DnxRTwPoA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 11/11] pidns: Support unsharing the pid namespace.
+Message-ID: <20121219181400.GA22991@redhat.com>
+References: <8739097bkk.fsf@xmission.com> <1353083750-3621-1-git-send-email-ebiederm@xmission.com> <1353083750-3621-11-git-send-email-ebiederm@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353083750-3621-11-git-send-email-ebiederm@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-19 17:29, Linus Torvalds wrote:
->> Of course it's been tested. Granted it got moved over too late (as 1 of
->> 2 that did), but I've run the branch on a multitude of systems.
->> Apparently none of them hit the case of having a zero granularity
->> reported, so never hit the bug.
-> 
-> I presumably happens on pretty much anything that doesn't have
-> discard. Of course, I've personally gotten rid of any rotating devices
-> I have, but it still sounds like there's a big testing hole somewhere.
+Hi Eric,
 
-It doesn't, though it seems so. Otherwise I definitely would have seen
-it. It only happens if discard max sectors is set, but alignment isn't.
-I suspect because that first divide is ordered after the
-!max_discard_sectors check. At least here.
+oleg@tv-sign.ru no longer works, so I just noticed these emails.
 
-And I suspect we would have seen a lot more reports if it DID trigger
-on anything that didn't have discard :-)
+On 11/16, Eric W. Biederman wrote:
+>
+> Unsharing of the pid namespace unlike unsharing of other namespaces
+> does not take affect immediately.  Instead it affects the children
+> created with fork and clone.
 
--- 
-Jens Axboe
+I'll try to read this series later, but I am not sure I will ever
+understand the code with these patches ;)
+
+So alloc_pid() becomes the only user nsproxy->pid_ns and it is not
+necessarily equal to task_active_pid_ns(). It seems to me that this
+adds a lot of new corner cases.
+
+Unless I missed something, at least we should not allow CLONE_THREAD
+if active_pid_ns != nsproxy->pid_ns. If nothing else, copy_process()
+initializes ->child_reaper only if thread_group_leader(child). And
+->child_reaper == NULL can obviously lead to crash.
+
+Oleg.
 
