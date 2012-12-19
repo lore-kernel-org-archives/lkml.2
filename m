@@ -1,220 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab2LSOdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:33:16 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62304 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab2LSOdD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:33:03 -0500
-Date: Wed, 19 Dec 2012 15:32:58 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Boris BREZILLON <linux-arm@overkiz.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: Re: [PATCH v3] pwm: atmel: add Timer Counter Block PWM driver
-Message-ID: <20121219143258.GA7837@avionic-0098.adnet.avionic-design.de>
-References: <1355742810-4241-1-git-send-email-linux-arm@overkiz.com>
- <20121219112610.GA22613@avionic-0098.adnet.avionic-design.de>
- <50D1CACC.8090309@overkiz.com>
+	id S1755263Ab2LSOg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:36:27 -0500
+Received: from mx02.infracom.it ([62.196.48.11]:33582 "EHLO mx02.infracom.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab2LSOgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 09:36:21 -0500
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 09:36:20 EST
+Message-ID: <50D1CF9D.2090709@infracom.it>
+Date: Wed, 19 Dec 2012 15:30:53 +0100
+From: Roberto Oppedisano <roberto.oppedisano@infracom.it>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
-Content-Disposition: inline
-In-Reply-To: <50D1CACC.8090309@overkiz.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:T3S9x78f95lVOIS06WOmxWEReN0aQJELI/tOkzeRzWq
- Ystytxr95nW1Tgy0cDWDGdmDLU4FNqLXS9fMZD1D08pkBEfauD
- cDb41fYiB4wVqsSVDWm/kiiKQK5JIEQSYJLo0yuq42T6QC3u43
- 92zl1r+6SBbqskj7FSruNnR/0RUbOhqc+y9Y6ZajI0WyRQM1QK
- trClCAf0049R4ocllCaHC19vlhhr9dWMDx78y6my2CZ/A6I7sU
- ilfjktimS2B+0VYJvG0JXjqptY3K3hCIiLyvLpzjxCuM0Oayfb
- MCIQRJkq3CyiMFFdSCuFGoZ2gt+ryUm0MECt0orYYk2PmLNj5H
- +tPLLHkZWnqNnOouUdK7ZLVCKQ/Wsu8hIxu7QWUNtMN+pLsxTw
- 8ACNe9H99Qk1czrWidjCSodpymTO6ZRoEA=
+To: Zhang Rui <rui.zhang@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <eduardo.valentin@ti.com>
+Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume
+ at 100%
+References: <50BDF345.60804@gmail.com> <1354630272.2480.4.camel@rzhang1-mobl4> <50BEF830.6020206@gmail.com>
+In-Reply-To: <50BEF830.6020206@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+     any news about this issue ? I'm still seeing the problem with the 
+released 3.7 (and also with 3.7.1).
+Let me know if you need more info or testing.
 
---BXVAT5kNtrzKuDFl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Kind regards
+R
 
-On Wed, Dec 19, 2012 at 03:10:20PM +0100, Boris BREZILLON wrote:
-> On 19/12/2012 12:26, Thierry Reding wrote:
-> > On Mon, Dec 17, 2012 at 12:13:30PM +0100, Boris BREZILLON wrote:
-[...]
-> >> +	/* configure new setting */
-> >> +	cmr |=3D newcmr;
-> >> +	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
-> >=20
-> > I wonder why you bother setting newcmr and OR'ing it into cmr. Couldn't
-> > you just mask all previous settings in cmr first, then OR the new bits?
->=20
-> I did this to keep the locked portion of code as small as possible:
-> I prepare the mask to apply to cmr register before getting the lock.
->=20
-> But I can do it this way if you prefer:
->=20
-> 	spin_lock(&tcbpwmc->lock);
-> 	cmr =3D __raw_readl(regs + ATMEL_TC_REG(group, CMR));
->=20
-> 	/* flush old setting and set the new one */
-> 	if (index =3D=3D 0) {
-> 		cmr &=3D ~ATMEL_TC_A_MASK;
-> 		if (polarity =3D=3D PWM_POLARITY_INVERSED)
-> 			cmr |=3D ATMEL_TC_ASWTRG_CLEAR;
-> 		else
-> 			cmr |=3D ATMEL_TC_ASWTRG_SET;
-> 	} else {
-> 		cmr &=3D ~ATMEL_TC_B_MASK;
-> 		if (polarity =3D=3D PWM_POLARITY_INVERSED)
-> 			cmr |=3D ATMEL_TC_BSWTRG_CLEAR;
-> 		else
-> 			cmr |=3D ATMEL_TC_BSWTRG_SET;
-> 	}
->=20
-> 	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
+Il 05/12/2012 08:30, Roberto Oppedisano ha scritto:
+> Hello Rui
+>
+> Il 04/12/2012 15:11, Zhang Rui ha scritto:
+>> Hi, Roberto,
+>>
+>> please attach the acpidump output.
+>
+> attached.
+>
+>> On Tue, 2012-12-04 at 13:57 +0100, Roberto Oppedisano wrote:
+>>> Hello,
+>>>       with recent kernels after a suspend/resume cycle on my laptop (HP
+>>> 6730b) the fans stays at full speed.
+>> does the fan keep running at full speed after resume?
+>
+> yes, the fan never stops and runs always at full speed.
+>
+>
+>> please attach the output of "grep . /sys/class/thermal/*/*" before
+>> suspend and when the fan is running at full speed.
+>> please attach the same stuff in a good kernel.
+>
+> See attached files.
+> 3.6.9 is the good kernel where the fan behaves correctly.
+> 3.7.0+git is the bad one.
+>
+> Kind regards
+> R
+>
+>>
+>>
+>> thanks,
+>> rui
+>>
+>>
+>>> I've bisected down to this commit:
+>>>
+>>> ce119f83257aae29b84a5bfad0669e8348437b18 is the first bad commit
+>>> commit ce119f83257aae29b84a5bfad0669e8348437b18
+>>> Author: Zhang Rui <rui.zhang@intel.com>
+>>> Date:   Wed Jun 27 14:13:04 2012 +0800
+>>>
+>>>       Thermal: Introduce simple arbitrator for setting device 
+>>> cooling state
+>>>
+>>>       This fixes the problem that a cooling device may be referenced by
+>>>       by multiple trip points in multiple thermal zones.
+>>>
+>>>       With this patch, we have two stages for updating a thermal zone,
+>>>       1. check if a thermal_instance needs to be updated or not
+>>>       2. update the cooling device, based on the target cooling state
+>>>          of all its instances.
+>>>
+>>>       Note that, currently, the cooling device is set to the deepest
+>>>       cooling state required.
+>>>
+>>>       Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>>>       Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>>       Reviewed-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>>>
+>>> :040000 040000 8469b057ee5b33bdb264624db35c951d0ecdb66b
+>>> d7288437cff3c7437e59144c46c04c78669a597b M      drivers
+>>> :040000 040000 397296161d55c825f07501470130928d226497cc
+>>> f715fd1770dd33fd333c5fa339e740537b2a916f M      include
+>>>
+>>> I tried to revert it but there are rejects so I cold not try current
+>>> kernel with simply this commit removed.
+>>>
+>>> As a side note when the fan is at full speed a see an anomaly on 
+>>> thermal
+>>> indicator #4
+>>>
+>>> $ grep 0 /sys/devices/virtual/thermal/thermal_zone*/temp
+>>> /sys/devices/virtual/thermal/thermal_zone0/temp:59000
+>>> /sys/devices/virtual/thermal/thermal_zone1/temp:63000
+>>> /sys/devices/virtual/thermal/thermal_zone2/temp:48000
+>>> /sys/devices/virtual/thermal/thermal_zone3/temp:27900
+>>> /sys/devices/virtual/thermal/thermal_zone4/temp:100000
+>>>
+>>> while the others seem to report normal value. Attached the output of
+>>> dmesg on this laptop.
+>>>
+>>> More info/testing on request.
+>>>
+>>> Kind regards
+>>> R
+>>
+>>
+>
 
-Yes, that's along the lines of what I had in mind. It was more of a
-suggestion because I think the above looks more obvious. But if you
-think having a shorter critical section is worth it, then that's fine
-too.
 
-> >> +	/*
-> >> +	 * If duty is 0 or equal to period there's no need to register
-> >> +	 * a specific action on RA/RB and RC compare.
-> >> +	 * The output will be configured on software trigger and keep
-> >> +	 * this config till next config call.
-> >> +	 */
-> >> +	if (tcbpwm->duty !=3D tcbpwm->period && tcbpwm->duty > 0) {
-> >> +		if (polarity =3D=3D PWM_POLARITY_INVERSED) {
-> >> +			if (index =3D=3D 0)
-> >> +				newcmr |=3D
-> >> +					ATMEL_TC_ACPA_SET | ATMEL_TC_ACPC_CLEAR;
-> >> +			else
-> >> +				newcmr |=3D
-> >> +					ATMEL_TC_BCPB_SET | ATMEL_TC_BCPC_CLEAR;
-> >> +		} else {
-> >> +			if (index =3D=3D 0)
-> >> +				newcmr |=3D
-> >> +					ATMEL_TC_ACPA_CLEAR | ATMEL_TC_ACPC_SET;
-> >> +			else
-> >> +				newcmr |=3D
-> >> +					ATMEL_TC_BCPB_CLEAR | ATMEL_TC_BCPC_SET;
-> >=20
-> > If you can get rid of newcmr and OR directly into cmr instead, these
-> > will fit on one line.
->=20
-> I'm not sure I understand how you would do this.
-> Here is the same function without the newcmr variable:
+-- 
+Roberto Oppedisano
+Infracom Italia S.p.A.
+Ingegneria d'offerta
+Tel. +39 0459692691
+Mob. +39 3487419534
 
-What I meant to say was: "these will each fit on one line".
-
-> static int atmel_tcb_pwm_enable(struct pwm_chip *chip, struct pwm_device =
-*pwm)
-> {
-> 	struct atmel_tcb_pwm_chip *tcbpwmc =3D to_tcb_chip(chip);
-> 	struct atmel_tcb_pwm_device *tcbpwm =3D pwm_get_chip_data(pwm);
-> 	struct atmel_tc *tc =3D tcbpwmc->tc;
-> 	void __iomem *regs =3D tc->regs;
-> 	unsigned group =3D pwm->hwpwm / 2;
-> 	unsigned index =3D pwm->hwpwm % 2;
-> 	u32 cmr;
-> 	enum pwm_polarity polarity =3D tcbpwm->polarity;
->=20
-> 	/* If duty is 0 reverse polarity */
-> 	if (tcbpwm->duty =3D=3D 0)
-> 		polarity =3D !polarity;
->=20
-> 	spin_lock(&tcbpwmc->lock);
-> 	cmr =3D __raw_readl(regs + ATMEL_TC_REG(group, CMR));
->=20
-> 	/* flush old setting and set the new one */
-> 	cmr &=3D ~ATMEL_TC_TCCLKS;
-> 	if (index =3D=3D 0) {
-> 		cmr &=3D ~ATMEL_TC_A_MASK;
->=20
-> 		/* Set CMR flags according to given polarity */
-> 		if (polarity =3D=3D PWM_POLARITY_INVERSED) {
-> 			cmr |=3D ATMEL_TC_ASWTRG_CLEAR;
->=20
-> 			/*
-> 			 * If duty is 0 or equal to period there's no need to register
-> 			 * a specific action on RA/RB and RC compare.
-> 			 * The output will be configured on software trigger and keep
-> 			 * this config till next config call.
-> 			 */
-> 			if (tcbpwm->duty !=3D tcbpwm->period && tcbpwm->duty > 0)
-> 				cmr |=3D ATMEL_TC_ACPA_SET | ATMEL_TC_ACPC_CLEAR;
-> 		} else {
-> 			cmr |=3D ATMEL_TC_ASWTRG_SET;
-> 			if (tcbpwm->duty !=3D tcbpwm->period && tcbpwm->duty > 0)
-> 				cmr |=3D ATMEL_TC_ACPA_CLEAR | ATMEL_TC_ACPC_SET;
-> 		}
-> 	} else {
-> 		cmr &=3D ~ATMEL_TC_B_MASK;
-> 		if (polarity =3D=3D PWM_POLARITY_INVERSED) {
-> 			cmr |=3D ATMEL_TC_BSWTRG_CLEAR;
-> 			if (tcbpwm->duty !=3D tcbpwm->period && tcbpwm->duty > 0)
-> 				cmr |=3D ATMEL_TC_BCPB_SET | ATMEL_TC_BCPC_CLEAR;
-> 		} else {
-> 			cmr |=3D ATMEL_TC_BSWTRG_SET;
-> 			if (tcbpwm->duty !=3D tcbpwm->period && tcbpwm->duty > 0)
-> 				cmr |=3D ATMEL_TC_BCPA_CLEAR | ATMEL_TC_BCPC_SET;
-> 		}
-> 	}
->=20
-> 	__raw_writel(cmr, regs + ATMEL_TC_REG(group, CMR));
->=20
-> 	if (index =3D=3D 0)
-> 		__raw_writel(tcbpwm->duty, regs + ATMEL_TC_REG(group, RA));
-> 	else
-> 		__raw_writel(tcbpwm->duty, regs + ATMEL_TC_REG(group, RB));
->=20
-> 	__raw_writel(tcbpwm->period, regs + ATMEL_TC_REG(group, RC));
->=20
-> 	/* Use software trigger to apply the new setting */
-> 	__raw_writel(ATMEL_TC_CLKEN | ATMEL_TC_SWTRG,
-> 			regs + ATMEL_TC_REG(group, CCR));
-> 	spin_unlock(&tcbpwmc->lock);
-> 	return 0;
-> }
->=20
->=20
-> Is that what you're expecting?
-
-Looking at the code above, maybe reshuffling isn't such a good idea
-after all as you have to repeat the "duty 0 or equal to period" check
-four times.
-
-Thierry
-
---BXVAT5kNtrzKuDFl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0dAaAAoJEN0jrNd/PrOhGTIQALM3jBoG7Xvn69SElk4jbgEs
-LqGg80TlY2VwWla3JJ6gImn7alayRSBWCAvvpmz+N0fxC+Cze2htarNenTy8Biz9
-OG1TNTrdug/xW/h2cOn/Md6eVIeUtvT0mjdrSJ47k5+EmfB2B8zFyi58eUzU8wvK
-frEm+jXVoFgK6Pt9k9wDwRWH9P239XvDcuyBg0igK8kc6AWbsBsgGMwbZSzrqazD
-/KLqWDIwoin9lC9XvdZQkk7E1jJpgvnbKjeFJu6YKWo8yTp1Jcy8JC4fxlt/wvna
-IeZrOkaIQ4ReTTFUi0pVBVGfKZGsU5BB6k+6HeqQMSdopXNb9R/nnqSwIprwGbKL
-uRgoGhaMC3frCcgcdtxBEV/eJqfxWVHLLsZnztJee9UUuILJsmERKnPnTnzK7lZL
-bnNhQDUG7XmH+iDTkVur2MZdsvC4FDf5kil9XRglsOP+CYf+px0+tDyTORKKricz
-N7KuHic8lN5773OsV+Bs6vFSpXyI3ovKcgO//sqqIefn/oWfOZGL18TrD2iSzxo6
-cutvM0yIExI0Q3ulj7Tff6J6Zg+kw2qFJ8xiAV9KJFMKc4YAm9sx9pCAxFO6SuV0
-YZ6UCFa+O340977XOE2eHdTwVFpVkTC9zYunkNQmYQe9eobbziAN+KfgPSDg1NXU
-9oREi6R+jYURkoJjdPYg
-=nwS7
------END PGP SIGNATURE-----
-
---BXVAT5kNtrzKuDFl--
