@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab2LSKUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 05:20:32 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:41319 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab2LSKUZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 05:20:25 -0500
-Date: Wed, 19 Dec 2012 10:19:34 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clockevents: Add generic timer broadcast
- receiver
-Message-ID: <20121219101934.GD32484@e106331-lin.cambridge.arm.com>
-References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
- <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
- <50D0EB67.2060802@codeaurora.org>
+	id S1754967Ab2LSKUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 05:20:38 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58042 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754317Ab2LSKUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 05:20:33 -0500
+Date: Wed, 19 Dec 2012 11:20:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Message-ID: <20121219102029.GA22346@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+	Steve Hodgson <steve@purestorage.com>
+References: <20120713162009.GA10268@logfs.org>
+ <20120716124614.GA19497@x1.osrc.amd.com>
+ <20120718185335.GA1771@logfs.org>
+ <20120718214520.GA14067@liondog.tnic>
+ <20120723200459.GD17767@logfs.org>
+ <20120724154218.GB13753@x1.osrc.amd.com>
+ <20120724145334.GB24954@logfs.org>
+ <20120724162546.GC13753@x1.osrc.amd.com>
+ <20120724175232.GC24954@logfs.org>
+ <20120724202820.GA5167@liondog.tnic>
 MIME-Version: 1.0
-In-Reply-To: <50D0EB67.2060802@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 19 Dec 2012 10:19:34.0817 (UTC) FILETIME=[57B82910:01CDDDD2]
-X-MC-Unique: 112121910193704501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120724202820.GA5167@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 10:17:11PM +0000, Stephen Boyd wrote:
-> On 12/18/12 04:06, Mark Rutland wrote:
-> > diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> > index f113755..c2dd022 100644
-> > --- a/kernel/time/tick-broadcast.c
-> > +++ b/kernel/time/tick-broadcast.c
-> > @@ -125,6 +125,21 @@ int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu)
-> >  	return ret;
-> >  }
-> >  
-> > +int tick_receive_broadcast(void)
-> > +{
-> > +	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
-> > +	struct clock_event_device *evt = td->evtdev;
-> > +
-> > +	if (!evt)
-> > +		return -ENODEV;
-> > +
-> > +	if (!evt->event_handler)
-> > +		return -EINVAL;
-> > +
-> 
-> Does this actually happen? It's not obvious to me how it does.
+Hey Jörn,
 
-Taking a look at it, I don't think it does. Any tick_device's
-clock_event_device should have an event_handler. I'll drop this check.
+On Tue, Jul 24, 2012 at 10:28:20PM +0200, Borislav Petkov wrote:
+> Ok, thanks for taking the time to explain this - very interesting
+> stuff.
+>
+> So, as far as I'm concerned blockconsole is ready for shipping! 8-)
 
-A tick device might not have a clock_event_device registered in some cases --
-the x86 lapic timer has to deal with interrupts pending across a kexec, where
-interrupts are enabled before local timers are registered. I'm not sure how
-common this problem might be though, and whether it should be dealt with here
-or elsewhere.
+you're probably very busy so I'll be quick: I still think that
+blockconsole is a pretty useful thing and I (and I'm sure others too)
+would like to restart the discussion and see it upstream eventually.
 
-> > +	evt->event_handler(evt);
-> > +	return 0;
-> > +}
-> > +
-> >  /*
-> >   * Broadcast the event to the cpus, which are set in the mask (mangled).
-> >   */
-> 
-> 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+If there's anything I can do to help, pls let me know.
 
-Thanks,
-Mark.
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
