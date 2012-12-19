@@ -1,75 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab2LSOka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:40:30 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:64046 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab2LSOkX (ORCPT
+	id S1755307Ab2LSOmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:42:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:64043 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab2LSOmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:40:23 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Wed, 19 Dec 2012 08:40:19 -0600
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
-        Juergen Beisert <jbe@pengutronix.de>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned divisors
-Date: Wed, 19 Dec 2012 06:40:15 -0800
-Message-Id: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Wed, 19 Dec 2012 09:42:36 -0500
+Date: Wed, 19 Dec 2012 15:42:26 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc-pcf8523: Add low battery voltage support
+Message-ID: <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
+References: <20121219140456.GA14217@axis.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
+Content-Disposition: inline
+In-Reply-To: <20121219140456.GA14217@axis.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:ImuFpNAqTEDYYmknPosnFfeaXYgefcHQE471yTuQ2WK
+ iEuTph84IX31ayl3m5k9j3Fb4RYN2ALUpfxPn4KDphHBvkShxv
+ T0f25Iq/gYQiJsAE8ANC0VWz8wePZRBAd6R4nKY2xRcFsHhEg6
+ SgdARz/LfBiCiFH+bzyCiCPWKmLayM5k9rIeBnfffpQRYSQGEv
+ 5k1u7OEm7S5pv2etgkMRQ+Ps4kVpLMMyLQubLsFtJKp1hlPedg
+ 9tCu3k6SitosVVLpvGHPzxP/8fn+NIK7F42a/X98D1YlinlrK8
+ ywciX0WJHI7YUWE4XKu8dKzZyn3yI/AlhiHRJMaLXcQ81xtRJX
+ mQIQyUMWkGQvKIjlxhZbhFSXSaFHE1SRf7Yh3ZybD1MTZUTGgK
+ P6yOOxxpkC0pNNzp5IGO5TWIr+nYy+rJ18=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 263a523 fixes a warning seen with W=1 due to change in
-DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
-with unsigned divisors to unsigned, even if the dividend is signed and
-negative (for example, -10 / 5U = 858993457). The C standard says "If one
-operand has unsigned int type, the other operand is converted to unsigned
-int", so the compiler is not to blame.
-As a result, DIV_ROUND_CLOSEST(0, 2U) and similar operations now return
-bad values, since the automatic conversion of expressions such as "0 - 2U/2"
-to unsigned was not taken into account.
 
-Fix by checking for the divisor variable type when deciding which operation
-to perform. This fixes DIV_ROUND_CLOSEST(0, 2U), but still returns bad values
-for negative dividends divided by unsigned divisors. Mark the latter case as
-unsupported.
+--WYTEVAkct0FjGQmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: Juergen Beisert <jbe@pengutronix.de>
-Tested-by: Juergen Beisert <jbe@pengutronix.de>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2: Description update (v1 wasn't supposed to make it to lkml)
+On Wed, Dec 19, 2012 at 03:04:56PM +0100, Jesper Nilsson wrote:
+> This patch implements reading of the battery voltage low signal for
+> rtc-pcf8523.
+>=20
+> The bit is read-only and cannot be cleared by software, so no
+> clear-function is implemented.
+>=20
+> Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+> ---
+> diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
+> index be05a64..82a9895 100644
+> --- a/drivers/rtc/rtc-pcf8523.c
+> +++ b/drivers/rtc/rtc-pcf8523.c
+> @@ -23,6 +23,7 @@
+>  #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
+>  #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
+>  #define REG_CONTROL3_PM_MASK 0xe0
+> +#define REG_CONTROL3_BLF (1 << 2) /* Battery low bit, read-only */
 
- include/linux/kernel.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Nit: "battery" since you don't have a full sentence.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index d97ed58..45726dc 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -77,13 +77,15 @@
- 
- /*
-  * Divide positive or negative dividend by positive divisor and round
-- * to closest integer. Result is undefined for negative divisors.
-+ * to closest integer. Result is undefined for negative divisors and
-+ * for negative dividends if the divisor variable type is unsigned.
-  */
- #define DIV_ROUND_CLOSEST(x, divisor)(			\
- {							\
- 	typeof(x) __x = x;				\
- 	typeof(divisor) __d = divisor;			\
--	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
-+	(((typeof(x))-1) > 0 ||				\
-+	 ((typeof(divisor))-1) > 0 || (__x) > 0) ?	\
- 		(((__x) + ((__d) / 2)) / (__d)) :	\
- 		(((__x) - ((__d) / 2)) / (__d));	\
- }							\
--- 
-1.7.9.7
+> =20
+>  #define REG_SECONDS  0x03
+>  #define REG_SECONDS_OS (1 << 7)
+> @@ -250,9 +252,29 @@ static int pcf8523_rtc_set_time(struct device *dev, =
+struct rtc_time *tm)
+>  	return pcf8523_start_rtc(client);
+>  }
+> =20
+> +static int pcf8523_rtc_read_vl(struct device *dev, int *vl)
+> +{
+> +	struct i2c_client *client =3D to_i2c_client(dev);
+> +	u8 value;
+> +	int err;
+> +
+> +	err =3D pcf8523_read(client, REG_CONTROL3, &value);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	if (value & REG_CONTROL3_BLF)
+> +		*vl =3D 1;
+> +	else
+> +		*vl =3D 0;
+> +
+> +	return 0;
+> +}
+> +
+> +
 
+That's one blank line too much.
+
+>  static const struct rtc_class_ops pcf8523_rtc_ops =3D {
+> -	.read_time =3D pcf8523_rtc_read_time,
+> -	.set_time =3D pcf8523_rtc_set_time,
+> +	.read_time	=3D pcf8523_rtc_read_time,
+> +	.set_time	=3D pcf8523_rtc_set_time,
+
+Maybe you shouldn't reindent these, but rather adopt the existing style
+instead.
+
+> +	.read_vl	=3D pcf8523_rtc_read_vl,
+
+What tree is this based on? None of the trees I have contains .read_vl
+in rtc_class_ops.
+
+Thierry
+
+--WYTEVAkct0FjGQmd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ0dJRAAoJEN0jrNd/PrOhlnUQAIUpcaGK4ZCP0UDrCEr2+jGw
+NurDtLmBd0sTQQ2x4S/sxKBHZR+CLb6DnhudBD6uKFUoiGMagZyBEBZTQh8YcPml
+tx09ct5cE1/wSfSR5u5NKmL1dBB/k0fPrVhFYebTYGum9egJlJJdixR3JDGEeTlB
+vFJ5QGS4rFx4lY8jzp4WMPb575lfgGFZkHY5S30ATolcwX9JPubqGnDsv65f1QV/
+VKoRZlW9aKtX9gtC6dCqv/z6dGvVQUdfDtH70nYQsS/eZv9CU3xWVX2BRGxEit9B
+9klcLb72oYfh2a7hZ7NMeFOmLf+NiQHSB4RsXB+bvSWRGufS8TIG7nsBHAiUez9j
+pyWcENYXtPo9xdQ6J+ZfZVmfq2V5wbR8r/+Ul75q35N/C19p0Crm0/HEirXg999t
+w7m7b2fC5d6/4f5uPRf/u4xFDiH9zfF8dko2mC2lKYuuQwPelHH0Aq6T3QyLDBjf
+q5qTWmEsLQvxIapdcVsydXba1OuGtJihReaMwyGZdp7P8S+GyJr3ZiPO5KhMlD5g
+qsIr98G8anijFWfMUvQitVYESl5kxdyd4NbmyQOjZkAoq1h/R1kJFrURfPh95Q79
+POM/UN3C8jR1W6Fjsyyqk5aXwJWd1Uwr3KWGnnkbUe9TyPp4PMaK+iYySujWuHbb
+HUTbFeu5klHzvJF74tLv
+=2Pyx
+-----END PGP SIGNATURE-----
+
+--WYTEVAkct0FjGQmd--
