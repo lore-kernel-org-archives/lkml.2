@@ -1,225 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab2LSFtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 00:49:53 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:51769 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab2LSFte (ORCPT
+	id S1751525Ab2LSFzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 00:55:23 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25718 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab2LSFzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 00:49:34 -0500
+	Wed, 19 Dec 2012 00:55:18 -0500
+Message-ID: <50D15600.6060001@huawei.com>
+Date: Wed, 19 Dec 2012 13:52:00 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1355841786-13307-5-git-send-email-gautam.vivek@samsung.com>
-References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
-	<1355841786-13307-5-git-send-email-gautam.vivek@samsung.com>
-Date: Wed, 19 Dec 2012 11:11:55 +0530
-Message-ID: <CAFp+6iE9vEUvGtHjLyHR_kWgJMgo1xebbj5njUC6939pXcqkYQ@mail.gmail.com>
-Subject: Re: [PATCH v5 4/4] USB: ohci-exynos: Add phy driver support
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: dianders@chromium.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        sylvester.nawrocki@gmail.com, jg1.han@samsung.com,
-        yulgon.kim@samsung.com, kishon@ti.com, p.paneri@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Jin <joe.jin@oracle.com>
+CC: "Fujinaka, Todd" <todd.fujinaka@intel.com>,
+        Ethan Zhao <ethan.kernel@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>, Jon Mason <jdmason@kudzu.us>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+References: <509B5038.8090304@oracle.com> <50A30656.6090508@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com> <50A43828.6000702@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com> <50A9C5CC.1030300@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com> <50AB8471.7080607@oracle.com> <9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com> <50B41077.3080009@oracle.com>	<b46b84cf-3688-4fd7-b741-4e96f2663517@default> <9B4A1B1917080E46B64F07F2989DADD62F2D8070@ORSMSX102.amr.corp.intel.com> <1354039840.2701.14.camel@bwh-desktop.uk.solarflarecom.com> <50B5CBD2.5020804@oracle.com> <9B4A1B1917080E46B64F07F2989DADD62F2D8AAC@ORSMSX102.amr.corp.intel.com> <CABawtvPrz=z_CLCvPeXkky7COyhjPyfBu3QCTbiiPpvr+5bicg@mail.gmail.com> <9B4A1B1917080E46B64F07F2989DADD638C60A9B@ORSMSX102.amr.corp.intel.com> <50D12EA2.3030907@oracle.com>
+In-Reply-To: <50D12EA2.3030907@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Doug Anderson.
+On 2012/12/19 11:04, Joe Jin wrote:
+> Hi all,
+> 
+> I backported mps commits and ask customer pass "pci=pcie_bus_peer2pee" to kernel
+> to limited MPS to 128 and issue disappeared, sound like this is a BIOS bug.
+> 
 
+Hi Joe,
+   I found similar problem when I do pci hotplug, discussion is here:http://marc.info/?l=linux-pci&m=134810569924220&w=2.
+We try to improve Linux kernel to debug this problem easily based Bjorn's suggestion. Jon sent out the first version patch http://marc.info/?l=linux-pci&m=135002016005274&w=2.
+I think we can do further here, http://marc.info/?l=linux-pci&m=135115581307869&w=2. I hope this information can help you.
 
-On Tue, Dec 18, 2012 at 8:13 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Adding the phy-driver to ohci-exynos. Keeping the platform data
-> for continuing the smooth operation for boards which still uses it
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/usb/host/ohci-exynos.c |   70 ++++++++++++++++++++++++++++------------
->  1 files changed, 49 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index 804fb62..c92ab7b 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -15,6 +15,7 @@
->  #include <linux/of.h>
->  #include <linux/platform_device.h>
->  #include <linux/platform_data/usb-exynos.h>
-> +#include <linux/usb/phy.h>
->  #include <linux/usb/samsung_usb_phy.h>
->  #include <plat/usb-phy.h>
->
-> @@ -22,8 +23,34 @@ struct exynos_ohci_hcd {
->         struct device *dev;
->         struct usb_hcd *hcd;
->         struct clk *clk;
-> +       struct usb_phy *phy;
-> +       struct exynos4_ohci_platdata *pdata;
->  };
->
-> +static void exynos_ohci_phy_enable(struct exynos_ohci_hcd *exynos_ohci)
-> +{
-> +       struct platform_device *pdev = to_platform_device(exynos_ohci->dev);
-> +
-> +       if (exynos_ohci->phy) {
-> +               samsung_usbphy_set_type(exynos_ohci->phy, USB_PHY_TYPE_HOST);
-> +               usb_phy_init(exynos_ohci->phy);
-> +       } else if (exynos_ohci->pdata->phy_init) {
-> +               exynos_ohci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-> +       }
-> +}
-> +
-> +static void exynos_ohci_phy_disable(struct exynos_ohci_hcd *exynos_ohci)
-> +{
-> +       struct platform_device *pdev = to_platform_device(exynos_ohci->dev);
-> +
-> +       if (exynos_ohci->phy) {
-> +               samsung_usbphy_set_type(exynos_ohci->phy, USB_PHY_TYPE_HOST);
-> +               usb_phy_shutdown(exynos_ohci->phy);
-> +       } else if (exynos_ohci->pdata->phy_exit) {
-> +               exynos_ohci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-> +       }
-> +}
-> +
->  static int ohci_exynos_reset(struct usb_hcd *hcd)
->  {
->         return ohci_init(hcd_to_ohci(hcd));
-> @@ -79,20 +106,15 @@ static u64 ohci_exynos_dma_mask = DMA_BIT_MASK(32);
->
->  static int exynos_ohci_probe(struct platform_device *pdev)
->  {
-> -       struct exynos4_ohci_platdata *pdata;
-> +       struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
->         struct exynos_ohci_hcd *exynos_ohci;
->         struct usb_hcd *hcd;
->         struct ohci_hcd *ohci;
->         struct resource *res;
-> +       struct usb_phy *phy;
->         int irq;
->         int err;
->
-> -       pdata = pdev->dev.platform_data;
-> -       if (!pdata) {
-> -               dev_err(&pdev->dev, "No platform data defined\n");
-> -               return -EINVAL;
-> -       }
-> -
->         /*
->          * Right now device-tree probed devices don't get dma_mask set.
->          * Since shared usb code relies on it, set it here for now.
-> @@ -108,6 +130,19 @@ static int exynos_ohci_probe(struct platform_device *pdev)
->         if (!exynos_ohci)
->                 return -ENOMEM;
->
-> +       phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-> +       if (IS_ERR_OR_NULL(phy)) {
-> +               /* Fallback to pdata */
-> +               if (!pdata) {
-> +                       dev_err(&pdev->dev, "no platform data or transceiver defined\n");
-> +                       return -EPROBE_DEFER;
-> +               } else {
-> +                       exynos_ohci->pdata = pdata;
-> +               }
-> +       } else {
-> +               exynos_ohci->phy = phy;
-> +       }
-> +
->         exynos_ohci->dev = &pdev->dev;
->
->         hcd = usb_create_hcd(&exynos_ohci_hc_driver, &pdev->dev,
-> @@ -153,8 +188,7 @@ static int exynos_ohci_probe(struct platform_device *pdev)
->                 goto fail_io;
->         }
->
-> -       if (pdata->phy_init)
-> -               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-> +       exynos_ohci_phy_enable(exynos_ohci);
->
->         ohci = hcd_to_ohci(hcd);
->         ohci_hcd_init(ohci);
-> @@ -162,13 +196,15 @@ static int exynos_ohci_probe(struct platform_device *pdev)
->         err = usb_add_hcd(hcd, irq, IRQF_SHARED);
->         if (err) {
->                 dev_err(&pdev->dev, "Failed to add USB HCD\n");
-> -               goto fail_io;
-> +               goto fail_add_hcd;
->         }
->
->         platform_set_drvdata(pdev, exynos_ohci);
->
->         return 0;
->
-> +fail_add_hcd:
-> +       exynos_ohci_phy_disable(exynos_ohci);
->  fail_io:
->         clk_disable_unprepare(exynos_ohci->clk);
->  fail_clk:
-> @@ -178,14 +214,12 @@ fail_clk:
->
->  static int exynos_ohci_remove(struct platform_device *pdev)
->  {
-> -       struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
->         struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
->         struct usb_hcd *hcd = exynos_ohci->hcd;
->
->         usb_remove_hcd(hcd);
->
-> -       if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-> +       exynos_ohci_phy_disable(exynos_ohci);
->
->         clk_disable_unprepare(exynos_ohci->clk);
->
-> @@ -209,8 +243,6 @@ static int exynos_ohci_suspend(struct device *dev)
->         struct exynos_ohci_hcd *exynos_ohci = dev_get_drvdata(dev);
->         struct usb_hcd *hcd = exynos_ohci->hcd;
->         struct ohci_hcd *ohci = hcd_to_ohci(hcd);
-> -       struct platform_device *pdev = to_platform_device(dev);
-> -       struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
->         unsigned long flags;
->         int rc = 0;
->
-> @@ -229,8 +261,7 @@ static int exynos_ohci_suspend(struct device *dev)
->
->         clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
->
-> -       if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-> +       exynos_ohci_phy_disable(exynos_ohci);
->
->         clk_disable_unprepare(exynos_ohci->clk);
->
-> @@ -244,13 +275,10 @@ static int exynos_ohci_resume(struct device *dev)
->  {
->         struct exynos_ohci_hcd *exynos_ohci = dev_get_drvdata(dev);
->         struct usb_hcd *hcd = exynos_ohci->hcd;
-> -       struct platform_device *pdev = to_platform_device(dev);
-> -       struct exynos4_ohci_platdata *pdata = pdev->dev.platform_data;
->
->         clk_prepare_enable(exynos_ohci->clk);
->
-> -       if (pdata && pdata->phy_init)
-> -               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-> +       exynos_ohci_phy_enable(exynos_ohci);
->
->         ohci_resume(hcd, false);
->
-> --
-> 1.7.6.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks!
+Yijing.
 
+> Thanks all of your help.
+> 
+> Best Regards,
+> Joe
+> 
+> On 11/29/12 23:52, Fujinaka, Todd wrote:
+>> Someone else pointed this out to me locally. If you have a non-client BIOS, you should be able to set the MaxPayloadSize using setpci. You have to make sure that you're being consistent throughout all the associated links.
+>>
+>> Todd Fujinaka
+>> Technical Marketing Engineer
+>> LAN Access Division (LAD)
+>> Intel Corporation
+>> todd.fujinaka@intel.com
+>> (503) 712-4565
+>>
+>>
+>> -----Original Message-----
+>> From: Ethan Zhao [mailto:ethan.kernel@gmail.com] 
+>> Sent: Wednesday, November 28, 2012 7:10 PM
+>> To: Fujinaka, Todd
+>> Cc: Joe Jin; Ben Hutchings; Mary Mcgrath; netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
+>> Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+>>
+>> Joe,
+>>     Possibly your customer is running a kernel without source code on a platform whose vendor wouldn't like to fix BIOS issue( Is that a HP/Dell server ?).
+>>     Anyway, to see if is a payload issue or,  you could change the payload size with setpci tool to those devices and set the link retrain bit to trigger the link retraining to debug the issue and identity the root cause.  I thinks it is much easier than modify the BIOS or  eeprom of NIC.
+>>
+>>     e.g.
+>>    set device control register to 0f 00   (128 bytes payload size)
+>>    #   setpci -v -s 00:02.0 98.w=000f
+>>    set device link control register to 60h (retrain the link)
+>>    #  setpci -v -s 00:02.0 a0.b=60
+>>
+>>   Hope it works,  Just my 2 cents.
+>>
+>> Ethan.zhao@oracle.com
+>>
+>> On Wed, Nov 28, 2012 at 11:53 PM, Fujinaka, Todd <todd.fujinaka@intel.com> wrote:
+>>> The only EEPROM I know about or can speak to is the one attached to the 82571 and it doesn't set the MaxPayloadSize. That's done by the BIOS.
+>>>
+>>> Todd Fujinaka
+>>> Technical Marketing Engineer
+>>> LAN Access Division (LAD)
+>>> Intel Corporation
+>>> todd.fujinaka@intel.com
+>>> (503) 712-4565
+>>>
+>>>
+>>> -----Original Message-----
+>>> From: Joe Jin [mailto:joe.jin@oracle.com]
+>>> Sent: Wednesday, November 28, 2012 12:31 AM
+>>> To: Ben Hutchings
+>>> Cc: Fujinaka, Todd; Mary Mcgrath; netdev@vger.kernel.org; 
+>>> e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
+>>> Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+>>>
+>>> On 11/28/12 02:10, Ben Hutchings wrote:
+>>>> On Tue, 2012-11-27 at 17:32 +0000, Fujinaka, Todd wrote:
+>>>>> Forgive me if I'm being too repetitious as I think some of this has 
+>>>>> been mentioned in the past.
+>>>>>
+>>>>> We (and by we I mean the Ethernet part and driver) can only change 
+>>>>> the advertised availability of a larger MaxPayloadSize. The size is 
+>>>>> negotiated by both sides of the link when the link is established.
+>>>>> The driver should not change the size of the link as it would be 
+>>>>> poking at registers outside of its scope and is controlled by the 
+>>>>> upstream bridge (not us).
+>>>> [...]
+>>>>
+>>>> MaxPayloadSize (MPS) is not negotiated between devices but is 
+>>>> programmed by the system firmware (at least for devices present at 
+>>>> boot - the kernel may be responsible in case of hotplug).  You can 
+>>>> use the kernel parameter 'pci=pcie_bus_perf' (or one of several 
+>>>> others) to set a policy that overrides this, but no policy will allow 
+>>>> setting MPS above the device's MaxPayloadSizeSupported (MPSS).
+>>>>
+>>>
+>>> Ben,
+>>>
+>>> Unfortunately I'm using 3.0.x kernel and this is not included in the kernel.
+>>> So I'm trying to use ethtool modify it from eeprom to see if help or no.
+>>>
+>>>
+>>> Todd, I'll review all MaxPayload for all devices, but need to say if it mismatch, customer could not modify it from BIOS for there was not entry at there, to test it, we have to find how to verify if this is the root cause, so still need to find the offset in eeprom.
+>>>
+>>> Thanks in advance,
+>>> Joe
+>>>
+> 
+> 
 
 
 -- 
-Thanks & Regards
-Vivek
+Thanks!
+Yijing
+
