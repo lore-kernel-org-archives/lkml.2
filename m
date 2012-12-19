@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2LSXKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:10:30 -0500
-Received: from gate.crashing.org ([63.228.1.57]:59217 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926Ab2LSXKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:10:23 -0500
-Message-ID: <1355958613.5397.54.camel@pasglop>
-Subject: Re: [git pull] Please pull powerpc.git next branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Thu, 20 Dec 2012 10:10:13 +1100
-In-Reply-To: <CA+55aFw-cRskrvW07FVJd9HfrBhn41Ogi1Vv_v1U12zahzFu=A@mail.gmail.com>
-References: <1355517897.19932.136.camel@pasglop>
-	 <1355787094.5397.30.camel@pasglop>
-	 <CA+55aFw-cRskrvW07FVJd9HfrBhn41Ogi1Vv_v1U12zahzFu=A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1752033Ab2LSXMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:12:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44632 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab2LSXMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 18:12:44 -0500
+Date: Wed, 19 Dec 2012 15:12:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Dae S. Kim" <dae@velatum.com>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] char/misc.c: misc_register: Do not loop on misc_list
+ unconditionally
+Message-Id: <20121219151243.9f8882c8.akpm@linux-foundation.org>
+In-Reply-To: <20121217222638.GA3747@Delta>
+References: <20121217222638.GA3747@Delta>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-18 at 10:02 -0800, Linus Torvalds wrote:
+On Mon, 17 Dec 2012 23:26:38 +0100
+"Dae S. Kim" <dae@velatum.com> wrote:
 
-> Anyway, I've pulled it in, but got a conflict on the kernel_thread
-> cleanups from Al. And since the conflict was in the powerpc assembly
-> code that I don't really know the details of, I did the
-> straightforward resolve of it, but I'd like you to check it out.
+> If the minor number is assigned dynamically, there is no need to
+> search for misc->minor in misc_list, since misc->minor == 
+> MISC_DYNAMIC_MINOR.
 > 
-> (I haven't pushed it out yet, I'm waiting for the allmodconfig to
-> finish compiling, so if you see this email quickly, but don't see the
-> powerpc merge yet, just wait a few minutes)
+> ...
+>
+> --- a/drivers/char/misc.c
+> +++ b/drivers/char/misc.c
+> @@ -190,12 +190,6 @@ int misc_register(struct miscdevice * misc)
+>  	INIT_LIST_HEAD(&misc->list);
+>  
+>  	mutex_lock(&misc_mtx);
+> -	list_for_each_entry(c, &misc_list, list) {
+> -		if (c->minor == misc->minor) {
+> -			mutex_unlock(&misc_mtx);
+> -			return -EBUSY;
+> -		}
+> -	}
+>  
+>  	if (misc->minor == MISC_DYNAMIC_MINOR) {
+>  		int i = find_first_zero_bit(misc_minors, DYNAMIC_MINORS);
+> @@ -205,6 +199,13 @@ int misc_register(struct miscdevice * misc)
+>  		}
+>  		misc->minor = DYNAMIC_MINORS - i - 1;
+>  		set_bit(i, misc_minors);
+> +	} else {
+> +		list_for_each_entry(c, &misc_list, list) {
+> +			if (c->minor == misc->minor) {
+> +				mutex_unlock(&misc_mtx);
+> +				return -EBUSY;
+> +			}
+> +		}
+>  	}
+>  
 
-Sorry for the delay, I verified that it looked right yesterday but
-didn't manage to actually test it until today due to a problem with our
-test farm. It's all good, thanks !
+Looks OK.  It permits this:
 
-Cheers,
-Ben.
 
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: drivers-char-miscc-misc_register-do-not-loop-on-misc_list-unconditionally-fix
+
+reduce scope of local `c'
+
+Cc: "Dae S. Kim" <dae@velatum.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Dae S. Kim <dae@velatum.com>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/char/misc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff -puN drivers/char/misc.c~drivers-char-miscc-misc_register-do-not-loop-on-misc_list-unconditionally-fix drivers/char/misc.c
+--- a/drivers/char/misc.c~drivers-char-miscc-misc_register-do-not-loop-on-misc_list-unconditionally-fix
++++ a/drivers/char/misc.c
+@@ -183,7 +183,6 @@ static const struct file_operations misc
+  
+ int misc_register(struct miscdevice * misc)
+ {
+-	struct miscdevice *c;
+ 	dev_t dev;
+ 	int err = 0;
+ 
+@@ -200,6 +199,8 @@ int misc_register(struct miscdevice * mi
+ 		misc->minor = DYNAMIC_MINORS - i - 1;
+ 		set_bit(i, misc_minors);
+ 	} else {
++		struct miscdevice *c;
++
+ 		list_for_each_entry(c, &misc_list, list) {
+ 			if (c->minor == misc->minor) {
+ 				mutex_unlock(&misc_mtx);
+_
 
