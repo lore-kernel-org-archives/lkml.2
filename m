@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab2LSNCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 08:02:04 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:45754 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2LSNB5 (ORCPT
+	id S1751709Ab2LSNDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 08:03:21 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:61876 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab2LSNDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 08:01:57 -0500
+	Wed, 19 Dec 2012 08:03:14 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
 Subject: Re: [PATCH] serial: tegra: add serial driver
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, alan@linux.intel.com,
-        gregkh@linuxfoundation.org, jslaby@suse.cz, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-In-Reply-To: <50CF8F36.2030309@wwwdotorg.org>
-References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com> <20121217171027.6AE573E0BDD@localhost> <50CF8F36.2030309@wwwdotorg.org>
-Date: Wed, 19 Dec 2012 13:01:51 +0000
-Message-Id: <20121219130151.F29CA3E0AD7@localhost>
+To: Mitch Bradley <wmb@firmworks.com>, Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, rob.herring@calxeda.com,
+        linux-doc@vger.kernel.org, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-tegra@vger.kernel.org,
+        jslaby@suse.cz, alan@linux.intel.com
+In-Reply-To: <50CF99EC.1050509@firmworks.com>
+References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com> <50CF9043.8030308@wwwdotorg.org> <50CF9580.4050300@firmworks.com> <50CF96D4.6010705@wwwdotorg.org> <50CF99EC.1050509@firmworks.com>
+Date: Wed, 19 Dec 2012 13:03:05 +0000
+Message-Id: <20121219130307.B8FCB3E0AD7@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012 14:31:34 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 12/17/2012 10:10 AM, Grant Likely wrote:
-> > On Mon, 17 Dec 2012 17:40:49 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> >> Nvidia's Tegra has multiple uart controller which supports:
-> >> - APB dma based controller fifo read/write.
-> >> - End Of Data interrupt in incoming data to know whether end
-> >>   of frame achieve or not.
-> >> - Hw controlled RTS and CTS flow control to reduce SW overhead.
-> 
-> >> +static int __devinit tegra_uart_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct tegra_uart_port *tup;
-> >> +	struct uart_port *u;
-> >> +	struct tegra_uart_platform_data *pdata = pdev->dev.platform_data;
+On Mon, 17 Dec 2012 12:17:16 -1000, Mitch Bradley <wmb@firmworks.com> wrote:
+> On 12/17/2012 12:04 PM, Stephen Warren wrote:
+> > On 12/17/2012 02:58 PM, Mitch Bradley wrote:
+> >> On 12/17/2012 11:36 AM, Stephen Warren wrote:
+> >>> On 12/17/2012 05:10 AM, Laxman Dewangan wrote:
+> >>>> Nvidia's Tegra has multiple uart controller which supports:
+> >>>> - APB dma based controller fifo read/write.
+> >>>> - End Of Data interrupt in incoming data to know whether end
+> >>>>   of frame achieve or not.
+> >>>> - Hw controlled RTS and CTS flow control to reduce SW overhead.
+> >>>
+> >>>> diff --git a/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt b/Documentation/devicetree/bindings/serial/nvidia,serial-tegra.txt
+> >>>
+> >>>> +NVIDIA Tegra20/Tegra30 high speed (dma based) UART controller driver.
+> >>>> +
+> >>>> +Required properties:
+> >>>> +- compatible : should be "nvidia,tegra20-hsuart", "nvidia,tegra30-hsuart".
+> >>>
+> >>> One question that isn't addressed here is:
+> >>>
+> >>> Tegra has 5 UARTs. All of them can use the existing 8250.c by specifying
+> >>> compatible = "nvidia,tegra20-uart".
+> >>
+> >> The way it is supposed to work is that the compatible property should
+> >> list "nvidia,tegra30-hsuart" first, followed by a fallback name that
+> >> refers to the generic 8250 compatibility.  Having the 8250.c driver bind
+> >> to the more-specific tegra30-hsuart name is wrong.
 > > 
-> > Since this is a new driver, and all new board support will use device
-> > tree, when would this platform_data pointer get set? Can you drop the
-> > platform_data support code entirely?
+> > 8250.c binds to nvidia,tegra20-uart, so that aspect is fine.
+> > 
+> > However, the real issue is that we probably want 4 of the 5 ports to use
+> > the plain old 8250.c (so as not to use up too many DMA channels), but
+> > just 1 of the ports to use the DMA-capable high-performance driver (e.g.
+> > the one that a particular board has hooked up to a Bluetooth radio). The
+> > only way to do that with DT that I know of would be to specify different
+> > subsets of legal compatible values for each UART in the per-board .dts file.
 > 
-> Aren't we still supposed to support platform data so that it can
-> override what's in DT in order to fix up bad DTs? Or, has that
-> requirement been dropped. If it has, we can drop a bunch of code from a
-> variety of Tegra-specific drivers, I expect.
+> 
+> That's an okay way to do it.  The whole purpose of the compatible
+> property is to support driver binding.  The mantra to "describe the
+> hardware" is good, but shouldn't be taken to extremes.
+> 
+> It would be a good idea to comment the .dts file to explain why the
+> compatible property differs between the otherwise-identical nodes.
 
-Do you have an actual user for this? If not, then don't borrow trouble.
-Just drop it. Things like platform_data can always be added later only
-if it is needed.
++1
 
 g.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
