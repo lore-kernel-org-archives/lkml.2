@@ -1,137 +1,1216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab2LSLIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 06:08:40 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37583 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296Ab2LSLIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 06:08:32 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from probing ACPI drivers
-Date: Wed, 19 Dec 2012 12:13:45 +0100
-Message-ID: <9914743.4VRVUiabDD@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <CAErSpo63cQJskAJKBwai6ipToVHEEwCWXeRfBOzF29Ds29MTbA@mail.gmail.com>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <4447450.z46Q2xYLQX@vostro.rjw.lan> <CAErSpo63cQJskAJKBwai6ipToVHEEwCWXeRfBOzF29Ds29MTbA@mail.gmail.com>
+	id S1754945Ab2LSLJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 06:09:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35712 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751604Ab2LSLJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 06:09:12 -0500
+Date: Wed, 19 Dec 2012 11:09:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, andrey.smrinov@convergeddevices.net,
+        sameo@linux.intel.com, perex@perex.cz, tiwai@suse.de,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/6] Add header files and Kbuild plumbing for SI476x
+ MFD core
+Message-ID: <20121219110909.GS4985@opensource.wolfsonmicro.com>
+References: <1349488502-11293-1-git-send-email-andrey.smirnov@convergeddevices.net>
+ <1349488502-11293-2-git-send-email-andrey.smirnov@convergeddevices.net>
+ <201210081043.15644.hverkuil@xs4all.nl>
+ <50731D89.40007@convergeddevices.net>
+ <20121218173744.1ee067b8@redhat.com>
+ <50D12F70.3080400@convergeddevices.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="f4HxWLVbzokH9yio"
+Content-Disposition: inline
+In-Reply-To: <50D12F70.3080400@convergeddevices.net>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 18, 2012 04:19:55 PM Bjorn Helgaas wrote:
-> On Tue, Dec 18, 2012 at 4:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Tuesday, December 18, 2012 03:15:12 PM Toshi Kani wrote:
-> >> On Tue, 2012-12-18 at 22:57 +0100, Rafael J. Wysocki wrote:
-> >> > On Tuesday, December 18, 2012 09:10:41 AM Toshi Kani wrote:
-> >> > > On Tue, 2012-12-18 at 02:48 +0100, Rafael J. Wysocki wrote:
-> >>  :
-> >> > > We need to decide which module is responsible for calling .bind().  I
-> >> > > think it should be the ACPI scan module, not the ACPI PCI root bridge
-> >> > > driver, because:
-> >> > >  - bind() needs to be called when _ADR device is added.  The ACPI scan
-> >> > > module can scan any devices, while the PCI root driver can only scan
-> >> > > when it is added.
-> >> > >  - acpi_bus_remove() calls unbind() at hot-remove.  The same module
-> >> > > should be responsible for both bind() and unbind() handling.
-> >> > >  - It is cleaner to keep struct acpi_device_ops interface to be called
-> >> > > by the ACPI core.
-> >> >
-> >> > I agree with that. :-)
-> >> >
-> >> > Moreover, I don't think we need acpi_pci_bind() and acpi_pci_unbind() at all.
-> >> >
-> >> > > So, I would propose the following changes.
-> >> > >
-> >> > >  - Move the acpi_hot_add_bind() call back to the original place after
-> >> > > the device_attach() call.
-> >> > >  - Rename the name of acpi_hot_add_bind() to something like
-> >> > > acpi_bind_adr_device() since it is no longer hot-add only (and is
-> >> > > specific to _ADR devices).
-> >> > >  - Create its pair function, acpi_unbind_adr_device(), which is called
-> >> > > from acpi_bus_remove().  When a constructor interface is introduced, its
-> >> > > destructor should be introduced as well.
-> >> > >  - Remove the binding procedure from acpi_pci_root_add().  This should
-> >> > > be done in patch [2/6].
-> >> >
-> >> > Well, what about moving the code from acpi_pci_bind()/acpi_pci_unbind()
-> >> > somewhere else and removing those things altogether?
+
+--f4HxWLVbzokH9yio
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Dec 18, 2012 at 07:07:28PM -0800, Andrey Smirnov wrote:
+> On 12-12-18 11:37 AM, Mauro Carvalho Chehab wrote:
+> >Em Mon, 8 Oct 2012 11:38:01 -0700
+> >Andrey Smirnov <andrey.smirnov@convergeddevices.net> escreveu:
+
+Guys, please delete irrelevant context from mails.  I just TL;DRed this
+so if there's anything you're expecting from me on this please let me
+know.
+
+> >
+> >>On 10/08/2012 01:43 AM, Hans Verkuil wrote:
+> >>>On Sat October 6 2012 03:54:57 Andrey Smirnov wrote:
+> >>>>This patch adds all necessary header files and Kbuild plumbing for the
+> >>>>core driver for Silicon Laboratories Si476x series of AM/FM tuner
+> >>>>chips.
+> >>>>
+> >>>>The driver as a whole is implemented as an MFD device and this patch
+> >>>>adds a core portion of it that provides all the necessary
+> >>>>functionality to the two other drivers that represent radio and audio
+> >>>>codec subsystems of the chip.
+> >>>>
+> >>>>Signed-off-by: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+> >>>>---
+> >>>>  drivers/mfd/Kconfig             |   14 ++
+> >>>>  drivers/mfd/Makefile            |    3 +
+> >>>>  include/linux/mfd/si476x-core.h |  529 ++++++++++++++++++++++++++++=
++++++++++++
+> >>>>  include/media/si476x.h          |  449 ++++++++++++++++++++++++++++=
++++++
+> >>>>  4 files changed, 995 insertions(+)
+> >>>>  create mode 100644 include/linux/mfd/si476x-core.h
+> >>>>  create mode 100644 include/media/si476x.h
+> >>>>
+> >>>>diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> >>>>index b1a1462..3fab06d 100644
+> >>>>--- a/drivers/mfd/Kconfig
+> >>>>+++ b/drivers/mfd/Kconfig
+> >>>>@@ -895,6 +895,20 @@ config MFD_WL1273_CORE
+> >>>>  	  driver connects the radio-wl1273 V4L2 module and the wl1273
+> >>>>  	  audio codec.
+> >>>>+config MFD_SI476X_CORE
+> >>>>+	tristate "Support for Silicon Laboratories 4761/64/68 AM/FM radio."
+> >>>>+	depends on I2C
+> >>>>+	select MFD_CORE
+> >>>>+	default n
+> >>>>+	help
+> >>>>+	  This is the core driver for the SI476x series of AM/FM radio. Thi=
+s MFD
+> >>>>+	  driver connects the radio-si476x V4L2 module and the si476x
+> >>>>+	  audio codec.
+> >>>>+
+> >>>>+	  To compile this driver as a module, choose M here: the
+> >>>>+	  module will be called si476x-core.
+> >>>>+
+> >>>>+
+> >>>>  config MFD_OMAP_USB_HOST
+> >>>>  	bool "Support OMAP USBHS core driver"
+> >>>>  	depends on USB_EHCI_HCD_OMAP || USB_OHCI_HCD_OMAP3
+> >>>>diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> >>>>index 79dd22d..942257b 100644
+> >>>>--- a/drivers/mfd/Makefile
+> >>>>+++ b/drivers/mfd/Makefile
+> >>>>@@ -132,3 +132,6 @@ obj-$(CONFIG_MFD_RC5T583)	+=3D rc5t583.o rc5t583-=
+irq.o
+> >>>>  obj-$(CONFIG_MFD_SEC_CORE)	+=3D sec-core.o sec-irq.o
+> >>>>  obj-$(CONFIG_MFD_ANATOP)	+=3D anatop-mfd.o
+> >>>>  obj-$(CONFIG_MFD_LM3533)	+=3D lm3533-core.o lm3533-ctrlbank.o
+> >>>>+
+> >>>>+si476x-core-objs :=3D si476x-cmd.o si476x-prop.o si476x-i2c.o
+> >>>>+obj-$(CONFIG_MFD_SI476X_CORE)	+=3D si476x-core.o
+> >>>>diff --git a/include/linux/mfd/si476x-core.h b/include/linux/mfd/si47=
+6x-core.h
+> >>>>new file mode 100644
+> >>>>index 0000000..eb6f52a
+> >>>>--- /dev/null
+> >>>>+++ b/include/linux/mfd/si476x-core.h
+> >>>>@@ -0,0 +1,529 @@
+> >>>>+/*
+> >>>>+ * include/media/si476x-core.h -- Common definitions for si476x core
+> >>>>+ * device
+> >>>>+ *
+> >>>>+ * Copyright (C) 2012 Innovative Converged Devices(ICD)
+> >>>>+ *
+> >>>>+ * Author: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+> >>>>+ *
+> >>>>+ * This program is free software; you can redistribute it and/or mod=
+ify
+> >>>>+ * it under the terms of the GNU General Public License as published=
+ by
+> >>>>+ * the Free Software Foundation; version 2 of the License.
+> >>>>+ *
+> >>>>+ * This program is distributed in the hope that it will be useful, b=
+ut
+> >>>>+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>>>+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> >>>>+ * General Public License for more details.
+> >>>>+ *
+> >>>>+ */
+> >>>>+
+> >>>>+#ifndef SI476X_CORE_H
+> >>>>+#define SI476X_CORE_H
+> >>>>+
+> >>>>+#include <linux/kfifo.h>
+> >>>>+#include <linux/atomic.h>
+> >>>>+#include <linux/i2c.h>
+> >>>>+#include <linux/mutex.h>
+> >>>>+#include <linux/mfd/core.h>
+> >>>>+#include <linux/videodev2.h>
+> >>>>+
+> >>>>+#include <media/si476x.h>
+> >>>>+
+> >>>>+#ifdef DEBUG
+> >>>>+#define DBG_BUFFER(device, header, buffer, bcount)			\
+> >>>>+	do {								\
+> >>>>+		dev_info((device), header);				\
+> >>>>+		print_hex_dump_bytes("",				\
+> >>>>+				     DUMP_PREFIX_OFFSET,		\
+> >>>>+				     buffer, bcount);			\
+> >>>>+	} while (0)
+> >>>>+#else
+> >>>>+#define DBG_BUFFER(device, header, buffer, bcount)			\
+> >>>>+	do {} while (0)
+> >>>>+#endif
+> >>>>+
+> >>>>+enum si476x_freq_suppoted_chips {
+> >>>typo: suppoted -> supported
+> >>>
+> >>>>+	SI476X_CHIP_SI4761 =3D 1,
+> >>>>+	SI476X_CHIP_SI4762,
+> >>>>+	SI476X_CHIP_SI4763,
+> >>>>+	SI476X_CHIP_SI4764,
+> >>>>+	SI476X_CHIP_SI4768,
+> >>>>+	SI476X_CHIP_SI4769,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_mfd_cells {
+> >>>>+	SI476X_RADIO_CELL =3D 0,
+> >>>>+	SI476X_CODEC_CELL,
+> >>>>+	SI476X_MFD_CELLS,
+> >>>>+};
+> >>>>+
+> >>>>+
+> >>>>+/**
+> >>>>+ * enum si476x_power_state - possible power state of the si476x
+> >>>>+ * device.
+> >>>>+ *
+> >>>>+ * @SI476X_POWER_DOWN: In this state all regulators are turned off
+> >>>>+ * and the reset line is pulled low. The device is completely
+> >>>>+ * inactive.
+> >>>>+ * @SI476X_POWER_UP_FULL: In this state all the power regualtors are
+> >>>>+ * turned on, reset line pulled high, IRQ line is enabled(polling is
+> >>>>+ * active for polling use scenario) and device is turned on with
+> >>>>+ * POWER_UP command. The device is ready to be used.
+> >>>>+ * @SI476X_POWER_INCONSISTENT: This state indicates that previous
+> >>>>+ * power down was inconsisten meaning some of he regulators wer not
+> >>>>+ * turned down and thus the consequent use of the device, without
+> >>>>+ * power-cycling it is impossible.
+> >>>>+ */
+> >>>>+enum si476x_power_state {
+> >>>>+	SI476X_POWER_DOWN		=3D 0,
+> >>>>+	SI476X_POWER_UP_FULL		=3D 1,
+> >>>>+	SI476X_POWER_INCONSISTENT	=3D 2,
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * struct si476x_core - internal data structure representing the
+> >>>>+ * underlying "core" device which all the MFD cell-devices use.
+> >>>>+ *
+> >>>>+ * @client: Actual I2C client used to transfer commands to the chip.
+> >>>>+ * @chip_id: Last digit of the chip model(E.g. "1" for SI4761)
+> >>>>+ * @cells: MFD cell devices created by this driver.
+> >>>>+ * @cmd_lock: Mutex used to serialize all the requests to the core
+> >>>>+ * device. This filed should not be used directly. Instead
+> >>>>+ * si476x_core_lock()/si476x_core_unlock() should be used to get
+> >>>>+ * exclusive access to the "core" device.
+> >>>>+ * @users: Active users counter(Used by the radio cell)
+> >>>>+ * @rds_read_queue: Wait queue used to wait for RDS data.
+> >>>>+ * @rds_fifo: FIFO in which all the RDS data received from the chip =
+is
+> >>>>+ * placed.
+> >>>>+ * @rds_fifo_drainer: Worker that drains on-chip RDS FIFO.
+> >>>>+ * @rds_drainer_is_working: Flag used for launching only one instance
+> >>>>+ * of the @rds_fifo_drainer.
+> >>>>+ * @rds_drainer_status_lock: Lock used to guard access to the
+> >>>>+ * @rds_drainer_is_working variable.
+> >>>>+ * @command: Wait queue for wainting on the command comapletion.
+> >>>>+ * @cts: Clear To Send flag set upon receiving first status with CTS
+> >>>>+ * set.
+> >>>>+ * @tuning: Wait queue used for wainting for tune/seek comand
+> >>>>+ * completion.
+> >>>>+ * @stc: Similar to @cts, but for the STC bit of the status value.
+> >>>>+ * @power_up_parameters: Parameters used as argument for POWER_UP
+> >>>>+ * command when the device is started.
+> >>>>+ * @state: Current power state of the device.
+> >>>>+ * @supplues: Structure containing handles to all power supplies used
+> >>>>+ * by the device (NULL ones are ignored).
+> >>>>+ * @gpio_reset: GPIO pin connectet to the RSTB pin of the chip.
+> >>>>+ * @pinmux: Chip's configurable pins configuration.
+> >>>>+ * @diversity_mode: Chips role when functioning in diversity mode.
+> >>>>+ * @status_monitor: Polling worker used in polling use case scenarion
+> >>>>+ * (when IRQ is not avalible).
+> >>>>+ * @revision: Chip's running firmware revision number(Used for corre=
+ct
+> >>>>+ * command set support).
+> >>>>+ */
+> >>>>+
+> >>>>+struct si476x_core {
+> >>>>+	struct i2c_client *client;
+> >>>>+	int chip_id;
+> >>>>+	struct mfd_cell cells[SI476X_MFD_CELLS];
+> >>>>+
+> >>>>+	struct mutex cmd_lock; /* for serializing fm radio operations */
+> >>>>+	atomic_t users;
+> >>>>+
+> >>>>+	wait_queue_head_t  rds_read_queue;
+> >>>>+	struct kfifo       rds_fifo;
+> >>>>+	struct work_struct rds_fifo_drainer;
+> >>>>+	bool               rds_drainer_is_working;
+> >>>>+	struct mutex       rds_drainer_status_lock;
+> >>>>+
+> >>>>+
+> >>>>+	wait_queue_head_t command;
+> >>>>+	atomic_t          cts;
+> >>>>+
+> >>>>+	wait_queue_head_t tuning;
+> >>>>+	atomic_t          stc;
+> >>>>+
+> >>>>+	struct si476x_power_up_args power_up_parameters;
+> >>>>+
+> >>>>+	enum si476x_power_state power_state;
+> >>>>+
+> >>>>+	struct {
+> >>>>+		struct regulator *vio1;
+> >>>>+		struct regulator *vd;
+> >>>>+		struct regulator *va;
+> >>>>+		struct regulator *vio2;
+> >>>>+	} supplies;
+> >>>>+
+> >>>>+	int gpio_reset;
+> >>>>+
+> >>>>+	struct si476x_pinmux pinmux;
+> >>>>+	enum si476x_phase_diversity_mode diversity_mode;
+> >>>>+
+> >>>>+	atomic_t is_alive;
+> >>>>+
+> >>>>+	struct delayed_work status_monitor;
+> >>>>+#define SI476X_WORK_TO_CORE(w) container_of(to_delayed_work(w),	\
+> >>>>+					    struct si476x_core,	\
+> >>>>+					    status_monitor)
+> >>>>+
+> >>>>+	int revision;
+> >>>>+
+> >>>>+	int rds_fifo_depth;
+> >>>>+
+> >>>>+	struct {
+> >>>>+		atomic_t tune;
+> >>>>+		atomic_t power_up;
+> >>>>+		atomic_t command;
+> >>>>+	} timeouts;
+> >>>>+
+> >>>>+	atomic_t polling_interval;
+> >>>>+};
+> >>>>+
+> >>>>+static inline struct si476x_core *i2c_mfd_cell_to_core(struct device=
+ *dev)
+> >>>>+{
+> >>>>+	struct i2c_client *client =3D to_i2c_client(dev->parent);
+> >>>>+	return i2c_get_clientdata(client);
+> >>>>+}
+> >>>>+
+> >>>>+
+> >>>>+/**
+> >>>>+ * si476x_core_lock() - lock the core device to get an exclusive acc=
+es
+> >>>acces -> access
+> >>>
+> >>>>+ * to it.
+> >>>>+ */
+> >>>>+static inline void si476x_core_lock(struct si476x_core *core)
+> >>>>+{
+> >>>>+	mutex_lock(&core->cmd_lock);
+> >>>>+}
+> >>>>+
+> >>>>+/**
+> >>>>+ * si476x_core_unlock() - unlock the core device to relinquish an
+> >>>>+ * exclusive acces to it.
+> >>>Ditto
+> >>>
+> >>>>+ */
+> >>>>+static inline void si476x_core_unlock(struct si476x_core *core)
+> >>>>+{
+> >>>>+	mutex_unlock(&core->cmd_lock);
+> >>>>+}
+> >>>>+
+> >>>>+void si476x_core_get(struct si476x_core *core);
+> >>>>+void si476x_core_put(struct si476x_core *core);
+> >>>>+
+> >>>>+
+> >>>>+/* *_TUNE_FREQ family of commands accept frequency in multiples of
+> >>>>+    10kHz */
+> >>>>+static inline u16 hz_to_si476x(struct si476x_core *core, int freq)
+> >>>>+{
+> >>>>+	u16 result;
+> >>>>+
+> >>>>+	switch (core->power_up_parameters.func) {
+> >>>>+	default:
+> >>>>+	case SI476X_FUNC_FM_RECEIVER:
+> >>>>+		result =3D freq / 10000;
+> >>>>+		break;
+> >>>>+	case SI476X_FUNC_AM_RECEIVER:
+> >>>>+		result =3D freq / 1000;
+> >>>>+		break;
+> >>>>+	}
+> >>>>+
+> >>>>+	return result;
+> >>>>+}
+> >>>>+
+> >>>>+static inline int si476x_to_hz(struct si476x_core *core, u16 freq)
+> >>>>+{
+> >>>>+	int result;
+> >>>>+
+> >>>>+	switch (core->power_up_parameters.func) {
+> >>>>+	default:
+> >>>>+	case SI476X_FUNC_FM_RECEIVER:
+> >>>>+		result =3D freq * 10000;
+> >>>>+		break;
+> >>>>+	case SI476X_FUNC_AM_RECEIVER:
+> >>>>+		result =3D freq * 1000;
+> >>>>+		break;
+> >>>>+	}
+> >>>>+
+> >>>>+	return result;
+> >>>>+}
+> >>>>+
+> >>>>+/* Since the V4L2_TUNER_CAP_LOW flag is supplied, V4L2 subsystem
+> >>>>+ * mesures frequency in 62.5 Hz units */
+> >>>>+
+> >>>>+static inline int hz_to_v4l2(int freq)
+> >>>>+{
+> >>>>+	return (freq * 10) / 625;
+> >>>>+}
+> >>>>+
+> >>>>+static inline int v4l2_to_hz(int freq)
+> >>>>+{
+> >>>>+	return (freq * 625) / 10;
+> >>>>+}
+> >>>>+
+> >>>>+static inline u16 v4l2_to_si476x(struct si476x_core *core, int freq)
+> >>>>+{
+> >>>>+	return hz_to_si476x(core, v4l2_to_hz(freq));
+> >>>>+}
+> >>>>+
+> >>>>+static inline int si476x_to_v4l2(struct si476x_core *core, u16 freq)
+> >>>>+{
+> >>>>+	return hz_to_v4l2(si476x_to_hz(core, freq));
+> >>>>+}
+> >>>>+
+> >>>>+
+> >>>>+
+> >>>>+/**
+> >>>>+ * struct si476x_func_info - structure containing result of the
+> >>>>+ * FUNC_INFO command.
+> >>>>+ *
+> >>>>+ * @firmware.major: Firmare major number.
+> >>>Firmare -> Firmware
+> >>>
+> >>>>+ * @firmware.minor[...]: Firmare minor numbers.
+> >>>ditto
+> >>>
+> >>>>+ * @patch_id:
+> >>>>+ * @func: Mode tuner is working in.
+> >>>>+ */
+> >>>>+struct si476x_func_info {
+> >>>>+	struct {
+> >>>>+		u8 major, minor[2];
+> >>>>+	} firmware;
+> >>>>+	u16 patch_id;
+> >>>>+	enum si476x_func func;
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * struct si476x_power_down_args - structure used to pass parameters
+> >>>>+ * to POWER_DOWN command
+> >>>>+ *
+> >>>>+ * @xosc: true - Power down, but leav oscillator running.
+> >>>>+ *        false - Full power down.
+> >>>>+ */
+> >>>>+struct si476x_power_down_args {
+> >>>>+	bool xosc;
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * enum si476x_tunemode - enum representing possible tune modes for
+> >>>>+ * the chip.
+> >>>>+ * @SI476X_TM_VALIDATED_NORMAL_TUNE: Unconditionally stay on the new
+> >>>>+ * channel after tune, tune status is valid.
+> >>>>+ * @SI476X_TM_INVALIDATED_FAST_TUNE: Unconditionally stay in the new
+> >>>>+ * channel after tune, tune status invalid.
+> >>>>+ * @SI476X_TM_VALIDATED_AF_TUNE: Jump back to previous channel if
+> >>>>+ * metric thresholds are not met.
+> >>>>+ * @SI476X_TM_VALIDATED_AF_CHECK: Unconditionally jump back to the
+> >>>>+ * previous channel.
+> >>>>+ */
+> >>>>+enum si476x_tunemode {
+> >>>>+	SI476X_TM_VALIDATED_NORMAL_TUNE =3D 0,
+> >>>>+	SI476X_TM_INVALIDATED_FAST_TUNE =3D 1,
+> >>>>+	SI476X_TM_VALIDATED_AF_TUNE     =3D 2,
+> >>>>+	SI476X_TM_VALIDATED_AF_CHECK    =3D 3,
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * enum si476x_smoothmetrics - enum containing the possible setting =
+fo
+> >>>>+ * audio transitioning of the chip
+> >>>>+ * @SI476X_SM_INITIALIZE_AUDIO: Initialize audio state to match this
+> >>>>+ * new channel
+> >>>>+ * @SI476X_SM_TRANSITION_AUDIO: Transition audio state from previous
+> >>>>+ * channel values to the new values
+> >>>>+ */
+> >>>>+enum si476x_smoothmetrics {
+> >>>>+	SI476X_SM_INITIALIZE_AUDIO =3D 0,
+> >>>>+	SI476X_SM_TRANSITION_AUDIO =3D 1,
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * struct si476x_rds_status_report - the structure representing the
+> >>>>+ * response to 'FM_RD_STATUS' command
+> >>>>+ * @rdstpptyint: Traffic program flag(TP) and/or program type(PTY)
+> >>>>+ * code has changed.
+> >>>>+ * @rdspiint: Program indentifiaction(PI) code has changed.
+> >>>>+ * @rdssyncint: RDS synchronization has changed.
+> >>>>+ * @rdsfifoint: RDS was received and the RDS FIFO has at least
+> >>>>+ * 'FM_RDS_INTERRUPT_FIFO_COUNT' elements in it.
+> >>>>+ * @tpptyvalid: TP flag and PTY code are valid falg.
+> >>>>+ * @pivalid: PI code is valid flag.
+> >>>>+ * @rdssync: RDS is currently synchronized.
+> >>>>+ * @rdsfifolost: On or more RDS groups have been lost/discarded flag.
+> >>>>+ * @tp: Current channel's TP flag.
+> >>>>+ * @pty: Current channel's PTY code.
+> >>>>+ * @pi: Current channel's PI code.
+> >>>>+ * @rdsfifoused: Number of blocks remaining in the RDS FIFO (0 if
+> >>>>+ * empty).
+> >>>>+ */
+> >>>>+struct si476x_rds_status_report {
+> >>>>+	bool rdstpptyint, rdspiint, rdssyncint, rdsfifoint;
+> >>>>+	bool tpptyvalid, pivalid, rdssync, rdsfifolost;
+> >>>>+	bool tp;
+> >>>>+
+> >>>>+	u8 pty;
+> >>>>+	u16 pi;
+> >>>>+
+> >>>>+	u8 rdsfifoused;
+> >>>>+	u8 ble[4];
+> >>>>+
+> >>>>+	struct v4l2_rds_data rds[4];
+> >>>>+};
+> >>>>+
+> >>>>+struct si476x_rsq_status_args {
+> >>>>+	bool primary;
+> >>>>+	bool rsqack;
+> >>>>+	bool attune;
+> >>>>+	bool cancel;
+> >>>>+	bool stcack;
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_injside {
+> >>>>+	SI476X_INJSIDE_AUTO	=3D 0,
+> >>>>+	SI476X_INJSIDE_LOW	=3D 1,
+> >>>>+	SI476X_INJSIDE_HIGH	=3D 2,
+> >>>>+};
+> >>>>+
+> >>>>+struct si476x_tune_freq_args {
+> >>>>+	bool zifsr;
+> >>>>+	bool hd;
+> >>>>+	enum si476x_injside injside;
+> >>>>+	int freq;
+> >>>>+	enum si476x_tunemode tunemode;
+> >>>>+	enum si476x_smoothmetrics smoothmetrics;
+> >>>>+	int antcap;
+> >>>>+};
+> >>>>+
+> >>>>+int si476x_core_stop(struct si476x_core *, bool);
+> >>>>+int si476x_core_start(struct si476x_core *, bool);
+> >>>>+int si476x_core_set_power_state(struct si476x_core *, enum si476x_po=
+wer_state);
+> >>>>+int si476x_core_cmd_func_info(struct si476x_core *, struct si476x_fu=
+nc_info *);
+> >>>>+int si476x_core_cmd_set_property(struct si476x_core *, u16, u16);
+> >>>>+int si476x_core_cmd_get_property(struct si476x_core *, u16);
+> >>>>+int si476x_core_cmd_dig_audio_pin_cfg(struct si476x_core *,
+> >>>>+				      enum si476x_dclk_config,
+> >>>>+				      enum si476x_dfs_config,
+> >>>>+				      enum si476x_dout_config,
+> >>>>+				      enum si476x_xout_config);
+> >>>>+int si476x_core_cmd_zif_pin_cfg(struct si476x_core *,
+> >>>>+				enum si476x_iqclk_config,
+> >>>>+				enum si476x_iqfs_config,
+> >>>>+				enum si476x_iout_config,
+> >>>>+				enum si476x_qout_config);
+> >>>>+int si476x_core_cmd_ic_link_gpo_ctl_pin_cfg(struct si476x_core *,
+> >>>>+					    enum si476x_icin_config,
+> >>>>+					    enum si476x_icip_config,
+> >>>>+					    enum si476x_icon_config,
+> >>>>+					    enum si476x_icop_config);
+> >>>>+int si476x_core_cmd_ana_audio_pin_cfg(struct si476x_core *,
+> >>>>+				      enum si476x_lrout_config);
+> >>>>+int si476x_core_cmd_intb_pin_cfg(struct si476x_core *, enum si476x_i=
+ntb_config,
+> >>>>+				 enum si476x_a1_config);
+> >>>>+int si476x_core_cmd_fm_seek_start(struct si476x_core *, bool, bool);
+> >>>>+int si476x_core_cmd_am_seek_start(struct si476x_core *, bool, bool);
+> >>>>+int si476x_core_cmd_fm_rds_status(struct si476x_core *, bool, bool, =
+bool,
+> >>>>+				  struct si476x_rds_status_report *);
+> >>>>+int si476x_core_cmd_fm_rds_blockcount(struct si476x_core *, bool,
+> >>>>+				      struct si476x_rds_blockcount_report *);
+> >>>>+int si476x_core_cmd_fm_tune_freq(struct si476x_core *,
+> >>>>+				 struct si476x_tune_freq_args *);
+> >>>>+int si476x_core_cmd_am_tune_freq(struct si476x_core *,
+> >>>>+				 struct si476x_tune_freq_args *);
+> >>>>+int si476x_core_cmd_am_rsq_status(struct si476x_core *,
+> >>>>+				  struct si476x_rsq_status_args *,
+> >>>>+				  struct si476x_rsq_status_report *);
+> >>>>+int si476x_core_cmd_fm_rsq_status(struct si476x_core *,
+> >>>>+				  struct si476x_rsq_status_args *,
+> >>>>+				  struct si476x_rsq_status_report *);
+> >>>>+int si476x_core_cmd_power_up(struct si476x_core *,
+> >>>>+			     struct si476x_power_up_args *);
+> >>>>+int si476x_core_cmd_power_down(struct si476x_core *,
+> >>>>+			       struct si476x_power_down_args *);
+> >>>>+int si476x_core_cmd_fm_phase_div_status(struct si476x_core *);
+> >>>>+int si476x_core_cmd_fm_phase_diversity(struct si476x_core *,
+> >>>>+				       enum si476x_phase_diversity_mode);
+> >>>>+
+> >>>>+int si476x_core_cmd_fm_acf_status(struct si476x_core *,
+> >>>>+				  struct si476x_acf_status_report *);
+> >>>>+int si476x_core_cmd_am_acf_status(struct si476x_core *,
+> >>>>+				  struct si476x_acf_status_report *);
+> >>>>+int si476x_core_cmd_agc_status(struct si476x_core *,
+> >>>>+			       struct si476x_agc_status_report *);
+> >>>>+
+> >>>>+enum si476x_power_grid_type {
+> >>>>+	SI476X_POWER_GRID_50HZ =3D 0,
+> >>>>+	SI476X_POWER_GRID_60HZ,
+> >>>>+};
+> >>>>+
+> >>>>+/* Properties  */
+> >>>>+
+> >>>>+enum si476x_interrupt_flags {
+> >>>>+	SI476X_STCIEN =3D (1 << 0),
+> >>>>+	SI476X_ACFIEN =3D (1 << 1),
+> >>>>+	SI476X_RDSIEN =3D (1 << 2),
+> >>>>+	SI476X_RSQIEN =3D (1 << 3),
+> >>>>+
+> >>>>+	SI476X_ERRIEN =3D (1 << 6),
+> >>>>+	SI476X_CTSIEN =3D (1 << 7),
+> >>>>+
+> >>>>+	SI476X_STCREP =3D (1 << 8),
+> >>>>+	SI476X_ACFREP =3D (1 << 9),
+> >>>>+	SI476X_RDSREP =3D (1 << 10),
+> >>>>+	SI476X_RSQREP =3D (1 << 11),
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_rdsint_sources {
+> >>>>+	SI476X_RDSTPPTY =3D (1 << 4),
+> >>>>+	SI476X_RDSPI    =3D (1 << 3),
+> >>>>+	SI476X_RDSSYNC	=3D (1 << 1),
+> >>>>+	SI476X_RDSRECV	=3D (1 << 0),
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_status_response_bits {
+> >>>>+	SI476X_CTS	  =3D (1 << 7),
+> >>>>+	SI476X_ERR	  =3D (1 << 6),
+> >>>>+	/* Status response for WB receiver */
+> >>>>+	SI476X_WB_ASQ_INT =3D (1 << 4),
+> >>>>+	SI476X_RSQ_INT    =3D (1 << 3),
+> >>>>+	/* Status response for FM receiver */
+> >>>>+	SI476X_FM_RDS_INT =3D (1 << 2),
+> >>>>+	SI476X_ACF_INT    =3D (1 << 1),
+> >>>>+	SI476X_STC_INT    =3D (1 << 0),
+> >>>>+};
+> >>>>+
+> >>>>+bool si476x_core_is_valid_property(struct si476x_core *, u16);
+> >>>>+bool si476x_core_is_readonly_property(struct si476x_core *, u16);
+> >>>>+int si476x_core_set_int_ctl_enable(struct si476x_core *,
+> >>>>+				   enum si476x_interrupt_flags);
+> >>>>+
+> >>>>+int si476x_core_set_frequency_spacing(struct si476x_core *, int);
+> >>>>+int si476x_core_set_seek_band_top(struct si476x_core *, int);
+> >>>>+int si476x_core_set_seek_band_bottom(struct si476x_core *, int);
+> >>>>+int si476x_core_set_audio_deemphasis(struct si476x_core *, int);
+> >>>>+int si476x_core_set_rds_reception(struct si476x_core *, int);
+> >>>>+int si476x_core_set_audio_pwr_line_filter(struct si476x_core *, bool,
+> >>>>+					  enum si476x_power_grid_type, int);
+> >>>>+
+> >>>>+int si476x_core_set_valid_snr_threshold(struct si476x_core *, int);
+> >>>>+int si476x_core_set_valid_rssi_threshold(struct si476x_core *, int);
+> >>>>+int si476x_core_set_valid_max_tune_error(struct si476x_core *, int);
+> >>>>+
+> >>>>+int si476x_core_get_frequency_spacing(struct si476x_core *);
+> >>>>+int si476x_core_get_seek_band_top(struct si476x_core *);
+> >>>>+int si476x_core_get_seek_band_bottom(struct si476x_core *);
+> >>>>+int si476x_core_get_audio_deemphasis(struct si476x_core *);
+> >>>>+int si476x_core_get_rds_reception(struct si476x_core *);
+> >>>>+int si476x_core_get_audio_pwr_line_filter(struct si476x_core *);
+> >>>>+
+> >>>>+int si476x_core_get_valid_snr_threshold(struct si476x_core *);
+> >>>>+int si476x_core_get_valid_rssi_threshold(struct si476x_core *);
+> >>>>+int si476x_core_get_valid_max_tune_error(struct si476x_core *);
+> >>>>+
+> >>>>+int si476x_core_set_fm_rds_interrupt_fifo_count(struct si476x_core *=
+, int);
+> >>>>+int si476x_core_set_rds_interrupt_source(struct si476x_core *,
+> >>>>+					 enum si476x_rdsint_sources);
+> >>>>+int si476x_core_set_digital_io_input_sample_rate(struct si476x_core =
+*, u16);
+> >>>>+int si476x_core_disable_digital_audio(struct si476x_core *);
+> >>>>+
+> >>>>+typedef int (*tune_freq_func_t) (struct si476x_core *,
+> >>>>+				 struct si476x_tune_freq_args *);
+> >>>>+
+> >>>>+enum si476x_i2c_type {
+> >>>>+	SI476X_I2C_SEND,
+> >>>>+	SI476X_I2C_RECV
+> >>>>+};
+> >>>>+
+> >>>>+int si476x_i2c_xfer(struct si476x_core *,
+> >>>>+		    enum si476x_i2c_type,
+> >>>>+		    char *, int);
+> >>>>+#endif	/* SI476X_CORE_H */
+> >>>>diff --git a/include/media/si476x.h b/include/media/si476x.h
+> >>>>new file mode 100644
+> >>>>index 0000000..6f6c253
+> >>>>--- /dev/null
+> >>>>+++ b/include/media/si476x.h
+> >>>>@@ -0,0 +1,449 @@
+> >>>>+/*
+> >>>>+ * include/media/si476x.h -- Common definitions for si476x driver
+> >>>>+ *
+> >>>>+ * Copyright (C) 2012 Innovative Converged Devices(ICD)
+> >>>>+ *
+> >>>>+ * Author: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+> >>>>+ *
+> >>>>+ * This program is free software; you can redistribute it and/or mod=
+ify
+> >>>>+ * it under the terms of the GNU General Public License as published=
+ by
+> >>>>+ * the Free Software Foundation; version 2 of the License.
+> >>>>+ *
+> >>>>+ * This program is distributed in the hope that it will be useful, b=
+ut
+> >>>>+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>>>+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> >>>>+ * General Public License for more details.
+> >>>>+ *
+> >>>>+ */
+> >>>>+
+> >>>>+#ifndef SI476X_H
+> >>>>+#define SI476X_H
+> >>>>+
+> >>>>+#include <linux/types.h>
+> >>>>+#include <linux/videodev2.h>
+> >>>>+
+> >>>>+struct si476x_device;
+> >>>>+
+> >>>>+/* It is possible to select one of the four adresses using pins A0
+> >>>>+ * and A1 on SI476x */
+> >>>>+#define SI476X_I2C_ADDR_1	0x60
+> >>>>+#define SI476X_I2C_ADDR_2	0x61
+> >>>>+#define SI476X_I2C_ADDR_3	0x62
+> >>>>+#define SI476X_I2C_ADDR_4	0x63
+> >>>>+
+> >>>>+enum si476x_iqclk_config {
+> >>>>+	SI476X_IQCLK_NOOP =3D 0,
+> >>>>+	SI476X_IQCLK_TRISTATE =3D 1,
+> >>>>+	SI476X_IQCLK_IQ =3D 21,
+> >>>>+};
+> >>>>+enum si476x_iqfs_config {
+> >>>>+	SI476X_IQFS_NOOP =3D 0,
+> >>>>+	SI476X_IQFS_TRISTATE =3D 1,
+> >>>>+	SI476X_IQFS_IQ =3D 21,
+> >>>>+};
+> >>>>+enum si476x_iout_config {
+> >>>>+	SI476X_IOUT_NOOP =3D 0,
+> >>>>+	SI476X_IOUT_TRISTATE =3D 1,
+> >>>>+	SI476X_IOUT_OUTPUT =3D 22,
+> >>>>+};
+> >>>>+enum si476x_qout_config {
+> >>>>+	SI476X_QOUT_NOOP =3D 0,
+> >>>>+	SI476X_QOUT_TRISTATE =3D 1,
+> >>>>+	SI476X_QOUT_OUTPUT =3D 22,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_dclk_config {
+> >>>>+	SI476X_DCLK_NOOP      =3D 0,
+> >>>>+	SI476X_DCLK_TRISTATE  =3D 1,
+> >>>>+	SI476X_DCLK_DAUDIO    =3D 10,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_dfs_config {
+> >>>>+	SI476X_DFS_NOOP      =3D 0,
+> >>>>+	SI476X_DFS_TRISTATE  =3D 1,
+> >>>>+	SI476X_DFS_DAUDIO    =3D 10,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_dout_config {
+> >>>>+	SI476X_DOUT_NOOP       =3D 0,
+> >>>>+	SI476X_DOUT_TRISTATE   =3D 1,
+> >>>>+	SI476X_DOUT_I2S_OUTPUT =3D 12,
+> >>>>+	SI476X_DOUT_I2S_INPUT  =3D 13,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_xout_config {
+> >>>>+	SI476X_XOUT_NOOP        =3D 0,
+> >>>>+	SI476X_XOUT_TRISTATE    =3D 1,
+> >>>>+	SI476X_XOUT_I2S_INPUT   =3D 13,
+> >>>>+	SI476X_XOUT_MODE_SELECT =3D 23,
+> >>>>+};
+> >>>>+
+> >>>>+
+> >>>>+enum si476x_icin_config {
+> >>>>+	SI476X_ICIN_NOOP	=3D 0,
+> >>>>+	SI476X_ICIN_TRISTATE	=3D 1,
+> >>>>+	SI476X_ICIN_GPO1_HIGH	=3D 2,
+> >>>>+	SI476X_ICIN_GPO1_LOW	=3D 3,
+> >>>>+	SI476X_ICIN_IC_LINK	=3D 30,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_icip_config {
+> >>>>+	SI476X_ICIP_NOOP	=3D 0,
+> >>>>+	SI476X_ICIP_TRISTATE	=3D 1,
+> >>>>+	SI476X_ICIP_GPO2_HIGH	=3D 2,
+> >>>>+	SI476X_ICIP_GPO2_LOW	=3D 3,
+> >>>>+	SI476X_ICIP_IC_LINK	=3D 30,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_icon_config {
+> >>>>+	SI476X_ICON_NOOP	=3D 0,
+> >>>>+	SI476X_ICON_TRISTATE	=3D 1,
+> >>>>+	SI476X_ICON_I2S		=3D 10,
+> >>>>+	SI476X_ICON_IC_LINK	=3D 30,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_icop_config {
+> >>>>+	SI476X_ICOP_NOOP	=3D 0,
+> >>>>+	SI476X_ICOP_TRISTATE	=3D 1,
+> >>>>+	SI476X_ICOP_I2S		=3D 10,
+> >>>>+	SI476X_ICOP_IC_LINK	=3D 30,
+> >>>>+};
+> >>>>+
+> >>>>+
+> >>>>+enum si476x_lrout_config {
+> >>>>+	SI476X_LROUT_NOOP	=3D 0,
+> >>>>+	SI476X_LROUT_TRISTATE	=3D 1,
+> >>>>+	SI476X_LROUT_AUDIO	=3D 2,
+> >>>>+	SI476X_LROUT_MPX	=3D 3,
+> >>>>+};
+> >>>>+
+> >>>>+
+> >>>>+enum si476x_intb_config {
+> >>>>+	SI476X_INTB_NOOP     =3D 0,
+> >>>>+	SI476X_INTB_TRISTATE =3D 1,
+> >>>>+	SI476X_INTB_DAUDIO   =3D 10,
+> >>>>+	SI476X_INTB_IRQ      =3D 40,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_a1_config {
+> >>>>+	SI476X_A1_NOOP     =3D 0,
+> >>>>+	SI476X_A1_TRISTATE =3D 1,
+> >>>>+	SI476X_A1_IRQ      =3D 40,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_part_revisions {
+> >>>>+	SI476X_REVISION_A10 =3D 0,
+> >>>>+	SI476X_REVISION_A20 =3D 1,
+> >>>>+	SI476X_REVISION_A30 =3D 2,
+> >>>>+};
+> >>>>+
+> >>>>+struct si476x_pinmux {
+> >>>>+	enum si476x_dclk_config  dclk;
+> >>>>+	enum si476x_dfs_config   dfs;
+> >>>>+	enum si476x_dout_config  dout;
+> >>>>+	enum si476x_xout_config  xout;
+> >>>>+
+> >>>>+	enum si476x_iqclk_config iqclk;
+> >>>>+	enum si476x_iqfs_config  iqfs;
+> >>>>+	enum si476x_iout_config  iout;
+> >>>>+	enum si476x_qout_config  qout;
+> >>>>+
+> >>>>+	enum si476x_icin_config  icin;
+> >>>>+	enum si476x_icip_config  icip;
+> >>>>+	enum si476x_icon_config  icon;
+> >>>>+	enum si476x_icop_config  icop;
+> >>>>+
+> >>>>+	enum si476x_lrout_config lrout;
+> >>>>+
+> >>>>+	enum si476x_intb_config  intb;
+> >>>>+	enum si476x_a1_config    a1;
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * enum si476x_phase_diversity_mode - possbile phase diversity modes
+> >>>>+ * for SI4764/5/6/7 chips.
+> >>>>+ *
+> >>>>+ * @SI476X_PHDIV_DISABLED:		Phase diversity feature is
+> >>>>+ *					disabled.
+> >>>>+ * @SI476X_PHDIV_PRIMARY_COMBINING:	Tuner works as a primary tuner
+> >>>>+ *					in combination with a
+> >>>>+ *					secondary one.
+> >>>>+ * @SI476X_PHDIV_PRIMARY_ANTENNA:	Tuner works as a primary tuner
+> >>>>+ *					using only its own antenna.
+> >>>>+ * @SI476X_PHDIV_SECONDARY_ANTENNA:	Tuner works as a primary tuner
+> >>>>+ *					usning seconary tuner's antenna.
+> >>>>+ * @SI476X_PHDIV_SECONDARY_COMBINING:	Tuner works as a secondary
+> >>>>+ *					tuner in combination with the
+> >>>>+ *					primary one.
+> >>>>+ */
+> >>>>+enum si476x_phase_diversity_mode {
+> >>>>+	SI476X_PHDIV_DISABLED			=3D 0,
+> >>>>+	SI476X_PHDIV_PRIMARY_COMBINING		=3D 1,
+> >>>>+	SI476X_PHDIV_PRIMARY_ANTENNA		=3D 2,
+> >>>>+	SI476X_PHDIV_SECONDARY_ANTENNA		=3D 3,
+> >>>>+	SI476X_PHDIV_SECONDARY_COMBINING	=3D 5,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_ibias6x {
+> >>>>+	SI476X_IBIAS6X_OTHER			=3D 0,
+> >>>>+	SI476X_IBIAS6X_RCVR1_NON_4MHZ_CLK	=3D 1,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_xstart {
+> >>>>+	SI476X_XSTART_MULTIPLE_TUNER	=3D 0x11,
+> >>>>+	SI476X_XSTART_NORMAL		=3D 0x77,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_freq {
+> >>>>+	SI476X_FREQ_4_MHZ		=3D 0,
+> >>>>+	SI476X_FREQ_37P209375_MHZ	=3D 1,
+> >>>>+	SI476X_FREQ_36P4_MHZ		=3D 2,
+> >>>>+	SI476X_FREQ_37P8_MHZ		=3D  3,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_xmode {
+> >>>>+	SI476X_XMODE_CRYSTAL_RCVR1	=3D 1,
+> >>>>+	SI476X_XMODE_EXT_CLOCK		=3D 2,
+> >>>>+	SI476X_XMODE_CRYSTAL_RCVR2_3	=3D 3,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_xbiashc {
+> >>>>+	SI476X_XBIASHC_SINGLE_RECEIVER =3D 0,
+> >>>>+	SI476X_XBIASHC_MULTIPLE_RECEIVER =3D 1,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_xbias {
+> >>>>+	SI476X_XBIAS_RCVR2_3	=3D 0,
+> >>>>+	SI476X_XBIAS_4MHZ_RCVR1 =3D 3,
+> >>>>+	SI476X_XBIAS_RCVR1	=3D 7,
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_func {
+> >>>>+	SI476X_FUNC_BOOTLOADER	=3D 0,
+> >>>>+	SI476X_FUNC_FM_RECEIVER =3D 1,
+> >>>>+	SI476X_FUNC_AM_RECEIVER =3D 2,
+> >>>>+	SI476X_FUNC_WB_RECEIVER =3D 3,
+> >>>>+};
+> >>>>+
+> >>>>+
+> >>>>+/**
+> >>>>+ * @xcload: Selects the amount of additional on-chip capacitance to
+> >>>>+ *          be connected between XTAL1 and gnd and between XTAL2 and
+> >>>>+ *          GND. One half of the capacitance value shown here is the
+> >>>>+ *          additional load capacitance presented to the xtal. The
+> >>>>+ *          minimum step size is 0.277 pF. Recommended value is 0x28
+> >>>>+ *          but it will be layout dependent. Range is 0=E2=80=930x3F=
+ i.e.
+> >>>>+ *          (0=E2=80=9316.33 pF)
+> >>>>+ * @ctsien: enable CTSINT(interrupt request when CTS condition
+> >>>>+ *          arises) when set
+> >>>>+ * @intsel: when set A1 pin becomes the interrupt pin; otherwise,
+> >>>>+ *          INTB is the interrupt pin
+> >>>>+ * @func:   selects the boot function of the device. I.e.
+> >>>>+ *          SI476X_BOOTLOADER  - Boot loader
+> >>>>+ *          SI476X_FM_RECEIVER - FM receiver
+> >>>>+ *          SI476X_AM_RECEIVER - AM receiver
+> >>>>+ *          SI476X_WB_RECEIVER - Weatherband receiver
+> >>>>+ * @freq:   oscillator's crystal frequency:
+> >>>>+ *          SI476X_XTAL_37P209375_MHZ - 37.209375 Mhz
+> >>>>+ *          SI476X_XTAL_36P4_MHZ      - 36.4 Mhz
+> >>>>+ *          SI476X_XTAL_37P8_MHZ      - 37.8 Mhz
+> >>>>+ */
+> >>>>+struct si476x_power_up_args {
+> >>>>+	enum si476x_ibias6x ibias6x;
+> >>>>+	enum si476x_xstart  xstart;
+> >>>>+	u8   xcload;
+> >>>>+	bool fastboot;
+> >>>>+	enum si476x_xbiashc xbiashc;
+> >>>>+	enum si476x_xbias   xbias;
+> >>>>+	enum si476x_func    func;
+> >>>>+	enum si476x_freq    freq;
+> >>>>+	enum si476x_xmode   xmode;
+> >>>>+};
+> >>>>+
+> >>>>+
+> >>>>+enum si476x_ctrl_id {
+> >>>>+	SI476X_CID_RSSI_THRESHOLD	=3D (V4L2_CID_USER_BASE | 0x1001),
+> >>>>+	SI476X_CID_SNR_THRESHOLD	=3D (V4L2_CID_USER_BASE | 0x1002),
+> >>>>+	SI476X_CID_MAX_TUNE_ERROR	=3D (V4L2_CID_USER_BASE | 0x1003),
+> >>>>+	SI476X_CID_RDS_RECEPTION	=3D (V4L2_CID_USER_BASE | 0x1004),
+> >>>>+	SI476X_CID_DEEMPHASIS		=3D (V4L2_CID_USER_BASE | 0x1005),
+> >>>>+	SI476X_CID_HARMONICS_COUNT	=3D (V4L2_CID_USER_BASE | 0x1006),
+> >>>>+};
+> >>>What do these controls do? Should they be standard controls instead?
+> >>>
+> >>>>+
+> >>>>+/*
+> >>>>+ * Platform dependent definition
+> >>>>+ */
+> >>>>+struct si476x_platform_data {
+> >>>>+	int gpio_reset; /* < 0 if not used */
+> >>>>+
+> >>>>+	struct si476x_power_up_args power_up_parameters;
+> >>>>+	enum si476x_phase_diversity_mode diversity_mode;
+> >>>>+
+> >>>>+	struct si476x_pinmux pinmux;
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * struct si476x_rsq_status - structure containing received signal
+> >>>>+ * quality
+> >>>>+ * @multhint:   Multipath Detect High.
+> >>>>+ *              true  - Indicatedes that the value is below
+> >>>>+ *                      FM_RSQ_MULTIPATH_HIGH_THRESHOLD
+> >>>>+ *              false - Indicatedes that the value is above
+> >>>>+ *                      FM_RSQ_MULTIPATH_HIGH_THRESHOLD
+> >>>>+ * @multlint:   Multipath Detect Low.
+> >>>>+ *              true  - Indicatedes that the value is below
+> >>>>+ *                      FM_RSQ_MULTIPATH_LOW_THRESHOLD
+> >>>>+ *              false - Indicatedes that the value is above
+> >>>>+ *                      FM_RSQ_MULTIPATH_LOW_THRESHOLD
+> >>>>+ * @snrhint:    SNR Detect High.
+> >>>>+ *              true  - Indicatedes that the value is below
+> >>>>+ *                      FM_RSQ_SNR_HIGH_THRESHOLD
+> >>>>+ *              false - Indicatedes that the value is above
+> >>>>+ *                      FM_RSQ_SNR_HIGH_THRESHOLD
+> >>>>+ * @snrlint:    SNR Detect Low.
+> >>>>+ *              true  - Indicatedes that the value is below
+> >>>>+ *                      FM_RSQ_SNR_LOW_THRESHOLD
+> >>>>+ *              false - Indicatedes that the value is above
+> >>>>+ *                      FM_RSQ_SNR_LOW_THRESHOLD
+> >>>>+ * @rssihint:   RSSI Detect High.
+> >>>>+ *              true  - Indicatedes that the value is below
+> >>>>+ *                      FM_RSQ_RSSI_HIGH_THRESHOLD
+> >>>>+ *              false - Indicatedes that the value is above
+> >>>>+ *                      FM_RSQ_RSSI_HIGH_THRESHOLD
+> >>>>+ * @rssilint:   RSSI Detect Low.
+> >>>>+ *              true  - Indicatedes that the value is below
+> >>>>+ *                      FM_RSQ_RSSI_LOW_THRESHOLD
+> >>>>+ *              false - Indicatedes that the value is above
+> >>>>+ *                      FM_RSQ_RSSI_LOW_THRESHOLD
+> >>>>+ * @bltf:       Band Limit.
+> >>>>+ *              Set if seek command hits the band limit or wrapped to
+> >>>>+ *              the original frequency.
+> >>>>+ * @snr_ready:  SNR measurement in progress.
+> >>>>+ * @rssiready:  RSSI measurement in progress.
+> >>>>+ * @afcrl:      Set if FREQOFF >=3D MAX_TUNE_ERROR
+> >>>>+ * @valid:      Set if the channel is valid
+> >>>>+ *               rssi < FM_VALID_RSSI_THRESHOLD
+> >>>>+ *               snr  < FM_VALID_SNR_THRESHOLD
+> >>>>+ *               tune_error < FM_VALID_MAX_TUNE_ERROR
+> >>>>+ * @readfreq:   Current tuned frequency.
+> >>>>+ * @freqoff:    Signed frequency offset.
+> >>>>+ * @rssi:       Received Signal Strength Indicator(dBuV).
+> >>>>+ * @snr:        RF SNR Indicator(dB).
+> >>>>+ * @lassi:
+> >>>>+ * @hassi:      Low/High side Adjacent(100 kHz) Channel Strength Ind=
+icator
+> >>>>+ * @mult:       Multipath indicator
+> >>>>+ * @dev:        Who knows? But values may vary.
+> >>>>+ * @readantcap: Antenna tuning capacity value.
+> >>>>+ * @assi:       Adjacent Channel(+/- 200kHz) Strength Indicator
+> >>>>+ * @usn:        Ultrasonic Noise Inticator in -DBFS
+> >>>>+ */
+> >>>>+struct si476x_rsq_status_report {
+> >>>>+	__u8 multhint, multlint;
+> >>>>+	__u8 snrhint,  snrlint;
+> >>>>+	__u8 rssihint, rssilint;
+> >>>>+	__u8 bltf;
+> >>>>+	__u8 snr_ready;
+> >>>>+	__u8 rssiready;
+> >>>>+	__u8 injside;
+> >>>>+	__u8 afcrl;
+> >>>>+	__u8 valid;
+> >>>>+
+> >>>>+	__u16 readfreq;
+> >>>>+	__s8  freqoff;
+> >>>>+	__s8  rssi;
+> >>>>+	__s8  snr;
+> >>>>+	__s8  issi;
+> >>>>+	__s8  lassi, hassi;
+> >>>>+	__s8  mult;
+> >>>>+	__u8  dev;
+> >>>>+	__u16 readantcap;
+> >>>>+	__s8  assi;
+> >>>>+	__s8  usn;
+> >>>>+
+> >>>>+	__u8 pilotdev;
+> >>>>+	__u8 rdsdev;
+> >>>>+	__u8 assidev;
+> >>>>+	__u8 strongdev;
+> >>>>+	__u16 rdspi;
+> >>>>+};
+> >>>>+
+> >>>>+/**
+> >>>>+ * si476x_acf_status_report - ACF report results
+> >>>>+ *
+> >>>>+ * @blend_int: If set, indicates that stereo separation has crossed
+> >>>>+ * below the blend threshold as set by FM_ACF_BLEND_THRESHOLD
+> >>>>+ * @hblend_int: If set, indicates that HiBlend cutoff frequency is
+> >>>>+ * lower than threshold as set by FM_ACF_HBLEND_THRESHOLD
+> >>>>+ * @hicut_int:  If set, indicates that HiCut cutoff frequency is low=
+er
+> >>>>+ * than the threshold set by ACF_
+> >>>>+
+> >>>>+ */
+> >>>>+struct si476x_acf_status_report {
+> >>>>+	__u8 blend_int;
+> >>>>+	__u8 hblend_int;
+> >>>>+	__u8 hicut_int;
+> >>>>+	__u8 chbw_int;
+> >>>>+	__u8 softmute_int;
+> >>>>+	__u8 smute;
+> >>>>+	__u8 smattn;
+> >>>>+	__u8 chbw;
+> >>>>+	__u8 hicut;
+> >>>>+	__u8 hiblend;
+> >>>>+	__u8 pilot;
+> >>>>+	__u8 stblend;
+> >>>>+};
+> >>>>+
+> >>>>+enum si476x_fmagc {
+> >>>>+	SI476X_FMAGC_10K_OHM	=3D 0,
+> >>>>+	SI476X_FMAGC_800_OHM	=3D 1,
+> >>>>+	SI476X_FMAGC_400_OHM	=3D 2,
+> >>>>+	SI476X_FMAGC_200_OHM	=3D 4,
+> >>>>+	SI476X_FMAGC_100_OHM	=3D 8,
+> >>>>+	SI476X_FMAGC_50_OHM	=3D 16,
+> >>>>+	SI476X_FMAGC_25_OHM	=3D 32,
+> >>>>+	SI476X_FMAGC_12P5_OHM	=3D 64,
+> >>>>+	SI476X_FMAGC_6P25_OHM	=3D 128,
+> >>>>+};
+> >>>>+
+> >>>>+struct si476x_agc_status_report {
+> >>>>+	__u8 mxhi;
+> >>>>+	__u8 mxlo;
+> >>>>+	__u8 lnahi;
+> >>>>+	__u8 lnalo;
+> >>>>+	__u8 fmagc1;
+> >>>>+	__u8 fmagc2;
+> >>>>+	__u8 pgagain;
+> >>>>+	__u8 fmwblang;
+> >>>>+};
+> >>>>+
+> >>>>+struct si476x_rds_blockcount_report {
+> >>>>+	__u16 expected;
+> >>>>+	__u16 received;
+> >>>>+	__u16 uncorrectable;
+> >>>>+};
+> >>>>+
+> >>>>+#define SI476X_PHDIV_STATUS_LINK_LOCKED(status) (0b10000000 & (statu=
+s))
+> >>>>+#define SI476X_PHDIV_STATS_MODE(status) (0b111 & (status))
+> >>>>+
+> >>>>+#define SI476X_IOC_GET_RSQ		_IOWR('V', BASE_VIDIOC_PRIVATE + 0, \
+> >>>>+					      struct si476x_rsq_status_report)
+> >>>>+
+> >>>>+#define SI476X_IOC_SET_PHDIV_MODE	_IOW('V', BASE_VIDIOC_PRIVATE + 1,=
+ \
+> >>>>+					     enum si476x_phase_diversity_mode)
+> >>>>+
+> >>>>+#define SI476X_IOC_GET_PHDIV_STATUS	_IOWR('V', BASE_VIDIOC_PRIVATE +=
+ 2, \
+> >>>>+					      int)
+> >>>>+
+> >>>>+#define SI476X_IOC_GET_RSQ_PRIMARY	_IOWR('V', BASE_VIDIOC_PRIVATE + =
+3, \
+> >>>>+					      struct si476x_rsq_status_report)
+> >>>>+
+> >>>>+#define SI476X_IOC_GET_ACF		_IOWR('V', BASE_VIDIOC_PRIVATE + 4, \
+> >>>>+					      struct si476x_acf_status_report)
+> >>>>+
+> >>>>+#define SI476X_IOC_GET_AGC		_IOWR('V', BASE_VIDIOC_PRIVATE + 5, \
+> >>>>+					      struct si476x_agc_status_report)
+> >>>>+
+> >>>>+#define SI476X_IOC_GET_RDS_BLKCNT	_IOWR('V', BASE_VIDIOC_PRIVATE + 6=
+, \
+> >>>>+					    struct si476x_rds_blockcount_report)
+> >>>There is no documentation at all for these private ioctls. At the very=
+ least
+> >>>these should be documentated (both the ioctl and the structs they rece=
+ive).
+> >>>
+> >>>More importantly, are these ioctls really needed?
+> >>I apologize for not writing the documentation for those ioctls. I
+> >>thought I at least did so for all data structures returned by those
+> >>calls, I guess I never got around to doing it. I'll document all the
+> >>ioctls in the next version of the patch.
 > >>
-> >> Sounds nice.  It will be bonus point if you can do that. :-)
+> >>SI476X_IOC_SET_PHDIV_MODE, SI476X_IOC_GET_PHDIV_STATUS are definitely
+> >>needed since they are used to control antenna phase diversity modes of
+> >>the tuners. In that mode two Si4764 chips connected to different
+> >>antennas can act as a single tuner and use both signal to improve
+> >>sensibility.
+> >>
+> >>The rest is useful to get different radio signal parameters from the
+> >>chip. We used it for during RF performance evaluation of the
+> >>boards(probably using it in EOL testing).
+> >>
+> >>>If the purpose is to return
+> >>>status information for debugging, then you should consider implementing
+> >>>VIDIOC_LOG_STATUS instead.
+> >>For me, the problem with using VIDIOC_LOG_STATUS is that it dumps all
+> >>the debugging information in kernel log buffer, meaning that if one
+> >>wants to pass that information to some other application they would have
+> >>to resort to screen-scraping of the output of dmesg. Unfortunately the
+> >>people who were using this driver/as a part of a software suite during
+> >>aforementioned RF performance testing are not Linux-savvy enough to be
+> >>asked to use dmesg and they want a GUI solution. That small test utility
+> >>was written and it uses those those ioctls to gather and display all
+> >>signal related information. I guess the other solution for that problem
+> >>would be to create corresponding files in sysfs, but I'm not sure if
+> >>creating multitude of files in sysfs tree is a better option.
+> >>
+> >>Since this version of the driver has not been integrated into our
+> >>software package the we install on laptops to do all the board testing I
+> >>guess I can remove those 'ioctl', but I would love to find acceptable
+> >>solution so that later I would be able to integrate upstream driver int
+> >>our package and not use "special" version of the driver for our purpose=
+s.
+> >One option would be to add a debugfs node for those, if they're used only
+> >for debugging.
+>=20
+> Yeah. Can't find a link for it right now, but that was the way I
+> went about it in my third version of the patches
+>=20
 > >
-> > I think I can, but I need a few more patches on top of what I've already posted
-> > to do that.
+> >Regards,
+> >Mauro
 > >
-> > I think that https://patchwork.kernel.org/patch/1889821/ and
-> > https://patchwork.kernel.org/patch/1884701/ can stay as they are, since there's
-> > some material on top of them already and I'll cut the new patches on top of all
-> > that.  I'll repost the whole series some time later this week, stay tuned. :-)
-> 
-> I haven't follow this closely enough to give useful feedback, but I
-> trust that what you're doing is going in the right direction.
+>=20
+>=20
 
-Cool. :-)
+--f4HxWLVbzokH9yio
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> The only question I have right now is what I mentioned earlier on IRC,
-> namely, the idea of "binding" an ACPI handle or device to a pci_dev,
-> and whether there's a way to guarantee that the binding doesn't become
-> stale.  For example, if we bind pci_dev A to acpi_device B, I think we
-> essentially capture the pointer to B and store that pointer in A.
-> Obviously we want to know that the captured pointer in A remains valid
-> as long as A exists, but I don't know what assures us of that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This really is a bit more complicated.
+iQIcBAEBAgAGBQJQ0aAqAAoJELSic+t+oim9fDcP/RYeOiTgVBNABARLRaTfmplD
+Wk8t/qmZ2rGN0jUY96dUQrxxY8GEawsUT91zyobOdwlNXgOxCgOk6nl7fOI75DhH
+/vmnjl7BcTECw5MQMUaJy/2ummBevHN0qaER4T5StgRlbRVQ55F9/QumEBU5n7eO
+FQgP5KvsC4NQbwhIZ/uZ1ElCyeufBC0clYQFKOU7KW07fcERrd3HC+DeuCSM4X2K
+oOWrQVMHqGRG2vfkeBsYo92/0HOwL+0gzaFXG9b/RF46X3q1Doce3V3WzZdTpq4E
+aoB1B+f855rM5VSBYFLctbk0IV5PUDo1J7Dppgn0YGdnU92prKsAUhowlN1gf8cZ
+O+6NfZyl3tHwLKt5+O0N5xC+MNzJQ7O3YHKXuFlyd83mjffY5fsH/DF+hVRJbt8P
+xSF+qjlzN/rZ+Cww6OhArkYfQR0RMdD239lPscFc+7Wm6D/wBdOej0vhmPEsMisF
+fREnj9NInHDheWPnRsxsbYXCKsZVhtkpA7OUody0K5su6Q/9JeSxPKGVRMiNKn00
+JQPrLsANF516/IF4REDyPdcBFLfRYaHfvV7t/xslvIadXvazCuK5UYfyoaVaX/Yn
+QWJWp+3DURTsoq0o6Nvc5yQT5pbJnY5oB3jOKRTrfweTrlhexwzY2P3kjbJr+tnF
+82b0CZVcy+miBQpRf3u/
+=+CNB
+-----END PGP SIGNATURE-----
 
-First, what we store in A is not a pointer to B, but rather the corresponding
-ACPICA handle, which is guaranteed to live longer that B itself.
-
-Second, we not only store the B's handle in A, but also a pointer to A in B
-(in the physical_node_list list).  Moreover, we create the "firmware_node"
-sysfs file under A and a "physical_node" sysfs file under B.
-
-All of that becomes invalid when either A or B is removed without notice.
-
-For the removal of A we have acpi_platform_notify() that calls
-acpi_unbind_one() which kills all of that stuff, so as long as A is removed
-earlier than B, we have no problems.
-
-For the removal of B, however, we seem to assume that if the device is
-ejectable, there will be an ACPI driver bound to B (ie. the struct acpi_device)
-that will take care of the removal of the physical nodes associated with it
-before B itself is removed.  At least that's my understanding of the current
-code.  Moreover, I'm not sure if this assumption is universally satisfied.
-
-> I don't think this is a new question; I have the same question about
-> the current code before your changes.  But it seems like you're
-> simplifying this area in a way that might make it easier to answer the
-> question.
-
-Well, my patches are not likely to make things worse in this area. :-)
-
-Anyway, I think we should make acpi_bus_scan(), or even acpi_bus_add() after
-my changes, mutually exclusive with acpi_bus_trim(), because that will ensure
-that we won't be removing ACPI device objects while setting them up (or the
-other way around).  That would require us to redesign some ACPI drivers first,
-though, because they call acpi_bus_trim() in their initialization code paths
-(I don't really think they should be doing that).
-
-Moreover, I think we should make the ACPI core trigger the removal of all
-physical nodes (As) associated with the given ACPI node (B) after calling
-device_release_driver() in acpi_bus_remove().  That will ensure that all
-physical nodes are gone along with all the binding-related stuff (thanks to
-acpi_platform_notify()) before the ACPI node is removed.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--f4HxWLVbzokH9yio--
