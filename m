@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2LSSOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:14:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab2LSSN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:13:58 -0500
-Date: Wed, 19 Dec 2012 19:14:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Serge Hallyn <serge@hallyn.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 11/11] pidns: Support unsharing the pid namespace.
-Message-ID: <20121219181400.GA22991@redhat.com>
-References: <8739097bkk.fsf@xmission.com> <1353083750-3621-1-git-send-email-ebiederm@xmission.com> <1353083750-3621-11-git-send-email-ebiederm@xmission.com>
+	id S1752522Ab2LSSRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:17:11 -0500
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:54658
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750859Ab2LSSRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 13:17:03 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h906i1155h)
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>, <monstr@monstr.eu>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        John Linn <john.linn@xilinx.com>, Arnd Bergmann <arnd@arndb.de>,
+        <git@xilinx.com>, <nbowler@elliptictech.com>, <josh.cartwright@ni.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 0/7] Updates for Zynq's timer driver
+Date: Wed, 19 Dec 2012 10:16:25 -0800
+X-Mailer: git-send-email 1.8.0.2
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353083750-3621-11-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+Message-ID: <ab760e55-61c2-46b0-b899-1935c213536e@CO1EHSMHS026.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+I started to put some effort on syncing the Xilinx Linux tree with mainline and
+the timer driver is my first victim.
+Most commits are fixing style issues or clean up. Functionality is touched only
+in patches #2 and #7.
 
-oleg@tv-sign.ru no longer works, so I just noticed these emails.
+Some patches are present in almost identically in the Xilinx Linux tree and I
+took over 'Acked-by' lines from those commits.
 
-On 11/16, Eric W. Biederman wrote:
->
-> Unsharing of the pid namespace unlike unsharing of other namespaces
-> does not take affect immediately.  Instead it affects the children
-> created with fork and clone.
+To repost the patch with the arm-kernel list included I made this a v2 to avoid
+confusion about which series is the current one, though the patches are the same
+as the ones posted before on lkml only.
+I added Josh's 'Reviewed-by' line though.
 
-I'll try to read this series later, but I am not sure I will ever
-understand the code with these patches ;)
+v2:
+ - extend receipient list
+ - adding reviewed by lines to commit messages
 
-So alloc_pid() becomes the only user nsproxy->pid_ns and it is not
-necessarily equal to task_active_pid_ns(). It seems to me that this
-adds a lot of new corner cases.
+	Soren
 
-Unless I missed something, at least we should not allow CLONE_THREAD
-if active_pid_ns != nsproxy->pid_ns. If nothing else, copy_process()
-initializes ->child_reaper only if thread_group_leader(child). And
-->child_reaper == NULL can obviously lead to crash.
 
-Oleg.
+Soren Brinkmann (7):
+  arm: zynq: timer: Replace PSS through PS
+  arm: zynq: timer: Remove unnecessary register write
+  arm: zynq: timer: Remove unused #defines
+  arm: zynq: timer: Align columns
+  arm: zynq: timer: Remove redundant #includes
+  arm: zynq: timer: Fix comment style
+  arm: zynq: timer: Set clock_event cpumask
+
+ arch/arm/mach-zynq/common.c |   6 +-
+ arch/arm/mach-zynq/common.h |   2 +-
+ arch/arm/mach-zynq/timer.c  | 150 +++++++++++++++++++++-----------------------
+ 3 files changed, 75 insertions(+), 83 deletions(-)
+
+-- 
+1.8.0.2
+
 
