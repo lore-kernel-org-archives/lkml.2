@@ -1,251 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab2LSVFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 16:05:47 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:57792 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab2LSVFk (ORCPT
+	id S1751359Ab2LSVHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 16:07:09 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:25419 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2LSVHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 16:05:40 -0500
-From: Laurent Navet <laurent.navet@gmail.com>
-To: w.sang@pengutronix.de
-Cc: khali@linux-fr.org, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] drivers: i2c-nforce2: fix coding style issues
-Date: Wed, 19 Dec 2012 22:06:11 +0100
-Message-Id: <1355951171-3230-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 19 Dec 2012 16:07:00 -0500
+X-IronPort-AV: E=Sophos;i="4.84,318,1355126400"; 
+   d="scan'208";a="15269215"
+Date: Wed, 19 Dec 2012 13:06:54 -0800
+From: Pratik Patel <pratikp@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
+        "arve@android.com" <arve@android.com>,
+        "jon-hunter@ti.com" <jon-hunter@ti.com>,
+        "david.rusling@linaro.org" <david.rusling@linaro.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "d-deao@ti.com" <d-deao@ti.com>,
+        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: CoreSight framework and drivers
+Message-ID: <20121219210654.GA524@pratikp-linux.qualcomm.com>
+References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
+ <20121219112314.GA26329@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219112314.GA26329@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-avoid these checkpatch.pl issues :
-- ERROR: "foo * bar" should be "foo *bar"
-- ERROR: switch and case should be at the same indent
-- ERROR: "(foo*)" should be "(foo *)"
-- ERROR: do not use assignment in if condition
-- ERROR: space required before the open parenthesis '('
-- WARNING: suspect code indent for conditional statements
-- WARNING: quoted string split across lines
-- WARNING: space prohibited between function name and open parenthesis '('
+On Wed, Dec 19, 2012 at 11:23:14AM +0000, Will Deacon wrote:
+> Hi Pratik,
+> 
+> On Tue, Dec 18, 2012 at 07:19:17PM +0000, pratikp@codeaurora.org wrote:
+> > This RFC is aimed at introducing CoreSight framework as well as
+> > individual CoreSight trace component drivers adhering to ARM
+> > CoreSight specification. Some prior discussion on this can be
+> > referred at [1].
+> > 
+> > There are 3 kinds of CoreSight trace components:
+> > 
+> > * Sources: Responsible for producing trace data to provide
+> >   visibility for the associated entity.
+> > 
+> > * Links: Transport components that carry trace data.
+> > 
+> > * Sinks: Collectors for storing trace data or acting as conduits
+> >   for off-chip trace data collection.
+> > 
+> > These components can be connected in various topologies to suite
+> > a particular SoCs tracing needs.
+> > 
+> > Framework is responsible for gathering and using the information
+> > about the registered CoreSight components and their connections
+> > to allow it to dynamically deduce the sequence of components
+> > representing a connection from a CoreSight source to the
+> > currently selected CoreSight sink. This helps the framework to
+> > program the correct set of components to satisfy user request.
+> 
+> From a million miles up, this looks like a sensible sort of design but I
+> really think you need to talk to Jon Hunter (he's at least on CC) about
+> this, especially where bindings are concerned. If we can get something that
+> you both agree on, then we can include the CTI with the other coresight
+> components and do a more in-depth review at that point.
+> 
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/i2c/busses/i2c-nforce2.c |  149 +++++++++++++++++++-------------------
- 1 file changed, 75 insertions(+), 74 deletions(-)
+Thanks for the feedback.
 
-diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
-index 392303b..03f32c5 100644
---- a/drivers/i2c/busses/i2c-nforce2.c
-+++ b/drivers/i2c/busses/i2c-nforce2.c
-@@ -60,7 +60,7 @@
- #include <linux/io.h>
- 
- MODULE_LICENSE("GPL");
--MODULE_AUTHOR ("Hans-Frieder Vogt <hfvogt@gmx.net>");
-+MODULE_AUTHOR("Hans-Frieder Vogt <hfvogt@gmx.net>");
- MODULE_DESCRIPTION("nForce2/3/4/5xx SMBus driver");
- 
- 
-@@ -188,9 +188,9 @@ static int nforce2_check_status(struct i2c_adapter *adap)
- }
- 
- /* Return negative errno on error */
--static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
-+static s32 nforce2_access(struct i2c_adapter *adap, u16 addr,
- 		unsigned short flags, char read_write,
--		u8 command, int size, union i2c_smbus_data * data)
-+		u8 command, int size, union i2c_smbus_data *data)
- {
- 	struct nforce2_smbus *smbus = adap->algo_data;
- 	unsigned char protocol, pec;
-@@ -203,55 +203,54 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
- 
- 	switch (size) {
- 
--		case I2C_SMBUS_QUICK:
--			protocol |= NVIDIA_SMB_PRTCL_QUICK;
--			read_write = I2C_SMBUS_WRITE;
--			break;
-+	case I2C_SMBUS_QUICK:
-+		protocol |= NVIDIA_SMB_PRTCL_QUICK;
-+		read_write = I2C_SMBUS_WRITE;
-+		break;
- 
--		case I2C_SMBUS_BYTE:
--			if (read_write == I2C_SMBUS_WRITE)
--				outb_p(command, NVIDIA_SMB_CMD);
--			protocol |= NVIDIA_SMB_PRTCL_BYTE;
--			break;
--
--		case I2C_SMBUS_BYTE_DATA:
--			outb_p(command, NVIDIA_SMB_CMD);
--			if (read_write == I2C_SMBUS_WRITE)
--				outb_p(data->byte, NVIDIA_SMB_DATA);
--			protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
--			break;
--
--		case I2C_SMBUS_WORD_DATA:
--			outb_p(command, NVIDIA_SMB_CMD);
--			if (read_write == I2C_SMBUS_WRITE) {
--				 outb_p(data->word, NVIDIA_SMB_DATA);
--				 outb_p(data->word >> 8, NVIDIA_SMB_DATA+1);
--			}
--			protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
--			break;
--
--		case I2C_SMBUS_BLOCK_DATA:
-+	case I2C_SMBUS_BYTE:
-+		if (read_write == I2C_SMBUS_WRITE)
- 			outb_p(command, NVIDIA_SMB_CMD);
--			if (read_write == I2C_SMBUS_WRITE) {
--				len = data->block[0];
--				if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
--					dev_err(&adap->dev,
--						"Transaction failed "
--						"(requested block size: %d)\n",
--						len);
--					return -EINVAL;
--				}
--				outb_p(len, NVIDIA_SMB_BCNT);
--				for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
--					outb_p(data->block[i + 1],
--					       NVIDIA_SMB_DATA+i);
-+		protocol |= NVIDIA_SMB_PRTCL_BYTE;
-+		break;
-+
-+	case I2C_SMBUS_BYTE_DATA:
-+		outb_p(command, NVIDIA_SMB_CMD);
-+		if (read_write == I2C_SMBUS_WRITE)
-+			outb_p(data->byte, NVIDIA_SMB_DATA);
-+		protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
-+		break;
-+
-+	case I2C_SMBUS_WORD_DATA:
-+		outb_p(command, NVIDIA_SMB_CMD);
-+		if (read_write == I2C_SMBUS_WRITE) {
-+			outb_p(data->word, NVIDIA_SMB_DATA);
-+			outb_p(data->word >> 8, NVIDIA_SMB_DATA+1);
-+		}
-+		protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
-+		break;
-+
-+	case I2C_SMBUS_BLOCK_DATA:
-+		outb_p(command, NVIDIA_SMB_CMD);
-+		if (read_write == I2C_SMBUS_WRITE) {
-+			len = data->block[0];
-+			if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
-+				dev_err(&adap->dev,
-+				"Transaction failed (requested block size: %d)\n",
-+				len);
-+				return -EINVAL;
- 			}
--			protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
--			break;
-+			outb_p(len, NVIDIA_SMB_BCNT);
-+			for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
-+				outb_p(data->block[i + 1],
-+				       NVIDIA_SMB_DATA+i);
-+		}
-+		protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
-+		break;
- 
--		default:
--			dev_err(&adap->dev, "Unsupported transaction %d\n", size);
--			return -EOPNOTSUPP;
-+	default:
-+		dev_err(&adap->dev, "Unsupported transaction %d\n", size);
-+		return -EOPNOTSUPP;
- 	}
- 
- 	outb_p((addr & 0x7f) << 1, NVIDIA_SMB_ADDR);
-@@ -266,27 +265,28 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
- 
- 	switch (size) {
- 
--		case I2C_SMBUS_BYTE:
--		case I2C_SMBUS_BYTE_DATA:
--			data->byte = inb_p(NVIDIA_SMB_DATA);
--			break;
--
--		case I2C_SMBUS_WORD_DATA:
--			data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA+1) << 8);
--			break;
--
--		case I2C_SMBUS_BLOCK_DATA:
--			len = inb_p(NVIDIA_SMB_BCNT);
--			if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
--				dev_err(&adap->dev, "Transaction failed "
--					"(received block size: 0x%02x)\n",
--					len);
--				return -EPROTO;
--			}
--			for (i = 0; i < len; i++)
--				data->block[i+1] = inb_p(NVIDIA_SMB_DATA + i);
--			data->block[0] = len;
--			break;
-+	case I2C_SMBUS_BYTE:
-+	case I2C_SMBUS_BYTE_DATA:
-+		data->byte = inb_p(NVIDIA_SMB_DATA);
-+		break;
-+
-+	case I2C_SMBUS_WORD_DATA:
-+		data->word = inb_p(NVIDIA_SMB_DATA) |
-+			(inb_p(NVIDIA_SMB_DATA+1) << 8);
-+		break;
-+
-+	case I2C_SMBUS_BLOCK_DATA:
-+		len = inb_p(NVIDIA_SMB_BCNT);
-+		if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
-+			dev_err(&adap->dev,
-+			"Transaction failed (received block size: 0x%02x)\n",
-+			len);
-+			return -EPROTO;
-+		}
-+		for (i = 0; i < len; i++)
-+			data->block[i+1] = inb_p(NVIDIA_SMB_DATA + i);
-+		data->block[0] = len;
-+		break;
- 	}
- 
- 	return 0;
-@@ -299,7 +299,7 @@ static u32 nforce2_func(struct i2c_adapter *adapter)
- 	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
- 	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
- 	       I2C_FUNC_SMBUS_PEC |
--	       (((struct nforce2_smbus*)adapter->algo_data)->blockops ?
-+	       (((struct nforce2_smbus *)adapter->algo_data)->blockops ?
- 		I2C_FUNC_SMBUS_BLOCK_DATA : 0);
- }
- 
-@@ -327,10 +327,10 @@ static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
- 	{ 0 }
- };
- 
--MODULE_DEVICE_TABLE (pci, nforce2_ids);
-+MODULE_DEVICE_TABLE(pci, nforce2_ids);
- 
- 
--static int __devinit nforce2_probe_smb (struct pci_dev *dev, int bar,
-+static int __devinit nforce2_probe_smb(struct pci_dev *dev, int bar,
- 	int alt_reg, struct nforce2_smbus *smbus, const char *name)
- {
- 	int error;
-@@ -388,11 +388,12 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
- 	int res1, res2;
- 
- 	/* we support 2 SMBus adapters */
--	if (!(smbuses = kzalloc(2*sizeof(struct nforce2_smbus), GFP_KERNEL)))
-+	smbuses = kzalloc(2*sizeof(struct nforce2_smbus), GFP_KERNEL);
-+	if (!smbuses)
- 		return -ENOMEM;
- 	pci_set_drvdata(dev, smbuses);
- 
--	switch(dev->device) {
-+	switch (dev->device) {
- 	case PCI_DEVICE_ID_NVIDIA_NFORCE2_SMBUS:
- 	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_SMBUS:
- 	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP55_SMBUS:
+> Finally, how do you plan on exposing this data to the user? I think the only
+> sane way is to have per-device file descriptors which act as pipes to the raw
+> data but this means we need some readily available, open-source tooling (or
+> at least public specifications of the trace formats).
+> 
+
+The sink drivers (ETB, TMC), expose a device node per device that
+is used to collect the raw data.
+
+Eg:, we have:
+/dev/coresight-etb
+/dev/coresight-tmc-etf
+/dev/coresight-tmc-etr
+
+where reading /dev/coresight-tmc-etf only works when the ETF is
+in circular buffer mode.
+
 -- 
-1.7.10.4
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
