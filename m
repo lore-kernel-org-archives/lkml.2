@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2LSHnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 02:43:15 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:63883 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2LSHnJ (ORCPT
+	id S1752287Ab2LSHqE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 02:46:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37986 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LSHp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 02:43:09 -0500
-Subject: Re: [patch 7/7] mm: reduce rmap overhead for ex-KSM page copies
- created on swap faults
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Satoru Moriya <satoru.moriya@hds.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1355767957-4913-8-git-send-email-hannes@cmpxchg.org>
-References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
-	 <1355767957-4913-8-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Dec 2012 02:01:19 -0500
-Message-ID: <1355900479.1381.1.camel@kernel-VirtualBox>
+	Wed, 19 Dec 2012 02:45:56 -0500
+Date: Tue, 18 Dec 2012 23:45:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Vincent Palatin <vpalatin@chromium.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
+Subject: Re: [rtc-linux] [PATCH] rtc: recycle id when unloading a rtc driver
+Message-Id: <20121218234543.786a2211.akpm@linux-foundation.org>
+In-Reply-To: <50D16EA3.8040803@ahsoftware.de>
+References: <1343951605-25722-1-git-send-email-vpalatin@chromium.org>
+	<20121218164659.a3d3655a.akpm@linux-foundation.org>
+	<50D16EA3.8040803@ahsoftware.de>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-17 at 13:12 -0500, Johannes Weiner wrote:
-> When ex-KSM pages are faulted from swap cache, the fault handler is
-> not capable of re-establishing anon_vma-spanning KSM pages.  In this
-> case, a copy of the page is created instead, just like during a COW
-> break.
-> 
-> These freshly made copies are known to be exclusive to the faulting
-> VMA and there is no reason to go look for this page in parent and
-> sibling processes during rmap operations.
-> 
-> Use page_add_new_anon_rmap() for these copies.  This also puts them on
-> the proper LRU lists and marks them SwapBacked, so we can get rid of
-> doing this ad-hoc in the KSM copy code.
+On Wed, 19 Dec 2012 08:37:07 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
 
-Is it just a code cleanup instead of reduce rmap overhead?
-
+> Am 19.12.2012 01:46, schrieb Andrew Morton:
+> > On Thu,  2 Aug 2012 16:53:25 -0700
+> > Vincent Palatin <vpalatin@chromium.org> wrote:
+> >
+> >> When calling rtc_device_unregister, we are not freeing the id used by the
+> >> driver.
+> >> So when doing a unload/load cycle for a RTC driver (e.g. rmmod rtc_cmos
+> >> && modprobe rtc_cmos), its id is incremented by one. As a consequence,
+> >> we no longer have neither an rtc0 driver nor a /proc/driver/rtc (as it
+> >> only exists for the first driver).
+> >>
+> >> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+> >> ---
+> >>   drivers/rtc/class.c |    1 +
+> >>   1 files changed, 1 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+> >> index dc4c274..37b1d82 100644
+> >> --- a/drivers/rtc/class.c
+> >> +++ b/drivers/rtc/class.c
+> >> @@ -238,6 +238,7 @@ void rtc_device_unregister(struct rtc_device *rtc)
+> >>   		rtc_proc_del_device(rtc);
+> >>   		device_unregister(&rtc->dev);
+> >>   		rtc->ops = NULL;
+> >> +		ida_simple_remove(&rtc_ida, rtc->id);
+> >>   		mutex_unlock(&rtc->ops_lock);
+> >>   		put_device(&rtc->dev);
+> >>   	}
+> >
+> > Now I think about it, this shouldn't have been needed?
+> >
+> > That put_device() should call rtc_device_release(), which does the
+> > ida_simple_remove().  Isn't that working?
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> ---
->  mm/ksm.c    | 6 ------
->  mm/memory.c | 5 ++++-
->  2 files changed, 4 insertions(+), 7 deletions(-)
+> It is, see the mini-thread, patch and my comment here:
 > 
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index 382d930..7275c74 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -1590,13 +1590,7 @@ struct page *ksm_does_need_to_copy(struct page *page,
->  
->  		SetPageDirty(new_page);
->  		__SetPageUptodate(new_page);
-> -		SetPageSwapBacked(new_page);
->  		__set_page_locked(new_page);
-> -
-> -		if (!mlocked_vma_newpage(vma, new_page))
-> -			lru_cache_add_lru(new_page, LRU_ACTIVE_ANON);
-> -		else
-> -			add_page_to_unevictable_list(new_page);
->  	}
->  
->  	return new_page;
-> diff --git a/mm/memory.c b/mm/memory.c
-> index db2e9e7..7e17eb0 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3020,7 +3020,10 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	}
->  	flush_icache_page(vma, page);
->  	set_pte_at(mm, address, page_table, pte);
-> -	do_page_add_anon_rmap(page, vma, address, exclusive);
-> +	if (swapcache) /* ksm created a completely new copy */
-> +		page_add_new_anon_rmap(page, vma, address);
-> +	else
-> +		do_page_add_anon_rmap(page, vma, address, exclusive);
->  	/* It's better to call commit-charge after rmap is established */
->  	mem_cgroup_commit_charge_swapin(page, ptr);
->  
+> https://lkml.org/lkml/2012/12/6/152
+> 
+> Maybe it would be better to move the ida_simple_remove from the 
+> rtc_device_release to rt_device_unregister as I've hinted in the above 
+> comment. That would make it easier to spot the ida_simple_remove().
 
+I'm all confused.
+
+Lothar's patch simply reverts Vincent's patch.  And that appears to be
+the correct thing to so, as the ida_simple_remove() in
+rtc_device_release() should be sufficient.  
+
+But apparently that doesn't work, because Vincent was seeing the RTC
+ID's increment rather than getting reused.
+
+Is it the case that rtc_device_release() is not being called sometimes?
+If so, under what circumstances?
 
