@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab2LSQLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 11:11:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44234 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab2LSQLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 11:11:08 -0500
-Message-ID: <50D1E6ED.2070803@zytor.com>
-Date: Wed, 19 Dec 2012 08:10:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755567Ab2LSQOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 11:14:17 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:40550 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab2LSQOJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 11:14:09 -0500
+Date: Wed, 19 Dec 2012 08:17:05 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: zram: fix invalid memory references during disk write
+Message-ID: <20121219161705.GA24251@kroah.com>
+References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
+ <20121211182720.GC29421@kroah.com>
+ <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
+ <20121219034949.GA22281@kroah.com>
+ <50D16AF8.7030401@vflare.org>
+ <20121219150826.GA23953@kroah.com>
+ <50D1E300.4000006@vflare.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "jarkko.sakkinen@intel.com" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>
-Subject: Re: Why Linux kernel forced to enter X2APIC mode( just because of
- booting cpu has supported x2apic) without depending on BIOS' setting in MSR->x2apic
- enablement bit ?
-References: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net> <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
-In-Reply-To: <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D1E300.4000006@vflare.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2012 09:49 AM, Yinghai Lu wrote:
+On Wed, Dec 19, 2012 at 07:53:36AM -0800, Nitin Gupta wrote:
+> On 12/19/2012 07:08 AM, Greg KH wrote:
+> > On Tue, Dec 18, 2012 at 11:21:28PM -0800, Nitin Gupta wrote:
+> >> On 12/18/2012 07:49 PM, Greg KH wrote:
+> >>> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
+> >>>> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >>>>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
+> >>>>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+> >>>>>> of incompressible pages") which caused invalid memory references
+> >>>>>> during disk write. Invalid references could occur in two cases:
+> >>>>>>  - Incoming data expands on compression: In this case, reference was
+> >>>>>> made to kunmap()'ed bio page.
+> >>>>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+> >>>>>> case, reference was made to a kfree()'ed buffer.
+> >>>>>>
+> >>>>>> Fixes bug 50081:
+> >>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
+> >>>>>>
+> >>>>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
+> >>>>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
+> >>>>>>
+> >>>>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
+> >>>>>>                               # zram_decompress_page() function
+> >>>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> >>>>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+> >>>>>> Reported-by: Tomas M <tomas@slax.org>
+> >>>>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> >>>>>> ---
+> >>>>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+> >>>>>>  1 file changed, 24 insertions(+), 15 deletions(-)
+> >>>>>
+> >>>>> This patch fails to apply to 3.6.10:
+> >>>>>
+> >>>>> patching file drivers/staging/zram/zram_drv.c
+> >>>>> Hunk #1 succeeded at 282 (offset 17 lines).
+> >>>>> Hunk #2 FAILED at 286.
+> >>>>> Hunk #3 succeeded at 319 (offset 17 lines).
+> >>>>> Hunk #4 succeeded at 340 (offset 17 lines).
+> >>>>> Hunk #5 succeeded at 353 (offset 17 lines).
+> >>>>> Hunk #6 succeeded at 368 (offset 17 lines).
+> >>>>> Hunk #7 succeeded at 385 (offset 17 lines).
+> >>>>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
+> >>>>>
+> >>>>> Please redo this patch and resend it if you wish for it to be applied to
+> >>>>> the 3.6-stable tree.
+> >>>>>
+> >>>>>
+> >>>>
+> >>>> Please apply this patch to stable tree asap.
+> >>>
+> >>> 3.6 is now end-of-life, there will not be any more releases for that
+> >>> kernel series anymore, sorry.
+> >>>
+> >>
+> >> Then please apply to 3.7.
+> > 
+> > That is impossible to do so, for the obvious reason.
+> > 
 > 
-> So you need to make cpuid show does not support x2apic --- check with
-> intel they have way to do that.
-> 
+> I meant to include it in whatever 3.7.x is released in future. Or put it
+> in staging, so it may eventually make it to mainline (by 3.8?).
 
-No, but there is a flag in ACPI that "this BIOS is broken with x2APIC".
-Setting that flag as opposed to fixing the bugs, though is very much not
-recommended, however; the lack of interrupt routing means there are ways
-for a rogue device to compromise the security provided by VT-d, see:
+{sigh}
 
-http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+Please think for a moment for how it would be impossible for me to add
+this patch to either the 3.7-stable tree, or the 3.8 tree, _again_.
 
-	-hpa
-
-
+greg k-h
