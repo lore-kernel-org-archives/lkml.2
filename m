@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2LSI42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 03:56:28 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:41411 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab2LSI4U (ORCPT
+	id S1753536Ab2LSJDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 04:03:41 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53981 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab2LSJD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 03:56:20 -0500
-Message-ID: <50D180E6.3010305@ahsoftware.de>
-Date: Wed, 19 Dec 2012 09:55:02 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 04:03:29 -0500
+Date: Wed, 19 Dec 2012 10:03:26 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Chao Xie <xiechao.mail@gmail.com>
+Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, haojian.zhuang@gmail.com
+Subject: Re: common clock framwork: clk_set_rate issue
+Message-ID: <20121219090326.GX26326@pengutronix.de>
+References: <CADApbej+f9P1sgLMR8_McoCCSLDjJt_qitWdNd8X1v6PwZqsnQ@mail.gmail.com>
+ <20121217201945.GA19651@pengutronix.de>
+ <CADApbej17udzpStNeY+tsSkeOy_Fv2+o+zKs4zBLV8+ST4DWTg@mail.gmail.com>
+ <20121218074711.GU26326@pengutronix.de>
+ <CADApbej8ddpgQAgr3ghMJaQfwcKk_bQe++MaHiRECzpPZNCuXg@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Vincent Palatin <vpalatin@chromium.org>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
-Subject: Re: [rtc-linux] [PATCH] rtc: recycle id when unloading a rtc driver
-References: <1343951605-25722-1-git-send-email-vpalatin@chromium.org> <20121218164659.a3d3655a.akpm@linux-foundation.org> <50D16EA3.8040803@ahsoftware.de> <20121218234543.786a2211.akpm@linux-foundation.org> <50D1730D.7010108@ahsoftware.de> <20121219002722.87438a08.akpm@linux-foundation.org>
-In-Reply-To: <20121219002722.87438a08.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADApbej8ddpgQAgr3ghMJaQfwcKk_bQe++MaHiRECzpPZNCuXg@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:58:25 up 179 days, 10 min, 58 users,  load average: 1.96, 9.67,
+ 16.75
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.12.2012 09:27, schrieb Andrew Morton:
-> On Wed, 19 Dec 2012 08:55:57 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
->
->>>
->>> I'm all confused.
->>>
->>> Lothar's patch simply reverts Vincent's patch.  And that appears to be
->>> the correct thing to so, as the ida_simple_remove() in
->>> rtc_device_release() should be sufficient.
->>>
->>> But apparently that doesn't work, because Vincent was seeing the RTC
->>> ID's increment rather than getting reused.
->>>
->>> Is it the case that rtc_device_release() is not being called sometimes?
->>> If so, under what circumstances?
->>
->> Maybe something (sysfs or whatever) still has a reference to it. Vincent
->> should check that.
->>
->> But I'm sure the ID will be recycled with that put_device() in
->> unregister because I've got the same warning as Lothar did when
->> (porperly) removing an RTC (with kernel 3.7).
->
-> If, as appears to be the case, rtc_device_release() is not being called
-> then we're also leaking memory.  So yes please, it would be good if
-> someone who can reproduce the IDs-dont-decrease problem could dive in
-> and work out why ->release() isn't begin called.
+On Wed, Dec 19, 2012 at 02:49:25PM +0800, Chao Xie wrote:
+> On Tue, Dec 18, 2012 at 3:47 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> >> There is already a flag to do it.
+> >> CLK_SET_RATE_PARENT
+> >
+> > That flag has another meaning. It means that a clock is allowed to
+> > change the parents rate when a rate change is requested. What I meant
+> > is a flag that allows a mux to change its parent when a rate change is
+> > requested.
+> >
+> another flag can help it. what i mean is that i can clear the flag
+> CLK_SET_RATE_PARENT of MUX's children, so when clock changing will not
+> impact the MUX.
+> 
+> >> if the mux does not want to changes the input for clk_set_rate called
+> >> by its child, it can clear this flag.
+> >> The question is whether we need add the round_rate/recalc_rate for MUX
+> >> type of clock? Is there any special issue about it that why current
+> >> MUX implementation does not have these callbacks?
+> >
+> > They currently do not need these callbacks. When a clock does not have
+> > round_rate propagates up to the parent if CLK_SET_RATE_PARENT is set or
+> > it returns the parents rate if this flag is not set. The situation with
+> > set_rate is similar.
+> >
+> So it means that for a uart clock  that get its clock from
+> MUX --> DIV --> UART
+> when uart want to change its rate, the driver has to know the topology
+> of clock tree. It can not directly clk_set_rate(uart), because it only
+> change the DIV settings, and if we want to change the MUX input, we
+> have to invoke clk_set_parent(MUX). So the uart driver need to know
+> the clock tree topology, and it is not good for sharing a driver
+> between mutiple SOCs that has same UART controller IP.
+> That is what i am confused about.
 
-Unlikely, as I've worked hard to get one of the first drivers for 
-pluggable RTCs into the kernel. ;)
-I think every sane kernel has them statically linked in and it's likely 
-a problem of the RTC-driver Vincent experienced that with.
+A driver shouldn't need to know the clock topology. If you have a setup
+like described above and want to have the mux look for the best parent
+during rate change, then a new flag for the mux is needed, something
+like:
 
-Regards,
+CLK_SET_RATE_SWITCH_PARENT (1 << x) /* allow to change parent on clk_set_rate /*
 
-Alexander
+For the reasons I described earlier in this thread this would have to be
+optional as on i.MX I don't want magic parent changes to happen on a
+rate change.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
