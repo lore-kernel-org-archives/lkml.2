@@ -1,167 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab2LSTZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 14:25:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35958 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab2LSTZ3 (ORCPT
+	id S1754686Ab2LST1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 14:27:49 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64083 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab2LST1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 14:25:29 -0500
-Message-ID: <50D214FC.8000405@infradead.org>
-Date: Wed, 19 Dec 2012 11:26:52 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 14:27:46 -0500
+Date: Wed, 19 Dec 2012 11:27:40 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] workqueue: fix find_worker_executing_work() brekage from
+ hashtable conversion
+Message-ID: <20121219192740.GT1844@htj.dyndns.org>
+References: <20121219095241.GA27310@localhost>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: Re: [PART5 Patch 1/5] page_alloc: add kernelcore_max_addr
-References: <1351675303-11786-1-git-send-email-wency@cn.fujitsu.com> <1351675303-11786-2-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1351675303-11786-2-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219095241.GA27310@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/12 02:21, Wen Congyang wrote:
-> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> 
-> Current ZONE_MOVABLE (kernelcore=) setting policy with boot option doesn't meet
-> our requirement. We need something like kernelcore_max_addr=XX boot option
-> to limit the kernelcore upper address.
-> 
-> The memory with higher address will be migratable(movable) and they
-> are easier to be offline(always ready to be offline when the system don't require
-> so much memory).
-> 
-> It makes things easy when we dynamic hot-add/remove memory, make better
-> utilities of memories, and helps for THP.
-> 
-> All kernelcore_max_addr=, kernelcore= and movablecore= can be safely specified
-> at the same time(or any 2 of them).
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  Documentation/kernel-parameters.txt |  9 +++++++++
->  mm/page_alloc.c                     | 29 ++++++++++++++++++++++++++++-
->  2 files changed, 37 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 9776f06..2b72ffb 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1223,6 +1223,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			use the HighMem zone if it exists, and the Normal
->  			zone if it does not.
->  
-> +	kernelcore_max_addr=nn[KMG]	[KNL,X86,IA-64,PPC] This parameter
-> +			is the same effect as kernelcore parameter, except it
-> +			specifies the up physical address of memory range
+>From 023f27d3d6fcc9048754d879fe5e7d63402a5b16 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 19 Dec 2012 11:24:06 -0800
 
-			              upper (or maximum)
+42f8570f43 ("workqueue: use new hashtable implementation") incorrectly
+made busy workers hashed by the pointer value of worker instead of
+work.  This broke find_worker_executing_work() which in turn broke a
+lot of fundamental operations of workqueue - non-reentrancy and
+flushing among others.  The flush malfunction triggered warning in
+disk event code in Fengguang's automated test.
 
-> +			usable by the kernel for non-movable allocations.
-> +			If both kernelcore and kernelcore_max_addr are
-> +			specified, this requested's priority is higher than
+ write_dev_root_ (3265) used greatest stack depth: 2704 bytes left
+ ------------[ cut here ]------------
+ WARNING: at /c/kernel-tests/src/stable/block/genhd.c:1574 disk_clear_events+0x\
+cf/0x108()
+ Hardware name: Bochs
+ Modules linked in:
+ Pid: 3328, comm: ata_id Not tainted 3.7.0-01930-gbff6343 #1167
+ Call Trace:
+  [<ffffffff810997c4>] warn_slowpath_common+0x83/0x9c
+  [<ffffffff810997f7>] warn_slowpath_null+0x1a/0x1c
+  [<ffffffff816aea77>] disk_clear_events+0xcf/0x108
+  [<ffffffff811bd8be>] check_disk_change+0x27/0x59
+  [<ffffffff822e48e2>] cdrom_open+0x49/0x68b
+  [<ffffffff81ab0291>] idecd_open+0x88/0xb7
+  [<ffffffff811be58f>] __blkdev_get+0x102/0x3ec
+  [<ffffffff811bea08>] blkdev_get+0x18f/0x30f
+  [<ffffffff811bebfd>] blkdev_open+0x75/0x80
+  [<ffffffff8118f510>] do_dentry_open+0x1ea/0x295
+  [<ffffffff8118f5f0>] finish_open+0x35/0x41
+  [<ffffffff8119c720>] do_last+0x878/0xa25
+  [<ffffffff8119c993>] path_openat+0xc6/0x333
+  [<ffffffff8119cf37>] do_filp_open+0x38/0x86
+  [<ffffffff81190170>] do_sys_open+0x6c/0xf9
+  [<ffffffff8119021e>] sys_open+0x21/0x23
+  [<ffffffff82c1c3d9>] system_call_fastpath+0x16/0x1b
 
-			specified, this parameter has a higher priority than
-			the kernelcore parameter.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+---
+Sorry that I didn't spot this earlier.  Fix applied to wq/for-3.9.
 
-> +			kernelcore's.
-> +			See the kernelcore parameter.
-> +
->  	kgdbdbgp=	[KGDB,HW] kgdb over EHCI usb debug port.
->  			Format: <Controller#>[,poll interval]
->  			The controller # is the number of the ehci usb debug
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5b74de6..9c35fe5 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -200,6 +200,7 @@ static unsigned long __meminitdata dma_reserve;
->  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
->  static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
->  static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
-> +static unsigned long __initdata required_kernelcore_max_pfn;
->  static unsigned long __initdata required_kernelcore;
->  static unsigned long __initdata required_movablecore;
->  static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
-> @@ -4715,6 +4716,7 @@ static void __init find_zone_movable_pfns_for_nodes(void)
->  {
->  	int i, nid;
->  	unsigned long usable_startpfn;
-> +	unsigned long kernelcore_max_pfn;
->  	unsigned long kernelcore_node, kernelcore_remaining;
->  	/* save the state before borrow the nodemask */
->  	nodemask_t saved_node_state = node_states[N_HIGH_MEMORY];
-> @@ -4743,6 +4745,9 @@ static void __init find_zone_movable_pfns_for_nodes(void)
->  		required_kernelcore = max(required_kernelcore, corepages);
->  	}
->  
-> +	if (required_kernelcore_max_pfn && !required_kernelcore)
-> +		required_kernelcore = totalpages;
-> +
->  	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
->  	if (!required_kernelcore)
->  		goto out;
-> @@ -4751,6 +4756,12 @@ static void __init find_zone_movable_pfns_for_nodes(void)
->  	find_usable_zone_for_movable();
->  	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
->  
-> +	if (required_kernelcore_max_pfn)
-> +		kernelcore_max_pfn = required_kernelcore_max_pfn;
-> +	else
-> +		kernelcore_max_pfn = ULONG_MAX >> PAGE_SHIFT;
-> +	kernelcore_max_pfn = max(kernelcore_max_pfn, usable_startpfn);
-> +
->  restart:
->  	/* Spread kernelcore memory as evenly as possible throughout nodes */
->  	kernelcore_node = required_kernelcore / usable_nodes;
-> @@ -4777,8 +4788,12 @@ restart:
->  			unsigned long size_pages;
->  
->  			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
-> -			if (start_pfn >= end_pfn)
-> +			end_pfn = min(kernelcore_max_pfn, end_pfn);
-> +			if (start_pfn >= end_pfn) {
-> +				if (!zone_movable_pfn[nid])
-> +					zone_movable_pfn[nid] = start_pfn;
->  				continue;
-> +			}
->  
->  			/* Account for what is only usable for kernelcore */
->  			if (start_pfn < usable_startpfn) {
-> @@ -4965,6 +4980,18 @@ static int __init cmdline_parse_core(char *p, unsigned long *core)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_MOVABLE_NODE
-> +/*
-> + * kernelcore_max_addr=addr sets the up physical address of memory range
+Thanks a lot Fengguang.  You're awesome!
 
-                                        upper
+ kernel/workqueue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> + * for use for allocations that cannot be reclaimed or migrated.
-> + */
-> +static int __init cmdline_parse_kernelcore_max_addr(char *p)
-> +{
-> +	return cmdline_parse_core(p, &required_kernelcore_max_pfn);
-> +}
-> +early_param("kernelcore_max_addr", cmdline_parse_kernelcore_max_addr);
-> +#endif
-> +
->  /*
->   * kernelcore=size sets the amount of memory for use for allocations that
->   * cannot be reclaimed or migrated.
-> 
-
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index d24a411..7967f34 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2172,7 +2172,7 @@ __acquires(&gcwq->lock)
+ 
+ 	/* claim and dequeue */
+ 	debug_work_deactivate(work);
+-	hash_add(gcwq->busy_hash, &worker->hentry, (unsigned long)worker);
++	hash_add(gcwq->busy_hash, &worker->hentry, (unsigned long)work);
+ 	worker->current_work = work;
+ 	worker->current_func = work->func;
+ 	worker->current_cwq = cwq;
 -- 
-~Randy
+1.8.0.2
+
