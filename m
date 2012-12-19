@@ -1,112 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2LSPJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:09:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37112 "EHLO mx1.redhat.com"
+	id S1755462Ab2LSPLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:11:08 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:33638 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221Ab2LSPJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:09:40 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/3] perf x86: Add precise sysfs attribute
-Date: Wed, 19 Dec 2012 16:07:21 +0100
-Message-Id: <1355929642-28392-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1355929642-28392-1-git-send-email-jolsa@redhat.com>
-References: <1355929642-28392-1-git-send-email-jolsa@redhat.com>
+	id S1752254Ab2LSPK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 10:10:58 -0500
+Date: Wed, 19 Dec 2012 16:10:54 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc-pcf8523: Add low battery voltage support
+Message-ID: <20121219151054.GB14217@axis.com>
+References: <20121219140456.GA14217@axis.com>
+ <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding sysfs precise attribute for cpu device (/sys/devices/cpu)
-to show the maximum value for perf event precise attribute.
+On Wed, Dec 19, 2012 at 03:42:26PM +0100, Thierry Reding wrote:
+> On Wed, Dec 19, 2012 at 03:04:56PM +0100, Jesper Nilsson wrote:
+> > This patch implements reading of the battery voltage low signal for
+> > rtc-pcf8523.
+> > 
+> > The bit is read-only and cannot be cleared by software, so no
+> > clear-function is implemented.
+> > 
+> > Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+> > ---
+> > diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
+> > index be05a64..82a9895 100644
+> > --- a/drivers/rtc/rtc-pcf8523.c
+> > +++ b/drivers/rtc/rtc-pcf8523.c
+> > @@ -23,6 +23,7 @@
+> >  #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
+> >  #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
+> >  #define REG_CONTROL3_PM_MASK 0xe0
+> > +#define REG_CONTROL3_BLF (1 << 2) /* Battery low bit, read-only */
+> 
+> Nit: "battery" since you don't have a full sentence.
 
-This will be initialy used for automated precise event perf test
-and could be helpful otherwise. Arnaldo suggested to use this as
-a guide for default adding of precise attribute for HW events.
+Right.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- arch/x86/kernel/cpu/perf_event.c | 34 +++++++++++++++++++++++++---------
- 1 file changed, 25 insertions(+), 9 deletions(-)
+> >  #define REG_SECONDS  0x03
+> >  #define REG_SECONDS_OS (1 << 7)
+> > @@ -250,9 +252,29 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
+> >  	return pcf8523_start_rtc(client);
+> >  }
+> >  
+> > +static int pcf8523_rtc_read_vl(struct device *dev, int *vl)
+> > +{
+> > +	struct i2c_client *client = to_i2c_client(dev);
+> > +	u8 value;
+> > +	int err;
+> > +
+> > +	err = pcf8523_read(client, REG_CONTROL3, &value);
+> > +	if (err < 0)
+> > +		return err;
+> > +
+> > +	if (value & REG_CONTROL3_BLF)
+> > +		*vl = 1;
+> > +	else
+> > +		*vl = 0;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +
+> 
+> That's one blank line too much.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6774c17..190995e 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -377,19 +377,26 @@ static inline int precise_br_compat(struct perf_event *event)
- 	return m == b;
- }
- 
--int x86_pmu_hw_config(struct perf_event *event)
-+static int x86_get_precise(void)
- {
--	if (event->attr.precise_ip) {
--		int precise = 0;
-+	int precise = 0;
- 
--		/* Support for constant skid */
--		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
-+	/* Support for constant skid */
-+	if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
-+		precise++;
-+
-+		/* Support for IP fixup */
-+		if (x86_pmu.lbr_nr)
- 			precise++;
-+	}
- 
--			/* Support for IP fixup */
--			if (x86_pmu.lbr_nr)
--				precise++;
--		}
-+	return precise;
-+}
-+
-+int x86_pmu_hw_config(struct perf_event *event)
-+{
-+	if (event->attr.precise_ip) {
-+		int precise = x86_get_precise();
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-@@ -1700,6 +1707,13 @@ static int x86_pmu_event_init(struct perf_event *event)
- 	return err;
- }
- 
-+static ssize_t get_attr_precise(struct device *cdev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	return snprintf(buf, 10, "%d\n", x86_get_precise());
-+}
-+
- static int x86_pmu_event_idx(struct perf_event *event)
- {
- 	int idx = event->hw.idx;
-@@ -1752,9 +1766,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- }
- 
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(precise, S_IRUGO, get_attr_precise, NULL);
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_precise.attr,
- 	NULL,
- };
- 
+Will fix.
+
+> >  static const struct rtc_class_ops pcf8523_rtc_ops = {
+> > -	.read_time = pcf8523_rtc_read_time,
+> > -	.set_time = pcf8523_rtc_set_time,
+> > +	.read_time	= pcf8523_rtc_read_time,
+> > +	.set_time	= pcf8523_rtc_set_time,
+> 
+> Maybe you shouldn't reindent these, but rather adopt the existing style
+> instead.
+
+Ok. :-)
+
+> > +	.read_vl	= pcf8523_rtc_read_vl,
+> 
+> What tree is this based on? None of the trees I have contains .read_vl
+> in rtc_class_ops.
+
+Hm, I've tested this against a local 3.4 kernel since that is what my
+device had, I didn't realize that we already had some local changes for
+the voltage low stuff.
+
+I'm guessing the right way is to do it as the pcf8563 in the mainline kernel,
+I'll respin my patch and resend.
+
+> Thierry
+
+/^JN - Jesper Nilsson
 -- 
-1.7.11.7
-
+               Jesper Nilsson -- jesper.nilsson@axis.com
