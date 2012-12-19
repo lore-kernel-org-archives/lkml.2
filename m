@@ -1,187 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab2LSWUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:20:06 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:52259 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab2LSWUB (ORCPT
+	id S1751790Ab2LSWUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:20:39 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47825 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab2LSWUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:20:01 -0500
-X-Greylist: delayed 1521 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 17:20:01 EST
-MIME-Version: 1.0
-In-Reply-To: <1355841786-13307-2-git-send-email-gautam.vivek@samsung.com>
-References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
-	<1355841786-13307-2-git-send-email-gautam.vivek@samsung.com>
-Date: Wed, 19 Dec 2012 13:48:39 -0800
-Message-ID: <CAD=FV=Ved4TSr7v413u5_o2cBrfegGrpKe1V2qKwQ36v-MQTHA@mail.gmail.com>
-Subject: Re: [PATCH v5 1/4] ARM: EXYNOS: Update & move usb-phy types to
- generic include layer
-From: Doug Anderson <dianders@chromium.org>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: linux-usb@vger.kernel.org, yulgon.kim@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        balbi@ti.com, kishon@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
-        stern@rowland.harvard.edu, rob.herring@calxeda.com,
-        sylvester.nawrocki@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Dec 2012 17:20:32 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] OMAP GPIO - don't wake from suspend unless requested.
+To: NeilBrown <neilb@suse.de>, Kevin Hilman <khilman@deeprootsystems.com>
+Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Benoit <b-cousson@ti.com>,
+        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Jon Hunter <jon-hunter@ti.com>
+In-Reply-To: <20121214180553.5eb62c0c@notabene.brown>
+References: <20120825214459.7333a376@notabene.brown> <CAMQu2gz0-U4GxEpZFfmJec+0FRs7ugy8EYS3HyYhb1jwbMBjug@mail.gmail.com> <20120827085312.75957354@notabene.brown> <CAMQu2gwH0O+NHV7H2aF375qmv0=TKb6RweOLohTHtB4UhQ-1gQ@mail.gmail.com> <CAMQu2gw2b8HHDPuSRuHXVYn3sJ5BYi_PuOT=snpa3zD5ert=QQ@mail.gmail.com> <20120906130510.32b0b877@notabene.brown> <CAMQu2gxGNJ+NW_rcRiXNE=OMTq8Hb81_1hDZnNen6mjc2cf6BQ@mail.gmail.com> <20120906170245.10e97bdd@notabene.brown> <87627pldkj.fsf@deeprootsystems.com> <CAMQu2gwSCvw_4gVE-giD6MSzmRCNoNu4NoFBSao_dh9YnojfuA@mail.gmail.com> <87ipblahho.fsf@deeprootsystems.com> <20121214180553.5eb62c0c@notabene.brown>
+Date: Wed, 19 Dec 2012 22:20:28 +0000
+Message-Id: <20121219222028.6BA4A3E0AD6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek,
+On Fri, 14 Dec 2012 18:05:53 +1100, NeilBrown <neilb@suse.de> wrote:
+> On Mon, 10 Sep 2012 10:57:07 -0700 Kevin Hilman <khilman@deeprootsystems.com>
+> wrote:
+> 
+> 
+> > OK thanks, I'll queue this up for v3.6-rc as this should qualify as a
+> > regression.
+> 
+> I don't think this did actually get queued.  At least I'm still seeing the
+> bug in 3.7 and I cannot see a patch in the git history that looks right.
+> But then I don't remember what we ended up with - it was 3 months ago!!!
+> 
+> This is the last thing I can find in my email history - it still seems to
+> apply and still seems to work.
+> 
+> NeilBrown
 
-On Tue, Dec 18, 2012 at 6:43 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Updating the names of usb-phy types to more generic names:
-> USB_PHY_TYPE_DEIVCE & USB_PHY_TYPE_HOST; and further update
-> its dependencies.
+Kevin, let me know if I need to do anything here. Since you might have
+it in one of you're trees, I'm not going to do anything unless I hear
+from you.
 
-Since you're changing the name, I would have expected to see a removal
-of the old enum type in this patch.  I don't see it.  After applying
-all of your patches I find that S5P_USB_PHY_HOST and
-S5P_USB_PHY_DEVICE are still defined and used.
-
-$ git grep S5P_USB_PHY_HOST
-arch/arm/mach-exynos/setup-usb-phy.c:   else if (type == S5P_USB_PHY_HOST)
-arch/arm/mach-exynos/setup-usb-phy.c:   else if (type == S5P_USB_PHY_HOST)
-arch/arm/plat-samsung/include/plat/usb-phy.h:   S5P_USB_PHY_HOST,
-
-I believe that those usages of the old enum should also be switched
-over and the old enum removed.
-
-> Signed-off-by: Praveen Paneri <p.paneri@samsung.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  drivers/usb/host/ehci-s5p.c         |    9 +++++----
->  drivers/usb/host/ohci-exynos.c      |    9 +++++----
->  include/linux/usb/samsung_usb_phy.h |   16 ++++++++++++++++
->  3 files changed, 26 insertions(+), 8 deletions(-)
->  create mode 100644 include/linux/usb/samsung_usb_phy.h
->
-> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-> index 319dcfa..46ca5ef 100644
-> --- a/drivers/usb/host/ehci-s5p.c
-> +++ b/drivers/usb/host/ehci-s5p.c
-> @@ -17,6 +17,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/of_gpio.h>
->  #include <linux/platform_data/usb-ehci-s5p.h>
-> +#include <linux/usb/samsung_usb_phy.h>
->  #include <plat/usb-phy.h>
->
->  #define EHCI_INSNREG00(base)                   (base + 0x90)
-> @@ -164,7 +165,7 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->         }
->
->         if (pdata->phy_init)
-> -               pdata->phy_init(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
->
->         ehci = hcd_to_ehci(hcd);
->         ehci->caps = hcd->regs;
-> @@ -198,7 +199,7 @@ static int s5p_ehci_remove(struct platform_device *pdev)
->         usb_remove_hcd(hcd);
->
->         if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
->
->         clk_disable_unprepare(s5p_ehci->clk);
->
-> @@ -229,7 +230,7 @@ static int s5p_ehci_suspend(struct device *dev)
->         rc = ehci_suspend(hcd, do_wakeup);
->
->         if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
->
->         clk_disable_unprepare(s5p_ehci->clk);
->
-> @@ -246,7 +247,7 @@ static int s5p_ehci_resume(struct device *dev)
->         clk_prepare_enable(s5p_ehci->clk);
->
->         if (pdata && pdata->phy_init)
-> -               pdata->phy_init(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
->
->         /* DMA burst Enable */
->         writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index aa3b884..804fb62 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -15,6 +15,7 @@
->  #include <linux/of.h>
->  #include <linux/platform_device.h>
->  #include <linux/platform_data/usb-exynos.h>
-> +#include <linux/usb/samsung_usb_phy.h>
->  #include <plat/usb-phy.h>
->
->  struct exynos_ohci_hcd {
-> @@ -153,7 +154,7 @@ static int exynos_ohci_probe(struct platform_device *pdev)
->         }
->
->         if (pdata->phy_init)
-> -               pdata->phy_init(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
->
->         ohci = hcd_to_ohci(hcd);
->         ohci_hcd_init(ohci);
-> @@ -184,7 +185,7 @@ static int exynos_ohci_remove(struct platform_device *pdev)
->         usb_remove_hcd(hcd);
->
->         if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
->
->         clk_disable_unprepare(exynos_ohci->clk);
->
-> @@ -229,7 +230,7 @@ static int exynos_ohci_suspend(struct device *dev)
->         clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
->
->         if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
->
->         clk_disable_unprepare(exynos_ohci->clk);
->
-> @@ -249,7 +250,7 @@ static int exynos_ohci_resume(struct device *dev)
->         clk_prepare_enable(exynos_ohci->clk);
->
->         if (pdata && pdata->phy_init)
-> -               pdata->phy_init(pdev, S5P_USB_PHY_HOST);
-> +               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
->
->         ohci_resume(hcd, false);
->
-> diff --git a/include/linux/usb/samsung_usb_phy.h b/include/linux/usb/samsung_usb_phy.h
-> new file mode 100644
-> index 0000000..9167826
-> --- /dev/null
-> +++ b/include/linux/usb/samsung_usb_phy.h
-> @@ -0,0 +1,16 @@
-> +/*
-> + * Copyright (C) 2012 Samsung Electronics Co.Ltd
-> + *             http://www.samsung.com/
-> + *
-> + * Defines phy types for samsung usb phy controllers - HOST or DEIVCE.
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +enum samsung_usb_phy_type {
-> +       USB_PHY_TYPE_DEVICE,
-> +       USB_PHY_TYPE_HOST,
-> +};
-> --
-> 1.7.6.5
->
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+g.
