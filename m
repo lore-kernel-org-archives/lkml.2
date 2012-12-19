@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab2LSRUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 12:20:41 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47754 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab2LSRT5 (ORCPT
+	id S1755842Ab2LSRUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 12:20:48 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47169 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab2LSRTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 12:19:57 -0500
+	Wed, 19 Dec 2012 12:19:55 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        netdev@vger.kernel.org
-Subject: [PATCH 4/4] net/smsc911x: Provide common clock functionality
-Date: Wed, 19 Dec 2012 17:19:47 +0000
-Message-Id: <1355937587-31730-4-git-send-email-lee.jones@linaro.org>
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 2/4] clk: ux500: Ensure the FMSC clock is obtainable
+Date: Wed, 19 Dec 2012 17:19:45 +0000
+Message-Id: <1355937587-31730-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
 References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
@@ -23,103 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms provide clocks which require enabling before the
-SMSC911x chip will power on. This patch uses the new common clk
-framework to do just that. If no clock is provided, it will just
-be ignored and the driver will continue to assume that no clock
-is required for the chip to run successfully.
+The FMSC clock is traditionally used for NAND flash devices when
+used on the ux500 series platforms. This patch makes it searchable
+during a clock-name search.
 
-Cc: Steve Glendinning <steve.glendinning@shawell.net>
-Cc: netdev@vger.kernel.org
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/net/ethernet/smsc/smsc911x.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ drivers/clk/ux500/u8500_clk.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index 4616bf2..f6196cd 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -33,6 +33,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+index 6b889a0..a601802 100644
+--- a/drivers/clk/ux500/u8500_clk.c
++++ b/drivers/clk/ux500/u8500_clk.c
+@@ -324,7 +324,7 @@ void u8500_clk_init(void)
  
- #include <linux/crc32.h>
-+#include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/etherdevice.h>
-@@ -144,6 +145,9 @@ struct smsc911x_data {
+ 	clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", U8500_CLKRST3_BASE,
+ 				BIT(0), 0);
+-	clk_register_clkdev(clk, NULL, "fsmc");
++	clk_register_clkdev(clk, "fsmc", NULL);
  
- 	/* regulators */
- 	struct regulator_bulk_data supplies[SMSC911X_NUM_SUPPLIES];
-+
-+	/* clock */
-+	struct clk *clk;
- };
- 
- /* Easy access to information */
-@@ -369,7 +373,7 @@ out:
- }
- 
- /*
-- * enable resources, currently just regulators.
-+ * enable regulator and clock resources.
-  */
- static int smsc911x_enable_resources(struct platform_device *pdev)
- {
-@@ -382,6 +386,13 @@ static int smsc911x_enable_resources(struct platform_device *pdev)
- 	if (ret)
- 		netdev_err(ndev, "failed to enable regulators %d\n",
- 				ret);
-+
-+	if (pdata->clk) {
-+		ret = clk_prepare_enable(pdata->clk);
-+		if (ret < 0)
-+			netdev_err(ndev, "failed to enable clock %d\n", ret);
-+	}
-+
- 	return ret;
- }
- 
-@@ -396,6 +407,10 @@ static int smsc911x_disable_resources(struct platform_device *pdev)
- 
- 	ret = regulator_bulk_disable(ARRAY_SIZE(pdata->supplies),
- 			pdata->supplies);
-+
-+	if (pdata->clk)
-+		clk_disable_unprepare(pdata->clk);
-+
- 	return ret;
- }
- 
-@@ -421,6 +436,14 @@ static int smsc911x_request_resources(struct platform_device *pdev)
- 	if (ret)
- 		netdev_err(ndev, "couldn't get regulators %d\n",
- 				ret);
-+
-+	/* Request clock */
-+	pdata->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pdata->clk)) {
-+		netdev_warn(ndev, "couldn't get clock %d\n", PTR_ERR(pdata->clk));
-+		pdata->clk = NULL;
-+	}
-+
- 	return ret;
- }
- 
-@@ -436,6 +459,12 @@ static void smsc911x_free_resources(struct platform_device *pdev)
- 	/* Free regulators */
- 	regulator_bulk_free(ARRAY_SIZE(pdata->supplies),
- 			pdata->supplies);
-+
-+	/* Free clock */
-+	if (pdata->clk) {
-+		clk_put(pdata->clk);
-+		pdata->clk = NULL;
-+	}
- }
- 
- /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
+ 	clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", U8500_CLKRST3_BASE,
+ 				BIT(1), 0);
 -- 
 1.7.9.5
 
