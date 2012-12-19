@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab2LSMJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 07:09:47 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:53356 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2LSMJp (ORCPT
+	id S1752402Ab2LSMLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 07:11:04 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:39681 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2LSMK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 07:09:45 -0500
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 07:09:45 EST
+	Wed, 19 Dec 2012 07:10:56 -0500
 MIME-Version: 1.0
-Date: Wed, 19 Dec 2012 20:04:11 +0800
-Message-ID: <CAJd=RBBAcZXKZZSrMuzm963ie81oGjHzYgyogtr2SPW2E0E_0w@mail.gmail.com>
-Subject: Re: [PATCH 04/26] aio: remove retry-based AIO
+Date: Wed, 19 Dec 2012 20:03:01 +0800
+Message-ID: <CAJd=RBBV0uRbZ3YA7BCGh9cJFAdc9N15Swjswb64rri4rrXqeg@mail.gmail.com>
+Subject: Re: [PATCH 06/26] aio: Kill return value of aio_complete()
 From: Hillf Danton <dhillf@gmail.com>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: Zach Brown <zab@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -21,23 +20,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->@@ -52,15 +46,6 @@ struct kioctx;
->  * not ask the method again -- ki_retry must ensure forward progress.
->  * aio_complete() must be called once and only once in the future, multiple
->  * calls may result in undefined behaviour.
->- *
->- * If ki_retry returns -EIOCBRETRY it has made a promise that kick_iocb()
->- * will be called on the kiocb pointer in the future.  This may happen
->- * through generic helpers that associate kiocb->ki_wait with a wait
->- * queue head that ki_retry uses via current->io_wait.  It can also happen
->- * with custom tracking and manual calls to kick_iocb(), though that is
->- * discouraged.  In either case, kick_iocb() must be called once and only
->- * once.  ki_retry must ensure forward progress, the AIO core will wait
->- * indefinitely for kick_iocb() to be called.
+>@@ -594,7 +591,7 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
+>  *	Returns true if this is the last user of the request.  The
+>  *	only other user of the request can be the cancellation code.
 >  */
-> struct kiocb {
-> 	struct list_head	ki_run_list;
 
-Then you can also erase ki_run_list if no longer used.
+Well the comment is stale.
 
 Hillf
+
+>-int aio_complete(struct kiocb *iocb, long res, long res2)
+>+void aio_complete(struct kiocb *iocb, long res, long res2)
