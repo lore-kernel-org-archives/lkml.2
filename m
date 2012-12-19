@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab2LSR7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 12:59:17 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49152 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab2LSR7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 12:59:05 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/2 v3] menuconfig: Add Save/Load buttons
-Date: Wed, 19 Dec 2012 18:58:54 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
-        linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
-        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
-        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
-        bpoirier@suse.de
-References: <20121219015058.GA5488@udknight>
-In-Reply-To: <20121219015058.GA5488@udknight>
+	id S1753983Ab2LSR72 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 12:59:28 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36696 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755671Ab2LSR7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 12:59:10 -0500
+Date: Wed, 19 Dec 2012 12:58:11 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Satoru Moriya <satoru.moriya@hds.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/7] mm: reduce rmap overhead for ex-KSM page copies
+ created on swap faults
+Message-ID: <20121219175811.GD7147@cmpxchg.org>
+References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
+ <1355767957-4913-8-git-send-email-hannes@cmpxchg.org>
+ <1355900479.1381.1.camel@kernel-VirtualBox>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212191858.54659.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355900479.1381.1.camel@kernel-VirtualBox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wang, All,
-
-On Wednesday 19 December 2012 Wang YanQing wrote:
-> If menuconfig have Save/Load button like alternative
-> .config editors, xconfig, nconfig, etc.We will have
-> a obvious benefit when use menuconfig just like
-> when we use others, we can Save/Load our .config quickly
-> and conveniently.
+On Wed, Dec 19, 2012 at 02:01:19AM -0500, Simon Jeons wrote:
+> On Mon, 2012-12-17 at 13:12 -0500, Johannes Weiner wrote:
+> > When ex-KSM pages are faulted from swap cache, the fault handler is
+> > not capable of re-establishing anon_vma-spanning KSM pages.  In this
+> > case, a copy of the page is created instead, just like during a COW
+> > break.
+> > 
+> > These freshly made copies are known to be exclusive to the faulting
+> > VMA and there is no reason to go look for this page in parent and
+> > sibling processes during rmap operations.
+> > 
+> > Use page_add_new_anon_rmap() for these copies.  This also puts them on
+> > the proper LRU lists and marks them SwapBacked, so we can get rid of
+> > doing this ad-hoc in the KSM copy code.
 > 
-> This patch add the Save/Load button for menuconfig.
-> 
-> [remove trailing space while at it for below line:
-> "*)  Formerly when I used Page Down and Page Up, the cursor would be set"
-> ]
-> 
-> Changes:
-> V1-V2:
-> 1:use PATH_MAX instead of hard code suggested by Yann E. MORIN
-> 2:drop the spurious empty-line removal suggested by Yann E. MORIN
-> V2-V3:
-> 1:ajust buttons position well centered reported by Yann E. MORIN
-> 
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> Is it just a code cleanup instead of reduce rmap overhead?
 
-Reviewd-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
-
+Both.
