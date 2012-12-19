@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab2LSBlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 20:41:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15837 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753008Ab2LSBlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 20:41:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,313,1355126400"; 
-   d="scan'208";a="259400943"
-Subject: Re: [PATCH] spi: Add the flag indicate to registe new device as
- children of master or not.
-From: Jun Chen <jun.d.chen@intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        Bi Chao <chao.bi@intel.com>, spi-devel-general@lists.sourceforge.net
-In-Reply-To: <20121218152623.GA26077@sirena.org.uk>
-References: <1355848174.1435.25.camel@chenjun-workstation>
-	 <20121218152623.GA26077@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Dec 2012 04:44:03 -0500
-Message-ID: <1355910243.1435.39.camel@chenjun-workstation>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755300Ab2LSBpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 20:45:55 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:49743 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab2LSBpw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 20:45:52 -0500
+X-Originating-IP: 108.223.40.66
+Date: Tue, 18 Dec 2012 17:45:56 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Strange results of DIV_ROUND_CLOSEST
+Message-ID: <20121219014556.GA17257@roeck-us.net>
+References: <201212181603.42094.jbe@pengutronix.de>
+ <20121218171620.GA19972@roeck-us.net>
+ <201212182204.56523.jbe@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212182204.56523.jbe@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-18 at 15:26 +0000, Mark Brown wrote:
-> On Tue, Dec 18, 2012 at 11:29:34AM -0500, Jun Chen wrote:
+On Tue, Dec 18, 2012 at 10:04:56PM +0100, Juergen Beisert wrote:
+> Hi Guenter,
 > 
-> >   * @master: Controller to which device is connected
-> > + * device_was_children_of_master is flag which the device is registed
-> > + * as the children of the bus
+> Guenter Roeck wrote:
+> > On Tue, Dec 18, 2012 at 04:03:41PM +0100, Juergen Beisert wrote:
+> > > commit 263a523d18bca306016d75f5c8d5c57c37fe52fb changes the code of
+> > > DIV_ROUND_CLOSEST in include/linux/kernel.h to fix a compile time
+> > > warning.
+> > >
+> > > But now feeding in a zero into this macro results into 4198403. Tested
+> > > with gcc 4.4.3 and 4.7.2, on arch x86 and ARM.
+> > >
+> > > I can reproduce this behaviour, when my ADC delivers a '0' value in the
+> > > driver drivers/hwmon/s3c-hwmon.c in function s3c_hwmon_ch_show() with a
+> > > current 3.7.1 kernel. The value is correct again, when the ADC delivers
+> > > at least a '1'.
+> > >
+> > > Any ideas how to fix it correctly?
+> >
+> > Odd one. I ran the macro through a large number of values and divisors as
+> > well as various optimization options, with different compilers, and always
+> > get correct results.
+> >
+> > What are your compile options, and what are the channel multiplier and
+> > dividers set to ?
 > 
-> This isn't a kerneldoc style comment (it needs the @XXX: format).  The
-> name is also extremely long, can't we think of something more concise?
+> Refer the lines 177 to 182 in drivers/hwmon/s3c-hwmon.c. "cfg->mult" is '3300' 
+> in my case, and "cfg->div" is '1023'. And whenever s3c_hwmon_read_ch() 
+> returns '0' line 184 returns '4198403' since Linux-3.6. checked with my 
+> gcc-4.6.2 cross compiler for Linux-3.6 and with gcc-4.6.2 for Linux-3.7.
 > 
-Thank for your suggestion, I will correct this comment and use concise
-flag.
+> I did a quick test with this macro on my host with gcc-4.4.3 and a simple 
+> userland program and surprise, surprise:
+> 
+> result = DIV_ROUND_CLOSEST(0, 1023);
+> 
+> works as expected (result is 0), but
+> 
+> int x = 0;
+> unsigned y = 1023;
+> result = DIV_ROUND_CLOSEST(x, y);
+> 
+> gives me result = 4198403!
+> 
 
-> > -	spi->dev.parent = &master->dev;
-> > +	if (device_was_children_of_master == true)
-> > +		spi->dev.parent = &master->dev;
-> > +	else
-> > +		spi->dev.parent = dev;
-> 
-> Can you provide an example of where this is useful?  Your changelog
-> didn't make it clear and the code doesn't make it obvious either.
+Juergen,
 
-This spi_alloc_device function will be called in the spi_new_device
-function to alloc new device as the master. But other way, it is called
-by the of_register_spi_devices function to register new device as the
-children of the master. I will update changlog to add it. 
+Can you test the following patch ?
 
-@@ -434,7 +440,7 @@ struct spi_device *spi_new_device(struct spi_master
-*master,
-         * suggests syslogged diagnostics are best here (ugh).
-         */
+Thanks,
+Guenter
+
+>From d4a639c6ace7cb0de247f59c38abac72d671f135 Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Tue, 18 Dec 2012 15:48:44 -0800
+Subject: [PATCH] linux/kernel.h: Fix DIV_ROUND_CLOSEST for unsigned divisors
+
+Commit 263a523 fixes a warning seen with W=1 due to change in
+DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
+with unsigned divisors to unsigned, even if the dividend is signed and
+negative (-10 / 5U = 858993457). As a result, DIV_ROUND_CLOSEST(0, 2U)
+and similar operations now return bad data.
+
+Fix by checking for the divisor variable type when deciding which operation
+to perform. This fixes DIV_ROUND_CLOSEST(0, 2U), but still returns bad data
+for negative dividends divided by unsigned divisors. Mark the latter case as
+unsupported.
+
+Reported-by: Juergen Beisert <jbe@pengutronix.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+An alternative would be to always convert divisors to signed:
+ 	int __d = (int)divisor;			\
+Not sure if that would be better.
+
+ include/linux/kernel.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index d97ed58..45726dc 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -77,13 +77,15 @@
  
--       proxy = spi_alloc_device(master);
-+       proxy = spi_alloc_device(master, false);
-        if (!proxy)
-                return NULL;
- 
-@@ -827,7 +833,7 @@ static void of_register_spi_devices(struct
-spi_master *master)
- 
-        for_each_available_child_of_node(master->dev.of_node, nc) {
-                /* Alloc an spi_device */
--               spi = spi_alloc_device(master);
-+               spi = spi_alloc_device(master, true);
-
-
-If I have mistake, pls correct me, thanks!
-
-
+ /*
+  * Divide positive or negative dividend by positive divisor and round
+- * to closest integer. Result is undefined for negative divisors.
++ * to closest integer. Result is undefined for negative divisors and
++ * for negative dividends if the divisor variable type is unsigned.
+  */
+ #define DIV_ROUND_CLOSEST(x, divisor)(			\
+ {							\
+ 	typeof(x) __x = x;				\
+ 	typeof(divisor) __d = divisor;			\
+-	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
++	(((typeof(x))-1) > 0 ||				\
++	 ((typeof(divisor))-1) > 0 || (__x) > 0) ?	\
+ 		(((__x) + ((__d) / 2)) / (__d)) :	\
+ 		(((__x) - ((__d) / 2)) / (__d));	\
+ }							\
+-- 
+1.7.9.7
 
