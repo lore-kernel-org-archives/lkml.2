@@ -1,227 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750785Ab2LSFlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 00:41:19 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:41680 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2LSFlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 00:41:14 -0500
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 00:41:13 EST
-MIME-Version: 1.0
-In-Reply-To: <1355841786-13307-4-git-send-email-gautam.vivek@samsung.com>
-References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
-	<1355841786-13307-4-git-send-email-gautam.vivek@samsung.com>
-Date: Wed, 19 Dec 2012 11:11:12 +0530
-Message-ID: <CAFp+6iEzi-qbQA=fYajfUL105xkg0=aELY5s7g-C=B4MuuofcQ@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] USB: ehci-s5p: Add phy driver support
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: dianders@chromium.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        sylvester.nawrocki@gmail.com, jg1.han@samsung.com,
-        yulgon.kim@samsung.com, kishon@ti.com, p.paneri@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751354Ab2LSFlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 00:41:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:50645 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab2LSFl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 00:41:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,313,1355126400"; 
+   d="scan'208";a="266787350"
+From: Lv Zheng <lv.zheng@intel.com>
+To: Len Brown <len.brown@intel.com>,
+        Rafael J Wysocki <rafael.j.wysocki@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>
+Subject: [RFC PATCH] Scripts: Add binary diff utility.
+Date: Wed, 19 Dec 2012 13:41:19 +0800
+Message-Id: <2d59b5e20811d4e70cda7f73ddf304b7bd83dc57.1355476687.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Doug Anderson.
+This utility is used as part of Linux ACPICA release process. It may be a
+good idea to add it to kernel scripts, since it may be generally usefull for
+verifying small kernel changes, like coding style cleanups etc.
 
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ scripts/diffvmlinux.sh |  227 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 227 insertions(+)
+ create mode 100755 scripts/diffvmlinux.sh
 
-On Tue, Dec 18, 2012 at 8:13 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Adding the phy driver to ehci-s5p. Keeping the platform data
-> for continuing the smooth operation for boards which still uses it
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/usb/host/ehci-s5p.c |   70 ++++++++++++++++++++++++++++++-------------
->  1 files changed, 49 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-> index 46ca5ef..50c93af 100644
-> --- a/drivers/usb/host/ehci-s5p.c
-> +++ b/drivers/usb/host/ehci-s5p.c
-> @@ -17,6 +17,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/of_gpio.h>
->  #include <linux/platform_data/usb-ehci-s5p.h>
-> +#include <linux/usb/phy.h>
->  #include <linux/usb/samsung_usb_phy.h>
->  #include <plat/usb-phy.h>
->
-> @@ -33,6 +34,8 @@ struct s5p_ehci_hcd {
->         struct device *dev;
->         struct usb_hcd *hcd;
->         struct clk *clk;
-> +       struct usb_phy *phy;
-> +       struct s5p_ehci_platdata *pdata;
->  };
->
->  static const struct hc_driver s5p_ehci_hc_driver = {
-> @@ -66,6 +69,30 @@ static const struct hc_driver s5p_ehci_hc_driver = {
->         .clear_tt_buffer_complete       = ehci_clear_tt_buffer_complete,
->  };
->
-> +static void s5p_ehci_phy_enable(struct s5p_ehci_hcd *s5p_ehci)
-> +{
-> +       struct platform_device *pdev = to_platform_device(s5p_ehci->dev);
-> +
-> +       if (s5p_ehci->phy) {
-> +               samsung_usbphy_set_type(s5p_ehci->phy, USB_PHY_TYPE_HOST);
-> +               usb_phy_init(s5p_ehci->phy);
-> +       } else if (s5p_ehci->pdata->phy_init) {
-> +               s5p_ehci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-> +       }
-> +}
-> +
-> +static void s5p_ehci_phy_disable(struct s5p_ehci_hcd *s5p_ehci)
-> +{
-> +       struct platform_device *pdev = to_platform_device(s5p_ehci->dev);
-> +
-> +       if (s5p_ehci->phy) {
-> +               samsung_usbphy_set_type(s5p_ehci->phy, USB_PHY_TYPE_HOST);
-> +               usb_phy_shutdown(s5p_ehci->phy);
-> +       } else if (s5p_ehci->pdata->phy_exit) {
-> +               s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-> +       }
-> +}
-> +
->  static void s5p_setup_vbus_gpio(struct platform_device *pdev)
->  {
->         int err;
-> @@ -88,20 +115,15 @@ static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
->
->  static int s5p_ehci_probe(struct platform_device *pdev)
->  {
-> -       struct s5p_ehci_platdata *pdata;
-> +       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
->         struct s5p_ehci_hcd *s5p_ehci;
->         struct usb_hcd *hcd;
->         struct ehci_hcd *ehci;
->         struct resource *res;
-> +       struct usb_phy *phy;
->         int irq;
->         int err;
->
-> -       pdata = pdev->dev.platform_data;
-> -       if (!pdata) {
-> -               dev_err(&pdev->dev, "No platform data defined\n");
-> -               return -EINVAL;
-> -       }
-> -
->         /*
->          * Right now device-tree probed devices don't get dma_mask set.
->          * Since shared usb code relies on it, set it here for now.
-> @@ -119,6 +141,19 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->         if (!s5p_ehci)
->                 return -ENOMEM;
->
-> +       phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-> +       if (IS_ERR_OR_NULL(phy)) {
-> +               /* Fallback to pdata */
-> +               if (!pdata) {
-> +                       dev_err(&pdev->dev, "no platform data or transceiver defined\n");
-> +                       return -EPROBE_DEFER;
-> +               } else {
-> +                       s5p_ehci->pdata = pdata;
-> +               }
-> +       } else {
-> +               s5p_ehci->phy = phy;
-> +       }
-> +
->         s5p_ehci->dev = &pdev->dev;
->
->         hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
-> @@ -164,8 +199,7 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->                 goto fail_io;
->         }
->
-> -       if (pdata->phy_init)
-> -               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-> +       s5p_ehci_phy_enable(s5p_ehci);
->
->         ehci = hcd_to_ehci(hcd);
->         ehci->caps = hcd->regs;
-> @@ -176,13 +210,15 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->         err = usb_add_hcd(hcd, irq, IRQF_SHARED);
->         if (err) {
->                 dev_err(&pdev->dev, "Failed to add USB HCD\n");
-> -               goto fail_io;
-> +               goto fail_add_hcd;
->         }
->
->         platform_set_drvdata(pdev, s5p_ehci);
->
->         return 0;
->
-> +fail_add_hcd:
-> +       s5p_ehci_phy_disable(s5p_ehci);
->  fail_io:
->         clk_disable_unprepare(s5p_ehci->clk);
->  fail_clk:
-> @@ -192,14 +228,12 @@ fail_clk:
->
->  static int s5p_ehci_remove(struct platform_device *pdev)
->  {
-> -       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
->         struct s5p_ehci_hcd *s5p_ehci = platform_get_drvdata(pdev);
->         struct usb_hcd *hcd = s5p_ehci->hcd;
->
->         usb_remove_hcd(hcd);
->
-> -       if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-> +       s5p_ehci_phy_disable(s5p_ehci);
->
->         clk_disable_unprepare(s5p_ehci->clk);
->
-> @@ -223,14 +257,11 @@ static int s5p_ehci_suspend(struct device *dev)
->         struct s5p_ehci_hcd *s5p_ehci = dev_get_drvdata(dev);
->         struct usb_hcd *hcd = s5p_ehci->hcd;
->         bool do_wakeup = device_may_wakeup(dev);
-> -       struct platform_device *pdev = to_platform_device(dev);
-> -       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
->         int rc;
->
->         rc = ehci_suspend(hcd, do_wakeup);
->
-> -       if (pdata && pdata->phy_exit)
-> -               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
-> +       s5p_ehci_phy_disable(s5p_ehci);
->
->         clk_disable_unprepare(s5p_ehci->clk);
->
-> @@ -241,13 +272,10 @@ static int s5p_ehci_resume(struct device *dev)
->  {
->         struct s5p_ehci_hcd *s5p_ehci = dev_get_drvdata(dev);
->         struct usb_hcd *hcd = s5p_ehci->hcd;
-> -       struct platform_device *pdev = to_platform_device(dev);
-> -       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
->
->         clk_prepare_enable(s5p_ehci->clk);
->
-> -       if (pdata && pdata->phy_init)
-> -               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
-> +       s5p_ehci_phy_enable(s5p_ehci);
->
->         /* DMA burst Enable */
->         writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
-> --
-> 1.7.6.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Thanks & Regards
-Vivek
+Index: linux-pm/scripts/diffvmlinux.sh
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-pm/scripts/diffvmlinux.sh	2012-12-19 13:40:21.000000000 +0800
+@@ -0,0 +1,226 @@
++#!/bin/sh
++#
++# Copyright (c) 2012, Intel Corporation
++# Author: Lv Zheng <lv.zheng@intel.com>
++#
++# This program is free software; you can redistribute it and/or modify it
++# under the terms of the GNU General Public License as published by the
++# Free Software Foundation; version 2 of the License.
++#
++# NAME
++#   diffvmlinux.sh - Generating vmlinux assembly differences before/after
++#                    applying a quilt patch
++# SYNOPSIS
++#   diffvmlinux.sh [-f assembly-diff] [-p patch-file] [-o object-file]
++#                  <linux-dir>
++
++
++# FIXME: More Useless Sections
++#
++# Please add other sections that would appear as executable but should get
++# removed for the comparision.
++USELESS_SECTIONS=".notes"
++
++fulldir() {
++	lpath=$1
++	(
++		cd $lpath; pwd
++	)
++}
++
++getdir() {
++	lpath=`dirname $1`
++	fulldir $lpath
++}
++
++fatal() {
++	echo $1
++	exit -1
++}
++
++usage() {
++	echo "Usage: `basename $0` [-p patch] <linux>"
++	echo "Where:"
++	echo " linux: Specify the linux source tree."
++	echo " patch: Specify the patch file name."
++}
++
++fatal_usage() {
++	usage
++	exit -1
++}
++
++quilt_applied() {
++	c=$1
++	applied_patches=`quilt applied 2>/dev/null`
++
++	for a in $applied_patches; do
++		if [ "x$a" = "x$c" ]; then
++			return 0
++		fi
++	done
++	return -1
++}
++
++remove_sections() {
++	binary2=$1
++	binary3=$2
++
++	for section in $USELESS_SECTIONS; do
++		echo "Removing $section section..."
++		objcopy -R $section $binary2 $binary3
++		mv $binary3 $binary2
++	done
++}
++
++quilt_push() {
++	quilt push > /dev/null || fatal "failed to push quilt stack"
++}
++
++quilt_pop() {
++	quilt pop > /dev/null || fatal "failed to pop quilt stack"
++}
++
++detect_patch() {
++	quilt_push
++	detected_patches=`quilt applied 2>/dev/null`
++	quilt_pop
++	for d in $detected_patches; do
++		quilt_applied $d || echo $d
++	done
++}
++
++quilt_forward() {
++	l=$1
++	patches=`quilt unapplied 2>/dev/null`
++	for i in $patches; do
++		quilt_push
++		quilt_applied $l
++		if [ $? -eq 0 ]; then
++			quilt_pop
++			return 0;
++		fi
++	done
++	fatal "Cannot find $locate in the unapplied patches."
++}
++
++quilt_backward() {
++	l=$1
++	patches=`quilt applied 2>/dev/null`
++	for i in $patches; do
++		quilt_pop
++		quilt_applied $l || return 0
++	done
++	fatal "Cannot find $locate in the applied patches."
++}
++
++locate_patch() {
++	t=$1
++	quilt_applied $t
++	if [ $? -eq 0 ]; then
++		echo "Locating $t in the applied patches..."
++		quilt_backward $t
++	else
++		echo "Locating $t in the unapplied patches..."
++		quilt_forward $t
++	fi
++}
++
++while getopts "f:p:o:" opt
++do
++	case $opt in
++	f) ASMDIFF=$OPTARG;;
++	o) BINARY=$OPTARG;;
++	p) PATCH=$OPTARG;;
++	?) echo "Invalid argument $opt"
++	   fatal_usage;;
++	esac
++done
++shift $(($OPTIND - 1))
++
++if [ "x$1" = "x" ]; then
++	echo "Missing <linux> paraemter."
++	fatal_usage
++fi
++
++CURDIR=`pwd`
++LINUX=`getdir $1`
++LINUX_BASE=`basename $LINUX`/vmlinux
++AFTER=$CURDIR/after.dump
++BEFORE=$CURDIR/before.dump
++
++if [ "x$BINARY" = "x" ]; then
++	BINARY=vmlinux
++fi
++echo "Diffing $BINARY..."
++BINARY0=$LINUX/$BINARY
++BINARY1=$LINUX/diffvmlinux
++BINARY2=$LINUX/diffvmlinux-nosections
++BINARY3=$LINUX/diffvmlinux-nosection
++
++# Prepare quilt stack
++if [ "x$PATCH" != "x" ]; then
++	echo "Locating patch $PATCH..."
++	locate_patch $PATCH
++else
++	PATCH=`detect_patch`
++	echo "Detected patch $PATCH."
++fi
++if [ "x$PATCH" = "x" ]; then
++	echo "Missing patch file"
++	fatal_usage
++fi
++
++# Allow overloading of ASMDIFF
++if [ "x$ASMDIFF" = "x" ]; then
++	ASMDIFF=$CURDIR/bin.diff
++fi
++
++(
++	cd $LINUX
++
++	# Assertion in case the above locating/detecting failed.
++	quilt_applied $PATCH && fatal "patch $PATCH should not be applied"
++	quilt_push
++	quilt_applied $PATCH || fatal "patch $PATCH should be the next patch"
++	quilt_pop
++
++	echo "Building $BINARY before applying $PATCH..."
++	rm -f $BINARY
++	make > /dev/null || fatal "failed to build $LINUX"
++	echo "Disassembling $BINARY before applying $PATCH..."
++	cp -f $BINARY0 $BINARY1
++	cp -f $BINARY1 $BINARY2 && remove_sections $BINARY2 $BINARY3
++	objdump -d $BINARY2 > $BEFORE
++
++	echo "Pushing $PATCH to $LINUX_BASE..."
++	quilt_push
++
++	echo "Building $BINARY after applying $PATCH..."
++	rm -f $BINARY
++	make > /dev/null || fatal "failed to build $LINUX"
++	echo "Disassembling $BINARY after applying $PATCH..."
++	cp -f $BINARY0 $BINARY1
++	cp -f $BINARY1 $BINARY2 && remove_sections $BINARY2 $BINARY3
++	objdump -d $BINARY2 > $AFTER
++
++	echo "Popping $PATCH from $LINUX_BASE..."
++	quilt_pop
++)
++
++# XXX: Fatal Error for the Sub-shell
++#
++# We'll reach here even in the case of fatal due to the sub-shell.
++# Thus we do cleanup here and the relative path of ASMDIFF is correct.
++
++if [ -f $BEFORE ] && [ -f $AFTER ]; then
++	echo "Generating assembly differences..."
++	diff -u $BEFORE $AFTER > $ASMDIFF
++	echo "$ASMDIFF is ready."
++fi
++
++rm -f $BINARY1
++rm -f $BINARY2
++rm -f $BINARY3
++rm -f $BEFORE
++rm -f $AFTER
