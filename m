@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab2LSN3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 08:29:05 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:37152 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755279Ab2LSN2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 08:28:39 -0500
-From: Alexander Kartashov <alekskartashov@parallels.com>
-To: Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <gorcunov@openvz.org>, <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Kartashov <alekskartashov@parallels.com>
-Subject: [PATCH 1/3] kcmp: Include linux/ptrace.h
-Date: Wed, 19 Dec 2012 17:27:55 +0400
-Message-ID: <1355923677-18249-2-git-send-email-alekskartashov@parallels.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355923677-18249-1-git-send-email-alekskartashov@parallels.com>
-References: <1355923677-18249-1-git-send-email-alekskartashov@parallels.com>
+	id S1755319Ab2LSNbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 08:31:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43364 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab2LSNbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 08:31:17 -0500
+Date: Wed, 19 Dec 2012 13:31:07 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] checkpatch: Warn on uapi #includes that #include
+ <uapi/...
+Message-ID: <20121219133107.GZ8798@dm>
+References: <28860.1355870146@warthog.procyon.org.uk>
+ <836be70329567778096e6a5b9e898a85238b382c.1355879564.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <836be70329567778096e6a5b9e898a85238b382c.1355879564.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cyrill Gorcunov <gorcunov@openvz.org>
+On Tue, Dec 18, 2012 at 05:30:58PM -0800, Joe Perches wrote:
+> Avoid specifying internal uapi #include paths with uapi/...
+> as userspace should not use and never see that.
+> 
+> Neaten message line wrapping above.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> cc: David Howells <dhowells@redhat.com>
+> ---
+>  scripts/checkpatch.pl |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 054a293..5eab67e 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2238,8 +2238,11 @@ sub process {
+>  			my $path = $1;
+>  			if ($path =~ m{//}) {
+>  				ERROR("MALFORMED_INCLUDE",
+> -				      "malformed #include filename\n" .
+> -					$herecurr);
+> +				      "malformed #include filename\n" . $herecurr);
+> +			}
+> +			if ($path =~ "^uapi/" && $realfile =~ m@\binclude/uapi/@) {
+> +				ERROR("UAPI_INCLUDE",
+> +				      "No #include in ...include/uapi/... should use a uapi/ path prefix\n" . $herecurr);
+>  			}
+>  		}
+>  
 
-This makes it compile on s390. After all the ptrace_may_access
-(which we use this file) is declared exactly in linux/ptrace.h.
+Looks reasonable indeed.
 
-This is preparatory work to wire this syscall up on all archs.
+Acked-by: Andy Whitcroft <apw@canonical.com>
 
-Original-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Eric W. Biederman <ebiederm@xmission.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Alexander Kartashov <alekskartashov@parallels.com>
-Signed-off-by: Alexander Kartashov <alekskartashov@parallels.com>
----
- kernel/kcmp.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/kcmp.c b/kernel/kcmp.c
-index 30b7b22..e30ac0f 100644
---- a/kernel/kcmp.c
-+++ b/kernel/kcmp.c
-@@ -4,6 +4,7 @@
- #include <linux/string.h>
- #include <linux/random.h>
- #include <linux/module.h>
-+#include <linux/ptrace.h>
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/cache.h>
--- 
-1.7.9.5
-
+-apw
