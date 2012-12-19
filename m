@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab2LSVpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 16:45:03 -0500
-Received: from canardo.mork.no ([148.122.252.1]:38235 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab2LSVo6 convert rfc822-to-8bit (ORCPT
+	id S1751417Ab2LSVr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 16:47:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44287 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab2LSVrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 16:44:58 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Norbert Warmuth <nwarmuth@t-online.de>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RESEND][PATCH v3] watchdog: Fix disable/enable regression
-Organization: m
-References: <87y5h1c70y.fsf@nemi.mork.no>
-	<1355946691-7969-1-git-send-email-bjorn@mork.no>
-	<20121219201336.GK88797@redhat.com> <874njh7nd5.fsf@nemi.mork.no>
-Date: Wed, 19 Dec 2012 22:44:44 +0100
-In-Reply-To: <874njh7nd5.fsf@nemi.mork.no> (=?utf-8?Q?=22Bj=C3=B8rn?=
- Mork"'s message of "Wed, 19
-	Dec 2012 22:17:42 +0100")
-Message-ID: <87zk1967jn.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Dec 2012 16:47:22 -0500
+Date: Wed, 19 Dec 2012 13:47:21 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
+ divisors
+Message-Id: <20121219134721.bbde212f.akpm@linux-foundation.org>
+In-Reply-To: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
+References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjørn Mork <bjorn@mork.no> writes:
-> Don Zickus <dzickus@redhat.com> writes:
->
->> What about the opposite cases?  
->> nmi_watchdog=1
->> echo 1 > /sys/devices/system/cpu/cpu1/online
->
-> I don't see why not. But verifying it would be nice.  I thought that it
-> would be a simple thing to test using qemu-kvm, but it seems that the
-> CPU hotplugging support there isn't quite ready. The guest just dies
-> with "Assertion `bus->allow_hotplug' failed."
->
-> I'll go digging for alternatives, but if anyone else could verify this
-> then I'd appreciate it.
+On Wed, 19 Dec 2012 06:40:15 -0800
+Guenter Roeck <linux@roeck-us.net> wrote:
 
-I just realized that you might not really want/need hotplugging, but
-just booting with some cores initially offline?
+> Commit 263a523 fixes a warning seen with W=1 due to change in
+> DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
+> with unsigned divisors to unsigned, even if the dividend is signed and
+> negative (for example, -10 / 5U = 858993457). The C standard says "If one
+> operand has unsigned int type, the other operand is converted to unsigned
+> int", so the compiler is not to blame.
+> As a result, DIV_ROUND_CLOSEST(0, 2U) and similar operations now return
+> bad values, since the automatic conversion of expressions such as "0 - 2U/2"
+> to unsigned was not taken into account.
+> 
+> Fix by checking for the divisor variable type when deciding which operation
+> to perform. This fixes DIV_ROUND_CLOSEST(0, 2U), but still returns bad values
+> for negative dividends divided by unsigned divisors. Mark the latter case as
+> unsupported.
 
-That's easier to test at least:
+The changelog didn't describe the end-user visible effects of the bug. 
+Please always include this information.  Because...
 
-qmitest:~# cat /proc/cmdline 
-initrd=/initrd.img.test root=/dev/sda1 ro console=tty0 console=ttyS0,9600n8 maxcpus=1 BOOT_IMAGE=/vmlinuz.test 
-qmitest:~#  grep . /sys/devices/system/cpu/o*line
-/sys/devices/system/cpu/offline:1-3
-/sys/devices/system/cpu/online:0
-qmitest:~# grep . /sys/devices/system/cpu/cpu?/online 
-/sys/devices/system/cpu/cpu1/online:0
-/sys/devices/system/cpu/cpu2/online:0
-/sys/devices/system/cpu/cpu3/online:0
-qmitest:~# grep . /sys/devices/system/cpu/o*line
-/sys/devices/system/cpu/offline:1-3
-/sys/devices/system/cpu/online:0
-qmitest:~# grep . /proc/sys/kernel/nmi_watchdog 
-1
-
-
-qmitest:~#  echo 1 > /sys/devices/system/cpu/cpu1/online
-qmitest:~#  echo 1 > /sys/devices/system/cpu/cpu2/online
-qmitest:~# grep . /sys/devices/system/cpu/cpu?/online 
-/sys/devices/system/cpu/cpu1/online:1
-/sys/devices/system/cpu/cpu2/online:1
-/sys/devices/system/cpu/cpu3/online:0
-
-
-No problem observed.  As expected.
-
-
-
-Bjørn
+The patch is applicable to 3.7.x.  Should we backport it?
