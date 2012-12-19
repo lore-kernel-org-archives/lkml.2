@@ -1,81 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab2LSOFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:05:07 -0500
-Received: from anubis.se.axis.com ([195.60.68.12]:54911 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab2LSOE7 (ORCPT
+	id S1755080Ab2LSOLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:11:48 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:52416 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab2LSOLo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:04:59 -0500
-Date: Wed, 19 Dec 2012 15:04:56 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] rtc-pcf8523: Add low battery voltage support
-Message-ID: <20121219140456.GA14217@axis.com>
+	Wed, 19 Dec 2012 09:11:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <505A1C0D.3050906@suse.cz>
+References: <505A1C0D.3050906@suse.cz>
+Date: Wed, 19 Dec 2012 15:05:34 +0100
+Message-ID: <CA+HkQJs1ycDqGwxxZ-6LphP5Kpm-Hx1e4-GJEMGVqX0KEn_POQ@mail.gmail.com>
+Subject: Re: tty ldisc: Close/Reopen race prevention should check the proper flag
+From: =?UTF-8?Q?D=C5=BEiugas_Baltr=C5=ABnas?= <dziugas@simula.no>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Shachar Shemesh <shachar@liveu.tv>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements reading of the battery voltage low signal for
-rtc-pcf8523.
+Hello,
 
-The bit is read-only and cannot be cleared by software, so no
-clear-function is implemented.
+It appears that the original patch [1] was committed in 3.6 tree, but
+not in 3.2. Therefore I can confirm that with the 3.2.33 kernel and
+without having the patch applied, I still see the pppd process going
+into the "uninterruptible sleep" state occasionally. I'm using Huawei
+3G modems (E173u-2, E3131, E353u-2) and typically I'm facing the issue
+when there is a poor radio signal. My watchdog daemon forks pppd
+process using the following command line:
 
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
----
-diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
-index be05a64..82a9895 100644
---- a/drivers/rtc/rtc-pcf8523.c
-+++ b/drivers/rtc/rtc-pcf8523.c
-@@ -23,6 +23,7 @@
- #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
- #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
- #define REG_CONTROL3_PM_MASK 0xe0
-+#define REG_CONTROL3_BLF (1 << 2) /* Battery low bit, read-only */
- 
- #define REG_SECONDS  0x03
- #define REG_SECONDS_OS (1 << 7)
-@@ -250,9 +252,29 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	return pcf8523_start_rtc(client);
- }
- 
-+static int pcf8523_rtc_read_vl(struct device *dev, int *vl)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	u8 value;
-+	int err;
-+
-+	err = pcf8523_read(client, REG_CONTROL3, &value);
-+	if (err < 0)
-+		return err;
-+
-+	if (value & REG_CONTROL3_BLF)
-+		*vl = 1;
-+	else
-+		*vl = 0;
-+
-+	return 0;
-+}
-+
-+
- static const struct rtc_class_ops pcf8523_rtc_ops = {
--	.read_time = pcf8523_rtc_read_time,
--	.set_time = pcf8523_rtc_set_time,
-+	.read_time	= pcf8523_rtc_read_time,
-+	.set_time	= pcf8523_rtc_set_time,
-+	.read_vl	= pcf8523_rtc_read_vl,
- };
- 
- static int pcf8523_probe(struct i2c_client *client,
+pppd /dev/ttyUSB0 460800 unit 0 connect "/usr/sbin/chat -V -v -s ABORT
+'BUSY' ABORT 'NO CARRIER' ABORT 'VOICE' ABORT 'NO DIALTONE' ABORT 'NO
+DIAL TONE' ABORT 'NO ANSWER' ABORT 'DELAYED' REPORT CONNECT TIMEOUT 6
+'' 'ATQ0' 'OK-AT-OK' 'ATZ' TIMEOUT 3 'OK\d-AT-OK' 'ATI' 'OK' 'ATZ'
+'OK' 'ATQ0 V1 E1 S0=0 &C1 &D2' 'OK-AT-OK'
+'AT+CGDCONT=1,\"IP\",\"internet\"' 'OK' 'AT+CGREG=2' 'OK' 'ATD*99#'
+TIMEOUT 30 CONNECT ''" nodetach debug lock crtscts modem noauth novj
+nobsdcomp nodefaultroute noipdefault lcp-echo-interval 2
+lcp-echo-failure 3 child-timeout 5
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+The same watchdog daemon monitors whether a pppX interface has an IP
+address assigned and if not, it sends the SIGTERM signal to the pppd
+process, waits for it to exit and then restarts it by forking another
+pppd instance. This is usually (but now always) the case when the pppd
+process is blocked in the "uninterruptible sleep" state and the kernel
+message (INFO: task pppd:PID blocked for more than 120 seconds).
+Additionally, both with and without the patch applied, chat process
+(forked by pppd) is usually left orphan and ignores SIGTERM (but dies
+after SIGKILL).
+
+I'm wondering if there are any reasons why this patch is not present
+in the 3.2 tree and I'm also looking forward for the 'right' patch to
+address the issue. When the pppd process is the "uninterruptible
+sleep" state, the only workaround that we have is to reset modems
+using a secondary serial interface for AT commands, so that the USB
+device reconnection is triggered.
+
+Regards,
+Džiugas Baltrūnas
+
+[1] https://github.com/torvalds/linux/commit/40c9f61eae9098212b6906f29f30f08f7a19b5e2
+
+On 19 September 2012 21:25, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 07/10/2012 06:54 AM, Shachar Shemesh wrote:
+>> From: Shachar Shemesh <shachar@liveu.tv>
+>>
+>> Commit acfa747b introduced the TTY_HUPPING flag to distinguish
+>> closed TTY from currently closing ones. The test in tty_set_ldisc
+>> still remained pointing at the old flag. This causes pppd to
+>> sometimes lapse into uninterruptible sleep when killed and
+>> restarted.
+>>
+>> Signed-off-by: Shachar Shemesh <shachar@liveu.tv>
+>> ---
+>> Tested with 3.2.20 kernel.
+>>
+>> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+>> index 24b95db..a662a24 100644
+>> --- a/drivers/tty/tty_ldisc.c
+>> +++ b/drivers/tty/tty_ldisc.c
+>> @@ -658,7 +658,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+>>               goto enable;
+>>       }
+>>
+>> -     if (test_bit(TTY_HUPPED, &tty->flags)) {
+>> +     if (test_bit(TTY_HUPPING, &tty->flags)) {
+>>               /* We were raced by the hangup method. It will have stomped
+>>                  the ldisc data and closed the ldisc down */
+>>               clear_bit(TTY_LDISC_CHANGING, &tty->flags);
+>
+> Yes, that makes the issue go away, but does not seem to be right too.
+> There are two issues I see:
+> * TTY_HUPPED has no use now. That is incorrect. Here should be a test
+> for both flags, I think.
+> * The change forces the set_ldisc path to always re-open the ldisc even
+> if it the terminal is HUPPED.
+>
+> The bug is not in the kernel. It was in login(1) (util-linux). And it
+> should be fixed by now. See:
+> http://git.kernel.org/?p=utils/util-linux/util-linux.git;a=commitdiff;h=2e7035646eb85851171cc2e989bfa858a4f00cd4
+>
+>
+> I'm for an in-fact revert of the patch. But temporarily I would still
+> return EIO. However let's do it even after the reopen is done, so that
+> we get rid of the user-visible regression. Like in the attached patch.
+> The regression was introduced by commit c65c9bc3e (tty: rewrite the
+> ldisc locking). That is !three! years ago. And that is suspicious in itself.
+>
+>
+> BTW Why pppd thinks it is a good idea to ignore EIO from TIOCSETD ioctl?
+>
+> regards,
+>
+>
+> >From b3e5a7f778be46b4b8dd38d5565010755ccafd67 Mon Sep 17 00:00:00 2001
+> From: Jiri Slaby <jslaby@suse.cz>
+> Date: Wed, 19 Sep 2012 20:23:59 +0200
+> Subject: [PATCH 1/1] TTY: forbid setting ldisc on HUPPED tty, step 1
+>
+> Commit c65c9bc3e (tty: rewrite the ldisc locking) introduced a check
+> into tty_set_ldisc whether the terminal is already hung. In that case
+> it returns -EIO.
+>
+> Later, commit aa3c8af86 (tty ldisc: Close/Reopen race prevention
+> should check the proper flag) effectively disabled the check by
+> replacing HUPPED by HUPPING flag. Those are two different flags and
+> the former check was actually correct. In principle we revert here to
+> the previous behavior plus we add a check if we are HUPPING. Because
+> it makes no sense to change ldisc when some other thread is making a
+> HUP but it had to unlock BTM temporarily.
+>
+> The bug which commit aa3c8af86 above tried to avoid lays in fact in
+> login(1). It was fixed by util-linux commit 2e7035646 (login: close
+> tty before vhangup()) already. It was reproducible for example by the
+> following setup:
+> 1) add a user ppp with shell set to /usr/bin/pppd
+> 2) run agetty on ttyS0 to wait for a user
+> 3) user connects via modem on ttyS0, types ppp to getty
+> 4) 'login ppp' is executed
+> 5) login performs hangup without properly closing ttyS0
+> 6) login executes pppd
+> 7) pppd does TIOCSETD attempt to N_PPP
+> 8) kernel denies step 7) as ttyS0 is HUPPED
+> 9) pppd calls some N_PPP ldisc's ioctls regardless -- uninterruptible
+>    sleep in tty_ioctl, trying to have a ref on tty->ldisc
+>
+> Now to sum up the fixes:
+> * The fix in util-linux is that 5 is changed to properly close all
+>   ttyS0 instances.
+> * The workaround from commit aa3c8af86 was that 8) succeeds.
+> * This patch is the same as aa3c8af86 except we still return -EIO and
+>   warn the user this will not be supported in the future. This is
+>   because we do not want to have a user-visible regression here.
+>
+> "Step 1" because step two would be to immediatelly return -EIO like in
+> the attached false branch in the patch.
+>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Shachar Shemesh <shachar@liveu.tv>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> ---
+>  drivers/tty/tty_ldisc.c | 37 ++++++++++++++++++++++++++++---------
+>  1 file changed, 28 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+> index f4e6754..7cca3fd 100644
+> --- a/drivers/tty/tty_ldisc.c
+> +++ b/drivers/tty/tty_ldisc.c
+> @@ -563,6 +563,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+>         struct tty_ldisc *o_ldisc, *new_ldisc;
+>         int work, o_work = 0;
+>         struct tty_struct *o_tty;
+> +       int retval_hupped = 0;
+>
+>         new_ldisc = tty_ldisc_get(ldisc);
+>         if (IS_ERR(new_ldisc))
+> @@ -659,14 +660,32 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+>                 goto enable;
+>         }
+>
+> -       if (test_bit(TTY_HUPPING, &tty->flags)) {
+> -               /* We were raced by the hangup method. It will have stomped
+> -                  the ldisc data and closed the ldisc down */
+> -               clear_bit(TTY_LDISC_CHANGING, &tty->flags);
+> -               mutex_unlock(&tty->ldisc_mutex);
+> -               tty_ldisc_put(new_ldisc);
+> -               tty_unlock(tty);
+> -               return -EIO;
+> +       if (test_bit(TTY_HUPPED, &tty->flags) ||
+> +                       test_bit(TTY_HUPPING, &tty->flags)) {
+> +               /*
+> +                * Until login(1) is fixed everywhere, let's fall through.
+> +                * Change to goto with -EIO after 3.10.
+> +                */
+> +               if (1) {
+> +                       char ttyn[64], comm[TASK_COMM_LEN];
+> +                       printk_ratelimited(KERN_WARNING "%s: %s calls TIOCSETD on a hung TTY (%s). This is deprecated and will stop working soon.\n",
+> +                                       __func__, get_task_comm(comm, current),
+> +                                       tty_name(tty, ttyn));
+> +                       retval_hupped = -EIO;
+> +               } else {
+> +                       /*
+> +                        * We were raced by the hangup method. It will have
+> +                        * stomped the ldisc data and closed the ldisc down
+> +                        */
+> +                       tty_ldisc_put(new_ldisc);
+> +                       retval = -EIO;
+> +                       /*
+> +                        * We have to enable the original ldisc so that
+> +                        * processes see N_TTY and fail instead of waiting
+> +                        * infinitely.
+> +                        */
+> +                       goto enable;
+> +               }
+>         }
+>
+>         /* Shutdown the current discipline. */
+> @@ -709,7 +728,7 @@ enable:
+>                 schedule_work(&o_tty->port->buf.work);
+>         mutex_unlock(&tty->ldisc_mutex);
+>         tty_unlock(tty);
+> -       return retval;
+> +       return retval ? : retval_hupped;
+>  }
+>
+>  /**
+> --
+> 1.7.12
+>
