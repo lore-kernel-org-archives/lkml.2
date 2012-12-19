@@ -1,204 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab2LSGbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 01:31:33 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6366 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2LSGb2 (ORCPT
+	id S1751570Ab2LSGhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 01:37:17 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:33520 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab2LSGhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 01:31:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 18 Dec 2012 22:29:45 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: dts: add aliases and DMA requestor for serial controller
-Date: Wed, 19 Dec 2012 12:01:11 +0530
-Message-ID: <1355898671-3960-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 19 Dec 2012 01:37:12 -0500
+Message-ID: <50D16094.1030101@linaro.org>
+Date: Tue, 18 Dec 2012 22:37:08 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Dong Zhu <bluezhudong@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept
+ in UTC time
+References: <20121206140334.GA24261@zhudong.nay.redhat.com> <20121219051518.GA8584@zhudong.nay.redhat.com>
+In-Reply-To: <20121219051518.GA8584@zhudong.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add APB DMA requestor and serial aliases for serial controller.
-There will be two serial driver i.e. 8250 based simple serial driver
-and APB DMA based serial driver for higher baudrate and performace.
+On 12/18/2012 09:15 PM, Dong Zhu wrote:
+> On Thu, Dec 06, 2012 at 10:03:34PM +0800, Dong Zhu wrote:
+>>  From c126376cf1837b0956e0268056db61870fbbc1d4 Mon Sep 17 00:00:00 2001
+>> From: Dong Zhu <bluezhudong@gmail.com>
+>> Date: Thu, 6 Dec 2012 21:45:00 +0800
+>> Subject: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept in
+>>   UTC time
+>>
+>> If the Hardware Clock kept in local time,kernel will adjust the time
+>> to be UTC time.But if Hardware Clock kept in UTC time,system will make
+>> a dummy settimeofday call first (sys_tz.tz_minuteswest = 0) to make sure
+>> the time is not shifted,so at this point I think maybe it is not necessary
+>> to set the kernel time once the sys_tz.tz_minuteswest is zero.
+>>
+>> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+>> ---
+>>   kernel/time.c | 8 +++++---
+>>   1 file changed, 5 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/time.c b/kernel/time.c
+>> index d226c6a..0b592ce 100644
+>> --- a/kernel/time.c
+>> +++ b/kernel/time.c
+>> @@ -134,9 +134,11 @@ static inline void warp_clock(void)
+>>   {
+>>   	struct timespec adjust;
+>>   
+>> -	adjust = current_kernel_time();
+>> -	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+>> -	do_settimeofday(&adjust);
+>> +	if (sys_tz.tz_minuteswest) {
+>> +		adjust = current_kernel_time();
+>> +		adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+>> +		do_settimeofday(&adjust);
+>> +	}
+>>   }
+>>   
+>>   /*
+>> -- 
+>> 1.7.11.7
+>>
+> Hi,
+>
+> Any comments ?
+Sorry for the slow response, been a little busy.   Honestly the 
+warp_clock() code path is always been a bit odd to me, so I've not 
+really been able to get my head around the implications of this change.
 
-The simple serial driver get enabled with compatible nvidia,tegra20-uart
-and APB DMA based driver will get enabled with compatible
-nvidia,tegra20-hsuart.
+Really, I'm not sure if I'll get to this before the new year.
+Its on my list, but don't be afraid to ping me early Jan if I haven't 
+queued it for 3.9 by then.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/boot/dts/tegra20.dtsi |   30 +++++++++++++++++++++++++-----
- arch/arm/boot/dts/tegra30.dtsi |   31 ++++++++++++++++++++++++++-----
- 2 files changed, 51 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index b8effa1..fe35c72 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -4,6 +4,14 @@
- 	compatible = "nvidia,tegra20";
- 	interrupt-parent = <&intc>;
- 
-+	aliases {
-+		serial0 = &uarta;
-+		serial1 = &uartb;
-+		serial2 = &uartc;
-+		serial3 = &uartd;
-+		serial4 = &uarte;
-+	};
-+
- 	host1x {
- 		compatible = "nvidia,tegra20-host1x", "simple-bus";
- 		reg = <0x50000000 0x00024000>;
-@@ -194,43 +202,55 @@
- 		status = "disabled";
- 	};
- 
--	serial@70006000 {
-+	/*
-+	 * There are two serial driver i.e. 8250 based simple serial
-+	 * driver and APB DMA based serial driver for higher baudrate
-+	 * and performace. To enable the 8250 based driver, the compatible
-+	 * is "nvidia,tegra20-uart" and to enable the APB DMA based serial
-+	 * driver, the comptible is "nvidia,tegra20-hsuart".
-+	 */
-+	uarta: serial@70006000 {
- 		compatible = "nvidia,tegra20-uart";
- 		reg = <0x70006000 0x40>;
- 		reg-shift = <2>;
- 		interrupts = <0 36 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 8>;
- 		status = "disabled";
- 	};
- 
--	serial@70006040 {
-+	uartb: serial@70006040 {
- 		compatible = "nvidia,tegra20-uart";
- 		reg = <0x70006040 0x40>;
- 		reg-shift = <2>;
- 		interrupts = <0 37 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 9>;
- 		status = "disabled";
- 	};
- 
--	serial@70006200 {
-+	uartc: serial@70006200 {
- 		compatible = "nvidia,tegra20-uart";
- 		reg = <0x70006200 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 46 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 10>;
- 		status = "disabled";
- 	};
- 
--	serial@70006300 {
-+	uartd: serial@70006300 {
- 		compatible = "nvidia,tegra20-uart";
- 		reg = <0x70006300 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 90 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 19>;
- 		status = "disabled";
- 	};
- 
--	serial@70006400 {
-+	uarte: serial@70006400 {
- 		compatible = "nvidia,tegra20-uart";
- 		reg = <0x70006400 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 91 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 20>;
- 		status = "disabled";
- 	};
- 
-diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-index 529fdb8..80a0edf 100644
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
-@@ -4,6 +4,14 @@
- 	compatible = "nvidia,tegra30";
- 	interrupt-parent = <&intc>;
- 
-+	aliases {
-+		serial0 = &uarta;
-+		serial1 = &uartb;
-+		serial2 = &uartc;
-+		serial3 = &uartd;
-+		serial4 = &uarte;
-+	};
-+
- 	host1x {
- 		compatible = "nvidia,tegra30-host1x", "simple-bus";
- 		reg = <0x50000000 0x00024000>;
-@@ -190,43 +198,56 @@
- 		       0x70003000 0x3e4>; /* Mux registers */
- 	};
- 
--	serial@70006000 {
-+	/*
-+	 * There are two serial driver i.e. 8250 based simple serial
-+	 * driver and APB DMA based serial driver for higher baudrate
-+	 * and performace. To enable the 8250 based driver, the compatible
-+	 * is "nvidia,tegra30-uart", "nvidia,tegra20-uart" and to enable
-+	 * the APB DMA based serial driver, the comptible is
-+	 * "nvidia,tegra30-hsuart", "nvidia,tegra20-hsuart".
-+	 */
-+	uarta: serial@70006000 {
- 		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006000 0x40>;
- 		reg-shift = <2>;
- 		interrupts = <0 36 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 8>;
- 		status = "disabled";
- 	};
- 
--	serial@70006040 {
-+	uartb: serial@70006040 {
- 		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006040 0x40>;
- 		reg-shift = <2>;
- 		interrupts = <0 37 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 9>;
- 		status = "disabled";
- 	};
- 
--	serial@70006200 {
-+	uartc: serial@70006200 {
- 		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006200 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 46 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 10>;
- 		status = "disabled";
- 	};
- 
--	serial@70006300 {
-+	uartd: serial@70006300 {
- 		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006300 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 90 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 19>;
- 		status = "disabled";
- 	};
- 
--	serial@70006400 {
-+	uarte: serial@70006400 {
- 		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006400 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 91 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 20>;
- 		status = "disabled";
- 	};
- 
--- 
-1.7.1.1
+thanks
+-john
 
