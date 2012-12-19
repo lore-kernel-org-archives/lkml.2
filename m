@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab2LSGhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 01:37:17 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:33520 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab2LSGhM (ORCPT
+	id S1751825Ab2LSGnE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 01:43:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27817 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab2LSGm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 01:37:12 -0500
-Message-ID: <50D16094.1030101@linaro.org>
-Date: Tue, 18 Dec 2012 22:37:08 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 01:42:57 -0500
+Date: Wed, 19 Dec 2012 09:42:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: iio: cleanup ring_sw.c
+Message-ID: <20121219064247.GL5032@mwanda>
+References: <1355873999-32098-1-git-send-email-dinggnu@gmail.com>
 MIME-Version: 1.0
-To: Dong Zhu <bluezhudong@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept
- in UTC time
-References: <20121206140334.GA24261@zhudong.nay.redhat.com> <20121219051518.GA8584@zhudong.nay.redhat.com>
-In-Reply-To: <20121219051518.GA8584@zhudong.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355873999-32098-1-git-send-email-dinggnu@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2012 09:15 PM, Dong Zhu wrote:
-> On Thu, Dec 06, 2012 at 10:03:34PM +0800, Dong Zhu wrote:
->>  From c126376cf1837b0956e0268056db61870fbbc1d4 Mon Sep 17 00:00:00 2001
->> From: Dong Zhu <bluezhudong@gmail.com>
->> Date: Thu, 6 Dec 2012 21:45:00 +0800
->> Subject: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept in
->>   UTC time
->>
->> If the Hardware Clock kept in local time,kernel will adjust the time
->> to be UTC time.But if Hardware Clock kept in UTC time,system will make
->> a dummy settimeofday call first (sys_tz.tz_minuteswest = 0) to make sure
->> the time is not shifted,so at this point I think maybe it is not necessary
->> to set the kernel time once the sys_tz.tz_minuteswest is zero.
->>
->> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
->> ---
->>   kernel/time.c | 8 +++++---
->>   1 file changed, 5 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/time.c b/kernel/time.c
->> index d226c6a..0b592ce 100644
->> --- a/kernel/time.c
->> +++ b/kernel/time.c
->> @@ -134,9 +134,11 @@ static inline void warp_clock(void)
->>   {
->>   	struct timespec adjust;
->>   
->> -	adjust = current_kernel_time();
->> -	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
->> -	do_settimeofday(&adjust);
->> +	if (sys_tz.tz_minuteswest) {
->> +		adjust = current_kernel_time();
->> +		adjust.tv_sec += sys_tz.tz_minuteswest * 60;
->> +		do_settimeofday(&adjust);
->> +	}
->>   }
->>   
->>   /*
->> -- 
->> 1.7.11.7
->>
-> Hi,
->
-> Any comments ?
-Sorry for the slow response, been a little busy.   Honestly the 
-warp_clock() code path is always been a bit odd to me, so I've not 
-really been able to get my head around the implications of this change.
+On Wed, Dec 19, 2012 at 12:39:59AM +0100, Cong Ding wrote:
+> clean the checkpatch warnings in ring_sw.c. mostly are 80 characters per line
+> issue.
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  drivers/staging/iio/ring_sw.c |   25 ++++++++++++++-----------
+>  1 file changed, 14 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
+> index 3a45f9a..4db1cc3 100644
+> --- a/drivers/staging/iio/ring_sw.c
+> +++ b/drivers/staging/iio/ring_sw.c
+> @@ -77,7 +77,8 @@ static int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
+>  		 * as long as the read pointer is valid before this
+>  		 * passes it - guaranteed as set later in this function.
+>  		 */
+> -		ring->half_p = ring->data - ring->buf.length*ring->buf.bytes_per_datum/2;
+> +		ring->half_p = ring->data -
+> +			ring->buf.length*ring->buf.bytes_per_datum/2;
 
-Really, I'm not sure if I'll get to this before the new year.
-Its on my list, but don't be afraid to ping me early Jan if I haven't 
-queued it for 3.9 by then.
+Please put spaces around the '*' and '/' characters.
+			ring->buf.length * ring->buf.bytes_per_datum / 2;
 
-thanks
--john
+>  	}
+>  	/* Copy data to where ever the current write pointer says */
+>  	memcpy(ring->write_p, data, ring->buf.bytes_per_datum);
+> @@ -112,8 +113,8 @@ static int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
+>  	else if (ring->write_p == ring->read_p) {
+>  		change_test_ptr = ring->read_p;
+>  		temp_ptr = change_test_ptr + ring->buf.bytes_per_datum;
+> -		if (temp_ptr
+> -		    == ring->data + ring->buf.length*ring->buf.bytes_per_datum) {
+> +		if (temp_ptr == ring->data +
+> +		    ring->buf.length*ring->buf.bytes_per_datum) {
+
+This needs spaces as well.  It might look cleaner if you broke it
+up like this:
+		if (temp_ptr == ring->data + ring->buf.length *
+				ring->buf.bytes_per_datum) {
+
+
+>  			temp_ptr = ring->data;
+>  		}
+>  		/* We are moving pointer on one because the ring is full.  Any
+> @@ -127,7 +128,8 @@ static int iio_store_to_sw_ring(struct iio_sw_ring_buffer *ring,
+>  	 * simultaneous read */
+>  	/* Also need to use loop count to ensure this only happens once */
+>  	ring->half_p += ring->buf.bytes_per_datum;
+> -	if (ring->half_p == ring->data + ring->buf.length*ring->buf.bytes_per_datum)
+> +	if (ring->half_p == ring->data +
+> +			ring->buf.length*ring->buf.bytes_per_datum)
+
+Same.
+
+>  		ring->half_p = ring->data;
+>  	if (ring->half_p == ring->read_p) {
+>  		ring->buf.stufftoread = true;
+> @@ -153,7 +155,8 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
+>  	if (n % ring->buf.bytes_per_datum) {
+>  		ret = -EINVAL;
+>  		printk(KERN_INFO "Ring buffer read request not whole number of"
+> -		       "samples: Request bytes %zd, Current bytes per datum %d\n",
+> +		       "samples: Request bytes %zd, Current bytes per"
+> +		       "datum %d\n",
+
+No space between "of" and "samples" and also "per" and "datum".
+
+The warning here is that the print should be on one line instead of
+two.  But actually that is a decision for the maintainer.
+Checkpatch.pl is not the king of us, we do not have to do what it
+says.
+
+>  		       n, ring->buf.bytes_per_datum);
+>  		goto error_ret;
+>  	}
+> @@ -193,7 +196,8 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
+>  	if (initial_write_p >= initial_read_p)
+>  		data_available = initial_write_p - initial_read_p;
+>  	else
+> -		data_available = buffer_size - (initial_read_p - initial_write_p);
+> +		data_available = buffer_size -
+> +			(initial_read_p - initial_write_p);
+>  
+>  	if (data_available < bytes_to_rip)
+>  		bytes_to_rip = data_available;
+> @@ -201,7 +205,8 @@ static int iio_read_first_n_sw_rb(struct iio_buffer *r,
+>  	if (initial_read_p + bytes_to_rip >= ring->data + buffer_size) {
+>  		max_copied = ring->data + buffer_size - initial_read_p;
+>  		memcpy(data, initial_read_p, max_copied);
+> -		memcpy(data + max_copied, ring->data, bytes_to_rip - max_copied);
+> +		memcpy(data + max_copied,
+> +				ring->data, bytes_to_rip - max_copied);
+
+Line it up like this:
+		memcpy(data + max_copied, ring->data,
+		       bytes_to_rip - max_copied);
+
+
+[tab][tab][space][space][space][space][space][space][space]bytes_
+
+regards,
+dan carpenter
 
