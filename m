@@ -1,282 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab2LSVid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 16:38:33 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:33506 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab2LSViZ (ORCPT
+	id S1751520Ab2LSVm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 16:42:27 -0500
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:45491 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2LSVmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 16:38:25 -0500
-X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 16:38:25 EST
-Message-ID: <50D23223.6020505@gmail.com>
-Date: Thu, 20 Dec 2012 08:31:15 +1100
-From: Michael Cassaniti <m.cassaniti@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 16:42:18 -0500
+Date: Wed, 19 Dec 2012 22:42:10 +0100
+From: Christophe TORDEUX <christophe@tordeux.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tai-hwa Liang <avatar@sentelic.com>, Oskari Saarenmaa <os@ohmu.fi>,
+        Paul Fox <pgf@laptop.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH 01/01] Input multitouch: fix horizontal
+ two-finger-scrolling on Sentelic touchpads
+Message-ID: <20121219214210.GA14841@sherka.no-ip.biz>
+References: <20121212012135.GA9043@sherka.no-ip.biz>
+ <20121219084113.GA2758@polaris.bitmath.org>
 MIME-Version: 1.0
-To: Linux Security Module mailing list 
-	<linux-security-module@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] security: seccomp as extended attribute
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Disposition: inline
+In-Reply-To: <20121219084113.GA2758@polaris.bitmath.org>
+X-PGP-Key: http://christophe.tordeux.net/data/pgp/c-tor2/pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From Michael Cassaniti <m.cassaniti@gmail.com>
 
-Add seccomp filter via extended attribute
-Written against Linux 3.5
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Michael Cassaniti <m.cassaniti@gmail.com>
----
-diff -uprN -X linux-3.5-rp1/Documentation/dontdiff 
-linux-3.5-rp1/include/linux/seccomp.h linux-3.5-rp2/include/linux/seccomp.h
---- linux-3.5-rp1/include/linux/seccomp.h    2012-09-21 
-12:43:28.215772113 +1000
-+++ linux-3.5-rp2/include/linux/seccomp.h    2012-09-21 
-12:44:09.915410558 +1000
-@@ -127,6 +127,11 @@ extern u32 seccomp_bpf_load(int off);
-  #define SECCOMP_XATTR_BIT_DEF_RETURN    2
-  #define SECCOMP_XATTR_BITMAP_START    3
+On Wednesday 19 December 2012 at 09:41:13AM, Henrik Rydberg has written:
+> Hi Christophe,
+>=20
+> > Fix horizontal two-finger scrolling on Sentelic touchpads. Currently
+> > horizontal two-fingers scrolling does not work with these touchpads.
+> > The patch also makes vertical two-finger scrolling smoother in some
+> > applications e.g. Firefox.
+> >=20
+> > Signed-off-by: Christophe TORDEUX <christophe@tordeux.net>
+> > ----
+> >=20
+> > This patch was inspired by the reading of
+> > drivers/input/mouse/synaptics.c. It is known to work (tested) on
+> > Sentelic touchpads version STL3888_C0. Very probably works on all later
+> > versions, and possibly works on some earlier versions of the hardware in
+> > question.
+>=20
+> Thanks for the patch. I would prefer it if this driver was converted
+> to use input_mt_assign_slots() instead.
+=20
+ Thanks for you feedback.=20
+=20
+=20
+ As for converting the driver to use input_mt_assign_slot, I can try,=20
+ and I have the device, give me just a couple of weeks.
+=20
+ I guess a measure of complete success would be to have the device able=20
+ to function in userspace purely based on multitouch events, with=20
+ non-multitouch absolute events being kept simply as a legacy feature,=20
+ in case one needs to use input userspace drivers like evdev which are=20
+ not specifically touchpad/touchscreen drivers.
 
-+#define SECCOMP_FILTER_LOAD_SYSCALL BPF_STMT(BPF_LD|BPF_W|BPF_ABS, 
-BPF_DATA(nr))
-+#define SECCOMP_FILTER_ALLOW BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW)
-+#define SECCOMP_FILTER_KILL  BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_KILL)
-+#define SECCOMP_FILTER_DENY BPF_STMT(BPF_RET|BPF_K, 
-(SECCOMP_RET_ERRNO|EPERM))
-+
-  #else  /* CONFIG_SECCOMP_FILTER */
-  static inline void put_seccomp_filter(struct task_struct *tsk)
-  {
-diff -uprN -X linux-3.5-rp1/Documentation/dontdiff 
-linux-3.5-rp1/kernel/seccomp.c linux-3.5-rp2/kernel/seccomp.c
---- linux-3.5-rp1/kernel/seccomp.c    2012-09-21 13:23:52.254969072 +1000
-+++ linux-3.5-rp2/kernel/seccomp.c    2012-09-21 14:43:27.687445601 +1000
-@@ -18,6 +18,9 @@
-  #include <linux/compat.h>
-  #include <linux/sched.h>
-  #include <linux/seccomp.h>
-+#include <linux/dcache.h>    /* for dget() and struct dentry */
-+#include <linux/binfmts.h>    /* for struct binprm */
-+#include <linux/fs.h>        /* for struct inode */
+ However I'm not sure the synaptics xorg driver is fit to achieve this. =20
+ With this userspace driver as it stands today, a few more or less=20
+ functional multitouch features are achieved because the synaptics xorg=20
+ driver interprets a mixture of MT and non-MT absolute events. The=20
+ sequence in which MT and non-MT events arrive matters.=20
 
-  /* #define SECCOMP_DEBUG 1 */
+> Why not save the variables instead of the array?
 
-@@ -224,7 +227,7 @@ static u32 seccomp_run_filters(int sysca
-   *
-   * Returns 0 on success or an errno on failure.
-   */
--static long seccomp_attach_filter(struct sock_fprog *fprog)
-+static long seccomp_attach_filter(struct sock_fprog *fprog, int copy_mode)
-  {
-      struct seccomp_filter *filter;
-      unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
-@@ -252,16 +255,22 @@ static long seccomp_attach_filter(struct
+> Relying on the box (x1, y1, max(x1, x2), max(y1, y2)) seems to assume
+> a lot about the behavior of the device.
 
-      /* Allocate a new seccomp_filter */
-      filter = kzalloc(sizeof(struct seccomp_filter) + fp_size,
--             GFP_KERNEL|__GFP_NOWARN);
-+                    GFP_KERNEL|__GFP_NOWARN);
-      if (!filter)
-          return -ENOMEM;
-+
-      atomic_set(&filter->usage, 1);
-      filter->len = fprog->len;
+ Well, as for your other objections, I guess I would agree today we=20
+ don't have to report touches which are (potentially) not located where=20
+ the physical fingers were detected, like I was doing in this early=20
+ attempt. Besides, saving data from the device's previous packet is not=20
+ an absolute necessity.
 
-      /* Copy the instructions from fprog. */
-      ret = -EFAULT;
--    if (copy_from_user(filter->insns, fprog->filter, fp_size))
--        goto fail;
-+    if (copy_mode) {
-+        if (memcpy(filter->insns, fprog->filter, fp_size))
-+            goto fail;
-+    } else {
-+        if (copy_from_user(filter->insns, fprog->filter, fp_size))
-+            goto fail;
-+    }
+ I'm now going to post a much simpler patch, and probably cleaner. The=20
+ way I see it this patch will have a double purpose:
+=20
+ 1) fix horizontal and improve vertical scrolling, though maybe in a=20
+ coincidental way and 2) work towards making the non-MT absolute events=20
+ a purely legacy single finger fallback mode, without breaking anything.
 
-      /* Check and rewrite the fprog via the skb checker */
-      ret = sk_chk_filter(filter->insns, filter->len);
-@@ -307,7 +316,7 @@ long seccomp_attach_user_filter(char __u
-  #endif
-      if (copy_from_user(&fprog, user_filter, sizeof(fprog)))
-          goto out;
--    ret = seccomp_attach_filter(&fprog);
-+    ret = seccomp_attach_filter(&fprog, 0);
-  out:
-      return ret;
-  }
-@@ -503,8 +512,168 @@ out:
-      return ret;
-  }
+ I'll post my new patch in something like an hour.
 
--int append_seccomp_from_vfs(struct linux_binprm *bprm)
-+int get_seccomp_xattr_from_vfs(struct linux_binprm *bprm,
-+                        unsigned char *bitmap)
-  {
--    pr_debug("Entered stub %s\n", __func__);
-+    int size;
-+    struct dentry *dentry;
-+    struct inode *inode;
-+
-+    dentry = dget(bprm->file->f_dentry);
-+    if (!dentry)
-+        return -EINVAL;
-+
-+    inode = dentry->d_inode;
-+    if (!inode || !inode->i_op->getxattr)
-+        return -EOPNOTSUPP;
-+
-+    size = inode->i_op->getxattr((struct dentry *)dentry,
-+                    SECCOMP_XATTR_NAME, bitmap,
-+                    SECCOMP_XATTR_LEN);
-+
-+    if (size == -ENODATA || size == -EOPNOTSUPP)
-+        return -EOPNOTSUPP;
-+
-+    if (size != SECCOMP_XATTR_LEN) {
-+        pr_notice("%s: Got invalid seccomp xattr for %s\n",
-+                        __func__, bprm->filename);
-+        return -EINVAL;
-+    }
-+
-      return 0;
-  }
-+
-+void seccomp_add_bpf_rule(struct sock_filter *filter, unsigned int 
-syscall,
-+                unsigned int rule, unsigned int rules)
-+{
-+
-+    /* Adds the appropriate rule to the filter list
-+     * Second last rule is default action
-+     * Last rule is opposite of default action
-+    */
-+
-+    unsigned int opp_rule = rules - rule - 2;
-+
-+    /* If syscall matches then jump to opposing rule, else continue */
-+    filter[rule] = (struct sock_filter)
-+        BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, syscall, opp_rule, 0);
-+}
-+
-+void append_seccomp_default_vfs_filters(struct sock_filter *filter,
-+                        unsigned int rule,
-+                        unsigned int def_action,
-+                        unsigned int def_return)
-+{
-+    /* Add default rule at index rule, opposite rule at index rule+1 */
-+    rule++;
-+    if (def_action) {
-+        filter[rule] = (struct sock_filter)SECCOMP_FILTER_ALLOW;
-+        if (def_return)
-+            filter[rule+1] = (struct sock_filter)
-+                            SECCOMP_FILTER_KILL;
-+        else
-+            filter[rule+1] = (struct sock_filter)
-+                            SECCOMP_FILTER_DENY;
-+    } else {
-+        if (def_return)
-+            filter[rule] = (struct sock_filter)SECCOMP_FILTER_KILL;
-+        else
-+            filter[rule] = (struct sock_filter)SECCOMP_FILTER_DENY;
-+        filter[rule+1] = (struct sock_filter)SECCOMP_FILTER_ALLOW;
-+    }
-+}
-+
-+int append_seccomp_from_vfs(struct linux_binprm *bprm)
-+{
-+    unsigned int i = (unsigned int)SECCOMP_XATTR_BITMAP_START;
-+    unsigned int rules = 1;        /* There is 1 starting rule */
-+    unsigned int rule = 0;
-+    unsigned int bit;
-+    unsigned int byte;
-+    unsigned char curr_byte;
-+    unsigned int def_action;
-+    unsigned int def_return;
-+    unsigned int curr_action;
-+    unsigned int loop_mode = 1;
-+    int rc = 0;
-+    struct sock_filter *filter;
-+    struct sock_fprog fprog;
-+    unsigned char *bitmap = kmalloc(SECCOMP_XATTR_LEN * sizeof(*bitmap),
-+                                GFP_KERNEL);
-+    if (!bitmap)
-+        return -ENOMEM;
-+    if (get_seccomp_xattr_from_vfs(bprm, bitmap)) {
-+        /* Doesn't matter if nothing returned */
-+        goto out;
-+    }
-+
-+    if (!(bitmap[0] & (1 << SECCOMP_XATTR_BIT_EN)))
-+        /* Seccomp extended attribute is disabled */
-+        goto out;
-+
-+    /* Isolate default and return bits */
-+    def_action = (unsigned int)((bitmap[0] &
-+                    (1 << SECCOMP_XATTR_BIT_DEF_ACTION))
-+                    >> SECCOMP_XATTR_BIT_DEF_ACTION);
-+    def_return  = (unsigned int)((bitmap[0] &
-+                    (1 << SECCOMP_XATTR_BIT_DEF_RETURN))
-+                    >> SECCOMP_XATTR_BIT_DEF_RETURN);
-+
-+    while (i != SECCOMP_XATTR_LEN * 8) {
-+        bit = i % 8;
-+        byte = i / 8;
-+        curr_byte = bitmap[byte];
-+        curr_action = (unsigned int) ((curr_byte >> bit) & 0x01);
-+
-+        if ((bit == 0) && (
-+                (def_action && ((0xFF ^ curr_byte) == 0)) ||
-+                ((def_action == 0) && (curr_byte == 0))
-+                )) {
-+            /* All byte aligned bits match default action */
-+            /* Skip checking these bits */
-+            i = i + 8;
-+        }
-+
-+        if (curr_action != def_action) {
-+            if (loop_mode) {
-+                /* Count the number of set bits */
-+                rules++;
-+            } else {
-+                rule++;
-+                seccomp_add_bpf_rule(filter,
-+                i-SECCOMP_XATTR_BITMAP_START, rule, rules);
-+            }
-+        }
-+
-+        i++;
-+        if (i >= SECCOMP_XATTR_LEN * 8) {
-+            if (loop_mode) {
-+                /* Go through the loop again, adding filters */
-+                loop_mode = 0;
-+                i = (unsigned int)SECCOMP_XATTR_BITMAP_START;
-+                /* Add allow/deny rules */
-+                rules = rules + 2;
-+                filter = kmalloc(rules * sizeof(*filter),
-+                                GFP_KERNEL);
-+                if (!filter) {
-+                    rc = -ENOMEM;
-+                    goto out;
-+                }
-+                filter[0] = (struct sock_filter)
-+                        SECCOMP_FILTER_LOAD_SYSCALL;
-+            } else {
-+                break;
-+            }
-+        }
-+    }
-+
-+    append_seccomp_default_vfs_filters(filter, rule, def_action,
-+                                def_return);
-+    fprog.len = rules;
-+    fprog.filter = filter;
-+    rc = seccomp_attach_filter(&fprog, 1);
-+    kfree(filter);
-+out:
-+    kfree(bitmap);
-+    return rc;
-+}
+> >=20
+> > diff -uprN -X vanilla/linux-3.7-rc8/Documentation/dontdiff=20
+> > vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.c=20
+> > linux-3.7-rc8/drivers/input/mouse/sentelic.c
+> > --- vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.c	2012-12-11 04:=
+32:44.476930522 +0100
+> > +++ linux-3.7-rc8/drivers/input/mouse/sentelic.c	2012-12-12 01:16:41.76=
+6018017 +0100
+> > @@ -706,8 +706,10 @@ static psmouse_ret_t fsp_process_byte(st
+> >  	struct input_dev *dev =3D psmouse->dev;
+> >  	struct fsp_data *ad =3D psmouse->private;
+> >  	unsigned char *packet =3D psmouse->packet;
+> > +	unsigned char *last_packet =3D ad->last_pkt;
+> >  	unsigned char button_status =3D 0, lscroll =3D 0, rscroll =3D 0;
+> >  	unsigned short abs_x, abs_y, fgrs =3D 0;
+> > +	unsigned short last_abs_x, last_abs_y;
+> >  	int rel_x, rel_y;
+> > =20
+> >  	if (psmouse->pktcnt < 4)
+> > @@ -734,6 +736,9 @@ static psmouse_ret_t fsp_process_byte(st
+> > =20
+> >  		abs_x =3D GET_ABS_X(packet);
+> >  		abs_y =3D GET_ABS_Y(packet);
+> > +		last_abs_x =3D GET_ABS_X(last_packet);
+> > +		last_abs_y =3D GET_ABS_Y(last_packet);
+> > +		memcpy(ad->last_pkt, packet, psmouse->pktcnt);
+>=20
+> > =20
+> >  		if (packet[0] & FSP_PB0_MFMC) {
+> >  			/*
+> > @@ -753,10 +758,19 @@ static psmouse_ret_t fsp_process_byte(st
+> >  					 */
+> >  					fgrs =3D 1;
+> >  					fsp_set_slot(dev, 0, false, 0, 0);
+> > +
+> > +					/* We don't need to re-order
+> > +					 * coordinates if last finger
+> > +					 * was same finger
+> > +					 */
+> > +					last_abs_x =3D abs_x;
+> > +					last_abs_y =3D abs_y;
+> >  				}
+> >  				ad->last_mt_fgr =3D 2;
+> > =20
+> > -				fsp_set_slot(dev, 1, fgrs =3D=3D 2, abs_x, abs_y);
+> > +				fsp_set_slot(dev, 1, fgrs =3D=3D 2,
+> > +						max(abs_x, last_abs_x),
+> > +						max(abs_y, last_abs_y));
+>=20
+>=20
+> >  			} else {
+> >  				/* 1st finger */
+> >  				if (ad->last_mt_fgr =3D=3D 1) {
+> > @@ -767,9 +781,18 @@ static psmouse_ret_t fsp_process_byte(st
+> >  					 */
+> >  					fgrs =3D 1;
+> >  					fsp_set_slot(dev, 1, false, 0, 0);
+> > +
+> > +					/* We don't need to re-order
+> > +					 * coordinates if last finger
+> > +					 * was same finger
+> > +					 */
+> > +					last_abs_x =3D abs_x;
+> > +					last_abs_y =3D abs_y;
+> >  				}
+> >  				ad->last_mt_fgr =3D 1;
+> > -				fsp_set_slot(dev, 0, fgrs !=3D 0, abs_x, abs_y);
+> > +				fsp_set_slot(dev, 0, fgrs !=3D 0,
+> > +						min(abs_x, last_abs_x),
+> > +						min(abs_y, last_abs_y));
+> >  			}
+> >  		} else {
+> >  			/* SFAC packet */
+> > @@ -788,12 +811,18 @@ static psmouse_ret_t fsp_process_byte(st
+> >  			if (abs_x !=3D 0 && abs_y !=3D 0)
+> >  				fgrs =3D 1;
+> > =20
+> > +			/* We don't need to re-order
+> > +			 * coordinates of SFAC packets
+> > +			 */
+> > +			last_abs_x =3D abs_x;
+> > +			last_abs_y =3D abs_y;
+> > +
+> >  			fsp_set_slot(dev, 0, fgrs > 0, abs_x, abs_y);
+> >  			fsp_set_slot(dev, 1, false, 0, 0);
+> >  		}
+> >  		if (fgrs > 0) {
+> > -			input_report_abs(dev, ABS_X, abs_x);
+> > -			input_report_abs(dev, ABS_Y, abs_y);
+> > +			input_report_abs(dev, ABS_X, min(abs_x, last_abs_x));
+> > +			input_report_abs(dev, ABS_Y, min(abs_y, last_abs_y));
+>=20
+> Looks like this point could differ from the reported MT positions.
+>=20
+> >  		}
+> >  		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+> >  		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
+> > diff -uprN -X vanilla/linux-3.7-rc8/Documentation/dontdiff vanilla/linu=
+x-3.7-rc8/drivers/input/mouse/sentelic.h linux-3.7-rc8/drivers/input/mouse/=
+sentelic.h
+> > --- vanilla/linux-3.7-rc8/drivers/input/mouse/sentelic.h	2012-12-11 04:=
+32:44.476930522 +0100
+> > +++ linux-3.7-rc8/drivers/input/mouse/sentelic.h	2012-12-12 01:16:41.95=
+4018011 +0100
+> > @@ -117,6 +117,7 @@ struct fsp_data {
+> >  	unsigned char	last_reg;	/* Last register we requested read from */
+> >  	unsigned char	last_val;
+> >  	unsigned int	last_mt_fgr;	/* Last seen finger(multitouch) */
+> > +	unsigned char	last_pkt[8];    /* Last packet we processed from fsp */
+> >  };
+> > =20
+> >  #ifdef CONFIG_MOUSE_PS2_SENTELIC
+>=20
+> Thanks.
+> Henrik
+>=20
+>=20
+
+--=20
+Christophe TORDEUX
+113 rue de la Barri=C3=A8re
+19000 Tulle
+FRANCE
+mob: +33-6-86-50-83-65
+tel: +33-5-55-93-64-35
+http://christophe.tordeux.net
+
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQ0jSvAAoJEE/hdwZK2Yyt02gH/RBgIN7sV6aaWCWff9LUeTM3
+nNXmRxCUsaKXh627MSqMng4+YlMnOSYz5p0l3WIh8radWfhNQMMvcAYzfip1f7x+
+UFUrgBnrQD2ksR5ce5axnZpVwnznfyoWyQ0XsfL2p4+VcAJSlWUz+ARqFnQY/XLW
+D699lbOCUFH38/WRB9DLKkqQFTJGSMoLPh3BcSeevLWPTN0h3C+BxJmfU8ZQ/bCt
+HIMjSwIQYk3dovQA0EZsNmHonWPrPr4AHLkPGRD5kMz3l6Uo8ITcPMoJupC3h/iU
+eBJ4ZjLUtS+P8Cwv0WEHIgDlLwnZjCnzrw20F8A+HEDZKpJl5zf9PzmnU9tsZT0=
+=4eNF
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
