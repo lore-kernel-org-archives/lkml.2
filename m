@@ -1,90 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2LSOsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:48:12 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33479
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751516Ab2LSOsA (ORCPT
+	id S1755402Ab2LSOxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:53:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37570 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752521Ab2LSOxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:48:00 -0500
-Message-ID: <50D1D373.5060301@kernel.dk>
-Date: Wed, 19 Dec 2012 15:47:15 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Shaohua Li <shli@fusionio.com>, Neil Brown <neilb@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [boot crash] Re: [GIT PULL[ block drivers bits for 3.8
-References: <50CF89EB.2030109@kernel.dk> <20121218092554.GA3823@gmail.com> <50D056A5.3040501@kernel.dk> <CA+55aFzhfknCd-JERhrDfkOhdm_eytoVBYA42ex2K+BghBaBKQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzhfknCd-JERhrDfkOhdm_eytoVBYA42ex2K+BghBaBKQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Dec 2012 09:53:47 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <damm@opensource.se>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: flat: Add flat cache type
+Date: Wed, 19 Dec 2012 14:53:43 +0000
+Message-Id: <1355928823-25950-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-18 17:49, Linus Torvalds wrote:
-> On Tue, Dec 18, 2012 at 3:42 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>
->> Bah. Does the below fix it up for you?
-> 
-> Grr. This is still bullshit.
-> 
-> Doing this:
-> 
->     alignment = sector << 9;
-> 
-> is fundamentally crap, because 'sector_t' may well be 32-bit
-> (non-large-block device case). And we're supposed (surprise surprise)
-> to be able to handle devices larger than 4GB in size.
-> 
-> So doing *any* of these calculations in bytes is pure and utter crap.
-> You need to do them in sectors. That's what "sector_t" means, and
-> that's damn well how everything should work. Anything that works in
-> bytes is simply pure crap. And don't talk to me about 64-bit math and
-> doing it in "u64" or "loff_t", that's just utterly moronic too.
-> 
-> Besides, "sector_div()" is only sensible when you're looking for the
-> remainder of a sector number. That's true in the first case (sector
-> really is a sector number - it's the starting sector of the
-> partition), but the source of alignment and granularity are actually
-> just "unsigned int" (and that's in bytes, not sectors), so using
-> sector_t afterwards is crazy too. You should have used just '%'.
-> Looking around, there are other places where this idiocy happens too
-> (blkdev_issue_discard() seems to think the granularity/alignments are
-> sector_t's too, for example).
-> 
-> Anyway, here's a patch to fix the crazy types and the bogus second
-> "sector_div()". It's whitespace-damaged, because not only have I not
-> tested it, I also think somebody needs to look at things in general.
-> The whole "discard_alignment" handling is extremely odd. I don't think
-> it should be called "alignment" at all - because it isn't. It's an
-> alignment *offset*. Look at the normal (non-discard) case, where it's
-> called "alignment_offset" like it should be.
-> 
-> So the math is confused, the types are confused, and the naming is
-> confused. Please, somebody check this out, because now *I* am
-> confused.
+While for I2C and SPI devices the overhead of using rbtree for devices with
+only one block of registers is negligible the same isn't always going to
+be true for MMIO devices where the I/O costs are very much lower. Cater
+for these devices by adding a simple flat array type for them where the
+lookups are simple array accesses, taking us right back to the original
+ASoC cache implementation.
 
-It should all just be in sectors. The limits set are in bytes (could be
-sectors too, but doesn't matter so much), but any interface operates in
-sectors.
+Thanks to Magnus Damm for the discussion which prompted this.
 
-I'm happy with your proposed fix. I think you should shove it in there,
-then I'll make sure we get it cleaned up for 3.9.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/Makefile        |    2 +-
+ drivers/base/regmap/internal.h      |    1 +
+ drivers/base/regmap/regcache-flat.c |   72 +++++++++++++++++++++++++++++++++++
+ drivers/base/regmap/regcache.c      |    1 +
+ include/linux/regmap.h              |    3 +-
+ 5 files changed, 77 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/base/regmap/regcache-flat.c
 
-> And btw, that whole commit happened too f*cking late too. When I get a
-> pull request, it should damn well have been tested already, and it
-> should have been developed *before* the merge window started. Not the
-> day before the pull request.
-
-Of course it's been tested. Granted it got moved over too late (as 1 of
-2 that did), but I've run the branch on a multitude of systems.
-Apparently none of them hit the case of having a zero granularity
-reported, so never hit the bug.
-
+diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
+index 5e75d1b..cf12998 100644
+--- a/drivers/base/regmap/Makefile
++++ b/drivers/base/regmap/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_REGMAP) += regmap.o regcache.o
+-obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o
++obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o regcache-flat.o
+ obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
+ obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
+ obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 401d191..e22bb80 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -177,5 +177,6 @@ int regcache_lookup_reg(struct regmap *map, unsigned int reg);
+ 
+ extern struct regcache_ops regcache_rbtree_ops;
+ extern struct regcache_ops regcache_lzo_ops;
++extern struct regcache_ops regcache_flat_ops;
+ 
+ #endif
+diff --git a/drivers/base/regmap/regcache-flat.c b/drivers/base/regmap/regcache-flat.c
+new file mode 100644
+index 0000000..d9762e4
+--- /dev/null
++++ b/drivers/base/regmap/regcache-flat.c
+@@ -0,0 +1,72 @@
++/*
++ * Register cache access API - flat caching support
++ *
++ * Copyright 2012 Wolfson Microelectronics plc
++ *
++ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/seq_file.h>
++
++#include "internal.h"
++
++static int regcache_flat_init(struct regmap *map)
++{
++	int i;
++	unsigned int *cache;
++
++	map->cache = kzalloc(sizeof(unsigned int) * (map->max_register + 1),
++			     GFP_KERNEL);
++	if (!map->cache)
++		return -ENOMEM;
++
++	cache = map->cache;
++
++	for (i = 0; i < map->num_reg_defaults; i++)
++		cache[map->reg_defaults[i].reg] = map->reg_defaults[i].def;
++
++	return 0;
++}
++
++static int regcache_flat_exit(struct regmap *map)
++{
++	kfree(map->cache);
++	map->cache = NULL;
++
++	return 0;
++}
++
++static int regcache_flat_read(struct regmap *map,
++			      unsigned int reg, unsigned int *value)
++{
++	unsigned int *cache = map->cache;
++
++	*value = cache[reg];
++
++	return 0;
++}
++
++static int regcache_flat_write(struct regmap *map, unsigned int reg,
++			       unsigned int value)
++{
++	unsigned int *cache = map->cache;
++
++	cache[reg] = value;
++
++	return 0;
++}
++
++struct regcache_ops regcache_flat_ops = {
++	.type = REGCACHE_FLAT,
++	.name = "flat",
++	.init = regcache_flat_init,
++	.exit = regcache_flat_exit,
++	.read = regcache_flat_read,
++	.write = regcache_flat_write,
++};
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 835883b..e69ff3e 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -22,6 +22,7 @@
+ static const struct regcache_ops *cache_types[] = {
+ 	&regcache_rbtree_ops,
+ 	&regcache_lzo_ops,
++	&regcache_flat_ops,
+ };
+ 
+ static int regcache_hw_init(struct regmap *map)
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index b7e95bf..390d879 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -28,7 +28,8 @@ struct regmap_range_cfg;
+ enum regcache_type {
+ 	REGCACHE_NONE,
+ 	REGCACHE_RBTREE,
+-	REGCACHE_COMPRESSED
++	REGCACHE_COMPRESSED,
++	REGCACHE_FLAT,
+ };
+ 
+ /**
 -- 
-Jens Axboe
+1.7.10.4
 
