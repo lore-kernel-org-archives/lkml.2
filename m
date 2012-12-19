@@ -1,121 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab2LSR0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 12:26:06 -0500
-Received: from mailserver6.natinst.com ([130.164.80.6]:59885 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2LSR0B (ORCPT
+	id S1755878Ab2LSRcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 12:32:08 -0500
+Received: from smtp25.sms.unimo.it ([155.185.44.25]:37644 "EHLO
+	smtp25.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab2LSRbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 12:26:01 -0500
-Date: Wed, 19 Dec 2012 11:26:19 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
-Message-ID: <20121219172619.GB1005@beefymiracle.amer.corp.natinst.com>
-References: <1355778135-32458-1-git-send-email-sboyd@codeaurora.org>
- <1355778135-32458-5-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-In-Reply-To: <1355778135-32458-5-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 12/19/2012 11:25:57 AM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 12/19/2012 11:25:57 AM,
-	Serialize complete at 12/19/2012 11:25:57 AM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-19_07:2012-12-19,2012-12-19,1970-01-01 signatures=0
+	Wed, 19 Dec 2012 12:31:55 -0500
+From: Paolo valente <paolo.valente@unimore.it>
+To: davem@davemloft.net, jhs@mojatatu.com, shemminger@vyatta.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rizzo@iet.unipi.it,
+        fchecconi@gmail.com, Paolo Valente <paolo.valente@unimore.it>
+Subject: [PATCH BUGFIX] pkt_sched: fix little service anomalies and possible crashes of qfq+
+Date: Wed, 19 Dec 2012 18:31:06 +0100
+Message-Id: <1355938266-18459-1-git-send-email-paolo.valente@unimore.it>
+X-Mailer: git-send-email 1.7.9.5
+UNIMORE-X-SA-Score: -2.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 01:02:15PM -0800, Stephen Boyd wrote:
-> Reduce lines of code and simplify this driver by using the
-> generic clock binding parsing function. This also fixes a bug
-> where the 'flags' member of the init struct is not initialized.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Josh Cartwright <josh.cartwright@ni.com>
-> Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  drivers/clk/clk-zynq.c | 28 +++++++++-------------------
->  1 file changed, 9 insertions(+), 19 deletions(-)
+This patch contains five fixes that remove some little service
+anomalies, plus an improvement that slightly reduces the execution
+time of qfq+.
 
-Stephen-
+As for possible crashes, in a stress test in which a few hundreds of
+classes randomly switched from backlogged to non-backlogged, and the
+parameters of a few tens of randomly chosen classes were changed
+repeatedly and in parallel, the problems solved by these fixes
+happened to combine and cause corruption of the data structures
+supporting the group bucket lists.
 
-Is there a particular tree I should be testing this against?  Booting this set
-on top of linus/master gives me:
+The portions of the code interested by each fix are small and do not
+overlap with each other, so I decided to provide just one patch
+(I hope that this was the right choice).
 
-   Linux version 3.7.0-10837-g3bb3ebf (joshc@beefymiracle) (gcc version 4.6.3 (Sourcery CodeBench Lite 2012.03-57) ) #3 Wed Dec 19 11:19:20 CST 2012
-   CPU: ARMv7 Processor [413fc090] revision 0 (ARMv7), cr=18c53c7d
-   CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
-   Machine: Xilinx Zynq Platform, model: NI Zynq Prototype Board
-   Memory policy: ECC disabled, Data cache writeback
-   Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 130048
-   Kernel command line: console=ttyPS1,115200
-   PID hash table entries: 2048 (order: 1, 8192 bytes)
-   Dentry cache hash table entries: 65536 (order: 6, 262144 bytes)
-   Inode-cache hash table entries: 32768 (order: 5, 131072 bytes)
-   __ex_table already sorted, skipping sort
-   Memory: 512MB = 512MB total
-   Memory: 514304k/514304k available, 9984k reserved, 0K highmem
-   Virtual kernel memory layout:
-       vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-       fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-       vmalloc : 0xe0800000 - 0xff000000   ( 488 MB)
-       lowmem  : 0xc0000000 - 0xe0000000   ( 512 MB)
-         .text : 0xc0008000 - 0xc0182e58   (1516 kB)
-         .init : 0xc0183000 - 0xc01992cc   (  89 kB)
-         .data : 0xc019a000 - 0xc01ac040   (  73 kB)
-          .bss : 0xc01ac064 - 0xc01d30fc   ( 157 kB)
-   SLUB: Genslabs=11, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-   NR_IRQS:16 nr_irqs:16 16
-   ------------[ cut here ]------------
-   WARNING: at drivers/clk/clk-zynq.c:159 zynq_periph_clk_setup+0x190/0x248()
-   [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
-   [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
-   [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193520>] (zynq_periph_clk_setup+0x190/0x248)
-   [<c0193520>] (zynq_periph_clk_setup+0x190/0x248) from [<c0192944>] (of_clk_init+0x30/0x58)
-   [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
-   [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
-   [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
-   [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
-   ---[ end trace 1b75b31a2719ed1c ]---
-   ------------[ cut here ]------------
-   WARNING: at drivers/clk/clk-zynq.c:296 zynq_cpu_clk_setup+0x1e0/0x26c()
-   [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
-   [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
-   [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c)
-   [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
-   [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
-   [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
-   [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
-   [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
-   ---[ end trace 1b75b31a2719ed1d ]---
-   ------------[ cut here ]------------
-   WARNING: at drivers/clk/clk-zynq.c:347 zynq_cpu_clk_setup+0x210/0x26c()
-   [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
-   [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
-   [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c)
-   [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
-   [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
-   [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
-   [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
-   [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
-   ---[ end trace 1b75b31a2719ed1e ]---
-   sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms
-   Calibrating delay loop... 3991.96 BogoMIPS (lpj=19959808)
-   pid_max: default: 32768 minimum: 301
-   Mount-cache hash table entries: 512
-   CPU: Testing write buffer coherency: ok
-   Setting up static identity map for 0x139e00 - 0x139e58
-   devtmpfs: initialized
-   DMA: preallocated 256 KiB pool for atomic coherent allocations
-   L310 cache controller enabled
-   l2x0: 8 ways, CACHE_ID 0x000000c0, AUX_CTRL 0x02060000, Cache size: 524288 B
+1. Fix the update of eligible-group sets
 
-Josh
+Between two invocations of make_eligible, the system virtual time may
+happen to grow enough that, in its binary representation, a bit with
+higher order than 31 flips. This happens especially with
+TSO/GSO. Before this fix, the mask used in make_eligible was computed
+as (1UL<<index_of_last_flipped_bit)-1, whose value is well defined on
+a 64-bit architecture, because index_of_flipped_bit <= 63, but is in
+general undefined on a 32-bit architecture if index_of_flipped_bit > 31.
+The fix just replaces 1UL with 1ULL.
+
+2. Properly cap timestamps in charge_actual_service
+
+After decreasing the number of classes, and hence the maximum budget
+budgetmax for an aggregate in service, it may happen that the service
+it receives before a new aggregate is chosen for service becomes
+larger than budgetmax. This may cause the aggregate to be assigned an
+incorrect, too high virtual finish time. The cap introduced by this
+fix solves this problem.
+
+3. Do not allow virtual time to jump if an aggregate is in service
+
+By definition of (the algorithm of) qfq+, the system virtual time must
+be pushed up only if there is no eligible aggregate. But to decide
+whether this condition holds correctly, qfq+ must also check whether
+no aggregate is in service (and hence eligible).
+
+4. Prevent the budget of an aggregate from becoming negative in
+qfq_dequeue
+
+If lmax is lowered, through qfq_change_class, for a class owning
+pending packets with larger size than the new value of lmax, then even
+the budget of a just selected-aggregate may happen to be lower than
+the length of the next packet to serve. This fix prevents the budget
+from becoming negative after the packet is dequeued.
+
+5. Start serving a just-activated aggregate immediately if the
+scheduler is empty
+
+This avoids qfq+ to be occasionally non-work-conserving.
+
+6. Remove useless invocation of qfq_update_eligible from qfq_deactivate_agg
+
+There is no need to invoke qfq_update_eligible in qfq_deactivate_agg
+to keep qfq+ work-conserving.
+
+Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
+---
+ net/sched/sch_qfq.c |   72 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 49 insertions(+), 23 deletions(-)
+
+diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
+index 6ed3765..01f36a5 100644
+--- a/net/sched/sch_qfq.c
++++ b/net/sched/sch_qfq.c
+@@ -299,6 +299,11 @@ static void qfq_update_agg(struct qfq_sched *q, struct qfq_aggregate *agg,
+ 	    new_num_classes == q->max_agg_classes - 1) /* agg no more full */
+ 		hlist_add_head(&agg->nonfull_next, &q->nonfull_aggs);
+ 
++	/*
++	 * The next assignment may let
++	 * agg->initial_budget > agg->budgetmax
++	 * hold, but this does not cause any harm
++	 */
+ 	agg->budgetmax = new_num_classes * agg->lmax;
+ 	new_agg_weight = agg->class_weight * new_num_classes;
+ 	agg->inv_w = ONE_FP/new_agg_weight;
+@@ -325,9 +330,10 @@ static void qfq_add_to_agg(struct qfq_sched *q,
+ 	qfq_update_agg(q, agg, agg->num_classes+1);
+ 	if (cl->qdisc->q.qlen > 0) { /* adding an active class */
+ 		list_add_tail(&cl->alist, &agg->active);
+-		if (list_first_entry(&agg->active, struct qfq_class, alist) ==
+-		    cl && q->in_serv_agg != agg) /* agg was inactive */
+-			qfq_activate_agg(q, agg, enqueue); /* schedule agg */
++		if (list_first_entry(&agg->active, struct qfq_class, alist) !=
++		    cl || q->in_serv_agg == agg)
++			return;
++		qfq_activate_agg(q, agg, enqueue);
+ 	}
+ }
+ 
+@@ -819,7 +825,7 @@ static void qfq_make_eligible(struct qfq_sched *q)
+ 	unsigned long old_vslot = q->oldV >> q->min_slot_shift;
+ 
+ 	if (vslot != old_vslot) {
+-		unsigned long mask = (1UL << fls(vslot ^ old_vslot)) - 1;
++		unsigned long mask = (1ULL << fls(vslot ^ old_vslot)) - 1;
+ 		qfq_move_groups(q, mask, IR, ER);
+ 		qfq_move_groups(q, mask, IB, EB);
+ 	}
+@@ -993,9 +999,19 @@ static inline void charge_actual_service(struct qfq_aggregate *agg)
+ 	/* compute the service received by the aggregate */
+ 	u32 service_received = agg->initial_budget - agg->budget;
+ 
++	/* may happen after decreasing the number of classes in agg */
++	if (service_received > agg->budgetmax)
++		service_received = agg->budgetmax;
++
+ 	agg->F = agg->S + (u64)service_received * agg->inv_w;
+ }
+ 
++static inline void qfq_update_agg_ts(struct qfq_sched *,
++				     struct qfq_aggregate *,
++				     enum update_reason);
++
++static void qfq_schedule_agg(struct qfq_sched *, struct qfq_aggregate *);
++
+ static struct sk_buff *qfq_dequeue(struct Qdisc *sch)
+ {
+ 	struct qfq_sched *q = qdisc_priv(sch);
+@@ -1023,7 +1039,7 @@ static struct sk_buff *qfq_dequeue(struct Qdisc *sch)
+ 		in_serv_agg->initial_budget = in_serv_agg->budget =
+ 			in_serv_agg->budgetmax;
+ 
+-		if (!list_empty(&in_serv_agg->active))
++		if (!list_empty(&in_serv_agg->active)) {
+ 			/*
+ 			 * Still active: reschedule for
+ 			 * service. Possible optimization: if no other
+@@ -1034,8 +1050,9 @@ static struct sk_buff *qfq_dequeue(struct Qdisc *sch)
+ 			 * handle it, we would need to maintain an
+ 			 * extra num_active_aggs field.
+ 			*/
+-			qfq_activate_agg(q, in_serv_agg, requeue);
+-		else if (sch->q.qlen == 0) { /* no aggregate to serve */
++			qfq_update_agg_ts(q, in_serv_agg, requeue);
++			qfq_schedule_agg(q, in_serv_agg);
++		} else if (sch->q.qlen == 0) { /* no aggregate to serve */
+ 			q->in_serv_agg = NULL;
+ 			return NULL;
+ 		}
+@@ -1054,7 +1071,16 @@ static struct sk_buff *qfq_dequeue(struct Qdisc *sch)
+ 	qdisc_bstats_update(sch, skb);
+ 
+ 	agg_dequeue(in_serv_agg, cl, len);
+-	in_serv_agg->budget -= len;
++	/*
++	 * If lmax is lowered, through qfq_change_class, for a class
++	 * owning pending packets with larger size than the new value of lmax,
++	 * then the following condition may hold.
++	 */
++	if (unlikely(in_serv_agg->budget < len))
++		in_serv_agg->budget = 0;
++	else
++		in_serv_agg->budget -= len;
++
+ 	q->V += (u64)len * IWSUM;
+ 	pr_debug("qfq dequeue: len %u F %lld now %lld\n",
+ 		 len, (unsigned long long) in_serv_agg->F,
+@@ -1154,7 +1180,7 @@ static void qfq_update_start(struct qfq_sched *q, struct qfq_aggregate *agg)
+  */
+ static inline void
+ qfq_update_agg_ts(struct qfq_sched *q,
+-		    struct qfq_aggregate *agg, enum update_reason reason)
++		  struct qfq_aggregate *agg, enum update_reason reason)
+ {
+ 	if (reason != requeue)
+ 		qfq_update_start(q, agg);
+@@ -1219,17 +1245,11 @@ static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
+ 	cl->deficit = agg->lmax;
+ 	list_add_tail(&cl->alist, &agg->active);
+ 
+-	if (list_first_entry(&agg->active, struct qfq_class, alist) != cl)
+-		return err; /* aggregate was not empty, nothing else to do */
++	if (list_first_entry(&agg->active, struct qfq_class, alist) != cl ||
++	    q->in_serv_agg == agg)
++		return err; /* non-empty or in service, nothing else to do */
+ 
+-	/* recharge budget */
+-	agg->initial_budget = agg->budget = agg->budgetmax;
+-
+-	qfq_update_agg_ts(q, agg, enqueue);
+-	if (q->in_serv_agg == NULL)
+-		q->in_serv_agg = agg;
+-	else if (agg != q->in_serv_agg)
+-		qfq_schedule_agg(q, agg);
++	qfq_activate_agg(q, agg, enqueue);
+ 
+ 	return err;
+ }
+@@ -1263,7 +1283,8 @@ static void qfq_schedule_agg(struct qfq_sched *q, struct qfq_aggregate *agg)
+ 		/* group was surely ineligible, remove */
+ 		__clear_bit(grp->index, &q->bitmaps[IR]);
+ 		__clear_bit(grp->index, &q->bitmaps[IB]);
+-	} else if (!q->bitmaps[ER] && qfq_gt(roundedS, q->V))
++	} else if (!q->bitmaps[ER] && qfq_gt(roundedS, q->V) &&
++		   q->in_serv_agg == NULL)
+ 		q->V = roundedS;
+ 
+ 	grp->S = roundedS;
+@@ -1286,8 +1307,15 @@ skip_update:
+ static void qfq_activate_agg(struct qfq_sched *q, struct qfq_aggregate *agg,
+ 			     enum update_reason reason)
+ {
++	agg->initial_budget = agg->budget = agg->budgetmax; /* recharge budg */
++
+ 	qfq_update_agg_ts(q, agg, reason);
+-	qfq_schedule_agg(q, agg);
++	if (q->in_serv_agg == NULL) { /* no aggr. in service or scheduled */
++		q->in_serv_agg = agg; /* start serving this aggregate */
++		 /* update V: to be in service, agg must be eligible */
++		q->oldV = q->V = agg->S;
++	} else if (agg != q->in_serv_agg)
++		qfq_schedule_agg(q, agg);
+ }
+ 
+ static void qfq_slot_remove(struct qfq_sched *q, struct qfq_group *grp,
+@@ -1359,8 +1387,6 @@ static void qfq_deactivate_agg(struct qfq_sched *q, struct qfq_aggregate *agg)
+ 			__set_bit(grp->index, &q->bitmaps[s]);
+ 		}
+ 	}
+-
+-	qfq_update_eligible(q);
+ }
+ 
+ static void qfq_qlen_notify(struct Qdisc *sch, unsigned long arg)
+-- 
+1.7.9.5
+
