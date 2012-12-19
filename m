@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2LSBw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 20:52:28 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32896 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755156Ab2LSBwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 20:52:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,313,1355126400"; 
-   d="scan'208";a="233627010"
-From: David Cohen <david.a.cohen@intel.com>
-To: grant.likely@secretlab.ca
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
-        "Li, Ning" <ning.li@intel.com>, David Cohen <david.a.cohen@intel.com>
-Subject: [PATCH 3/3] gpio-langwell: implement irq shutdown interface
-Date: Tue, 18 Dec 2012 17:52:13 -0800
-Message-Id: <1355881933-15182-4-git-send-email-david.a.cohen@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1355881933-15182-1-git-send-email-david.a.cohen@intel.com>
-References: <1355881933-15182-1-git-send-email-david.a.cohen@intel.com>
+	id S1755220Ab2LSB5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 20:57:23 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:48266 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab2LSB5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Dec 2012 20:57:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <3573149.O0Vu1dNrT9@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan>
+	<1355847041.18964.369.camel@misato.fc.hp.com>
+	<CAE9FiQV-GDRd1iapMwy4j4mBChRpEm-9ANHg6BTdyiTd-5Bf8A@mail.gmail.com>
+	<3573149.O0Vu1dNrT9@vostro.rjw.lan>
+Date: Tue, 18 Dec 2012 17:57:20 -0800
+X-Google-Sender-Auth: tZ0MAhtjxj1hNKhWTMYo-kdQl40
+Message-ID: <CAE9FiQV16BO-gC7Etm93OOG3tVY1Av614jZoZb_8cHeZ3oUq8A@mail.gmail.com>
+Subject: Re: [PATCH rev.2 1/6] ACPI: Separate adding ACPI device objects from
+ probing ACPI drivers
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Li, Ning" <ning.li@intel.com>
+On Tue, Dec 18, 2012 at 2:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>
+>> i think we should put jiang four patches before Rafael's patches.
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-jiang-hotplug
+>
+> Actually, I have something more radical than that in mind. :-)
+>
+> Namely, we don't need to call the wakeup-related stuff from acpi_pci_bind() and
+> acpi_pci_unbind().  It's only there, because I did't find a better place for it
+> when I added it.
+>
+> If we can set the ACPI handles of PCI devices in pci_scan_device(), which isn't
+> too difficult to do (I actually have a patch for that and it's not too invasive),
+> we can easily move the wakeup enabling stuff to pci_pm_init() and wakeup
+> disabling somewhere near pci_release_capabilities().
 
-Signed-off-by: David Cohen <david.a.cohen@intel.com>
-Signed-off-by: Li, Ning <ning.li@intel.com>
----
- drivers/gpio/gpio-langwell.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+good, let's see how acpi handles could be be passed to pci devices.
 
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index dc534a9..c702d3d 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -219,12 +219,30 @@ static int lnw_irq_type(struct irq_data *d, unsigned type)
- 
- static void lnw_irq_noop(struct irq_data *d) {}
- 
-+static void lnw_irq_shutdown(struct irq_data *d)
-+{
-+	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
-+	u32 gpio = irqd_to_hwirq(d);
-+	unsigned long flags;
-+	u32 value;
-+	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
-+	void __iomem *gfer = gpio_reg(&lnw->chip, gpio, GFER);
-+
-+	spin_lock_irqsave(&lnw->lock, flags);
-+	value = readl(grer) & ~BIT(gpio % 32);
-+	writel(value, grer);
-+	value = readl(gfer) & ~BIT(gpio % 32);
-+	writel(value, gfer);
-+	spin_unlock_irqrestore(&lnw->lock, flags);
-+};
-+
- static struct irq_chip lnw_irqchip = {
- 	.name		= "LNW-GPIO",
- 	.irq_mask	= lnw_irq_noop,
- 	.irq_unmask	= lnw_irq_noop,
- 	.irq_set_type	= lnw_irq_type,
- 	.irq_ack	= lnw_irq_noop,
-+	.irq_shutdown	= lnw_irq_shutdown,
- };
- 
- static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {   /* pin number */
--- 
-1.7.10.4
-
+Yinghai
