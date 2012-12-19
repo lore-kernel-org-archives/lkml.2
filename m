@@ -1,258 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab2LSUfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:35:30 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:52520 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab2LSUfR (ORCPT
+	id S1754974Ab2LSUfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:35:54 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:63034 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab2LSUfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:35:17 -0500
+	Wed, 19 Dec 2012 15:35:43 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 2/3] gpio: twl4030: Cache the direction and output states in private data
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-In-Reply-To: <1354791127-20545-3-git-send-email-peter.ujfalusi@ti.com>
-References: <1354791127-20545-1-git-send-email-peter.ujfalusi@ti.com> <1354791127-20545-3-git-send-email-peter.ujfalusi@ti.com>
-Date: Wed, 19 Dec 2012 17:03:56 +0000
-Message-Id: <20121219170357.0BA403E0C4A@localhost>
+Subject: Re: [PATCH] spi: tegra: sequence compatible strings as per preference
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <20121110170741.GA17689@avionic-0098.mockup.avionic-design.de>
+References: <1352452052-13823-1-git-send-email-ldewangan@nvidia.com> <509D37B8.8020606@wwwdotorg.org> <20121109171008.GX23807@opensource.wolfsonmicro.com> <509D3D46.7060102@wwwdotorg.org> <20121110170741.GA17689@avionic-0098.mockup.avionic-design.de>
+Date: Wed, 19 Dec 2012 17:00:09 +0000
+Message-Id: <20121219170009.54EE83E0C34@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Dec 2012 11:52:06 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> Use more coherent locking in the driver. Use bitfield to store the GPIO
-> direction and if the pin is configured as output store the status also in a
-> bitfiled.
-> In this way we can just look at these bitfields when we need information
-> about the pin status and only reach out to the chip when it is needed.
+On Sat, 10 Nov 2012 18:07:42 +0100, Thierry Reding <thierry.reding@avionic-design.de> wrote:
+> On Fri, Nov 09, 2012 at 10:28:38AM -0700, Stephen Warren wrote:
+> > On 11/09/2012 10:10 AM, Mark Brown wrote:
+> > > On Fri, Nov 09, 2012 at 10:04:56AM -0700, Stephen Warren wrote:
+> > > 
+> > >> However just FYI, it should not be necessary for correctness; The
+> > >> DT matching order is supposed to be driven purely by the order of
+> > >> the compatible values in the DT now, and not affected by the
+> > >> order of values in the table. (This wasn't always the case, but
+> > >> was a bug that was fixed IIRC by Thierry Reding).
+> > > 
+> > > I guess the driver is being used backported in older kernels which
+> > > don't have that fix?
+> > 
+> > That sounds likely. Laxman, it'd be a good idea to track down the fix
+> > to the DT matching code and backport it, so that hard-to debug issues
+> > aren't caused by the lack of that patch!
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Unfortunately the patch that was supposed to fixed this caused a
+> regression and was therefore reverted. Rob (Cc'ed) said there was a
+> patch to fix it properly and was supposed to go into 3.6 but it seems
+> that never happened. Rob, what's the status on this?
+> 
+> The revert is here: bc51b0c22cebf5c311a6f1895fcca9f78efd0478
 
-Applied, thanks
+Rob, ping on this. I think we talked about it on IRC, but I cannot
+remember what was said.... I must be getting old.
 
 g.
 
-> ---
->  drivers/gpio/gpio-twl4030.c | 99 ++++++++++++++++++++++++++++++---------------
->  1 file changed, 66 insertions(+), 33 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-> index c092739..a38e6e9c 100644
-> --- a/drivers/gpio/gpio-twl4030.c
-> +++ b/drivers/gpio/gpio-twl4030.c
-> @@ -64,14 +64,15 @@
->  /* Mask for GPIO registers when aggregated into a 32-bit integer */
->  #define GPIO_32_MASK			0x0003ffff
->  
-> -/* Data structures */
-> -static DEFINE_MUTEX(gpio_lock);
-> -
->  struct gpio_twl4030_priv {
->  	struct gpio_chip gpio_chip;
-> +	struct mutex mutex;
->  	int irq_base;
->  
-> +	/* Bitfields for state caching */
->  	unsigned int usage_count;
-> +	unsigned int direction;
-> +	unsigned int out_state;
->  };
->  
->  /*----------------------------------------------------------------------*/
-> @@ -130,7 +131,7 @@ static inline int gpio_twl4030_read(u8 address)
->  
->  /*----------------------------------------------------------------------*/
->  
-> -static u8 cached_leden;		/* protected by gpio_lock */
-> +static u8 cached_leden;
->  
->  /* The LED lines are open drain outputs ... a FET pulls to GND, so an
->   * external pullup is needed.  We could also expose the integrated PWM
-> @@ -144,14 +145,12 @@ static void twl4030_led_set_value(int led, int value)
->  	if (led)
->  		mask <<= 1;
->  
-> -	mutex_lock(&gpio_lock);
->  	if (value)
->  		cached_leden &= ~mask;
->  	else
->  		cached_leden |= mask;
->  	status = twl_i2c_write_u8(TWL4030_MODULE_LED, cached_leden,
->  				  TWL4030_LED_LEDEN_REG);
-> -	mutex_unlock(&gpio_lock);
->  }
->  
->  static int twl4030_set_gpio_direction(int gpio, int is_input)
-> @@ -162,7 +161,6 @@ static int twl4030_set_gpio_direction(int gpio, int is_input)
->  	u8 base = REG_GPIODATADIR1 + d_bnk;
->  	int ret = 0;
->  
-> -	mutex_lock(&gpio_lock);
->  	ret = gpio_twl4030_read(base);
->  	if (ret >= 0) {
->  		if (is_input)
-> @@ -172,7 +170,6 @@ static int twl4030_set_gpio_direction(int gpio, int is_input)
->  
->  		ret = gpio_twl4030_write(base, reg);
->  	}
-> -	mutex_unlock(&gpio_lock);
->  	return ret;
->  }
->  
-> @@ -212,7 +209,7 @@ static int twl_request(struct gpio_chip *chip, unsigned offset)
->  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
->  	int status = 0;
->  
-> -	mutex_lock(&gpio_lock);
-> +	mutex_lock(&priv->mutex);
->  
->  	/* Support the two LED outputs as output-only GPIOs. */
->  	if (offset >= TWL4030_GPIO_MAX) {
-> @@ -271,7 +268,7 @@ done:
->  	if (!status)
->  		priv->usage_count |= BIT(offset);
->  
-> -	mutex_unlock(&gpio_lock);
-> +	mutex_unlock(&priv->mutex);
->  	return status;
->  }
->  
-> @@ -279,64 +276,98 @@ static void twl_free(struct gpio_chip *chip, unsigned offset)
->  {
->  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
->  
-> +	mutex_lock(&priv->mutex);
->  	if (offset >= TWL4030_GPIO_MAX) {
->  		twl4030_led_set_value(offset - TWL4030_GPIO_MAX, 1);
->  		return;
->  	}
->  
-> -	mutex_lock(&gpio_lock);
-> -
->  	priv->usage_count &= ~BIT(offset);
->  
->  	/* on last use, switch off GPIO module */
->  	if (!priv->usage_count)
->  		gpio_twl4030_write(REG_GPIO_CTRL, 0x0);
->  
-> -	mutex_unlock(&gpio_lock);
-> +	mutex_unlock(&priv->mutex);
->  }
->  
->  static int twl_direction_in(struct gpio_chip *chip, unsigned offset)
->  {
-> -	return (offset < TWL4030_GPIO_MAX)
-> -		? twl4030_set_gpio_direction(offset, 1)
-> -		: -EINVAL;
-> +	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
-> +	int ret;
-> +
-> +	mutex_lock(&priv->mutex);
-> +	if (offset < TWL4030_GPIO_MAX)
-> +		ret = twl4030_set_gpio_direction(offset, 1);
-> +	else
-> +		ret = -EINVAL;
-> +
-> +	if (!ret)
-> +		priv->direction &= ~BIT(offset);
-> +
-> +	mutex_unlock(&priv->mutex);
-> +
-> +	return ret;
->  }
->  
->  static int twl_get(struct gpio_chip *chip, unsigned offset)
->  {
->  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
-> +	int ret;
->  	int status = 0;
->  
-> -	if (!(priv->usage_count & BIT(offset)))
-> -		return -EPERM;
-> +	mutex_lock(&priv->mutex);
-> +	if (!(priv->usage_count & BIT(offset))) {
-> +		ret = -EPERM;
-> +		goto out;
-> +	}
->  
-> -	if (offset < TWL4030_GPIO_MAX)
-> -		status = twl4030_get_gpio_datain(offset);
-> -	else if (offset == TWL4030_GPIO_MAX)
-> -		status = cached_leden & LEDEN_LEDAON;
-> +	if (priv->direction & BIT(offset))
-> +		status = priv->out_state & BIT(offset);
->  	else
-> -		status = cached_leden & LEDEN_LEDBON;
-> +		status = twl4030_get_gpio_datain(offset);
->  
-> -	return (status < 0) ? 0 : status;
-> +	ret = (status <= 0) ? 0 : 1;
-> +out:
-> +	mutex_unlock(&priv->mutex);
-> +	dev_err(chip->dev, "%s: offset %d value %d\n", __func__, offset, ret);
-> +	return ret;
->  }
->  
-> -static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-> +static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
->  {
-> -	if (offset < TWL4030_GPIO_MAX) {
-> +	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
-> +
-> +	dev_err(chip->dev, "%s: offset %d value %d\n", __func__, offset, value);
-> +	mutex_lock(&priv->mutex);
-> +	if (offset < TWL4030_GPIO_MAX)
->  		twl4030_set_gpio_dataout(offset, value);
-> -		return twl4030_set_gpio_direction(offset, 0);
-> -	} else {
-> +	else
->  		twl4030_led_set_value(offset - TWL4030_GPIO_MAX, value);
-> -		return 0;
-> -	}
-> +
-> +	if (value)
-> +		priv->out_state |= BIT(offset);
-> +	else
-> +		priv->out_state &= ~BIT(offset);
-> +
-> +	mutex_unlock(&priv->mutex);
->  }
->  
-> -static void twl_set(struct gpio_chip *chip, unsigned offset, int value)
-> +static int twl_direction_out(struct gpio_chip *chip, unsigned offset, int value)
->  {
-> +	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
-> +
-> +	dev_err(chip->dev, "%s: offset %d value %d\n", __func__, offset, value);
-> +	mutex_lock(&priv->mutex);
->  	if (offset < TWL4030_GPIO_MAX)
->  		twl4030_set_gpio_dataout(offset, value);
-> -	else
-> -		twl4030_led_set_value(offset - TWL4030_GPIO_MAX, value);
-> +
-> +	priv->direction |= BIT(offset);
-> +	mutex_unlock(&priv->mutex);
-> +
-> +	twl_set(chip, offset, value);
-> +
-> +	return 0;
->  }
->  
->  static int twl_to_irq(struct gpio_chip *chip, unsigned offset)
-> @@ -469,6 +500,8 @@ no_irqs:
->  	priv->gpio_chip.ngpio = TWL4030_GPIO_MAX;
->  	priv->gpio_chip.dev = &pdev->dev;
->  
-> +	mutex_init(&priv->mutex);
-> +
->  	if (node)
->  		pdata = of_gpio_twl4030(&pdev->dev);
->  
-> -- 
-> 1.8.0
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
