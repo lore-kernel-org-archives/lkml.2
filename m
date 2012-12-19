@@ -1,122 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab2LSPtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:49:19 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:56418 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755508Ab2LSPtO (ORCPT
+	id S1755067Ab2LSPuR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:50:17 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33862 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab2LSPuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:49:14 -0500
-Date: Wed, 19 Dec 2012 16:48:35 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rtc-pcf8523: Add low battery voltage support
-Message-ID: <20121219154828.GA32019@avionic-0098.adnet.avionic-design.de>
-References: <20121219140456.GA14217@axis.com>
- <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
- <20121219151054.GB14217@axis.com>
- <20121219151937.GA21212@avionic-0098.adnet.avionic-design.de>
- <20121219153432.GC14217@axis.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <20121219153432.GC14217@axis.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:qgyT3jGE+N1Dppor0PaQaNmNYGz8RLVzu01yZrAHDFy
- t1rCZzcGeNi/C0Vwdiz4/eKpGYWVnQ9k6Ozz7S27k121AQxfz1
- FH1Z67AnlKX1KObt2T2nCJ0ClieZx68t5bLdCkMboq3EyyaV0b
- lPmyGEgaysBqjWbLxfVIQc2nzECrJndt7v8TGcW/fpa2xZbvF3
- PRtaNtG0HOnKhWVYpM8m5JSaB+i7RNuwazEA+au5qDRvylX3Md
- QeJCJB7ASym1QgZmz4rOjWmBMZZh7NHUgh4dWf8M6Mz33lv71x
- sf9yta3k/FeVGVlEBc7U3rOe6FiTvPJ6emubxM8elR1b13Esns
- N0FZFHOGVqX/qttwtFbMkeci8wT+S2lC4b+iNpGYelNOAgMaBF
- g56swPdZnzDISXDv+qOmC2a4ljzheoIO/U=
+	Wed, 19 Dec 2012 10:50:12 -0500
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        c.gmeiner@bachmann.info
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
+Subject: [PATCH] at24: extend driver to allow writing via i2c_smbus_write_byte_data
+Date: Wed, 19 Dec 2012 17:07:09 +0100
+Message-Id: <1355933229-25865-1-git-send-email-christian.gmeiner@gmail.com>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have a at24 EEPROM connected via i2c bus provided by ISCH i2c
+bus driver. This bus driver does not support
+I2C_FUNC_SMBUS_WRITE_I2C_BLOCK and so I was looking for a way
+to be able to write the eeprom. This patch adds support for
+I2C_SMBUS_BYTE_DATA writing via i2c_smbus_write_byte_data.
+It is quite slow, but it works.
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ drivers/misc/eeprom/at24.c | 35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
 
-On Wed, Dec 19, 2012 at 04:34:32PM +0100, Jesper Nilsson wrote:
-> This patch implements reading of the battery voltage low signal for
-> rtc-pcf8523.
->=20
-> The bit is read-only and cannot be cleared by software, so no
-> clear-function is implemented.
->=20
-> Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-> ---
-> diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
-> index be05a64..62905fb 100644
-> --- a/drivers/rtc/rtc-pcf8523.c
-> +++ b/drivers/rtc/rtc-pcf8523.c
-> @@ -23,6 +23,7 @@
->  #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
->  #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
->  #define REG_CONTROL3_PM_MASK 0xe0
-> +#define REG_CONTROL3_BLF (1 << 2) /* battery low bit, read-only */
-> =20
->  #define REG_SECONDS  0x03
->  #define REG_SECONDS_OS (1 << 7)
-> @@ -250,9 +252,36 @@ static int pcf8523_rtc_set_time(struct device *dev, =
-struct rtc_time *tm)
->  	return pcf8523_start_rtc(client);
->  }
-> =20
-> +static int
-> +pcf8523_rtc_ioctl(struct device *dev, unsigned int cmd, unsigned long ar=
-g)
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index 2baeec5..723b411 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -56,6 +56,7 @@ struct at24_data {
+ 	struct at24_platform_data chip;
+ 	struct memory_accessor macc;
+ 	int use_smbus;
++	int use_smbuse_write;
+ 
+ 	/*
+ 	 * Lock protects against activities from other Linux tasks,
+@@ -324,7 +325,7 @@ static ssize_t at24_eeprom_write(struct at24_data *at24, const char *buf,
+ {
+ 	struct i2c_client *client;
+ 	struct i2c_msg msg;
+-	ssize_t status;
++	ssize_t status = 0;
+ 	unsigned long timeout, write_time;
+ 	unsigned next_page;
+ 
+@@ -365,9 +366,18 @@ static ssize_t at24_eeprom_write(struct at24_data *at24, const char *buf,
+ 	timeout = jiffies + msecs_to_jiffies(write_timeout);
+ 	do {
+ 		write_time = jiffies;
+-		if (at24->use_smbus) {
+-			status = i2c_smbus_write_i2c_block_data(client,
+-					offset, count, buf);
++		if (at24->use_smbuse_write) {
++			switch (at24->use_smbuse_write) {
++			case I2C_SMBUS_I2C_BLOCK_DATA:
++				status = i2c_smbus_write_i2c_block_data(client,
++						offset, count, buf);
++				break;
++			case I2C_SMBUS_BYTE_DATA:
++				status = i2c_smbus_write_byte_data(client,
++						offset, buf[0]);
++				break;
++			}
++
+ 			if (status == 0)
+ 				status = count;
+ 		} else {
+@@ -484,6 +494,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	struct at24_platform_data chip;
+ 	bool writable;
+ 	int use_smbus = 0;
++	int use_smbus_write = 0;
+ 	struct at24_data *at24;
+ 	int err;
+ 	unsigned i, num_addresses;
+@@ -547,6 +558,18 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		}
+ 	}
+ 
++	/* Use I2C operations unless we're stuck with SMBus extensions. */
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		if (!i2c_check_functionality(client->adapter,
++				I2C_FUNC_SMBUS_WRITE_I2C_BLOCK)) {
++			use_smbus_write = I2C_SMBUS_I2C_BLOCK_DATA;
++		} else if (i2c_check_functionality(client->adapter,
++				I2C_FUNC_SMBUS_WRITE_BYTE_DATA)) {
++			use_smbus_write = I2C_SMBUS_BYTE_DATA;
++			chip.page_size = 1;
++		}
++	}
++
+ 	if (chip.flags & AT24_FLAG_TAKE8ADDR)
+ 		num_addresses = 8;
+ 	else
+@@ -562,6 +585,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	mutex_init(&at24->lock);
+ 	at24->use_smbus = use_smbus;
++	at24->use_smbuse_write = use_smbus_write;
+ 	at24->chip = chip;
+ 	at24->num_addresses = num_addresses;
+ 
+@@ -579,8 +603,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	writable = !(chip.flags & AT24_FLAG_READONLY);
+ 	if (writable) {
+-		if (!use_smbus || i2c_check_functionality(client->adapter,
+-				I2C_FUNC_SMBUS_WRITE_I2C_BLOCK)) {
++		if (!use_smbus || use_smbus_write) {
+ 
+ 			unsigned write_max = chip.page_size;
+ 
+-- 
+1.7.12.2.421.g261b511
 
-You should keep the modifier and return type on the same line as the
-function name and wrap the arguments instead. That is:
-
-static int pcf8523_rtc_ioctl(struct device *dev, unsigned int cmd,
-			     unsigned long arg)
-{
-	...
-}
-
-> +{
-> +	struct i2c_client *client =3D to_i2c_client(dev);
-> +	u8 value;
-> +	int err;
-> +	int ret =3D 0;
-
-You can probably collapse the two integers in one line, like so:
-
-	int ret =3D 0, err;
-
-Other than that, looks good:
-
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0eHMAAoJEN0jrNd/PrOhagIP/3QAw1fv4UTdFZYhseQ8pzy6
-Q+Uhxwk3vneSfs9a3xu7wbQhwHG4soAmVSDJy0aPdCSM01xnVHtK0bq1zGrXLeFC
-A9PtnpHMx6Lvt+E6rvoKoIExacnMe4uR4AUC/T+iQgfC2Ge5Hti5fikpMgE5Z48Z
-NDJoS2aIHAEo23oZgnhYcTdnlwfMkiPwIrqxwsnXzYzoW+GBkwK/5mhMYq33+QS2
-quO3cxezkZnrhh+JAIOLkdJXieHPvGPOPbkC1FbeVDmJ/ITdZd+tlKe2WR27lste
-nom5zrHB4hEBOPCxE3xVyvzXtxxwUS0QXR1zEEluCbfUMtZL8zhcaGVnMhw41qaJ
-Z9Els23n5aHSg3yYAyP3uKv+yA0BIgFrb9YxRjHVkQ/lfZvA3Zh9krfmvkn/fgnU
-DM8RcbhKmMFmMrgtR9FPSs5T9BW1nndLCfqKTimpjVopuVwAkSsS6kaiVKqdqOyN
-fuaYRROTekKCnlGjlvyY+mwqkrw1yPdD7TzOcxRBPynVdlmalantVGRuzn6tcfQ+
-8Z7SiypfHgf2JUiSt2CcLd/DoOScRL95u+y+H98KuYt9WCMfZI51ya83i+uroYtm
-MNGVqYgmLhfWm5RfdIWxj3gxnyfU2yjNHVM/5LjZtvAhCyhNbZ3vnihMg6eNkZDk
-je8JcSApnzzFzFuiHlks
-=quNw
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
