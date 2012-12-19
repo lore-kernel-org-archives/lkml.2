@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab2LSOEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:04:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57086 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab2LSOEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:04:14 -0500
-Message-ID: <50D1C957.8090201@ti.com>
-Date: Wed, 19 Dec 2012 15:04:07 +0100
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755180Ab2LSOFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:05:07 -0500
+Received: from anubis.se.axis.com ([195.60.68.12]:54911 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab2LSOE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 09:04:59 -0500
+Date: Wed, 19 Dec 2012 15:04:56 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rtc-pcf8523: Add low battery voltage support
+Message-ID: <20121219140456.GA14217@axis.com>
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: <balbi@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, <svenkatr@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <cjb@laptop.org>, <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, <r.sricharan@ti.com>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-References: <1352968293.10872.51.camel@cumari.coelho.fi>  <20121218095450.GB27751@arwen.pp.htv.fi>  <20121219094552.GN4985@opensource.wolfsonmicro.com>  <50D19040.5090404@ti.com>  <20121219100909.GO4985@opensource.wolfsonmicro.com>  <50D19463.5010605@ti.com>  <20121219103206.GQ4985@opensource.wolfsonmicro.com>  <1355913954.5273.21.camel@cumari.coelho.fi> <50D19D54.2000307@ti.com>  <20121219130128.GC17993@arwen.pp.htv.fi> <50D1C652.3050607@ti.com> <1355925504.5273.26.camel@cumari.coelho.fi>
-In-Reply-To: <1355925504.5273.26.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 02:58 PM, Luciano Coelho wrote:
-> On Wed, 2012-12-19 at 14:51 +0100, Benoit Cousson wrote:
->> On 12/19/2012 02:01 PM, Felipe Balbi wrote:
->>> On Wed, Dec 19, 2012 at 11:56:20AM +0100, Peter Ujfalusi wrote:
->>>> BTW: have you happened to ubdate u-boot recently? There is a nice easter egg
->>>> added there:
->>>> f3f98bb ARM: OMAP4/5: Do not configure non essential pads, clocks, dplls.
->>>>
->>>> Which means that _essential_ clocks and pads are no longer configured.
->>>
->>> anything essential you can list ?
->>
->> Yeah, that u-boot version is just unusable at all with any mainline
->> kernel, since we are still missing pads conf for every drivers.
->>
->> Regarding the 32k clock, I noticed as well that the OMAP4460 panda
->> u-boot is the only one to enable it at boot time, and thus this is the
->> only board that can probe the wilink chip properly as of today.
-> 
-> Do you mean that with the latest mainline u-boot all boards will have
-> trouble except panda?
+This patch implements reading of the battery voltage low signal for
+rtc-pcf8523.
 
-I don't know since the u-boot mainline has never ever supported properly
-the SDP4430, I stopped wasting my time with that code a long time ago.
-But the braves who tried using the latest u-boot mainline code that does
-not configure anything anymore had some troubles...
+The bit is read-only and cannot be cleared by software, so no
+clear-function is implemented.
 
-Benoit
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+---
+diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
+index be05a64..82a9895 100644
+--- a/drivers/rtc/rtc-pcf8523.c
++++ b/drivers/rtc/rtc-pcf8523.c
+@@ -23,6 +23,7 @@
+ #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
+ #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
+ #define REG_CONTROL3_PM_MASK 0xe0
++#define REG_CONTROL3_BLF (1 << 2) /* Battery low bit, read-only */
+ 
+ #define REG_SECONDS  0x03
+ #define REG_SECONDS_OS (1 << 7)
+@@ -250,9 +252,29 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 	return pcf8523_start_rtc(client);
+ }
+ 
++static int pcf8523_rtc_read_vl(struct device *dev, int *vl)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	u8 value;
++	int err;
++
++	err = pcf8523_read(client, REG_CONTROL3, &value);
++	if (err < 0)
++		return err;
++
++	if (value & REG_CONTROL3_BLF)
++		*vl = 1;
++	else
++		*vl = 0;
++
++	return 0;
++}
++
++
+ static const struct rtc_class_ops pcf8523_rtc_ops = {
+-	.read_time = pcf8523_rtc_read_time,
+-	.set_time = pcf8523_rtc_set_time,
++	.read_time	= pcf8523_rtc_read_time,
++	.set_time	= pcf8523_rtc_set_time,
++	.read_vl	= pcf8523_rtc_read_vl,
+ };
+ 
+ static int pcf8523_probe(struct i2c_client *client,
 
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
