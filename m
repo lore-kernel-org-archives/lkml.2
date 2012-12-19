@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab2LSH1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 02:27:39 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47987 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2LSH1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 02:27:33 -0500
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 02:27:33 EST
-Message-ID: <50D16AF8.7030401@vflare.org>
-Date: Tue, 18 Dec 2012 23:21:28 -0800
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751796Ab2LSH2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 02:28:22 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44533 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab2LSH2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 02:28:17 -0500
+Date: Tue, 18 Dec 2012 23:28:02 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@au1.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        robert.richter@amd.com, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] perf: Make EVENT_ATTR and EVENT_PTR global
+Message-ID: <20121219072802.GA30790@us.ibm.com>
+References: <20121219072646.GA30580@us.ibm.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: zram: fix invalid memory references during disk write
-References: <1354257909-2380-1-git-send-email-ngupta@vflare.org> <20121211182720.GC29421@kroah.com> <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com> <20121219034949.GA22281@kroah.com>
-In-Reply-To: <20121219034949.GA22281@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219072646.GA30580@us.ibm.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121907-7182-0000-0000-000003E502B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2012 07:49 PM, Greg KH wrote:
-> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
->> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
->>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
->>>> of incompressible pages") which caused invalid memory references
->>>> during disk write. Invalid references could occur in two cases:
->>>>  - Incoming data expands on compression: In this case, reference was
->>>> made to kunmap()'ed bio page.
->>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
->>>> case, reference was made to a kfree()'ed buffer.
->>>>
->>>> Fixes bug 50081:
->>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
->>>>
->>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
->>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
->>>>
->>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
->>>>                               # zram_decompress_page() function
->>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
->>>> Reported-by: Tomas M <tomas@slax.org>
->>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
->>>> ---
->>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
->>>>  1 file changed, 24 insertions(+), 15 deletions(-)
->>>
->>> This patch fails to apply to 3.6.10:
->>>
->>> patching file drivers/staging/zram/zram_drv.c
->>> Hunk #1 succeeded at 282 (offset 17 lines).
->>> Hunk #2 FAILED at 286.
->>> Hunk #3 succeeded at 319 (offset 17 lines).
->>> Hunk #4 succeeded at 340 (offset 17 lines).
->>> Hunk #5 succeeded at 353 (offset 17 lines).
->>> Hunk #6 succeeded at 368 (offset 17 lines).
->>> Hunk #7 succeeded at 385 (offset 17 lines).
->>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
->>>
->>> Please redo this patch and resend it if you wish for it to be applied to
->>> the 3.6-stable tree.
->>>
->>>
->>
->> Please apply this patch to stable tree asap.
-> 
-> 3.6 is now end-of-life, there will not be any more releases for that
-> kernel series anymore, sorry.
-> 
 
-Then please apply to 3.7.
+Rename EVENT_ATTR() and EVENT_PTR() PMU_EVENT_ATTR() and PMU_EVENT_PTR().
+Make them global so they are available to all architectures.
 
-Nitin
+Further to allow architectures flexibility, have PMU_EVENT_PTR() pass in the
+variable name as a parameter.
 
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   17 +++++------------
+ include/linux/perf_event.h       |   13 +++++++++++++
+ 2 files changed, 18 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4428fd1..24bc505 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1316,11 +1316,6 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
+ };
+ 
+-struct perf_pmu_events_attr {
+-	struct device_attribute attr;
+-	u64 id;
+-};
+-
+ /*
+  * Remove all undefined events (x86_pmu.event_map(id) == 0)
+  * out of events_attr attributes.
+@@ -1351,14 +1346,12 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
+ 	return x86_pmu.events_sysfs_show(page, config);
+ }
+ 
+-#define EVENT_VAR(_id)  event_attr_##_id
+-#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++#define EVENT_VAR(_id)	event_attr_##_id
++#define EVENT_ID(_id)	PERF_COUNT_HW_##_id
++#define EVENT_PTR(_id)	PMU_EVENT_PTR(EVENT_VAR(_id))
+ 
+-#define EVENT_ATTR(_name, _id)					\
+-static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
+-	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
+-	.id   =  PERF_COUNT_HW_##_id,				\
+-};
++#define EVENT_ATTR(_name, _id)						\
++	PMU_EVENT_ATTR(_name, EVENT_VAR(_id), EVENT_ID(_id), events_sysfs_show)
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2fa..31692cb 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -817,6 +817,19 @@ do {									\
+ } while (0)
+ 
+ 
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++};
++
++#define PMU_EVENT_PTR(_var)	&_var.attr.attr
++
++#define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
++static struct perf_pmu_events_attr _var = {				\
++	.attr = __ATTR(_name, 0444, _show, NULL),			\
++	.id   =  _id,							\
++};
++
+ #define PMU_FORMAT_ATTR(_name, _format)					\
+ static ssize_t								\
+ _name##_show(struct device *dev,					\
+-- 
+1.7.1
 
