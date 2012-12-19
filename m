@@ -1,141 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab2LSX4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:56:07 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:60026 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab2LSXzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:55:55 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-b3-50d254091adb
-Message-id: <1355961345.16178.120.camel@kjgkr>
-Subject: Re: [PATCH -next] f2fs: add missing #include <linux/prefetch.h>
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Dec 2012 08:55:45 +0900
-In-reply-to: <1355951970-19720-1-git-send-email-geert@linux-m68k.org>
-References: <1355951970-19720-1-git-send-email-geert@linux-m68k.org>
-Organization: samsung
-Content-type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature"; boundary="=-EE+T3YcemShKFLCeiL6K"
-X-Mailer: Evolution 3.2.3-0ubuntu6
-MIME-version: 1.0
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+Zvi5nyKUAg5n/jSz27D3JYnF51xw2
-	i4ML2xgdmD0+b5ILYIzisklJzcksSy3St0vgyjj++wdLwQqRijOzelgaGN8IdjFyckgImEjM
-	XLqHGcIWk7hwbz1bFyMXh5DAMkaJSa0NLDBFq3sXs0AkpjNKnNn9GarqNaPEv2c32UGqeAX0
-	JO4vnMYKYgsLeEhs+fyUsYuRg4NNQFti834DkLCQgKLE2/13WUHCIgK6EnN+MoGEmQViJW5c
-	nwh2BIuAqsTqef/BpnAKuEosW/qGFaLVReJl3zuwGn4BUYmTrZ8YIXqrJNac2wX1gJLE7vZO
-	qGsEJX5MvscCMVNA4tvkQywgayUEZCU2HWAGuV5C4BG7RNv9D1A/SkocXHGDZQKj+CwkY2ch
-	GQUR15Ro3f6bHcLWlli28DUzhG0rsW7de6gaG4lNVxcwQtjyEtvfzmFewMi+ilE0tSC5oDgp
-	PddIrzgxt7g0L10vOT93EyMkOqV3MK5qsDjEKMDBqMTDK7niQoAQa2JZcWXuIUYVoDmPNqy+
-	wCjFkpefl6okwrvw1sUAId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJpS8knhDY2MTMxNT
-	E3NLU3NT0oSVxHmbPVIChATSE0tSs1NTC1KLYLYwcXBKNTDmReS/e88a6v+G/9+KzTc23ire
-	MGO7NtNm5d3aD91Wd8zW08ibL2x65v7Ea9VMFl7Fir16sn2Pd6fP+pK2cGJceauPYuvPtWtK
-	kibqCCbsc46cNu/lJs/cd3EHNq2YwWv/71tB4YuPXD5/F1jNf1F71uK78DSdaUEbKzbd4H4f
-	JX3vyrbAykBBJZbijERDLeai4kQAuhy7mB4DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t9jQV3OkEsBBg9f6lrs2XuSxeLyrjls
-	FgcXtjE6MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5hx/PcP
-	loIVIhVnZvWwNDC+Eexi5OSQEDCRWN27mAXCFpO4cG89WxcjF4eQwHRGiTO7P0M5rxkl/j27
-	yQ5SxSugJ3F/4TRWEFtYwENiy+enjF2MHBxsAtoSm/cbgISFBBQl3u6/ywoSFhHQlZjzkwkk
-	zCwQK3Hj+kRmEJtFQFVi9bz/YFM4BVwlli19wwrR6iLxsu8dWA2/gKjEydZPjBC9VRJrzu1i
-	hrhTSWJ3eyfUNYISPybfY5nAKDgLSdksJCmIuKZE6/bf7BC2tsSyha+ZIWxbiXXr3kPV2Ehs
-	urqAEcKWl9j+dg7zAkb2VYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBsf9MegfjqgaLQ4wC
-	HIxKPLySKy4ECLEmlhVX5h5iVAGa82jD6guMUix5+XmpSiK8C29dDBDiTUmsrEotyo8vKs1J
-	LT7EmAwMjYnMUqLJ+cB0lVcSb2hsYmZkaWRmYWRibk6asJI4b7NHSoCQQHpiSWp2ampBahHM
-	FiYOTqkGxuzXE281ayc8ly1K++wnceBgnXnBeak1hzTX3vt3Vmh7ya0drn+SCv66frnofGf6
-	vcg8mcC7Nu8XC09tYVpm8fviFtHm6VbC70viym7wcFia6K/e4+IjyaedErypq+uyz8zMV0w/
-	jga/m/38+pfij6duR7UZyzpcUWNV+V2XIn15e03bo0iP7UosxRmJhlrMRcWJADwis81NAwAA
-X-CFilter-Loop: Reflected
+	id S1751968Ab2LSX44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:56:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48121 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062Ab2LSX4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 18:56:48 -0500
+Message-ID: <50D25426.5020804@zytor.com>
+Date: Wed, 19 Dec 2012 15:56:22 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Jacob Shin <jacob.shin@amd.com>
+CC: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+References: <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com> <50CCF6F6.4020107@zytor.com> <CAE9FiQULAJhPUw62UVjyBakn-YcK8x0pzDgRi+FdJXS-_ekABg@mail.gmail.com> <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie> <50D23EE8.7030904@zytor.com> <20121219225155.GK24895@liondog.tnic> <20121219225941.GB2968@jshin-Toonie> <20121219230329.GM24895@liondog.tnic> <20121219232134.GA4816@jshin-Toonie>
+In-Reply-To: <20121219232134.GA4816@jshin-Toonie>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/19/2012 03:21 PM, Jacob Shin wrote:
+> On Thu, Dec 20, 2012 at 12:03:29AM +0100, Borislav Petkov wrote:
+>> On Wed, Dec 19, 2012 at 04:59:41PM -0600, Jacob Shin wrote:
+>>> I can check but right, they might be used up. But even if we had slots
+>>> available, the memory range that needs to be covered is in large
+>>> enough address and aligned in such a way that you cannot cover it with
+>>> variable range MTRRs.
+>>
+>> Actually, if I'm not mistaken, you only need to cover the HT hole with
+>> one MTRR - the rest remains WB. And in order the mask bits to work, we
+>> could make it a little bigger - we waste some memory but that's nothing
+>> in comparison to the MCE.
+>
+> Actually all memory hole above 4GB and under TOM2 needs to be marked
+> as UC, if the kernel just blanket calls init_memory_mapping from 4GB
+> to top of memory.
+>
+> Right we would be loosing memory, and I think depending on the
+> alignment of the boundary and how many MTRRs you have avaiable to use,
+> significant chunks of memory could be lost. I need to go refresh on
+> how variable range MTRRs are programmed, it has been a while.
+>
 
---=-EE+T3YcemShKFLCeiL6K
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+In this particular case an MTRR at 0xe000000000 would lose 896 MB of 
+RAM, or just under 0.1% of the total.
 
-Merged.
-Thank you very much.
+If it is only the HT region that causes trouble and not the rest of the 
+hole you could just plant an MTRR at 0xfc00000000 and not lose any 
+memory at all.
 
---=20
-Jaegeuk Kim
-Samsung
+	-hpa
 
-2012-12-19 (=EC=88=98), 22:19 +0100, Geert Uytterhoeven:
-> m68k allmodconfig:
->=20
-> fs/f2fs/data.c: In function =E2=80=98read_end_io=E2=80=99:
-> fs/f2fs/data.c:311: error: implicit declaration of function =E2=80=98pref=
-etchw=E2=80=99
->=20
-> fs/f2fs/segment.c: In function =E2=80=98f2fs_end_io_write=E2=80=99:
-> fs/f2fs/segment.c:628: error: implicit declaration of function =E2=80=98p=
-refetchw=E2=80=99
->=20
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> http://kisskb.ellerman.id.au/kisskb/buildresult/7787109/
->=20
->  fs/f2fs/data.c    |    1 +
->  fs/f2fs/segment.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
->=20
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index 655aeab..3aa5ce7 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -16,6 +16,7 @@
->  #include <linux/backing-dev.h>
->  #include <linux/blkdev.h>
->  #include <linux/bio.h>
-> +#include <linux/prefetch.h>
-> =20
->  #include "f2fs.h"
->  #include "node.h"
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 8bc1b6f..ca7b5ff 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -12,6 +12,7 @@
->  #include <linux/f2fs_fs.h>
->  #include <linux/bio.h>
->  #include <linux/blkdev.h>
-> +#include <linux/prefetch.h>
->  #include <linux/vmalloc.h>
-> =20
->  #include "f2fs.h"
-
-
-
---=-EE+T3YcemShKFLCeiL6K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ0lQBAAoJEEAUqH6CSFDSth4P/2Rvhp/bAk81JedEAAsqplxa
-YSSyjY5gjgZ2Du4aqU8vxtBxEr8z9e/pLqzyHbtg+PgJrSroFtcnATi5iryLhlOk
-XLKE599zd38heawUo2+xxvxQE9gjxgcdYyuTYX15M/TicG6DuxFpIW2Yfvjm6McV
-GDsaiDrnQCdQLSrJy2FbJlgBZz33Rv8zfE6yb5V81ByThel1diqYWR5QQoynIna9
-V2aPVlY4NOQWkXZqr27mCdZiHz+WahJYWYKCJU6tNTU1u687h6t+4tCjzigidv8J
-IOCLgeNsto0LUCf0oF33jnEtyK2xvmoQnsC17yDoO3ro3/T5IyEQUL95oYk8M7l+
-iirUaDuKSm4okEKF5Nj8qXqRgbYhS66e3xHJgiKdojlEAiv6EK70VdZR9Eh/kLIi
-LUtPmrX4PNU/XyyyDkktP4kTLfqz5IMG/W36XIHXx/rzfzH4qAFfB85Og240r3NU
-br+b0s6os2IBg7DtsIiPArpVGq+8bGLd1hH1kSKlbe1P7VvfwqQx8jpqtcY06K9O
-+L+ZBA2Be+vxCwiXhb9w65V+6uvlBpER6gXYJY809bctvYIPymzA5U9OkH0uzkvZ
-eJfTisxuGjSriayw8KfpS6QejjjvNol9mOwm2aKuDowkA0xDfxl/j/2e9Dou4Q8o
-NxU93Z9cRq+OqQ2KagGy
-=GSI0
------END PGP SIGNATURE-----
-
---=-EE+T3YcemShKFLCeiL6K--
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
