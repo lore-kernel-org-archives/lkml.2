@@ -1,133 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab2LSTwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 14:52:35 -0500
-Received: from canardo.mork.no ([148.122.252.1]:35572 "EHLO canardo.mork.no"
+	id S1752387Ab2LST6K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 14:58:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7752 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab2LSTw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 14:52:29 -0500
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Norbert Warmuth <nwarmuth@t-online.de>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [RESEND][PATCH v3] watchdog: Fix disable/enable regression
-Date: Wed, 19 Dec 2012 20:51:31 +0100
-Message-Id: <1355946691-7969-1-git-send-email-bjorn@mork.no>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <87y5h1c70y.fsf@nemi.mork.no>
-References: <87y5h1c70y.fsf@nemi.mork.no>
+	id S1750945Ab2LST6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 14:58:08 -0500
+Date: Wed, 19 Dec 2012 14:58:01 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, jgarzik@redhat.com,
+        JBottomley@Parallels.com, Milan Broz <mbroz@redhat.com>
+Subject: Re: [v3.7 Regression]  [SCSI] sd: Implement support for WRITE SAME
+Message-ID: <20121219195801.GA14456@redhat.com>
+References: <50CB8C74.3090102@canonical.com>
+ <yq11uesdzya.fsf@sermon.lab.mkp.net>
+ <50D0C971.1000907@canonical.com>
+ <yq1bodq7zdv.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1bodq7zdv.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8d451690 ("watchdog: Fix CPU hotplug regression") cause
-an oops or hard lockup when doing
+On Wed, Dec 19 2012 at 11:58am -0500,
+Martin K. Petersen <martin.petersen@oracle.com> wrote:
 
- echo 0 > /proc/sys/kernel/nmi_watchdog
- echo 1 > /proc/sys/kernel/nmi_watchdog
+> >>>>> "Joseph" == Joseph Salisbury <joseph.salisbury@canonical.com> writes:
+> 
+> Joseph> I captured the netconsole output from boot until I reproduced
+> Joseph> the bug. The RIP points to kcryptd_crypt_write_io_submit() in
+> Joseph> ~/drivers/md/dm-crypt.c.  The output can be seen at:
+> 
+> I'm thinking that dm-crypt should probably set max_write_same_sectors to
+> 0. It doesn't really make much sense for a crypto driver to pass that
+> command through.
+> 
+> Mike, do you want to look into this?
 
-and the kernel is booted with nmi_watchdog=1 (default)
+Milan (cc'd) is more well-versed with dm-crypt.  Though we likely need
+to audit DM relative to WRITE SAME too (will do once I understand what
+added safety/constraints are needed).
 
-Running laptop-mode-tools and disconnecting/connecting AC power
-will cause this to trigger, making it a common failure scenario
-on laptops.
-
-Instead of bailing out of watchdog_disable() when !watchdog_enabled
-we can initialize the hrtimer regardless of watchdog_enabled status.
-This makes it safe to call watchdog_disable() in the nmi_watchdog=0
-case, without the negative effect on the enabled => disabled =>
-enabled case.
-
-All these tests pass with this patch:
-- nmi_watchdog=1
-  echo 0 > /proc/sys/kernel/nmi_watchdog
-  echo 1 > /proc/sys/kernel/nmi_watchdog
-
-- nmi_watchdog=0
-  echo 0 > /sys/devices/system/cpu/cpu1/online
-
-- nmi_watchdog=0
-  echo mem > /sys/power/state
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51661
-
-Cc: <stable@vger.kernel.org> # v3.7
-Cc: Norbert Warmuth <nwarmuth@t-online.de>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
----
-Hello Linus,
-
-This post v3.7-rc8 regression kills any machine with laptop-mode-tools
-using default config, making it somewhat critical to get a fix into the
-v3.7.x stable series ASAP.  I was hoping for some response from Thomas
-or the reporters of the original bug, either verifying that my proposal
-is OK or providing a better fix.  But I believe that this cannot wait
-much longer.
-
-Please apply.  Thanks,
-
-Bjørn
-
-
-Patch history:
-
-v3:
-  added Bugzilla reference and additional recipients
-  rebased on current mainline
-v2:
-  implemented an alternate workaround for the original problem.
-v1:
-  plain revert of 8d451690
-
-
- kernel/watchdog.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 997c6a1..75a2ab3 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -344,6 +344,10 @@ static void watchdog_enable(unsigned int cpu)
- {
- 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
- 
-+	/* kick off the timer for the hardlockup detector */
-+	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	hrtimer->function = watchdog_timer_fn;
-+
- 	if (!watchdog_enabled) {
- 		kthread_park(current);
- 		return;
-@@ -352,10 +356,6 @@ static void watchdog_enable(unsigned int cpu)
- 	/* Enable the perf event */
- 	watchdog_nmi_enable(cpu);
- 
--	/* kick off the timer for the hardlockup detector */
--	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	hrtimer->function = watchdog_timer_fn;
--
- 	/* done here because hrtimer_start can only pin to smp_processor_id() */
- 	hrtimer_start(hrtimer, ns_to_ktime(sample_period),
- 		      HRTIMER_MODE_REL_PINNED);
-@@ -369,9 +369,6 @@ static void watchdog_disable(unsigned int cpu)
- {
- 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
- 
--	if (!watchdog_enabled)
--		return;
--
- 	watchdog_set_prio(SCHED_NORMAL, 0);
- 	hrtimer_cancel(hrtimer);
- 	/* disable the perf event */
--- 
-1.7.10.4
-
+But do we know mount to somwhow be issuing WRITE SAME requests?  Martin,
+why is it you weren't able to reproduce (I haven't attempted yet)?
