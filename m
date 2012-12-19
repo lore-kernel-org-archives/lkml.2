@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab2LSSUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:20:43 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:41963 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab2LSSUb (ORCPT
+	id S1753787Ab2LSS2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:28:41 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:49978 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab2LSS2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:20:31 -0500
-X-IronPort-AV: E=Sophos;i="4.84,318,1355126400"; 
-   d="scan'208";a="15315996"
-Message-ID: <50D2056E.9000507@codeaurora.org>
-Date: Wed, 19 Dec 2012 10:20:30 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 13:28:33 -0500
+Message-ID: <50D2074D.4000101@linaro.org>
+Date: Wed, 19 Dec 2012 10:28:29 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Josh Cartwright <josh.cartwright@ni.com>
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
-References: <1355778135-32458-1-git-send-email-sboyd@codeaurora.org> <1355778135-32458-5-git-send-email-sboyd@codeaurora.org> <20121219172619.GB1005@beefymiracle.amer.corp.natinst.com>
-In-Reply-To: <20121219172619.GB1005@beefymiracle.amer.corp.natinst.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bernd Faust <berndfaust@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: Re: [PATCH] Round the calculated scale factor in set_cyc2ns_scale()
+References: <1354717009-2687-1-git-send-email-berndfaust@gmail.com>
+In-Reply-To: <1354717009-2687-1-git-send-email-berndfaust@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/12 09:26, Josh Cartwright wrote:
-> On Mon, Dec 17, 2012 at 01:02:15PM -0800, Stephen Boyd wrote:
->> Reduce lines of code and simplify this driver by using the
->> generic clock binding parsing function. This also fixes a bug
->> where the 'flags' member of the init struct is not initialized.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> Cc: Josh Cartwright <josh.cartwright@ni.com>
->> Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>
->> ---
->>  drivers/clk/clk-zynq.c | 28 +++++++++-------------------
->>  1 file changed, 9 insertions(+), 19 deletions(-)
-> Stephen-
+On 12/05/2012 06:16 AM, Bernd Faust wrote:
+> During some experiments with an external clock (in a FPGA), we saw that
+> the TSC clock drifted approx. 2.5ms per second.
 >
-> Is there a particular tree I should be testing this against?  Booting this set
-> on top of linus/master gives me:
+> This drift was caused by the current way of calculating the scale.
+> In our case cpu_khz had a value of 3292725. This resulted in a scale
+> value of 310. But when doing the calculation by hand it shows that the
+> actual value is 310.9886188491, so a value of 311 would be more precise.
+>
+> With this change the value is rounded.
+>
+> Signed-off-by: Bernd Faust <berndfaust@gmail.com>
 
-I based the patches off of linux-next-20121217 although it seems like it
-applied fine for you on linus/master.
+Thanks for sending this in! I've queued it, but because I was slow here, 
+it will have to wait for 3.9.
 
->    ------------[ cut here ]------------
->    WARNING: at drivers/clk/clk-zynq.c:159 zynq_periph_clk_setup+0x190/0x248()
->    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
->    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
->    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193520>] (zynq_periph_clk_setup+0x190/0x248)
->    [<c0193520>] (zynq_periph_clk_setup+0x190/0x248) from [<c0192944>] (of_clk_init+0x30/0x58)
->    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
->    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
->    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
->    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
->    ---[ end trace 1b75b31a2719ed1c ]---
->    ------------[ cut here ]------------
->    WARNING: at drivers/clk/clk-zynq.c:296 zynq_cpu_clk_setup+0x1e0/0x26c()
->    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
->    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
->    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c)
->    [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
->    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
->    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
->    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
->    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
->    ---[ end trace 1b75b31a2719ed1d ]---
->    ------------[ cut here ]------------
->    WARNING: at drivers/clk/clk-zynq.c:347 zynq_cpu_clk_setup+0x210/0x26c()
->    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
->    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
->    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c)
->    [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
->    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
->    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
->    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
->    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
->    ---[ end trace 1b75b31a2719ed1e ]---
-
-Can you show the code at those line numbers? There are quite a few
-WARN_ONs in that code and it's possible the WARN_ON is the one
-introduced in this patch.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Sorry for the delay, and thanks again!
+-john
 
