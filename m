@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab2LSDrC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 22:47:02 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:59369 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab2LSDq4 (ORCPT
+	id S1754791Ab2LSDyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 22:54:12 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:45589 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab2LSDyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 22:46:56 -0500
-X-Greylist: delayed 106366 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 22:46:56 EST
-Date: Tue, 18 Dec 2012 19:49:49 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: zram: fix invalid memory references during disk write
-Message-ID: <20121219034949.GA22281@kroah.com>
-References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
- <20121211182720.GC29421@kroah.com>
- <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
+	Tue, 18 Dec 2012 22:54:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121215172805.GA20393@liondog.tnic>
+References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
+	<1355436141-8668-5-git-send-email-yinghai@kernel.org>
+	<20121215172805.GA20393@liondog.tnic>
+Date: Tue, 18 Dec 2012 19:53:59 -0800
+X-Google-Sender-Auth: iNVM_Xv65mGrnr13ntXsWJ5HZ7o
+Message-ID: <CAE9FiQVPpKR6M2ZxAa4X1n1d5AZ54HfLHkHqhg7OroBYaBDGfA@mail.gmail.com>
+Subject: Re: [PATCH v6 04/27] x86, boot: Move lldt/ltr out of 64bit code section
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
-> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
-> >> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
-> >> of incompressible pages") which caused invalid memory references
-> >> during disk write. Invalid references could occur in two cases:
-> >>  - Incoming data expands on compression: In this case, reference was
-> >> made to kunmap()'ed bio page.
-> >>  - Partial (non PAGE_SIZE) write with incompressible data: In this
-> >> case, reference was made to a kfree()'ed buffer.
-> >>
-> >> Fixes bug 50081:
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=50081
-> >>
-> >> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
-> >> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
-> >>
-> >> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
-> >>                               # zram_decompress_page() function
-> >> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> >> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-> >> Reported-by: Tomas M <tomas@slax.org>
-> >> Reviewed-by: Minchan Kim <minchan@kernel.org>
-> >> ---
-> >>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
-> >>  1 file changed, 24 insertions(+), 15 deletions(-)
-> >
-> > This patch fails to apply to 3.6.10:
-> >
-> > patching file drivers/staging/zram/zram_drv.c
-> > Hunk #1 succeeded at 282 (offset 17 lines).
-> > Hunk #2 FAILED at 286.
-> > Hunk #3 succeeded at 319 (offset 17 lines).
-> > Hunk #4 succeeded at 340 (offset 17 lines).
-> > Hunk #5 succeeded at 353 (offset 17 lines).
-> > Hunk #6 succeeded at 368 (offset 17 lines).
-> > Hunk #7 succeeded at 385 (offset 17 lines).
-> > 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
-> >
-> > Please redo this patch and resend it if you wish for it to be applied to
-> > the 3.6-stable tree.
-> >
-> >
-> 
-> Please apply this patch to stable tree asap.
+On Sat, Dec 15, 2012 at 9:28 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Dec 13, 2012 at 02:01:58PM -0800, Yinghai Lu wrote:
+>> commit 08da5a2ca
+>>
+>>     x86_64: Early segment setup for VT
+>>
+>> add lldt/ltr to clean more segments.
+>>
+>> Those code are put in code64, and it is using gdt that is only
+>> loaded from code32 path.
+>>
+>> That breaks booting with 64bit bootloader that does not go through
+>> code32 path. It get at startup_64 directly,  and it has different
+>> gdt.
+>>
+>> Move those lines into code32 after their gdt is loaded.
+>
+> Let me rewrite that commit message for ya, you tell me whether I got it
+> right:
+>
+> "08da5a2ca479 ("x86_64: Early segment setup for VT") sets up LDT and TR
+> into a valid state in order to speed up boot decompression under VT. The
+> code which loads the GDT is executed in the 32-bit startup code while
+> the above change in the 64-bit part.
+>
+> However, this breaks 64-bit bootloaders which jump straight to the
+> 64-bit startup entry point and thus skip LDR and TR setup because they
+> use a different GDT.
+>
+> Fix this by moving the LDT and TR setup to the 32-bit section."
+>
+> Is that correct?
+yes
 
-3.6 is now end-of-life, there will not be any more releases for that
-kernel series anymore, sorry.
+update to:
 
-greg k-h
+---
+Subject: [PATCH] x86, boot: Move lldt/ltr out of 64bit code section
+
+commit 08da5a2ca
+
+    x86_64: Early segment setup for VT
+
+sets up LDT and TR into a valid state in order to speed up boot
+decompression under VT.
+
+Those code are put in code64, and it is using GDT that is only
+loaded from code32 path.
+
+That breaks booting with 64bit bootloader that does not go through
+code32 path and jump to startup_64 directly, and it has different
+GDT.
+
+Move those lines into code32 after their GDT is loaded.
+---
