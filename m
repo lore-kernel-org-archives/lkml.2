@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab2LSKS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 05:18:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49163 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab2LSKSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 05:18:18 -0500
-Message-ID: <50D19463.5010605@ti.com>
-Date: Wed, 19 Dec 2012 11:18:11 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754345Ab2LSKUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 05:20:32 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:41319 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab2LSKUZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 05:20:25 -0500
+Date: Wed, 19 Dec 2012 10:19:34 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 2/5] clockevents: Add generic timer broadcast
+ receiver
+Message-ID: <20121219101934.GD32484@e106331-lin.cambridge.arm.com>
+References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
+ <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
+ <50D0EB67.2060802@codeaurora.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Felipe Balbi <balbi@ti.com>, Luciano Coelho <coelho@ti.com>,
-        <svenkatr@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <lrg@ti.com>,
-        <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-References: <1352968293.10872.51.camel@cumari.coelho.fi> <20121218095450.GB27751@arwen.pp.htv.fi> <20121219094552.GN4985@opensource.wolfsonmicro.com> <50D19040.5090404@ti.com> <20121219100909.GO4985@opensource.wolfsonmicro.com>
-In-Reply-To: <20121219100909.GO4985@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <50D0EB67.2060802@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 19 Dec 2012 10:19:34.0817 (UTC) FILETIME=[57B82910:01CDDDD2]
+X-MC-Unique: 112121910193704501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 11:09 AM, Mark Brown wrote:
-> On Wed, Dec 19, 2012 at 11:00:32AM +0100, Peter Ujfalusi wrote:
+On Tue, Dec 18, 2012 at 10:17:11PM +0000, Stephen Boyd wrote:
+> On 12/18/12 04:06, Mark Rutland wrote:
+> > diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> > index f113755..c2dd022 100644
+> > --- a/kernel/time/tick-broadcast.c
+> > +++ b/kernel/time/tick-broadcast.c
+> > @@ -125,6 +125,21 @@ int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu)
+> >  	return ret;
+> >  }
+> >  
+> > +int tick_receive_broadcast(void)
+> > +{
+> > +	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+> > +	struct clock_event_device *evt = td->evtdev;
+> > +
+> > +	if (!evt)
+> > +		return -ENODEV;
+> > +
+> > +	if (!evt->event_handler)
+> > +		return -EINVAL;
+> > +
 > 
->> I don't know the state of the common clock framework for OMAPs. Is it already
->> up in 3.7? Or going for 3.8? 3.9? 3.10?...
->> We need CCF to resolve this. I can cook up the clock driver for the 32k clock
->> from twl, but in order to use it we need CCF on OMAP.
+> Does this actually happen? It's not obvious to me how it does.
+
+Taking a look at it, I don't think it does. Any tick_device's
+clock_event_device should have an event_handler. I'll drop this check.
+
+A tick device might not have a clock_event_device registered in some cases --
+the x86 lapic timer has to deal with interrupts pending across a kexec, where
+interrupts are enabled before local timers are registered. I'm not sure how
+common this problem might be though, and whether it should be dealt with here
+or elsewhere.
+
+> > +	evt->event_handler(evt);
+> > +	return 0;
+> > +}
+> > +
+> >  /*
+> >   * Broadcast the event to the cpus, which are set in the mask (mangled).
+> >   */
 > 
-> Well, we at least ought to make sure it doesn't appear in the regulator
-> DT bindings even if it's handled via some OMAP magic - that was the key
-> point here.
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
 
-Sure. It must be a clock driver. I already have similar driver (for McPDM fclk
-clock) for twl6040.
-Let me check linux-next, if CCF is there for OMAP I can send the 32k clock
-driver soon (after writing it and testing it). It is going to be for 3.9 but
-we can roll it with us I think locally to resolv issues.
+Thanks,
+Mark.
 
--- 
-Péter
