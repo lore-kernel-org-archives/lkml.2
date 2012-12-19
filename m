@@ -1,350 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab2LSAAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 19:00:07 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:46986 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773Ab2LSAAD (ORCPT
+	id S1754989Ab2LSAAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 19:00:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35776 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab2LSAAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 19:00:03 -0500
-X-Greylist: delayed 2248 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Dec 2012 19:00:03 EST
-Date: Tue, 18 Dec 2012 14:53:30 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: qemu-devel@nongnu.org, riel@redhat.com, aquini@redhat.com, mst@redhat.com,
-        amit.shah@redhat.com, agl@us.ibm.com,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        kirill@shutemov.name, Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 3/3] virtio-balloon: add auto-ballooning support
-Message-ID: <20121218225330.GA28297@lizard.mcd00620.sjc.wayport.net>
-References: <1355861815-2607-1-git-send-email-lcapitulino@redhat.com>
- <1355861815-2607-4-git-send-email-lcapitulino@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1355861815-2607-4-git-send-email-lcapitulino@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Dec 2012 19:00:31 -0500
+Date: Tue, 18 Dec 2012 16:00:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] mm: cond_resched in tlb_flush_mmu to fix soft lockups
+ on !CONFIG_PREEMPT
+Message-Id: <20121218160030.baf723aa.akpm@linux-foundation.org>
+In-Reply-To: <20121218235042.GA10350@dhcp22.suse.cz>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+	<20121218140219.45867ddd.akpm@linux-foundation.org>
+	<20121218235042.GA10350@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Luiz,
+On Wed, 19 Dec 2012 00:50:42 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-On Tue, Dec 18, 2012 at 06:16:55PM -0200, Luiz Capitulino wrote:
-> The auto-ballooning feature automatically performs balloon inflate
-> or deflate based on host and guest memory pressure. This can help to
-> avoid swapping or worse in both, host and guest.
+> On Tue 18-12-12 14:02:19, Andrew Morton wrote:
+> > On Tue, 18 Dec 2012 17:11:28 +0100
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+> > > pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+> > > are done.
+> > > 
+> > > This works just fine most of the time but we can get in troubles with
+> > > non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY) on
+> > > large machines where too aggressive batching might lead to soft lockups during
+> > > process exit path (exit_mmap) because there are no scheduling points down the
+> > > free_pages_and_swap_cache path and so the freeing can take long enough to
+> > > trigger the soft lockup.
+> > > 
+> > > The lockup is harmless except when the system is setup to panic on
+> > > softlockup which is not that unusual.
+> > > 
+> > > The simplest way to work around this issue is to explicitly cond_resched per
+> > > batch in tlb_flush_mmu (1020 pages on x86_64).
+> > > 
+> > > ...
+> > >
+> > > --- a/mm/memory.c
+> > > +++ b/mm/memory.c
+> > > @@ -239,6 +239,7 @@ void tlb_flush_mmu(struct mmu_gather *tlb)
+> > >  	for (batch = &tlb->local; batch; batch = batch->next) {
+> > >  		free_pages_and_swap_cache(batch->pages, batch->nr);
+> > >  		batch->nr = 0;
+> > > +		cond_resched();
+> > >  	}
+> > >  	tlb->active = &tlb->local;
+> > >  }
+> > 
+> > tlb_flush_mmu() has a large number of callsites (or callsites which
+> > call callers, etc), many in arch code.  It's not at all obvious that
+> > tlb_flush_mmu() is never called from under spinlock?
 > 
-> Auto-ballooning has a host and a guest part. The host performs
-> automatic inflate by requesting the guest to inflate its balloon
-> when the host is facing memory pressure. The guest performs
-> automatic deflate when it's facing memory pressure itself. It's
-> expected that auto-inflate and auto-deflate will balance each
-> other over time.
-> 
-> This commit implements the host side of auto-ballooning.
-> 
-> To be notified of host memory pressure, this commit makes use of this
-> kernel API proposal being discussed upstream:
-> 
->  http://marc.info/?l=linux-mm&m=135513372205134&w=2
+> free_pages_and_swap_cache calls lru_add_drain which in turn calls
+> put_cpu (aka preempt_enable) which is a scheduling point for
+> CONFIG_PREEMPT.
 
-Wow, you're fast! And I'm glad that it works for you, so we have two
-full-featured mempressure cgroup users already.
+No, that inference doesn't work.  Because preempt_enable() inside
+spinlock is OK - it will not call schedule() because
+current->preempt_count is still elevated (by spin_lock).
 
-Even though it is a qemu patch, I think we should Cc linux-mm folks on it,
-just to let them know the great news.
+> There are more down the call chain probably. None of
+> them for non-preempt kernel.
 
-Thanks!
-
-> Three new properties are added to the virtio-balloon device to activate
-> auto-ballooning:
-> 
->   o auto-balloon-mempressure-path: this is the path for the kernel's
->     mempressure cgroup notification dir, which must be already mounted
-> 	(see link above for details on this)
-> 
->   o auto-balloon-level: the memory pressure level to trigger auto-balloon.
->     Valid values are:
-> 
-> 		- low: the kernel is reclaiming memory for new allocations
-> 		- medium: some swapping activity has already started
-> 		- oom: the kernel will start playing russian roulette real soon
-> 
->   o auto-balloon-granularity: percentage of current guest memory by which
->     the balloon should be inflated. For example, a value of 1 corresponds
-> 	to 1% which means that a guest with 1G of memory will get its balloon
-> 	inflated to 10485K.
-> 
-> To test this, you need a kernel with the mempressure API patch applied and
-> the guest side of auto-ballooning.
-> 
-> Then the feature can be enabled like:
-> 
->  qemu [...] \
->    -balloon virtio,auto-balloon-mempressure-path=/sys/fs/cgroup/mempressure/,auto-balloon-level=low,auto-balloon-granularity=1
-> 
-> FIXMEs:
-> 
->    o rate-limit the event? Can receive several in a row
->    o add auto-balloon-maximum to limit the inflate?
->    o this shouldn't override balloon changes done by the user manually
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> ---
->  hw/virtio-balloon.c | 156 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  hw/virtio-balloon.h |   4 ++
->  hw/virtio-pci.c     |   5 ++
->  3 files changed, 165 insertions(+)
-> 
-> diff --git a/hw/virtio-balloon.c b/hw/virtio-balloon.c
-> index 97d49b1..40a97e7 100644
-> --- a/hw/virtio-balloon.c
-> +++ b/hw/virtio-balloon.c
-> @@ -37,6 +37,13 @@ typedef struct VirtIOBalloon
->      VirtQueueElement stats_vq_elem;
->      size_t stats_vq_offset;
->      DeviceState *qdev;
-> +
-> +    /* auto-balloon */
-> +    bool auto_balloon_enabled;
-> +    int cfd;
-> +    int lfd;
-> +    float granularity;
-> +    EventNotifier mempressure_ev;
->  } VirtIOBalloon;
->  
->  static VirtIOBalloon *to_virtio_balloon(VirtIODevice *vdev)
-> @@ -157,7 +164,14 @@ static void virtio_balloon_set_config(VirtIODevice *vdev,
->  
->  static uint32_t virtio_balloon_get_features(VirtIODevice *vdev, uint32_t f)
->  {
-> +    VirtIOBalloon *s = to_virtio_balloon(vdev);
-> +
->      f |= (1 << VIRTIO_BALLOON_F_STATS_VQ);
-> +
-> +    if (s->auto_balloon_enabled) {
-> +        f |= (1 << VIRTIO_BALLOON_F_AUTO_BALLOON);
-> +    }
-> +
->      return f;
->  }
->  
-> @@ -166,6 +180,11 @@ static ram_addr_t guest_get_actual_ram(const VirtIOBalloon *s)
->      return ram_size - ((uint64_t) s->actual << VIRTIO_BALLOON_PFN_SHIFT);
->  }
->  
-> +static bool guest_supports_auto_balloon(const VirtIOBalloon *s)
-> +{
-> +    return s->vdev.guest_features & (1 << VIRTIO_BALLOON_F_AUTO_BALLOON);
-> +}
-> +
->  static void virtio_balloon_stat(void *opaque, BalloonInfo *info)
->  {
->      VirtIOBalloon *dev = opaque;
-> @@ -235,6 +254,133 @@ static int virtio_balloon_load(QEMUFile *f, void *opaque, int version_id)
->      return 0;
->  }
->  
-> +static int open_sysfile(const char *path, const char *file, mode_t mode)
-> +{
-> +    char *p;
-> +    int fd;
-> +
-> +    p = g_strjoin("/", path, file, NULL);
-> +    fd = qemu_open(p, mode);
-> +    if (fd < 0) {
-> +        error_report("balloon: can't open '%s': %s", p, strerror(errno));
-> +    }
-> +
-> +    g_free(p);
-> +    return fd;
-> +}
-> +
-> +static int balloon_ack_event(EventNotifier *ev)
-> +{
-> +    uint64_t res;
-> +    int ret, fd;
-> +
-> +    fd = event_notifier_get_fd(ev);
-> +
-> +    do {
-> +        ret = read(fd, &res, sizeof(res));
-> +    } while (ret == -1 && errno == EINTR);
-> +
-> +    return ret;
-> +}
-> +
-> +static void host_mempressure_cleanup(VirtIOBalloon *s);
-> +
-> +static void host_mempressure_cb(EventNotifier *ev)
-> +{
-> +    VirtIOBalloon *s = container_of(ev, VirtIOBalloon, mempressure_ev);
-> +    ram_addr_t target;
-> +    int ret;
-> +
-> +    ret = balloon_ack_event(&s->mempressure_ev);
-> +    if (ret < 0) {
-> +        fprintf(stderr, "balloon: failed to ack event: %s\n", strerror(errno));
-> +        return;
-> +    }
-> +
-> +    if (!guest_supports_auto_balloon(s)) {
-> +        fprintf(stderr,
-> +          "balloon: oops guest doesn't support auto-ballooning, disabling..\n");
-> +        host_mempressure_cleanup(s);
-> +        return;
-> +    }
-> +
-> +    target = guest_get_actual_ram(s) -
-> +             (guest_get_actual_ram(s) * s->granularity);
-> +    virtio_balloon_to_target(s, target);
-> +}
-> +
-> +static int host_mempressure_init(VirtIOBalloon *s,
-> +                                 const virtio_balloon_conf *conf)
-> +{
-> +    char *line;
-> +    int ret, fd;
-> +
-> +    if (!conf->path || !conf->level) {
-> +        error_report("balloon: mempressure path or level missing");
-> +        return -1;
-> +    }
-> +
-> +    if (conf->granularity > 100) {
-> +        error_report("balloon: invalid granularity value (should be 0..100)");
-> +        return -1;
-> +    }
-> +
-> +    s->lfd = open_sysfile(conf->path, "mempressure.level", O_RDONLY);
-> +    if (s->lfd < 0) {
-> +        return -1;
-> +    }
-> +
-> +    s->cfd = open_sysfile(conf->path, "cgroup.event_control", O_WRONLY);
-> +    if (s->cfd < 0) {
-> +        close(s->lfd);
-> +        return -1;
-> +    }
-> +
-> +    ret = event_notifier_init(&s->mempressure_ev, false);
-> +    if (ret < 0) {
-> +        error_report("failed to create notifier: %s", strerror(-ret));
-> +        goto out_err;
-> +    }
-> +
-> +    fd = event_notifier_get_fd(&s->mempressure_ev);
-> +    line = g_strdup_printf("%d %d %s", fd, s->lfd, conf->level);
-> +
-> +    do {
-> +        ret = write(s->cfd, line, strlen(line));
-> +    } while (ret < 0 && errno == EINTR);
-> +
-> +    if (ret < 0) {
-> +        error_report("balloon: write failed: %s", strerror(errno));
-> +        g_free(line);
-> +        goto out_ev;
-> +    }
-> +
-> +    g_free(line);
-> +
-> +    s->auto_balloon_enabled = true;
-> +    s->granularity = conf->granularity / 100.0;
-> +    event_notifier_set_handler(&s->mempressure_ev, host_mempressure_cb);
-> +
-> +    return 0;
-> +
-> +out_ev:
-> +    event_notifier_cleanup(&s->mempressure_ev);
-> +out_err:
-> +    close(s->lfd);
-> +    close(s->cfd);
-> +    return -1;
-> +}
-> +
-> +static void host_mempressure_cleanup(VirtIOBalloon *s)
-> +{
-> +    if (s->auto_balloon_enabled) {
-> +        close(s->lfd);
-> +        close(s->cfd);
-> +        event_notifier_cleanup(&s->mempressure_ev);
-> +        s->auto_balloon_enabled = false;
-> +    }
-> +}
-> +
->  VirtIODevice *virtio_balloon_init(DeviceState *dev, virtio_balloon_conf *conf)
->  {
->      VirtIOBalloon *s;
-> @@ -248,9 +394,18 @@ VirtIODevice *virtio_balloon_init(DeviceState *dev, virtio_balloon_conf *conf)
->      s->vdev.set_config = virtio_balloon_set_config;
->      s->vdev.get_features = virtio_balloon_get_features;
->  
-> +    if (conf->path || conf->level || conf->granularity > 0) {
-> +        ret = host_mempressure_init(s, conf);
-> +        if (ret < 0) {
-> +            virtio_cleanup(&s->vdev);
-> +            return NULL;
-> +        }
-> +    }
-> +
->      ret = qemu_add_balloon_handler(virtio_balloon_to_target,
->                                     virtio_balloon_stat, s);
->      if (ret < 0) {
-> +        host_mempressure_cleanup(s);
->          virtio_cleanup(&s->vdev);
->          return NULL;
->      }
-> @@ -273,6 +428,7 @@ void virtio_balloon_exit(VirtIODevice *vdev)
->      VirtIOBalloon *s = DO_UPCAST(VirtIOBalloon, vdev, vdev);
->  
->      qemu_remove_balloon_handler(s);
-> +    host_mempressure_cleanup(s);
->      unregister_savevm(s->qdev, "virtio-balloon", s);
->      virtio_cleanup(vdev);
->  }
-> diff --git a/hw/virtio-balloon.h b/hw/virtio-balloon.h
-> index 9d631d5..fcf0e3c 100644
-> --- a/hw/virtio-balloon.h
-> +++ b/hw/virtio-balloon.h
-> @@ -26,6 +26,7 @@
->  /* The feature bitmap for virtio balloon */
->  #define VIRTIO_BALLOON_F_MUST_TELL_HOST 0 /* Tell before reclaiming pages */
->  #define VIRTIO_BALLOON_F_STATS_VQ 1       /* Memory stats virtqueue */
-> +#define VIRTIO_BALLOON_F_AUTO_BALLOON 2   /* Automatic ballooning */
->  
->  /* Size of a PFN in the balloon interface. */
->  #define VIRTIO_BALLOON_PFN_SHIFT 12
-> @@ -40,6 +41,9 @@ struct virtio_balloon_config
->  
->  typedef struct virtio_balloon_conf
->  {
-> +    char *path;
-> +    char *level;
-> +    uint32_t granularity;
->  } virtio_balloon_conf;
->  
->  /* Memory Statistics */
-> diff --git a/hw/virtio-pci.c b/hw/virtio-pci.c
-> index 026222b..487b7f2 100644
-> --- a/hw/virtio-pci.c
-> +++ b/hw/virtio-pci.c
-> @@ -991,6 +991,11 @@ static TypeInfo virtio_serial_info = {
->  static Property virtio_balloon_properties[] = {
->      DEFINE_VIRTIO_COMMON_FEATURES(VirtIOPCIProxy, host_features),
->      DEFINE_PROP_HEX32("class", VirtIOPCIProxy, class_code, 0),
-> +#ifdef __linux__
-> +    DEFINE_PROP_STRING("auto-balloon-mempressure-path", VirtIOPCIProxy, balloon.path),
-> +    DEFINE_PROP_STRING("auto-balloon-level", VirtIOPCIProxy, balloon.level),
-> +    DEFINE_PROP_UINT32("auto-balloon-granularity", VirtIOPCIProxy, balloon.granularity, 0),
-> +#endif
->      DEFINE_PROP_END_OF_LIST(),
->  };
->  
-> -- 
-> 1.8.0
-> 
