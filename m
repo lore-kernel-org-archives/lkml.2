@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab2LSVNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 16:13:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43839 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab2LSVNS (ORCPT
+	id S1751270Ab2LSVSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 16:18:06 -0500
+Received: from canardo.mork.no ([148.122.252.1]:37855 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab2LSVR7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 16:13:18 -0500
-Date: Wed, 19 Dec 2012 13:13:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v2] mm: limit mmu_gather batching to fix soft lockups on
- !CONFIG_PREEMPT
-Message-Id: <20121219131316.7d13fcb1.akpm@linux-foundation.org>
-In-Reply-To: <20121219150423.GA12888@dhcp22.suse.cz>
-References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
-	<20121218140219.45867ddd.akpm@linux-foundation.org>
-	<20121218235042.GA10350@dhcp22.suse.cz>
-	<20121218160030.baf723aa.akpm@linux-foundation.org>
-	<20121219150423.GA12888@dhcp22.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Dec 2012 16:17:59 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Norbert Warmuth <nwarmuth@t-online.de>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RESEND][PATCH v3] watchdog: Fix disable/enable regression
+Organization: m
+References: <87y5h1c70y.fsf@nemi.mork.no>
+	<1355946691-7969-1-git-send-email-bjorn@mork.no>
+	<20121219201336.GK88797@redhat.com>
+Date: Wed, 19 Dec 2012 22:17:42 +0100
+In-Reply-To: <20121219201336.GK88797@redhat.com> (Don Zickus's message of
+	"Wed, 19 Dec 2012 15:13:36 -0500")
+Message-ID: <874njh7nd5.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 16:04:37 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> Since e303297 (mm: extended batches for generic mmu_gather) we are batching
-> pages to be freed until either tlb_next_batch cannot allocate a new batch or we
-> are done.
-> 
-> This works just fine most of the time but we can get in troubles with
-> non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
-> on large machines where too aggressive batching might lead to soft
-> lockups during process exit path (exit_mmap) because there are no
-> scheduling points down the free_pages_and_swap_cache path and so the
-> freeing can take long enough to trigger the soft lockup.
-> 
-> The lockup is harmless except when the system is setup to panic on
-> softlockup which is not that unusual.
-> 
-> The simplest way to work around this issue is to limit the maximum
-> number of batches in a single mmu_gather for !CONFIG_PREEMPT kernels.
-> Let's use 1G of resident memory for the limit for now. This shouldn't
-> make the batching less effective and it shouldn't trigger lockups as
-> well because freeing 262144 should be OK.
-> 
-> ...
+Don Zickus <dzickus@redhat.com> writes:
+> On Wed, Dec 19, 2012 at 08:51:31PM +0100, Bjørn Mork wrote:
+>> commit 8d451690 ("watchdog: Fix CPU hotplug regression") cause
+>> an oops or hard lockup when doing
+>> 
+>>  echo 0 > /proc/sys/kernel/nmi_watchdog
+>>  echo 1 > /proc/sys/kernel/nmi_watchdog
+>> 
+>> and the kernel is booted with nmi_watchdog=1 (default)
+>> 
+>> Running laptop-mode-tools and disconnecting/connecting AC power
+>> will cause this to trigger, making it a common failure scenario
+>> on laptops.
+>> 
+>> Instead of bailing out of watchdog_disable() when !watchdog_enabled
+>> we can initialize the hrtimer regardless of watchdog_enabled status.
+>> This makes it safe to call watchdog_disable() in the nmi_watchdog=0
+>> case, without the negative effect on the enabled => disabled =>
+>> enabled case.
+>> 
+>> All these tests pass with this patch:
+>> - nmi_watchdog=1
+>>   echo 0 > /proc/sys/kernel/nmi_watchdog
+>>   echo 1 > /proc/sys/kernel/nmi_watchdog
+>> 
+>> - nmi_watchdog=0
+>>   echo 0 > /sys/devices/system/cpu/cpu1/online
+>> 
+>> - nmi_watchdog=0
+>>   echo mem > /sys/power/state
 >
-> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-> index ed6642a..5843f59 100644
-> --- a/include/asm-generic/tlb.h
-> +++ b/include/asm-generic/tlb.h
-> @@ -78,6 +78,19 @@ struct mmu_gather_batch {
->  #define MAX_GATHER_BATCH	\
->  	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
->  
-> +/*
-> + * Limit the maximum number of mmu_gather batches for non-preemptible kernels
-> + * to reduce a risk of soft lockups on huge machines when a lot of memory is
-> + * zapped during unmapping.
-> + * 1GB of resident memory should be safe to free up at once even without
-> + * explicit preemption point.
-> + */
-> +#if defined(CONFIG_PREEMPT_COUNT)
-> +#define MAX_GATHER_BATCH_COUNT	(UINT_MAX)
-> +#else
-> +#define MAX_GATHER_BATCH_COUNT	(((1UL<<(30-PAGE_SHIFT))/MAX_GATHER_BATCH))
+> What about the opposite cases?  
+> nmi_watchdog=1
+> echo 1 > /sys/devices/system/cpu/cpu1/online
 
-Geeze.  I spent waaaaay too long staring at that expression trying to
-work out "how many pages is in a batch" and gave up.
+I don't see why not. But verifying it would be nice.  I thought that it
+would be a simple thing to test using qemu-kvm, but it seems that the
+CPU hotplugging support there isn't quite ready. The guest just dies
+with "Assertion `bus->allow_hotplug' failed."
 
-Realistically, I don't think we need to worry about CONFIG_PREEMPT here
-- if we just limit the thing to, say, 64k pages per batch then that
-will be OK for preemptible and non-preemptible kernels.  The
-performance difference between "64k" and "infinite" will be miniscule
-and unmeasurable.
+I'll go digging for alternatives, but if anyone else could verify this
+then I'd appreciate it.
 
-Also, the batch count should be independent of PAGE_SIZE.  Because
-PAGE_SIZE can vary by a factor of 16 and you don't want to fix the
-problem on 4k page size but leave it broken on 64k page size.
+> Are we going to leak memory by re-initing hrtimer?  Or is that caught
+> somewhere?
 
-Also, while the patch might prevent softlockup warnings, the kernel
-will still exhibit large latency glitches and those are undesirable.
+There are no allocations in hrtimer_init() AFAICS? It just initializes
+the preallocated hrtimer struct.
 
-Also, does this patch actually work?  It doesn't add a scheduling
-point.  It assumes that by returning zero from tlb_next_batch(), the
-process will back out to some point where it hits a cond_resched()?
+> Other than that, the patch seems reasonable to me.  Basically just forcing
+> the init of hrtimer so there is something to cancel on the disable side.
+> Then again, I don't fully understand the original problem.
+
+I believe the original problem was calling hrtimer_cancel on an
+uninitialized hrtimer.  That is likely to blow up here:
+
+static inline
+void unlock_hrtimer_base(const struct hrtimer *timer, unsigned long *flags)
+{
+        raw_spin_unlock_irqrestore(&timer->base->cpu_base->lock, *flags);
+}
 
 
-So I'm thinking that to address both the softlockup-detector problem
-and the large-latency-glitch problem we should do something like:
+Note that the lock_hrtimer_base() function protects access to
+timer->base with a NULL test.  That should probably be done in unlock as
+well, for symmetry?  But this is another issue and not at all urgent.
 
-	if (need_resched() && tlb->batch_count > 64k)
-		return 0;
 
-and then ensure that there's a cond_resched() at a safe point between
-batches?
+
+
+Bjørn
