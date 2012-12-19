@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2LSGxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 01:53:33 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:36978 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2LSGx1 convert rfc822-to-8bit (ORCPT
+	id S1752086Ab2LSGxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 01:53:44 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:40884 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2LSGx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 01:53:27 -0500
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: RE: arch/arm/mach-omap2/i2c.c:130:2: error: implicit declaration of
- function 'omap_pm_set_max_mpu_wakeup_lat'
-Thread-Topic: arch/arm/mach-omap2/i2c.c:130:2: error: implicit declaration
- of function 'omap_pm_set_max_mpu_wakeup_lat'
-Thread-Index: AQHN3ZBhzpadx7Uq7kmiSr1nZpia85gfrmQQ
-Date: Wed, 19 Dec 2012 06:53:10 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433EC9A322@DBDE01.ent.ti.com>
-References: <20121219021102.GA9472@localhost>
- <20121219022247.GA11170@localhost>
-In-Reply-To: <20121219022247.GA11170@localhost>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Dec 2012 01:53:29 -0500
 MIME-Version: 1.0
+In-Reply-To: <20121218191633.GB24548@google.com>
+References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
+	<20121213211808.GJ25017@kernel.dk>
+	<CA+res+SKXjXTgrxPaj+kuekd-CZMp4POkSpsdJ7Csfg0HsD=bA@mail.gmail.com>
+	<50CAD6D9.5070703@fusionio.com>
+	<20121215092526.GA10411@moria.home.lan>
+	<50CC46F8.3070600@fusionio.com>
+	<20121215103658.GB10411@moria.home.lan>
+	<50CC7840.4090403@fusionio.com>
+	<20121218191633.GB24548@google.com>
+Date: Tue, 18 Dec 2012 22:45:32 -0800
+Message-ID: <CAH+dOxJonSqq+RK-eTrPD0ik=xJSQrNXTUgzsj3RoW4V1De6tg@mail.gmail.com>
+Subject: Re: [PATCH 00/26] AIO performance improvements/cleanups, v2
+From: Kent Overstreet <koverstreet@google.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Jack Wang <jack.wang.usish@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "zab@redhat.com" <zab@redhat.com>, "bcrl@kvack.org" <bcrl@kvack.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 07:52:47, Fengguang Wu wrote:
-> [add more CC]
-> 
-> On Wed, Dec 19, 2012 at 10:11:02AM +0800, Fengguang Wu wrote:
-> > Hi Linus, Wolfram,
-> > 
-> > FYI, kernel build failed on
-> > 
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux master
-> > head:   752451f01c4567b506bf4343082682dbb8fb30dd
-> > commit: 752451f01c4567b506bf4343082682dbb8fb30dd Merge branch 'i2c-embedded/for-next' of git://git.pengutronix.de/git/wsa/linux
-> > date:   56 minutes ago
-> > config: make ARCH=arm omap2plus_defconfig
-> > 
-> > All error/warnings:
-> > 
-> > arch/arm/mach-omap2/i2c.c: In function 'omap_pm_set_max_mpu_wakeup_lat_compat':
-> > arch/arm/mach-omap2/i2c.c:130:2: error: implicit declaration of function 'omap_pm_set_max_mpu_wakeup_lat' [-Werror=implicit-function-declaration]
-> > cc1: some warnings being treated as errors
-> > 
-> > The root cause is, i2c.c (which is always compiled in arch/arm/mach-omap2/Makefile)
-> > uses omap_pm_set_max_mpu_wakeup_lat() which is defined in omap-pm-noop.c (which
-> > is compiled only on CONFIG_OMAP_PM_NOOP).
+On Tue, Dec 18, 2012 at 11:16 AM, Kent Overstreet
+<koverstreet@google.com> wrote:
+> Or maybe just getting rid of the ringbuffer is that awesome. Gonna try
+> and work on combining our optimizations so I can see what that looks
+> like :)
 
-CONFIG_OMAP_PM_NOOP is defined. The build breakage is due to a missing header inclusion.
-I just sent a patch for this [1]
 
-There are still a couple of patches missing before omap2plus_defconfig compiles
-https://patchwork.kernel.org/patch/1810481/
-https://patchwork.kernel.org/patch/1810441/
-
-I guess they are on the way from some other tree.
-
-Regards,
-Vaibhav
-
-[1] http://marc.info/?l=linux-arm-kernel&m=135589966017628&w=2
-
+Yes, yes it is. Combined our aio/dio patches and got 50% better
+throughput than I'd seen before.
