@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab2LSIQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 03:16:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:29518 "EHLO song.cn.fujitsu.com"
+	id S1753187Ab2LSIQo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 03:16:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:49065 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395Ab2LSIQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752327Ab2LSIQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Dec 2012 03:16:08 -0500
 X-IronPort-AV: E=Sophos;i="4.84,315,1355068800"; 
-   d="scan'208";a="6431814"
+   d="scan'208";a="6431815"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
         akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
@@ -19,9 +19,9 @@ To: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
         glommer@parallels.com
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH v4 5/6] page_alloc: Make movablecore_map has higher priority
-Date: Wed, 19 Dec 2012 16:15:02 +0800
-Message-Id: <1355904903-22699-6-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v4 3/6] ACPI: Restructure movablecore_map with memory info from SRAT.
+Date: Wed, 19 Dec 2012 16:15:00 +0800
+Message-Id: <1355904903-22699-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1355904903-22699-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1355904903-22699-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -34,85 +34,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kernelcore or movablecore is specified at the same time
-with movablecore_map, movablecore_map will have higher
-priority to be satisfied.
-This patch will make find_zone_movable_pfns_for_nodes()
-calculate zone_movable_pfn[] with the limit from
-zone_movable_limit[].
+The Hot Plugable bit in SRAT flags specifys if the memory range
+could be hotplugged.
+
+If user specified movablecore_map=nn[KMG]@ss[KMG], reset
+movablecore_map.map to the intersection of hotpluggable ranges from
+SRAT and old movablecore_map.map.
+Else if user specified movablecore_map=acpi, just use the hotpluggable
+ranges from SRAT.
+Otherwise, do nothing. The kernel will use all the memory in all nodes
+evenly.
+
+The idea "getting info from SRAT" was from Liu Jiang <jiang.liu@huawei.com>.
+And the idea "do more limit for memblock" was from Wu Jianguo <wujianguo@huawei.com>
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Reviewed-by: Wu Jianguo <wujianguo@huawei.com>
-Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
- mm/page_alloc.c |   28 +++++++++++++++++++++++++---
- 1 files changed, 25 insertions(+), 3 deletions(-)
+ arch/x86/mm/srat.c |   38 +++++++++++++++++++++++++++++++++++---
+ 1 files changed, 35 insertions(+), 3 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 128d28a..6ab1ffe 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4917,9 +4917,17 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 		required_kernelcore = max(required_kernelcore, corepages);
- 	}
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 4ddf497..947a2b5 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -146,7 +146,12 @@ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ {
+ 	u64 start, end;
++	u32 hotpluggable;
+ 	int node, pxm;
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++	int overlap;
++	unsigned long start_pfn, end_pfn;
++#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
  
--	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
--	if (!required_kernelcore)
-+	/*
-+	 * If neither kernelcore/movablecore nor movablecore_map is specified,
-+	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
-+	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
-+	 */
-+	if (!required_kernelcore) {
-+		if (movablecore_map.nr_map)
-+			memcpy(zone_movable_pfn, zone_movable_limit,
-+				sizeof(zone_movable_pfn));
- 		goto out;
-+	}
+ 	if (srat_disabled())
+ 		return -1;
+@@ -157,8 +162,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+ 		return -1;
  
- 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
- 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
-@@ -4949,10 +4957,24 @@ restart:
- 		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
- 			unsigned long size_pages;
- 
-+			/*
-+			 * Find more memory for kernelcore in
-+			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
-+			 */
- 			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
- 			if (start_pfn >= end_pfn)
- 				continue;
- 
-+			if (zone_movable_limit[nid]) {
-+				end_pfn = min(end_pfn, zone_movable_limit[nid]);
-+				/* No range left for kernelcore in this node */
-+				if (start_pfn >= end_pfn) {
-+					zone_movable_pfn[nid] =
-+							zone_movable_limit[nid];
-+					break;
-+				}
-+			}
+-	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
++	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
++	if (hotpluggable && !save_add_info())
+ 		return -1;
 +
- 			/* Account for what is only usable for kernelcore */
- 			if (start_pfn < usable_startpfn) {
- 				unsigned long kernel_pages;
-@@ -5012,12 +5034,12 @@ restart:
- 	if (usable_nodes && required_kernelcore > usable_nodes)
- 		goto restart;
+ 	start = ma->base_address;
+ 	end = start + ma->length;
+ 	pxm = ma->proximity_domain;
+@@ -178,9 +185,34 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
  
+ 	node_set(node, numa_nodes_parsed);
+ 
+-	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
++	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+ 	       node, pxm,
+-	       (unsigned long long) start, (unsigned long long) end - 1);
++	       (unsigned long long) start, (unsigned long long) end - 1,
++	       hotpluggable ? "Hot Pluggable": "");
++
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++	start_pfn = PFN_DOWN(start);
++	end_pfn = PFN_UP(end);
++
++	if (!hotpluggable) {
++		/* Clear the range overlapped in movablecore_map.map */
++		remove_movablecore_map(start_pfn, end_pfn);
++		goto out;
++	}
++
++	/* If not using SRAT, don't modify user configuration. */
++	if (!movablecore_map.acpi)
++		goto out;
++
++	/* If user chose to use SRAT info, insert the range anyway. */
++	if (insert_movablecore_map(start_pfn, end_pfn))
++		pr_err("movablecore_map: too many entries;"
++			" ignoring [mem %#010llx-%#010llx]\n",
++			(unsigned long long) start,
++			(unsigned long long) (end - 1));
++
 +out:
- 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
- 	for (nid = 0; nid < MAX_NUMNODES; nid++)
- 		zone_movable_pfn[nid] =
- 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
- 
--out:
- 	/* restore the node_state */
- 	node_states[N_MEMORY] = saved_node_state;
++#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 	return 0;
  }
+ 
 -- 
 1.7.1
 
