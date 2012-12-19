@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab2LSLco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 06:32:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab2LSLcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 06:32:36 -0500
-Date: Wed, 19 Dec 2012 09:30:39 -0200
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: qemu-devel@nongnu.org, riel@redhat.com, aquini@redhat.com, mst@redhat.com,
-        amit.shah@redhat.com, agl@us.ibm.com,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        kirill@shutemov.name, Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 3/3] virtio-balloon: add auto-ballooning support
-Message-ID: <20121219093039.51831f6f@doriath.home>
-In-Reply-To: <20121218225330.GA28297@lizard.mcd00620.sjc.wayport.net>
-References: <1355861815-2607-1-git-send-email-lcapitulino@redhat.com>
-	<1355861815-2607-4-git-send-email-lcapitulino@redhat.com>
-	<20121218225330.GA28297@lizard.mcd00620.sjc.wayport.net>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755145Ab2LSLkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 06:40:42 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41253 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab2LSLkf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 06:40:35 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v4 7/7] leds: leds-pwm: Add device tree bindings
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-leds@vger.kernel.org
+In-Reply-To: <1355303092-15523-8-git-send-email-peter.ujfalusi@ti.com>
+References: <1355303092-15523-1-git-send-email-peter.ujfalusi@ti.com> <1355303092-15523-8-git-send-email-peter.ujfalusi@ti.com>
+Date: Wed, 19 Dec 2012 11:40:30 +0000
+Message-Id: <20121219114030.9AC133E0AD7@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012 14:53:30 -0800
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+Hi Peter,
 
-> Hello Luiz,
+Thanks for this work. Comments below...
+
+On Wed, 12 Dec 2012 10:04:52 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> Support for device tree booted kernel.
 > 
-> On Tue, Dec 18, 2012 at 06:16:55PM -0200, Luiz Capitulino wrote:
-> > The auto-ballooning feature automatically performs balloon inflate
-> > or deflate based on host and guest memory pressure. This can help to
-> > avoid swapping or worse in both, host and guest.
-> > 
-> > Auto-ballooning has a host and a guest part. The host performs
-> > automatic inflate by requesting the guest to inflate its balloon
-> > when the host is facing memory pressure. The guest performs
-> > automatic deflate when it's facing memory pressure itself. It's
-> > expected that auto-inflate and auto-deflate will balance each
-> > other over time.
-> > 
-> > This commit implements the host side of auto-ballooning.
-> > 
-> > To be notified of host memory pressure, this commit makes use of this
-> > kernel API proposal being discussed upstream:
-> > 
-> >  http://marc.info/?l=linux-mm&m=135513372205134&w=2
+> For usage see:
+> Documentation/devicetree/bindings/leds/leds-pwm.txt
 > 
-> Wow, you're fast! And I'm glad that it works for you, so we have two
-> full-featured mempressure cgroup users already.
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-Thanks, although I think we need more testing to be sure this does what
-we want. I mean, the basic mechanics does work, but my testing has been
-very light so far.
+About commit text: Remember that commit text is the first thing people
+are going to see when looking over what changed in a given subsystem. It
+is also where maintainers like me look first when trying to decide if a
+patch makes sense before applying it. When commit text is bare-bones
+like the above and the patch is non-trivial, then I end up trying to
+reconstruct your though process or rational for a patch.
 
-> Even though it is a qemu patch, I think we should Cc linux-mm folks on it,
-> just to let them know the great news.
+So, please, if it is anything beyond a trivial patch then tell us more
+than simply "support for device tree booted kernel". What platform did
+you make the change for? How was it tested? Are there any notable design
+decisions that you made when adding this support? Are there any missing
+pieces or possible bugs?
 
-I'll do it next time.
+I'm picking on you at the moment, but this is a general comment. The
+commit text is where you get to convince me that the patch is needed and
+tell me about how it was designed. This is really important information;
+particularly for poor random user, bisecting his broken kernel and
+landing on your commit. In this small way, you can make her Christmas
+merrier this year.
+
+
+> ---
+>  .../devicetree/bindings/leds/leds-pwm.txt          |  48 +++++++++
+>  drivers/leds/leds-pwm.c                            | 112 +++++++++++++++++----
+>  2 files changed, 140 insertions(+), 20 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/leds/leds-pwm.txt b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+> new file mode 100644
+> index 0000000..7297107
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+> @@ -0,0 +1,48 @@
+> +LED connected to PWM
+> +
+> +Required properties:
+> +- compatible : should be "pwm-leds".
+> +
+> +Each LED is represented as a sub-node of the pwm-leds device.  Each
+> +node's name represents the name of the corresponding LED.
+> +
+> +LED sub-node properties:
+> +- pwms : PWM property to point to the PWM device (phandle)/port (id) and to
+> +  specify the period time to be used: <&phandle id period_ns>;
+> +- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
+> +  For the pwms and pwm-names property please refer to:
+> +  Documentation/devicetree/bindings/pwm/pwm.txt
+> +- max-brightness : Maximum brightness possible for the LED
+> +- label :  (optional)
+> +  see Documentation/devicetree/bindings/leds/common.txt
+> +- linux,default-trigger :  (optional)
+> +  see Documentation/devicetree/bindings/leds/common.txt
+> +
+> +Example:
+> +
+> +twl_pwm: pwm {
+> +	/* provides two PWMs (id 0, 1 for PWM1 and PWM2) */
+> +	compatible = "ti,twl6030-pwm";
+> +	#pwm-cells = <2>;
+> +};
+> +
+> +twl_pwmled: pwmled {
+> +	/* provides one PWM (id 0 for Charing indicator LED) */
+> +	compatible = "ti,twl6030-pwmled";
+> +	#pwm-cells = <2>;
+> +};
+> +
+> +pwmleds {
+> +	compatible = "pwm-leds";
+> +	kpad {
+> +		label = "omap4::keypad";
+> +		pwms = <&twl_pwm 0 7812500>;
+> +		max-brightness = <127>;
+> +	};
+> +
+> +	charging {
+> +		label = "omap4:green:chrg";
+> +		pwms = <&twl_pwmled 0 7812500>;
+> +		max-brightness = <255>;
+> +	};
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
