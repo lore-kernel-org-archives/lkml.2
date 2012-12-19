@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab2LSOMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:12:48 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19571 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2LSOMk (ORCPT
+	id S1755277Ab2LSOPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:15:42 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3163 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab2LSOPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:12:40 -0500
+	Wed, 19 Dec 2012 09:15:36 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 19 Dec 2012 06:11:02 -0800
+	by hqnvupgp05.nvidia.com on Wed, 19 Dec 2012 06:15:36 -0800
+Message-ID: <50D1CC07.6070506@nvidia.com>
+Date: Wed, 19 Dec 2012 19:45:35 +0530
 From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regmap: irq: enable wake support by default
-Date: Wed, 19 Dec 2012 19:42:28 +0530
-Message-ID: <1355926348-16100-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] serial: tegra: add serial driver
+References: <1355746249-15347-1-git-send-email-ldewangan@nvidia.com> <20121217171027.6AE573E0BDD@localhost> <50CF8F36.2030309@wwwdotorg.org> <20121219130151.F29CA3E0AD7@localhost>
+In-Reply-To: <20121219130151.F29CA3E0AD7@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regmap-irq framework is used vastly by mfd drivers and some of
-devices like TPS65910, TPS80036 do not support the wake base
-register to enable wake.
+On Wednesday 19 December 2012 06:31 PM, Grant Likely wrote:
+> On Mon, 17 Dec 2012 14:31:34 -0700, Stephen Warren<swarren@wwwdotorg.org>  wrote:
+>> On 12/17/2012 10:10 AM, Grant Likely wrote:
+>>> On Mon, 17 Dec 2012 17:40:49 +0530, Laxman Dewangan<ldewangan@nvidia.com>  wrote:
+>>
+>> Aren't we still supposed to support platform data so that it can
+>> override what's in DT in order to fix up bad DTs? Or, has that
+>> requirement been dropped. If it has, we can drop a bunch of code from a
+>> variety of Tegra-specific drivers, I expect.
+> Do you have an actual user for this? If not, then don't borrow trouble.
+> Just drop it. Things like platform_data can always be added later only
+> if it is needed.
 
-Currently wake in regmap-irq only supported if client driver
-passes the wake base register.
+Currently all our board supports DT. we are not using any driver 
+instantiated by board files.
+I will remove the platform data for current patch and if it is require 
+then will add later with reasoning.
 
-As the regmap-irq is mostly used by mfd devices and it is require
-to have wake support from these devices in most of use cases,
-enabling wake support by default in regmap-irq.
+Hope this will be fine with Stephen also so that  this basic patch can 
+be included into tree soon.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/base/regmap/regmap-irq.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 5972ad9..9129493 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -129,16 +129,15 @@ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
- 	struct regmap *map = d->map;
- 	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
- 
--	if (!d->chip->wake_base)
--		return -EINVAL;
--
- 	if (on) {
--		d->wake_buf[irq_data->reg_offset / map->reg_stride]
--			&= ~irq_data->mask;
-+		if (d->wake_buf)
-+			d->wake_buf[irq_data->reg_offset / map->reg_stride]
-+				&= ~irq_data->mask;
- 		d->wake_count++;
- 	} else {
--		d->wake_buf[irq_data->reg_offset / map->reg_stride]
--			|= irq_data->mask;
-+		if (d->wake_buf)
-+			d->wake_buf[irq_data->reg_offset / map->reg_stride]
-+				|= irq_data->mask;
- 		d->wake_count--;
- 	}
- 
-@@ -316,11 +315,6 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 
- 	d->irq_chip = regmap_irq_chip;
- 	d->irq_chip.name = chip->name;
--	if (!chip->wake_base) {
--		d->irq_chip.irq_set_wake = NULL;
--		d->irq_chip.flags |= IRQCHIP_MASK_ON_SUSPEND |
--				     IRQCHIP_SKIP_SET_WAKE;
--	}
- 	d->irq = irq;
- 	d->map = map;
- 	d->chip = chip;
--- 
-1.7.1.1
 
