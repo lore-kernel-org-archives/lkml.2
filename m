@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab2LSK6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 05:58:48 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:56537 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab2LSK6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 05:58:41 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Anatolij Gustschin <agust@denx.de>
-Subject: [PATCH] of: Fix export of of_find_matching_node_and_match()
-Date: Wed, 19 Dec 2012 10:58:36 +0000
-Message-Id: <1355914716-19469-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753354Ab2LSLAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 06:00:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52979 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab2LSLAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 06:00:40 -0500
+Message-ID: <50D19E52.9030003@ti.com>
+Date: Wed, 19 Dec 2012 12:00:34 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Luciano Coelho <coelho@ti.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Felipe Balbi <balbi@ti.com>, <svenkatr@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <cjb@laptop.org>, <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: 32kHz clock removal causes problems omap_hsmmc
+References: <1352968293.10872.51.camel@cumari.coelho.fi>  <20121218095450.GB27751@arwen.pp.htv.fi>  <20121219094552.GN4985@opensource.wolfsonmicro.com>  <50D19040.5090404@ti.com>  <20121219100909.GO4985@opensource.wolfsonmicro.com>  <50D19463.5010605@ti.com>  <20121219103206.GQ4985@opensource.wolfsonmicro.com> <1355913954.5273.21.camel@cumari.coelho.fi> <50D19D54.2000307@ti.com>
+In-Reply-To: <50D19D54.2000307@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 50c8af4cf9, "of: introduce for_each_matching_node_and_match()"
-renamed of_find_matching_node() to of_find_matching_node_and_match() and
-created a new static inline of_find_matching_node() wrapper around the
-new name. However, the change neglected to change the EXPORT_SYMBOL()
-reference causing build errors for modules.
+On 12/19/2012 11:56 AM, Peter Ujfalusi wrote:
+> BTW: have you happened to ubdate u-boot recently? There is a nice easter egg
+> added there:
+> f3f98bb ARM: OMAP4/5: Do not configure non essential pads, clocks, dplls.
+> 
+> Which means that _essential_ clocks and pads are no longer configured.
 
-This patch fixes the EXPORT_SYMBOL() statement. Discovered on a PowerPC
-Efika build with the mpc52xx_uart driver being built as a module.
+Meanwhile you can try to hack the u-boot to enable the 32k from there. It is
+going to stay up since we do not have code to control it in the kernel anymore.
 
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Anatolij Gustschin <agust@denx.de>
----
+Also do something like this at the same time to get things working:
+diff --git a/include/configs/omap4_common.h b/include/configs/omap4_common.h
+index cbc9bdb..b0ff1ec 100644
+--- a/include/configs/omap4_common.h
++++ b/include/configs/omap4_common.h
+@@ -271,4 +271,8 @@
 
-I'll push this patch out to my tree ASAP.
+ #define CONFIG_SYS_THUMB_BUILD
 
- drivers/of/base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
++/* Configure all pins and clocks */
++#define CONFIG_SYS_ENABLE_PADS_ALL
++#define CONFIG_SYS_CLOCKS_ENABLE_ALL
++
+ #endif /* __CONFIG_OMAP4_COMMON_H */
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index db8d211..2390ddb 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -629,7 +629,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
- 	read_unlock(&devtree_lock);
- 	return np;
- }
--EXPORT_SYMBOL(of_find_matching_node);
-+EXPORT_SYMBOL(of_find_matching_node_and_match);
- 
- /**
-  * of_modalias_node - Lookup appropriate modalias for a device node
 -- 
-1.7.10.4
-
+Péter
