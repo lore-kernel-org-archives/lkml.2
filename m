@@ -1,106 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab2LSUJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:09:21 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50651 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2LSUJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:09:14 -0500
-Date: Wed, 19 Dec 2012 15:09:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Dongxiao Xu <dongxiao.xu@intel.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
- for map_sg hook
-Message-ID: <20121219200904.GG15037@phenom.dumpdata.com>
-References: <1354799322-6000-1-git-send-email-dongxiao.xu@intel.com>
- <20121207140852.GC3140@phenom.dumpdata.com>
- <40776A41FC278F40B59438AD47D147A90FEBE741@SHSMSX102.ccr.corp.intel.com>
- <20121211170653.GG9347@localhost.localdomain>
- <40776A41FC278F40B59438AD47D147A90FEBFB64@SHSMSX102.ccr.corp.intel.com>
- <50C85E9F02000078000AFD65@nat28.tlf.novell.com>
+	id S1752395Ab2LSUN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:13:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab2LSUNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 15:13:53 -0500
+Date: Wed, 19 Dec 2012 15:13:36 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Norbert Warmuth <nwarmuth@t-online.de>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RESEND][PATCH v3] watchdog: Fix disable/enable regression
+Message-ID: <20121219201336.GK88797@redhat.com>
+References: <87y5h1c70y.fsf@nemi.mork.no>
+ <1355946691-7969-1-git-send-email-bjorn@mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <50C85E9F02000078000AFD65@nat28.tlf.novell.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1355946691-7969-1-git-send-email-bjorn@mork.no>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 09:38:23AM +0000, Jan Beulich wrote:
-> >>> On 12.12.12 at 02:03, "Xu, Dongxiao" <dongxiao.xu@intel.com> wrote:
-> >> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> >> On Tue, Dec 11, 2012 at 06:39:35AM +0000, Xu, Dongxiao wrote:
-> >> > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> >> > > What if this check was done in the routines that provide the
-> >> > > software static buffers and there try to provide a nice DMA contingous
-> >> swatch of pages?
-> >> >
-> >> > Yes, this approach also came to our mind, which needs to modify the driver
-> >> itself.
-> >> > If so, it requires driver not using such static buffers (e.g., from 
-> > kmalloc) to do
-> >> DMA even if the buffer is continuous in native.
-> >> 
-> >> I am bit loss here.
-> >> 
-> >> Is the issue you found only with drivers that do not use DMA API?
-> >> Can you perhaps point me to the code that triggered this fix in the first 
-> > place?
-> > 
-> > Yes, we met this issue on a specific SAS device/driver, and it calls into 
-> > libata-core code, you can refer to function ata_dev_read_id() called from 
-> > ata_dev_reread_id() in drivers/ata/libata-core.c.
-> > 
-> > In the above function, the target buffer is (void *)dev->link->ap->sector_buf, 
-> > which is 512 bytes static buffer and unfortunately it across the page 
-> > boundary.
+On Wed, Dec 19, 2012 at 08:51:31PM +0100, Bjørn Mork wrote:
+> commit 8d451690 ("watchdog: Fix CPU hotplug regression") cause
+> an oops or hard lockup when doing
 > 
-> I wonder whether such use of sg_init_one()/sg_set_buf() is correct
-> in the first place. While there aren't any restrictions documented for
-> its use, one clearly can't pass in whatever one wants (a pointer into
-> vmalloc()-ed memory, for instance, won't work afaict).
+>  echo 0 > /proc/sys/kernel/nmi_watchdog
+>  echo 1 > /proc/sys/kernel/nmi_watchdog
 > 
-> I didn't go through all other users of it, but quite a few of the uses
-> elsewhere look similarly questionable.
+> and the kernel is booted with nmi_watchdog=1 (default)
 > 
-> >> I am still not completely clear on what you had in mind. The one method I
-> >> thought about that might help in this is to have Xen-SWIOTLB track which
-> >> memory ranges were exchanged (so xen_swiotlb_fixup would save the *buf
-> >> and the size for each call to xen_create_contiguous_region in a list or 
-> > array).
-> >> 
-> >> When xen_swiotlb_map/xen_swiotlb_map_sg_attrs care called they would
-> >> consult said array/list to see if the region they retrieved crosses said 2MB
-> >> chunks. If so.. and here I am unsure of what would be the best way to 
-> > proceed.
+> Running laptop-mode-tools and disconnecting/connecting AC power
+> will cause this to trigger, making it a common failure scenario
+> on laptops.
+> 
+> Instead of bailing out of watchdog_disable() when !watchdog_enabled
+> we can initialize the hrtimer regardless of watchdog_enabled status.
+> This makes it safe to call watchdog_disable() in the nmi_watchdog=0
+> case, without the negative effect on the enabled => disabled =>
+> enabled case.
+> 
+> All these tests pass with this patch:
+> - nmi_watchdog=1
+>   echo 0 > /proc/sys/kernel/nmi_watchdog
+>   echo 1 > /proc/sys/kernel/nmi_watchdog
+> 
+> - nmi_watchdog=0
+>   echo 0 > /sys/devices/system/cpu/cpu1/online
+> 
+> - nmi_watchdog=0
+>   echo mem > /sys/power/state
 
-And from finally looking at the code I misunderstood your initial description.
+What about the opposite cases?  
+nmi_watchdog=1
+echo 1 > /sys/devices/system/cpu/cpu1/online
 
-> > 
-> > We thought we can solve the issue in several ways:
-> > 
-> > 1) Like the previous patch I sent out, we check the DMA region in 
-> > xen_swiotlb_map_page() and xen_swiotlb_map_sg_attr(), and if DMA region 
-> > crosses page boundary, we exchange the memory and copy the content. However 
-> > it has race condition that when copying the memory content (we introduced two 
-> > memory copies in the patch), some other code may also visit the page, which 
-> > may encounter incorrect values.
-> 
-> That's why, after mapping a buffer (or SG list) one has to call the
-> sync functions before looking at data. Any race as described by
-> you is therefore a programming error.
+Are we going to leak memory by re-initing hrtimer?  Or is that caught
+somewhere?
 
-I am with Jan here. It looks like the libata is depending on the dma_unmap
-to do this. But it is unclear to me when the ata_qc_complete is actually
-called to unmap the buffer (and hence sync it). 
+Other than that, the patch seems reasonable to me.  Basically just forcing
+the init of hrtimer so there is something to cancel on the disable side.
+Then again, I don't fully understand the original problem.
+
+Cheers,
+Don
 
 > 
-> Jan
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51661
 > 
+> Cc: <stable@vger.kernel.org> # v3.7
+> Cc: Norbert Warmuth <nwarmuth@t-online.de>
+> Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Bjørn Mork <bjorn@mork.no>
+> ---
+> Hello Linus,
+> 
+> This post v3.7-rc8 regression kills any machine with laptop-mode-tools
+> using default config, making it somewhat critical to get a fix into the
+> v3.7.x stable series ASAP.  I was hoping for some response from Thomas
+> or the reporters of the original bug, either verifying that my proposal
+> is OK or providing a better fix.  But I believe that this cannot wait
+> much longer.
+> 
+> Please apply.  Thanks,
+> 
+> Bjørn
+> 
+> 
+> Patch history:
+> 
+> v3:
+>   added Bugzilla reference and additional recipients
+>   rebased on current mainline
+> v2:
+>   implemented an alternate workaround for the original problem.
+> v1:
+>   plain revert of 8d451690
+> 
+> 
+>  kernel/watchdog.c |   11 ++++-------
+>  1 file changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 997c6a1..75a2ab3 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -344,6 +344,10 @@ static void watchdog_enable(unsigned int cpu)
+>  {
+>  	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+>  
+> +	/* kick off the timer for the hardlockup detector */
+> +	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+> +	hrtimer->function = watchdog_timer_fn;
+> +
+>  	if (!watchdog_enabled) {
+>  		kthread_park(current);
+>  		return;
+> @@ -352,10 +356,6 @@ static void watchdog_enable(unsigned int cpu)
+>  	/* Enable the perf event */
+>  	watchdog_nmi_enable(cpu);
+>  
+> -	/* kick off the timer for the hardlockup detector */
+> -	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+> -	hrtimer->function = watchdog_timer_fn;
+> -
+>  	/* done here because hrtimer_start can only pin to smp_processor_id() */
+>  	hrtimer_start(hrtimer, ns_to_ktime(sample_period),
+>  		      HRTIMER_MODE_REL_PINNED);
+> @@ -369,9 +369,6 @@ static void watchdog_disable(unsigned int cpu)
+>  {
+>  	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+>  
+> -	if (!watchdog_enabled)
+> -		return;
+> -
+>  	watchdog_set_prio(SCHED_NORMAL, 0);
+>  	hrtimer_cancel(hrtimer);
+>  	/* disable the perf event */
+> -- 
+> 1.7.10.4
 > 
