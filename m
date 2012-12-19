@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab2LSAAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Dec 2012 19:00:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35776 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab2LSAAb (ORCPT
+	id S1755001Ab2LSALK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Dec 2012 19:11:10 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59952 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834Ab2LSALD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Dec 2012 19:00:31 -0500
-Date: Tue, 18 Dec 2012 16:00:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] mm: cond_resched in tlb_flush_mmu to fix soft lockups
- on !CONFIG_PREEMPT
-Message-Id: <20121218160030.baf723aa.akpm@linux-foundation.org>
-In-Reply-To: <20121218235042.GA10350@dhcp22.suse.cz>
-References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
-	<20121218140219.45867ddd.akpm@linux-foundation.org>
-	<20121218235042.GA10350@dhcp22.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 18 Dec 2012 19:11:03 -0500
+Date: Wed, 19 Dec 2012 11:10:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>, Takashi Iwai <tiwai@suse.de>
+Subject: linux-next: manual merge of the modules tree with Linus' tree
+Message-Id: <20121219111053.345900e0b35ee8f4def990a7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Dec_2012_11_10_53_+1100_BCRepUOoIc.soa7u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 00:50:42 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+--Signature=_Wed__19_Dec_2012_11_10_53_+1100_BCRepUOoIc.soa7u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue 18-12-12 14:02:19, Andrew Morton wrote:
-> > On Tue, 18 Dec 2012 17:11:28 +0100
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > Since e303297 (mm: extended batches for generic mmu_gather) we are batching
-> > > pages to be freed until either tlb_next_batch cannot allocate a new batch or we
-> > > are done.
-> > > 
-> > > This works just fine most of the time but we can get in troubles with
-> > > non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY) on
-> > > large machines where too aggressive batching might lead to soft lockups during
-> > > process exit path (exit_mmap) because there are no scheduling points down the
-> > > free_pages_and_swap_cache path and so the freeing can take long enough to
-> > > trigger the soft lockup.
-> > > 
-> > > The lockup is harmless except when the system is setup to panic on
-> > > softlockup which is not that unusual.
-> > > 
-> > > The simplest way to work around this issue is to explicitly cond_resched per
-> > > batch in tlb_flush_mmu (1020 pages on x86_64).
-> > > 
-> > > ...
-> > >
-> > > --- a/mm/memory.c
-> > > +++ b/mm/memory.c
-> > > @@ -239,6 +239,7 @@ void tlb_flush_mmu(struct mmu_gather *tlb)
-> > >  	for (batch = &tlb->local; batch; batch = batch->next) {
-> > >  		free_pages_and_swap_cache(batch->pages, batch->nr);
-> > >  		batch->nr = 0;
-> > > +		cond_resched();
-> > >  	}
-> > >  	tlb->active = &tlb->local;
-> > >  }
-> > 
-> > tlb_flush_mmu() has a large number of callsites (or callsites which
-> > call callers, etc), many in arch code.  It's not at all obvious that
-> > tlb_flush_mmu() is never called from under spinlock?
-> 
-> free_pages_and_swap_cache calls lru_add_drain which in turn calls
-> put_cpu (aka preempt_enable) which is a scheduling point for
-> CONFIG_PREEMPT.
+Hi Rusty,
 
-No, that inference doesn't work.  Because preempt_enable() inside
-spinlock is OK - it will not call schedule() because
-current->preempt_count is still elevated (by spin_lock).
+Today's linux-next merge of the modules tree got a conflict in
+kernel/modsign_pubkey.c between commit 84ecfd15f554 ("modsign: add symbol
+prefix to certificate list") from Linus' tree and commit bb8f5966421d
+("MODSIGN: Avoid using .incbin in C source") from the modules tree.
 
-> There are more down the call chain probably. None of
-> them for non-preempt kernel.
+I fixed it up (I just used the modules tree version as it removed the
+section of code modified by the former) and can carry the fix as
+necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__19_Dec_2012_11_10_53_+1100_BCRepUOoIc.soa7u
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ0QYNAAoJEECxmPOUX5FEyt8P/jZJxKDH8CwKakFUZG63XCPg
+5yMAXmSPiNG9wbfbEf61V13fJHApVb2FGtQ/gDzc2dHWtayPFGsxDP6/+VnkxcUO
+iqj1nfZzxzLQAgQ5HhyjYr5GmskA9HygetwTVHRpMEImfI+7P7ytrxFz0NI0/czE
+C6wqhX1+mc11XxFIGU5qtdquOYy8hJetE4z12u23rJZLXHnQYne6EQFKikYhBe21
+TFvWCxWZ24YxGeV5sjwi4qgtIsF6hvBUNdg52zzSRWbJlWuIiN2PWHkwbDP0Cf3m
+98SmSmO+7DNGjCLBLstvUpMJ2xFQSnuqSCJDSR7azdmZj53O/cdHdquWk6MTa9qM
+YLW3L2StsJVkZI6N+sf5IHdWNd/noZmQBxh8vRiS2DOZGSastGxkLHy64kbi9SCx
+JTgM2x0DMA7749y2cAB1BtDxMMCM+2OPKZJVhJKgG7rwBcOXSrzAr6k+NWpar04M
+WWRl+jjC50QOlF8sUhwy7PAyvR/Sbhym1kh9e54KHNYZ3gxkDlqh4JxscLLxTDHf
+w5rVqHBk1l0XeWDsoqUltR6CQDckGEaid5yUUQ4JPlXS0nZdY4qa2xvUiSX57dE8
+3iYBGWfcLt9HRC9qts2sWWYXXnB10ojcQNavuB6ZLFlE1kMS02PmqSl/9blIXWia
+hmwoy43+lViH2sfayrOb
+=5vxX
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__19_Dec_2012_11_10_53_+1100_BCRepUOoIc.soa7u--
