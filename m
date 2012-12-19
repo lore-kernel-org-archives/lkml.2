@@ -1,44 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab2LSS2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:28:41 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:49978 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab2LSS2d (ORCPT
+	id S1753306Ab2LSSfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:35:33 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:38365 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab2LSSf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:28:33 -0500
-Message-ID: <50D2074D.4000101@linaro.org>
-Date: Wed, 19 Dec 2012 10:28:29 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 13:35:27 -0500
+Date: Wed, 19 Dec 2012 13:32:20 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2012-12-19
+Message-ID: <20121219183220.GB1912@tuxdriver.com>
 MIME-Version: 1.0
-To: Bernd Faust <berndfaust@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH] Round the calculated scale factor in set_cyc2ns_scale()
-References: <1354717009-2687-1-git-send-email-berndfaust@gmail.com>
-In-Reply-To: <1354717009-2687-1-git-send-email-berndfaust@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 06:16 AM, Bernd Faust wrote:
-> During some experiments with an external clock (in a FPGA), we saw that
-> the TSC clock drifted approx. 2.5ms per second.
->
-> This drift was caused by the current way of calculating the scale.
-> In our case cpu_khz had a value of 3292725. This resulted in a scale
-> value of 310. But when doing the calculation by hand it shows that the
-> actual value is 310.9886188491, so a value of 311 would be more precise.
->
-> With this change the value is rounded.
->
-> Signed-off-by: Bernd Faust <berndfaust@gmail.com>
 
-Thanks for sending this in! I've queued it, but because I was slow here, 
-it will have to wait for 3.9.
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for the delay, and thanks again!
--john
+Dave,
 
+Please pull these fixes for the 3.8 stream.
+
+Gabor Juhos provides and rt2x00 fix to properly clear-out the skb->cb
+for reporting tx_status.  Recent changes made this necessary where it
+previously was not.
+
+Vladimir Kondratiev gives us a fix for a build issue that caused some
+ath9k devices to be skipped in the build based on unrelated config
+choices.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
+---
+
+The following changes since commit c1e37ea287979052e3eab441e58da3899a8e2389:
+
+  net: fec: forbid FEC_PTP on SoCs that do not support (2012-12-18 16:26:18=
+ -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+for you to fetch changes up to d67df2b9edfc42ccc0a9ee5332e2821d487d6b3b:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless into for-davem (2012-12-19 13:00:00 -0500)
+
+----------------------------------------------------------------
+
+Gabor Juhos (1):
+      rt2x00: zero-out rx_status
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Vladimir Kondratiev (1):
+      wireless: fix Atheros drivers compilation
+
+ drivers/net/wireless/Makefile           | 2 +-
+ drivers/net/wireless/rt2x00/rt2x00dev.c | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/Makefile b/drivers/net/wireless/Makefile
+index 062dfdf..67156ef 100644
+--- a/drivers/net/wireless/Makefile
++++ b/drivers/net/wireless/Makefile
+@@ -47,7 +47,7 @@ obj-$(CONFIG_RT2X00)	+=3D rt2x00/
+=20
+ obj-$(CONFIG_P54_COMMON)	+=3D p54/
+=20
+-obj-$(CONFIG_ATH_COMMON)	+=3D ath/
++obj-$(CONFIG_ATH_CARDS)		+=3D ath/
+=20
+ obj-$(CONFIG_MAC80211_HWSIM)	+=3D mac80211_hwsim.o
+=20
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless=
+/rt2x00/rt2x00dev.c
+index 4ffb6a5..44f8b3f 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -685,6 +685,14 @@ void rt2x00lib_rxdone(struct queue_entry *entry, gfp_t=
+ gfp)
+ 	 * to mac80211.
+ 	 */
+ 	rx_status =3D IEEE80211_SKB_RXCB(entry->skb);
++
++	/* Ensure that all fields of rx_status are initialized
++	 * properly. The skb->cb array was used for driver
++	 * specific informations, so rx_status might contain
++	 * garbage.
++	 */
++	memset(rx_status, 0, sizeof(*rx_status));
++
+ 	rx_status->mactime =3D rxdesc.timestamp;
+ 	rx_status->band =3D rt2x00dev->curr_band;
+ 	rx_status->freq =3D rt2x00dev->curr_freq;
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ0gg0AAoJEJctW/TcYTgGexIP/0Qm5wLE7PuKV+NXfoPyySv6
+sp4ZkXsboZ0HXjZBjD1pn4aBjzU4G67tRThmHvWlIwaYgWXY3aDwXpvsy+JRCzTh
+xoFlp83u2wmIJSKoTiF9HEThPH65pQszAvn7AuzMIERnr1KexE0Iy9M5bIPOgGzm
+H4aOIGfITeh3SZa3NtschWGSbSAnJZfka123IuYNVGG5CVaq2B6yyzh3Ut+CdnEh
+xlaQ+ppoL0FyBykxou7B1proMzIvca1Ul2pp9sXgMPAqmNkAJi6Wnu46Q/hQKy3J
+7dIJhY86oFGQnmpdh/X5NMqTV2iSyOnKj+ZvSzR7X1VavKcAXqEUHEld7tcpdILn
+unAoIHDDSPq+Cfw7uD4Z1hpP7zYZRJ69MSr8ZcpulGe7b6jhbYD0deJeE5wz2Blg
+1frW6KeoXNczCdEUySIpGvYGSZLWy/1Pnh1sW7pk2n3zUlyoRP8bjyOLbBTdPC3Q
+1nfpSBiobQizQ8xvBC5YVv7FN0FHK67NsV5R1A+f8O+0hObYGg/f2SwMuT1oefqT
+ZarLR+m7a9MEBSzPY8aYbj9sVOnSrnQqP/aLKv1qjl3zVtIe0YyyQQWTgA85iOIM
+bL7ScFcsunOSrN47ZjKCxwMh8EuchcE8kj6FKfeMOO7qumfCVktK3ykVBohv1aCe
+jy4YE+nmPlnGSxtpvnbq
+=wDOd
+-----END PGP SIGNATURE-----
+
+--vtzGhvizbBRQ85DL--
