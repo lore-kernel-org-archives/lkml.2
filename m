@@ -1,78 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab2LSJLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 04:11:34 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45202 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750945Ab2LSJL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 04:11:29 -0500
-Date: Wed, 19 Dec 2012 09:11:27 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: lrg@ti.com, perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: dapm: Fix the unpaired runtime_get/put cases
-Message-ID: <20121219091127.GL4985@opensource.wolfsonmicro.com>
-References: <1355913397.17896.10.camel@cliu38-desktop-build>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KjSGHOmKKB2VUiQn"
-Content-Disposition: inline
-In-Reply-To: <1355913397.17896.10.camel@cliu38-desktop-build>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753464Ab2LSJNC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 04:13:02 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:36033 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809Ab2LSJMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 04:12:51 -0500
+X-IronPort-AV: E=Sophos;i="4.84,315,1355068800"; 
+   d="scan'208";a="6432405"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: [PATCH v4 3/6] ACPI: Restructure movablecore_map with memory info from SRAT.
+Date: Wed, 19 Dec 2012 17:11:48 +0800
+Message-Id: <1355908308-24744-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1355904903-22699-4-git-send-email-tangchen@cn.fujitsu.com>
+References: <1355904903-22699-4-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/19 17:11:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/19 17:11:49,
+	Serialize complete at 2012/12/19 17:11:49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Hot Plugable bit in SRAT flags specifys if the memory range
+could be hotplugged.
 
---KjSGHOmKKB2VUiQn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If user specified movablecore_map=nn[KMG]@ss[KMG], reset
+movablecore_map.map to the intersection of hotpluggable ranges from
+SRAT and old movablecore_map.map.
+Else if user specified movablecore_map=acpi, just use the hotpluggable
+ranges from SRAT.
+Otherwise, do nothing. The kernel will use all the memory in all nodes
+evenly.
 
-On Wed, Dec 19, 2012 at 06:36:37PM +0800, Chuansheng Liu wrote:
+The idea "getting info from SRAT" was from Liu Jiang <jiang.liu@huawei.com>.
+And the idea "do more limit for memblock" was from Wu Jianguo <wujianguo@huawei.com>
 
-> But some devices has been set to STANDY bias directly during device probing,
-> such as cs42l73_probe():
-> cs42l73_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ arch/x86/mm/srat.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 52 insertions(+), 3 deletions(-)
 
-> Then it will cause runtime_get() not be called but laterly runtime_put() will
-> be called. Also found some other uppaired cases.
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 4ddf497..a8856d2 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -146,7 +146,12 @@ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ {
+ 	u64 start, end;
++	u32 hotpluggable;
+ 	int node, pxm;
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++	int overlap;
++	unsigned long start_pfn, end_pfn;
++#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ 	if (srat_disabled())
+ 		return -1;
+@@ -157,8 +162,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+ 		return -1;
+ 
+-	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
++	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
++	if (hotpluggable && !save_add_info())
+ 		return -1;
++
+ 	start = ma->base_address;
+ 	end = start + ma->length;
+ 	pxm = ma->proximity_domain;
+@@ -178,9 +185,51 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 
+ 	node_set(node, numa_nodes_parsed);
+ 
+-	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
++	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+ 	       node, pxm,
+-	       (unsigned long long) start, (unsigned long long) end - 1);
++	       (unsigned long long) start, (unsigned long long) end - 1,
++	       hotpluggable ? "Hot Pluggable": "");
++
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++	start_pfn = PFN_DOWN(start);
++	end_pfn = PFN_UP(end);
++
++	if (!hotpluggable) {
++		/* Clear the range overlapped in movablecore_map.map */
++		remove_movablecore_map(start_pfn, end_pfn);
++		goto out;
++	}
++
++	if (!movablecore_map.acpi) {
++		for (overlap = 0; overlap < movablecore_map.nr_map; overlap++) {
++			if (start_pfn < movablecore_map.map[overlap].end_pfn)
++				break;
++		}
++
++		/*
++		 * If there is no overlapped range, or the end of the overlapped
++		 * range is higher than end_pfn, then insert nothing.
++		 */
++		if (end_pfn <= movablecore_map.map[overlap].end_pfn)
++			goto out;
++
++		/*
++		 * Otherwise, insert the rest of this range to prevent memblock
++		 * from allocating memory in it.
++		 */
++		start_pfn = movablecore_map.map[overlap].end_pfn;
++		start = start_pfn >> PAGE_SHIFT;
++	}
++
++	/* If user chose to use SRAT info, insert the range anyway. */
++	if (insert_movablecore_map(start_pfn, end_pfn))
++		pr_err("movablecore_map: too many entries;"
++			" ignoring [mem %#010llx-%#010llx]\n",
++			(unsigned long long) start,
++			(unsigned long long) (end - 1));
++
++out:
++#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
 
-This is just a bug in the driver, if it's idle_bias_off then it really
-should be starting in _OFF or at the very least starting actually in
-_STANDBY (including taking the runtime reference) rather than partially
-in _STANDBY.
-
-> So here add new flag get_runtime, and the logic will be:
-> 1/ when device is from off to non-off bias, runtime_get() will be called if not yet;
-> 2/ When device is off bias, runtime_put() will be called if runtime_get() has
->    been called;
-
-This is really not a good idea at all, it's just adding new special
-cases and making the code more obscure.
-
---KjSGHOmKKB2VUiQn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0YPTAAoJELSic+t+oim9hqMP/2l1ssTb35Vs8asi4E3anOMy
-iOs6WNQ6mk7hhDeJrfv4RXLO8+u40c7N9jE1RluGjollfBfyhvjrME5LlVFc2M8P
-ADEqt8x1IcZMPBMphYo8qPn6PdoQEwKWZSmS3XICC03NuYSQTR8v08hVWHdWAKZ+
-tXYD0ucmUwr3MtZbT2OXOlsi+YIujTdW/XU3ysB8GbrEwUSl5FA+ErlkXQBTE5mX
-XvYmix+UpmBSpgStCjJ17ZLJS55uswGHNLRD2Ic9PPpX97ruoiLQtb5HWPf3qCOI
-PeAXHFBVHbnkab55v9+joAYwCuvEikO2D3xsXaxCPaApzlNRrJdpnn3y5Vcdu8lK
-U7dSQIM21h1UP2hBbV4qj/2Qq+5oCvAr7tz8Ypuy0ngxe3CMYvwTQj6By9reuVy9
-ekHvG0q3xW0T8mzDik0RN8xzFhI/pqcJ1uXGANhtkG1NnvyZIGCLRogA2XsOPfdN
-Kc3utWmdY5ljAHqLe4rijnsN6sssykU9zOfnB3Nk+3IoBb1j8TCsteJcam+gIS4l
-28h2sDV1A3d94o97ZTaz+QqDehj8g+HkWPWeAecaJI8ZAEmKI2D5cuH9vxhORAAX
-WRI5ZJWKOaCIqkdGA2oZqVgymCdAtyRmw94ZtgBVfmKP+q+2NGroVcsAZZRv8+eX
-dVE3wVpSGF2r8vl4NpLa
-=mott
------END PGP SIGNATURE-----
-
---KjSGHOmKKB2VUiQn--
