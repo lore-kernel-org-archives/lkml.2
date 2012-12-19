@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab2LSMRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 07:17:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab2LSMQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 07:16:53 -0500
-Date: Wed, 19 Dec 2012 13:16:48 +0100
-From: Petr Holasek <pholasek@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm, ksm: NULL ptr deref in unstable_tree_search_insert
-Message-ID: <20121219121647.GB4381@thinkpad-work.redhat.com>
-References: <50D1158F.5070905@oracle.com>
- <alpine.LNX.2.00.1212181728400.1091@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1212181728400.1091@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752526Ab2LSMcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 07:32:16 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60669 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2LSMcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 07:32:07 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] i2c-core: Add gpio based bus arbitration implementation
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: w.sang@pengutronix.de, khali@linux-fr.org, ben-linux@fluff.org,
+        devicetree-discuss@lists.ozlabs.org, sjg@chromium.org,
+        grundler@chromium.org, naveen@chromium.org,
+        broonie@opensource.wolfsonmicro.com
+In-Reply-To: <1355464254-12768-2-git-send-email-ch.naveen@samsung.com>
+References: <1355464254-12768-1-git-send-email-ch.naveen@samsung.com> <1355464254-12768-2-git-send-email-ch.naveen@samsung.com>
+Date: Wed, 19 Dec 2012 12:32:01 +0000
+Message-Id: <20121219123201.B636A3E0AD7@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012, Hugh Dickins wrote:
-> On Tue, 18 Dec 2012, Sasha Levin wrote:
+On Fri, 14 Dec 2012 11:20:53 +0530, Naveen Krishna Chatradhi <ch.naveen@samsung.com> wrote:
+> The arbitrator is a general purpose function which uses two GPIOs to
+> communicate with another device to claim/release a bus.
 > 
-> > Hi all,
-> > 
-> > While fuzzing with trinity inside a KVM tools guest, running latest linux-next kernel, I've
-> > stumbled on the following:
-> > 
-> > [  127.959264] BUG: unable to handle kernel NULL pointer dereference at 0000000000000110
-> > [  127.960379] IP: [<ffffffff81185b60>] __lock_acquire+0xb0/0xa90
-...
-
-> > 88 e9 b9 09 00 00 90 <48> 81 3b 60 59 22 86 b8 01 00 00 00 44 0f 44 e8 41 83 fc 01 77
-> > [  127.978032] RIP  [<ffffffff81185b60>] __lock_acquire+0xb0/0xa90
-> > [  127.978032]  RSP <ffff8800137abb78>
-> > [  127.978032] CR2: 0000000000000110
-> > [  127.978032] ---[ end trace 3dc1b0c5db8c1230 ]---
-> > 
-> > The relevant piece of code is:
-> > 
-> > 	static struct page *get_mergeable_page(struct rmap_item *rmap_item)
-> > 	{
-> > 	        struct mm_struct *mm = rmap_item->mm;
-> > 	        unsigned long addr = rmap_item->address;
-> > 	        struct vm_area_struct *vma;
-> > 	        struct page *page;
-> > 	
-> > 	        down_read(&mm->mmap_sem);
-> > 
-> > Where 'mm' is NULL. I'm not really sure how it happens though.
+> i2c_transfer()
+> 	if adapter->gpio_arbit
+> 		i2c_bus_claim();
+> 			__i2c_transfer();
+> 		i2c_bus_release();
 > 
-> Thanks, yes, I got that, and it's not peculiar to fuzzing at all:
-> I'm testing the fix at the moment, but just hit something else too
-> (ksmd oops on NULL p->mm in task_numa_fault i.e. task_numa_placement).
-> 
-> For the moment, you're safer not to run KSM: configure it out or don't
-> set it to run.  Fixes to follow later, I'll try to remember to Cc you.
-> 
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+> Cc: Grant Grundler <grundler@chromium.org>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 
-Hello all,
+Hi Naveen,
 
-I've also tried fuzzing with trinity inside of kvm guest when tested KSM
-patch, but applied on top of 3.7-rc8, but didn't trigger that oops. So
-going to do the same testing on linux-next.
+I'm not convinced on the design of this protocol. It won't scale beyond
+2 bus masters and it seems very specific to the design of a specific
+piece of hardware. I don't think it is mature enough to bake into the
+core i2c infrastructure or bindings. Nor do I think it will handle other
+busses properly.
 
-Hugh, does it seem like bug in unstable_tree_search_insert() you mentioned
-in yesterday email of something else?
+I can see two alternatives here.
+1) build in hooks for doing i2c bus claim/release, but don't put this
+specific implementation into the core infrastructure
+2) Create an i2c bridge driver. This would kind of be like an i2c
+multiplexer, but it would only have one bus and it would include the
+knowledge of how to use the GPIO lines for bus arbitration.
 
-Thank you for your testing && feedback!
+I think option 2 would be the cleanest option. It would be straight
+forward to design a binding for it by placing a node between the i2c
+bus and all the i2c clients. For example:
 
-Petr
+i2c@60000000 {
+	compatible = "acme,some-i2c-device";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	i2c-bridge {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "samaung,i2c-gpio-arbitrate";
+
+		bus-arbitration-gpios = <&gpf0 3 1 0 0>, /* AP_CLAIM */
+			<&gpe0 4 0 3 0>; /* EC_CLAIM */
+	
+		bus-arbitration-slew-delay-us = <10>;
+		bus-arbitration-wait-retry-us = <2000>;
+		bus-arbitration-wait-free-us = <50000>;
+
+		i2c@52 {
+			// Normal i2c device
+		};
+	};
+};
+
+I don't know what the state of the i2c subsystem is with regard to
+supporting i2c multiplexer devices, so there might be some changes
+needed there, but I can't see it being particularly complex. It should
+just be a device in the middle. Any i2c device that is a child of the
+bridge would send transfers to the bridge, and the bridge would be
+responsible to claim the bus and then pass the transfer through
+unchanged.
+
+That eliminates the problem of trying to design an arbitration scheme
+that works for all.
+
+g.
+
