@@ -1,131 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab2LSJUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 04:20:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48974 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996Ab2LSJUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 04:20:15 -0500
-Date: Wed, 19 Dec 2012 09:20:09 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/8] mm: memcg: only evict file pages when we have plenty
-Message-ID: <20121219092009.GM9887@suse.de>
-References: <1355348620-9382-1-git-send-email-hannes@cmpxchg.org>
- <1355348620-9382-2-git-send-email-hannes@cmpxchg.org>
- <50C8FCE0.1060408@redhat.com>
- <20121212222844.GA10257@cmpxchg.org>
- <20121213145514.GD21644@dhcp22.suse.cz>
- <50CD2232.8020909@gmail.com>
- <20121217155416.GC25432@dhcp22.suse.cz>
- <1355894515.1657.2.camel@kernel-VirtualBox>
+	id S1753989Ab2LSJ06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 04:26:58 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34213 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2LSJ0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 04:26:51 -0500
+Date: Wed, 19 Dec 2012 09:26:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Arm Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Inconsistency in clk framework
+Message-ID: <20121219092636.GW14363@n2100.arm.linux.org.uk>
+References: <1355890233.25599.4.camel@gitbox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355894515.1657.2.camel@kernel-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1355890233.25599.4.camel@gitbox>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 12:21:55AM -0500, Simon Jeons wrote:
-> On Mon, 2012-12-17 at 16:54 +0100, Michal Hocko wrote:
-> > On Sun 16-12-12 09:21:54, Simon Jeons wrote:
-> > > On 12/13/2012 10:55 PM, Michal Hocko wrote:
-> > > >On Wed 12-12-12 17:28:44, Johannes Weiner wrote:
-> > > >>On Wed, Dec 12, 2012 at 04:53:36PM -0500, Rik van Riel wrote:
-> > > >>>On 12/12/2012 04:43 PM, Johannes Weiner wrote:
-> > > >>>>dc0422c "mm: vmscan: only evict file pages when we have plenty" makes
-> > > >>>>a point of not going for anonymous memory while there is still enough
-> > > >>>>inactive cache around.
-> > > >>>>
-> > > >>>>The check was added only for global reclaim, but it is just as useful
-> > > >>>>for memory cgroup reclaim.
-> > > >>>>
-> > > >>>>Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > >>>>---
-> > > >>>>  mm/vmscan.c | 19 ++++++++++---------
-> > > >>>>  1 file changed, 10 insertions(+), 9 deletions(-)
-> > > >>>>
-> > > >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > >>>>index 157bb11..3874dcb 100644
-> > > >>>>--- a/mm/vmscan.c
-> > > >>>>+++ b/mm/vmscan.c
-> > > >>>>@@ -1671,6 +1671,16 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> > > >>>>  		denominator = 1;
-> > > >>>>  		goto out;
-> > > >>>>  	}
-> > > >>>>+	/*
-> > > >>>>+	 * There is enough inactive page cache, do not reclaim
-> > > >>>>+	 * anything from the anonymous working set right now.
-> > > >>>>+	 */
-> > > >>>>+	if (!inactive_file_is_low(lruvec)) {
-> > > >>>>+		fraction[0] = 0;
-> > > >>>>+		fraction[1] = 1;
-> > > >>>>+		denominator = 1;
-> > > >>>>+		goto out;
-> > > >>>>+	}
-> > > >>>>
-> > > >>>>  	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
-> > > >>>>  		get_lru_size(lruvec, LRU_INACTIVE_ANON);
-> > > >>>>@@ -1688,15 +1698,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> > > >>>>  			fraction[1] = 0;
-> > > >>>>  			denominator = 1;
-> > > >>>>  			goto out;
-> > > >>>>-		} else if (!inactive_file_is_low_global(zone)) {
-> > > >>>>-			/*
-> > > >>>>-			 * There is enough inactive page cache, do not
-> > > >>>>-			 * reclaim anything from the working set right now.
-> > > >>>>-			 */
-> > > >>>>-			fraction[0] = 0;
-> > > >>>>-			fraction[1] = 1;
-> > > >>>>-			denominator = 1;
-> > > >>>>-			goto out;
-> > > >>>>  		}
-> > > >>>>  	}
-> > > >>>>
-> > > >>>>
-> > > >>>I believe the if() block should be moved to AFTER
-> > > >>>the check where we make sure we actually have enough
-> > > >>>file pages.
-> > > >>You are absolutely right, this makes more sense.  Although I'd figure
-> > > >>the impact would be small because if there actually is that little
-> > > >>file cache, it won't be there for long with force-file scanning... :-)
-> > > >Yes, I think that the result would be worse (more swapping) so the
-> > > >change can only help.
-> > > >
-> > > >>I moved the condition, but it throws conflicts in the rest of the
-> > > >>series.  Will re-run tests, wait for Michal and Mel, then resend.
-> > > >Yes the patch makes sense for memcg as well. I guess you have tested
-> > > >this primarily with memcg. Do you have any numbers? Would be nice to put
-> > > >them into the changelog if you have (it should help to reduce swapping
-> > > >with heavy streaming IO load).
-> > > >
-> > > >Acked-by: Michal Hocko <mhocko@suse.cz>
-> > > 
-> > > Hi Michal,
-> > > 
-> > > I still can't understand why "The goto out means that it should be
-> > > fine either way.",
-> > 
-> > Not sure I understand your question. goto out just says that either page
-> > cache is low or inactive file LRU is too small. And it works for both
-> > memcg and global because the page cache is low condition is evaluated
-> > only for the global reclaim and always before inactive file is small.
-> > Makes more sense?
+On Wed, Dec 19, 2012 at 05:10:33PM +1300, Tony Prisk wrote:
+> Hi Mike,
 > 
-> Hi Michal,
-> 
-> I confuse of Gorman's comments below, why the logic change still fine.  
-> 
+> In attempting to remove some IS_ERR_OR_NULL references, it was pointed
+> out that clk_get() can return NULL if CONFIG_HAVE_CLK is not defined.
 
-Those comments were wrong.
+That is correct - but why is that a problem?  As far as users are
+concerned, NULL is a valid clock.  If HAVE_CLK is undefined, do you
+want all your drivers to suddenly stop working?
 
--- 
-Mel Gorman
-SUSE Labs
+> This seems to contradict the kernel docs associated with the normal
+> clk_get (when HAVE_CLK is defined) which states:
+> 
+> * Returns a struct clk corresponding to the clock producer, or
+> * valid IS_ERR() condition containing errno.
+> 
+> Wouldn't a return code of ERR_PTR(-ENOENT) make more sense and be inline
+> with the empty of_ versions as well (which return -ENOENT when CONFIG_OF
+> is undefined).
+
+No.
+
+> Also, I noticed that clk_get_sys() doesn't appear to be defined in clk.h
+> when HAVE_CLK is undefined - is this correct?
+
+It was never promoted to an official API because its only platform code
+which should be using it; no device driver (which should have a struct
+device to pass into clk_get()) should ever use clk_get_sys().
