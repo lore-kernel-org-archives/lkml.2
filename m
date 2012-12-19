@@ -1,130 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab2LSU25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:28:57 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:43105 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2LSU2s (ORCPT
+	id S1752300Ab2LSUa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:30:29 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6534 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab2LSUaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:28:48 -0500
-Message-ID: <50D22379.9090909@gmail.com>
-Date: Wed, 19 Dec 2012 21:28:41 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Wed, 19 Dec 2012 15:30:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,318,1355126400"; 
+   d="scan'208";a="15255332"
+Message-ID: <50D223DD.8070208@codeaurora.org>
+Date: Wed, 19 Dec 2012 12:30:21 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: linux-usb@vger.kernel.org, dianders@chromium.org, l.majewski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, p.paneri@samsung.com,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, kyungmin.park@samsung.com,
-        kgene.kim@samsung.com, ben-linux@fluff.org,
-        broonie@opensource.wolfsonmicro.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: Re: [PATCH v2] usb: phy: samsung: Add support to set pmu isolation
-References: <1355810167-18425-2-git-send-email-gautam.vivek@samsung.com> <1355838966-11269-1-git-send-email-gautam.vivek@samsung.com> <50D0F9EA.9090002@gmail.com> <CAFp+6iGTRpDRcES862hcXL59DcG=GPEZ6B6r2jtw575P-8kCPw@mail.gmail.com> <CAFp+6iFHzARtKD6Off7h7_0fcxx52rFoT2V8ucy_a2kTd4bf1w@mail.gmail.com>
-In-Reply-To: <CAFp+6iFHzARtKD6Off7h7_0fcxx52rFoT2V8ucy_a2kTd4bf1w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Josh Cartwright <josh.cartwright@ni.com>
+Subject: Re: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
+References: <1355778135-32458-1-git-send-email-sboyd@codeaurora.org> <1355778135-32458-5-git-send-email-sboyd@codeaurora.org> <b11edd0b-27ff-48b3-9f2a-1e7ab293cc34@CO9EHSMHS019.ehs.local>
+In-Reply-To: <b11edd0b-27ff-48b3-9f2a-1e7ab293cc34@CO9EHSMHS019.ehs.local>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 12/19/2012 02:44 PM, Vivek Gautam wrote:
->>>> --- a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
->>>> +++ b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
->>>> @@ -9,3 +9,15 @@ Required properties:
->>>>    - compatible : should be "samsung,exynos4210-usbphy"
->>>>    - reg : base physical address of the phy registers and length of memory
->>>> mapped
->>>>          region.
->>>> +
->>>> +Optional properties:
->>>> +- samsung,usb-phyhandle : should point to usb-phyhandle sub-node which
->>>> provides
->>>> +                       binding data to enable/disable device PHY handled
->>>> by
->>>> +                       PMU register.
->>>> +
->>>> +                       Required properties:
->>>> +                       - compatible : should be "samsung,usbdev-phyctrl"
->>>> for
->>>> +                                       DEVICE type phy.
->>>> +                       - samsung,phyhandle-reg: base physical address of
->>>> +                                               PHY_CONTROL register in
->>>> PMU.
->>>> +- samsung,enable-mask : should be '1'
->>>
->>>
->>> This should only be 1 for Exynos4210+ SoCs, right ?
+On 12/19/12 11:22, Soren Brinkmann wrote:
+> Hi Stephen,
 >
-> Yes that's true Exynso4210+ SoCs have only single PHY for both host and device
-> which gets enabled by single bit.
+> I guess Josh is the better person to talk about this, since he created the
+> patches regarding common clock for mainline, but I tried running your series
+> and ran into this:
 >
->>> S5PV210 uses bit 0 for OTG and bit1 for USB host, doesn't it ? And for
->>> s3c64xx
->>> it seems to be bit 16.
->>>
-> True, S5PV210 uses two bits separately for OTG and HOST, so in that
-> case we would
-> require to set both these bits. Thanks for pointing out !!
+> Unable to handle kernel NULL pointer dereference at virtual address 0000002a
+> pgd = c0004000
+> [0000002a] *pgd=00000000
+> Internal error: Oops: 5 [#1] PREEMPT ARM
+> Modules linked in:
+> CPU: 0    Tainted: G        W     (3.7.0-rc3-00025-gc11ffdd-dirty #246)
+> PC is at __clk_prepare+0x20/0x80
+> LR is at clk_prepare+0x2c/0x44
+> pc : [<c031659c>]    lr : [<c0316628>]    psr: a0000153
+> sp : ee02fdd0  ip : ee02fde8  fp : ee02fde4
+> r10: 00000000  r9 : 00000000  r8 : c0587884
+> r7 : 00000000  r6 : c05aab98  r5 : fffffffe  r4 : fffffffe
+> r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : fffffffe
+> Flags: NzCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 18c5387d  Table: 00004059  DAC: 00000015
+> Process swapper (pid: 1, stack limit = 0xee02e230)
+> Stack: (0xee02fdd0 to 0xee030000)
+> fdc0:                                     c05b6a18 fffffffe ee02fdfc ee02fde8
+> fde0: c0316628 c0316588 ee085400 fffffffe ee02fe24 ee02fe00 c03c1358 c0316608
+> fe00: c03c1328 ee085410 c05aab98 c05aab98 00000000 c0587884 ee02fe34 ee02fe28
+> fe20: c026a5c0 c03c1334 ee02fe5c ee02fe38 c0268f50 c026a5a8 c026a7b8 c0313ac0
+> fe40: ee085410 ee085410 ee085444 c05aab98 ee02fe7c ee02fe60 c02691c0 c0268e18
+> fe60: c0269150 c05aab98 c0269150 00000000 ee02fea4 ee02fe80 c0267320 c026915c
+> fe80: ee00948c ee096df0 c021e02c c05aab98 ed9a0bc0 c05ab3a8 ee02feb4 ee02fea8
+> fea0: c0268a28 c02672d0 ee02fee4 ee02feb8 c0268408 c0268a0c c04b56d1 00000000
+> fec0: ee02fee4 c05aab98 c0565e60 00000000 0000006f c0587884 ee02ff14 ee02fee8
+> fee0: c0269990 c0268340 00000000 00000000 c0565e60 00000000 0000006f c0587884
+> ff00: 00000000 00000000 ee02ff24 ee02ff18 c026a9cc c02698f0 ee02ff3c ee02ff28
+> ff20: c0565e84 c026a984 ee02e000 ee02ff40 ee02ff74 ee02ff40 c00086f8 c0565e6c
+> ff40: c04f72e4 00000000 ee02ff74 00000006 00000006 c0571dac c0571d8c 0000006f
+> ff60: c0587884 00000000 ee02ffac ee02ff78 c03bf9c4 c0008664 00000006 00000006
+> ff80: c05511a8 00000000 ee02ffac 00000000 c03bf8cc 00000000 00000000 00000000
+> ffa0: 00000000 ee02ffb0 c000ea98 c03bf8d8 00000000 00000000 00000000 00000000
+> ffc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> ffe0: 00000000 00000000 00000000 00000000 00000013 00000000 0158ec21 0eced1ff
+> [<c031659c>] (__clk_prepare+0x20/0x80) from [<c0316628>] (clk_prepare+0x2c/0x44)
+> [<c0316628>] (clk_prepare+0x2c/0x44) from [<c03c1358>] (xuartps_probe+0x30/0x1ac
+> )
+> [<c03c1358>] (xuartps_probe+0x30/0x1ac) from [<c026a5c0>] (platform_drv_probe+0x
+> 24/0x28)
+> [<c026a5c0>] (platform_drv_probe+0x24/0x28) from [<c0268f50>] (driver_probe_devi
+> ce+0x144/0x344)
+> [<c0268f50>] (driver_probe_device+0x144/0x344) from [<c02691c0>] (__driver_attac
+> h+0x70/0x94)
+> [<c02691c0>] (__driver_attach+0x70/0x94) from [<c0267320>] (bus_for_each_dev+0x5
+> c/0x8c)
+> [<c0267320>] (bus_for_each_dev+0x5c/0x8c) from [<c0268a28>] (driver_attach+0x28/
+> 0x30)
+> [<c0268a28>] (driver_attach+0x28/0x30) from [<c0268408>] (bus_add_driver+0xd4/0x
+> 254)
+> [<c0268408>] (bus_add_driver+0xd4/0x254) from [<c0269990>] (driver_register+0xac
+> /0x14c)
+> [<c0269990>] (driver_register+0xac/0x14c) from [<c026a9cc>] (platform_driver_reg
+> ister+0x54/0x68)
+> [<c026a9cc>] (platform_driver_register+0x54/0x68) from [<c0565e84>] (xuartps_ini
+> t+0x24/0x44)
+> [<c0565e84>] (xuartps_init+0x24/0x44) from [<c00086f8>] (do_one_initcall+0xa0/0x
+> 170)
+> [<c00086f8>] (do_one_initcall+0xa0/0x170) from [<c03bf9c4>] (kernel_init+0xf8/0x
+> 2ac)
+> [<c03bf9c4>] (kernel_init+0xf8/0x2ac) from [<c000ea98>] (ret_from_fork+0x14/0x20
+> )
+> Code: e8bd4000 e2504000 01a05004 0a000015 (e594302c) 
+> ---[ end trace 1b75b31a2719ed1d ]---
+> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
 >
-> I couldn't see device tree support for S5PV210 and S3C64xx so thought
-> of going for
-> 4210+ SoCs. Better we make this more generic so that once these SoCs
-> are moved to
-> device tree we don't face any issue. Right ??
-
-Fair enough. Yes, let's not make any future addition of the device tree
-support for the older Samsung platforms unnecessarily difficult. It doesn't
-take much effort, and there is many drivers that are shared by multiple 
-SoCs
-already, starting from s3c64xx to exynos4 series.
-
->>> How about deriving this information from 'compatible' property instead ?
 >
-> It will definitely be good to use the compatible property to derive
-> such information,
-> Need to amend the current approach.
+> A probably unique thing I do is, I set the status of uart0 to disabled. This way
+> I can reuse my rootfs which does not run getty on ttyPS1. And this worked fine
+> before.
 >
->>> Maybe you could just encode the USB PMU registers (I assume those aren't
->>> touched by anything but the usb drivers) in a regular 'reg' property in
->>> an usbphy subnode. Then the driver could interpret it also with help
->>> of 'compatible' property. And you could just use of_iomap(). E.g.
->>>
->>>   usbphy@12130000 {
->>>          compatible = "samsung,exynos5250-usbphy";
->>>          reg =<0x12130000 0x100>,<0x12100000 0x100>;
->>>          usbphy-pmu {
->>>                  /* USB device and host PHY_CONTROL registers */
->>>                  reg =<0x10040704 8>;
->>>          };
->>>   };
->>>
->
-> This approach seems nice.
->
->>> Your "samsung,usb-phyhandle" approach seems over-engineered to me.
->>> I might be missing something though.
->>>
->
-> The idea behind using phandles for usb-phy was to get the multiple
-> registers (2 in PMU
-> and 1 in SYSREG) and program them separately as required.
 
-You could still specify multiple <address, size> pairs in 'reg' property
-or perhaps use separate node for SYSREG. And if on some SoCs PHY_CONTROL
-registers do not immediately follow each other in memory it might make
-sense to define the bindings so that each register is specified separately,
-e.g.
+Thanks for testing. It seems that clocks are failing to register. Please
+try this patch.
 
-reg = <0x10040704 4>, <0x10040708 4>, <0x10050230 4>;
+--->8-----
 
-However AFAICS single region for the PHY_CONTROL registers should be
-sufficient for all existing SoCs.
+diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
+index 2be22a2..2734715 100644
+--- a/drivers/tty/serial/xilinx_uartps.c
++++ b/drivers/tty/serial/xilinx_uartps.c
+@@ -948,9 +948,9 @@ static int xuartps_probe(struct platform_device *pdev)
+        struct clk *clk;
 
---
+        clk = of_clk_get(pdev->dev.of_node, 0);
+-       if (!clk) {
+-               dev_err(&pdev->dev, "no clock specified\n");
+-               return -ENODEV;
++       if (IS_ERR(clk)) {
++               dev_err(&pdev->dev, "failed to get clock\n");
++               return PTR_ERR(clk);
+        }
 
-Thanks,
-Sylwester
+        rc = clk_prepare_enable(clk);
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
