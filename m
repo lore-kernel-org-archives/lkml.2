@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab2LSUXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:23:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46291 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab2LSUXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:23:37 -0500
-Date: Wed, 19 Dec 2012 12:22:53 -0800
-Message-Id: <201212192022.qBJKMrJ6021946@tazenda.hos.anvin.org>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Additional x86 fixes for v3.8-rc1
-Cc: <stable@vger.kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Brown <mbrown@fensystems.co.uk>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>
+	id S1753046Ab2LSUX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:23:57 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:3349 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2LSUXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 15:23:43 -0500
+X-IronPort-AV: E=Sophos;i="4.84,318,1355126400"; 
+   d="scan'208";a="15251370"
+Message-ID: <50D2224E.4060300@codeaurora.org>
+Date: Wed, 19 Dec 2012 12:23:42 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Paul Walmsley <paul@pwsan.com>
+CC: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: spinlock bad magic on CPU#0 on BeagleBone
+References: <B5906170F1614E41A8A28DE3B8D121433EC9A69C@DBDE01.ent.ti.com> <alpine.DEB.2.00.1212191650430.16873@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1212191650430.16873@utopia.booyaka.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 12/19/12 08:53, Paul Walmsley wrote:
+> On Wed, 19 Dec 2012, Bedia, Vaibhav wrote:
+>
+>> Current mainline on Beaglebone using the omap2plus_defconfig + 3 build fixes
+>> is triggering a BUG()
+> ...
+>
+>> [    0.109688] Security Framework initialized
+>> [    0.109889] Mount-cache hash table entries: 512
+>> [    0.112674] BUG: spinlock bad magic on CPU#0, swapper/0/0
+>> [    0.112724]  lock: atomic64_lock+0x240/0x400, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+>> [    0.112782] [<c001af64>] (unwind_backtrace+0x0/0xf0) from [<c02c2010>] (do_raw_spin_lock+0x158/0x198)
+>> [    0.112813] [<c02c2010>] (do_raw_spin_lock+0x158/0x198) from [<c04d89ec>] (_raw_spin_lock_irqsave+0x4c/0x58)
+>> [    0.112844] [<c04d89ec>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c02cabf0>] (atomic64_add_return+0x30/0x5c)
+>> [    0.112886] [<c02cabf0>] (atomic64_add_return+0x30/0x5c) from [<c0124564>] (alloc_mnt_ns.clone.14+0x44/0xac)
+>> [    0.112914] [<c0124564>] (alloc_mnt_ns.clone.14+0x44/0xac) from [<c0124f4c>] (create_mnt_ns+0xc/0x54)
+>> [    0.112951] [<c0124f4c>] (create_mnt_ns+0xc/0x54) from [<c06f31a4>] (mnt_init+0x120/0x1d4)
+>> [    0.112978] [<c06f31a4>] (mnt_init+0x120/0x1d4) from [<c06f2d50>] (vfs_caches_init+0xe0/0x10c)
+>> [    0.113005] [<c06f2d50>] (vfs_caches_init+0xe0/0x10c) from [<c06d4798>] (start_kernel+0x29c/0x300)
+>> [    0.113029] [<c06d4798>] (start_kernel+0x29c/0x300) from [<80008078>] (0x80008078)
+>> [    0.118290] CPU: Testing write buffer coherency: ok
+>> [    0.118968] CPU0: thread -1, cpu 0, socket -1, mpidr 0
+>> [    0.119053] Setting up static identity map for 0x804de2c8 - 0x804de338
+>> [    0.120698] Brought up 1 CPUs
+> This is probably a memory corruption bug, there's probably some code 
+> executing early that's writing outside its own data and trashing some 
+> previously-allocated memory.
 
-A collection of very small fixes, mostly pure documentation.
+I'm not so sure. It looks like atomic64s use spinlocks on processors
+that don't have 64-bit atomic instructions (see lib/atomic64.c). And
+those spinlocks are not initialized until a pure initcall runs,
+init_atomic64_lock(). Pure initcalls don't run until after
+vfs_caches_init() and so you get this BUG() warning that the spinlock is
+not initialized.
 
-The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
+How about we initialize the locks statically? Does that fix your problem?
 
-  Linux 3.7 (2012-12-10 19:30:57 -0800)
+---->8-----
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
-
-The head of this tree is cd34ab8b16ffaa9753d85adb4fb6cd98e7e1d22a.
-
-H. Peter Anvin (2):
-      x86, doc: Add a formal bootloader ID for kexec-tools
-      x86, doc: Document that bootloader ID 4 is used also by iPXE
-
-Ondrej Zary (1):
-      x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
-
- Documentation/x86/boot.txt            | 3 ++-
- drivers/input/serio/i8042-x86ia64io.h | 9 +++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 9efceff..9a89e01 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -373,7 +373,7 @@ Protocol:	2.00+
- 	1  Loadlin
- 	2  bootsect-loader	(0x20, all other values reserved)
- 	3  Syslinux
--	4  Etherboot/gPXE
-+	4  Etherboot/gPXE/iPXE
- 	5  ELILO
- 	7  GRUB
- 	8  U-Boot
-@@ -381,6 +381,7 @@ Protocol:	2.00+
- 	A  Gujin
- 	B  Qemu
- 	C  Arcturus Networks uCbootloader
-+	D  kexec-tools
- 	E  Extended		(see ext_loader_type)
- 	F  Special		(0xFF = undefined)
-        10  Reserved
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index d6cc77a..5f306f7 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -921,6 +921,7 @@ static int __init i8042_platform_init(void)
- 	int retval;
+diff --git a/lib/atomic64.c b/lib/atomic64.c
+index 9785378..08a4f06 100644
+--- a/lib/atomic64.c
++++ b/lib/atomic64.c
+@@ -31,7 +31,11 @@
+ static union {
+        raw_spinlock_t lock;
+        char pad[L1_CACHE_BYTES];
+-} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
++} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp = {
++       [0 ... (NR_LOCKS - 1)] = {
++               .lock =  __RAW_SPIN_LOCK_UNLOCKED(atomic64_lock.lock),
++       },
++};
  
- #ifdef CONFIG_X86
-+	u8 a20_on = 0xdf;
- 	/* Just return if pre-detection shows no i8042 controller exist */
- 	if (!x86_platform.i8042_detect())
- 		return -ENODEV;
-@@ -960,6 +961,14 @@ static int __init i8042_platform_init(void)
- 
- 	if (dmi_check_system(i8042_dmi_dritek_table))
- 		i8042_dritek = true;
-+
-+	/*
-+	 * A20 was already enabled during early kernel init. But some buggy
-+	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-+	 * resume from S3. So we do it here and hope that nothing breaks.
-+	 */
-+	i8042_command(&a20_on, 0x10d1);
-+	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
- #endif /* CONFIG_X86 */
- 
- 	return retval;
+ static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
+ {
+@@ -173,14 +177,3 @@ int atomic64_add_unless(atomic64_t *v, long long a, long long u)
+        return ret;
+ }
+ EXPORT_SYMBOL(atomic64_add_unless);
+-
+-static int init_atomic64_lock(void)
+-{
+-       int i;
+-
+-       for (i = 0; i < NR_LOCKS; ++i)
+-               raw_spin_lock_init(&atomic64_lock[i].lock);
+-       return 0;
+-}
+-
+-pure_initcall(init_atomic64_lock);
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
