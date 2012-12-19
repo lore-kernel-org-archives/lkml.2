@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab2LSP24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:28:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753706Ab2LSP2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:28:49 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Corey Bryant <coreyb@linux.vnet.ibm.com>, Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        jmorris@namei.org, otubo@linux.vnet.ibm.com,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 1/3] seccomp: Add SECCOMP_RET_INFO return value
-Date: Wed, 19 Dec 2012 10:28:42 -0500
-Message-ID: <34771527.GTMPbzeFu2@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.9.4 (Linux/3.6.11-gentoo; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <50D1D58D.6060408@linux.vnet.ibm.com>
-References: <1355867449-3209-1-git-send-email-coreyb@linux.vnet.ibm.com> <CABqD9hbw2kT1PYiHRNSq+xVEDQdYPVqrJv78Sa4DiSnvWJ97cQ@mail.gmail.com> <50D1D58D.6060408@linux.vnet.ibm.com>
+	id S1755492Ab2LSPem (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:34:42 -0500
+Received: from anubis.se.axis.com ([195.60.68.12]:59332 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab2LSPeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 10:34:36 -0500
+Date: Wed, 19 Dec 2012 16:34:32 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] rtc-pcf8523: Add low battery voltage support
+Message-ID: <20121219153432.GC14217@axis.com>
+References: <20121219140456.GA14217@axis.com>
+ <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
+ <20121219151054.GB14217@axis.com>
+ <20121219151937.GA21212@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219151937.GA21212@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 19, 2012 09:56:13 AM Corey Bryant wrote:
-> On 12/18/2012 05:22 PM, Will Drewry wrote:
-> > while others I've spoken with have been using the audit path to track
-> > denied values -- not so great for soft-failures :)
-> 
-> The audit path would work too but if I understand I think you can only
-> learn one syscall per execution.  The nice thing about SECCOMP_RET_INFO
-> is that you can easily learn all the syscalls in one execution.
+This patch implements reading of the battery voltage low signal for
+rtc-pcf8523.
 
-Another quick point about the audit log: on some systems, e.g. tightly secured 
-SELinux systems, the audit log is only accessible via a very privileged user 
-(Will hints at this below).  Normal users do not have access to, and therefore 
-can't make use of, the seccomp related audit records.
+The bit is read-only and cannot be cleared by software, so no
+clear-function is implemented.
 
-> > That aside, I worry that pr_info is the wrong place for a random user
-> > on the machine to log to for this, but I may be wrong, rather than a
-> > dedicated ringbufffer, etc.  So if this is for a user with privs, then
-> > a SECCOMP_RET_AUDIT might make sense.  Feedback to a local user seems
-> > tricky in general. I don't know :)  I just decided to deal with it in
-> > userland even if it is slightly painful.
-> 
-> That's a good point.  I don't know which option is better either so if
-> anyone else could weigh in on the better approach I'd appreciate it.
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+---
+diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
+index be05a64..62905fb 100644
+--- a/drivers/rtc/rtc-pcf8523.c
++++ b/drivers/rtc/rtc-pcf8523.c
+@@ -23,6 +23,7 @@
+ #define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
+ #define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
+ #define REG_CONTROL3_PM_MASK 0xe0
++#define REG_CONTROL3_BLF (1 << 2) /* battery low bit, read-only */
+ 
+ #define REG_SECONDS  0x03
+ #define REG_SECONDS_OS (1 << 7)
+@@ -250,9 +252,36 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 	return pcf8523_start_rtc(client);
+ }
+ 
++static int
++pcf8523_rtc_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	u8 value;
++	int err;
++	int ret = 0;
++
++	switch (cmd) {
++	case RTC_VL_READ:
++		err = pcf8523_read(client, REG_CONTROL3, &value);
++		if (err < 0)
++			return err;
++
++		if (value & REG_CONTROL3_BLF)
++			ret = 1;
++
++		if (copy_to_user((void __user *)arg, &ret, sizeof(int)))
++			return -EFAULT;
++
++		return 0;
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++
+ static const struct rtc_class_ops pcf8523_rtc_ops = {
+ 	.read_time = pcf8523_rtc_read_time,
+ 	.set_time = pcf8523_rtc_set_time,
++	.ioctl = pcf8523_rtc_ioctl,
+ };
+ 
+ static int pcf8523_probe(struct i2c_client *client,
 
-I agree with Will's statement about better to deal with the problem in 
-userspace when possible, but as Corey pointed out, our experiences with QEMU 
-have demonstrated that dealing with the problem exclusively in userspace just 
-isn't practical in every case.
 
-Syslog might not be the answer, but RET_TRAP and the audit log aren't very 
-good answers either.
-
+/^JN - Jesper Nilsson
 -- 
-paul moore
-security and virtualization @ redhat
-
+               Jesper Nilsson -- jesper.nilsson@axis.com
