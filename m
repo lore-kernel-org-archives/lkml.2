@@ -1,95 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab2LSTEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 14:04:35 -0500
-Received: from mailserver5.natinst.com ([130.164.80.5]:46294 "EHLO
-	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2LSTE1 (ORCPT
+	id S1752698Ab2LSTGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 14:06:17 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42789 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2LSTGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 14:04:27 -0500
-Date: Wed, 19 Dec 2012 13:04:12 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>, monstr@monstr.eu,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Linn <john.linn@xilinx.com>, Arnd Bergmann <arnd@arndb.de>,
-        git@xilinx.com, nbowler@elliptictech.com
-Subject: Re: [PATCH v2 0/7] Updates for Zynq's timer driver
-Message-ID: <20121219190412.GD1005@beefymiracle.amer.corp.natinst.com>
-References: <ab760e55-61c2-46b0-b899-1935c213536e@CO1EHSMHS026.ehs.local>
-MIME-Version: 1.0
-In-Reply-To: <ab760e55-61c2-46b0-b899-1935c213536e@CO1EHSMHS026.ehs.local>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 12/19/2012 01:03:50 PM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 12/19/2012 01:03:50 PM,
-	Serialize complete at 12/19/2012 01:03:50 PM
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-19_08:2012-12-19,2012-12-19,1970-01-01 signatures=0
+	Wed, 19 Dec 2012 14:06:05 -0500
+Date: Wed, 19 Dec 2012 19:10:30 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: Fix unreasonable write toward closed pty.
+Message-ID: <20121219191030.4ee20a1c@pyramind.ukuu.org.uk>
+In-Reply-To: <50D20E87.9060403@ilyx.ru>
+References: <50D20E87.9060403@ilyx.ru>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+> index a82b399..1ce1362 100644
+> --- a/drivers/tty/pty.c
+> +++ b/drivers/tty/pty.c
+> @@ -116,6 +116,8 @@ static int pty_space(struct tty_struct *to)
+>  
+>  static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
+>  {
+> +	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
+> +		return -EIO;
 
---Nq2Wo0NMKNjxTN9z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The flag can change between the test and ny further code being executed ?
 
-On Wed, Dec 19, 2012 at 10:16:25AM -0800, Soren Brinkmann wrote:
-> I started to put some effort on syncing the Xilinx Linux tree with mainli=
-ne and
-> the timer driver is my first victim.
-> Most commits are fixing style issues or clean up. Functionality is touche=
-d only
-> in patches #2 and #7.
->=20
-> Some patches are present in almost identically in the Xilinx Linux tree a=
-nd I
-> took over 'Acked-by' lines from those commits.
->=20
-> To repost the patch with the arm-kernel list included I made this a v2 to=
- avoid
-> confusion about which series is the current one, though the patches are t=
-he same
-> as the ones posted before on lkml only.
-> I added Josh's 'Reviewed-by' line though.
-
-I had a chance this morning to get this set up and running on one of our
-Zynq boards this morning in between testing Stephen's clk-zynq changes.
-Looks good.
-
-Whoever is going to pick this up (probably Michal), feel free to add my:
-
-Tested-by: Josh Cartwright <josh.cartwright@ni.com>
-
-Thanks,
-
-  Josh
-
---Nq2Wo0NMKNjxTN9z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0g+sAAoJEEef0niEbw+lIdcQAKntNCA1FmOyegd4O5zSyr47
-uEmowgr3Ugm6nP/AukZzxpsOgbqCnt1rHl3FYIUBE5TkTUiFjIi01Esuiv+Q249y
-8jZ/ihgl+4rINw/40w4g67TiCiqXKQVAXhMRvmUv7gvBd/hfCxh0/cRn6mf/jox8
-38gMpVOtmppxb1x9ovvE7FBPNmjhi5cZTSsypnhRM5Yz/j5ekhXKMxdvEb4kT/bJ
-NwnAaNT/Hd61q5oFb2ZJgIKXvZptSI3SDor+DNHdzLmfG1fbaXa75C1O0XMUUSbr
-mTIV2fp0mmTX1scF+TZvmcoFS7cqkEqXNcQxt2o1G3NfeM9HA9tHCnIPzCtpi5ne
-6UgHLzB0w087mypZJTRmvBKlemD1ljNX8WIYMwkf0lBSgPuyQJ166UYiBP+ytCW5
-DJPYCSc4bweDN6nWhuDzu3+gQ9amprfLZcCyuteZpQBZTvMvqWzdUL+UtOUtPUxw
-zZHabNNKOmTnNNoIXC55WOLvfAfXwb/FlCS2NxYetsi27LWzZd+FUkBr0OxPK+ff
-1o3UymPL8TDM7Aao4lZNn6VewzGj6/JjvJIXWBxmE+gLwzKCgZ3pEDpdJZByFgOG
-9zUQz/fhvh415t28q1/hszgufcTphH1VnvOAT9PFGqm5DvTap1IOY/3xIVrZZbDi
-LTqzJbkueJML0+t2dSlq
-=QMnx
------END PGP SIGNATURE-----
-
---Nq2Wo0NMKNjxTN9z--
+Alan
