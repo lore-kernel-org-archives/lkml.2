@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab2LSKcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 05:32:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57356 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750966Ab2LSKcI (ORCPT
+	id S1755004Ab2LSKgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 05:36:51 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:27125 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab2LSKgo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 05:32:08 -0500
-Date: Wed, 19 Dec 2012 10:32:06 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, Luciano Coelho <coelho@ti.com>,
-        svenkatr@ti.com, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, lrg@ti.com, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-Message-ID: <20121219103206.GQ4985@opensource.wolfsonmicro.com>
-References: <1352968293.10872.51.camel@cumari.coelho.fi>
- <20121218095450.GB27751@arwen.pp.htv.fi>
- <20121219094552.GN4985@opensource.wolfsonmicro.com>
- <50D19040.5090404@ti.com>
- <20121219100909.GO4985@opensource.wolfsonmicro.com>
- <50D19463.5010605@ti.com>
+	Wed, 19 Dec 2012 05:36:44 -0500
+From: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "jarkko.sakkinen@intel.com" <jarkko.sakkinen@intel.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "agordeev@redhat.com" <agordeev@redhat.com>
+Subject: RE: Why Linux kernel forced to enter X2APIC mode( just because of
+ booting cpu has supported x2apic) without depending on BIOS' setting in
+ MSR->x2apic enablement bit ?
+Thread-Topic: Why Linux kernel forced to enter X2APIC mode( just because of
+ booting cpu has supported x2apic) without depending on BIOS' setting in
+ MSR->x2apic enablement bit ?
+Thread-Index: Ac3dBDEGb3itVOfRRseMR0luplSOQwAQ8+AAACKpTSA=
+Date: Wed, 19 Dec 2012 10:36:00 +0000
+Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F91F2222@G1W3649.americas.hpqcorp.net>
+References: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net>
+ <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
+In-Reply-To: <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.193.232.27]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FilwpOHBrTVNlmJ3"
-Content-Disposition: inline
-In-Reply-To: <50D19463.5010605@ti.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yinghai , 
+	
+Actually ,my question like this: 
+OS can really enable x2apic correctly without BIOS' help in this case : 
+BIOS has claimed definitely it doesn't enable x2apic ,but OS feel it can enable x2apic(based on BSP supports x2apic) ).
 
---FilwpOHBrTVNlmJ3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If Linux don't need BIOS' help , how did linux kernel reach this action? 
+I am reading this related code, I just see Linux kernel judge cpu_has_x2apic() ,if yes, it will set MSR, certainly , IR works right. 
+We can think BIOS' supporting is not necessary ? 
 
-On Wed, Dec 19, 2012 at 11:18:11AM +0100, Peter Ujfalusi wrote:
+Thanks very much . 
+-- Bob(LinBao Zhang)
+HP linux kernel enginner
 
-> Sure. It must be a clock driver. I already have similar driver (for McPDM fclk
-> clock) for twl6040.
-> Let me check linux-next, if CCF is there for OMAP I can send the 32k clock
-> driver soon (after writing it and testing it). It is going to be for 3.9 but
-> we can roll it with us I think locally to resolv issues.
-
-Well, we still haven't got the foggiest idea what the actual problem is
-beyond that it's probably related to the 32kHz clock in some way (unless
-it was one of the other reverts that coincidentally made a difference,
-but we don't know what they were) so it's unlikely that just randomly
-implementing clock support is going to fix anything immediately here.
-
---FilwpOHBrTVNlmJ3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0ZeGAAoJELSic+t+oim9OhcP/iUW16vAlKxNUVK2rI3p3Gmb
-obq0fIk8V/6l0YMpvUrRYWv9sVgpsFOVM79M8EJF5UN1rHJ5LXwdv3XinIWaqVYO
-0ixENxjHj2F3z2xIvwvEjmQTX8ZOrJymJo63/ekufSsKP+LKOvxSNxieXop7WTg7
-2Ifa66tu3qR+dXfZIZSkUkPBRlnrcjaFUFDHQUJXwf8GWcSD211XQ2bla21cIemG
-fkPloPnvPdn4vWguHaTJs+H4jo4ZB2FqbKI31PZtG5hDzN+ScYWK0Sp05qAmrhHe
-REiQ2t0DyqozNkp27ftO8FDWjf9sBI2cYTn0gQpzdp26OG+nGPUoXBPyMvUD0FoS
-pSW4EXZ0cRWRdDiQXUH9938qadHgpM0p4pVBLAUnY6zrM+mMTUa+LvjGOpWE5Tj4
-l74C2112yLlkcN/jpniUP2/YAWS+P6bBoQYeWaExRTWEgjp0olibEnpI88olGtax
-65Ql7zqWPWIUzyOGaJsSKF10Iq6pDTtjqycQmRTUY0Tzv1bkOgBv37GrUI3fnyto
-xAjoc8gi+ZiIzWw39KxKlJQgkEpS7pYi1h+5k2IuDbD4aQNxBQPtNirDfh+TAoBe
-PC0R29rF5Yt9l1UaD6pl2w11nvB3biVWqTmK+2e+LRrQbsRX1xicJe8JCvTVm3Oc
-hslRkdTziNNcH5e9i48G
-=2qCP
------END PGP SIGNATURE-----
-
---FilwpOHBrTVNlmJ3--
