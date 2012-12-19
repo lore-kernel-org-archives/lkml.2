@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2LSPTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 10:19:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:53772 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab2LSPTr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 10:19:47 -0500
-Date: Wed, 19 Dec 2012 16:19:37 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc-pcf8523: Add low battery voltage support
-Message-ID: <20121219151937.GA21212@avionic-0098.adnet.avionic-design.de>
-References: <20121219140456.GA14217@axis.com>
- <20121219144225.GB7837@avionic-0098.adnet.avionic-design.de>
- <20121219151054.GB14217@axis.com>
+	id S1751516Ab2LSP24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 10:28:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753706Ab2LSP2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 10:28:49 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Corey Bryant <coreyb@linux.vnet.ibm.com>, Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        jmorris@namei.org, otubo@linux.vnet.ibm.com,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 1/3] seccomp: Add SECCOMP_RET_INFO return value
+Date: Wed, 19 Dec 2012 10:28:42 -0500
+Message-ID: <34771527.GTMPbzeFu2@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.9.4 (Linux/3.6.11-gentoo; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <50D1D58D.6060408@linux.vnet.ibm.com>
+References: <1355867449-3209-1-git-send-email-coreyb@linux.vnet.ibm.com> <CABqD9hbw2kT1PYiHRNSq+xVEDQdYPVqrJv78Sa4DiSnvWJ97cQ@mail.gmail.com> <50D1D58D.6060408@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
-Content-Disposition: inline
-In-Reply-To: <20121219151054.GB14217@axis.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:z3WvqXsTh1QeeZgjL7KZ1M9cNiRn6fgGuTX2x31901J
- sOrqcGEhXB2rWuTxJgCpM5BEMDNiD0Ch8yyCpoD+FVJnZ4qaBM
- OQmGSjAPewjkCrlCCEWJ27ZIr0V5Yp3Ga531XbY5KnkM1yxSzz
- bJRIz9sHmHDWDEXm+FoO8BQOUFNZqsenuMHbKKJwA/XECGox+D
- uk73XLpgtDLY3mkys8V7VW7BpCFS4kLs0KAK+Q3LTpM3Kr062q
- l+iUjh6B3aX4umfce6tEbxyxpwBYaL8uPV5UXZCjVsy64FwlME
- Bm9BEb7MKN3OB6ZZ654bPtR6WRCjYj/H4OEz634T0TebAsSIDJ
- URXJLARw5NWcA2sYfsel/oz3T5aL5cj0Ljw7/cv3Ewd7xZ/1j4
- Fm3upziHK5EyTmj803dGXcYcdVNIdJj6vU=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, December 19, 2012 09:56:13 AM Corey Bryant wrote:
+> On 12/18/2012 05:22 PM, Will Drewry wrote:
+> > while others I've spoken with have been using the audit path to track
+> > denied values -- not so great for soft-failures :)
+> 
+> The audit path would work too but if I understand I think you can only
+> learn one syscall per execution.  The nice thing about SECCOMP_RET_INFO
+> is that you can easily learn all the syscalls in one execution.
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Another quick point about the audit log: on some systems, e.g. tightly secured 
+SELinux systems, the audit log is only accessible via a very privileged user 
+(Will hints at this below).  Normal users do not have access to, and therefore 
+can't make use of, the seccomp related audit records.
 
-On Wed, Dec 19, 2012 at 04:10:54PM +0100, Jesper Nilsson wrote:
-> On Wed, Dec 19, 2012 at 03:42:26PM +0100, Thierry Reding wrote:
-> > On Wed, Dec 19, 2012 at 03:04:56PM +0100, Jesper Nilsson wrote:
-[...]
-> > > +	.read_vl	=3D pcf8523_rtc_read_vl,
-> >=20
-> > What tree is this based on? None of the trees I have contains .read_vl
-> > in rtc_class_ops.
->=20
-> Hm, I've tested this against a local 3.4 kernel since that is what my
-> device had, I didn't realize that we already had some local changes for
-> the voltage low stuff.
->=20
-> I'm guessing the right way is to do it as the pcf8563 in the mainline ker=
-nel,
-> I'll respin my patch and resend.
+> > That aside, I worry that pr_info is the wrong place for a random user
+> > on the machine to log to for this, but I may be wrong, rather than a
+> > dedicated ringbufffer, etc.  So if this is for a user with privs, then
+> > a SECCOMP_RET_AUDIT might make sense.  Feedback to a local user seems
+> > tricky in general. I don't know :)  I just decided to deal with it in
+> > userland even if it is slightly painful.
+> 
+> That's a good point.  I don't know which option is better either so if
+> anyone else could weigh in on the better approach I'd appreciate it.
 
-=46rom a quick search through the mainline kernel history, there's no
-trace of this field.
+I agree with Will's statement about better to deal with the problem in 
+userspace when possible, but as Corey pointed out, our experiences with QEMU 
+have demonstrated that dealing with the problem exclusively in userspace just 
+isn't practical in every case.
 
-Thierry
+Syslog might not be the answer, but RET_TRAP and the audit log aren't very 
+good answers either.
 
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature
+-- 
+paul moore
+security and virtualization @ redhat
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0dsJAAoJEN0jrNd/PrOhszMP/ilgOaRiJ5JPfvCZgHZlb2zJ
-1LTeiJEKYtO7CEKw01waKaX5gAYDVYvJ9CmrK/Q4V1vFFAOtcTUTsczFtbV0UAFT
-WCIrM4rwhJdruv53V0vDJGPOZIMc7334b/oEOrqY3EGOobi3FXVV0ioDVwES++kB
-Yvt5Sbws9JIqcu/HR6iTps3hfOaKAOsqiXSWpwYQjx1/+68ynYD16uQG0KBMogEF
-QNP1MFkTVzTS3IcTh+AG7lIHyG9UMkm6Big07acbbe0fjrcVNnhx2kXFxmMtXapD
-UIU55rhdHEK9KTbsSG3I2ytD4YYv4OJsdDrHeUH3LyoYsdt79WIy+vqV8/AW/4j9
-+QRhQ9SQGBvlIOwxDShSt4owXaYRtCWm1kzib7QO3I6Jmq10XF4upNFPWVZegvYf
-DRTxH228emxOeShQ4vevhbXN4/9DPjirw7jxC/v/cVyqmZXGzdGJu5ACUOaKpsBH
-ktb5pl1okbWEyUx0NZ6ieI+zbe/Qc+dk6n+t4UWp0sXa9Mlbwz+0jIUsesdWJ/Ql
-plszfjqTYG1+2/XNtvLz8eoCWVxHM9qMCDdjY9G3iJWyyaDEXlOTFej8FrNzvr0N
-MzFWDGzmuCCN7FRxQF6+IoasR2/6SYp9pg1dfpGs+UqZYD1ovimq4Nvqqs4lwwIQ
-k6oqFBUhhMeWvyxE7Lzm
-=7vPN
------END PGP SIGNATURE-----
-
---envbJBWh7q8WU6mo--
