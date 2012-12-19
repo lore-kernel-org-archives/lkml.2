@@ -1,120 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab2LSWhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:37:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44506 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2LSWh1 (ORCPT
+	id S1751305Ab2LSWlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:41:18 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:57791 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab2LSWlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:37:27 -0500
-Date: Wed, 19 Dec 2012 14:37:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Vincent Palatin <vpalatin@chromium.org>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        Lothar =?ISO-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Subject: Re: [rtc-linux] [PATCH] rtc: recycle id when unloading a rtc driver
-Message-Id: <20121219143725.3f49598c.akpm@linux-foundation.org>
-In-Reply-To: <50D180E6.3010305@ahsoftware.de>
-References: <1343951605-25722-1-git-send-email-vpalatin@chromium.org>
-	<20121218164659.a3d3655a.akpm@linux-foundation.org>
-	<50D16EA3.8040803@ahsoftware.de>
-	<20121218234543.786a2211.akpm@linux-foundation.org>
-	<50D1730D.7010108@ahsoftware.de>
-	<20121219002722.87438a08.akpm@linux-foundation.org>
-	<50D180E6.3010305@ahsoftware.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Dec 2012 17:41:13 -0500
+X-Originating-IP: 108.223.40.66
+Date: Wed, 19 Dec 2012 14:41:22 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
+ divisors
+Message-ID: <20121219224122.GA26863@roeck-us.net>
+References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
+ <20121219134721.bbde212f.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219134721.bbde212f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 09:55:02 +0100
-Alexander Holler <holler@ahsoftware.de> wrote:
-
-> Am 19.12.2012 09:27, schrieb Andrew Morton:
-> > On Wed, 19 Dec 2012 08:55:57 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
-> >
-> >>>
-> >>> I'm all confused.
-> >>>
-> >>> Lothar's patch simply reverts Vincent's patch.  And that appears to be
-> >>> the correct thing to so, as the ida_simple_remove() in
-> >>> rtc_device_release() should be sufficient.
-> >>>
-> >>> But apparently that doesn't work, because Vincent was seeing the RTC
-> >>> ID's increment rather than getting reused.
-> >>>
-> >>> Is it the case that rtc_device_release() is not being called sometimes?
-> >>> If so, under what circumstances?
-> >>
-> >> Maybe something (sysfs or whatever) still has a reference to it. Vincent
-> >> should check that.
-> >>
-> >> But I'm sure the ID will be recycled with that put_device() in
-> >> unregister because I've got the same warning as Lothar did when
-> >> (porperly) removing an RTC (with kernel 3.7).
-> >
-> > If, as appears to be the case, rtc_device_release() is not being called
-> > then we're also leaking memory.  So yes please, it would be good if
-> > someone who can reproduce the IDs-dont-decrease problem could dive in
-> > and work out why ->release() isn't begin called.
+On Wed, Dec 19, 2012 at 01:47:21PM -0800, Andrew Morton wrote:
+> On Wed, 19 Dec 2012 06:40:15 -0800
+> Guenter Roeck <linux@roeck-us.net> wrote:
 > 
-> Unlikely, as I've worked hard to get one of the first drivers for 
-> pluggable RTCs into the kernel. ;)
-> I think every sane kernel has them statically linked in and it's likely 
-> a problem of the RTC-driver Vincent experienced that with.
+> > Commit 263a523 fixes a warning seen with W=1 due to change in
+> > DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
+> > with unsigned divisors to unsigned, even if the dividend is signed and
+> > negative (for example, -10 / 5U = 858993457). The C standard says "If one
+> > operand has unsigned int type, the other operand is converted to unsigned
+> > int", so the compiler is not to blame.
+> > As a result, DIV_ROUND_CLOSEST(0, 2U) and similar operations now return
+> > bad values, since the automatic conversion of expressions such as "0 - 2U/2"
+> > to unsigned was not taken into account.
+> > 
+> > Fix by checking for the divisor variable type when deciding which operation
+> > to perform. This fixes DIV_ROUND_CLOSEST(0, 2U), but still returns bad values
+> > for negative dividends divided by unsigned divisors. Mark the latter case as
+> > unsupported.
 > 
+> The changelog didn't describe the end-user visible effects of the bug. 
+> Please always include this information.  Because...
+> 
+One observed effect is that the s2c_hwmon driver reports a value of 4198403
+instead of 0 if the ADC reads 0.
 
-I think I'll do this:
+Other impact is unpredictable. Problem is seen if the divisor is an unsigned
+variable or constant and the dividend is less than (divisor/2).
 
+> The patch is applicable to 3.7.x.  Should we backport it?
+> 
+Yes. DIV_ROUND_CLOSEST is used throughout the kernel, and impact is
+unpredictable.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: revert "rtc: recycle id when unloading a rtc driver"
-
-Revert
-
-commit 2830a6d20139df2198d63235df7957712adb28e5
-Author: Vincent Palatin <vpalatin@chromium.org>
-Date:   Thu Oct 4 17:13:52 2012 -0700
-
-    rtc: recycle id when unloading a rtc driver
-
-
-We already perform the ida_simple_remove() in rtc_device_release(), which
-is an appropriate place.  2830a6d20 ("rtc: recycle id when unloading a rtc
-driver") caused the kernel to emit
-
-	ida_remove called for id=0 which is not allocated.
-
-warnings when rtc_device_release() tries to release an alread-released ID.
-
-Let's restore things to their previous state and then work out why
-Vincent's kernel wasn't calling rtc_device_release() - presumably a bug in
-a specific sub-driver.
-
-Reported-by: Lothar Wa_mann <LW@KARO-electronics.de>
-Acked-by: Alexander Holler <holler@ahsoftware.de>
-Cc: Vincent Palatin <vpalatin@chromium.org>
-Cc: <stable@vger.kernel.org>		[3.7.x]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/rtc/class.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff -puN drivers/rtc/class.c~revert-rtc-recycle-id-when-unloading-a-rtc-driver drivers/rtc/class.c
---- a/drivers/rtc/class.c~revert-rtc-recycle-id-when-unloading-a-rtc-driver
-+++ a/drivers/rtc/class.c
-@@ -244,7 +244,6 @@ void rtc_device_unregister(struct rtc_de
- 		rtc_proc_del_device(rtc);
- 		device_unregister(&rtc->dev);
- 		rtc->ops = NULL;
--		ida_simple_remove(&rtc_ida, rtc->id);
- 		mutex_unlock(&rtc->ops_lock);
- 		put_device(&rtc->dev);
- 	}
-_
-
+3.6 needs it as well.
