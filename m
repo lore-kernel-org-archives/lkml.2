@@ -1,165 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab2LSW1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:27:00 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:40412 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab2LSW0x (ORCPT
+	id S1751895Ab2LSWhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:37:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44506 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2LSWh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:26:53 -0500
-Date: Wed, 19 Dec 2012 14:26:51 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/15] mm/huge_memory: use new hashtable implementation
-In-Reply-To: <1355756497-15834-4-git-send-email-sasha.levin@oracle.com>
-Message-ID: <alpine.DEB.2.00.1212191416410.32757@chino.kir.corp.google.com>
-References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com> <1355756497-15834-4-git-send-email-sasha.levin@oracle.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 19 Dec 2012 17:37:27 -0500
+Date: Wed, 19 Dec 2012 14:37:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Vincent Palatin <vpalatin@chromium.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        Lothar =?ISO-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Subject: Re: [rtc-linux] [PATCH] rtc: recycle id when unloading a rtc driver
+Message-Id: <20121219143725.3f49598c.akpm@linux-foundation.org>
+In-Reply-To: <50D180E6.3010305@ahsoftware.de>
+References: <1343951605-25722-1-git-send-email-vpalatin@chromium.org>
+	<20121218164659.a3d3655a.akpm@linux-foundation.org>
+	<50D16EA3.8040803@ahsoftware.de>
+	<20121218234543.786a2211.akpm@linux-foundation.org>
+	<50D1730D.7010108@ahsoftware.de>
+	<20121219002722.87438a08.akpm@linux-foundation.org>
+	<50D180E6.3010305@ahsoftware.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012, Sasha Levin wrote:
+On Wed, 19 Dec 2012 09:55:02 +0100
+Alexander Holler <holler@ahsoftware.de> wrote:
 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 827d9c8..2a0ef01 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -20,6 +20,7 @@
->  #include <linux/mman.h>
->  #include <linux/pagemap.h>
->  
-> +#include <linux/hashtable.h>
->  #include <asm/tlb.h>
->  #include <asm/pgalloc.h>
->  #include "internal.h"
+> Am 19.12.2012 09:27, schrieb Andrew Morton:
+> > On Wed, 19 Dec 2012 08:55:57 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
+> >
+> >>>
+> >>> I'm all confused.
+> >>>
+> >>> Lothar's patch simply reverts Vincent's patch.  And that appears to be
+> >>> the correct thing to so, as the ida_simple_remove() in
+> >>> rtc_device_release() should be sufficient.
+> >>>
+> >>> But apparently that doesn't work, because Vincent was seeing the RTC
+> >>> ID's increment rather than getting reused.
+> >>>
+> >>> Is it the case that rtc_device_release() is not being called sometimes?
+> >>> If so, under what circumstances?
+> >>
+> >> Maybe something (sysfs or whatever) still has a reference to it. Vincent
+> >> should check that.
+> >>
+> >> But I'm sure the ID will be recycled with that put_device() in
+> >> unregister because I've got the same warning as Lothar did when
+> >> (porperly) removing an RTC (with kernel 3.7).
+> >
+> > If, as appears to be the case, rtc_device_release() is not being called
+> > then we're also leaking memory.  So yes please, it would be good if
+> > someone who can reproduce the IDs-dont-decrease problem could dive in
+> > and work out why ->release() isn't begin called.
+> 
+> Unlikely, as I've worked hard to get one of the first drivers for 
+> pluggable RTCs into the kernel. ;)
+> I think every sane kernel has them statically linked in and it's likely 
+> a problem of the RTC-driver Vincent experienced that with.
+> 
 
-Why group this with the asm includes?
+I think I'll do this:
 
-> @@ -61,12 +62,12 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
->  static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
->  
->  static int khugepaged(void *none);
-> -static int mm_slots_hash_init(void);
->  static int khugepaged_slab_init(void);
->  static void khugepaged_slab_free(void);
->  
 
-You're removing khugepaged_slab_free() too.
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: revert "rtc: recycle id when unloading a rtc driver"
 
-> -#define MM_SLOTS_HASH_HEADS 1024
-> -static struct hlist_head *mm_slots_hash __read_mostly;
-> +#define MM_SLOTS_HASH_BITS 10
-> +static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
-> +
+Revert
 
-What happened to the __read_mostly?
+commit 2830a6d20139df2198d63235df7957712adb28e5
+Author: Vincent Palatin <vpalatin@chromium.org>
+Date:   Thu Oct 4 17:13:52 2012 -0700
 
-This used to be dynamically allocated and would save the 8KB that you 
-statically allocate if transparent hugepages cannot be used.  The generic 
-hashtable implementation does not support dynamic allocation?
+    rtc: recycle id when unloading a rtc driver
 
->  static struct kmem_cache *mm_slot_cache __read_mostly;
->  
->  /**
-> @@ -633,12 +634,6 @@ static int __init hugepage_init(void)
->  	if (err)
->  		goto out;
->  
-> -	err = mm_slots_hash_init();
-> -	if (err) {
-> -		khugepaged_slab_free();
 
-This is the only use of khugepaged_slab_free(), so the function should be 
-removed as well.
+We already perform the ida_simple_remove() in rtc_device_release(), which
+is an appropriate place.  2830a6d20 ("rtc: recycle id when unloading a rtc
+driver") caused the kernel to emit
 
-> -		goto out;
-> -	}
-> -
->  	register_shrinker(&huge_zero_page_shrinker);
->  
->  	/*
-> @@ -1821,47 +1816,23 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
->  	kmem_cache_free(mm_slot_cache, mm_slot);
->  }
->  
-> -static int __init mm_slots_hash_init(void)
-> -{
-> -	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
-> -				GFP_KERNEL);
-> -	if (!mm_slots_hash)
-> -		return -ENOMEM;
-> -	return 0;
-> -}
-> -
-> -#if 0
-> -static void __init mm_slots_hash_free(void)
-> -{
-> -	kfree(mm_slots_hash);
-> -	mm_slots_hash = NULL;
-> -}
-> -#endif
-> -
->  static struct mm_slot *get_mm_slot(struct mm_struct *mm)
->  {
-> -	struct mm_slot *mm_slot;
-> -	struct hlist_head *bucket;
-> +	struct mm_slot *slot;
->  	struct hlist_node *node;
->  
-> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
-> -				% MM_SLOTS_HASH_HEADS];
-> -	hlist_for_each_entry(mm_slot, node, bucket, hash) {
-> -		if (mm == mm_slot->mm)
-> -			return mm_slot;
-> -	}
-> +	hash_for_each_possible(mm_slots_hash, slot, node, hash, (unsigned long) mm)
-> +		if (slot->mm == mm)
-> +			return slot;
+	ida_remove called for id=0 which is not allocated.
 
-Why these other changes (the naming of the variable, the ordering of the 
-conditional)?
+warnings when rtc_device_release() tries to release an alread-released ID.
 
-> +
->  	return NULL;
->  }
->  
->  static void insert_to_mm_slots_hash(struct mm_struct *mm,
->  				    struct mm_slot *mm_slot)
->  {
-> -	struct hlist_head *bucket;
-> -
-> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
-> -				% MM_SLOTS_HASH_HEADS];
->  	mm_slot->mm = mm;
-> -	hlist_add_head(&mm_slot->hash, bucket);
-> +	hash_add(mm_slots_hash, &mm_slot->hash, (long)mm);
->  }
->  
->  static inline int khugepaged_test_exit(struct mm_struct *mm)
-> @@ -1930,7 +1901,7 @@ void __khugepaged_exit(struct mm_struct *mm)
->  	spin_lock(&khugepaged_mm_lock);
->  	mm_slot = get_mm_slot(mm);
->  	if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
-> -		hlist_del(&mm_slot->hash);
-> +		hash_del(&mm_slot->hash);
->  		list_del(&mm_slot->mm_node);
->  		free = 1;
->  	}
-> @@ -2379,7 +2350,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
->  
->  	if (khugepaged_test_exit(mm)) {
->  		/* free mm_slot */
-> -		hlist_del(&mm_slot->hash);
-> +		hash_del(&mm_slot->hash);
->  		list_del(&mm_slot->mm_node);
->  
->  		/*
+Let's restore things to their previous state and then work out why
+Vincent's kernel wasn't calling rtc_device_release() - presumably a bug in
+a specific sub-driver.
+
+Reported-by: Lothar Wa_mann <LW@KARO-electronics.de>
+Acked-by: Alexander Holler <holler@ahsoftware.de>
+Cc: Vincent Palatin <vpalatin@chromium.org>
+Cc: <stable@vger.kernel.org>		[3.7.x]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/rtc/class.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff -puN drivers/rtc/class.c~revert-rtc-recycle-id-when-unloading-a-rtc-driver drivers/rtc/class.c
+--- a/drivers/rtc/class.c~revert-rtc-recycle-id-when-unloading-a-rtc-driver
++++ a/drivers/rtc/class.c
+@@ -244,7 +244,6 @@ void rtc_device_unregister(struct rtc_de
+ 		rtc_proc_del_device(rtc);
+ 		device_unregister(&rtc->dev);
+ 		rtc->ops = NULL;
+-		ida_simple_remove(&rtc_ida, rtc->id);
+ 		mutex_unlock(&rtc->ops_lock);
+ 		put_device(&rtc->dev);
+ 	}
+_
+
