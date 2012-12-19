@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab2LSSTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:19:18 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:39914
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751114Ab2LSSTG (ORCPT
+	id S1755230Ab2LSSTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:19:25 -0500
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:10962
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751805Ab2LSSTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Dec 2012 13:19:06 -0500
 X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
@@ -16,46 +16,54 @@ CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         John Linn <john.linn@xilinx.com>, Arnd Bergmann <arnd@arndb.de>,
         <git@xilinx.com>, <nbowler@elliptictech.com>, <josh.cartwright@ni.com>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 4/7] arm: zynq: timer: Align columns
-Date: Wed, 19 Dec 2012 10:18:39 -0800
+Subject: [PATCH v2 5/7] arm: zynq: timer: Remove redundant #includes
+Date: Wed, 19 Dec 2012 10:18:40 -0800
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <ab760e55-61c2-46b0-b899-1935c213536e@CO1EHSMHS026.ehs.local>
 References: <ab760e55-61c2-46b0-b899-1935c213536e@CO1EHSMHS026.ehs.local>
 X-RCIS-Action: ALLOW
 MIME-Version: 1.0
 Content-Type: text/plain
-Message-ID: <6707a3e2-3f76-40cb-a752-b37d0c7d2da6@VA3EHSMHS038.ehs.local>
+Message-ID: <21207fff-dd51-4099-88f8-eea754e3d19c@CO1EHSMHS021.ehs.local>
 X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aligning the columns in a block of #defines, so that the values
-are starting in the same colum on every line.
+Some #includes are implicitly included through others, some are
+just not needed.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 Reviewed-by: Josh Cartwright <josh.cartwright@ni.com>
 ---
- arch/arm/mach-zynq/timer.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-zynq/timer.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
 diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
-index 80bf474..4b81ae1 100644
+index 4b81ae1..2b23d0f 100644
 --- a/arch/arm/mach-zynq/timer.c
 +++ b/arch/arm/mach-zynq/timer.c
-@@ -35,9 +35,9 @@
-  * Timer Register Offset Definitions of Timer 1, Increment base address by 4
-  * and use same offsets for Timer 2
+@@ -15,20 +15,12 @@
+  * GNU General Public License for more details.
   */
--#define XTTCPS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
--#define XTTCPS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW */
--#define XTTCPS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
-+#define XTTCPS_CLK_CNTRL_OFFSET		0x00 /* Clock Control Reg, RW */
-+#define XTTCPS_CNT_CNTRL_OFFSET		0x0C /* Counter Control Reg, RW */
-+#define XTTCPS_COUNT_VAL_OFFSET		0x18 /* Counter Value Reg, RO */
- #define XTTCPS_INTR_VAL_OFFSET		0x24 /* Interval Count Reg, RW */
- #define XTTCPS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO */
- #define XTTCPS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW */
+ 
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/interrupt.h>
+-#include <linux/irq.h>
+-#include <linux/types.h>
+-#include <linux/clocksource.h>
+ #include <linux/clockchips.h>
+-#include <linux/io.h>
+-#include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/slab.h>
+ #include <linux/clk-provider.h>
+-
+ #include "common.h"
+ 
+ /*
 -- 
 1.8.0.2
 
