@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab2LSLCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 06:02:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40519 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751155Ab2LSLCl (ORCPT
+	id S1754719Ab2LSLDS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 06:03:18 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:45030 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab2LSLDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 06:02:41 -0500
-Date: Wed, 19 Dec 2012 11:02:38 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Luciano Coelho <coelho@ti.com>, Felipe Balbi <balbi@ti.com>,
-        svenkatr@ti.com, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, lrg@ti.com, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-Message-ID: <20121219110238.GR4985@opensource.wolfsonmicro.com>
-References: <1352968293.10872.51.camel@cumari.coelho.fi>
- <20121218095450.GB27751@arwen.pp.htv.fi>
- <20121219094552.GN4985@opensource.wolfsonmicro.com>
- <50D19040.5090404@ti.com>
- <20121219100909.GO4985@opensource.wolfsonmicro.com>
- <50D19463.5010605@ti.com>
- <20121219103206.GQ4985@opensource.wolfsonmicro.com>
- <1355913954.5273.21.camel@cumari.coelho.fi>
- <50D19D54.2000307@ti.com>
+	Wed, 19 Dec 2012 06:03:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Eu9PQ+LfZADlAtIa"
-Content-Disposition: inline
-In-Reply-To: <50D19D54.2000307@ti.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1355914716-19469-1-git-send-email-grant.likely@secretlab.ca>
+References: <1355914716-19469-1-git-send-email-grant.likely@secretlab.ca>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 19 Dec 2012 11:02:49 +0000
+X-Google-Sender-Auth: w-gZCVQ3Xyc2YI9s309JjbcG9Lw
+Message-ID: <CACxGe6vTxQGr+t5O4q0J265K02-EEeEiGoOTvB1o-ee2bBrhZg@mail.gmail.com>
+Subject: Re: [PATCH] of: Fix export of of_find_matching_node_and_match()
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anatolij Gustschin <agust@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 19, 2012 at 10:58 AM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> Commit 50c8af4cf9, "of: introduce for_each_matching_node_and_match()"
+> renamed of_find_matching_node() to of_find_matching_node_and_match() and
+> created a new static inline of_find_matching_node() wrapper around the
+> new name. However, the change neglected to change the EXPORT_SYMBOL()
+> reference causing build errors for modules.
+>
+> This patch fixes the EXPORT_SYMBOL() statement. Discovered on a PowerPC
+> Efika build with the mpc52xx_uart driver being built as a module.
+>
+> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Anatolij Gustschin <agust@denx.de>
 
---Eu9PQ+LfZADlAtIa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Rob, I've just pushed this out to my devicetree/merge branch. If
+you've got any fixes queued up for Linus, then please pull this in
+before sending them on to him. Otherwise I'll send Linus a pull req
+for this fix this evening. Ether way, please reply to let me know what
+you're going to do.
 
-On Wed, Dec 19, 2012 at 11:56:20AM +0100, Peter Ujfalusi wrote:
-> On 12/19/2012 11:45 AM, Luciano Coelho wrote:
+g.
 
-> > 0e8e5c34 "regulator: twl: Remove references to 32kHz clock from DT bindings"
-> > e76ab829 "regulator: twl: Remove references to the twl4030 regulator"
-> > 029dd3ce "regulator: twl: Remove another unused variable warning"
+The following changes since commit 752451f01c4567b506bf4343082682dbb8fb30dd:
 
-> Yeah. 32k clock is not provided by twl.
+  Merge branch 'i2c-embedded/for-next' of
+git://git.pengutronix.de/git/wsa/linux (2012-12-18 16:51:10 -0800)
 
-If these changes do anything to the platform I'd expect them to be
-leaving the clock enabled instead of disabling it...
+are available in the git repository at:
 
---Eu9PQ+LfZADlAtIa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+for you to fetch changes up to 80c2022e5645a1a789531d13010292c5c18bf1db:
 
-iQIcBAEBAgAGBQJQ0Z67AAoJELSic+t+oim9nGIP/0oQthRcZh2KwkYuYG+10FYl
-rlKAIZcpZAH/Eat+eJXM/gmfQC7Z3UvbxRH/o5I3GPiKn1Dk1UgcURA+3D4vzi+P
-FRFba8/my/4uPZcd7JOM/17NJbOD5I3TA0VB20/Yr+psa6JJZLmToYmUsibLpu2D
-14r0NInaNg023GCCSoESg3vl9ZILdFsR8wpqKnVKuAo0Qt3h3xNOkKJSmzxk8tzN
-rOda1ZuN3apCBhGw3RN8hJG50Skvr6IGkkkihB8ACNfnx+odLgArDFaa73fSQ9Yn
-+x+CyzSyoEcGC7zgPHdgK5SxAQBSfc75hTxaZ7lh/pot9TGFmSQyVivcGZ6u7u+Q
-DTYEYCVIoaZVYRNLAS+aLyLRCq72FiQdrB8TKOyucnFy0W2/K3E6zICJAvnbt163
-ru7uz+3uu3l6ZVIxFzZTfyfbmvpabQHCNtOyyXtgielpGvXfmRJ3LsL+HxUhIvVr
-/Ap7hMNCweqZmjbaq6wsQKpXbDFQnFKY4zzwwKTfS3vqwaR82cvggvCB+stElGH5
-H/R2CR7wu+UOdAeqP/pV4CNgworm0kxLAAIwKmrDB7Vx5hKi/AuoS1NkRTb0PdWm
-p+9Zu6jbeGXFYDq8LE3ocoS2/Wm8P2CCZCFMRDuOSbJU5Z8rGXKBHHravAirQ/XU
-0hNjmBNfPyXddCvTS+dZ
-=SW/c
------END PGP SIGNATURE-----
+  of: Fix export of of_find_matching_node_and_match() (2012-12-19
+10:58:53 +0000)
 
---Eu9PQ+LfZADlAtIa--
+----------------------------------------------------------------
+Grant Likely (1):
+      of: Fix export of of_find_matching_node_and_match()
+
+ drivers/of/base.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+> ---
+>
+> I'll push this patch out to my tree ASAP.
+>
+>  drivers/of/base.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index db8d211..2390ddb 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -629,7 +629,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
+>         read_unlock(&devtree_lock);
+>         return np;
+>  }
+> -EXPORT_SYMBOL(of_find_matching_node);
+> +EXPORT_SYMBOL(of_find_matching_node_and_match);
+>
+>  /**
+>   * of_modalias_node - Lookup appropriate modalias for a device node
+> --
+> 1.7.10.4
+>
+
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
