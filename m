@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab2LSUhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:37:03 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:50343 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab2LSUgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:36:15 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V2] spi: remove check for bits_per_word on transfer from low level driver
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        broonie@opensource.wolfsonmicro.com
-Cc: ben-linux@fluff.org, kgene.kim@samsung.com, baohua.song@csr.com,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jonas.gorski@gmail.com,
-        linux-tegra@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
-In-Reply-To: <1355820943-25228-1-git-send-email-ldewangan@nvidia.com>
-References: <1355820943-25228-1-git-send-email-ldewangan@nvidia.com>
-Date: Wed, 19 Dec 2012 16:24:33 +0000
-Message-Id: <20121219162433.1E1E43E0BCF@localhost>
+	id S1754349Ab2LSUiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:38:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:32845 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab2LSUh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 15:37:56 -0500
+Date: Wed, 19 Dec 2012 21:37:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+Message-ID: <20121219203751.GG24895@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+	Yinghai Lu <yinghai@kernel.org>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	"Yu, Fenghua" <fenghua.yu@intel.com>,
+	"mingo@kernel.org" <mingo@kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"tglx@linutronix.de" <tglx@linutronix.de>,
+	"linux-tip-commits@vger.kernel.org" <linux-tip-commits@vger.kernel.org>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+References: <CAE9FiQWRzmG7b+fzwzJKmK4Wjp3dkvu=07Q6mT97og4wsexeSA@mail.gmail.com>
+ <CAE9FiQUXyYCe5i8-hTF2rddTihdgTzh4Wg-MeVEZxjkSD2zsBA@mail.gmail.com>
+ <CAE9FiQXx+4KKUu2nwOd+uKq5jmLRnomG37mYpRqBRgjBp6Ba6Q@mail.gmail.com>
+ <50CCCFD0.7030704@linux.intel.com>
+ <CAE9FiQXeODfyPJmrL7reW+nHe1RXEbTKnC=DqMfpkNKYywPWSw@mail.gmail.com>
+ <50CCEE49.3080801@zytor.com>
+ <CAE9FiQUPeK-WB163KViPPLYFgw5pUq6Rk=CvvOrWQEfjS=FBEQ@mail.gmail.com>
+ <50CCF6F6.4020107@zytor.com>
+ <CAE9FiQULAJhPUw62UVjyBakn-YcK8x0pzDgRi+FdJXS-_ekABg@mail.gmail.com>
+ <50CD04F1.8020902@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50CD04F1.8020902@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012 14:25:43 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> The spi core make sure that each transfer structure have the proper
-> setting for bits_per_word before calling low level transfer APIs.
+On Sat, Dec 15, 2012 at 03:17:05PM -0800, H. Peter Anvin wrote:
+> On 12/15/2012 03:15 PM, Yinghai Lu wrote:
+> >>
+> >>That is for the kernel region itself (that code is actually unchanged from
+> >>the current code), and yes, we could cap that one to _end if there are
+> >>systems which have bugs in that area.  The dynamic page tables map 1G
+> >>aligned at a time.
+> >
+> >dynamic should be 2M too.
+> >
+> >AMD system:
+> >
+> >http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=66520ebc2df3fe52eb4792f8101fac573b766baf
+> >
+> >  BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
+> >  BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
+> >  BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+> >
+> >the hole is not 1G aligned.
+> >
+> >or HT region is from e040000000 ?
+> >
 > 
-> Hence it is no more require to check again in low level driver for
-> this field whether this is set correct or not. Removing such code
-> from low level driver.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-[...]
-> diff --git a/drivers/spi/spi-txx9.c b/drivers/spi/spi-txx9.c
-> index d5a3cbb..550b5f4 100644
-> --- a/drivers/spi/spi-txx9.c
-> +++ b/drivers/spi/spi-txx9.c
-> @@ -189,9 +189,8 @@ static void txx9spi_work_one(struct txx9spi *c, struct spi_message *m)
->  		unsigned int len = t->len;
->  		unsigned int wsize;
->  		u32 speed_hz = t->speed_hz ? : spi->max_speed_hz;
-> -		u8 bits_per_word = t->bits_per_word ? : spi->bits_per_word;
-> +		u8 bits_per_word = t->bits_per_word;
->  
-> -		bits_per_word = bits_per_word ? : 8;
->  		wsize = bits_per_word >> 3; /* in bytes */
->  
->  		if (prev_speed_hz != speed_hz
-> @@ -316,9 +315,8 @@ static int txx9spi_transfer(struct spi_device *spi, struct spi_message *m)
->  	/* check each transfer's parameters */
->  	list_for_each_entry (t, &m->transfers, transfer_list) {
->  		u32 speed_hz = t->speed_hz ? : spi->max_speed_hz;
-> -		u8 bits_per_word = t->bits_per_word ? : spi->bits_per_word;
-> +		u8 bits_per_word = t->bits_per_word;
->  
-> -		bits_per_word = bits_per_word ? : 8;
+> The HT region starts at 0xfd00000000 -- after that reserved region,
+> so I have no idea what that particular system is trying to do or
+> what is requirements are (nor what its MTRR setup is, since you
+> didn't post it.)
 
-Have you verified here that bits_per_word can never be '0' here? What is
-the path that ensures spi->bits_per_word (and hence t->bits_per_word) is
-set to 8 here?
+This is something that Jacob should be able to answer since he's been
+dealing with the 1T support.
 
-Otherwise the patch looks good. Thanks for doing this work.
+Jacob, how is the HT hole marked on AMD? I know hazily that we do say
+"all memory regions cacheable by default if not explicitly marked" but
+we need to exclude the HT hole from that, right?
 
-g.
+So how are we doing that, MTRRs?
 
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
