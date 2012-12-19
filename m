@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2LSK4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 05:56:36 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57292 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab2LSK41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 05:56:27 -0500
-Message-ID: <50D19D54.2000307@ti.com>
-Date: Wed, 19 Dec 2012 11:56:20 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Felipe Balbi <balbi@ti.com>, <svenkatr@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <cjb@laptop.org>, <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: 32kHz clock removal causes problems omap_hsmmc
-References: <1352968293.10872.51.camel@cumari.coelho.fi>  <20121218095450.GB27751@arwen.pp.htv.fi>  <20121219094552.GN4985@opensource.wolfsonmicro.com>  <50D19040.5090404@ti.com>  <20121219100909.GO4985@opensource.wolfsonmicro.com>  <50D19463.5010605@ti.com>  <20121219103206.GQ4985@opensource.wolfsonmicro.com> <1355913954.5273.21.camel@cumari.coelho.fi>
-In-Reply-To: <1355913954.5273.21.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	id S1753556Ab2LSK6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 05:58:48 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56537 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab2LSK6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 05:58:41 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH] of: Fix export of of_find_matching_node_and_match()
+Date: Wed, 19 Dec 2012 10:58:36 +0000
+Message-Id: <1355914716-19469-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 11:45 AM, Luciano Coelho wrote:
->> Well, we still haven't got the foggiest idea what the actual problem is
->> beyond that it's probably related to the 32kHz clock in some way (unless
->> it was one of the other reverts that coincidentally made a difference,
->> but we don't know what they were) so it's unlikely that just randomly
->> implementing clock support is going to fix anything immediately here.
-> 
-> This is exactly what I had to revert (as I mentioned in the other email,
-> I had to revert the other patches otherwise compilation would break):
-> 
-> 0e8e5c34 "regulator: twl: Remove references to 32kHz clock from DT bindings"
-> e76ab829 "regulator: twl: Remove references to the twl4030 regulator"
-> 029dd3ce "regulator: twl: Remove another unused variable warning"
+Commit 50c8af4cf9, "of: introduce for_each_matching_node_and_match()"
+renamed of_find_matching_node() to of_find_matching_node_and_match() and
+created a new static inline of_find_matching_node() wrapper around the
+new name. However, the change neglected to change the EXPORT_SYMBOL()
+reference causing build errors for modules.
 
-Yeah. 32k clock is not provided by twl.
+This patch fixes the EXPORT_SYMBOL() statement. Discovered on a PowerPC
+Efika build with the mpc52xx_uart driver being built as a module.
 
-As I said I need to take a look at CCF to see if it already there. If it is
-clock driver + mapping + patch for wl12xx should fix the issue you are facing.
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Anatolij Gustschin <agust@denx.de>
+---
 
-> Let me know if you need more info.
+I'll push this patch out to my tree ASAP.
 
-BTW: have you happened to ubdate u-boot recently? There is a nice easter egg
-added there:
-f3f98bb ARM: OMAP4/5: Do not configure non essential pads, clocks, dplls.
+ drivers/of/base.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Which means that _essential_ clocks and pads are no longer configured.
-
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index db8d211..2390ddb 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -629,7 +629,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
+ 	read_unlock(&devtree_lock);
+ 	return np;
+ }
+-EXPORT_SYMBOL(of_find_matching_node);
++EXPORT_SYMBOL(of_find_matching_node_and_match);
+ 
+ /**
+  * of_modalias_node - Lookup appropriate modalias for a device node
 -- 
-Péter
+1.7.10.4
+
