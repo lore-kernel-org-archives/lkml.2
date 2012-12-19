@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab2LSWNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 17:13:55 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:36290 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2LSWNt (ORCPT
+	id S1751504Ab2LSWRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 17:17:49 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49650 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab2LSWRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 17:13:49 -0500
-Date: Wed, 19 Dec 2012 17:13:47 -0500 (EST)
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+	Wed, 19 Dec 2012 17:17:45 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 2/3] gpio: twl4030: Cache the direction and output states in private data
+To: Michael Trimarchi <michael@amarulasolutions.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Message-ID: <1032450702.626703.1355955227194.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <20121219171600.7B0EF3E0C5A@localhost>
-Subject: Re: [PATCH v2] gpio: add TS-5500 DIO blocks support
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [208.88.110.46]
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+In-Reply-To: <a26b13f1-84e2-44fa-9801-690f7edf9345@email.android.com>
+References: <1354791127-20545-1-git-send-email-peter.ujfalusi@ti.com> <1354791127-20545-3-git-send-email-peter.ujfalusi@ti.com> <20121219170357.0BA403E0C4A@localhost> <a26b13f1-84e2-44fa-9801-690f7edf9345@email.android.com>
+Date: Wed, 19 Dec 2012 22:17:41 +0000
+Message-Id: <20121219221741.1E1CA3E0AD6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Wed, 19 Dec 2012 21:53:23 +0100, Michael Trimarchi <michael@amarulasolutions.com> wrote:
+> Hi
+> 
+> Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+> >On Thu, 6 Dec 2012 11:52:06 +0100, Peter Ujfalusi
+> ><peter.ujfalusi@ti.com> wrote:
+> >> Use more coherent locking in the driver. Use bitfield to store the
+> >GPIO
+> >> direction and if the pin is configured as output store the status
+> >also in a
+> >> bitfiled.
+> >> In this way we can just look at these bitfields when we need
+> >information
+> >> about the pin status and only reach out to the chip when it is
+> >needed.
+> >> 
+> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> >
+> >Applied, thanks
+> >
+> >g.
+> >
+> >> @@ -279,64 +276,98 @@ static void twl_free(struct gpio_chip *chip,
+> >unsigned offset)
+> >>  {
+> >>  	struct gpio_twl4030_priv *priv = to_gpio_twl4030(chip);
+> >>  
+> >> +	mutex_lock(&priv->mutex);
+> >>  	if (offset >= TWL4030_GPIO_MAX) {
+> >>  		twl4030_led_set_value(offset - TWL4030_GPIO_MAX, 1);
+> 
+> I have the mobile but where is the unlock here?
 
-> Please take a look at either send me a follow-on patch to convert it
-> to use gpio-generic, or tell my why gpio-generic isn't appropriate here.
+Good catch. I've dropped the patch. Peter, please resend a fixed-up version.
 
-The gpio-generic driver is not appropriate here because Technologic Systems
-x86-based platforms do not use a typical GPIO implementation. 
-To name a few specificities:
-- The GPIOs are available through ioport and not iomem
-- There are input-only/output-only/input-output lines on the same block
-- The number of GPIOs differs between blocks (currently 11, 13 and 14 pins)
-- A single bit in a control register drives the direction of 4 input/output
-  lines, while the register's other bits have different functions.
+g.
 
-IMHO these considerations justify a specific GPIO driver to support these
-Technologic Systems pin blocks.
-
-Regards,
-Vivien
