@@ -1,169 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab2LSOxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 09:53:54 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37570 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752521Ab2LSOxr (ORCPT
+	id S1755440Ab2LSO4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 09:56:38 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:55073 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab2LSO4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 09:53:47 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <damm@opensource.se>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: flat: Add flat cache type
-Date: Wed, 19 Dec 2012 14:53:43 +0000
-Message-Id: <1355928823-25950-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 19 Dec 2012 09:56:30 -0500
+Message-ID: <50D1D58D.6060408@linux.vnet.ibm.com>
+Date: Wed, 19 Dec 2012 09:56:13 -0500
+From: Corey Bryant <coreyb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Will Drewry <wad@chromium.org>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        jmorris@namei.org, pmoore@redhat.com, otubo@linux.vnet.ibm.com,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 1/3] seccomp: Add SECCOMP_RET_INFO return value
+References: <1355867449-3209-1-git-send-email-coreyb@linux.vnet.ibm.com> <CABqD9hbw2kT1PYiHRNSq+xVEDQdYPVqrJv78Sa4DiSnvWJ97cQ@mail.gmail.com>
+In-Reply-To: <CABqD9hbw2kT1PYiHRNSq+xVEDQdYPVqrJv78Sa4DiSnvWJ97cQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12121914-2398-0000-0000-00000F314E6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While for I2C and SPI devices the overhead of using rbtree for devices with
-only one block of registers is negligible the same isn't always going to
-be true for MMIO devices where the I/O costs are very much lower. Cater
-for these devices by adding a simple flat array type for them where the
-lookups are simple array accesses, taking us right back to the original
-ASoC cache implementation.
 
-Thanks to Magnus Damm for the discussion which prompted this.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/Makefile        |    2 +-
- drivers/base/regmap/internal.h      |    1 +
- drivers/base/regmap/regcache-flat.c |   72 +++++++++++++++++++++++++++++++++++
- drivers/base/regmap/regcache.c      |    1 +
- include/linux/regmap.h              |    3 +-
- 5 files changed, 77 insertions(+), 2 deletions(-)
- create mode 100644 drivers/base/regmap/regcache-flat.c
+On 12/18/2012 05:22 PM, Will Drewry wrote:
+> Thanks for the patch!
 
-diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-index 5e75d1b..cf12998 100644
---- a/drivers/base/regmap/Makefile
-+++ b/drivers/base/regmap/Makefile
-@@ -1,5 +1,5 @@
- obj-$(CONFIG_REGMAP) += regmap.o regcache.o
--obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o
-+obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o regcache-flat.o
- obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
- obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
- obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 401d191..e22bb80 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -177,5 +177,6 @@ int regcache_lookup_reg(struct regmap *map, unsigned int reg);
- 
- extern struct regcache_ops regcache_rbtree_ops;
- extern struct regcache_ops regcache_lzo_ops;
-+extern struct regcache_ops regcache_flat_ops;
- 
- #endif
-diff --git a/drivers/base/regmap/regcache-flat.c b/drivers/base/regmap/regcache-flat.c
-new file mode 100644
-index 0000000..d9762e4
---- /dev/null
-+++ b/drivers/base/regmap/regcache-flat.c
-@@ -0,0 +1,72 @@
-+/*
-+ * Register cache access API - flat caching support
-+ *
-+ * Copyright 2012 Wolfson Microelectronics plc
-+ *
-+ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include <linux/seq_file.h>
-+
-+#include "internal.h"
-+
-+static int regcache_flat_init(struct regmap *map)
-+{
-+	int i;
-+	unsigned int *cache;
-+
-+	map->cache = kzalloc(sizeof(unsigned int) * (map->max_register + 1),
-+			     GFP_KERNEL);
-+	if (!map->cache)
-+		return -ENOMEM;
-+
-+	cache = map->cache;
-+
-+	for (i = 0; i < map->num_reg_defaults; i++)
-+		cache[map->reg_defaults[i].reg] = map->reg_defaults[i].def;
-+
-+	return 0;
-+}
-+
-+static int regcache_flat_exit(struct regmap *map)
-+{
-+	kfree(map->cache);
-+	map->cache = NULL;
-+
-+	return 0;
-+}
-+
-+static int regcache_flat_read(struct regmap *map,
-+			      unsigned int reg, unsigned int *value)
-+{
-+	unsigned int *cache = map->cache;
-+
-+	*value = cache[reg];
-+
-+	return 0;
-+}
-+
-+static int regcache_flat_write(struct regmap *map, unsigned int reg,
-+			       unsigned int value)
-+{
-+	unsigned int *cache = map->cache;
-+
-+	cache[reg] = value;
-+
-+	return 0;
-+}
-+
-+struct regcache_ops regcache_flat_ops = {
-+	.type = REGCACHE_FLAT,
-+	.name = "flat",
-+	.init = regcache_flat_init,
-+	.exit = regcache_flat_exit,
-+	.read = regcache_flat_read,
-+	.write = regcache_flat_write,
-+};
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index 835883b..e69ff3e 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -22,6 +22,7 @@
- static const struct regcache_ops *cache_types[] = {
- 	&regcache_rbtree_ops,
- 	&regcache_lzo_ops,
-+	&regcache_flat_ops,
- };
- 
- static int regcache_hw_init(struct regmap *map)
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index b7e95bf..390d879 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -28,7 +28,8 @@ struct regmap_range_cfg;
- enum regcache_type {
- 	REGCACHE_NONE,
- 	REGCACHE_RBTREE,
--	REGCACHE_COMPRESSED
-+	REGCACHE_COMPRESSED,
-+	REGCACHE_FLAT,
- };
- 
- /**
+Thanks for the feedback!
+
+>
+> On Tue, Dec 18, 2012 at 3:50 PM, Corey Bryant <coreyb@linux.vnet.ibm.com> wrote:
+>> Adds a new return value to seccomp filters that causes an
+>> informational kernel message to be printed.  The message
+>> includes the system call number.
+>
+> I don't have strong opinions about this either way, but here are the
+> points that led me to drop a _LOG return value in the past:
+
+I figured you had attempted a log mechanism before. :)  I've just found 
+it too difficult to learn the syscalls a process uses and I think this 
+would ease the pain.
+
+> - ptrace can cover this awkwardly (user)
+> - ftrace can cover this awkwardly (system/root)
+> - audit can cover this without an allow
+> - _TRAP can be used to implement this
+> - There's no good way to give back the log data.
+>
+> I've been relying on SECCOMP_RET_TRAP:
+> - trap on failure, log, then die
+> - trap on failure, log, then jump to a whitelisted re-entry point to
+> resume the syscall
+
+We tried using SECCOMP_RET_TRAP with QEMU.  And while it was useful most 
+of the time, we hit some scenarios where libraries used by QEMU were 
+blocking SIGSYS.  So the signal would never get delivered to our signal 
+handler.  If it was just QEMU blocking the syscalls then we could work 
+around that, but I don't want to have to update other libraries.
+
+> while others I've spoken with have been using the audit path to track
+> denied values -- not so great for soft-failures :)
+
+The audit path would work too but if I understand I think you can only 
+learn one syscall per execution.  The nice thing about SECCOMP_RET_INFO 
+is that you can easily learn all the syscalls in one execution.
+
+>
+> [snip]
+>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>> index 5af44b5..854f628 100644
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -433,6 +433,10 @@ int __secure_computing(int this_syscall)
+>>                                  goto skip;  /* Explicit request to skip. */
+>>
+>>                          return 0;
+>> +               case SECCOMP_RET_INFO:
+>> +                       if (printk_ratelimit())
+>> +                               pr_info("seccomp: syscall=%d\n", this_syscall);
+>
+> The arch value will also be needed to make this reliably meaningful
+> (how was the syscall called).
+>
+
+Ah, yes.  Thanks.
+
+> That aside, I worry that pr_info is the wrong place for a random user
+> on the machine to log to for this, but I may be wrong, rather than a
+> dedicated ringbufffer, etc.  So if this is for a user with privs, then
+> a SECCOMP_RET_AUDIT might make sense.  Feedback to a local user seems
+> tricky in general. I don't know :)  I just decided to deal with it in
+> userland even if it is slightly painful.
+
+That's a good point.  I don't know which option is better either so if 
+anyone else could weigh in on the better approach I'd appreciate it.
+
 -- 
-1.7.10.4
+Regards,
+Corey Bryant
 
