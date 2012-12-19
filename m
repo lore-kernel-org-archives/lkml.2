@@ -1,146 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab2LSFzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 00:55:23 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25718 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab2LSFzS (ORCPT
+	id S1751344Ab2LSF74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 00:59:56 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:43547 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab2LSF7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 00:55:18 -0500
-Message-ID: <50D15600.6060001@huawei.com>
-Date: Wed, 19 Dec 2012 13:52:00 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Wed, 19 Dec 2012 00:59:47 -0500
 MIME-Version: 1.0
-To: Joe Jin <joe.jin@oracle.com>
-CC: "Fujinaka, Todd" <todd.fujinaka@intel.com>,
-        Ethan Zhao <ethan.kernel@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>, Jon Mason <jdmason@kudzu.us>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
-References: <509B5038.8090304@oracle.com> <50A30656.6090508@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com> <50A43828.6000702@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com> <50A9C5CC.1030300@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com> <50AB8471.7080607@oracle.com> <9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com> <50B41077.3080009@oracle.com>	<b46b84cf-3688-4fd7-b741-4e96f2663517@default> <9B4A1B1917080E46B64F07F2989DADD62F2D8070@ORSMSX102.amr.corp.intel.com> <1354039840.2701.14.camel@bwh-desktop.uk.solarflarecom.com> <50B5CBD2.5020804@oracle.com> <9B4A1B1917080E46B64F07F2989DADD62F2D8AAC@ORSMSX102.amr.corp.intel.com> <CABawtvPrz=z_CLCvPeXkky7COyhjPyfBu3QCTbiiPpvr+5bicg@mail.gmail.com> <9B4A1B1917080E46B64F07F2989DADD638C60A9B@ORSMSX102.amr.corp.intel.com> <50D12EA2.3030907@oracle.com>
-In-Reply-To: <50D12EA2.3030907@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
+References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
+Date: Wed, 19 Dec 2012 11:07:37 +0530
+Message-ID: <CAFp+6iEWPQH2f8zeR734U8Sy_tA3gguROYpvQa2nudNwxXyuRQ@mail.gmail.com>
+Subject: Re: [PATCH v5 0/4] Adding usb2.0 host-phy support for exynos5250
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: linux-usb@vger.kernel.org
+Cc: dianders@chromium.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
+        kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        sylvester.nawrocki@gmail.com, jg1.han@samsung.com,
+        yulgon.kim@samsung.com, kishon@ti.com, p.paneri@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/19 11:04, Joe Jin wrote:
-> Hi all,
-> 
-> I backported mps commits and ask customer pass "pci=pcie_bus_peer2pee" to kernel
-> to limited MPS to 128 and issue disappeared, sound like this is a BIOS bug.
-> 
+CC: Doug Anderson
 
-Hi Joe,
-   I found similar problem when I do pci hotplug, discussion is here:http://marc.info/?l=linux-pci&m=134810569924220&w=2.
-We try to improve Linux kernel to debug this problem easily based Bjorn's suggestion. Jon sent out the first version patch http://marc.info/?l=linux-pci&m=135002016005274&w=2.
-I think we can do further here, http://marc.info/?l=linux-pci&m=135115581307869&w=2. I hope this information can help you.
 
-Thanks!
-Yijing.
+On Tue, Dec 18, 2012 at 8:13 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Changes from v4:
+>  - Moved architecture side changes out of this patch-set.
+>  - Added support for multiple usbphy phandle parsing and
+>    doing all pmu_isolation() and phy_cfg_sel() related changes
+>    in samsung-usbphy driver only instead of architecture
+>    as in v4 patch-set.
+>  - Removed unnecessary multi line definitions for macros.
+>
+> Changes from v3:
+>  - Moved enums S5P_USB_PHY_DEVICE, S5P_USB_PHY_HOST from machine to file
+>    include/linux/usb/samsung_usb_phy.h as USB_PHY_TYPE_DEVICE and
+>    USB_PHY_TYPE_HOST to make it more generic. Further resolve its
+>    dependencies.
+>  - Introduced a function 'samsung_usbphy_set_type()' which takes
+>    care of setting up the phy_type: HOST/DEVICE. This function
+>    can be called by host/otg drivers to setup phy_type prior to
+>    handling the respective PHYs.
+>  - Added an error-path for HOST type phy in s5p_usb_phy_pmu_isolation()
+>    for 'mach-s3c64xx'.
+>  - Moving to PHY driver as default for ehci-s5p and ohci-exynos, and only
+>    when failed fall back to plat-data.
+>  - Added samsung_usbphy_set_type() prior to doing usb_phy_init() or
+>    usb_phy_shutdown() so that appropriate PHY gets init or shutdown.
+>
+> Based on patches for samsung-usbphy driver:
+>  1)http://lists.infradead.org/pipermail/linux-arm-kernel/2012-November/134476.html
+>  2)https://lkml.org/lkml/2012/12/18/187
+>
+> Vivek Gautam (4):
+>   ARM: EXYNOS: Update & move usb-phy types to generic include layer
+>   usb: phy: samsung: Add host phy support to samsung-phy driver
+>   USB: ehci-s5p: Add phy driver support
+>   USB: ohci-exynos: Add phy driver support
+>
+>  .../devicetree/bindings/usb/samsung-usbphy.txt     |   25 +-
+>  drivers/usb/host/ehci-s5p.c                        |   71 +++-
+>  drivers/usb/host/ohci-exynos.c                     |   71 +++-
+>  drivers/usb/phy/Kconfig                            |    2 +-
+>  drivers/usb/phy/samsung-usbphy.c                   |  465 ++++++++++++++++++--
+>  include/linux/usb/samsung_usb_phy.h                |   29 ++
+>  6 files changed, 570 insertions(+), 93 deletions(-)
+>  create mode 100644 include/linux/usb/samsung_usb_phy.h
+>
+> --
+> 1.7.6.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> Thanks all of your help.
-> 
-> Best Regards,
-> Joe
-> 
-> On 11/29/12 23:52, Fujinaka, Todd wrote:
->> Someone else pointed this out to me locally. If you have a non-client BIOS, you should be able to set the MaxPayloadSize using setpci. You have to make sure that you're being consistent throughout all the associated links.
->>
->> Todd Fujinaka
->> Technical Marketing Engineer
->> LAN Access Division (LAD)
->> Intel Corporation
->> todd.fujinaka@intel.com
->> (503) 712-4565
->>
->>
->> -----Original Message-----
->> From: Ethan Zhao [mailto:ethan.kernel@gmail.com] 
->> Sent: Wednesday, November 28, 2012 7:10 PM
->> To: Fujinaka, Todd
->> Cc: Joe Jin; Ben Hutchings; Mary Mcgrath; netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
->> Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
->>
->> Joe,
->>     Possibly your customer is running a kernel without source code on a platform whose vendor wouldn't like to fix BIOS issue( Is that a HP/Dell server ?).
->>     Anyway, to see if is a payload issue or,  you could change the payload size with setpci tool to those devices and set the link retrain bit to trigger the link retraining to debug the issue and identity the root cause.  I thinks it is much easier than modify the BIOS or  eeprom of NIC.
->>
->>     e.g.
->>    set device control register to 0f 00   (128 bytes payload size)
->>    #   setpci -v -s 00:02.0 98.w=000f
->>    set device link control register to 60h (retrain the link)
->>    #  setpci -v -s 00:02.0 a0.b=60
->>
->>   Hope it works,  Just my 2 cents.
->>
->> Ethan.zhao@oracle.com
->>
->> On Wed, Nov 28, 2012 at 11:53 PM, Fujinaka, Todd <todd.fujinaka@intel.com> wrote:
->>> The only EEPROM I know about or can speak to is the one attached to the 82571 and it doesn't set the MaxPayloadSize. That's done by the BIOS.
->>>
->>> Todd Fujinaka
->>> Technical Marketing Engineer
->>> LAN Access Division (LAD)
->>> Intel Corporation
->>> todd.fujinaka@intel.com
->>> (503) 712-4565
->>>
->>>
->>> -----Original Message-----
->>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>> Sent: Wednesday, November 28, 2012 12:31 AM
->>> To: Ben Hutchings
->>> Cc: Fujinaka, Todd; Mary Mcgrath; netdev@vger.kernel.org; 
->>> e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
->>> Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
->>>
->>> On 11/28/12 02:10, Ben Hutchings wrote:
->>>> On Tue, 2012-11-27 at 17:32 +0000, Fujinaka, Todd wrote:
->>>>> Forgive me if I'm being too repetitious as I think some of this has 
->>>>> been mentioned in the past.
->>>>>
->>>>> We (and by we I mean the Ethernet part and driver) can only change 
->>>>> the advertised availability of a larger MaxPayloadSize. The size is 
->>>>> negotiated by both sides of the link when the link is established.
->>>>> The driver should not change the size of the link as it would be 
->>>>> poking at registers outside of its scope and is controlled by the 
->>>>> upstream bridge (not us).
->>>> [...]
->>>>
->>>> MaxPayloadSize (MPS) is not negotiated between devices but is 
->>>> programmed by the system firmware (at least for devices present at 
->>>> boot - the kernel may be responsible in case of hotplug).  You can 
->>>> use the kernel parameter 'pci=pcie_bus_perf' (or one of several 
->>>> others) to set a policy that overrides this, but no policy will allow 
->>>> setting MPS above the device's MaxPayloadSizeSupported (MPSS).
->>>>
->>>
->>> Ben,
->>>
->>> Unfortunately I'm using 3.0.x kernel and this is not included in the kernel.
->>> So I'm trying to use ethtool modify it from eeprom to see if help or no.
->>>
->>>
->>> Todd, I'll review all MaxPayload for all devices, but need to say if it mismatch, customer could not modify it from BIOS for there was not entry at there, to test it, we have to find how to verify if this is the root cause, so still need to find the offset in eeprom.
->>>
->>> Thanks in advance,
->>> Joe
->>>
-> 
-> 
 
 
 -- 
-Thanks!
-Yijing
-
+Thanks & Regards
+Vivek
