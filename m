@@ -1,108 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab2LSSgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 13:36:07 -0500
-Received: from mailserver6.natinst.com ([130.164.80.6]:37105 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab2LSSf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 13:35:59 -0500
-Date: Wed, 19 Dec 2012 12:36:17 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
-Message-ID: <20121219183617.GC1005@beefymiracle.amer.corp.natinst.com>
-References: <1355778135-32458-1-git-send-email-sboyd@codeaurora.org>
- <1355778135-32458-5-git-send-email-sboyd@codeaurora.org>
- <20121219172619.GB1005@beefymiracle.amer.corp.natinst.com>
- <50D2056E.9000507@codeaurora.org>
+	id S1753798Ab2LSSmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 13:42:50 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:47420 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751303Ab2LSSmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 13:42:42 -0500
+Date: Wed, 19 Dec 2012 10:42:35 -0800
+From: Kees Cook <kees@outflux.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [RESEND][GIT PULL] CONFIG_EXPERIMENTAL removal for 3.8
+Message-ID: <20121219184235.GA11109@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <50D2056E.9000507@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 12/19/2012 12:35:55 PM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 12/19/2012 12:35:55 PM,
-	Serialize complete at 12/19/2012 12:35:55 PM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-19_08:2012-12-19,2012-12-19,1970-01-01 signatures=0
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 10:20:30AM -0800, Stephen Boyd wrote:
-> On 12/19/12 09:26, Josh Cartwright wrote:
-> > On Mon, Dec 17, 2012 at 01:02:15PM -0800, Stephen Boyd wrote:
-[..]
-> 
-> Can you show the code at those line numbers? There are quite a few
-> WARN_ONs in that code and it's possible the WARN_ON is the one
-> introduced in this patch.
+Hi Linus,
 
-It looks like we're not hitting the WARN_ON() you added, but several of
-the other ones.
+Please pull this tree of CONFIG_EXPERIMENTAL removals for 3.8. These
+are the Acked subset of patches of my larger "drop-experimental" tree
+that other maintainers asked me to carry for them in linux-next.
 
-> >    ------------[ cut here ]------------
-> >    WARNING: at drivers/clk/clk-zynq.c:159 zynq_periph_clk_setup+0x190/0x248()
-> >    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
-> >    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
-> >    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193520>] (zynq_periph_clk_setup+0x190/0x248)
-> >    [<c0193520>] (zynq_periph_clk_setup+0x190/0x248) from [<c0192944>] (of_clk_init+0x30/0x58)
-> >    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
-> >    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
-> >    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
-> >    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
-> >    ---[ end trace 1b75b31a2719ed1c ]---
+There are some conflicts that have cropped up during the merge window,
+but they're all pretty trivial: take what ever is most recent and delete
+"EXPERIMENTAL". :)
 
-zynq_periph_clk_setup:
-156 >-------periph->gates[0] = clk_register_gate(NULL, name, np->name, 0,
-157 >------->------->------->------->-------     periph->clk_ctrl, 0, 0,
-158 >------->------->------->------->-------     &periph->clkact_lock);
-159 >-------if (WARN_ON(IS_ERR(periph->gates[0])))
-160 >------->-------return;
+Thanks!
 
-> >    ------------[ cut here ]------------
-> >    WARNING: at drivers/clk/clk-zynq.c:296 zynq_cpu_clk_setup+0x1e0/0x26c()
-> >    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
-> >    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
-> >    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c)
-> >    [<c0193304>] (zynq_cpu_clk_setup+0x1e0/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
-> >    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
-> >    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
-> >    [<c0185d54>] (time_init+0x28/0x30) from [<c0183650>] (start_kernel+0x1a8/0x2c0)
-> >    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
-> >    ---[ end trace 1b75b31a2719ed1d ]---
+-Kees
 
-zynq_cpu_subclk_setup:
-295 >-------clk = clk_register(NULL, &subclk->hw);
-296 >-------if (WARN_ON(IS_ERR(clk)))
-297 >------->-------goto err_clk_register;
+The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
 
-> >    ------------[ cut here ]------------
-> >    WARNING: at drivers/clk/clk-zynq.c:347 zynq_cpu_clk_setup+0x210/0x26c()
-> >    [<c000d814>] (unwind_backtrace+0x0/0xf8) from [<c0016808>] (warn_slowpath_common+0x50/0x60)
-> >    [<c0016808>] (warn_slowpath_common+0x50/0x60) from [<c00168e0>] (warn_slowpath_null+0x1c/0x24)
-> >    [<c00168e0>] (warn_slowpath_null+0x1c/0x24) from [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c)
-> >    [<c0193334>] (zynq_cpu_clk_setup+0x210/0x26c) from [<c0192944>] (of_clk_init+0x30/0x58)
-> >    [<c0192944>] (of_clk_init+0x30/0x58) from [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48)
-> >    [<c0189708>] (xilinx_zynq_timer_init+0x40/0x48) from [<c0185d54>] (time_init+0x28/0x30)
-> >    [<c0185d54>] (time_init+0x28/0x30) fr m [<c0183650>] (start_kernel+0x1a8/0x2c0)
-> >    [<c0183650>] (start_kernel+0x1a8/0x2c0) from [<00008074>] (0x8074)
-> >    ---[ end trace 1b75b31a2719ed1e ]---
+  Linux 3.7 (2012-12-10 19:30:57 -0800)
 
-zynq_cpu_clk_setup:
-345 >-------for (i = 0; i < 4; i++) {
-346 >------->-------cpuclk->subclks[i] = zynq_cpu_subclk_setup(np, i, clk_621);
-347 >------->-------if (WARN_ON(IS_ERR(cpuclk->subclks[i])))
-348 >------->------->-------return;
-349 >-------}
+are available in the git repository at:
 
-The third warning is a bit redundant, it is triggered by the same conditions
-that triggered the second warning.
+  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/for-linus-3.8
 
-	  Josh
+for you to fetch changes up to 6b81c0f59cf689e81f80d8a601b08c5316b96a1f:
+
+  tools/lguest: remove depends on CONFIG_EXPERIMENTAL (2012-12-11 16:38:26 -0800)
+
+----------------------------------------------------------------
+Initial batch of CONFIG_EXPERIMENTAL removals for 3.8.
+
+----------------------------------------------------------------
+Kees Cook (81):
+      make CONFIG_EXPERIMENTAL invisible and default
+      Documentation: remove depends on CONFIG_EXPERIMENTAL
+      arch/alpha: remove depends on CONFIG_EXPERIMENTAL
+      arch/cris/arch-v32/drivers: remove depends on CONFIG_EXPERIMENTAL
+      arch/ia64/kvm: remove depends on CONFIG_EXPERIMENTAL
+      arch/ia64: remove depends on CONFIG_EXPERIMENTAL
+      arch/ia64/xen: remove depends on CONFIG_EXPERIMENTAL
+      arch/powerpc/platforms/ps3: remove depends on CONFIG_EXPERIMENTAL
+      arch/s390: remove depends on CONFIG_EXPERIMENTAL
+      arch/s390/kvm: remove depends on CONFIG_EXPERIMENTAL
+      arch/um: remove depends on CONFIG_EXPERIMENTAL
+      arch/x86: remove depends on CONFIG_EXPERIMENTAL
+      arch/x86/um: remove depends on CONFIG_EXPERIMENTAL
+      crypto: remove depends on CONFIG_EXPERIMENTAL
+      drivers/cpufreq: remove depends on CONFIG_EXPERIMENTAL
+      drivers/gpu/drm/udl: remove depends on CONFIG_EXPERIMENTAL
+      drivers/i2c/muxes: remove depends on CONFIG_EXPERIMENTAL
+      drivers/ide: remove depends on CONFIG_EXPERIMENTAL
+      drivers/lguest: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mmc/core: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mmc/host: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/cx25821: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/pvrusb2: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/s5p-fimc: remove depends on CONFIG_EXPERIMENTAL
+      drivers/media/video/s5p-tv: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd/chips: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd/devices: remove depends on CONFIG_EXPERIMENTAL
+      drivers/mtd/nand: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/8390: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/atheros: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/dec/tulip: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/i825xx: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/intel: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/natsemi: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/packetengines: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/realtek: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/silan: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/ethernet/ti: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/team: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/wan: remove depends on CONFIG_EXPERIMENTAL
+      drivers/net/usb: remove depends on CONFIG_EXPERIMENTAL
+      drivers/pcmcia: remove depends on CONFIG_EXPERIMENTAL
+      drivers/ptp: remove depends on CONFIG_EXPERIMENTAL
+      drivers/rpmsg: remove depends on CONFIG_EXPERIMENTAL
+      drivers/sbus/char: remove depends on CONFIG_EXPERIMENTAL
+      drivers/virtio: remove depends on CONFIG_EXPERIMENTAL
+      fs/ceph: remove depends on CONFIG_EXPERIMENTAL
+      fs/ecryptfs: remove depends on CONFIG_EXPERIMENTAL
+      fs/nilfs2: remove depends on CONFIG_EXPERIMENTAL
+      fs/xfs: remove depends on CONFIG_EXPERIMENTAL
+      init: remove depends on CONFIG_EXPERIMENTAL
+      kernel/gcov: remove depends on CONFIG_EXPERIMENTAL
+      net: remove depends on CONFIG_EXPERIMENTAL
+      net/9p: remove depends on CONFIG_EXPERIMENTAL
+      net/ceph: remove depends on CONFIG_EXPERIMENTAL
+      net/dccp/ccids: remove depends on CONFIG_EXPERIMENTAL
+      net/dccp: remove depends on CONFIG_EXPERIMENTAL
+      net/decnet/netfilter: remove depends on CONFIG_EXPERIMENTAL
+      net/decnet: remove depends on CONFIG_EXPERIMENTAL
+      net/dsa: remove depends on CONFIG_EXPERIMENTAL
+      net/ieee802154: remove depends on CONFIG_EXPERIMENTAL
+      net/ipv4/netfilter: remove depends on CONFIG_EXPERIMENTAL
+      net/ipv4: remove depends on CONFIG_EXPERIMENTAL
+      net/ipv6: remove depends on CONFIG_EXPERIMENTAL
+      net/l2tp: remove depends on CONFIG_EXPERIMENTAL
+      net/lapb: remove depends on CONFIG_EXPERIMENTAL
+      net/mac80211: remove depends on CONFIG_EXPERIMENTAL
+      net/mac802154: remove depends on CONFIG_EXPERIMENTAL
+      net/netfilter: remove depends on CONFIG_EXPERIMENTAL
+      net/rds: remove depends on CONFIG_EXPERIMENTAL
+      net/rxrpc: remove depends on CONFIG_EXPERIMENTAL
+      net/sctp: remove depends on CONFIG_EXPERIMENTAL
+      net/sunrpc: remove depends on CONFIG_EXPERIMENTAL
+      net/tipc: remove depends on CONFIG_EXPERIMENTAL
+      net/wanrouter: remove depends on CONFIG_EXPERIMENTAL
+      net/x25: remove depends on CONFIG_EXPERIMENTAL
+      net/xfrm: remove depends on CONFIG_EXPERIMENTAL
+      tools/lguest: remove depends on CONFIG_EXPERIMENTAL
+
+ Documentation/CodingStyle                  |   10 +-----
+ Documentation/DocBook/kernel-hacking.tmpl  |    7 ----
+ Documentation/DocBook/kgdb.tmpl            |    6 ++--
+ Documentation/intel_txt.txt                |    2 +-
+ Documentation/zh_CN/CodingStyle            |    7 ----
+ arch/alpha/Kconfig                         |    3 +-
+ arch/cris/arch-v32/drivers/Kconfig         |    4 +--
+ arch/ia64/Kconfig                          |    8 ++---
+ arch/ia64/kvm/Kconfig                      |    2 +-
+ arch/ia64/xen/Kconfig                      |    2 +-
+ arch/powerpc/platforms/ps3/Kconfig         |    2 +-
+ arch/s390/Kconfig                          |    4 +--
+ arch/s390/kvm/Kconfig                      |    2 +-
+ arch/um/Kconfig.net                        |    2 +-
+ arch/um/Kconfig.um                         |    8 ++---
+ arch/x86/Kconfig                           |   22 ++++++------
+ arch/x86/um/Kconfig                        |    3 +-
+ crypto/Kconfig                             |   15 +++-----
+ drivers/cpufreq/Kconfig.arm                |    4 +--
+ drivers/cpufreq/Kconfig.x86                |    6 ++--
+ drivers/gpu/drm/udl/Kconfig                |    2 +-
+ drivers/i2c/muxes/Kconfig                  |    2 --
+ drivers/ide/Kconfig                        |    8 ++---
+ drivers/lguest/Kconfig                     |    2 +-
+ drivers/media/Kconfig                      |    7 ++--
+ drivers/media/pci/cx25821/Kconfig          |    2 +-
+ drivers/media/platform/s5p-fimc/Kconfig    |    1 -
+ drivers/media/platform/s5p-tv/Kconfig      |    3 +-
+ drivers/media/usb/pvrusb2/Kconfig          |    8 ++---
+ drivers/mmc/core/Kconfig                   |    3 +-
+ drivers/mmc/host/Kconfig                   |   20 +++++------
+ drivers/mtd/Kconfig                        |    2 +-
+ drivers/mtd/chips/Kconfig                  |    2 +-
+ drivers/mtd/devices/Kconfig                |    4 +--
+ drivers/mtd/nand/Kconfig                   |    7 ++--
+ drivers/net/Kconfig                        |    9 +++--
+ drivers/net/ethernet/8390/Kconfig          |   21 +++++------
+ drivers/net/ethernet/atheros/Kconfig       |    8 ++---
+ drivers/net/ethernet/dec/tulip/Kconfig     |    4 +--
+ drivers/net/ethernet/i825xx/Kconfig        |   12 +++----
+ drivers/net/ethernet/intel/Kconfig         |    9 ++---
+ drivers/net/ethernet/natsemi/Kconfig       |    3 --
+ drivers/net/ethernet/packetengines/Kconfig |    4 +--
+ drivers/net/ethernet/realtek/Kconfig       |    4 +--
+ drivers/net/ethernet/silan/Kconfig         |    6 ++--
+ drivers/net/ethernet/ti/Kconfig            |    4 +--
+ drivers/net/team/Kconfig                   |    3 +-
+ drivers/net/usb/Kconfig                    |   16 ++++-----
+ drivers/net/wan/Kconfig                    |    8 ++---
+ drivers/pcmcia/Kconfig                     |    4 +--
+ drivers/ptp/Kconfig                        |    1 -
+ drivers/rpmsg/Kconfig                      |    3 +-
+ drivers/sbus/char/Kconfig                  |    7 ++--
+ drivers/virtio/Kconfig                     |    8 ++---
+ fs/ceph/Kconfig                            |    4 +--
+ fs/ecryptfs/Kconfig                        |    4 +--
+ fs/nilfs2/Kconfig                          |    3 +-
+ fs/xfs/Kconfig                             |    4 +--
+ init/Kconfig                               |   54 +++++++---------------------
+ kernel/gcov/Kconfig                        |    2 +-
+ net/9p/Kconfig                             |    2 +-
+ net/Kconfig                                |    5 ++-
+ net/ceph/Kconfig                           |    4 +--
+ net/dccp/Kconfig                           |    4 +--
+ net/dccp/ccids/Kconfig                     |    5 ++-
+ net/decnet/Kconfig                         |    4 +--
+ net/decnet/netfilter/Kconfig               |    2 +-
+ net/dsa/Kconfig                            |    2 +-
+ net/ieee802154/Kconfig                     |    3 +-
+ net/ipv4/Kconfig                           |   11 +-----
+ net/ipv4/netfilter/Kconfig                 |    4 +--
+ net/ipv6/Kconfig                           |   24 ++++++-------
+ net/l2tp/Kconfig                           |    4 +--
+ net/lapb/Kconfig                           |    3 +-
+ net/mac80211/Kconfig                       |    2 +-
+ net/mac802154/Kconfig                      |    2 +-
+ net/netfilter/Kconfig                      |   24 +++++--------
+ net/rds/Kconfig                            |    4 +--
+ net/rxrpc/Kconfig                          |    2 +-
+ net/sctp/Kconfig                           |    4 +--
+ net/sunrpc/Kconfig                         |    2 +-
+ net/tipc/Kconfig                           |    4 +--
+ net/wanrouter/Kconfig                      |    1 -
+ net/x25/Kconfig                            |    3 +-
+ net/xfrm/Kconfig                           |   16 ++++-----
+ tools/lguest/lguest.txt                    |    8 ++---
+ 86 files changed, 209 insertions(+), 337 deletions(-)
+
+-- 
+Kees Cook
+Chrome OS Security
