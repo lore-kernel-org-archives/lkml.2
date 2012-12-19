@@ -1,345 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2LSUb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 15:31:56 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42881 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab2LSUbt (ORCPT
+	id S1753106Ab2LSUfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 15:35:07 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:58735 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2LSUfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 15:31:49 -0500
-Subject: [PATCH 2/2] goldfish: add the goldfish virtual bus
-To: x86@kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com
-From: Alan Cox <alan@linux.intel.com>
-Date: Wed, 19 Dec 2012 20:34:33 +0000
-Message-ID: <20121219203431.9208.36521.stgit@bob.linux.org.uk>
-In-Reply-To: <20121219203018.9208.67869.stgit@bob.linux.org.uk>
-References: <20121219203018.9208.67869.stgit@bob.linux.org.uk>
-User-Agent: StGit/0.16
+	Wed, 19 Dec 2012 15:35:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121219181643.GA31435@core.coreip.homeip.net>
+References: <1355348028-19017-1-git-send-email-sjg@chromium.org>
+	<1355348028-19017-6-git-send-email-sjg@chromium.org>
+	<20121215011345.9D5973E0BEE@localhost>
+	<2990462.l5jY89jKQx@dtor-d630.eng.vmware.com>
+	<20121219125722.DCD3E3E0AD7@localhost>
+	<20121219181643.GA31435@core.coreip.homeip.net>
+Date: Wed, 19 Dec 2012 12:35:02 -0800
+X-Google-Sender-Auth: UNhqLxCOyOogux_aXgiSM1E4dG8
+Message-ID: <CAPnjgZ3USkBZk+xtTAdBUjt625=VeU3ex9QP-KoBRZwua3eWqQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Input: Add ChromeOS EC keyboard driver
+From: Simon Glass <sjg@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Olof Johansson <olof@lixom.net>, Roland Stigge <stigge@antcom.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        linux-doc@vger.kernel.org,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jun Nakajima <jnakajim@gmail.com>
+On Wed, Dec 19, 2012 at 10:16 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wed, Dec 19, 2012 at 12:57:22PM +0000, Grant Likely wrote:
+>> On Fri, 14 Dec 2012 17:43:31 -0800, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+>> > On Saturday, December 15, 2012 01:13:45 AM Grant Likely wrote:
+>> > > On Wed, 12 Dec 2012 13:33:48 -0800, Simon Glass <sjg@chromium.org> wrote:
+>> > > > Use the key-matrix layer to interpret key scan information from the EC
+>> > > > and inject input based on the FDT-supplied key map. This driver registers
+>> > > > itself with the ChromeOS EC driver to perform communications.
+>> > > >
+>> > > > Additional FDT bindings are provided to specify rows/columns and the
+>> > > > auto-repeat information.
+>> > > >
+>> > > > Signed-off-by: Simon Glass <sjg@chromium.org>
+>> > > > Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+>> > > > Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+>> > > > ---
+>> > > >
+>> > > >  .../devicetree/bindings/input/cros-ec-keyb.txt     |   77 ++++
+>> > > >  drivers/input/keyboard/Kconfig                     |   10 +
+>> > > >  drivers/input/keyboard/Makefile                    |    1 +
+>> > > >  drivers/input/keyboard/cros_ec_keyb.c              |  413
+>> > > >  ++++++++++++++++++++ 4 files changed, 501 insertions(+), 0 deletions(-)
+>> > > >  create mode 100644
+>> > > >  Documentation/devicetree/bindings/input/cros-ec-keyb.txt
+>> > > >  create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
+>> > > >
+>> > > > diff --git a/Documentation/devicetree/bindings/input/cros-ec-keyb.txt
+>> > > > b/Documentation/devicetree/bindings/input/cros-ec-keyb.txt new file mode
+>> > > > 100644
+>> > > > index 0000000..67f51d8
+>> > > > --- /dev/null
+>> > > > +++ b/Documentation/devicetree/bindings/input/cros-ec-keyb.txt
+>> > > > @@ -0,0 +1,77 @@
+>> > > > +ChromeOS EC Keyboard
+>> > > > +
+>> > > > +Google's ChromeOS EC Keyboard is a simple matrix keyboard implemented on
+>> > > > +a separate EC (Embedded Controller) device. It provides a message for
+>> > > > reading +key scans from the EC. These are then converted into keycodes
+>> > > > for processing +by the kernel.
+>> > > > +
+>> > > > +Required properties:
+>> > > > +- compatible: "google,cros-ec-keyb"
+>> > > > +- google,key-rows: Number of keyboard rows (must be <= 8)
+>> > > > +- google,key-columns: Number of keyboard columns (must be <= 13)
+>> > > > +- google,repeat-delay-ms: Key repeat delay in milliseconds
+>> > > > +- google,repeat-rate-ms: Key repeat rate in milliseconds
+>> > >
+>> > > Hmmm, these should probably be in a common binding. Take a look at
+>> > > the other input bindings and make a proposal for properties to add to
+>> > > matrix-keymap.txt.
+>> >
+>> > Actually these are not essentia for bringup and can be set from userspace,
+>> > so I'd say simply drop them.
+>>
+>> Aren't they needed for a working keyboard? If so, I would really think
+>> they should be set correctly without userspace intervention.
+>
+> I am sorry if I was unclear, but I was actually talking about the last
+> 2: repeat-delay-ms and repeat-rate-ms. Input core has I believe sane
+> defaults (250 msec delay, 33 cps autorepeat) and user can adjust if
+> other rate is preferred.
 
-This imports the current Google code and cleans it up slightly to use pr_ and
-to properly request its resources.
+(resending due to mailing problem)
 
-Goldfish is an emulator used for Android development. It has a virtual bus where
-the emulator passes platform device information to the guest which then creates
-the appropriate devices.
+I seems like I should remove these two, then.
 
-This part of the emulation is not architecture specific so should not be hiding
-in architecture trees as it does in the Google Android tree. The constants it
-uses do depend on the platform and so live in arch/goldfish.h
+It would be nice if we could keep these parameters so that the
+keyboard doesn't require user-space set up to work, but I understand
+and agree they are not essential. Regarding Grant's request to come up
+with a common binding, if I remove these then that is not needed,
+right?
 
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
-Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
-Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[Moved out of x86, cleaned up headers]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Regards,
+Simon
 
- drivers/platform/Makefile            |    1 
- drivers/platform/goldfish/Makefile   |    4 +
- drivers/platform/goldfish/pdev_bus.c |  265 ++++++++++++++++++++++++++++++++++
- 3 files changed, 270 insertions(+)
- create mode 100644 drivers/platform/goldfish/Makefile
- create mode 100644 drivers/platform/goldfish/pdev_bus.c
-
-
-diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
-index b17c16c..8a44a4c 100644
---- a/drivers/platform/Makefile
-+++ b/drivers/platform/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_X86)		+= x86/
- obj-$(CONFIG_OLPC)		+= olpc/
-+obj-$(CONFIG_GOLDFISH)		+= goldfish/
-diff --git a/drivers/platform/goldfish/Makefile b/drivers/platform/goldfish/Makefile
-new file mode 100644
-index 0000000..6c591f6
---- /dev/null
-+++ b/drivers/platform/goldfish/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Makefile for Goldfish platform specific drivers
-+#
-+obj-$(CONFIG_GOLDFISH)	+=	pdev_bus.o
-diff --git a/drivers/platform/goldfish/pdev_bus.c b/drivers/platform/goldfish/pdev_bus.c
-new file mode 100644
-index 0000000..6d95492
---- /dev/null
-+++ b/drivers/platform/goldfish/pdev_bus.c
-@@ -0,0 +1,265 @@
-+/*
-+ * Copyright (C) 2007 Google, Inc.
-+ * Copyright (C) 2011 Intel, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+
-+#include <asm/goldfish.h>
-+
-+#define PDEV_BUS_OP_DONE        (0x00)
-+#define PDEV_BUS_OP_REMOVE_DEV  (0x04)
-+#define PDEV_BUS_OP_ADD_DEV     (0x08)
-+
-+#define PDEV_BUS_OP_INIT        (0x00)
-+
-+#define PDEV_BUS_OP             (0x00)
-+#define PDEV_BUS_GET_NAME       (0x04)
-+#define PDEV_BUS_NAME_LEN       (0x08)
-+#define PDEV_BUS_ID             (0x0c)
-+#define PDEV_BUS_IO_BASE        (0x10)
-+#define PDEV_BUS_IO_SIZE        (0x14)
-+#define PDEV_BUS_IRQ            (0x18)
-+#define PDEV_BUS_IRQ_COUNT      (0x1c)
-+
-+struct pdev_bus_dev {
-+	struct list_head list;
-+	struct platform_device pdev;
-+	struct resource resources[0];
-+};
-+
-+static void goldfish_pdev_worker(struct work_struct *work);
-+
-+static void __iomem *pdev_bus_base;
-+static unsigned long pdev_bus_addr;
-+static u32 pdev_bus_irq;
-+static LIST_HEAD(pdev_bus_new_devices);
-+static LIST_HEAD(pdev_bus_registered_devices);
-+static LIST_HEAD(pdev_bus_removed_devices);
-+static DECLARE_WORK(pdev_bus_worker, goldfish_pdev_worker);
-+
-+
-+static void goldfish_pdev_worker(struct work_struct *work)
-+{
-+	int ret;
-+	struct pdev_bus_dev *pos, *n;
-+
-+	list_for_each_entry_safe(pos, n, &pdev_bus_removed_devices, list) {
-+		list_del(&pos->list);
-+		platform_device_unregister(&pos->pdev);
-+		kfree(pos);
-+	}
-+	list_for_each_entry_safe(pos, n, &pdev_bus_new_devices, list) {
-+		list_del(&pos->list);
-+		ret = platform_device_register(&pos->pdev);
-+		if (ret)
-+			pr_err("goldfish_pdev_worker failed to register device, %s\n",
-+								pos->pdev.name);
-+		list_add_tail(&pos->list, &pdev_bus_registered_devices);
-+	}
-+}
-+
-+static void goldfish_pdev_remove(void)
-+{
-+	struct pdev_bus_dev *pos, *n;
-+	u32 base;
-+
-+	base = readl(pdev_bus_base + PDEV_BUS_IO_BASE);
-+
-+	list_for_each_entry_safe(pos, n, &pdev_bus_new_devices, list) {
-+		if (pos->resources[0].start == base) {
-+			list_del(&pos->list);
-+			kfree(pos);
-+			return;
-+		}
-+	}
-+	list_for_each_entry_safe(pos, n, &pdev_bus_registered_devices, list) {
-+		if (pos->resources[0].start == base) {
-+			list_del(&pos->list);
-+			list_add_tail(&pos->list, &pdev_bus_removed_devices);
-+			schedule_work(&pdev_bus_worker);
-+			return;
-+		}
-+	};
-+	pr_err("goldfish_pdev_remove could not find device at %x\n", base);
-+}
-+
-+static int goldfish_new_pdev(void)
-+{
-+	struct pdev_bus_dev *dev;
-+	u32 name_len;
-+	u32 irq = -1, irq_count;
-+	int resource_count = 2;
-+	u32 base;
-+	char *name;
-+
-+	base = readl(pdev_bus_base + PDEV_BUS_IO_BASE);
-+
-+	irq_count = readl(pdev_bus_base + PDEV_BUS_IRQ_COUNT);
-+	name_len = readl(pdev_bus_base + PDEV_BUS_NAME_LEN);
-+	if (irq_count)
-+		resource_count++;
-+
-+	dev = kzalloc(sizeof(*dev) +
-+		sizeof(struct resource) * resource_count +
-+		name_len + 1 + sizeof(*dev->pdev.dev.dma_mask), GFP_ATOMIC);
-+	if (dev == NULL)
-+		return -ENOMEM;
-+
-+	dev->pdev.num_resources = resource_count;
-+	dev->pdev.resource = (struct resource *)(dev + 1);
-+	dev->pdev.name = name = (char *)(dev->pdev.resource + resource_count);
-+	dev->pdev.dev.coherent_dma_mask = ~0;
-+	dev->pdev.dev.dma_mask = (void *)(dev->pdev.name + name_len + 1);
-+	*dev->pdev.dev.dma_mask = ~0;
-+
-+	writel((unsigned long)name, pdev_bus_base + PDEV_BUS_GET_NAME);
-+	name[name_len] = '\0';
-+	dev->pdev.id = readl(pdev_bus_base + PDEV_BUS_ID);
-+	dev->pdev.resource[0].start = base;
-+	dev->pdev.resource[0].end = base +
-+				readl(pdev_bus_base + PDEV_BUS_IO_SIZE) - 1;
-+	dev->pdev.resource[0].flags = IORESOURCE_MEM;
-+	if (irq_count) {
-+		irq = readl(pdev_bus_base + PDEV_BUS_IRQ);
-+		dev->pdev.resource[1].start = irq;
-+		dev->pdev.resource[1].end = irq + irq_count - 1;
-+		dev->pdev.resource[1].flags = IORESOURCE_IRQ;
-+	}
-+
-+	pr_debug("goldfish_new_pdev %s at %x irq %d\n", name, base, irq);
-+	list_add_tail(&dev->list, &pdev_bus_new_devices);
-+	schedule_work(&pdev_bus_worker);
-+
-+	return 0;
-+}
-+
-+static irqreturn_t goldfish_pdev_bus_interrupt(int irq, void *dev_id)
-+{
-+	irqreturn_t ret = IRQ_NONE;
-+	while (1) {
-+		u32 op = readl(pdev_bus_base + PDEV_BUS_OP);
-+		switch (op) {
-+		case PDEV_BUS_OP_DONE:
-+			return IRQ_NONE;
-+
-+		case PDEV_BUS_OP_REMOVE_DEV:
-+			goldfish_pdev_remove();
-+			break;
-+
-+		case PDEV_BUS_OP_ADD_DEV:
-+			goldfish_new_pdev();
-+			break;
-+		}
-+		ret = IRQ_HANDLED;
-+	}
-+}
-+
-+static int __devinit goldfish_pdev_bus_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct resource *r;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (r == NULL)
-+		return -EINVAL;
-+
-+	pdev_bus_addr = GOLDFISH_IO_START + r->start;
-+
-+	if (request_region(pdev_bus_addr, GOLDFISH_IO_SIZE, "goldfish")) {
-+		pr_err("unable to reserve Goldfish MMIO.\n");
-+		return -EBUSY;
-+	}
-+
-+	pr_err("Goldfish bus at %lX\n", (long)pdev_bus_addr);
-+	pdev_bus_base = ioremap(pdev_bus_addr, GOLDFISH_IO_SIZE);
-+	if (pdev_bus_base == NULL) {
-+		pr_err("unable to map Goldfish MMIO.\n");
-+		return -EIO;
-+	}
-+
-+	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (r == NULL)
-+		return -EINVAL;
-+	pdev_bus_irq = r->start;
-+
-+	ret = request_irq(pdev_bus_irq, goldfish_pdev_bus_interrupt,
-+				IRQF_SHARED, "goldfish_pdev_bus", pdev);
-+	if (ret)
-+		goto err_request_irq_failed;
-+
-+	writel(PDEV_BUS_OP_INIT, pdev_bus_base + PDEV_BUS_OP);
-+
-+err_request_irq_failed:
-+	return ret;
-+}
-+
-+static int __devexit goldfish_pdev_bus_remove(struct platform_device *pdev)
-+{
-+	free_irq(pdev_bus_irq, pdev);
-+	release_region(pdev_bus_addr, GOLDFISH_IO_SIZE);
-+	return 0;
-+}
-+
-+static struct platform_driver goldfish_pdev_bus_driver = {
-+	.probe = goldfish_pdev_bus_probe,
-+	.remove = __devexit_p(goldfish_pdev_bus_remove),
-+	.driver = {
-+		.name = "goldfish_pdev_bus"
-+	}
-+};
-+
-+static int __init goldfish_pdev_bus_init(void)
-+{
-+	return platform_driver_register(&goldfish_pdev_bus_driver);
-+}
-+
-+static void __exit goldfish_pdev_bus_exit(void)
-+{
-+	platform_driver_unregister(&goldfish_pdev_bus_driver);
-+}
-+
-+module_init(goldfish_pdev_bus_init);
-+module_exit(goldfish_pdev_bus_exit);
-+
-+static struct resource goldfish_pdev_bus_resources[] = {
-+	{
-+		.start  = GOLDFISH_PDEV_BUS_BASE,
-+		.end    = GOLDFISH_PDEV_BUS_BASE + GOLDFISH_PDEV_BUS_END - 1,
-+		.flags  = IORESOURCE_IO,
-+	},
-+	{
-+		.start	= GOLDFISH_PDEV_BUS_IRQ,
-+		.end	= GOLDFISH_PDEV_BUS_IRQ,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+struct platform_device goldfish_pdev_bus_device = {
-+	.name = "goldfish_pdev_bus",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(goldfish_pdev_bus_resources),
-+	.resource = goldfish_pdev_bus_resources
-+};
-+
-+static int __init goldfish_init(void)
-+{
-+	return platform_device_register(&goldfish_pdev_bus_device);
-+}
-+device_initcall(goldfish_init);
-
+>
+> Thanks.
+>
+> --
+> Dmitry
