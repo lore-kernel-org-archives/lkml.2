@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab2LSQpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 11:45:31 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:45332 "EHLO mx2.parallels.com"
+	id S1755657Ab2LSQsm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 11:48:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51175 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755652Ab2LSQpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 11:45:14 -0500
-From: Alexander Kartashov <alekskartashov@parallels.com>
-To: Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <gorcunov@openvz.org>, <xemul@parallels.com>,
-        Alexander Kartashov <alekskartashov@parallels.com>
-Subject: [PATCH 3/3] kcmp: enable the kcmp syscall when C/R is enabled
-Date: Wed, 19 Dec 2012 20:44:30 +0400
-Message-ID: <1355935470-21001-4-git-send-email-alekskartashov@parallels.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355935470-21001-1-git-send-email-alekskartashov@parallels.com>
-References: <20689.54803.684081.31731@pilspetsen.it.uu.se>
- <1355935470-21001-1-git-send-email-alekskartashov@parallels.com>
+	id S1751049Ab2LSQsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 11:48:35 -0500
+Date: Wed, 19 Dec 2012 18:51:30 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, gaowanlong@cn.fujitsu.com, hutao@cn.fujitsu.com,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, asias@redhat.com, nab@linux-iscsi.org
+Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of
+ buffers
+Message-ID: <20121219165130.GA13684@redhat.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com>
+ <1355833972-20319-2-git-send-email-pbonzini@redhat.com>
+ <20121219104722.GA5832@stefanha-thinkpad.redhat.com>
+ <50D1AD38.7070606@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D1AD38.7070606@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Kartashov <alekskartashov@parallels.com>
----
- arch/arm/include/uapi/asm/unistd.h |    2 +-
- arch/arm/kernel/calls.S            |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Wed, Dec 19, 2012 at 01:04:08PM +0100, Paolo Bonzini wrote:
+> Il 19/12/2012 11:47, Stefan Hajnoczi ha scritto:
+> > On Tue, Dec 18, 2012 at 01:32:48PM +0100, Paolo Bonzini wrote:
+> >> +/**
+> >> + * virtqueue_start_buf - start building buffer for the other end
+> >> + * @vq: the struct virtqueue we're talking about.
+> >> + * @buf: a struct keeping the state of the buffer
+> >> + * @data: the token identifying the buffer.
+> >> + * @count: the number of buffers that will be added
+> > 
+> > Perhaps count should be named count_bufs or num_bufs.
+> 
+> Ok.
+> 
+> >> + * @count_sg: the number of sg lists that will be added
+> > 
+> > What is the purpose of count_sg?
+> 
+> It is needed to decide whether to use an indirect or a direct buffer.
+> The idea is to avoid a memory allocation if the driver is providing us
+> with separate sg elements (under the assumption that they will be few).
+> 
+> Originally I wanted to use a mix of direct and indirect buffer (direct
+> if add_buf received a one-element scatterlist, otherwise indirect).  It
+> would have had the same effect, without having to specify count_sg in
+> advance.  The spec is not clear if that is allowed or not, but in the
+> end they do not work with either QEMU or vhost, so I chose this
+> alternative instead.
+> 
+> Paolo
 
-diff --git a/arch/arm/include/uapi/asm/unistd.h b/arch/arm/include/uapi/asm/unistd.h
-index ac03bdb..afe27b5 100644
---- a/arch/arm/include/uapi/asm/unistd.h
-+++ b/arch/arm/include/uapi/asm/unistd.h
-@@ -404,7 +404,7 @@
- #define __NR_setns			(__NR_SYSCALL_BASE+375)
- #define __NR_process_vm_readv		(__NR_SYSCALL_BASE+376)
- #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
--					/* 378 for kcmp */
-+#define __NR_kcmp					(__NR_SYSCALL_BASE+378)
- 
- /*
-  * This may need to be greater than __NR_last_syscall+1 in order to
-diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
-index 831cd38..862ebd4 100644
---- a/arch/arm/kernel/calls.S
-+++ b/arch/arm/kernel/calls.S
-@@ -387,7 +387,7 @@
- /* 375 */	CALL(sys_setns)
- 		CALL(sys_process_vm_readv)
- 		CALL(sys_process_vm_writev)
--		CALL(sys_ni_syscall)	/* reserved for sys_kcmp */
-+		CALL(sys_kcmp)
- #ifndef syscalls_counted
- .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
- #define syscalls_counted
--- 
-1.7.9.5
+Hmm it should work with vhost.
 
+> 
+> > Stefan
+> > 
