@@ -1,122 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2LSXRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 18:17:19 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:38203 "EHLO mxout2.iskon.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab2LSXRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 18:17:12 -0500
-X-Remote-IP: 213.191.128.133
-Date: Thu, 20 Dec 2012 00:17:07 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1752039Ab2LSXRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 18:17:53 -0500
+Received: from smtp01.smtpout.orange.fr ([80.12.242.123]:48471 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab2LSXRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 18:17:44 -0500
+Date: Thu, 20 Dec 2012 00:09:45 +0100
+From: Christophe TORDEUX <christophe@tordeux.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Tai-hwa Liang <avatar@sentelic.com>,
+        Oskari Saarenmaa <os@ohmu.fi>, Paul Fox <pgf@laptop.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 01/01] Input multitouch: fix horizontal
+ two-finger-scrolling on Sentelic touchpads
+Message-ID: <20121219230945.GA25106@sherka.no-ip.biz>
+References: <20121212012135.GA9043@sherka.no-ip.biz>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
-CC: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <50D24AF3.1050809@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-Subject: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o congestion
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121219 #8791803, check: 20121219 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40503 [Dec 20 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <20121212012135.GA9043@sherka.no-ip.biz>
+X-PGP-Key: http://christophe.tordeux.net/data/pgp/c-tor2/pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a 4GB RAM machine, where Normal zone is much smaller than
-DMA32 zone, the Normal zone gets fragmented in time. This requires
-relatively more pressure in balance_pgdat to get the zone above the
-required watermark. Unfortunately, the congestion_wait() call in there
-slows it down for a completely wrong reason, expecting that there's
-a lot of writeback/swapout, even when there's none (much more common).
-After a few days, when fragmentation progresses, this flawed logic
-translates to a very high CPU iowait times, even though there's no
-I/O congestion at all. If THP is enabled, the problem occurs sooner,
-but I was able to see it even on !THP kernels, just by giving it a bit
-more time to occur.
 
-The proper way to deal with this is to not wait, unless there's
-congestion. Thanks to Mel Gorman, we already have the function that
-perfectly fits the job. The patch was tested on a machine which
-nicely revealed the problem after only 1 day of uptime, and it's been
-working great.
----
- mm/vmscan.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b7ed376..4588d1d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2546,7 +2546,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 							int *classzone_idx)
- {
--	int all_zones_ok;
-+	struct zone *unbalanced_zone;
- 	unsigned long balanced;
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-@@ -2580,7 +2580,7 @@ loop_again:
- 		unsigned long lru_pages = 0;
- 		int has_under_min_watermark_zone = 0;
- 
--		all_zones_ok = 1;
-+		unbalanced_zone = NULL;
- 		balanced = 0;
- 
- 		/*
-@@ -2719,7 +2719,7 @@ loop_again:
- 			}
- 
- 			if (!zone_balanced(zone, testorder, 0, end_zone)) {
--				all_zones_ok = 0;
-+				unbalanced_zone = zone;
- 				/*
- 				 * We are still under min water mark.  This
- 				 * means that we have a GFP_ATOMIC allocation
-@@ -2752,7 +2752,7 @@ loop_again:
- 				pfmemalloc_watermark_ok(pgdat))
- 			wake_up(&pgdat->pfmemalloc_wait);
- 
--		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
-+		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
- 			break;		/* kswapd: all done */
- 		/*
- 		 * OK, kswapd is getting into trouble.  Take a nap, then take
-@@ -2762,7 +2762,7 @@ loop_again:
- 			if (has_under_min_watermark_zone)
- 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
- 			else
--				congestion_wait(BLK_RW_ASYNC, HZ/10);
-+				wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
+=46rom: Christophe TORDEUX <christophe@tordeux.net>
+
+Apply the following change to the Sentelic touchpad driver:
+report only the position of the first finger as absolute non-MT=20
+coordinates, instead of reporting both fingers alternatively. Actual MT=20
+events are unaffected.
+
+Signed-off-by: Christophe TORDEUX <christophe@tordeux.net>
+----
+
+This is a much simpler version of my patch. Basically, it makes little=20
+sense to report both fingers alternatively, as long as it's non-MT=20
+events. With this approach, storing coordinates of the previously=20
+reported touch is not necessary. This patch is against kernel version=20
+3.7. Works with a touchpad version STL3888_C0, very probably works on=20
+all later version, and very probably does not impact any earlier=20
+version. This patch has two effects:
+1) fix horizontal and improve vertical scrolling, though maybe in a
+coincidental way and 2) work towards making the non-MT absolute events
+a purely legacy single finger fallback mode, without breaking anything.
+
+diff -uprN -X vanilla/linux-3.7-rc8/Documentation/dontdiff vanilla/linux-3.=
+7/drivers/input/mouse/sentelic.c linux-3.7/drivers/input/mouse/sentelic.c
+--- vanilla/linux-3.7/drivers/input/mouse/sentelic.c	2012-12-15 13:51:58.76=
+8136524 +0100
++++ linux-3.7/drivers/input/mouse/sentelic.c	2012-12-19 23:26:49.289517251 =
++0100
+@@ -791,7 +791,7 @@ static psmouse_ret_t fsp_process_byte(st
+ 			fsp_set_slot(dev, 0, fgrs > 0, abs_x, abs_y);
+ 			fsp_set_slot(dev, 1, false, 0, 0);
  		}
- 
- 		/*
-@@ -2781,7 +2781,7 @@ out:
- 	 * high-order: Balanced zones must make up at least 25% of the node
- 	 *             for the node to be balanced
- 	 */
--	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))) {
-+	if (unbalanced_zone && (!order || !pgdat_balanced(pgdat, balanced, *classzone_idx))) {
- 		cond_resched();
- 
- 		try_to_freeze();
--- 
-1.7.10.4
+-		if (fgrs > 0) {
++		if (fgrs =3D=3D1 || (fgrs =3D=3D 2 && !(packet[0] & FSP_PB0_MFMC_FGR2)))=
+ {
+ 			input_report_abs(dev, ABS_X, abs_x);
+ 			input_report_abs(dev, ABS_Y, abs_y);
+ 		}
 
--- 
-Zlatko
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQ0kk5AAoJEE/hdwZK2YythjQH/iH4Ac18TZvb2UYlhoVeaQ1a
+oGT1j2QjThcP15cbHkmXKptok+t1oM62Hvxr3sEgyOu3u+lz8AkW0SMhBl9LWmc6
+jLnWWekc3oOwl93Og1v6fQH0Y6RKqWXh66QnQDNIva3oUaNxwx0x1uMUg4+I3yI4
++ybmBcsZIEIWK/F704mWtvpIOHa8w1OgOys0SJoN3L5vUH6I37zABMbGTYPLsw+e
+zCFlsBlrBVLNGqJoPZM/193wvwttYbywaUEAQBtoUeKhS6ap5vr1xNiAhkORaJeW
+0Pgb4a6a1qp1O9p5y02CYlomu/XUwtzOg+I2g5BKaTbcKbGdDq9gU0tqJYryEtM=
+=MV9i
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
