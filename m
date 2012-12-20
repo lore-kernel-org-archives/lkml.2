@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab2LTGP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:15:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:12653 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab2LTGPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:15:47 -0500
-X-IronPort-AV: E=Sophos;i="4.84,322,1355068800"; 
-   d="scan'208";a="6438608"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH] sched: correct some annotations
-Date: Thu, 20 Dec 2012 14:12:44 +0800
-Message-Id: <1355983964-21523-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/20 14:14:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/20 14:14:43,
-	Serialize complete at 2012/12/20 14:14:43
+	id S1752556Ab2LTGQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:16:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35443 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab2LTGQS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 01:16:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
+   d="scan'208";a="260017799"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 0/8] Thermal Framework Enhancements
+Thread-Topic: [PATCH 0/8] Thermal Framework Enhancements
+Thread-Index: AQHN3QLYWsFdy6+maESoXsRsheh4gZgg0huAgABlL6A=
+Date: Thu, 20 Dec 2012 06:16:07 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924C60E@BGSMSX101.gar.corp.intel.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+ <20121220053757.GD28007@kroah.com>
+In-Reply-To: <20121220053757.GD28007@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- include/linux/sched.h |    6 +++---
- kernel/sched/fair.c   |   16 ++++++----------
- 2 files changed, 9 insertions(+), 13 deletions(-)
+Hi Greg,
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ce834e7..57b31f9 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -84,9 +84,9 @@ extern void get_avenrun(unsigned long *loads, unsigned long offset, int shift);
- #define FSHIFT		11		/* nr of bits of precision */
- #define FIXED_1		(1<<FSHIFT)	/* 1.0 as fixed-point */
- #define LOAD_FREQ	(5*HZ+1)	/* 5 sec intervals */
--#define EXP_1		1884		/* 1/exp(5sec/1min) as fixed-point */
--#define EXP_5		2014		/* 1/exp(5sec/5min) */
--#define EXP_15		2037		/* 1/exp(5sec/15min) */
-+#define EXP_1		1884		/* 1/exp^(5sec/1min) as fixed-point */
-+#define EXP_5		2014		/* 1/exp^(5sec/5min) */
-+#define EXP_15		2037		/* 1/exp^(5sec/15min) */
- 
- #define CALC_LOAD(load,exp,n) \
- 	load *= exp; \
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index eaff006..fecdb02 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4850,15 +4850,11 @@ static bool numa_allow_migration(struct task_struct *p, int prev_cpu, int new_cp
- 
- 
- /*
-- * sched_balance_self: balance the current task (running on cpu) in domains
-- * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-- * SD_BALANCE_EXEC.
-+ * select_task_rq_fair: select a proper cpu for current task to run on.
-  *
-- * Balance, ie. select the least loaded group.
-+ * Return the target CPU number.
-  *
-- * Returns the target CPU number, or the same CPU if no balancing is needed.
-- *
-- * preempt must be disabled.
-+ * Note: preempt must be disabled.
-  */
- static int
- select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-@@ -4933,12 +4929,12 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 
- 		new_cpu = find_idlest_cpu(group, p, cpu);
- 		if (new_cpu == -1 || new_cpu == cpu) {
--			/* Now try balancing at a lower domain level of cpu */
-+			/* Now try a lower domain level of cpu */
- 			sd = sd->child;
- 			continue;
- 		}
- 
--		/* Now try balancing at a lower domain level of new_cpu */
-+		/* Now try a upper domain level of new_cpu */
- 		cpu = new_cpu;
- 		weight = sd->span_weight;
- 		sd = NULL;
-@@ -5149,7 +5145,7 @@ preempt:
- 	 * point, either of which can * drop the rq lock.
- 	 *
- 	 * Also, during early boot the idle thread is in the fair class,
--	 * for obvious reasons its a bad idea to schedule back to it.
-+	 * for obvious reasons it's a bad idea to schedule back to it.
- 	 */
- 	if (unlikely(!se->on_rq || curr == rq->idle))
- 		return;
--- 
-1.7.2.5
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, December 20, 2012 11:08 AM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
+> 
+> On Tue, Dec 18, 2012 at 02:59:29PM +0530, Durgadoss R wrote:
+> > This patch is a v1 based on the RFC submitted here:
+> > https://patchwork.kernel.org/patch/1758921/
+> >
+> > This patch set is based on Rui's -thermal tree, and is
+> > tested on a Core-i5 and an Atom netbook.
+> >
+> > This series contains 8 patches:
+> > Patch 1/8: Creates new sensor level APIs
+> > Patch 2/8: Creates new zone level APIs. The existing tzd structure is
+> >            kept as such for clarity and compatibility purposes.
+> > Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
+> >            existing tcd structure need not be modified.
+> > Patch 4/8: Adds a thermal_trip sysfs node, which exposes various trip
+> >            points for all sensors present in a zone.
+> > Patch 5/8: Adds a thermal_map sysfs node. It is a compact representation
+> >            of the binding relationship between a sensor and a cdev,
+> >            within a zone.
+> > Patch 6/8: Creates Documentation for the new APIs. A new file is
+> >            created for clarity. Final goal is to merge with the existing
+> >            file or refactor the files, as whatever seems appropriate.
+> 
+> The documentation for sysfs files needs to be in Documentation/ABI,
+> please add new entries there if you are creating new sysfs files.
 
+This patch was meant to add Documentation in the standard .txt under
+Documentation/thermal/.
+
+So, will keep this patch, and also add one more patch to document these
+ABI under Documentation/ABI/testing/.
+
+Thanks,
+Durga
+
+> 
+> thanks,
+> 
+> greg k-h
