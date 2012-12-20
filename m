@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab2LTTUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:20:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21402 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab2LTTNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:13:42 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] m2m-deinterlace: use correct check for kzalloc failure
-Date: Thu, 20 Dec 2012 14:11:18 -0500
-Message-Id: <1356030701-16284-10-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
-References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1751516Ab2LTTUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:20:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40912 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751326Ab2LTTUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 14:20:35 -0500
+Date: Thu, 20 Dec 2012 20:20:33 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Joe Perches <joe@perches.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] MCE, AMD: MCE decoding support for AMD Family 16h
+Message-ID: <20121220192033.GG26635@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Joe Perches <joe@perches.com>, Jacob Shin <jacob.shin@amd.com>,
+	Doug Thompson <dougthompson@xmission.com>,
+	linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1355864771-13839-1-git-send-email-jacob.shin@amd.com>
+ <1355864771-13839-3-git-send-email-jacob.shin@amd.com>
+ <1355868659.3982.3.camel@joe-AO722>
+ <20121218225610.GL31255@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121218225610.GL31255@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no point in PTR_ERR()ing a NULL pointer, use a real error
-instead.
+On Tue, Dec 18, 2012 at 11:56:10PM +0100, Borislav Petkov wrote:
+> So, if you'd like, you could wait until I apply Jacob's patches and
+> push that git branch to kernel.org and then write a patch ontop
+> removing all the exports except pp_msgs (you could add them to the
+> "amd_" namespace by calling it amd_pp_msgs or something) test that
+> patch and send it to me.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- drivers/media/platform/m2m-deinterlace.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Ok, I've applied Jacob's stuff. You can do your patch ontop of
 
-diff --git a/drivers/media/platform/m2m-deinterlace.c b/drivers/media/platform/m2m-deinterlace.c
-index 05c560f..64db74e 100644
---- a/drivers/media/platform/m2m-deinterlace.c
-+++ b/drivers/media/platform/m2m-deinterlace.c
-@@ -917,10 +917,8 @@ static int deinterlace_open(struct file *file)
- 	ctx->xt = kzalloc(sizeof(struct dma_async_tx_descriptor) +
- 				sizeof(struct data_chunk), GFP_KERNEL);
- 	if (!ctx->xt) {
--		int ret = PTR_ERR(ctx->xt);
--
- 		kfree(ctx);
--		return ret;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->colorspace = V4L2_COLORSPACE_REC709;
+git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git edac-for-3.9
+
+and send it to me.
+
+Thanks.
+
 -- 
-1.8.0
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
