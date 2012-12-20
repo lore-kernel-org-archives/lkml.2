@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab2LTAro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 19:47:44 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:39156 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab2LTArh (ORCPT
+	id S1751883Ab2LTAuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 19:50:19 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39510 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab2LTAuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 19:47:37 -0500
-X-Greylist: delayed 1462 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 19:47:37 EST
+	Wed, 19 Dec 2012 19:50:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121220094433.791d70e55ae5e3325a6190fc@canb.auug.org.au>
-References: <20121220094433.791d70e55ae5e3325a6190fc@canb.auug.org.au>
-From: Roland Dreier <roland@kernel.org>
-Date: Wed, 19 Dec 2012 16:22:54 -0800
-X-Google-Sender-Auth: iLZ-dQmZ8dJMllr57Zo9iIRwHbw
-Message-ID: <CAG4TOxPVc0tNeLhi3FF=K_UJpizh2OZgviT5WqqLvZsg-QEoNw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the infiniband tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipul Pandya <vipul@chelsio.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 20 Dec 2012 00:42:44 +0000
+X-Google-Sender-Auth: uSVfEhbCeb9vX4QHdKP1QUlzFVw
+Message-ID: <CACxGe6uDAoU8feztvLeU2JHgT5PXneM4oQfdDXdWqh1K6Vv5nw@mail.gmail.com>
+Subject: [GIT PULL] GPIO bug fixes for v3.8 merge window
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 2:44 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the infiniband tree, today's linux-next build (x86_64_
-> allmodconfig) failed like this:
->
-> In file included from drivers/scsi/csiostor/csio_wr.h:42:0,
->                  from drivers/scsi/csiostor/csio_scsi.h:49,
->                  from drivers/scsi/csiostor/csio_init.h:45,
->                  from drivers/scsi/csiostor/csio_attr.c:45:
-> drivers/scsi/csiostor/t4fw_api_stor.h:43:6: error: nested redefinition of 'enum fw_retval'
-> drivers/scsi/csiostor/t4fw_api_stor.h:43:6: error: redeclaration of 'enum fw_retval'
-> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:42:6: note: originally defined here
-> drivers/scsi/csiostor/t4fw_api_stor.h:48:2: error: redeclaration of enumerator 'FW_ENOEXEC'
-> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:39:2: note: previous definition of 'FW_ENOEXEC' was here
-> drivers/scsi/csiostor/t4fw_api_stor.h:50:2: error: redeclaration of enumerator 'FW_ENOMEM'
-> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:43:2: note: previous definition of 'FW_ENOMEM' was here
-> drivers/scsi/csiostor/t4fw_api_stor.h:58:2: error: redeclaration of enumerator 'FW_EADDRINUSE'
-> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:44:2: note: previous definition of 'FW_EADDRINUSE' was here
->
-> And several others similar.
->
-> Caused by commit f65b56b15931 ("RDMA/cxgb4: Fix LE hash collision bug for
-> active open connection").
+Hi Linus,
+
+Some more basic bug fixes. GPIO this time. Please pull
+
+g.
+
+The following changes since commit 752451f01c4567b506bf4343082682dbb8fb30dd:
+
+  Merge branch 'i2c-embedded/for-next' of
+git://git.pengutronix.de/git/wsa/linux (2012-12-18 16:51:10 -0800)
+
+are available in the git repository at:
 
 
-Vipul, is the right fix to pull the full list of FW return values from
-t4fw_api_stor.h into t4fw_api.h as part of this patch (f65b56b15931)?
+  git://git.secretlab.ca/git/linux-2.6 tags/gpio-for-linus
+
+for you to fetch changes up to bc1008cf7d243cf6ad87b1e16d3dbbd8c8d6f35c:
+
+  gpio/mvebu-gpio: Make mvebu-gpio depend on OF_CONFIG (2012-12-19
+22:15:14 +0000)
+
+----------------------------------------------------------------
+GPIO device driver bug fixes:
+- gpio/mvebu-gpio: Make mvebu-gpio depend on OF_CONFIG
+- gpio/ich: Add missing spinlock init
+
+----------------------------------------------------------------
+Gregory CLEMENT (1):
+      gpio/mvebu-gpio: Make mvebu-gpio depend on OF_CONFIG
+
+Jean Delvare (1):
+      gpio/ich: Add missing spinlock init
+
+ drivers/gpio/Kconfig      |    1 +
+ drivers/gpio/gpio-ich.c   |    1 +
+ drivers/gpio/gpio-mvebu.c |   17 -----------------
+ 3 files changed, 2 insertions(+), 17 deletions(-)
