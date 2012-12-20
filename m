@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab2LTJRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:17:42 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:52023 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274Ab2LTJRi (ORCPT
+	id S1751338Ab2LTJVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:21:21 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:53462 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751228Ab2LTJVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:17:38 -0500
-Message-ID: <50D2D7BD.3030801@erwinrol.com>
-Date: Thu, 20 Dec 2012 10:17:49 +0100
-From: Erwin Rol <mailinglists@erwinrol.com>
-Organization: Erwin Rol Software Engineering
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 04:21:17 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, <stable@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v2] mfd: db8500-prcmu: fix irqdomain usage
+Date: Thu, 20 Dec 2012 10:20:15 +0100
+Message-ID: <1355995215-6273-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: linux-kernel@vger.kernel.org, Havard Skinnemoen <havard@skinnemoen.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        matteo.fortini@sadel.it, netdev <netdev@vger.kernel.org>
-Subject: Re: at91sam9260 MACB problem with IP fragmentation
-References: <50C08233.9030905@erwinrol.com> <50C09D2E.8050608@atmel.com>
-In-Reply-To: <50C09D2E.8050608@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Dec 2012 09:17:36.0105 (UTC) FILETIME=[D99B7D90:01CDDE92]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo Nicolas,
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On 6-12-2012 14:27, Nicolas Ferre wrote:
-> Erwin,
-> 
-> On 12/06/2012 12:32 PM, Erwin Rol :
->> Hello Nicolas, Havard, all,
->>
->> I have a very obscure problem with a at91sam9260 board (almost 1 to 1
->> copy of the Atmel EK).
->>
->> The MACB seems to stall when I use large (>2 * MTU) UDP datagrams. The
->> test case is that a udp echo client (PC) sends datagrams with increasing
->> length to the AT91 until the max length of the UDP datagram is reached.
->> When there is no IP fragmentation everything is fine, but when the
->> datagrams are starting to get fragmented the AT91 will not reply
->> anymore. But as soon as some network traffic happens it goes on again,
->> and non of the data is lost.
+This fixes two issues with the DB8500 PRCMU irqdomain:
+- You have to state the irq base 0 to get a linear domain
+  for the DT case from irq_domain_add_simple()
+- The irqdomain was not used to translate the initial irq
+  request using irq_create_mapping() making the linear
+  case fail as it was lacking a proper descriptor.
 
-<snip>
+I took this opportunity to fix two lines of whitespace
+errors in related code as I was anyway messing around with
+it.
 
->> I tried several kernels including the test version from Nicolas that he
->> posted on LKML in October. They all show the same effect.
-> 
-> [..]
-> 
-> It seems that Matteo has the same behavior: check here:
-> http://www.spinics.net/lists/netdev/msg218951.html
+Cc: stable@kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Fix smallish whitespace error
+- Make sure not to call irq_create_mapping() in the fastpath,
+  instead, right after creating the irqdomain call that
+  for each wakeup source, and use irq_find_mapping() in
+  fastpath.
 
-I tried Matteo's patch and it seems to work. But I don't know if the
-patch is really the right solution. I checked again with wireshark and
-it really seems the sending that stalls not the receiving. But as soon
-as a ethernet frame is received the sending "un-stalls". So maybe the
-patch just causes an MACB IRQ at certain moments that causes the sending
-to continue?
+Hi Sam, this is a regression and as such should go into the
+-rc series. As you can see I also added the Cc: stable tag.
 
-> I am working on the macb driver right now, so I will try to reproduce
-> and track this issue on my side.
+Yours,
+Linus Walleij
+---
+ drivers/mfd/db8500-prcmu.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-Any luck reproducing it ?
-
-
-- Erwin
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index dc8826d..268f45d 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -2524,7 +2524,7 @@ static bool read_mailbox_0(void)
+ 
+ 		for (n = 0; n < NUM_PRCMU_WAKEUPS; n++) {
+ 			if (ev & prcmu_irq_bit[n])
+-				generic_handle_irq(IRQ_PRCMU_BASE + n);
++				generic_handle_irq(irq_find_mapping(db8500_irq_domain, n));
+ 		}
+ 		r = true;
+ 		break;
+@@ -2737,13 +2737,14 @@ static int db8500_irq_map(struct irq_domain *d, unsigned int virq,
+ }
+ 
+ static struct irq_domain_ops db8500_irq_ops = {
+-        .map    = db8500_irq_map,
+-        .xlate  = irq_domain_xlate_twocell,
++	.map    = db8500_irq_map,
++	.xlate  = irq_domain_xlate_twocell,
+ };
+ 
+ static int db8500_irq_init(struct device_node *np)
+ {
+-	int irq_base = -1;
++	int irq_base = 0;
++	int i;
+ 
+ 	/* In the device tree case, just take some IRQs */
+ 	if (!np)
+@@ -2758,6 +2759,10 @@ static int db8500_irq_init(struct device_node *np)
+ 		return -ENOSYS;
+ 	}
+ 
++	/* All wakeups will be used, so create mappings for all */
++	for (i = 0; i < NUM_PRCMU_WAKEUPS; i++)
++		irq_create_mapping(db8500_irq_domain, i);
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.11.3
 
