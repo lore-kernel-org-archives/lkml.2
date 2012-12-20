@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab2LTGaH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:30:07 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:20199 "EHLO
+	id S1752635Ab2LTGat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:30:49 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:20389 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab2LTG37 (ORCPT
+	with ESMTP id S1751129Ab2LTGan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:29:59 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-7d-50d2b06637e2
+	Thu, 20 Dec 2012 01:30:43 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-d5-50d2b092436f
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
@@ -15,86 +15,110 @@ Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000401cdde7b$2b0194c0$8104be40$%han@samsung.com>
 In-reply-to: <000401cdde7b$2b0194c0$8104be40$%han@samsung.com>
-Subject: [PATCH 3/5] backlight: ams369fg06: replace EFAULT with EINVAL
-Date: Thu, 20 Dec 2012 15:29:58 +0900
-Message-id: <000601cdde7b$6e9f9bf0$4bded3d0$%han@samsung.com>
+Subject: [PATCH 4/5] backlight: ams369fg06: remove redundant variable
+ 'before_power'
+Date: Thu, 20 Dec 2012 15:30:41 +0900
+Message-id: <000701cdde7b$88aa0580$99fe1080$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3eeyqi7zfdOO97SfGBrHQPr76IuAAACjKw
+Thread-index: Ac3eeyqi7zfdOO97SfGBrHQPr76IuAAAEUvA
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI920DZcCDC4+k7G4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZz89sYSmYyFXx9P4/xgbG5RxdjJwcEgImEq82z2KCsMUkLtxb
-	z9bFyMUhJLCMUWLF9Z9sMEXvjvxmh0gsYpR4f+4mC4Qzm0ni8KIHYO1sAmoSX74cZgexRQQi
-	JJpnzGLuYuTgYBbwkdg8SxMkLCRgK9E+9zBYOaeAnUTzh6Ng5cICbhJd+04zg9gsAqoSLzYs
-	AlvMC1T/efNvZghbUOLH5HssIDazgJbE+p3HmSBseYnNa96CrZIQUJd49FcX4gIjiWWPpkOV
-	iEjse/GOEWK8gMS3yYdYIMplJTYdYIZ4cRG7xJIGTghbUuLgihssExglZiFZPAvJ4llIFs9C
-	smEBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjJC4kt7BuKrB4hCjAAejEg/vommXAoRY
-	E8uKK3MPMUpwMCuJ8C68dTFAiDclsbIqtSg/vqg0J7X4EKMP0OETmaVEk/OBMZ9XEm9obGxi
-	ZmJqYm5pam6KQ1hJnLfZIyVASCA9sSQ1OzW1ILUIZhwTB6dUA6Nlw5Ifbzw3VL7LtcxNN1P9
-	ou32/enBjsMJ83a0m/067ezeMG35ZoF7JrXJ66Ll/ps1qPP90j2xUFydy+D5T7cYya/vc24U
-	zcpb8fxrcvST855L+ZU0jWsmzwrVkV/QN3chV1HetcjG23eaj1x+vvb8b/ncLgOO7kePn1f/
-	lr+xgCW+TCZI7qcSS3FGoqEWc1FxIgAhlDIA2AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jAd20DZcCDOatlrC4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGc/PbGEpmMhV8fT+P8YG
-	xuUcXYycHBICJhLvjvxmh7DFJC7cW8/WxcjFISSwiFHi/bmbLBDObCaJw4seMIFUsQmoSXz5
-	chisQ0QgQqJ5xizmLkYODmYBH4nNszRBwkICthLtcw+DlXMK2Ek0fzgKVi4s4CbRte80M4jN
-	IqAq8WLDIjYQmxeo/vPm38wQtqDEj8n3WEBsZgEtifU7jzNB2PISm9e8BVslIaAu8eivLsQF
-	RhLLHk2HKhGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeu
-	l5yfu4kRHLfPpHcwrmqwOMQowMGoxMO7aNqlACHWxLLiytxDjBIczEoivAtvXQwQ4k1JrKxK
-	LcqPLyrNSS0+xOgD9OhEZinR5HxgSskriTc0NjEzsjQyszAyMTfHIawkztvskRIgJJCeWJKa
-	nZpakFoEM46Jg1OqgTHF+2eIW4Rz05KbK7MNTHdN1DzSEGYS02nfeI5/edrmoN4DWRGpqlsr
-	Xh9d8yHcaLflQQVT/Q0Rh/1TTy7OeH7Ju7DnmsffpO+9jUGXX2xcwqLK9+S4/iyDtk1XVzpb
-	WjL9+G+jmfRHnOG25tb5c14GPDHVnebfvu59qHvlan4GzhansudLfJRYijMSDbWYi4oTAfyp
-	taoIAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t8zA91JGy4FGCy/zG1xedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyzszzLFjLX9E8+SJrA+MZni5GTg4JAROJNZ2LGCFsMYkL99az
+	dTFycQgJLGOU+DT3AnsXIwdY0b6nDhDxRYwSnb9vMUI4s5kkzu+ZywrSzSagJvHly2F2EFtE
+	IEKiecYsZpBmZgEfic2zNEHCQgK2Eu1zDzOB2JwCdhLNH46ClQsLhEmcfPsF7AgWAVWJuefO
+	gdm8QPWT5u5lh7AFJX5MvscCYjMLaEms33mcCcKWl9i85i0zxJ3qEo/+6kJcYCSx/dEWZogS
+	EYl9L95BjReQ+Db5EAtEuazEpgPMIJ9ICCxil+ja/o4ZEg6SEgdX3GCZwCgxC8nmWUg2z0Ky
+	eRaSFQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525ihESV9A7GVQ0WhxgFOBiVeHgXTbsU
+	IMSaWFZcmXuIUYKDWUmEd+GtiwFCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M+LySeENj
+	YxMzE1MTc0tTc1McwkrivM0eKQFCAumJJanZqakFqUUw45g4OKUaGOXti3aVfLmVd2Hf35WM
+	3WHWh2xlF+6W5Ui97f7h/nWWQFvpwrtfonUuqqukb3vw6MqC+lmT118/tOdSqNgSeY6XrPov
+	rV+UzlHs9Ujc3PPP80ir7fbQdBOG7S3GhRtrWk1Pf/8SxnXYzUpcoVd0X/e37SyOBhFd4iFS
+	Cad3dL+2vS4euG6rvxJLcUaioRZzUXEiAI+M1JvXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd1JGy4FGGzfxWpxedccNgdGj8+b
+	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
+	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM87M8yxYy1/RPPkiawPj
+	GZ4uRg4OCQETiX1PHboYOYFMMYkL99azdTFycQgJLGKU6Px9ixHCmc0kcX7PXFaQKjYBNYkv
+	Xw6zg9giAhESzTNmMYMMYhbwkdg8SxMkLCRgK9E+9zATiM0pYCfR/OEoWLmwQJjEybdfGEFs
+	FgFVibnnzoHZvED1k+buZYewBSV+TL7HAmIzC2hJrN95nAnClpfYvOYtM8TN6hKP/upCXGAk
+	sf3RFmaIEhGJfS/eMU5gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6
+	yfm5mxjBMftMegfjqgaLQ4wCHIxKPLyLpl0KEGJNLCuuzD3EKMHBrCTCu/DWxQAh3pTEyqrU
+	ovz4otKc1OJDjD5Aj05klhJNzgemk7ySeENjEzMjSyMzCyMTc3McwkrivM0eKQFCAumJJanZ
+	qakFqUUw45g4OKUaGE03/G24rzn1h3LdJdujm+Uvsmy3+HFMw6RP3yP6+Iz9f7du0rPTZNjI
+	/tE9yEuAgc9fkGnJy02VxumxOwWn3/ofetK890n3+XUmbBXvTJIUbHwEFghm/jslfHb+Jt3A
+	RRnszp9CfQymhGzd2PQu/ghzje5OnYuarAqTnP3uyax5+8Bw7rQvd5RYijMSDbWYi4oTAV7S
+	5nIGAwAA
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces EFAULT with EINVAL, because EFAULT tends to be
-for the invalid memory addresses.
+'before_power' was used to check the previous status when resume()
+is called. However, FB_BLANK_POWERDOWN was used in suspend() all
+the time, so there is no need to check the previous status.
+Also, redundant return variables are removed to reduce the code.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ams369fg06.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/video/backlight/ams369fg06.c |   24 +++---------------------
+ 1 files changed, 3 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-index b4bf130..22756dd 100644
+index 22756dd..4794a9a 100644
 --- a/drivers/video/backlight/ams369fg06.c
 +++ b/drivers/video/backlight/ams369fg06.c
-@@ -328,7 +328,7 @@ static int ams369fg06_power_on(struct ams369fg06 *lcd)
+@@ -545,44 +545,26 @@ static int ams369fg06_remove(struct spi_device *spi)
+ }
  
- 	if (!pd->power_on) {
- 		dev_err(lcd->dev, "power_on is NULL.\n");
--		return -EFAULT;
-+		return -EINVAL;
- 	} else {
- 		pd->power_on(lcd->ld, 1);
- 		msleep(pd->power_on_delay);
-@@ -336,7 +336,7 @@ static int ams369fg06_power_on(struct ams369fg06 *lcd)
+ #if defined(CONFIG_PM)
+-static unsigned int before_power;
+-
+ static int ams369fg06_suspend(struct spi_device *spi, pm_message_t mesg)
+ {
+-	int ret = 0;
+ 	struct ams369fg06 *lcd = dev_get_drvdata(&spi->dev);
  
- 	if (!pd->reset) {
- 		dev_err(lcd->dev, "reset is NULL.\n");
--		return -EFAULT;
-+		return -EINVAL;
- 	} else {
- 		pd->reset(lcd->ld);
- 		msleep(pd->reset_delay);
-@@ -485,7 +485,7 @@ static int ams369fg06_probe(struct spi_device *spi)
- 	lcd->lcd_pd = spi->dev.platform_data;
- 	if (!lcd->lcd_pd) {
- 		dev_err(&spi->dev, "platform data is NULL\n");
--		return -EFAULT;
-+		return -EINVAL;
- 	}
+ 	dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
  
- 	ld = lcd_device_register("ams369fg06", &spi->dev, lcd,
+-	before_power = lcd->power;
+-
+ 	/*
+ 	 * when lcd panel is suspend, lcd panel becomes off
+ 	 * regardless of status.
+ 	 */
+-	ret = ams369fg06_power(lcd, FB_BLANK_POWERDOWN);
+-
+-	return ret;
++	return ams369fg06_power(lcd, FB_BLANK_POWERDOWN);
+ }
+ 
+ static int ams369fg06_resume(struct spi_device *spi)
+ {
+-	int ret = 0;
+ 	struct ams369fg06 *lcd = dev_get_drvdata(&spi->dev);
+ 
+-	/*
+-	 * after suspended, if lcd panel status is FB_BLANK_UNBLANK
+-	 * (at that time, before_power is FB_BLANK_UNBLANK) then
+-	 * it changes that status to FB_BLANK_POWERDOWN to get lcd on.
+-	 */
+-	if (before_power == FB_BLANK_UNBLANK)
+-		lcd->power = FB_BLANK_POWERDOWN;
++	lcd->power = FB_BLANK_POWERDOWN;
+ 
+-	dev_dbg(&spi->dev, "before_power = %d\n", before_power);
+-
+-	ret = ams369fg06_power(lcd, before_power);
+-
+-	return ret;
++	return ams369fg06_power(lcd, FB_BLANK_UNBLANK);
+ }
+ #else
+ #define ams369fg06_suspend	NULL
 -- 
 1.7.2.5
 
