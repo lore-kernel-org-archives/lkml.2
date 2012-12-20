@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab2LTUvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:51:39 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35147 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2LTUva (ORCPT
+	id S1751525Ab2LTU6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:58:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52766 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab2LTU6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:51:30 -0500
-Date: Thu, 20 Dec 2012 20:51:13 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Robert Marklund <robert.marklund@stericsson.com>,
-        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] net/smsc911x: Provide common clock functionality
-Message-ID: <20121220205113.GD14363@n2100.arm.linux.org.uk>
-References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org> <1355937587-31730-4-git-send-email-lee.jones@linaro.org> <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com> <20121220192441.GC14363@n2100.arm.linux.org.uk> <20121220203514.GN2691@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121220203514.GN2691@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 20 Dec 2012 15:58:03 -0500
+Date: Thu, 20 Dec 2012 12:58:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Zlatko Calusic <zlatko.calusic@iskon.hr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o
+ congestion
+Message-Id: <20121220125802.23e9b22d.akpm@linux-foundation.org>
+In-Reply-To: <20121220111208.GD10819@suse.de>
+References: <50D24AF3.1050809@iskon.hr>
+	<20121220111208.GD10819@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 08:35:14PM +0000, Lee Jones wrote:
-> On Thu, 20 Dec 2012, Russell King - ARM Linux wrote:
-> 
-> > On Thu, Dec 20, 2012 at 08:12:08PM +0100, Linus Walleij wrote:
-> > > On Wed, Dec 19, 2012 at 6:19 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > > 
-> > > > Some platforms provide clocks which require enabling before the
-> > > > SMSC911x chip will power on. This patch uses the new common clk
-> > > > framework to do just that. If no clock is provided, it will just
-> > > > be ignored and the driver will continue to assume that no clock
-> > > > is required for the chip to run successfully.
-> > > >
-> > > > Cc: Steve Glendinning <steve.glendinning@shawell.net>
-> > > > Cc: netdev@vger.kernel.org
-> > > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > 
-> > > Seems to me like it'll do the trick.
-> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> > 
-> > This looks fairly dangerous.  What about those platforms which use this
-> > driver, but don't provide a clock for it?
-> > 
-> > It looks like this will result in those platforms losing their ethernet
-> > support.  There's at least a bunch of the ARM evaluation boards which
-> > make use of this driver...
-> 
-> Right, but nothing should regress. If no clock is provided the driver
-> moves on during the request and will refuse to prepare, enable and
-> disable there after. 
-> 
-> Unless I've made a mistake somewhere? If so, I'd be happy to fixup.
+On Thu, 20 Dec 2012 11:12:08 +0000
+Mel Gorman <mgorman@suse.de> wrote:
 
-No, but... don't use NULL for that.  Use IS_ERR(pdata->clk) instead.
+> On Thu, Dec 20, 2012 at 12:17:07AM +0100, Zlatko Calusic wrote:
+> > On a 4GB RAM machine, where Normal zone is much smaller than
+> > DMA32 zone, the Normal zone gets fragmented in time. This requires
+> > relatively more pressure in balance_pgdat to get the zone above the
+> > required watermark. Unfortunately, the congestion_wait() call in there
+> > slows it down for a completely wrong reason, expecting that there's
+> > a lot of writeback/swapout, even when there's none (much more common).
+> > After a few days, when fragmentation progresses, this flawed logic
+> > translates to a very high CPU iowait times, even though there's no
+> > I/O congestion at all. If THP is enabled, the problem occurs sooner,
+> > but I was able to see it even on !THP kernels, just by giving it a bit
+> > more time to occur.
+> > 
+> > The proper way to deal with this is to not wait, unless there's
+> > congestion. Thanks to Mel Gorman, we already have the function that
+> > perfectly fits the job. The patch was tested on a machine which
+> > nicely revealed the problem after only 1 day of uptime, and it's been
+> > working great.
+> > ---
+> >  mm/vmscan.c |   12 ++++++------
+> >  1 file changed, 6 insertions(+), 6 deletions(-)
+> > 
+> 
+> Acked-by: Mel Gorman <mgorman@suse.de
+
+There seems to be some complexity/duplication here between the new
+unbalanced_zone() and pgdat_balanced().
+
+Can we modify pgdat_balanced() so that it also handles order=0, then do
+
+-		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
++		if (!pgdat_balanced(...))
+
+?
+
