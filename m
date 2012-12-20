@@ -1,149 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab2LTJr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:47:57 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14696 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab2LTJre (ORCPT
+	id S1752093Ab2LTJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:58:35 -0500
+Received: from stargate.chelsio.com ([67.207.112.58]:12874 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab2LTJ61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:47:34 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 20 Dec 2012 01:46:35 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <linux-tegra@vger.kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 9/9] ARM: tegra: Add initial support for Tegra 114 SoC.
-Date: Thu, 20 Dec 2012 11:44:07 +0200
-Message-ID: <1355996654-6579-10-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 20 Dec 2012 04:58:27 -0500
+Message-ID: <50D2E138.7000700@chelsio.com>
+Date: Thu, 20 Dec 2012 15:28:16 +0530
+From: Vipul Pandya <vipul@chelsio.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Roland Dreier <roland@kernel.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the infiniband tree
+References: <20121220094433.791d70e55ae5e3325a6190fc@canb.auug.org.au> <CAG4TOxPVc0tNeLhi3FF=K_UJpizh2OZgviT5WqqLvZsg-QEoNw@mail.gmail.com>
+In-Reply-To: <CAG4TOxPVc0tNeLhi3FF=K_UJpizh2OZgviT5WqqLvZsg-QEoNw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Dec 2012 09:58:21.0083 (UTC) FILETIME=[8AED86B0:01CDDE98]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new Tegra 114 SoC support.
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mach-tegra/Kconfig             |   10 +++++++
- arch/arm/mach-tegra/Makefile            |    1 +
- arch/arm/mach-tegra/board-dt-tegra114.c |   48 +++++++++++++++++++++++++++++++
- arch/arm/mach-tegra/common.c            |    1 +
- 4 files changed, 60 insertions(+)
- create mode 100644 arch/arm/mach-tegra/board-dt-tegra114.c
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 56e5dd8..3be5639 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -61,6 +61,16 @@ config ARCH_TEGRA_3x_SOC
- 	  Support for NVIDIA Tegra T30 processor family, based on the
- 	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
- 
-+config ARCH_TEGRA_114_SOC
-+	bool "Enable support for Tegra114 family"
-+	select ARM_GIC
-+	select CPU_V7
-+	select ARM_L1_CACHE_SHIFT_6
-+	select ARM_ARCH_TIMER
-+	help
-+	  Support for NVIDIA Tegra T114 processor family, based on the
-+	  ARM CortexA15MP CPU
-+
- config TEGRA_PCI
- 	bool "PCI Express support"
- 	depends on ARCH_TEGRA_2x_SOC
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 8a108ef..3d6f645 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
- 
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-dt-tegra20.o
- obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
-+obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= board-dt-tegra114.o
- 
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-harmony-pcie.o
- 
-diff --git a/arch/arm/mach-tegra/board-dt-tegra114.c b/arch/arm/mach-tegra/board-dt-tegra114.c
-new file mode 100644
-index 0000000..4c36dd0
---- /dev/null
-+++ b/arch/arm/mach-tegra/board-dt-tegra114.c
-@@ -0,0 +1,48 @@
-+/*
-+ * NVIDIA Tegra114 device tree board support
-+ *
-+ * Copyright (C) 2012 NVIDIA Corporation
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/clocksource.h>
-+
-+#include <asm/mach/arch.h>
-+#include <asm/hardware/gic.h>
-+
-+#include "board.h"
-+#include "common.h"
-+
-+static void __init tegra114_dt_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const tegra114_dt_board_compat[] = {
-+	"nvidia,tegra114",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
-+	.smp		= smp_ops(tegra_smp_ops),
-+	.map_io		= tegra_map_common_io,
-+	.init_early	= tegra30_init_early,
-+	.init_irq	= tegra_dt_init_irq,
-+	.handle_irq	= gic_handle_irq,
-+	.init_time	= clocksource_of_init,
-+	.init_machine	= tegra114_dt_init,
-+	.init_late	= tegra_init_late,
-+	.restart	= tegra_assert_system_reset,
-+	.dt_compat	= tegra114_dt_board_compat,
-+MACHINE_END
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index d54cfc5..debcaf4 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -59,6 +59,7 @@ u32 tegra_uart_config[4] = {
- #ifdef CONFIG_OF
- static const struct of_device_id tegra_dt_irq_match[] __initconst = {
- 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
-+	{ .compatible = "arm,cortex-a15-gic", .data = gic_of_init },
- 	{ }
- };
- 
--- 
-1.7.9.5
+On 20-12-2012 05:52, Roland Dreier wrote:
+> On Wed, Dec 19, 2012 at 2:44 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> After merging the infiniband tree, today's linux-next build (x86_64_
+>> allmodconfig) failed like this:
+>>
+>> In file included from drivers/scsi/csiostor/csio_wr.h:42:0,
+>>                  from drivers/scsi/csiostor/csio_scsi.h:49,
+>>                  from drivers/scsi/csiostor/csio_init.h:45,
+>>                  from drivers/scsi/csiostor/csio_attr.c:45:
+>> drivers/scsi/csiostor/t4fw_api_stor.h:43:6: error: nested redefinition of 'enum fw_retval'
+>> drivers/scsi/csiostor/t4fw_api_stor.h:43:6: error: redeclaration of 'enum fw_retval'
+>> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:42:6: note: originally defined here
+>> drivers/scsi/csiostor/t4fw_api_stor.h:48:2: error: redeclaration of enumerator 'FW_ENOEXEC'
+>> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:39:2: note: previous definition of 'FW_ENOEXEC' was here
+>> drivers/scsi/csiostor/t4fw_api_stor.h:50:2: error: redeclaration of enumerator 'FW_ENOMEM'
+>> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:43:2: note: previous definition of 'FW_ENOMEM' was here
+>> drivers/scsi/csiostor/t4fw_api_stor.h:58:2: error: redeclaration of enumerator 'FW_EADDRINUSE'
+>> drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h:44:2: note: previous definition of 'FW_EADDRINUSE' was here
+>>
+>> And several others similar.
+>>
+>> Caused by commit f65b56b15931 ("RDMA/cxgb4: Fix LE hash collision bug for
+>> active open connection").
+> 
+> 
+> Vipul, is the right fix to pull the full list of FW return values from
+> t4fw_api_stor.h into t4fw_api.h as part of this patch (f65b56b15931)?
+> 
 
+Yes, this is a correct way to fix this issue. I see that this change is
+already done. Thanks for providing the fix.
