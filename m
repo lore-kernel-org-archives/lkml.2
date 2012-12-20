@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab2LTIv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 03:51:29 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50024 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab2LTIvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 03:51:22 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [RFC Patch v1 45/55] ARC: unaligned access emulation
-Date: Thu, 20 Dec 2012 08:51:14 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <201211121400.13046.arnd@arndb.de> <50D2C78B.4060109@synopsys.com>
-In-Reply-To: <50D2C78B.4060109@synopsys.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212200851.15350.arnd@arndb.de>
-X-Provags-ID: V02:K0:guYCYYBCWmvww0v4ygt9D03mrYbSmYbXxa3cMn5peRu
- sQQWxsrvs893JHumzKmH6u3sczSPhR2T4lMtAESagGtzLSjcOL
- luHO9Rm7uz63Sa2hsNkxNCbaHIuTxnvxWaydmZoO4cxtSzvpZD
- r7Hd1Rt/sfUYqSHHz2SGmkXCG9KT3kL/pA/yHhXtZskSwpgGAr
- TWizo7wagoT66SVCqu/FuzkfJuF1937K07aKxvC71fFrUYOrnQ
- A4+md8Oudujxw0zqtNlAKEkOtxTmVXyBO/BmKj6SOK3cIAD9h4
- HK2kgj5xQbqKRRYelpjp5rtmCnVmOtUxkZhSaGxZ9+SqPnMoh/
- s8ZLVQsvwuyAvhvRNglo=
+	id S1751510Ab2LTI4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 03:56:25 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51278 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab2LTI4V convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 20 Dec 2012 03:56:21 -0500
+Message-Id: <50D2E0C102000078000B1B1C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 20 Dec 2012 08:56:17 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Dongxiao Xu" <dongxiao.xu@intel.com>
+Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous
+ memory for map_sg hook
+References: <1354799322-6000-1-git-send-email-dongxiao.xu@intel.com>
+ <20121207140852.GC3140@phenom.dumpdata.com>
+ <40776A41FC278F40B59438AD47D147A90FEBE741@SHSMSX102.ccr.corp.intel.com>
+ <20121211170653.GG9347@localhost.localdomain>
+ <40776A41FC278F40B59438AD47D147A90FEBFB64@SHSMSX102.ccr.corp.intel.com>
+ <50C85E9F02000078000AFD65@nat28.tlf.novell.com>
+ <20121219200904.GG15037@phenom.dumpdata.com>
+ <40776A41FC278F40B59438AD47D147A90FECC3EC@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <40776A41FC278F40B59438AD47D147A90FECC3EC@SHSMSX102.ccr.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 December 2012, Vineet Gupta wrote:
-> Are you OK if we keep this support build time - provided that once it is
-> build time enabled - we have the additional runtime sysctl based
-> toggle-ability as you suggested.
+>>> On 20.12.12 at 02:23, "Xu, Dongxiao" <dongxiao.xu@intel.com> wrote:
+> Sorry, maybe I am still not describing this issue clearly.
 
-Yes, sounds good.
+No, at least I understood you the way you re-describe below.
 
-> Only one of our customers need this feature and this gives people
-> reasons to moan about the kernel .text size and such.
+> Take the libata case as an example, the static DMA buffer locates 
+> (dev->link->ap->sector_buf , here we use Data Structure B in the graph) in 
+> the following structure:
+> 
+> -------------------------------------Page boundary
+> <Data Structure A>
+> <Data Structure B>
+> -------------------------------------Page boundary
+> <Data Structure B (cross page)>
+> <Data Structure C>
+> -------------------------------------Page boundary
+> 
+> Where Structure B is our DMA target.
+> 
+> For Data Structure B, we didn't care about the simultaneous access, either 
+> lock or sync function will take care of it.
+> What we are not sure is "read/write of A and C from other processor". As we 
+> will have memory copy for the pages, and at the same time, other CPU may 
+> access A/C.
 
-Ok.
+The question is whether what libata does here is valid in the first
+place - fill an SG list entry with something that crosses a page
+boundary and is not a compound page.
 
-	Arnd
+Jan
+
