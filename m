@@ -1,120 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab2LTVuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 16:50:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56101 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2LTVuR (ORCPT
+	id S1751871Ab2LTVvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 16:51:16 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41836 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab2LTVvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 16:50:17 -0500
-Date: Thu, 20 Dec 2012 22:50:08 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-Message-ID: <20121220215008.GA30491@avionic-0098.adnet.avionic-design.de>
-References: <50CB5205.1030303@wwwdotorg.org>
- <50CB850F.9090704@nvidia.com>
- <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de>
- <50D2D792.1050401@nvidia.com>
- <50D34775.5010606@wwwdotorg.org>
- <50D34F00.4080308@nvidia.com>
- <50D3511F.2090308@wwwdotorg.org>
- <50D35287.3040509@nvidia.com>
- <20121220203059.GA12977@avionic-0098.adnet.avionic-design.de>
- <50D38462.3060302@nvidia.com>
+	Thu, 20 Dec 2012 16:51:06 -0500
+Message-ID: <50D387FD.4020008@oracle.com>
+Date: Thu, 20 Dec 2012 16:49:49 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
-Content-Disposition: inline
-In-Reply-To: <50D38462.3060302@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:VarOdApt+L4qFvcEaYety1eQDqmzz+ka/q7mP8w73KP
- /6FsAk2eJV4wgQ5UcLxyjUpoeAfUJ0PdjWdr5iIwc6oNde9mNp
- ARxcf4S2tJLbjaRwQYYDVnTeq5RGA608bvUwsSG5DlEV5xNF89
- xGHKtMWskSPOVDIG+EYRoHB3iKKU8JQaJ/rKoalw0wzM8xpUyL
- 0o5Dv23ujskbyDSn25+eRTXbn0vq02t0t3F376fPHr7fW8aGGy
- NjO8V8BGEIu1sSMPk2s4pIQ61dk7OjUo8YjbDLj7ClBWmRub78
- jOd1uoAh/9MXPvVDZ6W/lJJd3hpjYMrfRqgEnlThC2uxlp38qO
- QMHlQMkGoouZsAafxessEbXF3CULsPlxlPEUdZnsWgO3o32CHz
- O0JGB97+etw9OEKBjDjNyVPBlXaglAPqATkOPxQQnbaB38/7KL
- 2qKQs
+To: Hugh Dickins <hughd@google.com>
+CC: Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Petr Holasek <pholasek@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] ksm: make rmap walks more scalable
+References: <alpine.LNX.2.00.1212191735530.25409@eggly.anvils> <alpine.LNX.2.00.1212191742440.25409@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1212191742440.25409@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/19/2012 08:44 PM, Hugh Dickins wrote:
+> The rmap walks in ksm.c are like those in rmap.c:
+> they can safely be done with anon_vma_lock_read().
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
 
---KsGdsel6WgEHnImy
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Hugh,
 
-On Thu, Dec 20, 2012 at 11:34:26PM +0200, Terje Bergstr=C3=B6m wrote:
-> On 20.12.2012 22:30, Thierry Reding wrote:
-> > The problem with your proposed solution is that, even any of Stephen's
-> > valid objections aside, it won't work. Once the tegra-drm module is
-> > unloaded, the driver's data will be left in the current state and the
-> > link to the dummy device will be lost.
->=20
-> The dummy device is created by tegradrm's module init, because it's used
-> only by tegradrm. When tegradrm is unloaded, all the tegradrm devices
-> and drivers are unloaded and freed, including the dummy one.
+This patch didn't fix the ksm oopses I'm seeing.
 
-No, the children platform devices of host1x are not freed, so their
-driver data will still contain the data set by the previous call to
-their driver's .probe() function.
+This is with both patches applied:
 
-But reading what you said again, you were proposing to set the children
-driver data from the tegra-drm dummy device's .probe(). In that case it
-would probably work.
 
-> > And quite frankly given how all the various host1x components are
-> > interlinked I think having a single function that gets the DRM dummy
-> > device for DRM-related clients isn't that bad.
->=20
-> I like clear responsibilities. tegradrm is responsible for the DRM
-> interface, and host1x driver is responsible for host1x. tegradrm owns
-> its data, and can pass its pointers to the functions that need it.
->=20
-> But fine, I still don't like it, but I'll add host1x_set_tegradrm() and
-> host1x_get_tegradrm(), which act as setter and getter for tegradrm's
-> global data. I still think it's a solution to a problem we don't have,
-> but we've wasted an order of magnitude more time debating it than it
-> takes to implement.
+[  191.221082] BUG: unable to handle kernel NULL pointer dereference at 0000000000000110
+[  191.226749] IP: [<ffffffff81185bf0>] __lock_acquire+0xb0/0xa90
+[  191.228437] PGD 1469f067 PUD 1466a067 PMD 0
+[  191.229185] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  191.230031] Dumping ftrace buffer:
+[  191.230031]    (ftrace buffer empty)
+[  191.230031] CPU 3
+[  191.230031] Pid: 3174, comm: ksmd Tainted: G        W    3.7.0-next-20121220-sasha-00015-g5dc79b2-dirty #223
+[  191.230031] RIP: 0010:[<ffffffff81185bf0>]  [<ffffffff81185bf0>] __lock_acquire+0xb0/0xa90
+[  191.230031] RSP: 0018:ffff8800be933b78  EFLAGS: 00010046
+[  191.230031] RAX: 0000000000000086 RBX: 0000000000000110 RCX: 0000000000000001
+[  191.230031] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000110
+[  191.230031] RBP: ffff8800be933c18 R08: 0000000000000002 R09: 0000000000000000
+[  191.230031] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+[  191.230031] R13: 0000000000000002 R14: ffff8800be940000 R15: 0000000000000000
+[  191.230031] FS:  0000000000000000(0000) GS:ffff88000fc00000(0000) knlGS:0000000000000000
+[  191.230031] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  191.230031] CR2: 0000000000000110 CR3: 000000001469e000 CR4: 00000000000406e0
+[  191.230031] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  191.230031] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  191.230031] Process ksmd (pid: 3174, threadinfo ffff8800be932000, task ffff8800be940000)
+[  191.230031] Stack:
+[  191.230031]  ffff8800be933fd8 0000000000000000 ffff8800be933bb8 ffffffff810a4ec8
+[  191.230031]  ffff8800be933bc8 ffffffff811572a8 ffff88000fdd78c0 ffff88000fdd78d0
+[  191.230031]  ffff8800be933bc8 ffffffff81077ce5 ffff8800be933bf8 ffffffff81157075
+[  191.230031] Call Trace:
+[  191.230031]  [<ffffffff810a4ec8>] ? kvm_clock_read+0x38/0x70
+[  191.230031]  [<ffffffff811572a8>] ? sched_clock_cpu+0x108/0x120
+[  191.230031]  [<ffffffff81077ce5>] ? sched_clock+0x15/0x20
+[  191.230031]  [<ffffffff81157075>] ? sched_clock_local+0x25/0x90
+[  191.230031]  [<ffffffff81188a3a>] lock_acquire+0x1ca/0x270
+[  191.230031]  [<ffffffff812599cf>] ? unstable_tree_search_insert+0x9f/0x260
+[  191.230031]  [<ffffffff83cd7f27>] down_read+0x47/0x90
+[  191.230031]  [<ffffffff812599cf>] ? unstable_tree_search_insert+0x9f/0x260
+[  191.230031]  [<ffffffff812599cf>] unstable_tree_search_insert+0x9f/0x260
+[  191.230031]  [<ffffffff8125afc7>] cmp_and_merge_page+0xe7/0x1e0
+[  191.230031]  [<ffffffff8125b125>] ksm_do_scan+0x65/0xa0
+[  191.230031]  [<ffffffff8125b1cf>] ksm_scan_thread+0x6f/0x2d0
+[  191.230031]  [<ffffffff8113deb0>] ? abort_exclusive_wait+0xb0/0xb0
+[  191.230031]  [<ffffffff8125b160>] ? ksm_do_scan+0xa0/0xa0
+[  191.230031]  [<ffffffff8113cc43>] kthread+0xe3/0xf0
+[  191.230031]  [<ffffffff8113cb60>] ? __kthread_bind+0x40/0x40
+[  191.230031]  [<ffffffff83cdba7c>] ret_from_fork+0x7c/0xb0
+[  191.230031]  [<ffffffff8113cb60>] ? __kthread_bind+0x40/0x40
+[  191.230031] Code: 00 83 3d 33 2b b0 05 00 0f 85 d5 09 00 00 be f9 0b 00 00 48 c7 c7 24 d1 b2 84 89 55 88 e8 09 80 f8 ff 8b 55
+88 e9 b9 09 00 00 90 <48> 81 3b 60 59 22 86 b8 01 00 00 00 44 0f 44 e8 41 83 fc 01 77
+[  191.230031] RIP  [<ffffffff81185bf0>] __lock_acquire+0xb0/0xa90
+[  191.230031]  RSP <ffff8800be933b78>
+[  191.230031] CR2: 0000000000000110
+[  191.230031] ---[ end trace 55f664bfe0f01693 ]---
 
-As Stephen already pointed out, since the host1x driver will already
-instantiate the dummy device, there's no point in adding a function to
-set the pointer to that device.
 
-Adding a getter should be enough. And it should return a pointer to the
-dummy platform devices .dev field. Calling it host1x_get_drm_device()
-may make it more obvious about what it returns.
-
-Thierry
-
---KsGdsel6WgEHnImy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ04gQAAoJEN0jrNd/PrOhbYMQAJUjaTAI7SgC0p0mbwcXRDrb
-c7jtdTG9cMrWmVNguAxMcuJyRVERoxK6sXT9y7RKlOAPpFq3UpllY4lC1c6mjCMo
-y+hFx1Z2Ac9K3NGDolfhi6VWY0MvO1jfxix8MywPPfPUMxr2K58OfUqI2uQktr7W
-e1e2SI7nRPgcM0uMLNHGa0H4f5KMWVyHh18OZ5k8aDzNSvWjLur1NoaQKPcTIl7Y
-3BsAbvk+whu4si3QNhRx5Hkx5eimm3x6rhf7HFXrAp2NdCNLxevppJKPuFamY/Dv
-BhIAGRXdBxYpwuT2ZaAZ/U5iTpCCYEmFK2Vz31pbqyCuo6X6Y1Y6Io3IjluN/We5
-JWqx0+1eKjXOPJGlI0myzWDlDjHCH9C/KlHGZfVz2qs5MooFQ/0kskHZWYP+9qlt
-tntjf+lQxudU6ZXveAcu/iuvYLBUy41UwpBkb/iQUcs+3cROjvIHC8GkudJRCN1B
-NsLVhlD2YsJWUsumUtYhaSs/ORYZwROYFREl9/C49fMdH83T90r8lOsyCba53Llw
-Vtl+N346ZOxsqRSseiZPPfPRIHj/vFtS51deHympefo6Ln71oxP/l06kyDUp4CnW
-tH0HObJjveeuqIudTLnojZ0M1DZJ37KZl3mZgu3uNg/Al5z0No7p0856GiJUWnlE
-u1oENt0rG8hxv85WZXOK
-=gqLj
------END PGP SIGNATURE-----
-
---KsGdsel6WgEHnImy--
+Thanks,
+Sasha
