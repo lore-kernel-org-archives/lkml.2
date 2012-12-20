@@ -1,121 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab2LTSms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:42:48 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:48516 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2LTSmk (ORCPT
+	id S1752296Ab2LTSnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:43:18 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:62205 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab2LTSnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:42:40 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 24/24] nohz: Add some tracing
-Date: Thu, 20 Dec 2012 19:33:11 +0100
-Message-Id: <1356028391-14427-25-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+	Thu, 20 Dec 2012 13:43:06 -0500
+X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 13:43:06 EST
+MIME-Version: 1.0
+In-Reply-To: <CAMe9rOoxTqF3PpvhS-+K40e-3fCELJUQhCjRPenZOi=Df895fg@mail.gmail.com>
+References: <1355823656-13902-1-git-send-email-stefani@seibold.net>
+ <1355823656-13902-7-git-send-email-stefani@seibold.net> <50D09733.3080502@zytor.com>
+ <1355849558.26967.24.camel@wall-e> <50D0B986.7020009@zytor.com>
+ <1355862759.28056.14.camel@wall-e> <CALCETrX2zAA-X7fjoPNSERq0kVDDY43O_u=Oqjq77_ggf64j9A@mail.gmail.com>
+ <1355989294.24672.9.camel@wall-e> <a881f355-720c-40aa-ad96-60fc86e96d53@email.android.com>
+ <1356025992.25530.1.camel@wall-e> <50D35713.1090506@zytor.com> <CAMe9rOoxTqF3PpvhS-+K40e-3fCELJUQhCjRPenZOi=Df895fg@mail.gmail.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Thu, 20 Dec 2012 10:35:49 -0800
+Message-ID: <CAB=4xhpXojoeNdThEQi3CH_fhsAqk63_G5zYgMTvoPxn5nE7Zg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] Add 32 bit VDSO support for 32 and 64 bit kernels
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not for merge, just for debugging.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-sched.c |   27 ++++++++++++++++++++++-----
- 1 files changed, 22 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 4f4fa13..f75a85f 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -142,6 +142,7 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
- 			ts->idle_jiffies++;
- 	}
- #endif
-+	trace_printk("tick\n");
- 	update_process_times(user_mode(regs));
- 	profile_tick(CPU_PROFILING);
- }
-@@ -589,17 +590,30 @@ void tick_nohz_idle_enter(void)
- #ifdef CONFIG_NO_HZ_FULL
- static bool can_stop_full_tick(int cpu)
- {
--	if (!sched_can_stop_tick())
-+	if (!sched_can_stop_tick()) {
-+		trace_printk("Can't stop: sched\n");
- 		return false;
-+	}
- 
--	if (!rcu_is_nocb_cpu(cpu))
-+	if (!rcu_is_nocb_cpu(cpu)) {
-+		trace_printk("Can't stop: not RCU nocb\n");
- 		return false;
-+	}
- 
--	if (rcu_pending(cpu))
-+	/*
-+	 * Keep the tick if we are asked to report a quiescent state.
-+	 * This must be further optimized (avoid checks for local callbacks,
-+	 * ignore RCU in userspace, etc...
-+	 */
-+	if (rcu_pending(cpu)) {
-+		trace_printk("Can't stop: RCU pending\n");
- 		return false;
-+	}
- 
--	if (posix_cpu_timers_running(current))
-+	if (posix_cpu_timers_running(current)) {
-+		trace_printk("Can't stop: posix CPU timers running\n");
- 		return false;
-+	}
- 
- 	return true;
- }
-@@ -613,12 +627,15 @@ static void tick_nohz_full_stop_tick(struct tick_sched *ts)
- 	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
- 		return;
- 
--	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
-+	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE) {
-+		trace_printk("Can't stop: NOHZ_MODE_INACTIVE\n");
- 		return;
-+	}
- 
- 	if (!can_stop_full_tick(cpu))
- 		return;
- 
-+	trace_printk("Stop tick\n");
- 	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
- #endif
- }
--- 
-1.7.5.4
-
+The Kconfig text for COMPAT_VDSO suggests that glibc versions prior to
+2.3.3 may have relied on the fixed address.  I can't find anything in the
+libc revision history to explain that (AFAIK the code always used
+AT_SYSINFO* since it started using the vDSO at all), but it might have been
+something less obvious.  Someone like Jakub might recall the details.
