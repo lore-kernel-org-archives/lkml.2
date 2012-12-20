@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab2LTARI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 19:17:08 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:61723 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab2LTARE (ORCPT
+	id S1752160Ab2LTATE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 19:19:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44870 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2LTAS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 19:17:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121219171423.GW4985@opensource.wolfsonmicro.com>
-References: <1355464254-12768-1-git-send-email-ch.naveen@samsung.com>
-	<1355464254-12768-2-git-send-email-ch.naveen@samsung.com>
-	<20121219123201.B636A3E0AD7@localhost>
-	<20121219171423.GW4985@opensource.wolfsonmicro.com>
-Date: Wed, 19 Dec 2012 16:17:03 -0800
-X-Google-Sender-Auth: lA3LXBNcvlT1nkAwnLNUL7-Wk3Q
-Message-ID: <CAPnjgZ30MQS1OT3GOFLG9HntoD8NrzNw6bB_d1fiJEgHcMDGUA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] i2c-core: Add gpio based bus arbitration implementation
-From: Simon Glass <sjg@chromium.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>, linux-samsung-soc@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>, khali@linux-fr.org,
-        Ben Dooks <ben-linux@fluff.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Naveen Krishna <naveen@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Dec 2012 19:18:57 -0500
+Date: Wed, 19 Dec 2012 16:18:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Cc: ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2] Add the values related to buddy system for filtering
+ free pages.
+Message-Id: <20121219161856.e6aa984f.akpm@linux-foundation.org>
+In-Reply-To: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
+References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 9:14 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, Dec 19, 2012 at 12:32:01PM +0000, Grant Likely wrote:
->
->> I'm not convinced on the design of this protocol. It won't scale beyond
->> 2 bus masters and it seems very specific to the design of a specific
->> piece of hardware. I don't think it is mature enough to bake into the
->
-> I ought to point out that the original patch would've baked this into
-> the Samsung I2C driver but I asked for it to be split out as it's
-> nothing to do with the controller really and I'm sure I've seen it
-> before.
+On Mon, 10 Dec 2012 10:39:13 +0900
+Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp> wrote:
 
-Grant your idea looks nice to me. I only worry if we should wait until
-we have a second user before going so far with it. But it is certainly
-a nice general solution.
+> This patch adds the values related to buddy system to vmcoreinfo data
+> so that makedumpfile (dump filtering command) can filter out all free
+> pages with the new logic.
+> It's faster than the current logic because it can distinguish free page
+> by analyzing page structure at the same time as filtering for other
+> unnecessary pages (e.g. anonymous page).
+> OTOH, the current logic has to trace free_list to distinguish free 
+> pages while analyzing page structure to filter out other unnecessary
+> pages.
+> 
+> The new logic uses the fact that buddy page is marked by _mapcount == 
+> PAGE_BUDDY_MAPCOUNT_VALUE. But, _mapcount shares its memory with other
+> fields for SLAB/SLUB when PG_slab is set, so we need to check if PG_slab
+> is set or not before looking up _mapcount value.
+> And we can get the order of buddy system from private field.
+> To sum it up, the values below are required for this logic.
+> 
+> Required values:
+>   - OFFSET(page._mapcount)
+>   - OFFSET(page.private)
+>   - NUMBER(PG_slab)
+>   - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
+> 
+> Changelog from v1 to v2:
+> 1. remove SIZE(pageflags)
+>   The new logic was changed after I sent v1 patch.  
+>   Accordingly, SIZE(pageflags) has been unnecessary for makedumpfile.
+> 
+> What's makedumpfile:
+>   makedumpfile creates a small dumpfile by excluding unnecessary pages
+>   for the analysis. To distinguish unnecessary pages, makedumpfile gets
+>   the vmcoreinfo data which has the minimum debugging information only
+>   for dump filtering.
 
-The scaling beyond two bus masters would require the code to be
-changed to check more input lines from other masters. Best avoided for
-now I think until we have a use for it.
+Gee, this info is getting highly dependent upon deep internal kernel
+behaviour.
 
-Regards,
-Simon
+> index 5e4bd78..b27efe4 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1490,6 +1490,8 @@ static int __init crash_save_vmcoreinfo_init(void)
+> 	VMCOREINFO_OFFSET(page, _count);
+> 	VMCOREINFO_OFFSET(page, mapping);
+> 	VMCOREINFO_OFFSET(page, lru);
+> +	VMCOREINFO_OFFSET(page, _mapcount);
+> +	VMCOREINFO_OFFSET(page, private);
+> 	VMCOREINFO_OFFSET(pglist_data, node_zones);
+> 	VMCOREINFO_OFFSET(pglist_data, nr_zones);
+>  #ifdef CONFIG_FLAT_NODE_MEM_MAP
+> @@ -1512,6 +1514,8 @@ static int __init crash_save_vmcoreinfo_init(void)
+> 	VMCOREINFO_NUMBER(PG_lru);
+> 	VMCOREINFO_NUMBER(PG_private);
+> 	VMCOREINFO_NUMBER(PG_swapcache);
+> +	VMCOREINFO_NUMBER(PG_slab);
+> +	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+
+We might change the PageBuddy() implementation at any time, and
+makedumpfile will break.  Or in this case, become less efficient.
+
+Is there any way in which we can move some of this logic into the
+kernel?  In this case, add some kernel code which uses PageBuddy() on
+behalf of makedumpfile, rather than replicating the PageBuddy() logic
+in userspace?
+
