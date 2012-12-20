@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab2LTJMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:12:37 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14939 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2LTJMc (ORCPT
+	id S1751758Ab2LTJOU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:14:20 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:47725 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab2LTJOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:12:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 20 Dec 2012 01:12:25 -0800
-Message-ID: <50D2D792.1050401@nvidia.com>
-Date: Thu, 20 Dec 2012 11:17:06 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de> <50C99677.6090306@nvidia.com> <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de> <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 04:14:15 -0500
+From: chenggang <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: chenggang <chenggang.qin@gmail.com>, David Ahern <dsahern@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chenggang Qin <chenggang.qcg@taobao.com>
+Subject: [PATCH 2/5] perf tools: Add xyarray__realloc function in xyarray.c to expend xyarray.
+Date: Thu, 20 Dec 2012 17:05:50 +0800
+Message-Id: <1355994350-13622-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.12.2012 14:16, Thierry Reding wrote:
-> Okay, so we're back on the topic of using globals. I need to assert
-> again that this is not an option. If we were to use globals, then we
-> could just as well leave out the dummy device and just do all of that in
-> the tegra-drm driver's initialization function.
+xyarray__realloc() could be used if we wish extend the evsel->fd,
+evsel->sample_id or any other xyarray on-the-fly.
 
-I found a way of dropping the global in a straightforward way, and
-introduce dummy device for drm_platform_init().
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+---
+ tools/perf/util/xyarray.c |   26 ++++++++++++++++++++++++++
+ tools/perf/util/xyarray.h |    2 ++
+ 2 files changed, 28 insertions(+)
 
-I added dummy device and driver, and moved the tegradrm global
-(previously called struct host1x *host1x) allocation to happen in the
-probe. In addition, probe calls device tree node traversal to do the
-tegra_drm_add_client() calls. The dummy device is owner for this global.
+diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
+index 22afbf6..4e76377 100644
+--- a/tools/perf/util/xyarray.c
++++ b/tools/perf/util/xyarray.c
+@@ -18,3 +18,29 @@ void xyarray__delete(struct xyarray *xy)
+ {
+ 	free(xy);
+ }
++
++int xyarray__realloc(struct xyarray **xy_old, int xlen_old, int xlen_new,
++		      int ylen_new)
++{
++	size_t row_size_new = ylen_new * (*xy_old)->entry_size;
++	struct xyarray *xy_new = zalloc(sizeof(*xy_new) + xlen_new
++					* row_size_new);
++	int x;
++
++	if (xy_new != NULL) {
++		for (x = 0; x < xlen_old; x++)
++			memcpy(&xy_new->contents[x * row_size_new],
++			       &((*xy_old)->contents[x * (*xy_old)->row_size]),
++			       (*xy_old)->row_size);
++
++		xy_new->row_size = row_size_new;
++		xy_new->entry_size = (*xy_old)->entry_size;
++
++		xyarray__delete(*xy_old);
++
++		*xy_old = xy_new;
++
++		return 0;
++	}
++
++	return -1;
++}
++
+diff --git a/tools/perf/util/xyarray.h b/tools/perf/util/xyarray.h
+index c488a07..ad41649 100644
+--- a/tools/perf/util/xyarray.h
++++ b/tools/perf/util/xyarray.h
+@@ -11,6 +11,8 @@ struct xyarray {
+ 
+ struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size);
+ void xyarray__delete(struct xyarray *xy);
++int xyarray__realloc(struct xyarray **xy_old, int xlen_old, int xlen_new,
++		     int ylen_new);
+ 
+ static inline void *xyarray__entry(struct xyarray *xy, int x, int y)
+ {
+-- 
+1.7.9.5
 
-I changed the device tree node traversal so that it goes actually
-through each host1x child, checks if it's supported by tegradrm, and if
-so, sets its drvdata to point to the tegradrm data.
-
-Each probe will add the client with tegra_drm_register_client(), and
-that will find the global via dev_get_drvdata(). In the end of probe,
-each driver will replace the drvdata with its own data.
-
-I am also setting the coherent_dma_mask for dummy device so that it can
-be used with CMA FB helper.
-
-Would this be ok for you? I could send a patchset with this implemented
-by tomorrow and let it simmer for 2-3 weeks due to my and everybody
-elses' holidays. I'm hoping we would have 2D acceleration in Linux
-kernel 3.9.
-
-Terje
