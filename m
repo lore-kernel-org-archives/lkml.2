@@ -1,103 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab2LTSSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:18:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15121 "EHLO mx1.redhat.com"
+	id S1752046Ab2LTSS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:18:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60864 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab2LTSSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:18:07 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: JBottomley@parallels.com, robert.w.love@intel.com, torvalds@osdl.org,
-        hpa@zytor.com
-cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org
-Subject: UAPI: What remains to be pulled: SCSI and FCoE
-Date: Thu, 20 Dec 2012 18:16:51 +0000
-Message-ID: <2145.1356027411@warthog.procyon.org.uk>
+	id S1751427Ab2LTSSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 13:18:49 -0500
+Date: Thu, 20 Dec 2012 20:18:18 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/9] ARM: tegra: # of CPU cores detection w/ & w/o
+ HAVE_ARM_SCU
+Message-ID: <20121220181818.GA26861@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
+ <1355996654-6579-4-git-send-email-hdoyu@nvidia.com>
+ <20121220100625.GB24693@arwen.pp.htv.fi>
+ <20121220.132136.1599315430686323669.hdoyu@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+Content-Disposition: inline
+In-Reply-To: <20121220.132136.1599315430686323669.hdoyu@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--9amGYk9869ThD9tj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Assuming Linus pulls the fbdev branch that I've sent him, all that remains to
-be pulled of the UAPI changes are the SCSI and the FCoE bits.
+Hi,
 
-Barring Kbuild updates, the SCSI patch just moves three files and the FCoE
-patch just moves four files.  No actual header changes are made.  Is it
-possible to get these in in this merge window?
+On Thu, Dec 20, 2012 at 12:21:36PM +0100, Hiroshi Doyu wrote:
+> Felipe Balbi <balbi@ti.com> wrote @ Thu, 20 Dec 2012 11:06:25 +0100:
+> ...
+> > > @@ -149,7 +154,26 @@ done:
+> > >   */
+> > >  static void __init tegra_smp_init_cpus(void)
+> > >  {
+> > > -	unsigned int i, ncores =3D scu_get_core_count(scu_base);
+> > > +	unsigned int i, cpu_id, ncores;
+> > > +	u32 l2ctlr;
+> > > +	phys_addr_t pa;
+> > > +
+> > > +	cpu_id =3D read_cpuid(CPUID_ID) & CPU_MASK;
+> > > +	switch (cpu_id) {
+> > > +	case CPU_CORTEX_A15:
+> > > +		asm("mrc p15, 1, %0, c9, c0, 2\n" : "=3Dr" (l2ctlr));
+> > > +		ncores =3D ((l2ctlr >> 24) & 3) + 1;
+> > > +		break;
+> > > +	case CPU_CORTEX_A9:
+> > > +		/* Get SCU physical base */
+> > > +		asm("mrc p15, 4, %0, c15, c0, 0" : "=3Dr" (pa));
+> > > +		scu_base =3D IO_ADDRESS(pa);
+> > > +		ncores =3D scu_get_core_count(scu_base);
+> > > +		break;
+> > > +	default:
+> > > +		BUG();
+> >=20
+> > instead of bugging out, how about setting ncores to 1 instead ?
+>=20
+> Maybe that would be useful in the case of adding new ARM core in the
+> future.
 
-I talked to James about the SCSI patch, but it didn't get picked up; I haven't
-heard from Robert about the FCoE patch at all.
+right, kernel would at least boot in that case.
 
-Below are two git pull requests, one for SCSI and one for FCoE.  I can resend
-them separately to their mailing lists if need be.
+--=20
+balbi
 
-Merry Christmas!
-David
----
-The following changes since commit 752451f01c4567b506bf4343082682dbb8fb30dd:
+--9amGYk9869ThD9tj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  Merge branch 'i2c-embedded/for-next' of git://git.pengutronix.de/git/wsa/linux (2012-12-18 16:51:10 -0800)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-are available in the git repository at:
+iQIcBAEBAgAGBQJQ01ZqAAoJEIaOsuA1yqREZoAQAKmi82hURVFWWzf8DVFGy5Gg
+talOWJzhA28D0JM5wahDhth1sImiSh0GyZWSH/d3nc0zxXKARs/I5qjL0X0lmb7q
+zivcdNZv8eJOqAYTwWTBK9ye6Ld3soELKZuxzGBbD11M0k6K9OEsSS4Rr19OBL9V
+ThdKbSRr6gfss6Gv1jq5vxDF13xR3dASgnSaUOzyxu0ZjxfUaNxeJZ9gCcK9lVyH
+CQQKVPkLXTu7K/GZ3k4VxBzTlA7bRz5JVHv2GFIpN4+YbFMEKQ0SSa5Cow2d9Fcr
+KXLRozZW9t5Hd287HAWKagCfYQEMSow1iu7J3ljZVGIHU+xgIykLxZMx3/rp4+bG
+FkabxLtntqwaTp+7QJzN210LmEOToFviztq9D9rTPL9fILEGwsQOlOdEiqB4DFR7
+7g2OmZnIhlm8/+R47bRzx0P7sXhBCtuqdwfOhr6C0dBkoXwhGb+MJBAIIsFDTXoG
+BqdjcQmu/OFIYepLLy22HsAjNWrkVZxSa5d5rvfF02V4TjJnI//ayEFEdENtlp2w
+Wd+/gWRLSolLujoHD+lMkASnQf7+RKBx+k5HSBbQ11rJe/y8mG41G9P1LvUhbKdC
+qb9Mdxnu90LUvnpo+aeEbfjrP8eK+rMEf5vPWiA+cCBRf+gInJNrsGcpFsjbh+K1
+FILqq+wKz98cKdLyMSio
+=LlYW
+-----END PGP SIGNATURE-----
 
-
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-scsi-20121219
-
-for you to fetch changes up to ee7afd717c26299c85675d84c7ff89a9c989f4fa:
-
-  UAPI: (Scripted) Disintegrate include/scsi (2012-12-19 16:07:23 +0000)
-
-----------------------------------------------------------------
-UAPI Disintegration 2012-12-19
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/scsi
-
- include/scsi/Kbuild                       | 3 ---
- include/uapi/scsi/Kbuild                  | 3 +++
- include/{ => uapi}/scsi/scsi_bsg_fc.h     | 0
- include/{ => uapi}/scsi/scsi_netlink.h    | 0
- include/{ => uapi}/scsi/scsi_netlink_fc.h | 0
- 5 files changed, 3 insertions(+), 3 deletions(-)
- rename include/{ => uapi}/scsi/scsi_bsg_fc.h (100%)
- rename include/{ => uapi}/scsi/scsi_netlink.h (100%)
- rename include/{ => uapi}/scsi/scsi_netlink_fc.h (100%)
-
----
-The following changes since commit 752451f01c4567b506bf4343082682dbb8fb30dd:
-
-  Merge branch 'i2c-embedded/for-next' of git://git.pengutronix.de/git/wsa/linux (2012-12-18 16:51:10 -0800)
-
-are available in the git repository at:
-
-
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-fc-20121219
-
-for you to fetch changes up to 6973d441bb53bdf58693c9e54493fc609d9e37cf:
-
-  UAPI: (Scripted) Disintegrate include/scsi/fc (2012-12-19 16:07:25 +0000)
-
-----------------------------------------------------------------
-UAPI Disintegration 2012-12-19
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/scsi/fc
-
- include/scsi/fc/Kbuild              | 4 ----
- include/uapi/scsi/fc/Kbuild         | 4 ++++
- include/{ => uapi}/scsi/fc/fc_els.h | 0
- include/{ => uapi}/scsi/fc/fc_fs.h  | 0
- include/{ => uapi}/scsi/fc/fc_gs.h  | 0
- include/{ => uapi}/scsi/fc/fc_ns.h  | 0
- 6 files changed, 4 insertions(+), 4 deletions(-)
- rename include/{ => uapi}/scsi/fc/fc_els.h (100%)
- rename include/{ => uapi}/scsi/fc/fc_fs.h (100%)
- rename include/{ => uapi}/scsi/fc/fc_gs.h (100%)
- rename include/{ => uapi}/scsi/fc/fc_ns.h (100%)
+--9amGYk9869ThD9tj--
