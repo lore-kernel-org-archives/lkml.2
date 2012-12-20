@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab2LTQqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 11:46:35 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42194 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2LTQq3 (ORCPT
+	id S1751789Ab2LTQrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 11:47:13 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:59055 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab2LTQrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 11:46:29 -0500
-Message-ID: <50D340E1.7040600@wwwdotorg.org>
-Date: Thu, 20 Dec 2012 09:46:25 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 11:47:02 -0500
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>
-CC: "djbw@fb.com" <djbw@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] dma: tegra: implement flags parameters for cyclic transfer
-References: <1355924434-7930-1-git-send-email-ldewangan@nvidia.com> <50D1F33D.1050709@wwwdotorg.org> <50D2ABF7.8090308@nvidia.com>
-In-Reply-To: <50D2ABF7.8090308@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <92645B27BF79D04FBD2B0F8494FFD0F91F2600@G1W3649.americas.hpqcorp.net>
+References: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net>
+	<CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com>
+	<92645B27BF79D04FBD2B0F8494FFD0F91F2222@G1W3649.americas.hpqcorp.net>
+	<CAE9FiQVAPnc7P91AK8gdwgY-xFsXMM_MxYZAu2sRjsp3EdA96w@mail.gmail.com>
+	<92645B27BF79D04FBD2B0F8494FFD0F91F2600@G1W3649.americas.hpqcorp.net>
+Date: Thu, 20 Dec 2012 08:46:59 -0800
+X-Google-Sender-Auth: q7oMXTh1dJTT0vfKeANF2KMKSE4
+Message-ID: <CAE9FiQVRcGvaTJ6NrxnQuFbPT9OwB7j8xxhDe5kcYUpgAMkz1A@mail.gmail.com>
+Subject: Re: Why Linux kernel forced to enter X2APIC mode( just because of
+ booting cpu has supported x2apic) without depending on BIOS' setting in
+ MSR->x2apic enablement bit ?
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "jarkko.sakkinen@intel.com" <jarkko.sakkinen@intel.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "agordeev@redhat.com" <agordeev@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 11:11 PM, Laxman Dewangan wrote:
-> On Wednesday 19 December 2012 10:32 PM, Stephen Warren wrote:
->> On 12/19/2012 06:40 AM, Laxman Dewangan wrote:
->>> The flag parameter is added in the cyclic transfer request.
->>> Use the flag option of:
->>> - DMA_PREP_INTERRUPT for enabling interrupt.
->>> - DMA_CTRL_ACK for deciding whether ack is requred or not for
->>>    descriptor.
->> Do the relevant drivers that use Tegra's DMA engine already set flags
->> correctly, so that this change won't cause any regressions?
->>
-> 
-> Currently, the sound soc driver uses the cyclic mode of dma transfer and
-> it has already enable the proper flags. This was done recently after
-> adding flags in cyclic api.
-> Also, there was bug in our dma driver for not setting DMA_CTRL_ACK by
-> default for cyclic case.
-> This will fix the issue.
+On Thu, Dec 20, 2012 at 2:38 AM, Zhang, Lin-Bao (Linux Kernel R&D)
+<linbao.zhang@hp.com> wrote:
+> I think current core argument is our BIOS did following judgement ,
+> but Linux kernel did not(Linux seems just judge BSP supports x2apic mode or not by CPUID method)
 
-OK. I assume "This was done recently after adding flags in cyclic api."
-was a patch that went into 3.8?  So, this patch is a bug-fix that should
-be included in 3.8 then?
+kernel checks that, if the BSP in x2apic mode, kernel will check if
+intr-remapping can be enabled, otherwise
+it will switch back to xapic mode.
+
+> Our BSP really supports x2apic mode, however,as this spec, our BIOS think some of configuration of server
+> could not meet x2apic conditions ,So didn't place local xAPICs into x2apic mode.
+> But linux kernel indeed enable x2apic mode(just believe BSP, didn't do above judgement) . so this is the conflict.
+
+so your BIOS is wrong,  it does not enable intr-remapping.
+
+Yinghai
