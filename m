@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab2LTCfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 21:35:04 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61352 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab2LTCe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 21:34:57 -0500
-X-AuditID: 9c930197-b7c5bae000000e31-3e-50d2794cde7a
-Date: Thu, 20 Dec 2012 11:34:52 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 07/14] perf ui/hist: Add support for event group view
-Message-ID: <20121220023452.GA3679@danjae>
-References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
- <1355726345-29553-8-git-send-email-namhyung@kernel.org>
- <20121218193015.GA2639@ghostprotocols.net>
+	id S1751399Ab2LTCia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 21:38:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49217 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751397Ab2LTCiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 21:38:23 -0500
+Message-ID: <50D279F9.4000707@zytor.com>
+Date: Wed, 19 Dec 2012 18:37:45 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121218193015.GA2639@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Jacob Shin <jacob.shin@amd.com>
+CC: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
+ ucode on Intel's CPU
+References: <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie> <50D23EE8.7030904@zytor.com> <20121219225155.GK24895@liondog.tnic> <20121219225941.GB2968@jshin-Toonie> <50D25AA9.3090306@zytor.com> <20121220002954.GA10405@jshin-Toonie>
+In-Reply-To: <20121220002954.GA10405@jshin-Toonie>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 04:30:15PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 17, 2012 at 03:38:58PM +0900, Namhyung Kim escreveu:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > Show group members' overhead also when showing the leader's if event
-> > group is enabled.  Use macro for defining hpp functions which looks
-> > almost identical.
-> > 
-> > Thanks to Arnaldo for suggesting a better way to print group members
-> > without allocating temporary array.
+On 12/19/2012 04:29 PM, Jacob Shin wrote:
+> On Wed, Dec 19, 2012 at 04:24:09PM -0800, H. Peter Anvin wrote:
+>> On 12/19/2012 04:07 PM, Jacob Shin wrote:
+>>>
+>>> From what I remember, accessing memory around the memory hole (not
+>>> just the HT hole, but e038000000 ~ 10000000000 on our mentioned system
+>>> ) generated prefetches because the memory hole was marked as WB in PAT.
+>>>
+>>> I'll take a look at the system again, try the blanket MTRR covering
+>>> 0xe000000000 ~ 1TB, and talk to our BIOS guys.
+>>>
+>>
+>> Yes, but do they all #MC (as opposed to, say, fetching all FFs)?
 > 
-> I applied up to the previous patch (6/14), doing minor changes in some
-> due to clashes with other patches, but then this one isn't applying, can
-> you take a look?
-
-Of course.  It's because, as I mentioned in the cover letter, this patch
-set was based on Jiri's multi-diff series which contains a couple of
-changes in hpp side.  I somehow thought you wanted to apply his change
-before mine. ;-)
-
+> Yes, MCE every time and it was fatal.
 > 
-> I left what I did on the perf/group, so you can continue from there.
 
-I rebased it on the perf/group branch and pushed to perf/group-v8 on my
-tree.  Please take a look, or I can resend it to the list if you want.
+OK, one more question... there is something odd with the memory ranges here:
 
-Thanks,
-Namhyung
+ BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
+ BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
+ BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+
+The first usable range here is 4G to 896G + 896M which is an awfully
+strange number.  Similarly, the second range is 1T to 1T + 128G - 16M.
+The little fiddly bits imply that there is either overshoot of some sort
+going on -- possibly reserved memory -- or these are fairly arbitrary
+sizes that don't match any physical bank sizes in which case it should
+be possible to shuffle it differently...
+
+	-hpa
+
