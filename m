@@ -1,69 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab2LTJeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:34:05 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:58638 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2LTJd5 convert rfc822-to-8bit (ORCPT
+	id S1751923Ab2LTJgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:36:55 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:39045 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab2LTJgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:33:57 -0500
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 04:33:56 EST
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: Tom St Denis <tstdenis@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
-Date: Thu, 20 Dec 2012 10:27:57 +0100
-Message-ID: <1425298.zMcaSB7taE@calvin>
-User-Agent: KMail/4.9.4 (Linux/3.7.1; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <1520620637.200975.1355955029721.JavaMail.root@elliptictech.com>
-References: <1520620637.200975.1355955029721.JavaMail.root@elliptictech.com>
+	Thu, 20 Dec 2012 04:36:42 -0500
+X-Greylist: delayed 1078 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 04:36:42 EST
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+In-Reply-To: <1355989253-27471-1-git-send-email-jonghwa3.lee@samsung.com>
+References: <1355989253-27471-1-git-send-email-jonghwa3.lee@samsung.com>
+Date: Thu, 20 Dec 2012 14:42:20 +0530
+Message-ID: <CAHdPZaM_TKVvZxCQuUziCEY4nFmGYYY6F4so+FbVtQ0EFBNTtA@mail.gmail.com>
+Subject: Re: [PATCH v2] RTC: MAX77686: Add Maxim 77686 driver
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Aleessandro Zummo <a.zummo@towertech.it>, a.kesavan@samsung.com,
+        akpm@linux-foundation.org, joe@perches.com,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Myugnjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In data mercoledì 19 dicembre 2012 17:10:29, hai scritto:
-> ----- Original Message -----
-> 
-> > From: "Fabio Coatti" <fabio.coatti@gmail.com>
-> > To: linux-kernel@vger.kernel.org
-> > Sent: Wednesday, 19 December, 2012 5:01:30 PM
-> > Subject: 3.7.X vs 3.6.11 HP Folio 9470m brightness regression?
-> > 
-> > Hi,
-> > I'm testing kernels 3.7.X vs 3.6.11 on an HP Folio 9470m machine,
-> > i915
-> > driver for a VGA compatible controller: Intel Corporation 3rd Gen
-> > Core
-> > processor Graphics Controller (rev 09) 8086:0166
-> > 
-> > With 3.6.11, the brightness can be correctly set using fn+f9/10: kde
-> > shows the bar and brightness changes.
-> > 
-> > With 3.7.1 kde shows the percentage bar and
-> > /sys/class/backlight/acpi_video0/brightness is updated, but the
-> > screen
-> > brightness does not changes.
-> 
-> I had a similar problem with my Dell laptop and i915/acpi...
-> 
-> Is there another acpi_video? device?  In my case two showed up in 3.7
-> whereas in 3.6 there was one.  In 3.7 it was controlling the wrong one
-> apparently.
+Hello,
 
-Well, this seems not to be the case, I have only one acpi_video:
+Sorry for commenting on your V2, i would have done it for the first one :(
 
-calvin ~ # ls -l /sys/class/backlight/
-totale 0
-lrwxrwxrwx 1 root root 0 20 dic 09.20 acpi_video0 -> 
-../../devices/pci0000:00/0000:00:02.0/backlight/acpi_video0
+but these are all small ones, if you would like me to do it after this
+merged, i will be glad to do so.
 
-calvin ~ # ls -l /sys/devices/pci0000:00/0000:00:02.0/backlight
-totale 0
-drwxr-xr-x 3 root root 0 20 dic 09.20 acpi_video0
+> +
+> +static int max77686_rtc_probe(struct platform_device *pdev)
+> +{
+> +       struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
+> +       struct max77686_rtc_info *info;
+> +       int ret, virq;
+> +
+> +       pr_info("%s\n", __func__);
+> +
+> +       info = kzalloc(sizeof(struct max77686_rtc_info), GFP_KERNEL);
 
+devm_kzalloc will be good to use, as this is module.
 
+> +       if (!info)
+> +               return -ENOMEM;
+> +
+> +       mutex_init(&info->lock);
+> +       info->dev = &pdev->dev;
+> +       info->max77686 = max77686;
+> +       info->rtc = max77686->rtc;
+> +       info->max77686->rtc_regmap = regmap_init_i2c(info->max77686->rtc,
+> +                                        &max77686_rtc_regmap_config);
+> +       if (IS_ERR(info->max77686->rtc_regmap)) {
+> +               ret = PTR_ERR(info->max77686->rtc_regmap);
+> +               dev_err(info->max77686->dev, "Failed to allocate register map: %d\n",
+> +                               ret);
+> +               kfree(info);
+> +               return ret;
+> +       }
+> +       platform_set_drvdata(pdev, info);
+> +
+> +       ret = max77686_rtc_init_reg(info);
+> +
+> +       if (ret < 0) {
+> +               dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
+> +               goto err_rtc;
+> +       }
+> +
+> +       max77686_rtc_enable_wtsr(info, true);
+> +       max77686_rtc_enable_smpl(info, true);
+> +
+> +       device_init_wakeup(&pdev->dev, 1);
+> +
+> +       info->rtc_dev = rtc_device_register("max77686-rtc", &pdev->dev,
+> +                       &max77686_rtc_ops, THIS_MODULE);
+> +
+> +       if (IS_ERR(info->rtc_dev)) {
+> +               pr_info("%s: fail\n", __func__);
+> +
+> +               ret = PTR_ERR(info->rtc_dev);
+> +               dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
+> +               if (ret == 0)
+> +                       ret = -EINVAL;
 
---
-Fabio
+AFAIK, we dont return 0 or null of the rtc_device_register fail. so
+ret == 0 may be not needed.
+
+> +               goto err_rtc;
+> +       }
+> +       virq = irq_create_mapping(max77686->irq_domain, MAX77686_RTCIRQ_RTCA1);
+> +       if (!virq)
+> +               goto err_rtc;
+                    goto err_rtc_reg;
+> +       info->virq = virq;
+> +
+> +       ret = request_threaded_irq(virq, NULL, max77686_rtc_alarm_irq, 0,
+> +                       "rtc-alarm0", info);
+> +       if (ret < 0) {
+> +               dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
+> +                       info->virq, ret);
+> +               goto err_rtc;
+                    goto err_rtc_reg;
+> +       }
+> +
+> +       goto out;
+> +err_rtc_reg:
+
+rtc_device_unregister();
+
+> +       kfree(info);
+> +       return ret;
+> +out:
+> +       return ret;
+> +}
+> +
+> +static int max77686_rtc_remove(struct platform_device *pdev)
+> +{
+> +       struct max77686_rtc_info *info = platform_get_drvdata(pdev);
+> +
+> +       if (info) {
+> +               free_irq(info->virq, info);
+> +               rtc_device_unregister(info->rtc_dev);
+> +               kfree(info);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static void max77686_rtc_shutdown(struct platform_device *pdev)
+> +{
+> +       struct max77686_rtc_info *info = platform_get_drvdata(pdev);
+> +       int i;
+> +       u8 val = 0;
+> +
+> +       for (i = 0; i < 3; i++) {
+> +               max77686_rtc_enable_wtsr(info, false);
+> +               regmap_read(info->max77686->rtc_regmap,
+> +                               MAX77686_WTSR_SMPL_CNTL, &val);
+> +               pr_info("%s: WTSR_SMPL reg(0x%02x)\n", __func__, val);
+> +               if (val & WTSR_EN_MASK)
+> +                       pr_emerg("%s: fail to disable WTSR\n", __func__);
+> +               else {
+> +                       pr_info("%s: success to disable WTSR\n", __func__);
+> +                       break;
+> +               }
+> +       }
+> +
+> +       max77686_rtc_enable_smpl(info, false);
+> +}
+> +
+> +static const struct platform_device_id rtc_id[] = {
+> +       { "max77686-rtc", 0 },
+> +       {},
+> +};
+> +
+> +static struct platform_driver max77686_rtc_driver = {
+> +       .driver         = {
+> +               .name   = "max77686-rtc",
+> +               .owner  = THIS_MODULE,
+> +       },
+> +       .probe          = max77686_rtc_probe,
+> +       .remove         = max77686_rtc_remove,
+> +       .shutdown       = max77686_rtc_shutdown,
+> +       .id_table       = rtc_id,
+> +};
+> +
+----> from here
+> +static int __init max77686_rtc_init(void)
+> +{
+> +       return platform_driver_register(&max77686_rtc_driver);
+> +}
+> +module_init(max77686_rtc_init);
+> +
+> +static void __exit max77686_rtc_exit(void)
+> +{
+> +       platform_driver_unregister(&max77686_rtc_driver);
+> +}
+> +module_exit(max77686_rtc_exit);
+> +
+
+----- to here
+
+you can use module_platform_driver(&max77686_rtc_driver);
+
+> +MODULE_DESCRIPTION("Maxim MAX77686 RTC driver");
+> +MODULE_AUTHOR("<woong.byun@samsung.com>");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
