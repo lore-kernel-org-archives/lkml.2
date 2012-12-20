@@ -1,78 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2LTQ4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 11:56:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46519 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2LTQ4M (ORCPT
+	id S1751790Ab2LTQ6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 11:58:49 -0500
+Received: from mga03.intel.com ([143.182.124.21]:35298 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060Ab2LTQ6m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 11:56:12 -0500
+	Thu, 20 Dec 2012 11:58:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,324,1355126400"; 
+   d="scan'208";a="234694832"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+Thread-Topic: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+Thread-Index: AQHN3QLhVtjs0vDJ0k+q6f3rVEfUDJgg0z6AgAB+x2CAADE/AIAAX08A//+oIYCAAF+MAA==
+Date: Thu, 20 Dec 2012 16:58:32 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924CF67@BGSMSX101.gar.corp.intel.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+ <1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
+ <20121220054201.GE28007@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CB6C@BGSMSX101.gar.corp.intel.com>
+ <20121220161202.GA29796@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CF1F@BGSMSX101.gar.corp.intel.com>
+ <20121220163839.GA30120@kroah.com>
+In-Reply-To: <20121220163839.GA30120@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <50D0DB1A.5010407@zytor.com>
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<1355814959-10573-7-git-send-email-yinghai@kernel.org>
-	<CAE9FiQXrpQtZ7Sq=xfjscKjKzZ6P89uPG0bByER8q48jEgYx_g@mail.gmail.com>
-	<50D0D6D1.70400@zytor.com>
-	<CAE9FiQV5zpTiskB_RwXT8XGNfgTGSwc3AAFqCBusq1t4-OSJHw@mail.gmail.com>
-	<50D0DB1A.5010407@zytor.com>
-Date: Thu, 20 Dec 2012 08:56:11 -0800
-X-Google-Sender-Auth: FWoEYiT1g1S1cKDB7tAh19LYhk8
-Message-ID: <CAE9FiQV2U+Am0zCz__6YL4CoOeie5McE9=g-L3A_udRNN1rPTw@mail.gmail.com>
-Subject: Re: [PATCH v7 06/27] x86, 64bit: early #PF handler set page table
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>, Jan Kiszka <jan.kiszka@web.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 1:07 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/18/2012 12:55 PM, Yinghai Lu wrote:
->> On Tue, Dec 18, 2012 at 12:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 12/18/2012 12:43 PM, Yinghai Lu wrote:
->>
->>>
->>> That is putting the cart before the horse.  What is the specific requirement
->>> with kgdb here (I didn't see any email on that, please don't have private
->>> back conversations)?  Either way, however, kgdb is a tool to debug the
->>> kernel... having it a barrier for proper functionality of the kernel is not
->>> acceptable.
->>
->> did not hear back from Jason or Jan.
->>
->> Looks like last mail in LKML from Jason is about Oct 20
->>
->> looks like kgdb is want DB, BP, and PF are set at first.
->>
->> and just after that early_param for kgdbwait will get into to hold the kernel.
->>
->> then command from kgdb could dump ram etc.
->>
->
-> So in that case, kgdb is broken and will need to be fixed up.  That
-> happens all the time with debugging tools.
->
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, December 20, 2012 10:09 PM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> 
+> On Thu, Dec 20, 2012 at 04:25:32PM +0000, R, Durgadoss wrote:
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Thursday, December 20, 2012 9:42 PM
+> > > To: R, Durgadoss
+> > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > hongbo.zhang@linaro.org; wni@nvidia.com
+> > > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> > >
+> > > On Thu, Dec 20, 2012 at 07:52:03AM +0000, R, Durgadoss wrote:
+> > > > > On Tue, Dec 18, 2012 at 02:59:33PM +0530, Durgadoss R wrote:
+> > > > > > This patch adds a thermal_trip directory under
+> > > > > > /sys/class/thermal/zoneX. This directory contains
+> > > > > > the trip point values for sensors bound to this
+> > > > > > zone.
+> > > > >
+> > > > > Eeek, you just broke userspace tools that now can no longer see
+> these
+> > > > > entries :(
+> > > > >
+> > > > > Why do you need to create a subdirectory?  As you found out, doing
+> so
+> > > > > isn't the easiest, right?  That is on purpose.
+> > > >
+> > > > Yes, I observed the complexity.
+> > > >
+> > > > >
+> > > > > I really wouldn't recommend doing this at all, please stick within the
+> > > > > 'struct device' framework here, don't create new kobjects and hang
+> sysfs
+> > > > > files off of them.
+> > > >
+> > > > But, we cannot put all _trip directly under ZoneX directory.
+> > >
+> > > Why not?  What is preventing this?
+> > >
+> > > > We can remove the thermal_trip directory, and put sensorY_trip under
+> > > > /sys/class/thermal/zoneX/.  But this sensorY_trip needs to be a
+> > > > directory which has four sysfs nodes named, active, passive, crit,
+> > > > hot.
+> > > >
+> > > > Rui, What do you think about this ?
+> > > >
+> > > > The only other way I see, is directly put
+> > > sensorY_trip_[active/passive/hot/crit]
+> > > > which will create way too many nodes, under
+> /sys/class/thermal/zoneX/.
+> > >
+> > > What is "too many"?  20000?  50000?  How many are we talking about
+> here?
+> >
+> > Not in 1000's though..
+> >
+> > > What is the limiting factor that is preventing this from all going into
+> > > one directory?
+> >
+> > We support a MAX of 12 sensors per zone today, which will lead to
+> > 12 * 4, 48 nodes under this directory named
+> > sensorY_trip_[active/passive/hot/crit], besides the other nodes.
+> 
+> That's fine, we can easily support that many files, have you tried this
+> already?
 
-If there is a way that we can make all parties happy, we really should
-not break KGDB.
+Yes, in fact, this is sort of what was the old implementation..
+although with different sysfs nodes.
 
-Please reconsider to stop #PF handler in x86_64_start_kernel. in that case
-1. microcode update still can use #PF handler to find microcode in
-ramdisk and use it.
-2. kernel that is loaded above 4G, could set mapping in C instead of
-set that in head_64.S
-   and use ioremap to access zero_page
-3. KGDB still can call early_trap_init early before init_mem_mapping.
+> 
+> The main point is, if you use a kobject like you are, userspace tools
+> can't "see" these directories and files easily, if at all.  Try it out
+> with libudev yourself to verify it, the attributes will not show up as
+> owned to that device like you need them to be.
 
-I put the change in for-x86-boot-v8 branch.
-core patch is:
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=6fa4f1e68f0b67d0dc13d30c5ce6c3932697d08f
+I haven't used libudev exactly, but I realized this sort of thing,
+when I was trying to catch UEvents on this device path.
 
-Thanks
+I will give libudev a try..
 
-Yinghai
+> 
+> So put them all in one directory, we can handle 10's of thousands of
+> files quite easily, so 48 is trivial :)
+
+Okay, Will make it this way :-)
+Now I can see the implementation getting much simpler !!
+
+Thank you Greg,
+Durga
+P.S: I should thank you for this file(samples/kobject/kobject-example.c) also,
+from where I got how to get this implementation done :-)
