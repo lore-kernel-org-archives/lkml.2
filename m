@@ -1,141 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2LTT0c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:26:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2073 "EHLO mx1.redhat.com"
+	id S1752503Ab2LTT1C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:27:02 -0500
+Received: from fieldses.org ([174.143.236.118]:60753 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908Ab2LTT0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:26:25 -0500
-Date: Thu, 20 Dec 2012 14:26:23 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: CPU hotplug lockdep trace during offline.
-Message-ID: <20121220192623.GA7093@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1752164Ab2LTT0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 14:26:54 -0500
+Date: Thu, 20 Dec 2012 14:26:53 -0500
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: nfsd changes for 3.8
+Message-ID: <20121220192653.GA19049@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From Linus' tree as of a half hour ago.
+Please pull nfsd changes for 3.8 from the for-3.8 branch at
 
-echo 0 > /sys/devices/system/cpu/cpu1/online
+  git://linux-nfs.org/~bfields/linux.git for-3.8
 
+Included this time:
 
+  - more nfsd containerization work from Stanislav Kinsbursky: we're not
+    quite there yet, but should be by 3.9.
 
-[   67.675171] ======================================================
-[   67.676121] [ INFO: possible circular locking dependency detected ]
-[   67.677084] 3.7.0+ #34 Not tainted
-[   67.677641] -------------------------------------------------------
-[   67.678614] bash/604 is trying to acquire lock:
-[   67.679326] blocked:  (cgroup_mutex){+.+.+.}, instance: ffffffff81c38278, at: [<ffffffff810cef77>] cgroup_lock+0x17/0x20
-[   67.681220] 
-but task is already holding lock:
-[   67.682115] held:     (cpu_hotplug.lock){+.+.+.}, instance: ffffffff81c1f700, at: [<ffffffff81049ddf>] cpu_hotplug_begin+0x2f/0x60
-[   67.684087] 
-which lock already depends on the new lock.
+  - NFSv4.1 progress: implementation of basic backchannel security
+    negotiation and the mandatory BACKCHANNEL_CTL operation.  See
 
-[   67.685316] 
-the existing dependency chain (in reverse order) is:
-[   67.686450] 
--> #2 (cpu_hotplug.lock){+.+.+.}:
-[   67.687183]        [<ffffffff810b84e2>] lock_acquire+0x92/0x1d0
-[   67.688165]        [<ffffffff816a7713>] mutex_lock_nested+0x73/0x3b0
-[   67.689186]        [<ffffffff81049ddf>] cpu_hotplug_begin+0x2f/0x60
-[   67.690217]        [<ffffffff816986df>] _cpu_up+0x29/0x14b
-[   67.691134]        [<ffffffff8169884f>] cpu_up+0x4e/0x5e
-[   67.692025]        [<ffffffff81edf551>] smp_init+0x82/0xa3
-[   67.692950]        [<ffffffff8168d214>] kernel_init+0xd4/0x2d0
-[   67.693924]        [<ffffffff816b2b5c>] ret_from_fork+0x7c/0xb0
-[   67.694921] 
--> #1 (cpu_add_remove_lock){+.+.+.}:
-[   67.695791]        [<ffffffff810b84e2>] lock_acquire+0x92/0x1d0
-[   67.696770]        [<ffffffff816a7713>] mutex_lock_nested+0x73/0x3b0
-[   67.697814]        [<ffffffff81049f47>] cpu_maps_update_begin+0x17/0x20
-[   67.698897]        [<ffffffff8168e406>] register_cpu_notifier+0x16/0x40
-[   67.699973]        [<ffffffff8168f450>] mem_cgroup_css_alloc+0x450/0x6a0
-[   67.701071]        [<ffffffff81edfde7>] cgroup_init_subsys+0x5e/0xf8
-[   67.702112]        [<ffffffff81ee00ad>] cgroup_init+0x46/0x129
-[   67.703076]        [<ffffffff81ec8bd9>] start_kernel+0x3cb/0x413
-[   67.704071]        [<ffffffff81ec832d>] x86_64_start_reservations+0x131/0x135
-[   67.705206]        [<ffffffff81ec8409>] x86_64_start_kernel+0xd8/0xdc
-[   67.706266] 
--> #0 (cgroup_mutex){+.+.+.}:
-[   67.707091]        [<ffffffff810b7daf>] __lock_acquire+0x1a7f/0x1b30
-[   67.708133]        [<ffffffff810b84e2>] lock_acquire+0x92/0x1d0
-[   67.709111]        [<ffffffff816a7713>] mutex_lock_nested+0x73/0x3b0
-[   67.710129]        [<ffffffff810cef77>] cgroup_lock+0x17/0x20
-[   67.711081]        [<ffffffff810d9599>] cpuset_update_active_cpus+0x19/0x160
-[   67.712225]        [<ffffffff810891e7>] cpuset_cpu_inactive+0x47/0x50
-[   67.713286]        [<ffffffff816ae6d6>] notifier_call_chain+0x66/0x150
-[   67.714358]        [<ffffffff81078a2e>] __raw_notifier_call_chain+0xe/0x10
-[   67.715425]        [<ffffffff81049d70>] __cpu_notify+0x20/0x40
-[   67.716389]        [<ffffffff8168e0bd>] _cpu_down+0x8d/0x330
-[   67.717306]        [<ffffffff8168e396>] cpu_down+0x36/0x50
-[   67.718230]        [<ffffffff81691b1d>] store_online+0x5d/0xd0
-[   67.719194]        [<ffffffff8143b1b8>] dev_attr_store+0x18/0x30
-[   67.720186]        [<ffffffff81238440>] sysfs_write_file+0xe0/0x150
-[   67.721224]        [<ffffffff811b8fef>] vfs_write+0xaf/0x180
-[   67.722163]        [<ffffffff811b9335>] sys_write+0x55/0xa0
-[   67.723095]        [<ffffffff816b2c02>] system_call_fastpath+0x16/0x1b
-[   67.724142] 
-other info that might help us debug this:
+	  http://wiki.linux-nfs.org/wiki/index.php/Server_4.0_and_4.1_issues
 
-[   67.725345] Chain exists of:
-  cgroup_mutex --> cpu_add_remove_lock --> cpu_hotplug.lock
+    for remaining TODO's
 
-[   67.745352]  Possible unsafe locking scenario:
+  - Fixes for some bugs that could be triggered by unusual compounds.
+    Our xdr code wasn't designed with v4 compounds in mind, and it
+    shows.  A more thorough rewrite is still a todo.
 
-[   67.758710]        CPU0                    CPU1
-[   67.765527]        ----                    ----
-[   67.772259]   lock(cpu_hotplug.lock);
-[   67.778901]                                lock(cpu_add_remove_lock);
-[   67.785983]                                lock(cpu_hotplug.lock);
-[   67.792943]   lock(cgroup_mutex);
-[   67.799358] 
- *** DEADLOCK ***
+  - If you've ever seen "RPC: multiple fragments per record not
+    supported" logged while using some sort of odd userland NFS client,
+    that should now be fixed.
 
-[   67.816718] 5 locks on stack by bash/604:
-[   67.822496]  #0: held:     (&buffer->mutex){+.+.+.}, instance: ffff880108886518, at: [<ffffffff812383a7>] sysfs_write_file+0x47/0x150
-[   67.829905]  #1: blocked:  (s_active#69){.+.+.+}, instance: ffff88012ce6cd60, at: [<ffffffff81238428>] sysfs_write_file+0xc8/0x150
-[   67.837370]  #2: held:     (x86_cpu_hotplug_driver_mutex){+.+.+.}, instance: ffffffff81c1aef8, at: [<ffffffff8101e4b7>] cpu_hotplug_driver_lock+0x17/0x20
-[   67.845512]  #3: held:     (cpu_add_remove_lock){+.+.+.}, instance: ffffffff81c1f638, at: [<ffffffff81049f47>] cpu_maps_update_begin+0x17/0x20
-[   67.853640]  #4: held:     (cpu_hotplug.lock){+.+.+.}, instance: ffffffff81c1f700, at: [<ffffffff81049ddf>] cpu_hotplug_begin+0x2f/0x60
-[   67.861874] 
-stack backtrace:
-[   67.874926] Pid: 604, comm: bash Not tainted 3.7.0+ #34
-[   67.881886] Call Trace:
-[   67.888481]  [<ffffffff8169f49d>] print_circular_bug+0x1fe/0x20f
-[   67.895623]  [<ffffffff810b7daf>] __lock_acquire+0x1a7f/0x1b30
-[   67.902779]  [<ffffffff810b8e6e>] ? mark_held_locks+0xae/0x110
-[   67.909957]  [<ffffffff810b2ffe>] ? put_lock_stats.isra.23+0xe/0x40
-[   67.917206]  [<ffffffff816aacb5>] ? _raw_spin_unlock_irqrestore+0x65/0x80
-[   67.924565]  [<ffffffff810b84e2>] lock_acquire+0x92/0x1d0
-[   67.931733]  [<ffffffff810cef77>] ? cgroup_lock+0x17/0x20
-[   67.938894]  [<ffffffff816a7713>] mutex_lock_nested+0x73/0x3b0
-[   67.946061]  [<ffffffff810cef77>] ? cgroup_lock+0x17/0x20
-[   67.953171]  [<ffffffff810b907d>] ? trace_hardirqs_on+0xd/0x10
-[   67.960330]  [<ffffffff810cef77>] ? cgroup_lock+0x17/0x20
-[   67.967439]  [<ffffffff8101df26>] ? native_send_call_func_single_ipi+0x36/0x40
-[   67.974840]  [<ffffffff810c04c1>] ? generic_exec_single+0xb1/0xc0
-[   67.982097]  [<ffffffff810cef77>] cgroup_lock+0x17/0x20
-[   67.989262]  [<ffffffff810d9599>] cpuset_update_active_cpus+0x19/0x160
-[   67.996640]  [<ffffffff810c3ff2>] ? __module_address+0xf2/0x130
-[   68.003933]  [<ffffffff810b394e>] ? __lock_is_held+0x5e/0x90
-[   68.011206]  [<ffffffff810891e7>] cpuset_cpu_inactive+0x47/0x50
-[   68.018485]  [<ffffffff816ae6d6>] notifier_call_chain+0x66/0x150
-[   68.025765]  [<ffffffff81078a2e>] __raw_notifier_call_chain+0xe/0x10
-[   68.033047]  [<ffffffff81049d70>] __cpu_notify+0x20/0x40
-[   68.040181]  [<ffffffff8168e0bd>] _cpu_down+0x8d/0x330
-[   68.047281]  [<ffffffff8168e396>] cpu_down+0x36/0x50
-[   68.054328]  [<ffffffff81691b1d>] store_online+0x5d/0xd0
-[   68.061400]  [<ffffffff8143b1b8>] dev_attr_store+0x18/0x30
-[   68.068489]  [<ffffffff81238440>] sysfs_write_file+0xe0/0x150
-[   68.075618]  [<ffffffff811b8fef>] vfs_write+0xaf/0x180
-[   68.082647]  [<ffffffff811b9335>] sys_write+0x55/0xa0
-[   68.089623]  [<ffffffff816b2c02>] system_call_fastpath+0x16/0x1b
+  - Further work from Jeff Layton on our mechanism for storing
+    information about NFSv4 clients across reboots.
 
+  - Further work from Bryan Schumaker on his fault-injection mechanism
+    (which allows us to discard selective NFSv4 state, to excercise
+    rarely-taken recovery code paths in the client.)
+
+  - The usual mix of miscellaneous bugs and cleanup.
+
+Thanks to everyone who tested or contributed this cycle.
+
+--b.
+
+----------------------------------------------------------------
+Bryan Schumaker (12):
+      NFSD: Fold fault_inject.h into state.h
+      NFSD: Lock state before calling fault injection function
+      NFSD: Clean up forgetting clients
+      NFSD: Clean up forgetting locks
+      NFSD: Clean up forgetting openowners
+      NFSD: Clean up forgetting and recalling delegations
+      NFSD: Fault injection operations take a per-client forget function
+      NFSD: Reading a fault injection file prints a state count
+      NFSD: Add a custom file operations structure for fault injection
+      NFSD: Forget state for a specific client
+      NFSD: Pass correct buffer size to rpc_ntop
+      NFSD: Correct the size calculation in fault_inject_write
+
+Fengguang Wu (2):
+      nfsd4: init_session should be declared static
+      nfsd4: get_backchannel_cred should be static
+
+J. Bruce Fields (36):
+      nfsd4: helper function for getting mounted_on ino
+      nfsd4: remove unused init_session return
+      svcrpc: demote some printks to a dprintk
+      nfsd4: don't BUG in delegation break callback
+      nfsd: assume writeable exportabled filesystems have f_sync
+      nfsd: use vfs_fsync_range(), not O_SYNC, for stable writes
+      nfsd4: clean up callback security parsing
+      nfsd4: use callback security parameters in create_session
+      nfsd4: implement backchannel_ctl operation
+      nfsd4: common helper to initialize callback work
+      nfsd4: backchannel should use client-provided security flavor
+      nfsd4: update documentation on 4.1 progress
+      svcrpc: Revert "sunrpc/cache.h: replace simple_strtoul"
+      nfsd: fix v4 reply caching
+      nfsd4: no, we're not going to check tags for utf8
+      nfsd4: simplify reading of opnum
+      nfsd4: reorganize write decoding
+      nfsd4: move more write parameters into xdr argument
+      nfsd4: delay filling in write iovec array till after xdr decoding
+      nfsd4: downgrade some fs/nfsd/nfs4state.c BUG's
+      nfsd4: return badname, not inval, on "." or "..", or "/"
+      nfsd4: remove state lock from nfsd4_load_reboot_recovery_data
+      nfsd4: discard some unused nfsd4_verify xdr code
+      svcrpc: don't byte-swap sk_reclen in place
+      svcrpc: delay minimum-rpc-size check till later
+      svcrpc: fix off-by-4 error in "incomplete TCP record" dprintk
+      svcrpc: track rpc data length separately from sk_tcplen
+      svcrpc: support multiple-fragment rpc's
+      nfsd4: lockt, release_lockowner should renew clients
+      svcrpc: fix some printks
+      nfsd4: disable zero-copy on non-final read ops
+      nfsd4: fix oops on unusual readlike compound
+      nfsd: warn on odd reply state in nfsd_vfs_read
+      nfsd4: cleanup: replace rq_resused count by rq_next_page pointer
+      nfsd4: free_stateid can use the current stateid
+      nfsd4: don't leave freed stateid hashed
+
+Jeff Layton (13):
+      nfsd: fix error handling in nfsd4_remove_clid_dir
+      nfsd: remove unused argument to nfs4_has_reclaimed_state
+      nfsd: add a usermodehelper upcall for NFSv4 client ID tracking
+      nfsd: change heuristic for selecting the client_tracking_ops
+      nfsd: pass info about the legacy recoverydir in environment variables
+      nfsd: warn about impending removal of nfsdcld upcall
+      nfsd: have nfsd4_find_reclaim_client take a char * argument
+      nfsd: break out reclaim record removal into separate function
+      nfsd: make nfs4_client_to_reclaim return a pointer to the reclaim record
+      nfsd: don't search for client by hash on legacy reboot recovery gracedone
+      nfsd: move the confirmed and unconfirmed hlists to a rbtree
+      nfsd: get rid of cl_recdir field
+      nfsd: release the legacy reclaimable clients list in grace_done
+
+Namjae Jeon (1):
+      exportfs: add FILEID_INVALID to indicate invalid fid_type
+
+Neil Brown (1):
+      nfsd: avoid permission checks on EXCLUSIVE_CREATE replay
+
+Stanislav Kinsbursky (44):
+      nfsd: use service net instead of hard-coded net where possible
+      nfsd: make nfs4_client network namespace dependent
+      nfsd: make reclaim_str_hashtbl allocated per net
+      nfsd: make conf_id_hashtbl allocated per net
+      nfsd: make conf_name_tree per net
+      nfsd: make unconf_id_hashtbl allocated per net
+      nfsd: make unconf_name_tree per net
+      nfsd: make ownerstr_hashtbl allocated per net
+      nfsd: make lockowner_ino_hashtbl allocated per net
+      nfsd: make sessionid_hashtbl allocated per net
+      nfsd: make client_lru list per net
+      nfsd: make close_lru list per net
+      nfsd: use service net instead of hard-coded init_net
+      nfsd: pass nfsd_net instead of net to grace enders
+      nfsd: make laundromat network namespace aware
+      nfsd4: remove state lock from nfs4_state_shutdown
+      nfsd: make client_lock per net
+      nfsd: make delegations shutdown network namespace aware
+      nfsd: cleanup NFSd state shutdown a bit
+      nfsd: cleanup NFSd state start a bit
+      nfsd: call state init and shutdown twice
+      nfsd: recovery - make rec_file per net
+      nfsd: recovery - make in_grace per net
+      nfsd: remove redundant declarations
+      nfsd: make NFSv4 lease time per net
+      nfsd: make NFSv4 grace time per net
+      nfsd: make NFSv4 recovery client tracking options per net
+      SUNRPC: remove redundant "linux/nsproxy.h" includes
+      nfsd: use "init_net" for portmapper
+      nfsd: pass net to nfsd_init_socks()
+      nfsd: pass net to nfsd_startup() and nfsd_shutdown()
+      nfsd: pass net to nfsd_create_serv()
+      nfsd: pass net to nfsd_svc()
+      nfsd: pass net to nfsd_set_nrthreads()
+      nfsd: pass net to __write_ports() and down
+      nfsd: move per-net startup code to separated function
+      nfsd: per-net NFSd up flag introduced
+      nfsd: make NFSd service boot time per-net
+      nfsd: make NFSd service structure allocated per net
+      nfsd: introduce helpers for generic resources init and shutdown
+      nfsd: simplify NFSv4 state init and shutdown
+      nfsd: replace boolean nfsd_up flag by users counter
+      nfsd: simplify service shutdown
+      nfsd: pass proper net to nfsd_destroy() from NFSd kthreads
+
+Wei Yongjun (1):
+      nfsd4: remove unused variable in nfsd4_delegreturn()
+
+Yanchuan Nian (1):
+      nfs: fix wrong object type in lockowner_slab
+
+ Documentation/filesystems/nfs/nfs41-server.txt |   20 +-
+ fs/exportfs/expfs.c                            |    4 +-
+ fs/fhandle.c                                   |    2 +-
+ fs/nfsd/fault_inject.c                         |  113 ++-
+ fs/nfsd/fault_inject.h                         |   28 -
+ fs/nfsd/netns.h                                |   66 ++
+ fs/nfsd/nfs2acl.c                              |    2 +-
+ fs/nfsd/nfs3acl.c                              |    2 +-
+ fs/nfsd/nfs3proc.c                             |    6 +-
+ fs/nfsd/nfs3xdr.c                              |   47 +-
+ fs/nfsd/nfs4callback.c                         |   69 +-
+ fs/nfsd/nfs4proc.c                             |   74 +-
+ fs/nfsd/nfs4recover.c                          |  561 ++++++++++---
+ fs/nfsd/nfs4state.c                            | 1015 ++++++++++++++----------
+ fs/nfsd/nfs4xdr.c                              |  324 ++++----
+ fs/nfsd/nfsctl.c                               |  100 ++-
+ fs/nfsd/nfsd.h                                 |   36 +-
+ fs/nfsd/nfsfh.c                                |    4 +-
+ fs/nfsd/nfssvc.c                               |  203 +++--
+ fs/nfsd/nfsxdr.c                               |   11 +-
+ fs/nfsd/state.h                                |   64 +-
+ fs/nfsd/vfs.c                                  |   53 +-
+ fs/nfsd/xdr4.h                                 |   15 +-
+ include/linux/exportfs.h                       |    5 +
+ include/linux/sunrpc/cache.h                   |    6 +-
+ include/linux/sunrpc/svc.h                     |    6 +-
+ include/linux/sunrpc/svcsock.h                 |   21 +-
+ net/sunrpc/rpcb_clnt.c                         |    1 -
+ net/sunrpc/svc.c                               |    8 +-
+ net/sunrpc/svcsock.c                           |   98 +--
+ net/sunrpc/xprtrdma/svc_rdma_recvfrom.c        |   10 +-
+ net/sunrpc/xprtrdma/svc_rdma_sendto.c          |    4 +-
+ 32 files changed, 1911 insertions(+), 1067 deletions(-)
+ delete mode 100644 fs/nfsd/fault_inject.h
