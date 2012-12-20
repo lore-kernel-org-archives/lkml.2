@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab2LTHwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 02:52:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14184 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab2LTHwK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 02:52:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
-   d="scan'208";a="234394384"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	id S1751469Ab2LTHyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 02:54:12 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:41029 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976Ab2LTHyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 02:54:06 -0500
+X-IronPort-AV: E=Sophos;i="4.84,322,1355068800"; 
+   d="scan'208";a="6439466"
+Date: Thu, 20 Dec 2012 15:53:59 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-Thread-Topic: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-Thread-Index: AQHN3QLhVtjs0vDJ0k+q6f3rVEfUDJgg0z6AgAB+x2A=
-Date: Thu, 20 Dec 2012 07:52:03 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924CB6C@BGSMSX101.gar.corp.intel.com>
-References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
- <1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
- <20121220054201.GE28007@kroah.com>
-In-Reply-To: <20121220054201.GE28007@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v12 0/8] pv event to notify host when the
+ guest is panicked
+Message-ID: <20121220075359.GF7141@localhost.localdomain>
+References: <cover.1355290850.git.hutao@cn.fujitsu.com>
 MIME-Version: 1.0
+In-Reply-To: <cover.1355290850.git.hutao@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/20 15:53:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/20 15:53:03,
+	Serialize complete at 2012/12/20 15:53:03
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi,
 
-Thank you for looking at this.
+Any comments?
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, December 20, 2012 11:12 AM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> hongbo.zhang@linaro.org; wni@nvidia.com
-> Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+On Wed, Dec 12, 2012 at 02:13:43PM +0800, Hu Tao wrote:
+> This series implements a new interface, kvm pv event, to notify host when
+> some events happen in guest. Right now there is one supported event: guest
+> panic.
 > 
-> On Tue, Dec 18, 2012 at 02:59:33PM +0530, Durgadoss R wrote:
-> > This patch adds a thermal_trip directory under
-> > /sys/class/thermal/zoneX. This directory contains
-> > the trip point values for sensors bound to this
-> > zone.
+> changes from v11:
 > 
-> Eeek, you just broke userspace tools that now can no longer see these
-> entries :(
+>   - add a new patch 'save/load cpu runstate'
+>   - fix a bug of null-dereference when no -machine option is supplied
+>   - reserve RUN_STATE_GUEST_PANICKED during migration
+>   - add doc of enable_pv_event option
+>   - disable reboot-on-panic if pv_event is on
 > 
-> Why do you need to create a subdirectory?  As you found out, doing so
-> isn't the easiest, right?  That is on purpose.
-
-Yes, I observed the complexity.
-
+> v11: http://lists.gnu.org/archive/html/qemu-devel/2012-10/msg04361.html
 > 
-> I really wouldn't recommend doing this at all, please stick within the
-> 'struct device' framework here, don't create new kobjects and hang sysfs
-> files off of them.
-
-But, we cannot put all _trip directly under ZoneX directory. We can remove the
-thermal_trip directory, and put sensorY_trip under /sys/class/thermal/zoneX/.
-But this sensorY_trip needs to be a directory which has four sysfs nodes named,
-active, passive, crit, hot.
-
-Rui, What do you think about this ?
-
-The only other way I see, is directly put sensorY_trip_[active/passive/hot/crit]
-which will create way too many nodes, under /sys/class/thermal/zoneX/.
-
-Thanks,
-Durga
-
+> Hu Tao (7):
+>   save/load cpu runstate
+>   update kernel headers
+>   add a new runstate: RUN_STATE_GUEST_PANICKED
+>   add a new qevent: QEVENT_GUEST_PANICKED
+>   introduce a new qom device to deal with panicked event
+>   allower the user to disable pv event support
+>   pv event: add document to describe the usage
 > 
-> thanks,
+> Wen Congyang (1):
+>   start vm after resetting it
 > 
-> greg k-h
+>  block.h                          |   2 +
+>  docs/pv-event.txt                |  17 ++++
+>  hw/kvm/Makefile.objs             |   2 +-
+>  hw/kvm/pv_event.c                | 197 +++++++++++++++++++++++++++++++++++++++
+>  hw/pc_piix.c                     |  11 +++
+>  kvm-stub.c                       |   4 +
+>  kvm.h                            |   2 +
+>  linux-headers/asm-x86/kvm_para.h |   1 +
+>  linux-headers/linux/kvm_para.h   |   6 ++
+>  migration.c                      |   7 +-
+>  monitor.c                        |   6 +-
+>  monitor.h                        |   1 +
+>  qapi-schema.json                 |   6 +-
+>  qemu-config.c                    |   4 +
+>  qemu-options.hx                  |   3 +-
+>  qmp.c                            |   5 +-
+>  savevm.c                         |   1 +
+>  sysemu.h                         |   2 +
+>  vl.c                             |  52 ++++++++++-
+>  19 files changed, 312 insertions(+), 17 deletions(-)
+>  create mode 100644 docs/pv-event.txt
+>  create mode 100644 hw/kvm/pv_event.c
+> 
+> -- 
+> 1.8.0.1.240.ge8a1f5a
