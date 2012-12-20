@@ -1,88 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab2LTDWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 22:22:38 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33447 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab2LTDWa (ORCPT
+	id S1752442Ab2LTDkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 22:40:05 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:34490 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab2LTDj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 22:22:30 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Thu, 20 Dec 2012 12:22:14 +0900 (JST)
-Message-Id: <20121220.122214.503837449.d.hatayama@jp.fujitsu.com>
-To: cpw@sgi.com
-Cc: kexec@lists.infradead.org, ptesarik@suse.cz, linux-kernel@vger.kernel.org,
-        kumagai-atsushi@mxc.nes.nec.co.jp, vgoyal@redhat.com
-Subject: Re: [PATCH] makedumpfile: request the kernel do page scans
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20121210153614.GA9037@sgi.com>
-References: <20121119180710.GA16448@sgi.com>
-	<20121210.095929.249234826.d.hatayama@jp.fujitsu.com>
-	<20121210153614.GA9037@sgi.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Dec 2012 22:39:59 -0500
+X-Greylist: delayed 460 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 22:39:59 EST
+MIME-Version: 1.0
+Date: Wed, 19 Dec 2012 19:32:18 -0800
+Message-ID: <CAFO3HzWnbZ+=BfF35kc1c3xQ6EUuRdri5_p14YJ_Ws17u6bMWQ@mail.gmail.com>
+Subject: Kernel 3.7.1 bug: include/uapi/linux/usb/ch9.h
+From: User Linux <user.kernel@gmail.com>
+To: "mailing list: linux-kernel" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
-Subject: Re: [PATCH] makedumpfile: request the kernel do page scans
-Date: Mon, 10 Dec 2012 09:36:14 -0600
-> On Mon, Dec 10, 2012 at 09:59:29AM +0900, HATAYAMA Daisuke wrote:
->> From: Cliff Wickman <cpw@sgi.com>
->> Subject: Re: [PATCH] makedumpfile: request the kernel do page scans
->> Date: Mon, 19 Nov 2012 12:07:10 -0600
->> 
->> > On Fri, Nov 16, 2012 at 03:39:44PM -0500, Vivek Goyal wrote:
->> >> On Thu, Nov 15, 2012 at 04:52:40PM -0600, Cliff Wickman wrote:
-> 
-> Hi Hatayama,
-> 
-> If ioremap/iounmap is the bottleneck then perhaps you could do what
-> my patch does: it consolidates all the ranges of physical addresses
-> where the boot kernel's page structures reside (see make_kernel_mmap())
-> and passes them to the kernel, which then does a handfull of ioremaps's to
-> cover all of them.  Then /proc/vmcore could look up the already-mapped
-> virtual address.
-> (also note a kludge in get_mm_sparsemem() that verifies that each section
-> of the mem_map spans contiguous ranges of page structures.  I had
-> trouble with some sections when I made that assumption)
-> 
-> I'm attaching 3 patches that might be useful in your testing:
-> - 121210.proc_vmcore2  my current patch that applies to the released
->   makedumpfile 1.5.1
-> - 121207.vmcore_pagescans.sles applies to a 3.0.13 kernel
-> - 121207.vmcore_pagescans.rhel applies to a 2.6.32 kernel
-> 
+Updated from kernel 3.6.10 to 3.7.1 and encountered the following when
+recompiling media_build dvb drivers:
 
-I used the same patch set on the benchmark.
-
-BTW, I have continuously reservation issue, so I think I cannot use
-terabyte memory machine at least in this year.
-
-Also, your patch set is doing ioremap per a chunk of memory map,
-i.e. a number of consequtive pages at the same time. On your terabyte
-machines, how large they are? We have memory consumption issue on the
-2nd kernel so we must decrease amount of memory used. But looking into
-ioremap code quickly, it looks not using 2MB or 1GB pages to
-remap. This means more than tera bytes page table is generated. Or
-have you probably already investigated this?
-
-BTW, my idea to solve this issue are two:
-
-1) make linear direct mapping for old memory, and acess the old memory
-via the linear direct mapping, not by ioremap.
-
-  - adding remap code in vmcore, or passing the regions that need to
-    be remapped using memmap= kernel option to tell the 2nd kenrel to
-    map them in addition.
-
-Or,
-
-2) Support 2MB or 1GB pages in ioremap.
-
-Thanks.
-HATAYAMA, Daisuke
-
+include/uapi/linux/usb/ch9.h:597:77: error: expected declaration
+specifiers or '...' before '(' token
