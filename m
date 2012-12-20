@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab2LTFea (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 00:34:30 -0500
-Received: from www.maurer-it.com ([213.129.239.114]:47869 "EHLO
-	proxmox.maurer-it.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab2LTFeZ convert rfc822-to-8bit (ORCPT
+	id S1752272Ab2LTFfE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 00:35:04 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:56539 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2LTFe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 00:34:25 -0500
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 00:34:25 EST
-From: Dietmar Maurer <dietmar@proxmox.com>
-To: Luiz Capitulino <lcapitulino@redhat.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: Michal Hocko <mhocko@suse.cz>, "aquini@redhat.com" <aquini@redhat.com>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        "agl@us.ibm.com" <agl@us.ibm.com>,
-        "amit.shah@redhat.com" <amit.shah@redhat.com>,
-        "kirill@shutemov.name" <kirill@shutemov.name>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: [Qemu-devel] [RFC 3/3] virtio-balloon: add auto-ballooning
-	support
-Thread-Topic: [Qemu-devel] [RFC 3/3] virtio-balloon: add auto-ballooning
-	support
-Thread-Index: AQHN3aewsF1keFIa8EWPaRBQL7q7SZgf7HeAgAE8ILA=
-Date: Thu, 20 Dec 2012 05:24:12 +0000
-Message-ID: <24E144B8C0207547AD09C467A8259F75578B8BD8@lisa.maurer-it.com>
-References: <1355861815-2607-1-git-send-email-lcapitulino@redhat.com>
-	<1355861815-2607-4-git-send-email-lcapitulino@redhat.com>
-	<20121218225330.GA28297@lizard.mcd00620.sjc.wayport.net>
- <20121219093039.51831f6f@doriath.home>
-In-Reply-To: <20121219093039.51831f6f@doriath.home>
-Accept-Language: en-US, de-AT
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Dec 2012 00:34:58 -0500
+Date: Wed, 19 Dec 2012 21:37:57 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Durgadoss R <durgadoss.r@intel.com>
+Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hongbo.zhang@linaro.org, wni@nvidia.com
+Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
+Message-ID: <20121220053757.GD28007@kroah.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Wow, you're fast! And I'm glad that it works for you, so we have two
-> > full-featured mempressure cgroup users already.
+On Tue, Dec 18, 2012 at 02:59:29PM +0530, Durgadoss R wrote:
+> This patch is a v1 based on the RFC submitted here:
+> https://patchwork.kernel.org/patch/1758921/
 > 
-> Thanks, although I think we need more testing to be sure this does what we
-> want. I mean, the basic mechanics does work, but my testing has been very
-> light so far.
+> This patch set is based on Rui's -thermal tree, and is
+> tested on a Core-i5 and an Atom netbook.
+> 
+> This series contains 8 patches:
+> Patch 1/8: Creates new sensor level APIs
+> Patch 2/8: Creates new zone level APIs. The existing tzd structure is
+>            kept as such for clarity and compatibility purposes.
+> Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
+>            existing tcd structure need not be modified.
+> Patch 4/8: Adds a thermal_trip sysfs node, which exposes various trip
+>            points for all sensors present in a zone.
+> Patch 5/8: Adds a thermal_map sysfs node. It is a compact representation
+>            of the binding relationship between a sensor and a cdev,
+>            within a zone.
+> Patch 6/8: Creates Documentation for the new APIs. A new file is
+>            created for clarity. Final goal is to merge with the existing
+>            file or refactor the files, as whatever seems appropriate.
 
-Is it possible to assign different weights for different VMs, something like the vmware 'shares' setting?
+The documentation for sysfs files needs to be in Documentation/ABI,
+please add new entries there if you are creating new sysfs files.
 
+thanks,
+
+greg k-h
