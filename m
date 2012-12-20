@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575Ab2LTUYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:24:19 -0500
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:46481 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab2LTUYI (ORCPT
+	id S1751742Ab2LTU1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:27:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52623 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab2LTU1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:24:08 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Simon Glass <sjg@chromium.org>, linux-input@vger.kernel.org,
-        Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, Roland Stigge <stigge@antcom.de>,
-        linux-doc@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] RFC: input: Extend matrix-keypad device tree binding
-Date: Thu, 20 Dec 2012 12:23:58 -0800
-Message-Id: <1356035039-21653-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 20 Dec 2012 15:27:48 -0500
+Date: Thu, 20 Dec 2012 12:27:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2] mm: limit mmu_gather batching to fix soft lockups on
+ !CONFIG_PREEMPT
+Message-Id: <20121220122746.72d889fd.akpm@linux-foundation.org>
+In-Reply-To: <20121220124710.GA31912@dhcp22.suse.cz>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+	<20121218140219.45867ddd.akpm@linux-foundation.org>
+	<20121218235042.GA10350@dhcp22.suse.cz>
+	<20121218160030.baf723aa.akpm@linux-foundation.org>
+	<20121219150423.GA12888@dhcp22.suse.cz>
+	<20121219131316.7d13fcb1.akpm@linux-foundation.org>
+	<20121220124710.GA31912@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some matrix keypad drivers can support different numbers of rows and
-columns. Add a generic binding for these.
+On Thu, 20 Dec 2012 13:47:10 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Also define properties for the repeat rate, to allow a sane baseline to
-be set up for the driver.
+> > > + */
+> > > +#if defined(CONFIG_PREEMPT_COUNT)
+> > > +#define MAX_GATHER_BATCH_COUNT	(UINT_MAX)
+> > > +#else
+> > > +#define MAX_GATHER_BATCH_COUNT	(((1UL<<(30-PAGE_SHIFT))/MAX_GATHER_BATCH))
+> > 
+> > Geeze.  I spent waaaaay too long staring at that expression trying to
+> > work out "how many pages is in a batch" and gave up.
+> > 
+> > Realistically, I don't think we need to worry about CONFIG_PREEMPT here
+> > - if we just limit the thing to, say, 64k pages per batch then that
+> > will be OK for preemptible and non-preemptible kernels. 
+> 
+> I wanted the fix to be as non-intrusive as possible so I didn't want to
+> touch PREEMPT (which is default in many configs) at all. I am OK to a
+> single limit of course.
 
-Implementation note:
+non-intrusive is nice, but best-implementation is nicer.
 
-In order to implement this binding in the kernel, we will need to modify
-matrix_keypad_() to look up the number of rows and cols in
-the keymap. Perhaps this could be done by passing 0 for these parameters?
-Many of the parameters can already be set to NULL. Ick.
+> > The performance difference between "64k" and "infinite" will be
+> > miniscule and unmeasurable.
+> > 
+> > Also, the batch count should be independent of PAGE_SIZE.  Because
+> > PAGE_SIZE can vary by a factor of 16 and you don't want to fix the
+> > problem on 4k page size but leave it broken on 64k page size.
+> 
+> MAX_GATHER_BATCH depends on the page size so I didn't want to differ
+> without a good reason.
 
-For the key repeat feature, we need to set this after the input device
-is registered. So we would need to add a matrix_keypad_setup_input() or
-similar to be called by the driver after input_register_device(). I am
-less keen on that idea, and less again on the alternative of perhaps
-matrix_keypad_register_device() which does input_register_device() and
-then sets up the key repeat. Thoughts?
+There's a good reason!  PAGE_SIZE can vary by a factor of 16, and if
+this results in the unpreemptible-CPU-effort varying by a factor of 16
+then that's bad, and we should change things so the
+unpreemptible-CPU-effort is independent of PAGE_SIZE.
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- .../devicetree/bindings/input/matrix-keymap.txt    |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/input/matrix-keymap.txt b/Documentation/devicetree/bindings/input/matrix-keymap.txt
-index 3cd8b98..b953d27 100644
---- a/Documentation/devicetree/bindings/input/matrix-keymap.txt
-+++ b/Documentation/devicetree/bindings/input/matrix-keymap.txt
-@@ -9,6 +9,16 @@ Required properties:
- 	row << 24 | column << 16 | key-code
- 
- Optional properties:
-+Properties for the number of rows and columns are optional because some
-+drivers will use fixed values for these.
-+- keypad,num-rows: Number of row lines connected to the keypad controller.
-+- keypad,num-columns: Number of column lines connected to the keypad
-+  controller.
-+- keypad,repeat-delay-ms: Number of milliseconds of delay before the first
-+  keyboard repeat when a key is held down.
-+- keypad,repeat-rate-ms: Number of milliseconds between each subsequent
-+  keyboard repeat when a key is held down.
-+
- Some users of this binding might choose to specify secondary keymaps for
- cases where there is a modifier key such as a Fn key. Proposed names
- for said properties are "linux,fn-keymap" or with another descriptive
-@@ -17,3 +27,7 @@ word for the modifier other from "Fn".
- Example:
- 	linux,keymap = < 0x00030012
- 			 0x0102003a >;
-+	keypad,num-rows = <2>;
-+	keypad,num-columns = <8>;
-+	keypad,repeat-delay-ms = <600>;
-+	keypad,repeat-rate-ms = <60>;
--- 
-1.7.7.3
 
