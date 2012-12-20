@@ -1,42 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab2LTRsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 12:48:20 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:42472 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab2LTRsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 12:48:14 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Woody Wu <narkewoody@gmail.com>
-Subject: Re: S3C2416 LCD Support
-Date: Thu, 20 Dec 2012 18:48:17 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-References: <20121220165623.GA7008@zuhnb712>
-In-Reply-To: <20121220165623.GA7008@zuhnb712>
+	id S1751802Ab2LTRsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 12:48:33 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:62598 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2LTRsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 12:48:15 -0500
+Date: Thu, 20 Dec 2012 09:51:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+Message-ID: <20121220175116.GB32061@kroah.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+ <1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
+ <20121220054201.GE28007@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CB6C@BGSMSX101.gar.corp.intel.com>
+ <20121220161202.GA29796@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CF1F@BGSMSX101.gar.corp.intel.com>
+ <20121220163839.GA30120@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CF67@BGSMSX101.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212201848.18219.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB5924CF67@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 20. Dezember 2012, 17:56:23 schrieb Woody Wu:
-> Hi, List
+On Thu, Dec 20, 2012 at 04:58:32PM +0000, R, Durgadoss wrote:
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Thursday, December 20, 2012 10:09 PM
+> > To: R, Durgadoss
+> > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > hongbo.zhang@linaro.org; wni@nvidia.com
+> > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> > 
+> > On Thu, Dec 20, 2012 at 04:25:32PM +0000, R, Durgadoss wrote:
+> > >
+> > > > -----Original Message-----
+> > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > > Sent: Thursday, December 20, 2012 9:42 PM
+> > > > To: R, Durgadoss
+> > > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > > hongbo.zhang@linaro.org; wni@nvidia.com
+> > > > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> > > >
+> > > > On Thu, Dec 20, 2012 at 07:52:03AM +0000, R, Durgadoss wrote:
+> > > > > > On Tue, Dec 18, 2012 at 02:59:33PM +0530, Durgadoss R wrote:
+> > > > > > > This patch adds a thermal_trip directory under
+> > > > > > > /sys/class/thermal/zoneX. This directory contains
+> > > > > > > the trip point values for sensors bound to this
+> > > > > > > zone.
+> > > > > >
+> > > > > > Eeek, you just broke userspace tools that now can no longer see
+> > these
+> > > > > > entries :(
+> > > > > >
+> > > > > > Why do you need to create a subdirectory?  As you found out, doing
+> > so
+> > > > > > isn't the easiest, right?  That is on purpose.
+> > > > >
+> > > > > Yes, I observed the complexity.
+> > > > >
+> > > > > >
+> > > > > > I really wouldn't recommend doing this at all, please stick within the
+> > > > > > 'struct device' framework here, don't create new kobjects and hang
+> > sysfs
+> > > > > > files off of them.
+> > > > >
+> > > > > But, we cannot put all _trip directly under ZoneX directory.
+> > > >
+> > > > Why not?  What is preventing this?
+> > > >
+> > > > > We can remove the thermal_trip directory, and put sensorY_trip under
+> > > > > /sys/class/thermal/zoneX/.  But this sensorY_trip needs to be a
+> > > > > directory which has four sysfs nodes named, active, passive, crit,
+> > > > > hot.
+> > > > >
+> > > > > Rui, What do you think about this ?
+> > > > >
+> > > > > The only other way I see, is directly put
+> > > > sensorY_trip_[active/passive/hot/crit]
+> > > > > which will create way too many nodes, under
+> > /sys/class/thermal/zoneX/.
+> > > >
+> > > > What is "too many"?  20000?  50000?  How many are we talking about
+> > here?
+> > >
+> > > Not in 1000's though..
+> > >
+> > > > What is the limiting factor that is preventing this from all going into
+> > > > one directory?
+> > >
+> > > We support a MAX of 12 sensors per zone today, which will lead to
+> > > 12 * 4, 48 nodes under this directory named
+> > > sensorY_trip_[active/passive/hot/crit], besides the other nodes.
+> > 
+> > That's fine, we can easily support that many files, have you tried this
+> > already?
 > 
-> Does the current kernel 3.7.1 support S3C2416 (it's *6* not 0) LCD and
-> touch screen? I saw the help text of the CONFIG_FB_S3C says it only
-> supports S3C6400 and S3C6410.
+> Yes, in fact, this is sort of what was the old implementation..
+> although with different sysfs nodes.
 
-if you look in the mach-smd2416.c file you'll see that it uses the s3c-fb 
-driver. I think the Kconfig text is just out of data, as the support for 
-s3c2416 and s3c2443 was added later.
+What "old" implementation, one that is in-kernel?  Are you changing the
+user interface here?
 
-So it should work, but you'll have to try it for yourself :-)
+thanks,
 
-As for the touchscreen, it probably depends on the type used.
-
-
-Heiko
+greg k-h
