@@ -1,167 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab2LTPmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:42:32 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:48309 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2LTPmW (ORCPT
+	id S1751450Ab2LTPsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:48:03 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:43123 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab2LTPr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:42:22 -0500
+	Thu, 20 Dec 2012 10:47:56 -0500
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 10:47:56 EST
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v4 03/18] perf/x86: add flags to event constraints
-Date: Thu, 20 Dec 2012 16:41:33 +0100
-Message-Id: <1356018108-6081-4-git-send-email-eranian@google.com>
+Subject: [PATCH v4 00/18] perf: add memory access sampling support
+Date: Thu, 20 Dec 2012 16:41:30 +0100
+Message-Id: <1356018108-6081-1-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1356018108-6081-1-git-send-email-eranian@google.com>
-References: <1356018108-6081-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a flags field to each event constraint.
-It can be used to store event specific features which can
-then later be used by scheduling code or low-level x86 code.
+This patch series had a new feature to the kernel perf_events
+interface and corresponding user level tool, perf.
 
-The flags are propagated into event->hw.flags during the
-get_event_constraint() call. They are cleared during the
-put_event_constraint() call.
+With this patch, it is possible to sample (not trace) memory
+accesses (load, store). For loads, the instruction and data
+addresses are captured along with the latency and data source.
+For stores, the instruction and data addresses are capture
+along with limited cache and TLB information.
 
-This mechanism is going to be used by the PEBS-LL patches.
-It avoids defining yet another table to hold event specific
-information.
+For load data source, the memory hierarchy level, the tlb, snoop
+and lock information is captured.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event.c              |    2 +-
- arch/x86/kernel/cpu/perf_event.h              |    8 +++++---
- arch/x86/kernel/cpu/perf_event_intel.c        |    5 ++++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c     |    4 +++-
+Although the perf_event interface is extended in a generic manner,
+sampling memory accesses requires HW support. The current patches
+implement the feature on Intel processors starting with Nehalem.
+The patches leverage the PEBS Load Latency and Precise Store
+mechanisms. Precise Store is present only on Sandy Bridge and
+Ivy Bridge based processors.
+
+The perf tool is extended to make capturing and analyzing the
+data easier with a new command: perf mem.
+
+$ perf mem -t load rec triad
+$ perf mem -t load rep --stdio
+# Samples: 19K of event 'cpu/mem-loads/pp'
+# Total cost : 1013994
+# Sort order : cost,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked
+#
+# Overhead      Samples     Cost  Memory access Symbol      Shared Obj  Data Symbol             Data Object Snoop  TLB access   Locked
+# ........  ...........  .......  ............. ..........  ........... ......................  ........... ...... ............ ......
+#
+     0.10%            1      986  LFB hit       [.] triad   triad       [.] 0x00007f67dffe8038  [unknown]    None  L1 or L2 hit  No    
+     0.09%            1      890  LFB hit       [.] triad   triad       [.] 0x00007f67df91a750  [unknown]    None  L1 or L2 hit  No    
+     0.08%            1      826  LFB hit       [.] triad   triad       [.] 0x00007f67e288fba8  [unknown]    None  L1 or L2 hit  No    
+     0.08%            1      825  LFB hit       [.] triad   triad       [.] 0x00007f67dea28c80  [unknown]    None  L1 or L2 hit  No    
+     0.08%            1      787  LFB hit       [.] triad   triad       [.] 0x00007f67df055a60  [unknown]    None  L1 or L2 hit  No    
+
+The perf mem command is a wrapper around perf record/report. It passes the
+right options to the report and record commands. Note that the TUI mode is
+supported.
+
+One powerful feature of perf is that users can toy with sort order to display
+the information in different format or from a different angle. This is particularly
+useful with memory sampling:
+
+$ perf mem -t load rep --sort=mem
+# Samples: 19K of event 'cpu/mem-loads/pp'
+# Total cost : 1013994
+# Sort order : mem
+#
+# Overhead      Samples             Memory access
+# ........  ...........  ........................
+#
+    85.26%        10633  LFB hit                 
+     7.35%         8151  L1 hit                  
+     3.13%          383  L3 hit                  
+     3.09%          195  Local RAM hit           
+     1.16%          259  L2 hit                  
+     0.00%            4  Uncached hit            
+
+Or if one is interested in the data view:
+$ perf mem -t load rep --sort=symbol_daddr,cost
+# Samples: 19K of event 'cpu/mem-loads/pp'
+# Total cost : 1013994
+# Sort order : symbol_daddr,cost
+#
+# Overhead      Samples             Data Symbol     Cost
+# ........  ...........  ......................  .......
+#
+     0.10%            1  [.] 0x00007f67dffe8038      986
+     0.09%            1  [.] 0x00007f67df91a750      890
+     0.08%            1  [.] 0x00007f67e288fba8      826
+
+
+One note on the cost displayed: On Intel processors with PEBS Load Latency, as described
+in the SDM, the cost encompasses the number of cycles from dispatch to Globally Observable
+(GO) state. That means, that it includes OOO execution. It is not usual to see L1D Hits
+with a cost of > 100 cycles. Always look at the memory level for an approximation of the
+access penalty, then interpret the cost value accordingly.
+
+Data symbolization is working for initialized global variables. Dynamically allocated
+data and bss symbolization is currently non-functional.
+
+There is no cost associated with stores.
+
+In v2, we leverage some of Andi Kleen's Haswell patches, namely the weighted
+samples and perf tool event parser fixes. We  also introduce PERF_RECORD_MISC_DATA_MMAP
+to tag mmaps for data vs. code. This helps the perf tool distinguish data. vs. code
+mmaps (and therefore symbols). We have also integrated the feedback from v1. Note that in
+v2 data symbol resolution is not yet fully operational, but there is a slight improvement.
+
+In v3, we rebased the patch on 3.7.0-rc6 which includes certain of Nahyung's patches.
+
+In v4, we rebase to v3.7 tip and also included the fixes from Namhyung Kim for
+symbolization of data addresses. We now have accesses to global variables working.
+
+Andi Kleen (2):
+  perf, x86: Support CPU specific sysfs events
+  perf, core: Add a concept of a weightened sample
+
+Namhyung Kim (2):
+  perf tools: Ignore ABS symbols when loading data maps
+  perf tools: Fix output of symbol_daddr offset
+
+Stephane Eranian (14):
+  perf/x86: improve sysfs event mapping with event string
+  perf/x86: add flags to event constraints
+  perf: add minimal support for PERF_SAMPLE_WEIGHT
+  perf: add support for PERF_SAMPLE_ADDR in dump_sampple()
+  perf: add generic memory sampling interface
+  perf/x86: add memory profiling via PEBS Load Latency
+  perf/x86: export PEBS load latency threshold register to sysfs
+  perf/x86: add support for PEBS Precise Store
+  perf tools: add mem access sampling core support
+  perf report: add support for mem access profiling
+  perf record: add support for mem access profiling
+  perf tools: add new mem command for memory access profiling
+  perf: add PERF_RECORD_MISC_MMAP_DATA to RECORD_MMAP
+  perf tools: detect data vs. text mappings
+
+ arch/x86/include/uapi/asm/msr-index.h         |    1 +
+ arch/x86/kernel/cpu/perf_event.c              |   63 +++--
+ arch/x86/kernel/cpu/perf_event.h              |   62 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c        |   34 ++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     |  182 +++++++++++++-
  arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- include/linux/perf_event.h                    |    1 +
- 6 files changed, 15 insertions(+), 7 deletions(-)
+ include/linux/perf_event.h                    |    5 +
+ include/uapi/linux/perf_event.h               |   74 +++++-
+ kernel/events/core.c                          |   15 ++
+ tools/perf/Makefile                           |    1 +
+ tools/perf/builtin-mem.c                      |  238 ++++++++++++++++++
+ tools/perf/builtin-record.c                   |    2 +
+ tools/perf/builtin-report.c                   |  131 +++++++++-
+ tools/perf/builtin.h                          |    1 +
+ tools/perf/command-list.txt                   |    1 +
+ tools/perf/perf.c                             |    1 +
+ tools/perf/perf.h                             |    1 +
+ tools/perf/util/event.h                       |    2 +
+ tools/perf/util/evsel.c                       |   15 ++
+ tools/perf/util/hist.c                        |   67 ++++-
+ tools/perf/util/hist.h                        |   13 +
+ tools/perf/util/machine.c                     |   10 +-
+ tools/perf/util/session.c                     |   44 ++++
+ tools/perf/util/session.h                     |    4 +
+ tools/perf/util/sort.c                        |  324 ++++++++++++++++++++++++-
+ tools/perf/util/sort.h                        |   10 +-
+ tools/perf/util/symbol-elf.c                  |    3 +
+ tools/perf/util/symbol.h                      |    7 +
+ 28 files changed, 1264 insertions(+), 49 deletions(-)
+ create mode 100644 tools/perf/builtin-mem.c
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f4057bb..1a3f693 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1493,7 +1493,7 @@ static int __init init_hw_perf_events(void)
- 
- 	unconstrained = (struct event_constraint)
- 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
--				   0, x86_pmu.num_counters, 0);
-+				   0, x86_pmu.num_counters, 0, 0);
- 
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3f4380c..3f10cfe 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -59,6 +59,7 @@ struct event_constraint {
- 	u64	cmask;
- 	int	weight;
- 	int	overlap;
-+	int	flags;
- };
- 
- struct amd_nb {
-@@ -170,16 +171,17 @@ struct cpu_hw_events {
- 	void				*kfree_on_online;
- };
- 
--#define __EVENT_CONSTRAINT(c, n, m, w, o) {\
-+#define __EVENT_CONSTRAINT(c, n, m, w, o, f) {\
- 	{ .idxmsk64 = (n) },		\
- 	.code = (c),			\
- 	.cmask = (m),			\
- 	.weight = (w),			\
- 	.overlap = (o),			\
-+	.flags = f,			\
- }
- 
- #define EVENT_CONSTRAINT(c, n, m)	\
--	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0)
-+	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
- 
- /*
-  * The overlap flag marks event constraints with overlapping counter
-@@ -203,7 +205,7 @@ struct cpu_hw_events {
-  * and its counter masks must be kept at a minimum.
-  */
- #define EVENT_CONSTRAINT_OVERLAP(c, n, m)	\
--	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1)
-+	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1, 0)
- 
- /*
-  * Constraint on the Event code.
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 93b9e11..57d6527 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1367,8 +1367,10 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 
- 	if (x86_pmu.event_constraints) {
- 		for_each_event_constraint(c, x86_pmu.event_constraints) {
--			if ((event->hw.config & c->cmask) == c->code)
-+			if ((event->hw.config & c->cmask) == c->code) {
-+				event->hw.flags |= c->flags;
- 				return c;
-+			}
- 		}
- 	}
- 
-@@ -1413,6 +1415,7 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
- static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
- 					struct perf_event *event)
- {
-+	event->hw.flags = 0;
- 	intel_put_shared_regs_event_constraints(cpuc, event);
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 826054a..f30d85b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -430,8 +430,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- 
- 	if (x86_pmu.pebs_constraints) {
- 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
--			if ((event->hw.config & c->cmask) == c->code)
-+			if ((event->hw.config & c->cmask) == c->code) {
-+				event->hw.flags |= c->flags;
- 				return c;
-+			}
- 		}
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 3cf3d97..cc39e64 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2438,7 +2438,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 
- 	type->unconstrainted = (struct event_constraint)
- 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
--				0, type->num_counters, 0);
-+				0, type->num_counters, 0, 0);
- 
- 	for (i = 0; i < type->num_boxes; i++) {
- 		pmus[i].func_id = -1;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6bfb2faa..484cfbc 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -128,6 +128,7 @@ struct hw_perf_event {
- 			int		event_base_rdpmc;
- 			int		idx;
- 			int		last_cpu;
-+			int		flags;
- 
- 			struct hw_perf_event_extra extra_reg;
- 			struct hw_perf_event_extra branch_reg;
 -- 
 1.7.9.5
 
