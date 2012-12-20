@@ -1,106 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab2LTSt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:49:59 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:64817 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab2LTStx (ORCPT
+	id S1752158Ab2LTS4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:56:34 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:49641 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LTS4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:49:53 -0500
-From: Jonathan Kliegman <kliegs@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org,
-        Jonathan Kliegman <kliegs@chromium.org>
-Subject: [PATCH] modpost: Add flag -f for making section mismatches fatal
-Date: Thu, 20 Dec 2012 13:49:24 -0500
-Message-Id: <1356029364-11346-1-git-send-email-kliegs@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 20 Dec 2012 13:56:25 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>
+Subject: [PATCH 01/24] context_tracking: Add comments on interface and internals
+Date: Thu, 20 Dec 2012 19:32:48 +0100
+Message-Id: <1356028391-14427-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The section mismatch warning can be easy to miss during the kernel build
-process.  Allow it to be marked as fatal to be easily caught and prevent
-bugs from slipping in.
+This subsystem lacks many explanations on its purpose and
+design. Add these missing comments.
 
-Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 ---
- scripts/Makefile.modpost |    1 +
- scripts/mod/modpost.c    |   24 +++++++++++++++++-------
- 2 files changed, 18 insertions(+), 7 deletions(-)
+ kernel/context_tracking.c |   73 ++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 63 insertions(+), 10 deletions(-)
 
-diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
-index a1cb022..1e496d3 100644
---- a/scripts/Makefile.modpost
-+++ b/scripts/Makefile.modpost
-@@ -81,6 +81,7 @@ modpost = scripts/mod/modpost                    \
-  $(if $(KBUILD_EXTMOD),-o $(modulesymfile))      \
-  $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)      \
-  $(if $(KBUILD_EXTMOD)$(KBUILD_MODPOST_WARN),-w) \
-+ $(if $(CONFIG_SECTION_MISMATCH_FATAL),,-f)      \
-  $(if $(cross_build),-c)
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index e0e07fd..9f6c38f 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -1,3 +1,19 @@
++/*
++ * Context tracking: Probe on high level context boundaries such as kernel
++ * and userspace. This includes syscalls and exceptions entry/exit.
++ *
++ * This is used by RCU to remove its dependency on the timer tick while a CPU
++ * runs in userspace.
++ *
++ *  Started by Frederic Weisbecker:
++ *
++ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ *
++ * Many thanks to Gilad Ben-Yossef, Paul McKenney, Ingo Molnar, Andrew Morton,
++ * Steven Rostedt, Peter Zijlstra for suggestions and improvements.
++ *
++ */
++
+ #include <linux/context_tracking.h>
+ #include <linux/rcupdate.h>
+ #include <linux/sched.h>
+@@ -6,8 +22,8 @@
  
- quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index ff36c50..5648882 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -42,6 +42,7 @@ static int warn_unresolved = 0;
- /* How a symbol is exported */
- static int sec_mismatch_count = 0;
- static int sec_mismatch_verbose = 1;
-+static int sec_mismatch_fatal = 0;
+ struct context_tracking {
+ 	/*
+-	 * When active is false, hooks are not set to
+-	 * minimize overhead: TIF flags are cleared
++	 * When active is false, hooks are unset in order
++	 * to minimize overhead: TIF flags are cleared
+ 	 * and calls to user_enter/exit are ignored. This
+ 	 * may be further optimized using static keys.
+ 	 */
+@@ -24,6 +40,15 @@ static DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
+ #endif
+ };
  
- enum export {
- 	export_plain,      export_unused,     export_gpl,
-@@ -2126,7 +2127,7 @@ int main(int argc, char **argv)
- 	struct ext_sym_list *extsym_iter;
- 	struct ext_sym_list *extsym_start = NULL;
++/**
++ * user_enter - Inform the context tracking that the CPU is going to
++ *              enter userspace mode.
++ *
++ * This function must be called right before we switch from the kernel
++ * to userspace, when it's guaranteed the remaining kernel instructions
++ * to execute won't use any RCU read side critical section because this
++ * function sets RCU in extended quiescent state.
++ */
+ void user_enter(void)
+ {
+ 	unsigned long flags;
+@@ -39,40 +64,68 @@ void user_enter(void)
+ 	if (in_interrupt())
+ 		return;
  
--	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:")) != -1) {
-+	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:f")) != -1) {
- 		switch (opt) {
- 		case 'i':
- 			kernel_read = optarg;
-@@ -2164,6 +2165,9 @@ int main(int argc, char **argv)
- 		case 'w':
- 			warn_unresolved = 1;
- 			break;
-+		case 'f':
-+			sec_mismatch_fatal = 1;
-+			break;
- 		default:
- 			exit(1);
- 		}
-@@ -2210,14 +2214,20 @@ int main(int argc, char **argv)
- 		sprintf(fname, "%s.mod.c", mod->name);
- 		write_if_changed(&buf, fname);
++	/* Kernel threads aren't supposed to go to userspace */
+ 	WARN_ON_ONCE(!current->mm);
+ 
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.active) &&
+ 	    __this_cpu_read(context_tracking.state) != IN_USER) {
+ 		__this_cpu_write(context_tracking.state, IN_USER);
++		/*
++		 * At this stage, only low level arch entry code remains and
++		 * then we'll run in userspace. We can assume there won't be
++		 * any RCU read-side critical section until the next call to
++		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
++		 * on the tick.
++		 */
+ 		rcu_user_enter();
  	}
--
- 	if (dump_write)
- 		write_dump(dump_write);
--	if (sec_mismatch_count && !sec_mismatch_verbose)
--		warn("modpost: Found %d section mismatch(es).\n"
--		     "To see full details build your kernel with:\n"
--		     "'make CONFIG_DEBUG_SECTION_MISMATCH=y'\n",
--		     sec_mismatch_count);
-+	if (sec_mismatch_count) {
-+		if (!sec_mismatch_verbose) {
-+			warn("modpost: Found %d section mismatch(es).\n"
-+			     "To see full details build your kernel with:\n"
-+			     "'make CONFIG_DEBUG_SECTION_MISMATCH=y'\n",
-+			     sec_mismatch_count);
-+		}
-+		if (sec_mismatch_fatal) {
-+			fatal("modpost: Section mismatches detected.\n"
-+			      "Unset CONFIG_SECTION_MISMATCH_FATAL to allow them.\n");
-+		}
-+	}
- 
- 	return err;
+ 	local_irq_restore(flags);
  }
+ 
++
++/**
++ * user_exit - Inform the context tracking that the CPU is
++ *             exiting userspace mode and entering the kernel.
++ *
++ * This function must be called after we entered the kernel from userspace
++ * before any use of RCU read side critical section. This potentially include
++ * any high level kernel code like syscalls, exceptions, signal handling, etc...
++ *
++ * This call supports re-entrancy. This way it can be called from any exception
++ * handler without needing to know if we came from userspace or not.
++ */
+ void user_exit(void)
+ {
+ 	unsigned long flags;
+ 
+-	/*
+-	 * Some contexts may involve an exception occuring in an irq,
+-	 * leading to that nesting:
+-	 * rcu_irq_enter() rcu_user_exit() rcu_user_exit() rcu_irq_exit()
+-	 * This would mess up the dyntick_nesting count though. And rcu_irq_*()
+-	 * helpers are enough to protect RCU uses inside the exception. So
+-	 * just return immediately if we detect we are in an IRQ.
+-	 */
+ 	if (in_interrupt())
+ 		return;
+ 
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
+ 		__this_cpu_write(context_tracking.state, IN_KERNEL);
++		/*
++		 * We are going to run code that may use RCU. Inform
++		 * RCU core about that (ie: we may need the tick again).
++		 */
+ 		rcu_user_exit();
+ 	}
+ 	local_irq_restore(flags);
+ }
+ 
++
++/**
++ * context_tracking_task_switch - context switch the syscall hooks
++ *
++ * The context tracking uses the syscall slow path to implement its user-kernel
++ * boundaries hooks on syscalls. This way it doesn't impact the syscall fast
++ * path on CPUs that don't do context tracking.
++ *
++ * But we need to clear the flag on the previous task because it may later
++ * migrate to some CPU that doesn't do the context tracking. As such the TIF
++ * flag may not be desired there.
++ */
+ void context_tracking_task_switch(struct task_struct *prev,
+ 			     struct task_struct *next)
+ {
 -- 
-1.7.7.3
+1.7.5.4
 
