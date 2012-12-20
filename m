@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2LTTS3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:18:29 -0500
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:62367 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab2LTTSK (ORCPT
+	id S1752678Ab2LTTTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:19:11 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21542 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab2LTTNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:18:10 -0500
-Date: Thu, 20 Dec 2012 11:18:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup: remove redundant check
-Message-ID: <20121220191803.GA14527@htj.dyndns.org>
+	Thu, 20 Dec 2012 14:13:55 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] wireless: mwifiex: remove unreachable paths
+Date: Thu, 20 Dec 2012 14:11:25 -0500
+Message-Id: <1356030701-16284-17-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
 References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
- <1356030701-16284-23-git-send-email-sasha.levin@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356030701-16284-23-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 02:11:31PM -0500, Sasha Levin wrote:
-> We already know that 'event' is non-NULL, remove the redundant check.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+We know 'firmware' is non-NULL from the beginning of mwifiex_prog_fw_w_helper,
+remove all !firmware paths from the rest of the function.
 
-I don't know.  I kinda like that test there.  It's not an error path
-and tearing down everything which could have been allocated.  If the
-test not being used is bothering, convert return -ENOMEM to goto fail?
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ drivers/net/wireless/mwifiex/usb.c | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
+index 63ac9f2..8bd7098 100644
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -836,23 +836,14 @@ static int mwifiex_prog_fw_w_helper(struct mwifiex_adapter *adapter,
+ 			dlen = 0;
+ 		} else {
+ 			/* copy the header of the fw_data to get the length */
+-			if (firmware)
+-				memcpy(&fwdata->fw_hdr, &firmware[tlen],
+-				       sizeof(struct fw_header));
+-			else
+-				mwifiex_get_fw_data(adapter, tlen,
+-						    sizeof(struct fw_header),
+-						    (u8 *)&fwdata->fw_hdr);
++			memcpy(&fwdata->fw_hdr, &firmware[tlen],
++			       sizeof(struct fw_header));
+ 
+ 			dlen = le32_to_cpu(fwdata->fw_hdr.data_len);
+ 			dnld_cmd = le32_to_cpu(fwdata->fw_hdr.dnld_cmd);
+ 			tlen += sizeof(struct fw_header);
+ 
+-			if (firmware)
+-				memcpy(fwdata->data, &firmware[tlen], dlen);
+-			else
+-				mwifiex_get_fw_data(adapter, tlen, dlen,
+-						    (u8 *)fwdata->data);
++			memcpy(fwdata->data, &firmware[tlen], dlen);
+ 
+ 			fwdata->seq_num = cpu_to_le32(fw_seqnum);
+ 			tlen += dlen;
 -- 
-tejun
+1.8.0
+
