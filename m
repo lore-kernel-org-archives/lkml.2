@@ -1,119 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab2LTGgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:36:47 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:23027 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2LTGgk (ORCPT
+	id S1752753Ab2LTGh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:37:29 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:51939 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab2LTGhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:36:40 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-cf-50d2b1f67e95
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/5] backlight: ld9040: use sleep instead of delay
-Date: Thu, 20 Dec 2012 15:36:38 +0900
-Message-id: <000f01cdde7c$5d4e83b0$17eb8b10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3efF04bK/W++SuRFi0yIAkd2rsTA==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zA91vGy8FGDy/Ym1xedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyNl61K2jnrfjbuY61gXELVxcjJ4eEgInE/d0zWCBsMYkL99az
-	dTFycQgJLGOUWLj5HCNM0ZN3B1ggEtMZJaZNfssO4cxmknjz7wcTSBWbgJrEly+H2UFsEYEI
-	ieYZs5i7GDk4mAV8JDbP0gQJCws4SWxf0Ac2lEVAVWLLxV1grbwCthIXF/1jg7AFJX5Mvgd2
-	EbOAlsT6nceZIGx5ic1r3oKNlBBQl3j0Vxdik57E9N8trBAlIhL7XryDGi8g8W3yIRaIclmJ
-	TQeYQS6WEGhnl9i94jgrxF+SEgdX3GCZwCg2C8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6Xn
-	GuoVJ+YWl+al6yXn525ihMSJ1A7GlQ0WhxgFOBiVeHgXTbsUIMSaWFZcmXuIUYKDWUmEd+Gt
-	iwFCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M4bySeENjYxMzE1MTc0tTc1McwkrivM0e
-	KQFCAumJJanZqakFqUUw45g4OKUaGBkrFhXayllmbxeJm8adVxfdeuk3I5N+8K7XpnxLLLue
-	V1pf5i6v21zy6Kv0ee/9M132Fba9sI7cWynVMHFjdvTHxom69dNrev8/ZX6wlm2yppPx+yDB
-	6Io5XN/9/rtMV4wLY/i9+UjUhGrVJJvqG4dvzci4U+bc85P1w91uO16NVwX1pS9/KrEUZyQa
-	ajEXFScCAPDKKWnAAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd1vGy8FGFx6YWZxedccNgdGj8+b
-	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYMzZetSto563427mOtYFx
-	C1cXIyeHhICJxJN3B1ggbDGJC/fWs3UxcnEICUxnlJg2+S07hDObSeLNvx9MIFVsAmoSX74c
-	ZgexRQQiJJpnzGLuYuTgYBbwkdg8SxMkLCzgJLF9QR8jiM0ioCqx5eIusFZeAVuJi4v+sUHY
-	ghI/Jt8DW8wsoCWxfudxJghbXmLzmrdgIyUE1CUe/dWF2KQnMf13CytEiYjEvhfvGCcwCsxC
-	MmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgKHwmtYNxZYPFIUYB
-	DkYlHt5F0y4FCLEmlhVX5h5ilOBgVhLhXXjrYoAQb0piZVVqUX58UWlOavEhRh+gRycyS4km
-	5wMTRF5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjGb70q5p
-	75OObJ1g6dmQumD7m9IZgjdE3Zp+86/55f+gb16T1LGJVwXLSlz28UYVGHdt66tcbCtYUeDR
-	vuzU9iscLWUzD/jfXZ19rf7l/U6hu8ZWcx+v9I71ffx3Pu9ryxu837i+zRE6efNE/lsegwqX
-	v1ZL1/ztXam2Jrf+9/zWYpF/gjmN2UosxRmJhlrMRcWJAAJfkVzvAgAA
-X-CFilter-Loop: Reflected
+	Thu, 20 Dec 2012 01:37:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAD=FV=WLVpwBo1g41BYwMUdedN3MJcmfaWwYow=RfsLC5bX1jg@mail.gmail.com>
+References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
+	<1355841786-13307-4-git-send-email-gautam.vivek@samsung.com>
+	<CAD=FV=WLVpwBo1g41BYwMUdedN3MJcmfaWwYow=RfsLC5bX1jg@mail.gmail.com>
+Date: Thu, 20 Dec 2012 12:07:19 +0530
+Message-ID: <CAFp+6iGe3Hz6OiVNDa=8c98CyNGaELfg-uRbCO0kFdpdv_gQpw@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] USB: ehci-s5p: Add phy driver support
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        yulgon.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        balbi@ti.com, kishon@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces mdelay with msleep to remove the busy loop
-waiting.
+Hi Doug,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/ld9040.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
-index 1cb3524..a52a6a7 100644
---- a/drivers/video/backlight/ld9040.c
-+++ b/drivers/video/backlight/ld9040.c
-@@ -78,7 +78,7 @@ static void ld9040_regulator_enable(struct ld9040 *lcd)
- 
- 		lcd->enabled = true;
- 	}
--	mdelay(pd->power_on_delay);
-+	msleep(pd->power_on_delay);
- out:
- 	mutex_unlock(&lcd->lock);
- }
-@@ -474,8 +474,9 @@ static int ld9040_panel_send_sequence(struct ld9040 *lcd,
- 			ret = ld9040_spi_write(lcd, wbuf[i], wbuf[i+1]);
- 			if (ret)
- 				break;
--		} else
--			udelay(wbuf[i+1]*1000);
-+		} else {
-+			msleep(wbuf[i+1]);
-+		}
- 		i += 2;
- 	}
- 
-@@ -539,7 +540,7 @@ static int ld9040_ldi_init(struct ld9040 *lcd)
- 	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
- 		ret = ld9040_panel_send_sequence(lcd, init_seq[i]);
- 		/* workaround: minimum delay time for transferring CMD */
--		udelay(300);
-+		usleep_range(300, 310);
- 		if (ret)
- 			break;
- 	}
-@@ -584,7 +585,7 @@ static int ld9040_power_on(struct ld9040 *lcd)
- 		return -EFAULT;
- 	} else {
- 		pd->reset(lcd->ld);
--		mdelay(pd->reset_delay);
-+		msleep(pd->reset_delay);
- 	}
- 
- 	ret = ld9040_ldi_init(lcd);
-@@ -619,7 +620,7 @@ static int ld9040_power_off(struct ld9040 *lcd)
- 		return -EIO;
- 	}
- 
--	mdelay(pd->power_off_delay);
-+	msleep(pd->power_off_delay);
- 
- 	/* lcd power off */
- 	ld9040_regulator_disable(lcd);
+On Thu, Dec 20, 2012 at 5:00 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Vivek,
+>
+> Again, not a high-level review, but...
+>
+Thanks for reviewing. :-)
+
+>
+> On Tue, Dec 18, 2012 at 6:43 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> Adding the phy driver to ehci-s5p. Keeping the platform data
+>> for continuing the smooth operation for boards which still uses it
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Acked-by: Jingoo Han <jg1.han@samsung.com>
+>> ---
+>>  drivers/usb/host/ehci-s5p.c |   70 ++++++++++++++++++++++++++++++-------------
+>>  1 files changed, 49 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+>> index 46ca5ef..50c93af 100644
+>> --- a/drivers/usb/host/ehci-s5p.c
+>> +++ b/drivers/usb/host/ehci-s5p.c
+>> @@ -17,6 +17,7 @@
+>>  #include <linux/platform_device.h>
+>>  #include <linux/of_gpio.h>
+>>  #include <linux/platform_data/usb-ehci-s5p.h>
+>> +#include <linux/usb/phy.h>
+>>  #include <linux/usb/samsung_usb_phy.h>
+>>  #include <plat/usb-phy.h>
+>>
+>> @@ -33,6 +34,8 @@ struct s5p_ehci_hcd {
+>>         struct device *dev;
+>>         struct usb_hcd *hcd;
+>>         struct clk *clk;
+>> +       struct usb_phy *phy;
+>> +       struct s5p_ehci_platdata *pdata;
+>>  };
+>>
+>>  static const struct hc_driver s5p_ehci_hc_driver = {
+>> @@ -66,6 +69,30 @@ static const struct hc_driver s5p_ehci_hc_driver = {
+>>         .clear_tt_buffer_complete       = ehci_clear_tt_buffer_complete,
+>>  };
+>>
+>> +static void s5p_ehci_phy_enable(struct s5p_ehci_hcd *s5p_ehci)
+>> +{
+>> +       struct platform_device *pdev = to_platform_device(s5p_ehci->dev);
+>> +
+>> +       if (s5p_ehci->phy) {
+>> +               samsung_usbphy_set_type(s5p_ehci->phy, USB_PHY_TYPE_HOST);
+>
+> This confuses me.  Why are you setting the type to host here?
+>
+Being in host controller, before calling usb_phy_init() we set type to
+Host since, with certain SOCs
+like 4210, same register has different bit settings for HOST type and
+device type. So setting this
+to Host type here make the flow of usb_phy_init to go in the direction of Host.
+
+>> +               usb_phy_init(s5p_ehci->phy);
+>> +       } else if (s5p_ehci->pdata->phy_init) {
+>> +               s5p_ehci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
+>> +       }
+>> +}
+>> +
+>> +static void s5p_ehci_phy_disable(struct s5p_ehci_hcd *s5p_ehci)
+>> +{
+>> +       struct platform_device *pdev = to_platform_device(s5p_ehci->dev);
+>> +
+>> +       if (s5p_ehci->phy) {
+>> +               samsung_usbphy_set_type(s5p_ehci->phy, USB_PHY_TYPE_HOST);
+>
+> ...and why set it to host here?
+>
+Same here...
+
+>> +               usb_phy_shutdown(s5p_ehci->phy);
+>> +       } else if (s5p_ehci->pdata->phy_exit) {
+>> +               s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+>> +       }
+>> +}
+>> +
+>>  static void s5p_setup_vbus_gpio(struct platform_device *pdev)
+>>  {
+>>         int err;
+>> @@ -88,20 +115,15 @@ static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
+>>
+>>  static int s5p_ehci_probe(struct platform_device *pdev)
+>>  {
+>> -       struct s5p_ehci_platdata *pdata;
+>> +       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+>>         struct s5p_ehci_hcd *s5p_ehci;
+>>         struct usb_hcd *hcd;
+>>         struct ehci_hcd *ehci;
+>>         struct resource *res;
+>> +       struct usb_phy *phy;
+>>         int irq;
+>>         int err;
+>>
+>> -       pdata = pdev->dev.platform_data;
+>> -       if (!pdata) {
+>> -               dev_err(&pdev->dev, "No platform data defined\n");
+>> -               return -EINVAL;
+>> -       }
+>> -
+>>         /*
+>>          * Right now device-tree probed devices don't get dma_mask set.
+>>          * Since shared usb code relies on it, set it here for now.
+>> @@ -119,6 +141,19 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>         if (!s5p_ehci)
+>>                 return -ENOMEM;
+>>
+>> +       phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+>> +       if (IS_ERR_OR_NULL(phy)) {
+>> +               /* Fallback to pdata */
+>> +               if (!pdata) {
+>> +                       dev_err(&pdev->dev, "no platform data or transceiver defined\n");
+>> +                       return -EPROBE_DEFER;
+>
+> Shouldn't you return -EINVAL like the old code did?
+
+We are deferring the probe since the usb-phy transceiver may get
+probed after ehci/ohci controllers.
+And if we return -EINVAL like the previous code, we would end up not
+setting the phy.
+
+>
+>> +               } else {
+>> +                       s5p_ehci->pdata = pdata;
+>> +               }
+>> +       } else {
+>> +               s5p_ehci->phy = phy;
+>> +       }
+>> +
+>>         s5p_ehci->dev = &pdev->dev;
+>>
+>>         hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
+>> @@ -164,8 +199,7 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>                 goto fail_io;
+>>         }
+>>
+>> -       if (pdata->phy_init)
+>> -               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
+>> +       s5p_ehci_phy_enable(s5p_ehci);
+>>
+>>         ehci = hcd_to_ehci(hcd);
+>>         ehci->caps = hcd->regs;
+>> @@ -176,13 +210,15 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>         err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+>>         if (err) {
+>>                 dev_err(&pdev->dev, "Failed to add USB HCD\n");
+>> -               goto fail_io;
+>> +               goto fail_add_hcd;
+>>         }
+>>
+>>         platform_set_drvdata(pdev, s5p_ehci);
+>>
+>>         return 0;
+>>
+>> +fail_add_hcd:
+>> +       s5p_ehci_phy_disable(s5p_ehci);
+>>  fail_io:
+>>         clk_disable_unprepare(s5p_ehci->clk);
+>>  fail_clk:
+>> @@ -192,14 +228,12 @@ fail_clk:
+>>
+>>  static int s5p_ehci_remove(struct platform_device *pdev)
+>>  {
+>> -       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+>>         struct s5p_ehci_hcd *s5p_ehci = platform_get_drvdata(pdev);
+>>         struct usb_hcd *hcd = s5p_ehci->hcd;
+>>
+>>         usb_remove_hcd(hcd);
+>>
+>> -       if (pdata && pdata->phy_exit)
+>> -               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+>> +       s5p_ehci_phy_disable(s5p_ehci);
+>>
+>>         clk_disable_unprepare(s5p_ehci->clk);
+>>
+>> @@ -223,14 +257,11 @@ static int s5p_ehci_suspend(struct device *dev)
+>>         struct s5p_ehci_hcd *s5p_ehci = dev_get_drvdata(dev);
+>>         struct usb_hcd *hcd = s5p_ehci->hcd;
+>>         bool do_wakeup = device_may_wakeup(dev);
+>> -       struct platform_device *pdev = to_platform_device(dev);
+>> -       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+>>         int rc;
+>>
+>>         rc = ehci_suspend(hcd, do_wakeup);
+>>
+>> -       if (pdata && pdata->phy_exit)
+>> -               pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+>> +       s5p_ehci_phy_disable(s5p_ehci);
+>>
+>>         clk_disable_unprepare(s5p_ehci->clk);
+>>
+>> @@ -241,13 +272,10 @@ static int s5p_ehci_resume(struct device *dev)
+>>  {
+>>         struct s5p_ehci_hcd *s5p_ehci = dev_get_drvdata(dev);
+>>         struct usb_hcd *hcd = s5p_ehci->hcd;
+>> -       struct platform_device *pdev = to_platform_device(dev);
+>> -       struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+>>
+>>         clk_prepare_enable(s5p_ehci->clk);
+>>
+>> -       if (pdata && pdata->phy_init)
+>> -               pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
+>> +       s5p_ehci_phy_enable(s5p_ehci);
+>>
+>>         /* DMA burst Enable */
+>>         writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
+>> --
+>> 1.7.6.5
+>>
+>> _______________________________________________
+>> devicetree-discuss mailing list
+>> devicetree-discuss@lists.ozlabs.org
+>> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.7.2.5
-
-
+Thanks & Regards
+Vivek
