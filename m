@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2LTBc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 20:32:28 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:56332 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab2LTBcX (ORCPT
+	id S1752244Ab2LTBe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 20:34:59 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43285 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab2LTBey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 20:32:23 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] mfd: db8500-prcmu: fix irqdomain usage
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, stable@kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1355928161-8082-1-git-send-email-linus.walleij@stericsson.com>
-References: <1355928161-8082-1-git-send-email-linus.walleij@stericsson.com>
-Date: Thu, 20 Dec 2012 01:32:18 +0000
-Message-Id: <20121220013218.A55E93E0AD7@localhost>
+	Wed, 19 Dec 2012 20:34:54 -0500
+X-AuditID: 9c930179-b7becae000000e51-32-50d26b372af2
+Date: Thu, 20 Dec 2012 10:34:47 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Arun Sharma <asharma@fb.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        sanjay@google.com, Paul Turner <pjt@google.com>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v4 0/3] Support volatile for anonymous range
+Message-ID: <20121220013447.GA2686@blaptop>
+References: <1355813274-571-1-git-send-email-minchan@kernel.org>
+ <50D0B5A2.2010707@fb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D0B5A2.2010707@fb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 15:42:41 +0100, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, Dec 18, 2012 at 10:27:46AM -0800, Arun Sharma wrote:
+> On 12/17/12 10:47 PM, Minchan Kim wrote:
 > 
-> This fixes two issues with the DB8500 PRCMU irqdomain:
-> - You have to state the irq base 0 to get a linear domain
->   for the DT case from irq_domain_add_simple()
-> - The irqdomain was not used to translate the initial irq
->   request using irq_create_mapping() making the linear
->   case fail as it was lacking a proper descriptor.
+> >I hope more inputs from user-space allocator people and test patch
+> >with their allocator because it might need design change of arena
+> >management for getting real vaule.
 > 
-> I took this opportunity to fix two lines of whitespace
-> errors in related code as I was anyway messing around with
-> it.
-> 
-> Cc: stable@kernel.org
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Hi Sam, this is a regression and as such should go into the
-> -rc series. As you can see I also added the Cc: stable tag.
-> 
-> Yours,
-> Linus Walleij
-> ---
->  drivers/mfd/db8500-prcmu.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-> index dc8826d..fcac8e0 100644
-> --- a/drivers/mfd/db8500-prcmu.c
-> +++ b/drivers/mfd/db8500-prcmu.c
-> @@ -2524,7 +2524,7 @@ static bool read_mailbox_0(void)
->  
->  		for (n = 0; n < NUM_PRCMU_WAKEUPS; n++) {
->  			if (ev & prcmu_irq_bit[n])
-> -				generic_handle_irq(IRQ_PRCMU_BASE + n);
-> +				generic_handle_irq(irq_create_mapping(db8500_irq_domain,n));
+> jemalloc knows how to handle MADV_FREE on platforms that support it.
+> This looks similar (we'll need a SIGBUS handler that does the right
+> thing = zero the page + mark it as non-volatile in the common case).
 
-This looks wrong. It probably works at the moment, but calling
-irq_create_mapping when trying to process an IRQ is backwards. There
-certainly shouldn't be any processing of an irq that isn't already
-mapped. irq_find_mapping() should be used instead.
+Don't work because it's too late to mark it as non-volatile in signal
+handler in case of malloc.
 
-g.
+For example,
+free(P1-P4) -> mvolatile(P1-P4) -> VM discard(P3) -> alloc(P1-P4) ->
+use P1 -> VM discard(P1) -> use P3 -> SIGBUS -> mark nonvolatile ->
+lost P1.
+
+So, we should call mnovolatile before giving the free space to user.
+
+> 
+> All of this of course assumes that apps madvise the kernel through
+> APIs exposed by the malloc implementation - not via a raw syscall.
+> 
+> In other words, some new user space code needs to be written to test
+
+Agreed. I might want to design new allocator with this system calls if
+existing allocators cannot use this system calls efficiently because it
+might need allocator's design change. MADV_FREE/MADV_DONTNEED isn't cheap
+due to enumerating ptes/page descriptors in that range to mark something
+so I guess allocator avoids frequent calling of the such advise system call
+and even if they call it, they want to call the big range as batch.
+Just my imagine.
+
+But mvolatile/mnovolatile is cheaper so you can call it more frequently
+with smaller range so VM could have easy-reclaimable pages easily.
+Another benefit of the mvolatile is it can change the behavior when memory
+pressure is severe where it can zap all pages like DONTNEED so it could
+work very flexible.
+The downside of that approach is that if we call it with small range,
+it can increase the number of VMA so we might tune point for VMA size.
+
+> this out fully. Sounds feasible though.
+
+Thanks!
+
+> 
+>  -Arun
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
