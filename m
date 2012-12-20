@@ -1,78 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab2LTMdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 07:33:55 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:41337 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab2LTMdq convert rfc822-to-8bit (ORCPT
+	id S1752395Ab2LTMof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 07:44:35 -0500
+Received: from anubis.se.axis.com ([195.60.68.12]:40771 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab2LTMo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 07:33:46 -0500
-Message-ID: <50D305A6.2080904@arm.com>
-Date: Thu, 20 Dec 2012 12:33:42 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 07:44:28 -0500
+Date: Thu, 20 Dec 2012 13:44:25 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel@axis.com
+Subject: [GIT PULL] CRIS updates for 3.8
+Message-ID: <20121220124423.GT14172@axis.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com> <1355996654-6579-6-git-send-email-hdoyu@nvidia.com> <50D2EFFB.8030702@arm.com> <20121220.135758.1347753620353343245.hdoyu@nvidia.com> <50D2FF19.4060600@arm.com> <20121220122246.GA6819@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20121220122246.GA6819@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 20 Dec 2012 12:33:44.0024 (UTC) FILETIME=[3FD56D80:01CDDEAE]
-X-MC-Unique: 112122012334401001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/12/12 12:22, Peter De Schrijver wrote:
->>>>> +
->>>>> +	/* CNTFRQ */
->>>>> +	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
->>>>> +	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
->>>>> +	BUG_ON(val != freq);
->>>>
->>>> This is scary. CNTFRQ is only writable from secure mode, and will
->>>> explode in any other situation.
->>>>
->>>> Also, writing to CNTFRQ doesn't change the timer frequency! This is just
->>>> a way for secure mode to tell the rest of the world the frequency the
->>>> timer is ticking at. Unless you've wired the input clock to be able to
->>>> change the frequency?
->>>
->>> ATM, our upstream kernel is expected in secure mode. This situation
->>> may be changed later, though....
->>
->> I appreciate this. But I expect this kernel to be also used on the
->> non-secure side if someone tried to run KVM with it. And this would go
->> bang right away.
->>
-> 
-> But the guest wouldn't necessarily have this peripheral, or any other Tegra114
-> peripheral for that matter?
+Hi Linus,
 
-The problem is not so much the guest but the host. The host has to be
-booted in non-secure, so just saying "we do not support non-secure" is
-not a very convincing argument.
+Please pull for CRIS 3.8 updates.
 
-Unless of course you've already decided that you don't want to support
-KVM on this SoC...
+Thanks, och God Jul!
 
-	M.
+The following changes since commit f01af9f85855e38fbd601e033a8eac204cc4cc1c:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2012-12-19 20:31:02 -0800)
+
+are available in the git repository at:
+
+  git://jni.nu/cris.git tags/cris-for-linus-3.8
+
+for you to fetch changes up to 77c8006d8df4d5bafeb1d15eafa0886ae96e9b17:
+
+  UAPI: Fix up empty files in arch/cris/ (2012-12-20 12:51:25 +0100)
+
+----------------------------------------------------------------
+CRIS changes for 3.8
+
+----------------------------------------------------------------
+David Howells (4):
+      UAPI: (Scripted) Disintegrate arch/cris/include/arch-v10/arch
+      UAPI: (Scripted) Disintegrate arch/cris/include/arch-v32/arch
+      UAPI: (Scripted) Disintegrate arch/cris/include/asm
+      UAPI: Fix up empty files in arch/cris/
+
+James Hogan (1):
+      CRIS: use kbuild.h instead of defining macros in asm-offset.c
+
+Jesper Nilsson (1):
+      Merge tag 'disintegrate-cris-20121009' of git://git.infradead.org/users/dhowells/linux-headers into for-linus2
+
+Wei Yongjun (1):
+      CRIS: locking: fix the return value of arch_read_trylock()
+
+ arch/cris/include/arch-v10/arch/Kbuild             |   5 +-
+ arch/cris/include/arch-v32/arch/Kbuild             |   3 +-
+ arch/cris/include/arch-v32/arch/cryptocop.h        | 116 +------
+ arch/cris/include/arch-v32/arch/spinlock.h         |   2 +-
+ arch/cris/include/asm/Kbuild                       |   5 -
+ arch/cris/include/asm/ptrace.h                     |   5 +-
+ arch/cris/include/asm/signal.h                     | 121 +-------
+ arch/cris/include/asm/swab.h                       |   3 +-
+ arch/cris/include/asm/termios.h                    |  43 +--
+ arch/cris/include/asm/types.h                      |   5 +-
+ arch/cris/include/asm/unistd.h                     | 342 +-------------------
+ arch/cris/include/uapi/arch-v10/arch/Kbuild        |   4 +
+ .../include/{ => uapi}/arch-v10/arch/sv_addr.agh   |   0
+ .../include/{ => uapi}/arch-v10/arch/sv_addr_ag.h  |   0
+ .../cris/include/{ => uapi}/arch-v10/arch/svinto.h |   0
+ arch/cris/include/{ => uapi}/arch-v10/arch/user.h  |   0
+ arch/cris/include/uapi/arch-v32/arch/Kbuild        |   2 +
+ arch/cris/include/uapi/arch-v32/arch/cryptocop.h   | 122 ++++++++
+ arch/cris/include/{ => uapi}/arch-v32/arch/user.h  |   0
+ arch/cris/include/uapi/asm/Kbuild                  |  34 ++
+ arch/cris/include/{ => uapi}/asm/auxvec.h          |   0
+ arch/cris/include/{ => uapi}/asm/bitsperlong.h     |   0
+ arch/cris/include/{ => uapi}/asm/byteorder.h       |   0
+ arch/cris/include/{ => uapi}/asm/errno.h           |   0
+ arch/cris/include/{ => uapi}/asm/ethernet.h        |   0
+ arch/cris/include/{ => uapi}/asm/etraxgpio.h       |   0
+ arch/cris/include/{ => uapi}/asm/fcntl.h           |   0
+ arch/cris/include/{ => uapi}/asm/ioctl.h           |   0
+ arch/cris/include/{ => uapi}/asm/ioctls.h          |   0
+ arch/cris/include/{ => uapi}/asm/ipcbuf.h          |   0
+ arch/cris/include/{ => uapi}/asm/mman.h            |   0
+ arch/cris/include/{ => uapi}/asm/msgbuf.h          |   0
+ arch/cris/include/{ => uapi}/asm/param.h           |   0
+ arch/cris/include/{ => uapi}/asm/poll.h            |   0
+ arch/cris/include/{ => uapi}/asm/posix_types.h     |   0
+ arch/cris/include/uapi/asm/ptrace.h                |   1 +
+ arch/cris/include/{ => uapi}/asm/resource.h        |   0
+ arch/cris/include/{ => uapi}/asm/rs485.h           |   0
+ arch/cris/include/{ => uapi}/asm/sembuf.h          |   0
+ arch/cris/include/{ => uapi}/asm/setup.h           |   0
+ arch/cris/include/{ => uapi}/asm/shmbuf.h          |   0
+ arch/cris/include/{ => uapi}/asm/sigcontext.h      |   0
+ arch/cris/include/{ => uapi}/asm/siginfo.h         |   0
+ arch/cris/include/uapi/asm/signal.h                | 122 ++++++++
+ arch/cris/include/{ => uapi}/asm/socket.h          |   0
+ arch/cris/include/{ => uapi}/asm/sockios.h         |   0
+ arch/cris/include/{ => uapi}/asm/stat.h            |   0
+ arch/cris/include/{ => uapi}/asm/statfs.h          |   0
+ arch/cris/include/uapi/asm/swab.h                  |   3 +
+ arch/cris/include/{ => uapi}/asm/sync_serial.h     |   0
+ arch/cris/include/{ => uapi}/asm/termbits.h        |   0
+ arch/cris/include/uapi/asm/termios.h               |  45 +++
+ arch/cris/include/uapi/asm/types.h                 |   1 +
+ arch/cris/include/uapi/asm/unistd.h                | 344 +++++++++++++++++++++
+ arch/cris/kernel/asm-offsets.c                     |   6 +-
+ 55 files changed, 689 insertions(+), 645 deletions(-)
+ rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr.agh (100%)
+ rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr_ag.h (100%)
+ rename arch/cris/include/{ => uapi}/arch-v10/arch/svinto.h (100%)
+ rename arch/cris/include/{ => uapi}/arch-v10/arch/user.h (100%)
+ create mode 100644 arch/cris/include/uapi/arch-v32/arch/cryptocop.h
+ rename arch/cris/include/{ => uapi}/arch-v32/arch/user.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/ethernet.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/etraxgpio.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/msgbuf.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/param.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/cris/include/uapi/asm/ptrace.h
+ rename arch/cris/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/rs485.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/sembuf.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/setup.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/cris/include/uapi/asm/signal.h
+ rename arch/cris/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/statfs.h (100%)
+ create mode 100644 arch/cris/include/uapi/asm/swab.h
+ rename arch/cris/include/{ => uapi}/asm/sync_serial.h (100%)
+ rename arch/cris/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/cris/include/uapi/asm/termios.h
+ create mode 100644 arch/cris/include/uapi/asm/types.h
+ create mode 100644 arch/cris/include/uapi/asm/unistd.h
+/^JN - Jesper Nilsson
 -- 
-Jazz is not dead. It just smells funny...
-
+               Jesper Nilsson -- jesper.nilsson@axis.com
