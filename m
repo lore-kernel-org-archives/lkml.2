@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab2LTKWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 05:22:17 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:29542 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab2LTKWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 05:22:11 -0500
-Date: Thu, 20 Dec 2012 11:22:02 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Juergen Beisert <jbe@pengutronix.de>
-Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
-  divisors
-Message-ID: <20121220112202.3ead1fe1@endymion.delvare>
-In-Reply-To: <20121219224122.GA26863@roeck-us.net>
-References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
-	<20121219134721.bbde212f.akpm@linux-foundation.org>
-	<20121219224122.GA26863@roeck-us.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751866Ab2LTKYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 05:24:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37379 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751326Ab2LTKYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 05:24:42 -0500
+Date: Thu, 20 Dec 2012 10:24:38 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2] mm: limit mmu_gather batching to fix soft lockups on
+ !CONFIG_PREEMPT
+Message-ID: <20121220102438.GA10819@suse.de>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+ <20121218140219.45867ddd.akpm@linux-foundation.org>
+ <20121218235042.GA10350@dhcp22.suse.cz>
+ <20121218160030.baf723aa.akpm@linux-foundation.org>
+ <20121219150423.GA12888@dhcp22.suse.cz>
+ <20121219131316.7d13fcb1.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121219131316.7d13fcb1.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-
-On Wed, 19 Dec 2012 14:41:22 -0800, Guenter Roeck wrote:
-> On Wed, Dec 19, 2012 at 01:47:21PM -0800, Andrew Morton wrote:
-> > The changelog didn't describe the end-user visible effects of the bug. 
-> > Please always include this information.  Because...
->
-> One observed effect is that the s2c_hwmon driver reports a value of 4198403
-> instead of 0 if the ADC reads 0.
+On Wed, Dec 19, 2012 at 01:13:16PM -0800, Andrew Morton wrote:
+> On Wed, 19 Dec 2012 16:04:37 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Other impact is unpredictable. Problem is seen if the divisor is an unsigned
-> variable or constant and the dividend is less than (divisor/2).
-
-Really? In my own testing, the problem only shows with dividend == 0,
-and even then, only when dividend is signed and divisor is not.
-DIV_ROUND_CLOSEST(5, 20U) returns 0 as expected, and so do
-DIV_ROUND_CLOSEST(0 / 20), DIV_ROUND_CLOSEST(0U / 20) and
-DIV_ROUND_CLOSEST(0U / 20U).
-
-Are your observations different?
-
-> > The patch is applicable to 3.7.x.  Should we backport it?
->
-> Yes. DIV_ROUND_CLOSEST is used throughout the kernel, and impact is
-> unpredictable.
+> > Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+> > pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+> > are done.
+> > 
+> > This works just fine most of the time but we can get in troubles with
+> > non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
+> > on large machines where too aggressive batching might lead to soft
+> > lockups during process exit path (exit_mmap) because there are no
+> > scheduling points down the free_pages_and_swap_cache path and so the
+> > freeing can take long enough to trigger the soft lockup.
+> > 
+> > The lockup is harmless except when the system is setup to panic on
+> > softlockup which is not that unusual.
+> > 
+> > The simplest way to work around this issue is to limit the maximum
+> > number of batches in a single mmu_gather for !CONFIG_PREEMPT kernels.
+> > Let's use 1G of resident memory for the limit for now. This shouldn't
+> > make the batching less effective and it shouldn't trigger lockups as
+> > well because freeing 262144 should be OK.
+> > 
+> > ...
+> >
+> > diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+> > index ed6642a..5843f59 100644
+> > --- a/include/asm-generic/tlb.h
+> > +++ b/include/asm-generic/tlb.h
+> > @@ -78,6 +78,19 @@ struct mmu_gather_batch {
+> >  #define MAX_GATHER_BATCH	\
+> >  	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+> >  
+> > +/*
+> > + * Limit the maximum number of mmu_gather batches for non-preemptible kernels
+> > + * to reduce a risk of soft lockups on huge machines when a lot of memory is
+> > + * zapped during unmapping.
+> > + * 1GB of resident memory should be safe to free up at once even without
+> > + * explicit preemption point.
+> > + */
+> > +#if defined(CONFIG_PREEMPT_COUNT)
+> > +#define MAX_GATHER_BATCH_COUNT	(UINT_MAX)
+> > +#else
+> > +#define MAX_GATHER_BATCH_COUNT	(((1UL<<(30-PAGE_SHIFT))/MAX_GATHER_BATCH))
 > 
-> 3.6 needs it as well.
+> Geeze.  I spent waaaaay too long staring at that expression trying to
+> work out "how many pages is in a batch" and gave up.
+> 
+
+1G.
+
+> Realistically, I don't think we need to worry about CONFIG_PREEMPT here
+> - if we just limit the thing to, say, 64k pages per batch then that
+> will be OK for preemptible and non-preemptible kernels.  The
+> performance difference between "64k" and "infinite" will be miniscule
+> and unmeasurable.
+> 
+
+That was my fault due to a private conversation. Michal originally had
+a fixed counter that was commented to be related to address space size
+on x86-64. I felt if it was based on address space size then it should be
+expressed in terms of PAGE_SIZE. It really is about the number of TLB flush
+operations though and a fixed counter works. I'm happy either way but the
+comment should not mention address space size if it's a fixed counter.
+
+> Also, the batch count should be independent of PAGE_SIZE.  Because
+> PAGE_SIZE can vary by a factor of 16 and you don't want to fix the
+> problem on 4k page size but leave it broken on 64k page size.
+> 
+> Also, while the patch might prevent softlockup warnings, the kernel
+> will still exhibit large latency glitches and those are undesirable.
+> 
+> Also, does this patch actually work?  It doesn't add a scheduling
+> point.  It assumes that by returning zero from tlb_next_batch(), the
+> process will back out to some point where it hits a cond_resched()?
+> 
+
+I expected it to work for two reasons.
+
+1. returning here hits the cond_resched() in zap_pmd_range()
+2. The original soft lockup was in tlb_finish_mmu and this patch should
+   limit the amount of work that thing has to do
+
+I didn't test it though.
 
 -- 
-Jean Delvare
+Mel Gorman
+SUSE Labs
