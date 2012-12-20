@@ -1,308 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2LTB6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 20:58:16 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38301 "EHLO hydra.sisk.pl"
+	id S1752721Ab2LTB60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 20:58:26 -0500
+Received: from mout.gmx.net ([212.227.15.18]:54513 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab2LTBzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 20:55:45 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH 15/16] ACPI / PCI: Move the _PRT setup and cleanup code to pci-acpi.c
-Date: Thu, 20 Dec 2012 02:59:17 +0100
-Message-ID: <1444724.1lVhhTmGMg@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1855256.SyhOJGYMIh@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <4082842.31rfDviYHK@vostro.rjw.lan> <1855256.SyhOJGYMIh@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1752243Ab2LTB4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 20:56:47 -0500
+X-Authenticated: #48310644
+X-Provags-ID: V01U2FsdGVkX1+6e0pMoOW6s1GpbA5+t71ihMFGEZhn+T60SDcsaA
+	NmuOz8AZYuxuPw
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="utf-8"
+Date: Thu, 20 Dec 2012 02:56:43 +0100
+From: "Andrey Isakov" <andy51@gmx.ru>
+Message-ID: <20121220015643.238490@gmx.com>
+MIME-Version: 1.0
+Subject: Re: [PATCH] workqueue: consider work function when searching for busy
+ work items
+To: "Tejun Heo" <tj@kernel.org>
+X-Flags: 0001
+X-Mailer: GMX.com Web Mailer
+x-registered: 0
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: DBWgcE08eSEqJxVKinYh96F+IGRvb0AM
+X-Y-GMX-Trusted: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+I've merged the patch on my kernel version and did the same test, just to make sure. I confirm that the problem with deadlock is gone, thanks!
+Well, actually, in my case I just did a kind of workaround by moving kfree to the very end of work functions and it worked. That still leaves some space for race conditions though.
 
-Move the code related to _PRT setup and removal from acpi_pci_bind()
-and acpi_pci_unbind() to the .setup() and .cleanup() callbacks in
-acpi_pci_bus and remove acpi_pci_bind() and acpi_pci_unbind() that
-have no purpose any more.  Accordingly, remove the code related to
-device .bind() and .unbind() operations from the ACPI PCI root bridge
-driver.
+Anyway, I know the driver code I am supporting overuses workqueues a bit, but it initially relied on the fact that there was a separate thread for each wq before, so it used both blocking and works allocating.
+I had a hard time finding the cause of a workqueue suddenly stalling in one module apparently because of the blocked work in another one, and it is stated in the docs that both operations are supposed to be a valid use of wq.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+It is nice to know that there is now a solution for the people who could step on the same rake as me.
+Thanks.
+
+
+  ----- Original Message -----
+  From: Tejun Heo
+  Sent: 12/19/12 04:04 AM
+  To: andy51@gmx.ru
+  Subject: [PATCH] workqueue: consider work function when searching for busy work items
+ 
+   
+>From a2c1c57be8d9fd5b716113c8991d3d702eeacf77 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 18 Dec 2012 10:35:02 -0800
+
+To avoid executing the same work item concurrenlty, workqueue hashes
+currently busy workers according to their current work items and looks
+up the the table when it wants to execute a new work item. If there
+already is a worker which is executing the new work item, the new item
+is queued to the found worker so that it gets executed only after the
+current execution finishes.
+
+Unfortunately, a work item may be freed while being executed and thus
+recycled for different purposes. If it gets recycled for a different
+work item and queued while the previous execution is still in
+progress, workqueue may make the new work item wait for the old one
+although the two aren't really related in any way.
+
+In extreme cases, this false dependency may lead to deadlock although
+it's extremely unlikely given that there aren't too many self-freeing
+work item users and they usually don't wait for other work items.
+
+To alleviate the problem, record the current work function in each
+busy worker and match it together with the work item address in
+find_worker_executing_work(). While this isn't complete, it ensures
+that unrelated work items don't interact with each other and in the
+very unlikely case where a twisted wq user triggers it, it's always
+onto itself making the culprit easy to spot.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andrey Isakov <andy51@gmx.ru>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
+Cc: stable@vger.kernel.org
 ---
- drivers/acpi/Makefile   |    2 
- drivers/acpi/pci_bind.c |  113 ------------------------------------------------
- drivers/acpi/pci_root.c |   31 -------------
- drivers/pci/pci-acpi.c  |   34 +++++++++++---
- 4 files changed, 29 insertions(+), 151 deletions(-)
+While this bug is theoretically possible, I haven't seen any evidence
+that it's happening at all and cmwq has been in the wild for quite a
+while. I'm queueing this for wq/for-3.9 and will route it back
+through -stable later.
 
-Index: linux/drivers/acpi/pci_bind.c
-===================================================================
---- linux.orig/drivers/acpi/pci_bind.c
-+++ /dev/null
-@@ -1,113 +0,0 @@
--/*
-- *  pci_bind.c - ACPI PCI Device Binding ($Revision: 2 $)
-- *
-- *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
-- *  Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
-- *
-- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- *
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License as published by
-- *  the Free Software Foundation; either version 2 of the License, or (at
-- *  your option) any later version.
-- *
-- *  This program is distributed in the hope that it will be useful, but
-- *  WITHOUT ANY WARRANTY; without even the implied warranty of
-- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- *  General Public License for more details.
-- *
-- *  You should have received a copy of the GNU General Public License along
-- *  with this program; if not, write to the Free Software Foundation, Inc.,
-- *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-- *
-- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- */
--
--#include <linux/kernel.h>
--#include <linux/types.h>
--#include <linux/pci.h>
--#include <linux/pci-acpi.h>
--#include <linux/acpi.h>
--#include <linux/pm_runtime.h>
--#include <acpi/acpi_bus.h>
--#include <acpi/acpi_drivers.h>
--
--#define _COMPONENT		ACPI_PCI_COMPONENT
--ACPI_MODULE_NAME("pci_bind");
--
--static int acpi_pci_unbind(struct acpi_device *device)
--{
--	struct pci_dev *dev;
--
--	dev = acpi_get_pci_dev(device->handle);
--	if (!dev)
--		goto out;
--
--	if (!dev->subordinate)
--		goto out;
--
--	acpi_pci_irq_del_prt(dev->subordinate);
--
--	device->ops.bind = NULL;
--	device->ops.unbind = NULL;
--
--out:
--	pci_dev_put(dev);
--	return 0;
--}
--
--static int acpi_pci_bind(struct acpi_device *device)
--{
--	acpi_status status;
--	acpi_handle handle;
--	struct pci_bus *bus;
--	struct pci_dev *dev;
--
--	dev = acpi_get_pci_dev(device->handle);
--	if (!dev)
--		return 0;
--
--	/*
--	 * Install the 'bind' function to facilitate callbacks for
--	 * children of the P2P bridge.
--	 */
--	if (dev->subordinate) {
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Device %04x:%02x:%02x.%d is a PCI bridge\n",
--				  pci_domain_nr(dev->bus), dev->bus->number,
--				  PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn)));
--		device->ops.bind = acpi_pci_bind;
--		device->ops.unbind = acpi_pci_unbind;
--	}
--
--	/*
--	 * Evaluate and parse _PRT, if exists.  This code allows parsing of
--	 * _PRT objects within the scope of non-bridge devices.  Note that
--	 * _PRTs within the scope of a PCI bridge assume the bridge's
--	 * subordinate bus number.
--	 *
--	 * TBD: Can _PRTs exist within the scope of non-bridge PCI devices?
--	 */
--	status = acpi_get_handle(device->handle, METHOD_NAME__PRT, &handle);
--	if (ACPI_FAILURE(status))
--		goto out;
--
--	if (dev->subordinate)
--		bus = dev->subordinate;
--	else
--		bus = dev->bus;
--
--	acpi_pci_irq_add_prt(device->handle, bus);
--
--out:
--	pci_dev_put(dev);
--	return 0;
--}
--
--int acpi_pci_bind_root(struct acpi_device *device)
--{
--	device->ops.bind = acpi_pci_bind;
--	device->ops.unbind = acpi_pci_unbind;
--
--	return 0;
--}
-Index: linux/drivers/pci/pci-acpi.c
-===================================================================
---- linux.orig/drivers/pci/pci-acpi.c
-+++ linux/drivers/pci/pci-acpi.c
-@@ -320,12 +320,30 @@ static int acpi_pci_find_root_bridge(str
- 	return 0;
- }
- 
--static void acpi_pci_wakeup_setup(struct device *dev)
-+static void pci_acpi_setup(struct device *dev)
- {
--	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
-+	acpi_handle handle = ACPI_HANDLE(dev);
-+	struct acpi_device *adev;
-+	acpi_status status;
-+	acpi_handle dummy;
-+
-+	/*
-+	 * Evaluate and parse _PRT, if exists.  This code allows parsing of
-+	 * _PRT objects within the scope of non-bridge devices.  Note that
-+	 * _PRTs within the scope of a PCI bridge assume the bridge's
-+	 * subordinate bus number.
-+	 *
-+	 * TBD: Can _PRTs exist within the scope of non-bridge PCI devices?
-+	 */
-+	status = acpi_get_handle(handle, METHOD_NAME__PRT, &dummy);
-+	if (ACPI_SUCCESS(status)) {
-+		struct pci_bus *bus = pci_dev->subordinate;
-+
-+		acpi_pci_irq_add_prt(handle, bus ? bus : pci_dev->bus);
-+	}
- 
--	if (!adev || !adev->wakeup.flags.valid)
-+	if (acpi_bus_get_device(handle, &adev) || !adev->wakeup.flags.valid)
- 		return;
- 
- 	device_set_wakeup_capable(dev, true);
-@@ -336,23 +354,27 @@ static void acpi_pci_wakeup_setup(struct
- 		device_set_run_wake(dev, true);
- }
- 
--static void acpi_pci_wakeup_cleanup(struct device *dev)
-+static void pci_acpi_cleanup(struct device *dev)
- {
- 	struct acpi_device *adev = acpi_dev_pm_get_node(dev);
-+	struct pci_dev *pci_dev = to_pci_dev(dev);
- 
- 	if (adev && adev->wakeup.flags.valid) {
- 		device_set_wakeup_capable(dev, false);
- 		device_set_run_wake(dev, false);
- 		pci_acpi_remove_pm_notifier(adev);
- 	}
-+
-+	if (pci_dev->subordinate)
-+		acpi_pci_irq_del_prt(pci_dev->subordinate);
- }
- 
- static struct acpi_bus_type acpi_pci_bus = {
- 	.bus = &pci_bus_type,
- 	.find_device = acpi_pci_find_device,
- 	.find_bridge = acpi_pci_find_root_bridge,
--	.setup = acpi_pci_wakeup_setup,
--	.cleanup = acpi_pci_wakeup_cleanup,
-+	.setup = pci_acpi_setup,
-+	.cleanup = pci_acpi_cleanup,
+Thanks.
+
+ kernel/workqueue.c | 39 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 31 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index acd417b..d24a411 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -137,6 +137,7 @@ struct worker {
  };
  
- static int __init acpi_pci_init(void)
-Index: linux/drivers/acpi/Makefile
-===================================================================
---- linux.orig/drivers/acpi/Makefile
-+++ linux/drivers/acpi/Makefile
-@@ -37,7 +37,7 @@ acpi-y				+= resource.o
- acpi-y				+= processor_core.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
--acpi-y				+= pci_root.o pci_link.o pci_irq.o pci_bind.o
-+acpi-y				+= pci_root.o pci_link.o pci_irq.o
- acpi-y				+= acpi_platform.o
- acpi-y				+= power.o
- acpi-y				+= event.o
-Index: linux/drivers/acpi/pci_root.c
-===================================================================
---- linux.orig/drivers/acpi/pci_root.c
-+++ linux/drivers/acpi/pci_root.c
-@@ -186,21 +186,6 @@ static acpi_status try_get_root_bridge_b
- 	return AE_OK;
+ struct work_struct *current_work; /* L: work being processed */
++ work_func_t current_func; /* L: current_work's fn */
+ struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
+ struct list_head scheduled; /* L: scheduled works */
+ struct task_struct *task; /* I: worker task */
+@@ -861,9 +862,27 @@ static inline void worker_clr_flags(struct worker *worker, unsigned int flags)
+ * @gcwq: gcwq of interest
+ * @work: work to find worker for
+ *
+- * Find a worker which is executing @work on @gcwq. This function is
+- * identical to __find_worker_executing_work() except that this
+- * function calculates @bwh itself.
++ * Find a worker which is executing @work on @gcwq by searching
++ * @gcwq->busy_hash which is keyed by the address of @work. For a worker
++ * to match, its current execution should match the address of @work and
++ * its work function. This is to avoid unwanted dependency between
++ * unrelated work executions through a work item being recycled while still
++ * being executed.
++ *
++ * This is a bit tricky. A work item may be freed once its execution
++ * starts and nothing prevents the freed area from being recycled for
++ * another work item. If the same work item address ends up being reused
++ * before the original execution finishes, workqueue will identify the
++ * recycled work item as currently executing and make it wait until the
++ * current execution finishes, introducing an unwanted dependency.
++ *
++ * This function checks the work item address, work function and workqueue
++ * to avoid false positives. Note that this isn't complete as one may
++ * construct a work function which can introduce dependency onto itself
++ * through a recycled work item. Well, if somebody wants to shoot oneself
++ * in the foot that badly, there's only so much we can do, and if such
++ * deadlock actually occurs, it should be easy to locate the culprit work
++ * function.
+ *
+ * CONTEXT:
+ * spin_lock_irq(gcwq->lock).
+@@ -878,8 +897,10 @@ static struct worker *find_worker_executing_work(struct global_cwq *gcwq,
+ struct worker *worker;
+ struct hlist_node *tmp;
+ 
+- hash_for_each_possible(gcwq->busy_hash, worker, tmp, hentry, (unsigned long)work)
+- if (worker->current_work == work)
++ hash_for_each_possible(gcwq->busy_hash, worker, tmp, hentry,
++ (unsigned long)work)
++ if (worker->current_work == work &&
++ worker->current_func == work->func)
+ return worker;
+ 
+ return NULL;
+@@ -2114,7 +2135,6 @@ __acquires(&gcwq->lock)
+ struct worker_pool *pool = worker->pool;
+ struct global_cwq *gcwq = pool->gcwq;
+ bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
+- work_func_t f = work->func;
+ int work_color;
+ struct worker *collision;
+ #ifdef CONFIG_LOCKDEP
+@@ -2154,6 +2174,7 @@ __acquires(&gcwq->lock)
+ debug_work_deactivate(work);
+ hash_add(gcwq->busy_hash, &worker->hentry, (unsigned long)worker);
+ worker->current_work = work;
++ worker->current_func = work->func;
+ worker->current_cwq = cwq;
+ work_color = get_work_color(work);
+ 
+@@ -2186,7 +2207,7 @@ __acquires(&gcwq->lock)
+ lock_map_acquire_read(&cwq->wq->lockdep_map);
+ lock_map_acquire(&lockdep_map);
+ trace_workqueue_execute_start(work);
+- f(work);
++ worker->current_func(work);
+ /*
+ * While we must be careful to not use "work" after this, the trace
+ * point will only record its address.
+@@ -2198,7 +2219,8 @@ __acquires(&gcwq->lock)
+ if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
+ pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
+ " last function: %pf\n",
+- current->comm, preempt_count(), task_pid_nr(current), f);
++ current->comm, preempt_count(), task_pid_nr(current),
++ worker->current_func);
+ debug_show_held_locks(current);
+ dump_stack();
  }
- 
--static void acpi_pci_bridge_scan(struct acpi_device *device)
--{
--	int status;
--	struct acpi_device *child = NULL;
--
--	if (device->flags.bus_address)
--		if (device->parent && device->parent->ops.bind) {
--			status = device->parent->ops.bind(device);
--			if (!status) {
--				list_for_each_entry(child, &device->children, node)
--					acpi_pci_bridge_scan(child);
--			}
--		}
--}
--
- static u8 pci_osc_uuid_str[] = "33DB4D5B-1FF7-401C-9657-7441C03DD766";
- 
- static acpi_status acpi_pci_run_osc(acpi_handle handle,
-@@ -450,7 +435,6 @@ static int __devinit acpi_pci_root_add(s
- 	int result;
- 	struct acpi_pci_root *root;
- 	acpi_handle handle;
--	struct acpi_device *child;
- 	struct acpi_pci_driver *driver;
- 	u32 flags, base_flags;
- 
-@@ -538,15 +522,6 @@ static int __devinit acpi_pci_root_add(s
- 	}
- 
- 	/*
--	 * Attach ACPI-PCI Context
--	 * -----------------------
--	 * Thus binding the ACPI and PCI devices.
--	 */
--	result = acpi_pci_bind_root(device);
--	if (result)
--		goto out_del_root;
--
--	/*
- 	 * PCI Routing Table
- 	 * -----------------
- 	 * Evaluate and parse _PRT, if exists.
-@@ -555,12 +530,6 @@ static int __devinit acpi_pci_root_add(s
- 	if (ACPI_SUCCESS(status))
- 		result = acpi_pci_irq_add_prt(device->handle, root->bus);
- 
--	/*
--	 * Scan and bind all _ADR-Based Devices
--	 */
--	list_for_each_entry(child, &device->children, node)
--		acpi_pci_bridge_scan(child);
--
- 	/* Indicate support for various _OSC capabilities. */
- 	if (pci_ext_cfg_avail(root->bus->self))
- 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+@@ -2212,6 +2234,7 @@ __acquires(&gcwq->lock)
+ /* we're done with it, release */
+ hash_del(&worker->hentry);
+ worker->current_work = NULL;
++ worker->current_func = NULL;
+ worker->current_cwq = NULL;
+ cwq_dec_nr_in_flight(cwq, work_color);
+ }
+-- 
+1.8.0.2   
+
 
