@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab2LTEHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 23:07:31 -0500
-Received: from relay.parallels.com ([195.214.232.42]:36958 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab2LTEHY convert rfc822-to-8bit (ORCPT
+	id S1752520Ab2LTENp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 23:13:45 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:60298 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab2LTENi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 23:07:24 -0500
-Message-ID: <50D28EC8.7000708@parallels.com>
-Date: Thu, 20 Dec 2012 08:06:32 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <serge.hallyn@canonical.com>, <ebiederm@xmission.com>,
-        <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>, <jmorris@namei.org>,
-        <cmetcalf@tilera.com>, <joe.korty@ccur.com>, <dhowells@redhat.com>,
-        <dledford@redhat.com>, <viro@zeniv.linux.org.uk>,
-        <kosaki.motohiro@jp.fujitsu.com>, <linux-api@vger.kernel.org>,
-        <serue@us.ibm.com>, <tglx@linutronix.de>, <paulmck@linux.vnet.ibm.com>,
-        <devel@openvz.org>, <mtk.manpages@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [RFC PATCH v8 0/5] IPC: checkpoint/restore in userspace enhancements
-References: <20121024151555.5642.79086.stgit@localhost.localdomain> <20121218123601.113a29c0.akpm@linux-foundation.org>
-In-Reply-To: <20121218123601.113a29c0.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [69.7.221.19]
+	Wed, 19 Dec 2012 23:13:38 -0500
+Message-ID: <1355976817.2968.12.camel@gitbox>
+Subject: Re: Inconsistency in clk framework
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Arm Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 20 Dec 2012 17:13:37 +1300
+In-Reply-To: <20121219190824.GX14363@n2100.arm.linux.org.uk>
+References: <1355890233.25599.4.camel@gitbox>
+	 <20121219092636.GW14363@n2100.arm.linux.org.uk>
+	 <1355938492.27893.8.camel@gitbox> <1355943649.2451.1.camel@gitbox>
+	 <20121219190824.GX14363@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.12.2012 00:36, Andrew Morton пишет:
-> On Wed, 24 Oct 2012 19:34:51 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->
->> This respin of the patch set was significantly reworked. Most part of new API
->> was replaced by sysctls (by one per messages, semaphores and shared memory),
->> allowing to preset desired id for next new IPC object.
->>
->> This patch set is aimed to provide additional functionality for all IPC
->> objects, which is required for migration of these objects by user-space
->> checkpoint/restore utils (CRIU).
->>
->> The main problem here was impossibility to set up object id. This patch set
->> solves the problem by adding new sysctls for preset of desired id for new IPC
->> object.
->>
->> Another problem was to peek messages from queues without deleting them.
->> This was achived by introducing of new MSG_COPY flag for sys_msgrcv(). If
->> MSG_COPY flag is set, then msgtyp is interpreted as message number.
-> According to my extensive records, Sasha hit a bug in
-> ipc-message-queue-copy-feature-introduced.patch and Fengguang found a
-> bug in
-> ipc-message-queue-copy-feature-introduced-cleanup-do_msgrcv-aroung-msg_copy-feature.patch
->
-> It's not obvious (to me) that these things have been identified and
-> fixed.  What's the status, please?
+On Wed, 2012-12-19 at 19:08 +0000, Russell King - ARM Linux wrote:
+> On Thu, Dec 20, 2012 at 08:00:49AM +1300, Tony Prisk wrote:
+> > On Thu, 2012-12-20 at 06:34 +1300, Tony Prisk wrote:
+> > > On Wed, 2012-12-19 at 09:26 +0000, Russell King - ARM Linux wrote:
+> > > > On Wed, Dec 19, 2012 at 05:10:33PM +1300, Tony Prisk wrote:
+> > > > > Hi Mike,
+> > > > > 
+> > > > > In attempting to remove some IS_ERR_OR_NULL references, it was pointed
+> > > > > out that clk_get() can return NULL if CONFIG_HAVE_CLK is not defined.
+> > > > 
+> > > > That is correct - but why is that a problem?  As far as users are
+> > > > concerned, NULL is a valid clock.  If HAVE_CLK is undefined, do you
+> > > > want all your drivers to suddenly stop working?
+> > > 
+> > > That will be where the misunderstanding has occurred - I didn't consider
+> > > NULL to be a valid clock.
+> > > 
+> > > Given that NULL is a valid clock, I guess all tests against get_clk and
+> > > of_get_clk results should be IS_ERR_OR_NULL. Correct?
+> > > 
+> > For the sake of clarity, I should rephrase:
+> > 
+> > If the driver can't operate with a NULL clk, it should use a
+> > IS_ERR_OR_NULL test to test for failure, rather than IS_ERR.
+> 
+> Why should a _consumer_ of a clock care?  It is _very_ important that
+> people get this idea - to a consumer, the struct clk is just an opaque
+> cookie.  The fact that it appears to be a pointer does _not_ mean that
+> the driver can do any kind of dereferencing on that pointer - it should
+> never do so.
 
-Hello, Andrew.
-Fengguang's issue was solved by "ipc: simplify message copying" I sent you.
-But I can't find Sasha's issue. As I remember, there was some problem in 
-early
-version of the patch set. But I believe its fixed now.
+As a simple example:
+We have a PWM module that requires a clock source to be enabled before
+registers can be read/written.
+
+*pseudo code*
+x = clk_get("pwm_clock")
+if IS_ERR(x) then fail
+err = clk_enable(x)
+if (err != 0) then fail
+start writing to module registers
+
+
+Assuming HAVE_CLK is undefined:
+
+x = clk_get("pwm_clock") (= NULL)
+if IS_ERR(x) then fail (not an error)
+err = clk_enable(x) (= 0)
+if (err) then fail (not an error)
+start writing to module registers
+(register writes lock the bus because the clock wasn't really enabled,
+but no errors occurred enabling the clock)
+
+
+I apologise if it seems like I am not getting it, but I would like to
+understand this properly to avoid further problems later.
+
+Regards
+Tony P
 
