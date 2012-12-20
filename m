@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2LTCHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 21:07:06 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:42572 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab2LTCG7 (ORCPT
+	id S1752220Ab2LTCOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 21:14:05 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:47408 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab2LTCN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 21:06:59 -0500
+	Wed, 19 Dec 2012 21:13:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1855256.SyhOJGYMIh@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan>
-	<1355789297.18964.334.camel@misato.fc.hp.com>
-	<4082842.31rfDviYHK@vostro.rjw.lan>
-	<1855256.SyhOJGYMIh@vostro.rjw.lan>
-Date: Wed, 19 Dec 2012 18:06:57 -0800
-X-Google-Sender-Auth: CAGKy6E40eamMA9Y_jo1GcRqj4E
-Message-ID: <CAE9FiQXn9C4_eYUdSew-5H0fpHE7C0wCqsXORfrPvGFf2sK98A@mail.gmail.com>
-Subject: Re: [PATCH 0/16] ACPI: Rework ACPI namespace scanning for devices
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Thu, 20 Dec 2012 10:13:57 +0800
+Message-ID: <CABawtvNQCD5ikpCVMW2=yJwT2x7YX4v_Bwr_HyjdVZfi_TTeTg@mail.gmail.com>
+Subject: [PATCH] arch/x86/pci/xen.c: fix a typo in comments
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: konrad.wilk@oracle.com, hap9@epoch.ncsc.mil
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=20cf307f32b08d5e5804d13f48e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 5:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+--20cf307f32b08d5e5804d13f48e5
+Content-Type: text/plain; charset=ISO-8859-1
 
-great!, the .bind and .unbind go away.
+Konrad,
+      This patch fix a typo in comments of arch/x86/pci/xen.c
 
->
-> The patches are on top of my master branch and I'm going to rebase them when
-> v3.8-rc1 is out.
+Thanks,
+Ethan.zhao@oracle.com
 
->
-> There is a git tree you can pull them from at:
->
-> http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=summary acpi-scan-temp-new
->
-> It's v3.7 with my master branch merged and the new patches on top.
+---------------------------------------
+commit 333a48b76d5311ae370d65dfac293ca0d839c455
+Author: ethan.zhao <ethan.kernel@gmail.com>
+Date:   Thu Dec 20 20:23:31 2012 -0800
 
+    Fix a typo in comments
 
-can you make it base to today's Linus tree ?
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 56ab749..8de6ced 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -2,7 +2,7 @@
+  * Xen PCI - handle PCI (INTx) and MSI infrastructure calls for PV, HVM and
+  * initial domain support. We also handle the DSDT _PRT callbacks for GSI's
+  * used in HVM and initial domain mode (PV does not parse ACPI, so it has no
+- * concept of GSIs). Under PV we hook under the pnbbios API for IRQs and
++ * concept of GSIs). Under PV we hook under the pnpbios API for IRQs and
+  * 0xcf8 PCI configuration read/write.
+  *
+  *   Author: Ryan Wilson <hap9@epoch.ncsc.mil>
 
-otherwise I have to do some manual merge...
+--20cf307f32b08d5e5804d13f48e5
+Content-Type: application/octet-stream; 
+	name="1264-Fix-a-typo-in-comments.patch"
+Content-Disposition: attachment; 
+	filename="1264-Fix-a-typo-in-comments.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hax9aw850
 
-Bjorn change the _PRT for v.3.8...
-
-Thanks
-
-Yinghai
+RnJvbSAzMzNhNDhiNzZkNTMxMWFlMzcwZDY1ZGZhYzI5M2NhMGQ4MzljNDU1IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBldGhhbi56aGFvIDxldGhhbi5rZXJuZWxAZ21haWwuY29tPgpE
+YXRlOiBUaHUsIDIwIERlYyAyMDEyIDIwOjIzOjMxIC0wODAwClN1YmplY3Q6IFtQQVRDSCAxMjY0
+LzEyNjRdIEZpeCBhIHR5cG8gaW4gY29tbWVudHMKCgpTaWduZWQtb2ZmLWJ5OiBldGhhbi56aGFv
+IDxldGhhbi5rZXJuZWxAZ21haWwuY29tPgotLS0KIGFyY2gveDg2L3BjaS94ZW4uYyB8ICAgIDIg
+Ky0KIDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQoKZGlm
+ZiAtLWdpdCBhL2FyY2gveDg2L3BjaS94ZW4uYyBiL2FyY2gveDg2L3BjaS94ZW4uYwppbmRleCA1
+NmFiNzQ5Li44ZGU2Y2VkIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9wY2kveGVuLmMKKysrIGIvYXJj
+aC94ODYvcGNpL3hlbi5jCkBAIC0yLDcgKzIsNyBAQAogICogWGVuIFBDSSAtIGhhbmRsZSBQQ0kg
+KElOVHgpIGFuZCBNU0kgaW5mcmFzdHJ1Y3R1cmUgY2FsbHMgZm9yIFBWLCBIVk0gYW5kCiAgKiBp
+bml0aWFsIGRvbWFpbiBzdXBwb3J0LiBXZSBhbHNvIGhhbmRsZSB0aGUgRFNEVCBfUFJUIGNhbGxi
+YWNrcyBmb3IgR1NJJ3MKICAqIHVzZWQgaW4gSFZNIGFuZCBpbml0aWFsIGRvbWFpbiBtb2RlIChQ
+ViBkb2VzIG5vdCBwYXJzZSBBQ1BJLCBzbyBpdCBoYXMgbm8KLSAqIGNvbmNlcHQgb2YgR1NJcyku
+IFVuZGVyIFBWIHdlIGhvb2sgdW5kZXIgdGhlIHBuYmJpb3MgQVBJIGZvciBJUlFzIGFuZAorICog
+Y29uY2VwdCBvZiBHU0lzKS4gVW5kZXIgUFYgd2UgaG9vayB1bmRlciB0aGUgcG5wYmlvcyBBUEkg
+Zm9yIElSUXMgYW5kCiAgKiAweGNmOCBQQ0kgY29uZmlndXJhdGlvbiByZWFkL3dyaXRlLgogICoK
+ICAqICAgQXV0aG9yOiBSeWFuIFdpbHNvbiA8aGFwOUBlcG9jaC5uY3NjLm1pbD4KLS0gCjEuNy4x
+Cgo=
+--20cf307f32b08d5e5804d13f48e5--
