@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab2LTTSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:18:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab2LTTSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:18:05 -0500
-Date: Thu, 20 Dec 2012 14:17:53 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Norbert Warmuth <nwarmuth@t-online.de>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RESEND][PATCH v3] watchdog: Fix disable/enable regression
-Message-ID: <20121220191752.GR88797@redhat.com>
-References: <87y5h1c70y.fsf@nemi.mork.no>
- <1355946691-7969-1-git-send-email-bjorn@mork.no>
- <20121219201336.GK88797@redhat.com>
- <874njh7nd5.fsf@nemi.mork.no>
- <87zk1967jn.fsf@nemi.mork.no>
+	id S1752648Ab2LTTS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:18:29 -0500
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:62367 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab2LTTSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 14:18:10 -0500
+Date: Thu, 20 Dec 2012 11:18:03 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup: remove redundant check
+Message-ID: <20121220191803.GA14527@htj.dyndns.org>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
+ <1356030701-16284-23-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87zk1967jn.fsf@nemi.mork.no>
+In-Reply-To: <1356030701-16284-23-git-send-email-sasha.levin@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 10:44:44PM +0100, Bjørn Mork wrote:
-> Bjørn Mork <bjorn@mork.no> writes:
-> > Don Zickus <dzickus@redhat.com> writes:
-> >
-> >> What about the opposite cases?  
-> >> nmi_watchdog=1
-> >> echo 1 > /sys/devices/system/cpu/cpu1/online
-> >
-> > I don't see why not. But verifying it would be nice.  I thought that it
-> > would be a simple thing to test using qemu-kvm, but it seems that the
-> > CPU hotplugging support there isn't quite ready. The guest just dies
-> > with "Assertion `bus->allow_hotplug' failed."
-> >
-> > I'll go digging for alternatives, but if anyone else could verify this
-> > then I'd appreciate it.
+On Thu, Dec 20, 2012 at 02:11:31PM -0500, Sasha Levin wrote:
+> We already know that 'event' is non-NULL, remove the redundant check.
 > 
-> I just realized that you might not really want/need hotplugging, but
-> just booting with some cores initially offline?
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Actually, I did a poor job explaining myself but your previous email
-answered my question.
+I don't know.  I kinda like that test there.  It's not an error path
+and tearing down everything which could have been allocated.  If the
+test not being used is bothering, convert return -ENOMEM to goto fail?
 
-The original problem was that hrtimer_cancel was being called on an
-un-initialized object.  I was wondering what happens if watchdog_enable
-was called multiple times, would it re-initialize a new object causing a
-memory leak?
-
-But as you pointed out that couldn't happen.
-
-So I am fine with your changes.  Thanks for the initial and follow up
-testing.
-
-Acked-by: Don Zickus <dzickus@redhat.com>
+-- 
+tejun
