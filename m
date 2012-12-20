@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab2LTSdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:33:37 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:61405 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab2LTSd3 (ORCPT
+	id S1752050Ab2LTSdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:33:50 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62314 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2LTSdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:33:29 -0500
+	Thu, 20 Dec 2012 13:33:37 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 03/24] cputime: Allow dynamic switch between tick/virtual based cputime accounting
-Date: Thu, 20 Dec 2012 19:32:50 +0100
-Message-Id: <1356028391-14427-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 06/24] nohz: Basic full dynticks interface
+Date: Thu, 20 Dec 2012 19:32:53 +0100
+Message-Id: <1356028391-14427-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
 References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
@@ -31,20 +31,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow to dynamically switch between tick and virtual based cputime accounting.
-This way we can provide a kind of "on-demand" virtual based cputime
-accounting. In this mode, the kernel will rely on the user hooks
-subsystem to dynamically hook on kernel boundaries.
+Start with a very simple interface to define full dynticks CPU:
+use a boot time option defined cpumask through the "full_nohz="
+kernel parameter.
 
-This is in preparation for beeing able to stop the timer tick further
-idle. Doing so will depend on CONFIG_VIRT_CPU_ACCOUNTING which makes
-it possible to account the cputime without the tick by hooking on
-kernel/user boundaries.
+Make sure you keep at least one CPU outside this range to handle
+the timekeeping.
 
-Depending whether the tick is stopped or not, we can switch between
-tick and vtime based accounting anytime in order to minimize the
-overhead associated to user hooks.
+Also full_nohz= must match rcu_nocb= value.
 
+Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -61,258 +57,83 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/kernel_stat.h |    2 +-
- include/linux/sched.h       |    4 +-
- include/linux/vtime.h       |    9 +++++++
- init/Kconfig                |    6 ++++
- kernel/fork.c               |    2 +-
- kernel/sched/cputime.c      |   57 ++++++++++++++++++++++++++++---------------
- kernel/time/tick-sched.c    |    5 +++-
- 7 files changed, 60 insertions(+), 25 deletions(-)
+ include/linux/tick.h     |    7 +++++++
+ kernel/time/Kconfig      |    9 +++++++++
+ kernel/time/tick-sched.c |   23 +++++++++++++++++++++++
+ 3 files changed, 39 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 66b7078..ed5f6ed 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -127,7 +127,7 @@ extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t)
- extern void account_steal_time(cputime_t);
- extern void account_idle_time(cputime_t);
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 553272e..2d4f6f0 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -157,6 +157,13 @@ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+ # endif /* !NO_HZ */
  
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- static inline void account_process_tick(struct task_struct *tsk, int user)
- {
- 	vtime_account_user(tsk);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 651b51a..547c1f0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -597,7 +597,7 @@ struct signal_struct {
- 	cputime_t utime, stime, cutime, cstime;
- 	cputime_t gtime;
- 	cputime_t cgtime;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	struct cputime prev_cputime;
- #endif
- 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
-@@ -1357,7 +1357,7 @@ struct task_struct {
- 
- 	cputime_t utime, stime, utimescaled, stimescaled;
- 	cputime_t gtime;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	struct cputime prev_cputime;
- #endif
- 	unsigned long nvcsw, nivcsw; /* context switch counts */
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index 58392aa..e57020d 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -10,11 +10,20 @@ extern void vtime_account_system_irqsafe(struct task_struct *tsk);
- extern void vtime_account_idle(struct task_struct *tsk);
- extern void vtime_account_user(struct task_struct *tsk);
- extern void vtime_account(struct task_struct *tsk);
-+
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+extern bool vtime_accounting(void);
- #else
-+static inline bool vtime_accounting(void) { return true; }
++#ifdef CONFIG_NO_HZ_FULL
++int tick_nohz_full_cpu(int cpu);
++#else
++static inline int tick_nohz_full_cpu(int cpu) { return 0; }
 +#endif
 +
-+#else /* !CONFIG_VIRT_CPU_ACCOUNTING */
- static inline void vtime_task_switch(struct task_struct *prev) { }
- static inline void vtime_account_system(struct task_struct *tsk) { }
- static inline void vtime_account_system_irqsafe(struct task_struct *tsk) { }
-+static inline void vtime_account_user(struct task_struct *tsk) { }
- static inline void vtime_account(struct task_struct *tsk) { }
-+static inline bool vtime_accounting(void) { return false; }
- #endif
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-diff --git a/init/Kconfig b/init/Kconfig
-index a64b3e8..9d7000a 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -342,6 +342,7 @@ config VIRT_CPU_ACCOUNTING
- 	bool "Deterministic task and CPU time accounting"
- 	depends on HAVE_VIRT_CPU_ACCOUNTING || HAVE_CONTEXT_TRACKING
- 	select VIRT_CPU_ACCOUNTING_GEN if !HAVE_VIRT_CPU_ACCOUNTING
-+	select VIRT_CPU_ACCOUNTING_NATIVE if HAVE_VIRT_CPU_ACCOUNTING
- 	default y if PPC64
- 	help
- 	  Select this option to enable more accurate task and CPU time
-@@ -367,11 +368,16 @@ endchoice
- 
- config VIRT_CPU_ACCOUNTING_GEN
- 	select CONTEXT_TRACKING
-+	depends on VIRT_CPU_ACCOUNTING && HAVE_CONTEXT_TRACKING
- 	bool
- 	help
- 	  Implement a generic virtual based cputime accounting by using
- 	  the context tracking subsystem.
- 
-+config VIRT_CPU_ACCOUNTING_NATIVE
-+	depends on VIRT_CPU_ACCOUNTING && HAVE_VIRT_CPU_ACCOUNTING
-+	bool
 +
- config BSD_PROCESS_ACCT
- 	bool "BSD Process Accounting"
- 	help
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3c31e87..a81efb8 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1221,7 +1221,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ # ifdef CONFIG_CPU_IDLE_GOV_MENU
+ extern void menu_hrtimer_cancel(void);
+ # else
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 8601f0d..0a1bc72 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -70,6 +70,15 @@ config NO_HZ
+ 	  only trigger on an as-needed basis both when the system is
+ 	  busy and when the system is idle.
  
- 	p->utime = p->stime = p->gtime = 0;
- 	p->utimescaled = p->stimescaled = 0;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	p->prev_cputime.utime = p->prev_cputime.stime = 0;
- #endif
- #if defined(SPLIT_RSS_COUNTING)
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index da0a9e7..e1fcab4 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -317,8 +317,6 @@ out:
- 	rcu_read_unlock();
- }
- 
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
--
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
- /*
-  * Account a tick to a process and cpustat
-@@ -388,6 +386,7 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
- 						struct rq *rq) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- /*
-  * Account a single tick of cpu time.
-  * @p: the process that the cpu time gets accounted to
-@@ -398,6 +397,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
- 	struct rq *rq = this_rq();
- 
-+	if (vtime_accounting()) {
-+		vtime_account_user(p);
-+		return;
-+	}
++config NO_HZ_FULL
++       bool "Full tickless system"
++       depends on NO_HZ && RCU_USER_QS && VIRT_CPU_ACCOUNTING_GEN && RCU_NOCB_CPU
++       select CONTEXT_TRACKING_FORCE
++       help
++         Try to be tickless everywhere, not just in idle. (You need
++	 to fill up the full_nohz_mask boot parameter).
 +
- 	if (sched_clock_irqtime) {
- 		irqtime_account_process_tick(p, user_tick, rq);
- 		return;
-@@ -439,29 +443,13 @@ void account_idle_ticks(unsigned long ticks)
- 
- 	account_idle_time(jiffies_to_cputime(ticks));
- }
--
- #endif
- 
 +
- /*
-  * Use precise platform statistics if available:
-  */
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
--void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
--{
--	*ut = p->utime;
--	*st = p->stime;
--}
--
--void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
--{
--	struct task_cputime cputime;
--
--	thread_group_cputime(p, &cputime);
--
--	*ut = cputime.utime;
--	*st = cputime.stime;
--}
--
- void vtime_account_system_irqsafe(struct task_struct *tsk)
- {
- 	unsigned long flags;
-@@ -517,8 +505,25 @@ void vtime_account(struct task_struct *tsk)
- }
- EXPORT_SYMBOL_GPL(vtime_account);
- #endif /* __ARCH_HAS_VTIME_ACCOUNT */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
- 
--#else
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+{
-+	*ut = p->utime;
-+	*st = p->stime;
-+}
-+
-+void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+{
-+	struct task_cputime cputime;
-+
-+	thread_group_cputime(p, &cputime);
-+
-+	*ut = cputime.utime;
-+	*st = cputime.stime;
-+}
-+#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- #ifndef nsecs_to_cputime
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
-@@ -548,6 +553,12 @@ static void cputime_adjust(struct task_cputime *curr,
- {
- 	cputime_t rtime, utime, total;
- 
-+	if (vtime_accounting()) {
-+		*ut = curr->utime;
-+		*st = curr->stime;
-+		return;
-+	}
-+
- 	utime = curr->utime;
- 	total = utime + curr->stime;
- 
-@@ -601,6 +612,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
- 	thread_group_cputime(p, &cputime);
- 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
- }
-+#endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
-@@ -642,6 +654,11 @@ void vtime_account_idle(struct task_struct *tsk)
- 	account_idle_time(delta_cpu);
- }
- 
-+bool vtime_accounting(void)
-+{
-+	return context_tracking_active();
-+}
-+
- static int __cpuinit vtime_cpu_notify(struct notifier_block *self,
- 				      unsigned long action, void *hcpu)
- {
+ config HIGH_RES_TIMERS
+ 	bool "High Resolution Timer Support"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index fb8e5e4..ad0e6fa 100644
+index ad0e6fa..fac9ba4 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -632,8 +632,11 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+@@ -142,6 +142,29 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ 	profile_tick(CPU_PROFILING);
+ }
  
- static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
- {
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	unsigned long ticks;
++#ifdef CONFIG_NO_HZ_FULL
++static cpumask_var_t full_nohz_mask;
++bool have_full_nohz_mask;
 +
-+	if (vtime_accounting())
-+		return;
- 	/*
- 	 * We stopped the tick in idle. Update process times would miss the
- 	 * time we slept as update_process_times does only a 1 tick
++int tick_nohz_full_cpu(int cpu)
++{
++	if (!have_full_nohz_mask)
++		return 0;
++
++	return cpumask_test_cpu(cpu, full_nohz_mask);
++}
++
++/* Parse the boot-time nohz CPU list from the kernel parameters. */
++static int __init tick_nohz_full_setup(char *str)
++{
++	alloc_bootmem_cpumask_var(&full_nohz_mask);
++	have_full_nohz_mask = true;
++	cpulist_parse(str, full_nohz_mask);
++	return 1;
++}
++__setup("full_nohz=", tick_nohz_full_setup);
++#endif
++
+ /*
+  * NOHZ - aka dynamic tick functionality
+  */
 -- 
 1.7.5.4
 
