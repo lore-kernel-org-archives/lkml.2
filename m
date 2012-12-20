@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab2LTUFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:05:37 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:65363 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab2LTUFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:05:32 -0500
+	id S1751995Ab2LTUPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:15:50 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:53328 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751036Ab2LTUPm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 15:15:42 -0500
+From: Bing Zhao <bzhao@marvell.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Dec 2012 12:13:44 -0800
+Subject: RE: [PATCH] wireless: mwifiex: remove unreachable paths
+Thread-Topic: [PATCH] wireless: mwifiex: remove unreachable paths
+Thread-Index: Ac3e5iJ51wt5nf3uTR+G8SgZJ6wKVgAB0iLw
+Message-ID: <477F20668A386D41ADCC57781B1F70430D13D806CA@SC-VEXCH1.marvell.com>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
+ <1356030701-16284-17-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1356030701-16284-17-git-send-email-sasha.levin@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20121220070323.GU15182@dastard>
-References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
- <20121218015705.GH4939@ZenIV.linux.org.uk> <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
- <20121218213043.GF15182@dastard> <CALCETrV9fEfTVbiSzai2dvk6MWwDhsD_nAKs7Z1JP0ZkF-eruw@mail.gmail.com>
- <20121220070323.GU15182@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 20 Dec 2012 12:05:09 -0800
-Message-ID: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
-Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
-To: Dave Chinner <david@fromorbit.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 11:03 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> The fact you are conerned about this function tells me something
-> important - that you aren't having problems with i_mutex (show me
-> where i_mutex is taken on the page_mkwrite path ;), but you are
-> having latency problems with the ext4 .dirty_inode method starting a
-> new transaction when it is called from mark_inode_dirty_sync().
->
-> So, a filesystem specific problem, perhaps?
+Hi Sasha,
 
-i_mutex isn't involved.  On ext4, it looks like this (from latencytop):
+Thanks for the patch.
 
-start_this_handle jbd2__journal_start jbd2_journal_start
-ext4_journal_start_sb ext4_dirty_inode __mark_inode_dirty update_time
-file_update_time ext4_page_mkwrite do_wp_page handle_pte_fault
-handle_mm_fault
+> We know 'firmware' is non-NULL from the beginning of mwifiex_prog_fw_w_helper,
+> remove all !firmware paths from the rest of the function.
 
-This is a showstopper for my software -- I'm running on a kernel with
-the call to file_update_time commented out.
+After removing all !firmware paths the function 'mwifiex_get_fw_data' becomes an orphan.
 
->
->> Filesystems that haven't been converted can will continue to update
->> times in ->page_mkwrite.
->
-> You don't need to change this at all. If you have ext4
-> implement .update_timestamp to do whatever timestamp trickery you
-> want and avoid ext4 starting a new transaction in .dirty_inode for
-> pure timestamp updates, you can move the timestamp update into the
-> ext4 writeback path. The ext4 writeback path is already quite
-> special, so I'm sure people would welcome another weird behaviour
-> being added to it :)
->
-> IOWs, what you want to do doesn't seem to require any changes to the
-> generic code.  Just make it do timestamp updates in a manner similar
-> to XFS and btrfs, and you can handle it all completely internally to
-> the filesystem...
+Could you please remove that function as well and resend a v2 patch?
 
-Are XFS and btrfs really better?  XFS does:
+Thanks,
+Bing
 
-	tp = xfs_trans_alloc(mp, XFS_TRANS_FSYNC_TS);
-	error = xfs_trans_reserve(tp, 0, XFS_FSYNC_TS_LOG_RES(mp), 0, 0, 0);
-	if (error) {
-		xfs_trans_cancel(tp, 0);
-		return -error;
-	}
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  drivers/net/wireless/mwifiex/usb.c | 15 +++------------
+>  1 file changed, 3 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
+> index 63ac9f2..8bd7098 100644
+> --- a/drivers/net/wireless/mwifiex/usb.c
+> +++ b/drivers/net/wireless/mwifiex/usb.c
+> @@ -836,23 +836,14 @@ static int mwifiex_prog_fw_w_helper(struct mwifiex_adapter *adapter,
+>  			dlen = 0;
+>  		} else {
+>  			/* copy the header of the fw_data to get the length */
+> -			if (firmware)
+> -				memcpy(&fwdata->fw_hdr, &firmware[tlen],
+> -				       sizeof(struct fw_header));
+> -			else
+> -				mwifiex_get_fw_data(adapter, tlen,
+> -						    sizeof(struct fw_header),
+> -						    (u8 *)&fwdata->fw_hdr);
+> +			memcpy(&fwdata->fw_hdr, &firmware[tlen],
+> +			       sizeof(struct fw_header));
+> 
+>  			dlen = le32_to_cpu(fwdata->fw_hdr.data_len);
+>  			dnld_cmd = le32_to_cpu(fwdata->fw_hdr.dnld_cmd);
+>  			tlen += sizeof(struct fw_header);
+> 
+> -			if (firmware)
+> -				memcpy(fwdata->data, &firmware[tlen], dlen);
+> -			else
+> -				mwifiex_get_fw_data(adapter, tlen, dlen,
+> -						    (u8 *)fwdata->data);
+> +			memcpy(fwdata->data, &firmware[tlen], dlen);
+> 
+>  			fwdata->seq_num = cpu_to_le32(fw_seqnum);
+>  			tlen += dlen;
+> --
+> 1.8.0
 
-	xfs_ilock(ip, XFS_ILOCK_EXCL);
-
-This looks like it could sleep in a couple of places.  I admit I
-haven't actually tried it.
-
-
-In any case, I have an alternative approach that I'm currently playing
-with.  If it survives a bit of testing, I'll send patches.
-
---Andy
