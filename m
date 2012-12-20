@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2LTSRK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:17:10 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:62862 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897Ab2LTSQ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:16:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
-References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
-Date: Thu, 20 Dec 2012 19:16:54 +0100
-Message-ID: <CACRpkdaqO7AAeYeR8SZt4Tbv1grrMq85TNYMc-FSbUSrnZBm=Q@mail.gmail.com>
-Subject: Re: [PATCH 0/9] drivers: mailbox: framework creation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Loic Pallardy <loic.pallardy-ext@stericsson.com>, arm@kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic PALLARDY <loic.pallardy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Suman Anna <s-anna@ti.com>, Juan Gutierrez <jgutierrez@ti.com>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751996Ab2LTSSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:18:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15121 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab2LTSSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 13:18:07 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: JBottomley@parallels.com, robert.w.love@intel.com, torvalds@osdl.org,
+        hpa@zytor.com
+cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, devel@open-fcoe.org,
+        linux-scsi@vger.kernel.org
+Subject: UAPI: What remains to be pulled: SCSI and FCoE
+Date: Thu, 20 Dec 2012 18:16:51 +0000
+Message-ID: <2145.1356027411@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 2:10 PM, Loic Pallardy
-<loic.pallardy-ext@stericsson.com> wrote:
 
-> OMAP and ST-Ericsson platforms are both using mailbox to communicate
-> with some coprocessors.
-> Based on OMAP existing mailbox framework, this series proposes a
-> generic framework, living under drivers/mailbox.
+Assuming Linus pulls the fbdev branch that I've sent him, all that remains to
+be pulled of the UAPI changes are the SCSI and the FCoE bits.
 
-I like this patch series so you have my Acked-by.
+Barring Kbuild updates, the SCSI patch just moves three files and the FCoE
+patch just moves four files.  No actual header changes are made.  Is it
+possible to get these in in this merge window?
 
-Since it's a new subsystem and affects a few ARM architectures can
-we merge this into the ARM SoC tree once we have consensus,
-so we get some rotation in linux-next that way?
+I talked to James about the SCSI patch, but it didn't get picked up; I haven't
+heard from Robert about the FCoE patch at all.
 
-Olof/Arnd?
+Below are two git pull requests, one for SCSI and one for FCoE.  I can resend
+them separately to their mailing lists if need be.
 
-Yours,
-Linus Walleij
+Merry Christmas!
+David
+---
+The following changes since commit 752451f01c4567b506bf4343082682dbb8fb30dd:
+
+  Merge branch 'i2c-embedded/for-next' of git://git.pengutronix.de/git/wsa/linux (2012-12-18 16:51:10 -0800)
+
+are available in the git repository at:
+
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-scsi-20121219
+
+for you to fetch changes up to ee7afd717c26299c85675d84c7ff89a9c989f4fa:
+
+  UAPI: (Scripted) Disintegrate include/scsi (2012-12-19 16:07:23 +0000)
+
+----------------------------------------------------------------
+UAPI Disintegration 2012-12-19
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/scsi
+
+ include/scsi/Kbuild                       | 3 ---
+ include/uapi/scsi/Kbuild                  | 3 +++
+ include/{ => uapi}/scsi/scsi_bsg_fc.h     | 0
+ include/{ => uapi}/scsi/scsi_netlink.h    | 0
+ include/{ => uapi}/scsi/scsi_netlink_fc.h | 0
+ 5 files changed, 3 insertions(+), 3 deletions(-)
+ rename include/{ => uapi}/scsi/scsi_bsg_fc.h (100%)
+ rename include/{ => uapi}/scsi/scsi_netlink.h (100%)
+ rename include/{ => uapi}/scsi/scsi_netlink_fc.h (100%)
+
+---
+The following changes since commit 752451f01c4567b506bf4343082682dbb8fb30dd:
+
+  Merge branch 'i2c-embedded/for-next' of git://git.pengutronix.de/git/wsa/linux (2012-12-18 16:51:10 -0800)
+
+are available in the git repository at:
+
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-fc-20121219
+
+for you to fetch changes up to 6973d441bb53bdf58693c9e54493fc609d9e37cf:
+
+  UAPI: (Scripted) Disintegrate include/scsi/fc (2012-12-19 16:07:25 +0000)
+
+----------------------------------------------------------------
+UAPI Disintegration 2012-12-19
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/scsi/fc
+
+ include/scsi/fc/Kbuild              | 4 ----
+ include/uapi/scsi/fc/Kbuild         | 4 ++++
+ include/{ => uapi}/scsi/fc/fc_els.h | 0
+ include/{ => uapi}/scsi/fc/fc_fs.h  | 0
+ include/{ => uapi}/scsi/fc/fc_gs.h  | 0
+ include/{ => uapi}/scsi/fc/fc_ns.h  | 0
+ 6 files changed, 4 insertions(+), 4 deletions(-)
+ rename include/{ => uapi}/scsi/fc/fc_els.h (100%)
+ rename include/{ => uapi}/scsi/fc/fc_fs.h (100%)
+ rename include/{ => uapi}/scsi/fc/fc_gs.h (100%)
+ rename include/{ => uapi}/scsi/fc/fc_ns.h (100%)
