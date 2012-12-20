@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab2LTFCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 00:02:12 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41901 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2LTFCG (ORCPT
+	id S1751647Ab2LTFJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 00:09:40 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:18545 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1749667Ab2LTFJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 00:02:06 -0500
-Date: Thu, 20 Dec 2012 14:02:32 +0900
-From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, mtosatti@redhat.com,
-        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
- dirty logging
-Message-Id: <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
-In-Reply-To: <1355931777.3224.562.camel@bling.home>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	<20121219213037.b234f9d4f187df2132e65576@gmail.com>
-	<1355931777.3224.562.camel@bling.home>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 00:09:36 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
+X-WSS-ID: 0MFBCZQ-02-5JK-02
+X-M-MSG: 
+Date: Wed, 19 Dec 2012 23:09:27 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: <linux-kernel@vger.kernel.org>, <Boris.Ostrovsky@amd.com>
+Subject: Re: AMD microcode site (amd64.org) down for a while now
+Message-ID: <20121220050927.GA28438@jshin-Toonie>
+References: <20121220011108.GB17761@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20121220011108.GB17761@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 08:42:57 -0700
-Alex Williamson <alex.williamson@redhat.com> wrote:
+On Wed, Dec 19, 2012 at 11:11:09PM -0200, Henrique de Moraes Holschuh wrote:
+> Jacob,
+> 
+> Since you seem to be dealing with AMD microcode, do you know anything about
+> the amd64.org demise?  Where do we get the microcode update data, now?
 
-> Please let me know if you can identify one of these as the culprit.
-> They're all very simple, but there's always a chance I've missed a hard
-> coding of slot numbers somewhere.  Thanks,
+Hi,
 
-I identified the one:
-  commit b7f69c555ca430129b6cde81e9f0927531420c5c
-  KVM: Minor memory slot optimization
-
-IIUC, the problem was that you did not care about the generation of
-slots which was updated by update_memslots():
-
-  Your patch reused the old memory slots which was there before
-  doing the update for invalidating the slot, and badly, we did flush
-  shadow pages after that before doing the second update for finally
-  installing the new slot.  As a result, the generation did not change
-  from that of the invalidated one, although the ghc(gfn to hva cache)
-  might be stale.
-
-  After that, kvm_write_guest_cached() checked if ghc should be
-  initialized by comparing ghc's generation with that old one,
-  resulting mark_page_dirty_in_slot() was called with the invalid
-  cache contents.
-
-Although we can do something to correct the generation alone, I do not
-think such a trick is worth it because this is not a hot path.  Let's
-just revert the patch.
+Yes, the server amd64.org was hosted on is down at the moment, sorry
+about that. We are hoping to get it back up soon. But eventually we
+are planning to push the microcode patch update files to kernel.org
+linux-firmware git repository.
 
 Thanks,
-	Takuya
+
+-Jacob
+
+> 
+> -- 
+>   "One disk to rule them all, One disk to find them. One disk to bring
+>   them all and in the darkness grind them. In the Land of Redmond
+>   where the shadows lie." -- The Silicon Valley Tarot
+>   Henrique Holschuh
+> 
+
