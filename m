@@ -1,157 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2LTNZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 08:25:55 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10663 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab2LTNZt convert rfc822-to-8bit (ORCPT
+	id S1752596Ab2LTN35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 08:29:57 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:49106 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab2LTN3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 08:25:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 20 Dec 2012 05:24:11 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 20 Dec 2012 14:25:44 +0100
-Subject: Re: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
-Thread-Topic: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
-Thread-Index: Ac3etYSablKZMgLfRJaR6dr9mUbnvg==
-Message-ID: <20121220.152544.2281355586046026239.hdoyu@nvidia.com>
-References: <50D2EFFB.8030702@arm.com><20121220.135758.1347753620353343245.hdoyu@nvidia.com><50D2FF19.4060600@arm.com>
-In-Reply-To: <50D2FF19.4060600@arm.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Thu, 20 Dec 2012 08:29:51 -0500
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 08:29:50 EST
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: DRI Development <dri-devel@lists.freedesktop.org>,
+        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Aaron Plattner <aplattner@nvidia.com>
+Subject: [PATCH] [RFC] dma-buf: implement vmap refcounting in the interface logic
+Date: Thu, 20 Dec 2012 14:14:23 +0100
+Message-Id: <1356009263-15822-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <50D255F5.5030602@nvidia.com>
+References: <50D255F5.5030602@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 13:05:45 +0100:
+All drivers which implement this need to have some sort of refcount to
+allow concurrent vmap usage. Hence implement this in the dma-buf core.
 
-> On 20/12/12 11:57, Hiroshi Doyu wrote:
-> > Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 12:01:15 +0100:
-> > 
-> >> On 20/12/12 09:44, Hiroshi Doyu wrote:
-> >>> Add platform enabler for ARM arch_timer(TSC). TSC is more fine grained
-> >>> timer than TMR0. If it's available, it will be used for clock source
-> >>> and sched_clock. Otherwise, TMR0 is used. In any case TMR0 is
-> >>> necessary for clock event.
-> >>>
-> >>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> >>> ---
-> >>>  .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 ++++
-> >>>  drivers/clocksource/tegra20_timer.c                |   64 +++++++++++++++++++-
-> >>>  2 files changed, 74 insertions(+), 1 deletion(-)
-> >>>  create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
-> >>>
-> >>> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
-> >>> new file mode 100644
-> >>> index 0000000..9de936a
-> >>> --- /dev/null
-> >>> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
-> >>> @@ -0,0 +1,11 @@
-> >>> +NVIDIA Tegra Timer Stamp Counter(TSC)
-> >>> +
-> >>> +Required properties:
-> >>> +- compatible : "nvidia,tegra114-tsc
-> >>> +- reg : Should contain 1 register ranges(address and length)
-> >>> +
-> >>> +Example:
-> >>> +	tsc {
-> >>> +		compatible = "nvidia,tegra114-tsc";
-> >>> +		reg = <0x700f0000 0x20000>;
-> >>> +	};
-> >>> diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
-> >>> index 1d25de8..285a6f1 100644
-> >>> --- a/drivers/clocksource/tegra20_timer.c
-> >>> +++ b/drivers/clocksource/tegra20_timer.c
-> >>> @@ -30,6 +30,7 @@
-> >>>  #include <asm/mach/time.h>
-> >>>  #include <asm/smp_twd.h>
-> >>>  #include <asm/sched_clock.h>
-> >>> +#include <asm/arch_timer.h>
-> >>>  
-> >>>  #define RTC_SECONDS            0x08
-> >>>  #define RTC_SHADOW_SECONDS     0x0c
-> >>> @@ -271,10 +272,71 @@ static void __init tegra20_init_tmr(void)
-> >>>  	clockevents_register_device(&tegra_clockevent);
-> >>>  }
-> >>>  
-> >>> +#define TSC_CNTCR		0		/* TSC control registers */
-> >>> +#define TSC_CNTCR_ENABLE	(1 << 0)	/* Enable */
-> >>> +#define TSC_CNTCR_HDBG		(1 << 1)	/* Halt on debug */
-> >>> +
-> >>> +#define TSC_CNTCV0		0x8		/* TSC counter (LSW) */
-> >>> +#define TSC_CNTCV1		0xc		/* TSC counter (MSW) */
-> >>> +#define TSC_CNTFID0		0x20		/* TSC freq id 0 */
-> >>> +
-> >>> +static const struct of_device_id tegra_tsc_match[] __initconst = {
-> >>> +	{ .compatible = "nvidia,tegra114-tsc" },
-> >>> +	{}
-> >>> +};
-> >>> +
-> >>> +static int tegra_arch_timer_init(void)
-> >>> +{
-> >>> +	int err;
-> >>> +	struct device_node *np;
-> >>> +	struct clk *clk;
-> >>> +	void __iomem *tsc_base;
-> >>> +	u32 freq, val;
-> >>> +
-> >>> +	np = of_find_matching_node(NULL, tegra_tsc_match);
-> >>> +	if (!np)
-> >>> +		return -ENODEV;
-> >>> +
-> >>> +	tsc_base = of_iomap(np, 0);
-> >>> +	if (!tsc_base)
-> >>> +		return -ENODEV;
-> >>> +
-> >>> +	clk = clk_get_sys("clk_m", NULL);
-> >>> +	if (IS_ERR(clk)) {
-> >>> +		freq = 12000000;
-> >>> +		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
-> >>> +	} else {
-> >>> +		freq = clk_get_rate(clk);
-> >>> +		clk_put(clk);
-> >>> +	}
-> >>> +	writel_relaxed(freq, tsc_base + TSC_CNTFID0);
-> >>> +
-> >>> +	/* CNTFRQ */
-> >>> +	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
-> >>> +	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
-> >>> +	BUG_ON(val != freq);
-> >>
-> >> This is scary. CNTFRQ is only writable from secure mode, and will
-> >> explode in any other situation.
-> >>
-> >> Also, writing to CNTFRQ doesn't change the timer frequency! This is just
-> >> a way for secure mode to tell the rest of the world the frequency the
-> >> timer is ticking at. Unless you've wired the input clock to be able to
-> >> change the frequency?
-> > 
-> > ATM, our upstream kernel is expected in secure mode. This situation
-> > may be changed later, though....
-> 
-> I appreciate this. But I expect this kernel to be also used on the
-> non-secure side if someone tried to run KVM with it. And this would go
-> bang right away.
+To protect against concurrent calls we need a lock, which potentially
+causes new funny locking inversions. But this shouldn't be a problem
+for exporters with statically allocated backing storage, and more
+dynamic drivers have decent issues already anyway.
 
-What is the common way to make the above code selective at run
-time(secure or non-secure path)?
+Inspired by some refactoring patches from Aaron Plattner, who
+implemented the same idea, but only for drm/prime drivers.
+
+v2: Check in dma_buf_release that no dangling vmaps are left.
+Suggested by Aaron Plattner. We might want to do similar checks for
+attachments, but that's for another patch. Also fix up ERR_PTR return
+for vmap.
+
+v3: Check whether the passed-in vmap address matches with the cached
+one for vunmap. Eventually we might want to remove that parameter -
+compared to the kmap functions there's no need for the vaddr for
+unmapping.  Suggested by Chris Wilson.
+
+v4: Fix a brown-paper-bag bug spotted by Aaron Plattner.
+
+Cc: Aaron Plattner <aplattner@nvidia.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ Documentation/dma-buf-sharing.txt |  6 +++++-
+ drivers/base/dma-buf.c            | 43 ++++++++++++++++++++++++++++++++++-----
+ include/linux/dma-buf.h           |  4 +++-
+ 3 files changed, 46 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+index 0188903..4966b1b 100644
+--- a/Documentation/dma-buf-sharing.txt
++++ b/Documentation/dma-buf-sharing.txt
+@@ -302,7 +302,11 @@ Access to a dma_buf from the kernel context involves three steps:
+       void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
+ 
+    The vmap call can fail if there is no vmap support in the exporter, or if it
+-   runs out of vmalloc space. Fallback to kmap should be implemented.
++   runs out of vmalloc space. Fallback to kmap should be implemented. Note that
++   the dma-buf layer keeps a reference count for all vmap access and calls down
++   into the exporter's vmap function only when no vmapping exists, and only
++   unmaps it once. Protection against concurrent vmap/vunmap calls is provided
++   by taking the dma_buf->lock mutex.
+ 
+ 3. Finish access
+ 
+diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+index a3f79c4..26b68de 100644
+--- a/drivers/base/dma-buf.c
++++ b/drivers/base/dma-buf.c
+@@ -39,6 +39,8 @@ static int dma_buf_release(struct inode *inode, struct file *file)
+ 
+ 	dmabuf = file->private_data;
+ 
++	BUG_ON(dmabuf->vmapping_counter);
++
+ 	dmabuf->ops->release(dmabuf);
+ 	kfree(dmabuf);
+ 	return 0;
+@@ -482,12 +484,34 @@ EXPORT_SYMBOL_GPL(dma_buf_mmap);
+  */
+ void *dma_buf_vmap(struct dma_buf *dmabuf)
+ {
++	void *ptr;
++
+ 	if (WARN_ON(!dmabuf))
+ 		return NULL;
+ 
+-	if (dmabuf->ops->vmap)
+-		return dmabuf->ops->vmap(dmabuf);
+-	return NULL;
++	if (!dmabuf->ops->vmap)
++		return NULL;
++
++	mutex_lock(&dmabuf->lock);
++	if (dmabuf->vmapping_counter) {
++		dmabuf->vmapping_counter++;
++		BUG_ON(!dmabuf->vmap_ptr);
++		ptr = dmabuf->vmap_ptr;
++		goto out_unlock;
++	}
++
++	BUG_ON(dmabuf->vmap_ptr);
++
++	ptr = dmabuf->ops->vmap(dmabuf);
++	if (IS_ERR_OR_NULL(ptr))
++		goto out_unlock;
++
++	dmabuf->vmap_ptr = ptr;
++	dmabuf->vmapping_counter = 1;
++
++out_unlock:
++	mutex_unlock(&dmabuf->lock);
++	return ptr;
+ }
+ EXPORT_SYMBOL_GPL(dma_buf_vmap);
+ 
+@@ -501,7 +525,16 @@ void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
+ 	if (WARN_ON(!dmabuf))
+ 		return;
+ 
+-	if (dmabuf->ops->vunmap)
+-		dmabuf->ops->vunmap(dmabuf, vaddr);
++	BUG_ON(!dmabuf->vmap_ptr);
++	BUG_ON(dmabuf->vmapping_counter == 0);
++	BUG_ON(dmabuf->vmap_ptr != vaddr);
++
++	mutex_lock(&dmabuf->lock);
++	if (--dmabuf->vmapping_counter == 0) {
++		if (dmabuf->ops->vunmap)
++			dmabuf->ops->vunmap(dmabuf, vaddr);
++		dmabuf->vmap_ptr = NULL;
++	}
++	mutex_unlock(&dmabuf->lock);
+ }
+ EXPORT_SYMBOL_GPL(dma_buf_vunmap);
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index bd2e52c..e3bf2f6 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -119,8 +119,10 @@ struct dma_buf {
+ 	struct file *file;
+ 	struct list_head attachments;
+ 	const struct dma_buf_ops *ops;
+-	/* mutex to serialize list manipulation and attach/detach */
++	/* mutex to serialize list manipulation, attach/detach and vmap/unmap */
+ 	struct mutex lock;
++	unsigned vmapping_counter;
++	void *vmap_ptr;
+ 	void *priv;
+ };
+ 
+-- 
+1.7.11.7
+
