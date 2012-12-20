@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab2LTW1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 17:27:12 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:58342 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab2LTW1E (ORCPT
+	id S1752536Ab2LTW3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 17:29:03 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53196 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2LTW2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 17:27:04 -0500
+	Thu, 20 Dec 2012 17:28:54 -0500
+Message-ID: <50D39122.3060401@wwwdotorg.org>
+Date: Thu, 20 Dec 2012 15:28:50 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <50D387FD.4020008@oracle.com>
-References: <alpine.LNX.2.00.1212191735530.25409@eggly.anvils>
- <alpine.LNX.2.00.1212191742440.25409@eggly.anvils> <50D387FD.4020008@oracle.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 20 Dec 2012 14:26:43 -0800
-X-Google-Sender-Auth: 9Zbti4pz3H_6bMqT3xqKBIDxCvo
-Message-ID: <CA+55aFxfS0SBbRBRULX4Hm7a-xOY7ebJ=Ncu2cAdH2xvcZFO+Q@mail.gmail.com>
-Subject: Re: [PATCH] ksm: make rmap walks more scalable
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Petr Holasek <pholasek@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+References: <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de> <50D2D792.1050401@nvidia.com> <50D34775.5010606@wwwdotorg.org> <50D34F00.4080308@nvidia.com> <50D3511F.2090308@wwwdotorg.org> <50D35287.3040509@nvidia.com> <20121220203059.GA12977@avionic-0098.adnet.avionic-design.de> <50D38462.3060302@nvidia.com>
+In-Reply-To: <50D38462.3060302@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 1:49 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 12/19/2012 08:44 PM, Hugh Dickins wrote:
->> The rmap walks in ksm.c are like those in rmap.c:
->> they can safely be done with anon_vma_lock_read().
->>
->> Signed-off-by: Hugh Dickins <hughd@google.com>
->> ---
->
-> Hi Hugh,
->
-> This patch didn't fix the ksm oopses I'm seeing.
->
-> This is with both patches applied:
+On 12/20/2012 02:34 PM, Terje Bergström wrote:
+> On 20.12.2012 22:30, Thierry Reding wrote:
+>> The problem with your proposed solution is that, even any of Stephen's
+>> valid objections aside, it won't work. Once the tegra-drm module is
+>> unloaded, the driver's data will be left in the current state and the
+>> link to the dummy device will be lost.
+> 
+> The dummy device is created by tegradrm's module init, because it's used
 
-Looks like another NULL mm pointer in ksmd.. Hugh fixed one in
-2832bc19f666 ("sched: numa: ksm: fix oops in task_numa_placment()"),
-this looks like more of the same.
-
-At a guess, it looks like get_mergeable_page() has a rmap_item with no
-mm. No idea how that happened. Hugh? Some race due to something that
-depended on the mmap_sem being exclusive, rather than for
-read-ownership?
-
-              Linus
+No, the tegradrm driver object might be registered by tegradrm's module
+init, but the dummy tegradrm platform device would need to be
+created/registered by host1x's probe. Otherwise, the device would get
+created even if there was no host1x/... in the system (disabled for some
+reason, multi-SoC kernel, ...)
