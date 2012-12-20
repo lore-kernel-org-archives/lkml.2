@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2LTT7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:59:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56088 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2LTT7p (ORCPT
+	id S1751889Ab2LTUFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:05:37 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:65363 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab2LTUFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:59:45 -0500
-Date: Thu, 20 Dec 2012 11:59:21 -0800
-From: tip-bot for Sasha Levin <sasha.levin@oracle.com>
-Message-ID: <tip-886d751a2ea99a160f2d0a472231566d9cb0cf58@git.kernel.org>
-Cc: mjg@redhat.com, linux-kernel@vger.kernel.org, sasha.levin@oracle.com,
-        hpa@zytor.com, mingo@kernel.org, seth.forshee@canonical.com,
-        matt.fleming@intel.com, bhelgaas@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
-        linux-kernel@vger.kernel.org, mjg@redhat.com, matt.fleming@intel.com,
-        seth.forshee@canonical.com, bhelgaas@google.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1356030701-16284-25-git-send-email-sasha.levin@oracle.com>
-References: <1356030701-16284-25-git-send-email-sasha.levin@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, efi:
-  correct precedence of operators in setup_efi_pci
-Git-Commit-ID: 886d751a2ea99a160f2d0a472231566d9cb0cf58
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 20 Dec 2012 15:05:32 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 20 Dec 2012 11:59:28 -0800 (PST)
+In-Reply-To: <20121220070323.GU15182@dastard>
+References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+ <20121218015705.GH4939@ZenIV.linux.org.uk> <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
+ <20121218213043.GF15182@dastard> <CALCETrV9fEfTVbiSzai2dvk6MWwDhsD_nAKs7Z1JP0ZkF-eruw@mail.gmail.com>
+ <20121220070323.GU15182@dastard>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 20 Dec 2012 12:05:09 -0800
+Message-ID: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
+Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
+To: Dave Chinner <david@fromorbit.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  886d751a2ea99a160f2d0a472231566d9cb0cf58
-Gitweb:     http://git.kernel.org/tip/886d751a2ea99a160f2d0a472231566d9cb0cf58
-Author:     Sasha Levin <sasha.levin@oracle.com>
-AuthorDate: Thu, 20 Dec 2012 14:11:33 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 20 Dec 2012 11:47:14 -0800
+On Wed, Dec 19, 2012 at 11:03 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> The fact you are conerned about this function tells me something
+> important - that you aren't having problems with i_mutex (show me
+> where i_mutex is taken on the page_mkwrite path ;), but you are
+> having latency problems with the ext4 .dirty_inode method starting a
+> new transaction when it is called from mark_inode_dirty_sync().
+>
+> So, a filesystem specific problem, perhaps?
 
-x86, efi: correct precedence of operators in setup_efi_pci
+i_mutex isn't involved.  On ext4, it looks like this (from latencytop):
 
-With the current code, the condition in the if() doesn't make much sense due to
-precedence of operators.
+start_this_handle jbd2__journal_start jbd2_journal_start
+ext4_journal_start_sb ext4_dirty_inode __mark_inode_dirty update_time
+file_update_time ext4_page_mkwrite do_wp_page handle_pte_fault
+handle_mm_fault
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Link: http://lkml.kernel.org/r/1356030701-16284-25-git-send-email-sasha.levin@oracle.com
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/compressed/eboot.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is a showstopper for my software -- I'm running on a kernel with
+the call to file_update_time commented out.
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b1942e2..18e329c 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -302,7 +302,7 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		if (!attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM)
-+		if (!(attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM))
- 			continue;
- 
- 		if (!pci->romimage || !pci->romsize)
+>
+>> Filesystems that haven't been converted can will continue to update
+>> times in ->page_mkwrite.
+>
+> You don't need to change this at all. If you have ext4
+> implement .update_timestamp to do whatever timestamp trickery you
+> want and avoid ext4 starting a new transaction in .dirty_inode for
+> pure timestamp updates, you can move the timestamp update into the
+> ext4 writeback path. The ext4 writeback path is already quite
+> special, so I'm sure people would welcome another weird behaviour
+> being added to it :)
+>
+> IOWs, what you want to do doesn't seem to require any changes to the
+> generic code.  Just make it do timestamp updates in a manner similar
+> to XFS and btrfs, and you can handle it all completely internally to
+> the filesystem...
+
+Are XFS and btrfs really better?  XFS does:
+
+	tp = xfs_trans_alloc(mp, XFS_TRANS_FSYNC_TS);
+	error = xfs_trans_reserve(tp, 0, XFS_FSYNC_TS_LOG_RES(mp), 0, 0, 0);
+	if (error) {
+		xfs_trans_cancel(tp, 0);
+		return -error;
+	}
+
+	xfs_ilock(ip, XFS_ILOCK_EXCL);
+
+This looks like it could sleep in a couple of places.  I admit I
+haven't actually tried it.
+
+
+In any case, I have an alternative approach that I'm currently playing
+with.  If it survives a bit of testing, I'll send patches.
+
+--Andy
