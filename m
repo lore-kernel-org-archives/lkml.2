@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab2LTOMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 09:12:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab2LTOMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 09:12:39 -0500
-Date: Thu, 20 Dec 2012 10:59:46 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
- dirty logging
-Message-ID: <20121220125946.GB7750@amt.cnet>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121219213037.b234f9d4f187df2132e65576@gmail.com>
- <1355931777.3224.562.camel@bling.home>
- <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	id S1752698Ab2LTONl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 09:13:41 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61795 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab2LTONe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 09:13:34 -0500
+X-Originating-IP: 108.223.40.66
+Date: Thu, 20 Dec 2012 06:13:44 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Juergen Beisert <jbe@pengutronix.de>
+Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
+ divisors
+Message-ID: <20121220141344.GA32230@roeck-us.net>
+References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
+ <20121219134721.bbde212f.akpm@linux-foundation.org>
+ <20121219224122.GA26863@roeck-us.net>
+ <20121220112202.3ead1fe1@endymion.delvare>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
+In-Reply-To: <20121220112202.3ead1fe1@endymion.delvare>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 02:02:32PM +0900, Takuya Yoshikawa wrote:
-> On Wed, 19 Dec 2012 08:42:57 -0700
-> Alex Williamson <alex.williamson@redhat.com> wrote:
+On Thu, Dec 20, 2012 at 11:22:02AM +0100, Jean Delvare wrote:
+> Hi Guenter,
 > 
-> > Please let me know if you can identify one of these as the culprit.
-> > They're all very simple, but there's always a chance I've missed a hard
-> > coding of slot numbers somewhere.  Thanks,
+> On Wed, 19 Dec 2012 14:41:22 -0800, Guenter Roeck wrote:
+> > On Wed, Dec 19, 2012 at 01:47:21PM -0800, Andrew Morton wrote:
+> > > The changelog didn't describe the end-user visible effects of the bug.
+> > > Please always include this information.  Because...
+> >
+> > One observed effect is that the s2c_hwmon driver reports a value of 4198403
+> > instead of 0 if the ADC reads 0.
+> > 
+> > Other impact is unpredictable. Problem is seen if the divisor is an unsigned
+> > variable or constant and the dividend is less than (divisor/2).
 > 
-> I identified the one:
->   commit b7f69c555ca430129b6cde81e9f0927531420c5c
->   KVM: Minor memory slot optimization
+> Really? In my own testing, the problem only shows with dividend == 0, and even
+> then, only when dividend is signed and divisor is not.  DIV_ROUND_CLOSEST(5,
+> 20U) returns 0 as expected, and so do DIV_ROUND_CLOSEST(0 / 20),
+> DIV_ROUND_CLOSEST(0U / 20) and DIV_ROUND_CLOSEST(0U / 20U).
 > 
-> IIUC, the problem was that you did not care about the generation of
-> slots which was updated by update_memslots():
+> Are your observations different?
 > 
->   Your patch reused the old memory slots which was there before
->   doing the update for invalidating the slot, and badly, we did flush
->   shadow pages after that before doing the second update for finally
->   installing the new slot.  As a result, the generation did not change
->   from that of the invalidated one, although the ghc(gfn to hva cache)
->   might be stale.
-> 
->   After that, kvm_write_guest_cached() checked if ghc should be
->   initialized by comparing ghc's generation with that old one,
->   resulting mark_page_dirty_in_slot() was called with the invalid
->   cache contents.
-> 
-> Although we can do something to correct the generation alone, I do not
-> think such a trick is worth it because this is not a hot path.  Let's
-> just revert the patch.
 
-Agreed. No dependencies by the following patches on it?
+Hmm, you are right - it only happens with 0. I thought I had also seen it with
+other values.
 
+> > > The patch is applicable to 3.7.x.  Should we backport it?
+> >
+> > Yes. DIV_ROUND_CLOSEST is used throughout the kernel, and impact is
+> > unpredictable.
+> > 
+> > 3.6 needs it as well.
+> 
+Turns out 3.6 is EOL, so we'll only need it in 3.7.
+
+Guenter
