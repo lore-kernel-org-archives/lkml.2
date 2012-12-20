@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab2LTTbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:31:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51696 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab2LTTbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:31:41 -0500
-Date: Thu, 20 Dec 2012 20:31:38 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Michal Marek <mmarek@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] scripts: add checkmaintainers.py
-Message-ID: <20121220193138.GH26635@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Joe Perches <joe@perches.com>, Michal Marek <mmarek@suse.cz>,
-	Cesar Eduardo Barros <cesarb@cesarb.net>,
-	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>
-References: <1355770579.13361.41.camel@joe-AO722>
- <1355771383.13361.44.camel@joe-AO722>
- <20121218182838.GF31255@liondog.tnic>
- <1355859281.30366.29.camel@joe-AO722>
- <20121218203159.GI31255@liondog.tnic>
- <1355862997.30366.36.camel@joe-AO722>
- <20121218204716.GJ31255@liondog.tnic>
- <1355866399.3297.2.camel@joe-AO722>
- <20121219150732.GD24895@liondog.tnic>
- <1355939022.7430.4.camel@joe-AO722>
+	id S1752500Ab2LTTd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:33:58 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:14045 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751796Ab2LTTdw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 14:33:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX198FRVoQFEefgjNS6sH+2No
+Date: Thu, 20 Dec 2012 11:33:25 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Loic Pallardy <loic.pallardy-ext@stericsson.com>, arm@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic PALLARDY <loic.pallardy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Suman Anna <s-anna@ti.com>, Juan Gutierrez <jgutierrez@ti.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>
+Subject: Re: [PATCH 0/9] drivers: mailbox: framework creation
+Message-ID: <20121220193325.GH21056@atomide.com>
+References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
+ <CACRpkdaqO7AAeYeR8SZt4Tbv1grrMq85TNYMc-FSbUSrnZBm=Q@mail.gmail.com>
+ <20121220182835.GB21056@atomide.com>
+ <CAOesGMh2uZC_9FzAxDVZqwe06OgqOrKjPgQi6wOJCt-SAmoHwg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355939022.7430.4.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMh2uZC_9FzAxDVZqwe06OgqOrKjPgQi6wOJCt-SAmoHwg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 09:43:42AM -0800, Joe Perches wrote:
-> When I use this file
-> $ cat .git/hooks/pre-commit
-> exec  git diff --cached HEAD -- | ./scripts/checkpatch.pl --strict -
-> $
+* Olof Johansson <olof@lixom.net> [121220 11:22]:
+> On Thu, Dec 20, 2012 at 10:28 AM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Linus Walleij <linus.walleij@linaro.org> [121220 10:19]:
+> >> On Tue, Dec 18, 2012 at 2:10 PM, Loic Pallardy
+> >> <loic.pallardy-ext@stericsson.com> wrote:
+> >>
+> >> > OMAP and ST-Ericsson platforms are both using mailbox to communicate
+> >> > with some coprocessors.
+> >> > Based on OMAP existing mailbox framework, this series proposes a
+> >> > generic framework, living under drivers/mailbox.
+> >>
+> >> I like this patch series so you have my Acked-by.
+> >>
+> >> Since it's a new subsystem and affects a few ARM architectures can
+> >> we merge this into the ARM SoC tree once we have consensus,
+> >> so we get some rotation in linux-next that way?
+> >
+> > Yes good idea.
+> >
+> >> Olof/Arnd?
+> >
+> > I suggest we set up an immutable branch against
+> > v3.8-rc1 when it's out with only these patches in it.
+> > Then we can all merge it in as needed. Maybe Arnd or
+> > Olof can set up the branch?
 > 
-> it works fine.
-> ^
-> Here's the latest checkpatch diff without that
-> concatenation warning for you to try.
+> I haven't reviewed the patches yet, but this flow sounds reasonable to me.
 
-Yep, looks good. Add a proper commit message and ship it.
+OK cool.
+ 
+> > FYI, looks like I need to merge in this branch too to
+> > avoid build errors with remoteproc enabled once I flip
+> > on the multiplatform support for omap2+.
+> 
+> While we can make the branch stable, would it make sense to make
+> remoteproc for omap depend on !multiplatform during the transition, to
+> reduce dependencies a little? Either way works, but it'd be nice to
+> keep them independent if we can.
 
-Tested-by: Borislav Petkov <bp@alien8.de>
+Yes I'll update the omap multiplat fixups patch I posted yesterday.
+I noticed it only after running make randconfig for a while.
 
-Btw, you should credit Cesar in the commit message for the idea.
+Regards,
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Tony
