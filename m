@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab2LTK3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 05:29:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab2LTK3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 05:29:03 -0500
-Date: Thu, 20 Dec 2012 11:27:06 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 2/3] perf x86: Add precise sysfs attribute
-Message-ID: <20121220102706.GA1241@krava.brq.redhat.com>
-References: <1355929642-28392-1-git-send-email-jolsa@redhat.com>
- <1355929642-28392-3-git-send-email-jolsa@redhat.com>
- <20121220053430.GB28007@kroah.com>
+	id S1752019Ab2LTKak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 05:30:40 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:35683 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab2LTKad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 05:30:33 -0500
+Message-ID: <50D2E8BB.6000108@synopsys.com>
+Date: Thu, 20 Dec 2012 16:00:19 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121220053430.GB28007@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [RFC Patch v1 45/55] ARC: unaligned access emulation
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-15-git-send-email-vgupta@synopsys.com> <201211121400.13046.arnd@arndb.de> <50D2B75A.3000208@synopsys.com>
+In-Reply-To: <50D2B75A.3000208@synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 09:34:30PM -0800, Greg KH wrote:
-> On Wed, Dec 19, 2012 at 04:07:21PM +0100, Jiri Olsa wrote:
-> > Adding sysfs precise attribute for cpu device (/sys/devices/cpu)
-> > to show the maximum value for perf event precise attribute.
-> > 
-> > This will be initialy used for automated precise event perf test
-> > and could be helpful otherwise. Arnaldo suggested to use this as
-> > a guide for default adding of precise attribute for HW events.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > ---
-> >  arch/x86/kernel/cpu/perf_event.c | 34 +++++++++++++++++++++++++---------
-> >  1 file changed, 25 insertions(+), 9 deletions(-)
+On Thursday 20 December 2012 12:29 PM, Vineet Gupta wrote:
+> On Monday 12 November 2012 07:30 PM, Arnd Bergmann wrote:
+>> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+>>> +
+>>> +config ARC_MISALIGN_ACCESS
+>>> +       bool "Emulate unaligned memory access (userspace only)"
+>>> +       default N
+>>> +       help
+>>> +         This enables misaligned 16 & 32 bit memory access from user space.
+>>> +         Use ONLY-IF-ABS-NECESSARY as it will be very slow and also can hide
+>>> +         potential bugs in code
+>>
+>> parisc and ia64 both have the same feature, and they use sysctl to configure
+>> it at run-time. Maybe you should pick one of the two sysctl implementations
+>> and hook that up to your implementation as well.
 > 
-> As you are adding a new sysfs file, you must also document it with an
-> entry in Documentation/ABI/
+> Sounds like a good idea.
+> 
+> Looking at your suggestion, the sysctl interface in both of those is for
+> slightly different semantics and ARC would possibly need a bit from
+> both. So to avoid duplication, I'm proposing following changes to
+> kernel/sysctl.c and the generic options selected by respective arches.
+> 
+> * no_unaligned_warning:CONFIG_IA64 => CONFIG_SYSCTL_ARCH_UNALIGN_NO_WARN
+> *unaligned_enabled: __hppa__ => CONFIG_SYSCTL_ARCH_UNALIGN_ALLOW
+> 
+> If you can think of better(smaller) names, please do let me know :-)
+> 
+> If we agree in principle, I'll cookup the patches and seek the ACKs from
+> ARCH maintainers (assuming my CC list above is right). And to keep
+> things simple, we can route the kernel/sysctl.c changes via the ARC
+> submission tree.
+> 
+> Thx,
+> Vineet
+> 
 
-will do, thanks
-jirka
+Sorry for a naive patch submitter question (yes I've already read
+SubmittingPatches and googled much already). A lot of times, I see the
+"Cc: ..." lines, just below the "Signed-off-by:" lines in the patch -
+e.g. https://lkml.org/lkml/2012/10/4/318
+Are those added manually - because none of the xxx-cc options to
+format-patch or send-email seem to be doing that - unless I missed some.
+
+Context: I have the patch which touches ia64/parisc which I want to send
+out and at the same time have those "Cc: lines for the maintainers too"
+
+Thx,
+-Vineet
+
+* It's OK to "look" fool once - rather than actually "being" a fool rest
+of your life !
