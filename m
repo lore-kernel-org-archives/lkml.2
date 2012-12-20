@@ -1,174 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab2LTXfa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 18:35:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53443 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2LTXf0 (ORCPT
+	id S1752007Ab2LTXgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:36:36 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:59120 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751352Ab2LTXg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 18:35:26 -0500
-Date: Thu, 20 Dec 2012 15:35:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Nazarewicz <mpn@google.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] cma: use unsigned type for count argument
-Message-Id: <20121220153525.97841100.akpm@linux-foundation.org>
-In-Reply-To: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com>
-References: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 18:36:28 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApsKAGCf01B5LG3x/2dsb2JhbABFt3SFexdzgh4BAQQBJxMcIwULCAMOCi4UJQMhE4gNBbhFFIxDhEMDlgqJToZ7gwg
+Date: Fri, 21 Dec 2012 10:36:24 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
+Message-ID: <20121220233624.GX15182@dastard>
+References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
+ <20121218015705.GH4939@ZenIV.linux.org.uk>
+ <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
+ <20121218213043.GF15182@dastard>
+ <CALCETrV9fEfTVbiSzai2dvk6MWwDhsD_nAKs7Z1JP0ZkF-eruw@mail.gmail.com>
+ <20121220070323.GU15182@dastard>
+ <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 18:44:40 +0100
-Michal Nazarewicz <mpn@google.com> wrote:
+On Thu, Dec 20, 2012 at 12:05:09PM -0800, Andy Lutomirski wrote:
+> On Wed, Dec 19, 2012 at 11:03 PM, Dave Chinner <david@fromorbit.com> wrote:
+> start_this_handle jbd2__journal_start jbd2_journal_start
+> ext4_journal_start_sb ext4_dirty_inode __mark_inode_dirty update_time
+> file_update_time ext4_page_mkwrite do_wp_page handle_pte_fault
+> handle_mm_fault
 
-> From: Michal Nazarewicz <mina86@mina86.com>
+Yup, as I suspected. It's a filesystem specific problem.
+
+> This is a showstopper for my software -- I'm running on a kernel with
+> the call to file_update_time commented out.
+
+Which means you are effectively running with O_CMTIME on all mmapped
+files....
+
+> >> Filesystems that haven't been converted can will continue to update
+> >> times in ->page_mkwrite.
+> >
+> > You don't need to change this at all. If you have ext4
+> > implement .update_timestamp to do whatever timestamp trickery you
+> > want and avoid ext4 starting a new transaction in .dirty_inode for
+> > pure timestamp updates, you can move the timestamp update into the
+> > ext4 writeback path. The ext4 writeback path is already quite
+> > special, so I'm sure people would welcome another weird behaviour
+> > being added to it :)
+> >
+> > IOWs, what you want to do doesn't seem to require any changes to the
+> > generic code.  Just make it do timestamp updates in a manner similar
+> > to XFS and btrfs, and you can handle it all completely internally to
+> > the filesystem...
 > 
-> Specifying negative size of buffer makes no sense and thus this commit
-> changes the type of the count argument to unsigned.
+> Are XFS and btrfs really better?  XFS does:
 > 
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -1038,9 +1038,9 @@ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size,
->  					  gfp_t gfp, struct dma_attrs *attrs)
->  {
->  	struct page **pages;
-> -	int count = size >> PAGE_SHIFT;
-> -	int array_size = count * sizeof(struct page *);
-> -	int i = 0;
-> +	unsigned int count = size >> PAGE_SHIFT;
-> +	unsigned int array_size = count * sizeof(struct page *);
-> +	unsigned int i = 0;
+> 	tp = xfs_trans_alloc(mp, XFS_TRANS_FSYNC_TS);
+> 	error = xfs_trans_reserve(tp, 0, XFS_FSYNC_TS_LOG_RES(mp), 0, 0, 0);
+> 	if (error) {
+> 		xfs_trans_cancel(tp, 0);
+> 		return -error;
+> 	}
+> 
+> 	xfs_ilock(ip, XFS_ILOCK_EXCL);
+> 
+> This looks like it could sleep in a couple of places.  I admit I
+> haven't actually tried it.
 
-C programmers expect a variable called `i' to have type `int'.  It
-would be clearer to find a new name for this.  `idx', perhaps.
+It certainly can if there is no log space available, but that's a
+filesystem specific problem, not a problem with the way the VFS does
+timestamp updates.
 
-Also, we later do
+Indeed, it was only recently we changed this code to use a
+transaction, previously it was doing exactly what you are proposing
+completely internally to XFS. i.e. it copied the timestamp and set a
+dirty flag that then trigger the next transaction that dirtied the
+inode or triggered inode writeback to copy the new timestamps into
+the inode with a transaction.
 
-	int j;
-	..
-	pages[i + j] ...
+Cheers,
 
-So `j' should also be converted to unsigned.  And perhaps renamed, but
-`j' isn't as egregious as `i'.
-
->  	if (array_size <= PAGE_SIZE)
->  		pages = kzalloc(array_size, gfp);
-> @@ -1102,9 +1102,9 @@ error:
->  static int __iommu_free_buffer(struct device *dev, struct page **pages,
->  			       size_t size, struct dma_attrs *attrs)
->  {
-> -	int count = size >> PAGE_SHIFT;
-> -	int array_size = count * sizeof(struct page *);
-> -	int i;
-> +	unsigned int count = size >> PAGE_SHIFT;
-> +	unsigned int array_size = count * sizeof(struct page *);
-> +	unsigned int i;
-
-ditto.
-
-
---- a/arch/arm/mm/dma-mapping.c~cma-use-unsigned-type-for-count-argument-fix
-+++ a/arch/arm/mm/dma-mapping.c
-@@ -1040,7 +1040,7 @@ static struct page **__iommu_alloc_buffe
- 	struct page **pages;
- 	unsigned int count = size >> PAGE_SHIFT;
- 	unsigned int array_size = count * sizeof(struct page *);
--	unsigned int i = 0;
-+	unsigned int idx = 0;
- 
- 	if (array_size <= PAGE_SIZE)
- 		pages = kzalloc(array_size, gfp);
-@@ -1049,8 +1049,7 @@ static struct page **__iommu_alloc_buffe
- 	if (!pages)
- 		return NULL;
- 
--	if (dma_get_attr(DMA_ATTR_FORCE_CONTIGUOUS, attrs))
--	{
-+	if (dma_get_attr(DMA_ATTR_FORCE_CONTIGUOUS, attrs)) {
- 		unsigned long order = get_order(size);
- 		struct page *page;
- 
-@@ -1060,38 +1059,39 @@ static struct page **__iommu_alloc_buffe
- 
- 		__dma_clear_buffer(page, size);
- 
--		for (i = 0; i < count; i++)
--			pages[i] = page + i;
-+		for (idx = 0; idx < count; idx++)
-+			pages[i] = page + idx;
- 
- 		return pages;
- 	}
- 
- 	while (count) {
--		int j, order = __fls(count);
-+		unsigned int j;
-+		unnsigned int order = __fls(count);
- 
--		pages[i] = alloc_pages(gfp | __GFP_NOWARN, order);
--		while (!pages[i] && order)
--			pages[i] = alloc_pages(gfp | __GFP_NOWARN, --order);
--		if (!pages[i])
-+		pages[idx] = alloc_pages(gfp | __GFP_NOWARN, order);
-+		while (!pages[idx] && order)
-+			pages[idx] = alloc_pages(gfp | __GFP_NOWARN, --order);
-+		if (!pages[idx])
- 			goto error;
- 
- 		if (order) {
--			split_page(pages[i], order);
-+			split_page(pages[idx], order);
- 			j = 1 << order;
- 			while (--j)
--				pages[i + j] = pages[i] + j;
-+				pages[idx + j] = pages[idx] + j;
- 		}
- 
--		__dma_clear_buffer(pages[i], PAGE_SIZE << order);
--		i += 1 << order;
-+		__dma_clear_buffer(pages[idx], PAGE_SIZE << order);
-+		idx += 1 << order;
- 		count -= 1 << order;
- 	}
- 
- 	return pages;
- error:
--	while (i--)
--		if (pages[i])
--			__free_pages(pages[i], 0);
-+	while (idx--)
-+		if (pages[idx])
-+			__free_pages(pages[idx], 0);
- 	if (array_size <= PAGE_SIZE)
- 		kfree(pages);
- 	else
-@@ -1104,14 +1104,15 @@ static int __iommu_free_buffer(struct de
- {
- 	unsigned int count = size >> PAGE_SHIFT;
- 	unsigned int array_size = count * sizeof(struct page *);
--	unsigned int i;
- 
- 	if (dma_get_attr(DMA_ATTR_FORCE_CONTIGUOUS, attrs)) {
- 		dma_release_from_contiguous(dev, pages[0], count);
- 	} else {
--		for (i = 0; i < count; i++)
--			if (pages[i])
--				__free_pages(pages[i], 0);
-+		unsigned int idx;
-+
-+		for (idx = 0; idx < count; idx++)
-+			if (pages[idx])
-+				__free_pages(pages[idx], 0);
- 	}
- 
- 	if (array_size <= PAGE_SIZE)
-diff -puN drivers/base/dma-contiguous.c~cma-use-unsigned-type-for-count-argument-fix drivers/base/dma-contiguous.c
-diff -puN include/linux/dma-contiguous.h~cma-use-unsigned-type-for-count-argument-fix include/linux/dma-contiguous.h
-_
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
