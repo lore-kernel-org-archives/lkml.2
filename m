@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2LTTQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:16:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21848 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab2LTTOc (ORCPT
+	id S1752508Ab2LTTRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:17:16 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49129 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab2LTTOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:14:32 -0500
+	Thu, 20 Dec 2012 14:14:23 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
-To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
 Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] um: don't compare a pointer to 0
-Date: Thu, 20 Dec 2012 14:11:35 -0500
-Message-Id: <1356030701-16284-27-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH] uprobes: remove redundant check
+Date: Thu, 20 Dec 2012 14:11:30 -0500
+Message-Id: <1356030701-16284-22-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
 References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We checked for uprobe==NULL earlier, no need to redo that.
+
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- arch/x86/um/fault.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/uprobes.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/um/fault.c b/arch/x86/um/fault.c
-index 8784ab3..84ac7f7 100644
---- a/arch/x86/um/fault.c
-+++ b/arch/x86/um/fault.c
-@@ -20,7 +20,7 @@ int arch_fixup(unsigned long address, struct uml_pt_regs *regs)
- 	const struct exception_table_entry *fixup;
- 
- 	fixup = search_exception_tables(address);
--	if (fixup != 0) {
-+	if (fixup) {
- 		UPT_IP(regs) = fixup->fixup;
- 		return 1;
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index dea7acf..30ea9a4 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -901,8 +901,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
  	}
+ 
+ 	mutex_unlock(uprobes_hash(inode));
+-	if (uprobe)
+-		put_uprobe(uprobe);
++	put_uprobe(uprobe);
+ }
+ 
+ static struct rb_node *
 -- 
 1.8.0
 
