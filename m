@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab2LTPCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:02:32 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:43196 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab2LTPC0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:02:26 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-Subject: RE: [PATCH v2 0/2] pstore,efi_pstore: Avoid deadlock in
- non-blocking paths
-Thread-Topic: [PATCH v2 0/2] pstore,efi_pstore: Avoid deadlock in
- non-blocking paths
-Thread-Index: Ac3cl4zZBiTIIXpNQSucdlXbfMCKaAAMiL4AAH5CtFA=
-Date: Thu, 20 Dec 2012 15:02:05 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A29FFB@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A22EFA@USINDEM103.corp.hds.com>
- <20121217214506.GF60946@redhat.com>
-In-Reply-To: <20121217214506.GF60946@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751344Ab2LTPEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:04:32 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39804 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751168Ab2LTPE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 10:04:26 -0500
+Date: Thu, 20 Dec 2012 16:04:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH] libata: Shut up annoying native_sectors warning
+Message-ID: <20121220150423.GC26635@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
+References: <1356006355-6819-1-git-send-email-bp@alien8.de>
+ <20121220130159.7125e700@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2012-12-20_05:2012-12-20,2012-12-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1212200119
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121220130159.7125e700@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 20, 2012 at 01:01:59PM +0000, Alan Cox wrote:
+> Net lose IMHO - better to file a gcc bug report
 
+Ok, I'll try that. Want on CC?
 
->Though it seems most of patch2 should have been in patch1 (except for the efi part).
+The good thing is, it is a new issue in 4.7 since it doesn't trigger
+with 4.6:
 
-OK. I will merge pstore part in patch2 to patch1.
+$  make CC=gcc-4.6 drivers/ata/libata-core.o
+make[1]: Nothing to be done for `all'.
+make[1]: Nothing to be done for `relocs'.
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CC      drivers/ata/libata-core.o
 
+vs
 
-> 
-> The only nitpick I have is the name 'is_non_blocking_path'.  I don't know why, but the name doesn't seem exactly right to me.  I was
-> thinking something like 'pstore_cannot_block_path' or something.  But it is just a nitpick, so it doesn't matter either way to me.
+$  make CC=gcc-4.7 drivers/ata/libata-core.o
+make[1]: Nothing to be done for `all'.
+make[1]: Nothing to be done for `relocs'.
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CC      kernel/bounds.s
+  GEN     include/generated/bounds.h
+  CC      arch/x86/kernel/asm-offsets.s
+  GEN     include/generated/asm-offsets.h
+  CALL    scripts/checksyscalls.sh
+  CC      scripts/mod/empty.o
+  MKELF   scripts/mod/elfconfig.h
+  HOSTCC  scripts/mod/file2alias.o
+  HOSTCC  scripts/mod/modpost.o
+  HOSTCC  scripts/mod/sumversion.o
+  HOSTLD  scripts/mod/modpost
+  CC      drivers/ata/libata-core.o
+drivers/ata/libata-core.c: In function ‘ata_hpa_resize’:
+drivers/ata/libata-core.c:1397:3: warning: ‘native_sectors’ may be used uninitialized in this function [-Wmaybe-uninitialized]
 
-I will rename the function in next patch.
+-- 
+Regards/Gruss,
+    Boris.
 
-Seiji
+Sent from a fat crate under my desk. Formatting is fine.
+--
