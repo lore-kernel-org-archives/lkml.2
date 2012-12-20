@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab2LTTUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:20:41 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40912 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326Ab2LTTUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:20:35 -0500
-Date: Thu, 20 Dec 2012 20:20:33 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] MCE, AMD: MCE decoding support for AMD Family 16h
-Message-ID: <20121220192033.GG26635@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Joe Perches <joe@perches.com>, Jacob Shin <jacob.shin@amd.com>,
-	Doug Thompson <dougthompson@xmission.com>,
-	linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1355864771-13839-1-git-send-email-jacob.shin@amd.com>
- <1355864771-13839-3-git-send-email-jacob.shin@amd.com>
- <1355868659.3982.3.camel@joe-AO722>
- <20121218225610.GL31255@liondog.tnic>
+	id S1752342Ab2LTTZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:25:05 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35104 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LTTY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 14:24:56 -0500
+Date: Thu, 20 Dec 2012 19:24:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] net/smsc911x: Provide common clock functionality
+Message-ID: <20121220192441.GC14363@n2100.arm.linux.org.uk>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org> <1355937587-31730-4-git-send-email-lee.jones@linaro.org> <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121218225610.GL31255@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 11:56:10PM +0100, Borislav Petkov wrote:
-> So, if you'd like, you could wait until I apply Jacob's patches and
-> push that git branch to kernel.org and then write a patch ontop
-> removing all the exports except pp_msgs (you could add them to the
-> "amd_" namespace by calling it amd_pp_msgs or something) test that
-> patch and send it to me.
+On Thu, Dec 20, 2012 at 08:12:08PM +0100, Linus Walleij wrote:
+> On Wed, Dec 19, 2012 at 6:19 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > Some platforms provide clocks which require enabling before the
+> > SMSC911x chip will power on. This patch uses the new common clk
+> > framework to do just that. If no clock is provided, it will just
+> > be ignored and the driver will continue to assume that no clock
+> > is required for the chip to run successfully.
+> >
+> > Cc: Steve Glendinning <steve.glendinning@shawell.net>
+> > Cc: netdev@vger.kernel.org
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Seems to me like it'll do the trick.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Ok, I've applied Jacob's stuff. You can do your patch ontop of
+This looks fairly dangerous.  What about those platforms which use this
+driver, but don't provide a clock for it?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git edac-for-3.9
-
-and send it to me.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+It looks like this will result in those platforms losing their ethernet
+support.  There's at least a bunch of the ARM evaluation boards which
+make use of this driver...
