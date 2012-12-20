@@ -1,185 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab2LTXkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 18:40:36 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:34495 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2LTXk3 (ORCPT
+	id S1752139Ab2LTXkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:40:47 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35197 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2LTXkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 18:40:29 -0500
-X-Greylist: delayed 1802 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 18:40:29 EST
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC PATCH 3/4] Remove file_update_time from all mkwrite paths
-Date: Thu, 20 Dec 2012 15:10:11 -0800
-Message-Id: <742f23805d7fd3539c87ecf7b5b53d89de4937b0.1356043686.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <cover.1356043686.git.luto@amacapital.net>
-References: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
- <cover.1356043686.git.luto@amacapital.net>
-In-Reply-To: <cover.1356043686.git.luto@amacapital.net>
-References: <cover.1356043686.git.luto@amacapital.net>
+	Thu, 20 Dec 2012 18:40:39 -0500
+Date: Thu, 20 Dec 2012 23:40:11 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jon Hunter <jon-hunter@ti.com>
+Cc: Pratik Patel <pratikp@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
+        "david.rusling@linaro.org" <david.rusling@linaro.org>,
+        "arve@android.com" <arve@android.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "d-deao@ti.com" <d-deao@ti.com>,
+        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: CoreSight framework and drivers
+Message-ID: <20121220234011.GE14363@n2100.arm.linux.org.uk>
+References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org> <20121219112314.GA26329@mudshark.cambridge.arm.com> <50D1F37E.6000804@ti.com> <20121219212431.GC23594@pratikp-linux.qualcomm.com> <50D34EE5.8090407@ti.com> <20121220195127.GA14877@pratikp-linux.qualcomm.com> <50D3972E.4030607@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D3972E.4030607@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The times are now updated at sync time.
+On Thu, Dec 20, 2012 at 04:54:38PM -0600, Jon Hunter wrote:
+> On 12/20/2012 01:51 PM, Pratik Patel wrote:
+> > Ok, so are you referring to making CoreSight devices register
+> > with AMBA bus instead of platform bus keeping everything else
+> > intact?
+> 
+> Yes exactly. However, please note I am not saying that we should do
+> this, and I asking what direction does the community want us to take
+> here? Platform bus or AMBA bus?
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- fs/9p/vfs_file.c | 3 ---
- fs/btrfs/inode.c | 4 +---
- fs/buffer.c      | 6 ------
- fs/ceph/addr.c   | 3 ---
- fs/ext4/inode.c  | 1 -
- fs/gfs2/file.c   | 3 ---
- fs/nilfs2/file.c | 1 -
- fs/sysfs/bin.c   | 2 --
- mm/filemap.c     | 1 -
- mm/memory.c      | 3 ---
- 10 files changed, 1 insertion(+), 26 deletions(-)
+One of the issues which worries me about mixing peripheral drivers on
+random different buses is... what happens when we end up with a SoC
+which gates the APB clock at bus level (there are SoCs which gate the
+APB clock at peripheral level.)  In other words, an APB bus only gets
+clocked upon request.
 
-diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index c2483e9..34b84f0 100644
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -610,9 +610,6 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	p9_debug(P9_DEBUG_VFS, "page %p fid %lx\n",
- 		 page, (unsigned long)filp->private_data);
- 
--	/* Update file times before taking page lock */
--	file_update_time(filp);
--
- 	v9inode = V9FS_I(inode);
- 	/* make sure the cache has finished storing the page */
- 	v9fs_fscache_wait_on_page_write(inode, page);
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 95542a1..6fb8558 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -6747,10 +6747,8 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	sb_start_pagefault(inode->i_sb);
- 	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
- 	if (!ret) {
--		ret = file_update_time(vma->vm_file);
- 		reserved = 1;
--	}
--	if (ret) {
-+	} else if (ret) {
- 		if (ret == -ENOMEM)
- 			ret = VM_FAULT_OOM;
- 		else /* -ENOSPC, -EIO, etc */
-diff --git a/fs/buffer.c b/fs/buffer.c
-index ec0aca8..a9a8f2a 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2379,12 +2379,6 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 
- 	sb_start_pagefault(sb);
- 
--	/*
--	 * Update file times before taking page lock. We may end up failing the
--	 * fault so this update may be superfluous but who really cares...
--	 */
--	file_update_time(vma->vm_file);
--
- 	ret = __block_page_mkwrite(vma, vmf, get_block);
- 	sb_end_pagefault(sb);
- 	return block_page_mkwrite_return(ret);
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 6690269..19af339 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -1183,9 +1183,6 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	loff_t size, len;
- 	int ret;
- 
--	/* Update time before taking page lock */
--	file_update_time(vma->vm_file);
--
- 	size = i_size_read(inode);
- 	if (off + PAGE_CACHE_SIZE <= size)
- 		len = PAGE_CACHE_SIZE;
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index b3c243b..5ddbc75 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4780,7 +4780,6 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	int retries = 0;
- 
- 	sb_start_pagefault(inode->i_sb);
--	file_update_time(vma->vm_file);
- 	/* Delalloc case is easy... */
- 	if (test_opt(inode->i_sb, DELALLOC) &&
- 	    !ext4_should_journal_data(inode) &&
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index e056b4c..999b1ed 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -398,9 +398,6 @@ static int gfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 
- 	sb_start_pagefault(inode->i_sb);
- 
--	/* Update file times before taking page lock */
--	file_update_time(vma->vm_file);
--
- 	ret = gfs2_rs_alloc(ip);
- 	if (ret)
- 		return ret;
-diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
-index 16f35f7..185b8e6 100644
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -116,7 +116,6 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (unlikely(ret))
- 		goto out;
- 
--	file_update_time(vma->vm_file);
- 	ret = __block_page_mkwrite(vma, vmf, nilfs_get_block);
- 	if (ret) {
- 		nilfs_transaction_abort(inode->i_sb);
-diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
-index 614b2b5..a475983 100644
---- a/fs/sysfs/bin.c
-+++ b/fs/sysfs/bin.c
-@@ -228,8 +228,6 @@ static int bin_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	ret = 0;
- 	if (bb->vm_ops->page_mkwrite)
- 		ret = bb->vm_ops->page_mkwrite(vma, vmf);
--	else
--		file_update_time(file);
- 
- 	sysfs_put_active(attr_sd);
- 	return ret;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..feb0540 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1715,7 +1715,6 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	int ret = VM_FAULT_LOCKED;
- 
- 	sb_start_pagefault(inode->i_sb);
--	file_update_time(vma->vm_file);
- 	lock_page(page);
- 	if (page->mapping != inode->i_mapping) {
- 		unlock_page(page);
-diff --git a/mm/memory.c b/mm/memory.c
-index 086b901..07a0b0d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2658,9 +2658,6 @@ reuse:
- 		if (!page_mkwrite) {
- 			wait_on_page_locked(dirty_page);
- 			set_page_dirty_balance(dirty_page, page_mkwrite);
--			/* file_update_time outside page_lock */
--			if (vma->vm_file)
--				file_update_time(vma->vm_file);
- 		}
- 		put_page(dirty_page);
- 		if (page_mkwrite) {
--- 
-1.7.11.7
+We can deal with that with the infrastructure we have in place in the
+AMBA bus layer, but not with the platform bus - we'd have to teach the
+platform bus driver about the special APB clock instead of having it
+handled primerily at the bus layer.
 
+At least the coresight ETM peripherals make use of the APB bus.  They
+have a whole pile of registers on the APB bus, and they have the
+primecell IDs stored in the last words of the peripheral, again just
+like the other primecell devices we have using the AMBA bus layer.
+
+What I'd say is... why stick it on a different bus type from the other
+peripherals which might make things harder in the future?
