@@ -1,112 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab2LTP55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:57:57 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:43676 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab2LTP5u (ORCPT
+	id S1751416Ab2LTQC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 11:02:28 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:36814 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab2LTQCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:57:50 -0500
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 10:57:49 EST
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH] mm: compare MIGRATE_ISOLATE selectively
-In-Reply-To: <1355981152-2505-1-git-send-email-minchan@kernel.org>
-Organization: http://mina86.com/
-References: <1355981152-2505-1-git-send-email-minchan@kernel.org>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Thu, 20 Dec 2012 16:49:44 +0100
-Message-ID: <xa1tfw30hgfb.fsf@mina86.com>
+	Thu, 20 Dec 2012 11:02:20 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <alpine.LFD.2.02.1212201235570.3148@ionos>
+References: <1355770314-9167-1-git-send-email-john.stultz@linaro.org>
+	<alpine.LFD.2.02.1212201235570.3148@ionos>
+Date: Thu, 20 Dec 2012 08:02:17 -0800
+X-Google-Sender-Auth: _oKxkMsTSpOU6IRYQ0ULW845h-E
+Message-ID: <CAGXu5jL7fEhNkhGH4AV+GJmj9ZOHMJhQHG292+yYC27gj_zAwg@mail.gmail.com>
+Subject: Re: [PATCH] time: create __getnstimeofday for WARNless calls
+From: Kees Cook <keescook@chromium.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 20, 2012 at 3:43 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 17 Dec 2012, John Stultz wrote:
+>> From: Kees Cook <keescook@chromium.org>
+>>
+>> Hey Thomas,
+>>    Wanted to see if maybe there was still time for this for 3.8?
+>> thanks
+>> -john
+>>
+>> The pstore RAM backend can get called during resume, and must be defensive
+>> against a suspended time source. Expose getnstimeofday logic that returns
+>> an error instead of a WARN. This can be detected and the timestamp can
+>> be zeroed out.
+>
+> Shouldn't we zero out the time stamp in the core code ?
 
-On Thu, Dec 20 2012, Minchan Kim wrote:
-> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolatio=
-n.h
-> index a92061e..4ada4ef 100644
-> --- a/include/linux/page-isolation.h
-> +++ b/include/linux/page-isolation.h
-> @@ -1,6 +1,25 @@
->  #ifndef __LINUX_PAGEISOLATION_H
->  #define __LINUX_PAGEISOLATION_H
->=20=20
-> +#ifdef CONFIG_MEMORY_ISOLATION
-> +static inline bool page_isolated_pageblock(struct page *page)
-> +{
-> +	return get_pageblock_migratetype(page) =3D=3D MIGRATE_ISOLATE;
-> +}
-> +static inline bool mt_isolated_pageblock(int migratetype)
-> +{
-> +	return migratetype =3D=3D MIGRATE_ISOLATE;
-> +}
+It wasn't clear to me if the raw/wrong value should be available to a
+caller when they got the EAGAIN. Since pstore is the only known user
+of this, I'm fine moving the zeroing into the timekeeping core.
 
-Perhaps =E2=80=9Cis_migrate_isolate=E2=80=9D to match already existing =E2=
-=80=9Cis_migrate_cma=E2=80=9D?
-Especially as the =E2=80=9Cmt_isolated_pageblock=E2=80=9D sound confusing t=
-o me, it
-implies that it works on pageblocks which it does not.
+-Kees
 
-> +#else
-> +static inline bool page_isolated_pageblock(struct page *page)
-> +{
-> +	return false;
-> +}
-> +static inline bool mt_isolated_pageblock(int migratetype)
-> +{
-> +	return false;
-> +}
-> +#endif
->=20=20
->  bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
->  			 bool skip_hwpoisoned_pages);
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+>
+> Thanks,
+>
+>         tglx
+>
+>> Reported-by: Doug Anderson <dianders@chromium.org>
+>> Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Signed-off-by: John Stultz <john.stultz@linaro.org>
+>> ---
+>>  fs/pstore/ram.c           |   10 +++++++---
+>>  include/linux/time.h      |    1 +
+>>  kernel/time/timekeeping.c |   29 ++++++++++++++++++++++++-----
+>>  3 files changed, 32 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+>> index 1a4f6da..dacfe78 100644
+>> --- a/fs/pstore/ram.c
+>> +++ b/fs/pstore/ram.c
+>> @@ -168,12 +168,16 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>>  static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+>>  {
+>>       char *hdr;
+>> -     struct timeval timestamp;
+>> +     struct timespec timestamp;
+>>       size_t len;
+>>
+>> -     do_gettimeofday(&timestamp);
+>> +     /* Report zeroed timestamp if called before timekeeping has resumed. */
+>> +     if (__getnstimeofday(&timestamp)) {
+>> +             timestamp.tv_sec = 0;
+>> +             timestamp.tv_nsec = 0;
+>> +     }
+>>       hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
+>> -             (long)timestamp.tv_sec, (long)timestamp.tv_usec);
+>> +             (long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000));
+>>       WARN_ON_ONCE(!hdr);
+>>       len = hdr ? strlen(hdr) : 0;
+>>       persistent_ram_write(prz, hdr, len);
+>> diff --git a/include/linux/time.h b/include/linux/time.h
+>> index 4d358e9..0015aea 100644
+>> --- a/include/linux/time.h
+>> +++ b/include/linux/time.h
+>> @@ -158,6 +158,7 @@ extern int do_setitimer(int which, struct itimerval *value,
+>>                       struct itimerval *ovalue);
+>>  extern unsigned int alarm_setitimer(unsigned int seconds);
+>>  extern int do_getitimer(int which, struct itimerval *value);
+>> +extern int __getnstimeofday(struct timespec *tv);
+>>  extern void getnstimeofday(struct timespec *tv);
+>>  extern void getrawmonotonic(struct timespec *ts);
+>>  extern void getnstime_raw_and_real(struct timespec *ts_raw,
+>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+>> index 4c7de02..dfc7f87 100644
+>> --- a/kernel/time/timekeeping.c
+>> +++ b/kernel/time/timekeeping.c
+>> @@ -214,19 +214,18 @@ static void timekeeping_forward_now(struct timekeeper *tk)
+>>  }
+>>
+>>  /**
+>> - * getnstimeofday - Returns the time of day in a timespec
+>> + * __getnstimeofday - Returns the time of day in a timespec.
+>>   * @ts:              pointer to the timespec to be set
+>>   *
+>> - * Returns the time of day in a timespec.
+>> + * Updates the time of day in the timespec.
+>> + * Returns 0 on success, or -ve when suspended (timespec will be undefined).
+>>   */
+>> -void getnstimeofday(struct timespec *ts)
+>> +int __getnstimeofday(struct timespec *ts)
+>>  {
+>>       struct timekeeper *tk = &timekeeper;
+>>       unsigned long seq;
+>>       s64 nsecs = 0;
+>>
+>> -     WARN_ON(timekeeping_suspended);
+>> -
+>>       do {
+>>               seq = read_seqbegin(&tk->lock);
+>>
+>> @@ -237,6 +236,26 @@ void getnstimeofday(struct timespec *ts)
+>>
+>>       ts->tv_nsec = 0;
+>>       timespec_add_ns(ts, nsecs);
+>> +
+>> +     /*
+>> +      * Do not bail out early, in case there were callers still using
+>> +      * the value, even in the face of the WARN_ON.
+>> +      */
+>> +     if (unlikely(timekeeping_suspended))
+>> +             return -EAGAIN;
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL(__getnstimeofday);
+>> +
+>> +/**
+>> + * getnstimeofday - Returns the time of day in a timespec.
+>> + * @ts:              pointer to the timespec to be set
+>> + *
+>> + * Returns the time of day in a timespec (WARN if suspended).
+>> + */
+>> +void getnstimeofday(struct timespec *ts)
+>> +{
+>> +     WARN_ON(__getnstimeofday(ts));
+>>  }
+>>  EXPORT_SYMBOL(getnstimeofday);
+>>
+>> --
+>> 1.7.9.5
+>>
+>>
 
---==-=-=
-Content-Type: text/plain
 
 
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ0zOZAAoJECBgQBJQdR/0JaQP+wUiFmn/WVrdrXO37kDHr1uw
-unGc45gwZizHjGZdnTEAGiJVOTyeA1nicUZ8SoMEuv1N/L1iPjqa+diWGlqh7S2+
-3NoXVlzitMEqy1aWQEl8NZIQbcAEak29WlpVDQZhC7CyyoY3qC/tn3z9OC63AiuG
-lKxRRvMnF0GcIqBSnj4XLOkO+tIviooIiGxdbERstim8okxojQs894NDrQkrKzA7
-94thgXChhGEsx3BmRGVbYnoT0Z7Hcz8WAM3Jjv+hxQtNW1x+7oo6G2uWNMnwspfG
-L3oajPjVYxrMxg3JtGq//ISF0THg6NMJbnhCZnYZrffFe+r45eELKX+mIulojcNp
-yRmZojuobVGmKIulWan+F/LjZaVmMHb8n6TH7Rs5jXx4D7XA58SgC8mLCfZg6wrJ
-mjeNZWFgmDuF6M+cDovTW0xdfuCmJajPvSxvXtNNa3KFpFOphMq/6YuVfzaJoqfL
-slDkQ47slEtSlbFWuPhXdHbsK9xddScOHL8aAmEe6EyrRW2hdDD1pwVsY/ThDRL3
-BzFIuejZmcEe6pYUzmMlJ0uGS0TtmT4vkiDdbUieo+Hp53i8Du0Gy35Dd2bY0GUB
-L6o61GLFx3Fge5yq9DSU7MwghJdcmNla//y0y3GmmEz2V6LJdHyDgobt8KMF6+Zf
-cn7HO40PeY0lUnRpXALq
-=7hVI
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+--
+Kees Cook
+Chrome OS Security
