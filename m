@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab2LTXMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 18:12:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21226 "EHLO mx1.redhat.com"
+	id S1751999Ab2LTXPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:15:01 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39262 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab2LTXMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 18:12:02 -0500
-Message-ID: <1356045105.3625.33.camel@ul30vt.home>
-Subject: [RESEND][GIT PULL v2] VFIO updates for v3.8
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        fengguang.wu@intel.com, julia.lawall@lip6.fr, jiang.liu@huawei.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 20 Dec 2012 16:11:45 -0700
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751133Ab2LTXOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 18:14:54 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 0/16] ACPI: Rework ACPI namespace scanning for devices
+Date: Fri, 21 Dec 2012 00:20:08 +0100
+Message-ID: <12131132.10dj1atNiS@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1356037647.18964.384.camel@misato.fc.hp.com>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <1855256.SyhOJGYMIh@vostro.rjw.lan> <1356037647.18964.384.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thursday, December 20, 2012 02:07:27 PM Toshi Kani wrote:
+> Hi Rafael,
+> 
+> The changes look very good.  It's much cleaner and consistent. :-)  For
+> the series:
+> 
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Same as sent earlier last week.  This fixes the rebased commits from the
-original pull request.  Please include for v3.8-rc1.  Thanks,
-
-Alex
-
-The following changes since commit 1afa471706963643ceeda7cbbe9c605a1e883d53:
-
-  Merge tag 'mmc-fixes-for-3.7' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2012-12-07 09:15:20 -0800)
-
-are available in the git repository at:
+Thanks!
 
 
-  git://github.com/awilliam/linux-vfio.git tags/vfio-for-v3.8-v2
-
-for you to fetch changes up to 9a92c5091a42c565ede818fdf204c4f60004d0d8:
-
-  vfio-pci: Enable device before attempting reset (2012-12-07 13:43:51 -0700)
-
-----------------------------------------------------------------
-vfio pull for v3.8
-
-----------------------------------------------------------------
-Alex Williamson (2):
-      vfio-pci: Re-order device reset
-      vfio-pci: Enable device before attempting reset
-
-Fengguang Wu (1):
-      vfio: simplify kmalloc+copy_from_user to memdup_user
-
-Jiang Liu (3):
-      VFIO: unregister IOMMU notifier on error recovery path
-      VFIO: use ACCESS_ONCE() to guard access to dev->driver
-      VFIO: fix out of order labels for error recovery in vfio_pci_init()
-
- drivers/vfio/pci/vfio_pci.c | 83 +++++++++++++++++++++++++--------------------
- drivers/vfio/vfio.c         | 34 +++++++++----------
- 2 files changed, 64 insertions(+), 53 deletions(-)
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
