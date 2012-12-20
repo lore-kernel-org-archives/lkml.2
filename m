@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab2LTPuA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:50:00 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:48371 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab2LTPtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:49:40 -0500
+	id S1751837Ab2LTPuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:50:21 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:47353 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751228Ab2LTPuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 10:50:16 -0500
+Date: Thu, 20 Dec 2012 09:51:47 -0600
+From: Cliff Wickman <cpw@sgi.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, ptesarik@suse.cz, linux-kernel@vger.kernel.org,
+        kumagai-atsushi@mxc.nes.nec.co.jp, vgoyal@redhat.com
+Subject: Re: [PATCH] makedumpfile: request the kernel do page scans
+Message-ID: <20121220155147.GA2048@sgi.com>
+References: <20121119180710.GA16448@sgi.com> <20121210.095929.249234826.d.hatayama@jp.fujitsu.com> <20121210153614.GA9037@sgi.com> <20121220.122214.503837449.d.hatayama@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <034FBC2C8CCA484FBA5BA5FC707AC8303AD02F0D1E@EXMB02.eu.tieto.com>
-References: <034FBC2C8CCA484FBA5BA5FC707AC8303AD02F0D1E@EXMB02.eu.tieto.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 20 Dec 2012 07:49:18 -0800
-X-Google-Sender-Auth: ol1-DMmk9e2EmpW10AraMPlht4o
-Message-ID: <CA+55aFxbE9G+2NdA_8s1vyjrkNE5mBdYZ5Cy9tYr4AJOdvdivg@mail.gmail.com>
-Subject: Re: [PATCH] mmc:core:if detect mmc card remove,don't wait for req done
-To: zhenpeng.qian@tieto.com, Chris Ball <cjb@laptop.org>
-Cc: Greg KH <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-mmc@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7bfcf91ab3634104d14aada3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220.122214.503837449.d.hatayama@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bfcf91ab3634104d14aada3
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, Dec 20, 2012 at 12:22:14PM +0900, HATAYAMA Daisuke wrote:
+> From: Cliff Wickman <cpw@sgi.com>
+> Subject: Re: [PATCH] makedumpfile: request the kernel do page scans
+> Date: Mon, 10 Dec 2012 09:36:14 -0600
+> > On Mon, Dec 10, 2012 at 09:59:29AM +0900, HATAYAMA Daisuke wrote:
+> >> From: Cliff Wickman <cpw@sgi.com>
+> >> Subject: Re: [PATCH] makedumpfile: request the kernel do page scans
+> >> Date: Mon, 19 Nov 2012 12:07:10 -0600
+> >> 
+> >> > On Fri, Nov 16, 2012 at 03:39:44PM -0500, Vivek Goyal wrote:
+> >> >> On Thu, Nov 15, 2012 at 04:52:40PM -0600, Cliff Wickman wrote:
+> > 
+> > Hi Hatayama,
+> > 
+> > If ioremap/iounmap is the bottleneck then perhaps you could do what
+> > my patch does: it consolidates all the ranges of physical addresses
+> > where the boot kernel's page structures reside (see make_kernel_mmap())
+> > and passes them to the kernel, which then does a handfull of ioremaps's to
+> > cover all of them.  Then /proc/vmcore could look up the already-mapped
+> > virtual address.
+> > (also note a kludge in get_mm_sparsemem() that verifies that each section
+> > of the mem_map spans contiguous ranges of page structures.  I had
+> > trouble with some sections when I made that assumption)
+> > 
+> > I'm attaching 3 patches that might be useful in your testing:
+> > - 121210.proc_vmcore2  my current patch that applies to the released
+> >   makedumpfile 1.5.1
+> > - 121207.vmcore_pagescans.sles applies to a 3.0.13 kernel
+> > - 121207.vmcore_pagescans.rhel applies to a 2.6.32 kernel
+> > 
+> 
+> I used the same patch set on the benchmark.
+> 
+> BTW, I have continuously reservation issue, so I think I cannot use
+> terabyte memory machine at least in this year.
+> 
+> Also, your patch set is doing ioremap per a chunk of memory map,
+> i.e. a number of consequtive pages at the same time. On your terabyte
+> machines, how large they are? We have memory consumption issue on the
+> 2nd kernel so we must decrease amount of memory used. But looking into
+> ioremap code quickly, it looks not using 2MB or 1GB pages to
+> remap. This means more than tera bytes page table is generated. Or
+> have you probably already investigated this?
+> 
+> BTW, my idea to solve this issue are two:
+> 
+> 1) make linear direct mapping for old memory, and acess the old memory
+> via the linear direct mapping, not by ioremap.
+> 
+>   - adding remap code in vmcore, or passing the regions that need to
+>     be remapped using memmap= kernel option to tell the 2nd kenrel to
+>     map them in addition.
 
-Hi,
+Good point.  It would take over 30G of memory to map 16TB with 4k pages.
+I recently tried to dump such a memory and ran out of kernel memory --
+no wonder!
 
-On Thu, Dec 20, 2012 at 1:32 AM,  <zhenpeng.qian@tieto.com> wrote:
->
->         I find a bug about mmc/core/core.c, and send you a patch which I fix
-> this bug.
->
->         In fact, the bug is a low probability of occurrence.
->
->         Hope you help me to analyze it and discuss with me.
+Do you have a patch for doing a linear direct mapping?  Or can you name
+existing kernel infrastructure to do such mapping?  I'm just looking for
+a jumpstart to enhance the patch.
 
-I've added the proper people - Chris Ball and linux-mmc - to the
-participants list.
+-Cliff
+> 
+> Or,
+> 
+> 2) Support 2MB or 1GB pages in ioremap.
+> 
+> Thanks.
+> HATAYAMA, Daisuke
 
-I also wanted to check with you: the commit message implies that this
-can cause an IO timeout and then a call to
-msmsdcc_start_command_deferred() with a NULL cmd->mrq. Which I assume
-results in a NULL pointer dereference and Oops, but that wasn't
-spelled out.
-
-Chris, please give it a look, and perhaps edit the commit message a bit.
-
-                     Linus
-
---047d7bfcf91ab3634104d14aada3
-Content-Type: application/octet-stream; name="0001-mmc-core.patch"
-Content-Disposition: attachment; filename="0001-mmc-core.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hay2ajo01
-
-RnJvbSAwYWNiNjhkNWI3ZDA3OThlZmMzOTMyYjQwNTc3NjhkMGQ3MmRiZDBmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBaaGVucGVuZyBRaWFuIDx6aGVucGVuZy5xaWFuQHRpZXRvLmNv
-bT4KRGF0ZTogVGh1LCAyMCBEZWMgMjAxMiAxNjoyMDoxMiArMDgwMApTdWJqZWN0OiBbUEFUQ0hd
-IG1tYzpjb3JlOmlmIGRldGVjdCBtbWMgY2FyZCByZW1vdmUsZG9uJ3Qgd2FpdCBmb3IgcmVxIGRv
-bmUKCmZ1bmN0aW9uIG1tY193YWl0X2Zvcl9yZXEgY2FsbCBfX21tY19zdGFydF9yZXEsaWYgZGV0
-ZWN0IG1tYyBjYXJkIHJlbW92ZQosaXQgd2lsbCByZXR1cm4gLUVOT01FRElVTSBhbmQgZG9uJ3Qg
-d2FpdCBmb3IgcmVxIGRvbmUuICBJbiB0aGlzIHdheSxpdApjYW4gcmVkdWNlIGlvX3NjaGVkdWxl
-IG9uY2UuCgpBbmQgaWYgaW9fc2NoZWR1bGUgdGltZW91dCBhbmQgY2hlY2sgbW1jX2NhcmRfcmVt
-b3ZlIGZhaWwsaXQgd2lsbCBjYWxsCmhvc3QtPm9wcy0+cmVxdWVzdCwoc29tZXRpbWVzIGl0IG1h
-eSBvY2N1ciBieSBpbnNtb2QgYW5kIHJtbW9kIGZhc3QpLCBpdAp3aWxsIGNhbGwgbXNtc2RjY19z
-dGFydF9jb21tYW5kX2RlZmVycmVkIGZpbmFsbHkgLCBhbmQgY21kLT5tcnEgaXMgTlVMTCwKaXQg
-aXMgaW5pdCBpbiBtbWNfc3RhcnRfcmVxdWVzdC4gCgoxMCBbPGMwNmU4NDU4Pl0gKF9fZGFidF9z
-dmMpIGZyb20gWzxjMDRjOGMyYz5dCjExIFs8YzA0YzhhNDQ+XSAobXNtc2RjY19zdGFydF9jb21t
-YW5kX2RlZmVycmVkKSBmcm9tIFs8YzA0YzhjMmM+XQoxMiBbPGMwNGM4YzJjPl0gKG1zbXNkY2Nf
-c3RhcnRfY29tbWFuZCkgZnJvbSBbPGMwNGQxNDI4Pl0KMTMgWzxjMDRkMTQyOD5dIChtc21zZGNj
-X3JlcXVlc3QpIGZyb20gWzxjMDRiN2M4MD5dCjE0IFs8YzA0YjdjODA+XSAobW1jX3dhaXRfZm9y
-X3JlcV9kb25lKSBmcm9tIFs8YzA0Yjg2MzA+XQoxNSBbPGMwNGI4NjMwPl0gKG1tY193YWl0X2Zv
-cl9jbWQpIGZyb20gWzxjMDRjNDk4MD5dCjE2IFs8YzA0YzQ5ODA+XSAoZ2V0X2NhcmRfc3RhdHVz
-KSBmcm9tIFs8YzA0YzUzMzg+XQoxNyBbPGMwNGM1MzM4Pl0gKG1tY19ibGtfZXJyX2NoZWNrKSBm
-cm9tIFs8YzA0YjhhNzg+XQoxOCBbPGMwNGI4YTc4Pl0gKG1tY19zdGFydF9yZXEpIGZyb20gWzxj
-MDRjNjAyMD5dCjE5IFs8YzA0YzYwMjA+XSAobW1jX2Jsa19pc3N1ZV9yd19ycSkgZnJvbSBbPGMw
-NGM2YTFjPl0KMjAgWzxjMDRjNmExYz5dIChtbWNfYmxrX2lzc3VlX3JxKSBmcm9tIFs8YzA0YzZj
-N2M+XQoyMSBbPGMwNGM2YzdjPl0gKG1tY19xdWV1ZV90aHJlYWQpIGZyb20gWzxjMDA5MWQ1ND5d
-CjIyIFs8YzAwOTFkNTQ+XSAoa3RocmVhZCkgZnJvbSBbPGMwMDBmMDI4Pl0KClNpZ25lZC1vZmYt
-Ynk6IFFpYW4gemhlbnBlbmcgPHpoZW5wZW5nLnFpYW5AdGlldG8uY29tPgotLS0KIGRyaXZlcnMv
-bW1jL2NvcmUvY29yZS5jIHwgNyArKysrKy0tCiAxIGZpbGUgY2hhbmdlZCwgNSBpbnNlcnRpb25z
-KCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvbW1jL2NvcmUvY29yZS5j
-IGIvZHJpdmVycy9tbWMvY29yZS9jb3JlLmMKaW5kZXggYWFlZDc2OC4uZmFjMDE4YyAxMDA2NDQK
-LS0tIGEvZHJpdmVycy9tbWMvY29yZS9jb3JlLmMKKysrIGIvZHJpdmVycy9tbWMvY29yZS9jb3Jl
-LmMKQEAgLTQ3MCw4ICs0NzAsMTEgQEAgRVhQT1JUX1NZTUJPTChtbWNfc3RhcnRfcmVxKTsKICAq
-Lwogdm9pZCBtbWNfd2FpdF9mb3JfcmVxKHN0cnVjdCBtbWNfaG9zdCAqaG9zdCwgc3RydWN0IG1t
-Y19yZXF1ZXN0ICptcnEpCiB7Ci0JX19tbWNfc3RhcnRfcmVxKGhvc3QsIG1ycSk7Ci0JbW1jX3dh
-aXRfZm9yX3JlcV9kb25lKGhvc3QsIG1ycSk7CisJaW50IGVycjsKKwllcnI9X19tbWNfc3RhcnRf
-cmVxKGhvc3QsIG1ycSk7CisJLyogaWYgZGV0ZWN0IG1tYyBjYXJkIHJlbW92ZSxkb24ndCB3YWl0
-IGZvciByZXEgZG9uZSovCisJaWYgKCFlcnIpCisJCW1tY193YWl0X2Zvcl9yZXFfZG9uZShob3N0
-LCBtcnEpOwogfQogRVhQT1JUX1NZTUJPTChtbWNfd2FpdF9mb3JfcmVxKTsKIAotLSAKMS43LjEx
-LjMKCg==
---047d7bfcf91ab3634104d14aada3--
+-- 
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
