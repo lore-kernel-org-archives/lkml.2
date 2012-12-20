@@ -1,208 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab2LTKbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 05:31:24 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:38461 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab2LTKbR (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 20 Dec 2012 05:31:17 -0500
-Message-Id: <50D2F6FF02000078000B1BC5@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Thu, 20 Dec 2012 10:31:11 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Olaf Hering" <olaf@aepfle.de>, "Jens Axboe" <axboe@kernel.dk>,
-        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen-blkback: do not leak mode property
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__PartFDCC72FF.4__="
+	id S1752135Ab2LTKdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 05:33:47 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35665 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab2LTKdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 05:33:40 -0500
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned divisors
+Date: Thu, 20 Dec 2012 11:30:38 +0100
+User-Agent: KMail/1.9.10
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+References: <1355928015-26212-1-git-send-email-linux@roeck-us.net> <20121219224122.GA26863@roeck-us.net> <20121220112202.3ead1fe1@endymion.delvare>
+In-Reply-To: <20121220112202.3ead1fe1@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201212201130.39235.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+Hi Jean,
 
---=__PartFDCC72FF.4__=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
+Jean Delvare wrote:
+> On Wed, 19 Dec 2012 14:41:22 -0800, Guenter Roeck wrote:
+> > On Wed, Dec 19, 2012 at 01:47:21PM -0800, Andrew Morton wrote:
+> > > The changelog didn't describe the end-user visible effects of the bug.
+> > > Please always include this information.  Because...
+> >
+> > One observed effect is that the s2c_hwmon driver reports a value of
+> > 4198403 instead of 0 if the ADC reads 0.
+> >
+> > Other impact is unpredictable. Problem is seen if the divisor is an
+> > unsigned variable or constant and the dividend is less than (divisor/2).
+>
+> Really? In my own testing, the problem only shows with dividend == 0,
+> and even then, only when dividend is signed and divisor is not.
+> DIV_ROUND_CLOSEST(5, 20U) returns 0 as expected, and so do
+> DIV_ROUND_CLOSEST(0 / 20), DIV_ROUND_CLOSEST(0U / 20) and
+> DIV_ROUND_CLOSEST(0U / 20U).
+>
+> Are your observations different?
 
-"be->mode" is obtained from xenbus_read(), which does a kmalloc() for
-the message body. The short string is never released, so do it along
-with freeing "be" itself, and make sure the string isn't kept when
-backend_changed() doesn't complete successfully (which made it
-desirable to slightly re-structure that function, so that the error
-cleanup can be done in one place).
+I tried it with this simple user-land program to get an idea what's going 
+wrong in the s3c_hwmon.c ADC driver:
 
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+#define DIV_ROUND_CLOSEST(x, divisor)(			\
+{							\
+	typeof(x) __x = x;				\
+	typeof(divisor) __d = divisor;			\
+	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
+		(((__x) + ((__d) / 2)) / (__d)) :	\
+		(((__x) - ((__d) / 2)) / (__d));	\
+}							\
+)
 
----
- drivers/block/xen-blkback/xenbus.c |   49 ++++++++++++++++++--------------=
------
- 1 file changed, 24 insertions(+), 25 deletions(-)
+int main(int argc, char *argv[])
+{
+	int x;
+	unsigned y;
 
---- 3.7/drivers/block/xen-blkback/xenbus.c
-+++ 3.7-xen-blkback-mode-leak/drivers/block/xen-blkback/xenbus.c
-@@ -366,6 +366,7 @@ static int xen_blkbk_remove(struct xenbu
- 		be->blkif =3D NULL;
- 	}
-=20
-+	kfree(be->mode);
- 	kfree(be);
- 	dev_set_drvdata(&dev->dev, NULL);
- 	return 0;
-@@ -501,6 +502,7 @@ static void backend_changed(struct xenbu
- 		=3D container_of(watch, struct backend_info, backend_watch)=
-;
- 	struct xenbus_device *dev =3D be->dev;
- 	int cdrom =3D 0;
-+	unsigned long handle;
- 	char *device_type;
-=20
- 	DPRINTK("");
-@@ -520,10 +522,10 @@ static void backend_changed(struct xenbu
- 		return;
- 	}
-=20
--	if ((be->major || be->minor) &&
--	    ((be->major !=3D major) || (be->minor !=3D minor))) {
--		pr_warn(DRV_PFX "changing physical device (from %x:%x to =
-%x:%x) not supported.\n",
--			be->major, be->minor, major, minor);
-+	if (be->major | be->minor) {
-+		if (be->major !=3D major || be->minor !=3D minor)
-+			pr_warn(DRV_PFX "changing physical device (from =
-%x:%x to %x:%x) not supported.\n",
-+				be->major, be->minor, major, minor);
- 		return;
- 	}
-=20
-@@ -541,36 +543,33 @@ static void backend_changed(struct xenbu
- 		kfree(device_type);
- 	}
-=20
--	if (be->major =3D=3D 0 && be->minor =3D=3D 0) {
--		/* Front end dir is a number, which is used as the handle. =
-*/
-+	/* Front end dir is a number, which is used as the handle. */
-+	err =3D strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, =
-&handle);
-+	if (err)
-+		return;
-=20
--		char *p =3D strrchr(dev->otherend, '/') + 1;
--		long handle;
--		err =3D strict_strtoul(p, 0, &handle);
--		if (err)
--			return;
-+	be->major =3D major;
-+	be->minor =3D minor;
-=20
--		be->major =3D major;
--		be->minor =3D minor;
--
--		err =3D xen_vbd_create(be->blkif, handle, major, minor,
--				 (NULL =3D=3D strchr(be->mode, 'w')), =
-cdrom);
--		if (err) {
--			be->major =3D 0;
--			be->minor =3D 0;
--			xenbus_dev_fatal(dev, err, "creating vbd structure"=
-);
--			return;
--		}
-+	err =3D xen_vbd_create(be->blkif, handle, major, minor,
-+			     !strchr(be->mode, 'w'), cdrom);
-=20
-+	if (err)
-+		xenbus_dev_fatal(dev, err, "creating vbd structure");
-+	else {
- 		err =3D xenvbd_sysfs_addif(dev);
- 		if (err) {
- 			xen_vbd_free(&be->blkif->vbd);
--			be->major =3D 0;
--			be->minor =3D 0;
- 			xenbus_dev_fatal(dev, err, "creating sysfs =
-entries");
--			return;
- 		}
-+	}
-=20
-+	if (err) {
-+		kfree(be->mode);
-+		be->mode =3D NULL;
-+		be->major =3D 0;
-+		be->minor =3D 0;
-+	} else {
- 		/* We're potentially connected now */
- 		xen_update_blkif_status(be->blkif);
- 	}
+	printf("Constants\n");
 
+	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(-1, 2));
+	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(-1, 1023));
+	printf("0 -> %d\n", DIV_ROUND_CLOSEST(0, 1023));
+	printf("0 -> %d\n", DIV_ROUND_CLOSEST(0, 2));
+	printf("1 -> %d\n", DIV_ROUND_CLOSEST(1, 2));
+	printf("1 -> %d\n", DIV_ROUND_CLOSEST(3300, 1023));
+	printf("2 -> %d\n", DIV_ROUND_CLOSEST(6600, 1023));
 
+	printf("Variables\n");
 
+	x = -1; y = 2;
+	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(x, y));
+	x = -1; y = 1023;
+	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(x, y));
+	x = 0; y = 1023;
+	printf("0 -> %d\n", DIV_ROUND_CLOSEST(x, y));
+	x = 3300; y = 1023;
+	printf("3300 -> %d\n", DIV_ROUND_CLOSEST(3300, 1023));
+	x = 6600; y = 1023;
+	printf("6600 -> %d\n", DIV_ROUND_CLOSEST(6600, 1023));
 
---=__PartFDCC72FF.4__=
-Content-Type: text/plain; name="linux-3.7-xen-blkback-mode-leak.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="linux-3.7-xen-blkback-mode-leak.patch"
+	return 0;
+}
 
-xen-blkback: do not leak mode property=0A=0A"be->mode" is obtained from =
-xenbus_read(), which does a kmalloc() for=0Athe message body. The short =
-string is never released, so do it along=0Awith freeing "be" itself, and =
-make sure the string isn't kept when=0Abackend_changed() doesn't complete =
-successfully (which made it=0Adesirable to slightly re-structure that =
-function, so that the error=0Acleanup can be done in one place).=0A=0ARepor=
-ted-by: Olaf Hering <olaf@aepfle.de>=0ASigned-off-by: Jan Beulich =
-<jbeulich@suse.com>=0A=0A---=0A drivers/block/xen-blkback/xenbus.c |   49 =
-++++++++++++++++++-------------------=0A 1 file changed, 24 insertions(+), =
-25 deletions(-)=0A=0A--- 3.7/drivers/block/xen-blkback/xenbus.c=0A+++ =
-3.7-xen-blkback-mode-leak/drivers/block/xen-blkback/xenbus.c=0A@@ -366,6 =
-+366,7 @@ static int xen_blkbk_remove(struct xenbu=0A 		be->blkif =
-=3D NULL;=0A 	}=0A =0A+	kfree(be->mode);=0A 	kfree(be);=0A 	=
-dev_set_drvdata(&dev->dev, NULL);=0A 	return 0;=0A@@ -501,6 +502,7 @@ =
-static void backend_changed(struct xenbu=0A 		=3D container_of(wa=
-tch, struct backend_info, backend_watch);=0A 	struct xenbus_device *dev =
-=3D be->dev;=0A 	int cdrom =3D 0;=0A+	unsigned long handle;=0A 	=
-char *device_type;=0A =0A 	DPRINTK("");=0A@@ -520,10 +522,10 @@ =
-static void backend_changed(struct xenbu=0A 		return;=0A 	=
-}=0A =0A-	if ((be->major || be->minor) &&=0A-	    ((be->major =
-!=3D major) || (be->minor !=3D minor))) {=0A-		pr_warn(DRV_PFX =
-"changing physical device (from %x:%x to %x:%x) not supported.\n",=0A-		=
-	be->major, be->minor, major, minor);=0A+	if (be->major | =
-be->minor) {=0A+		if (be->major !=3D major || be->minor !=3D =
-minor)=0A+			pr_warn(DRV_PFX "changing physical device =
-(from %x:%x to %x:%x) not supported.\n",=0A+				=
-be->major, be->minor, major, minor);=0A 		return;=0A 	=
-}=0A =0A@@ -541,36 +543,33 @@ static void backend_changed(struct xenbu=0A 	=
-	kfree(device_type);=0A 	}=0A =0A-	if (be->major =3D=3D 0 && =
-be->minor =3D=3D 0) {=0A-		/* Front end dir is a number, =
-which is used as the handle. */=0A+	/* Front end dir is a number, =
-which is used as the handle. */=0A+	err =3D strict_strtoul(strrchr(dev-=
->otherend, '/') + 1, 0, &handle);=0A+	if (err)=0A+		return;=0A =
-=0A-		char *p =3D strrchr(dev->otherend, '/') + 1;=0A-		=
-long handle;=0A-		err =3D strict_strtoul(p, 0, &handle);=0A-	=
-	if (err)=0A-			return;=0A+	be->major =3D =
-major;=0A+	be->minor =3D minor;=0A =0A-		be->major =3D =
-major;=0A-		be->minor =3D minor;=0A-=0A-		err =3D =
-xen_vbd_create(be->blkif, handle, major, minor,=0A-				=
- (NULL =3D=3D strchr(be->mode, 'w')), cdrom);=0A-		if (err) =
-{=0A-			be->major =3D 0;=0A-			be->minor =
-=3D 0;=0A-			xenbus_dev_fatal(dev, err, "creating vbd =
-structure");=0A-			return;=0A-		}=0A+	=
-err =3D xen_vbd_create(be->blkif, handle, major, minor,=0A+			=
-     !strchr(be->mode, 'w'), cdrom);=0A =0A+	if (err)=0A+		=
-xenbus_dev_fatal(dev, err, "creating vbd structure");=0A+	else {=0A 	=
-	err =3D xenvbd_sysfs_addif(dev);=0A 		if (err) {=0A 		=
-	xen_vbd_free(&be->blkif->vbd);=0A-			be->major =
-=3D 0;=0A-			be->minor =3D 0;=0A 			=
-xenbus_dev_fatal(dev, err, "creating sysfs entries");=0A-			=
-return;=0A 		}=0A+	}=0A =0A+	if (err) {=0A+		=
-kfree(be->mode);=0A+		be->mode =3D NULL;=0A+		be->major =
-=3D 0;=0A+		be->minor =3D 0;=0A+	} else {=0A 		/* =
-We're potentially connected now */=0A 		xen_update_blkif_status(be-=
->blkif);=0A 	}=0A
---=__PartFDCC72FF.4__=--
+Result is on my x86 host (same on my ARM target):
+
+Constants
+-1 -> -1
+-1 -> 0
+0 -> 0
+0 -> 0
+1 -> 1
+1 -> 3
+2 -> 6
+Variables
+-1 -> 2147483647
+-1 -> 4198403
+0 -> 4198403
+3300 -> 3
+6600 -> 6
+
+Regards,
+Juergen
+
+-- 
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
