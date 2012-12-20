@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab2LTToM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:44:12 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:36021 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab2LTToB (ORCPT
+	id S1751714Ab2LTTur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:50:47 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27235 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751060Ab2LTTum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:44:01 -0500
-Message-ID: <1356032637.24462.4.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH] Documentation: ABI: remove testing/sysfs-devices-node
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 20 Dec 2012 11:43:57 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 14:50:42 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX182VWd0YBjpeaoIe+hBards
+Date: Thu, 20 Dec 2012 11:50:34 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        maxime.ripard@free-electrons.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH] ARM: OMAP2+: Trivial fix for IOMMU merge issue (Re: [GIT
+ PULL v2] ARM: arm-soc fixes for 3.8)
+Message-ID: <20121220195033.GI21056@atomide.com>
+References: <20121220163814.GA29557@quad.lixom.net>
+ <20121220175639.GA14363@n2100.arm.linux.org.uk>
+ <CAOesGMgxXmXUW2RP_5AxJ6Z5sRBhFJ2CQz4S12MwXAb3=ibYOA@mail.gmail.com>
+ <20121220184525.GC21056@atomide.com>
+ <CA+55aFyiRPk0Qta35PBqMFqn+GkKaugqKJM3WHCT0JEJ1YohWw@mail.gmail.com>
+ <20121220190847.GF21056@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220190847.GF21056@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file is already documented in the stable ABI (commit 5bbe1ec1).
+Commit 787314c3 (Merge tag 'iommu-updates-v3.8' of
+git://git./linux/kernel/git/joro/iommu) did not account
+for the changed header location.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+The headers were made local to mach-omap2 as they
+are specific to omap2+ only, and we wanted to get
+most of the #include <plat/*.h> headers fixed up
+anyways for the ARM multiplatform support.
+
+We attempted to avoid this kind of merge conflict
+early on by setting up a minimal git branch shared by
+the arm-soc tree and the iommu tree, but looks like
+we still hit a merge issue there as the branches got
+merged as various topic branches.
+
+Cc: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+
 ---
- Documentation/ABI/testing/sysfs-devices-node | 7 -------
- 1 file changed, 7 deletions(-)
- delete mode 100644 Documentation/ABI/testing/sysfs-devices-node
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-node b/Documentation/ABI/testing/sysfs-devices-node
-deleted file mode 100644
-index 453a210..0000000
---- a/Documentation/ABI/testing/sysfs-devices-node
-+++ /dev/null
-@@ -1,7 +0,0 @@
--What:		/sys/devices/system/node/nodeX/compact
--Date:		February 2010
--Contact:	Mel Gorman <mel@csn.ul.ie>
--Description:
--		When this file is written to, all memory within that node
--		will be compacted. When it completes, memory will be freed
--		into blocks which have as many contiguous pages as possible
--- 
-1.7.11.7
+Found one more merge issue with the recent IOMMU merge.
 
+Linus, maybe apply this fix directly as Olof's branch
+is based on an earlier commit?
 
-
+--- a/arch/arm/mach-omap2/omap-iommu.c
++++ b/arch/arm/mach-omap2/omap-iommu.c
+@@ -16,8 +16,8 @@
+ #include <linux/slab.h>
+ 
+ #include <linux/platform_data/iommu-omap.h>
+-#include <plat/omap_hwmod.h>
+-#include <plat/omap_device.h>
++#include "omap_hwmod.h"
++#include "omap_device.h"
+ 
+ static int __init omap_iommu_dev_init(struct omap_hwmod *oh, void *unused)
+ {
