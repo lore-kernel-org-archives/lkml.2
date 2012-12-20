@@ -1,142 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab2LTWsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 17:48:16 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:57139 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab2LTWsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 17:48:03 -0500
+	id S1751989Ab2LTWvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 17:51:07 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39241 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751380Ab2LTWu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 17:50:59 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Update 2][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Thu, 20 Dec 2012 23:56:07 +0100
+Message-ID: <150695156.KNRhubloU5@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAErSpo7NWHmSEJMuytUTziRTwUmnPHCVcD0zX7pKVmhQyv26sQ@mail.gmail.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <3596215.suSiEFiGH8@vostro.rjw.lan> <CAErSpo7NWHmSEJMuytUTziRTwUmnPHCVcD0zX7pKVmhQyv26sQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKcLGm9eFRQrAc_Nm0Z658ct46psVemWt4c8NbpETjhMF3A+jQ@mail.gmail.com>
-References: <1354257909-2380-1-git-send-email-ngupta@vflare.org>
-	<20121211182720.GC29421@kroah.com>
-	<CAPkvG_c0HayXO50SKCd==T-M4W1r8JUSi_VgGDiP+M+i=DpbZA@mail.gmail.com>
-	<20121219034949.GA22281@kroah.com>
-	<50D16AF8.7030401@vflare.org>
-	<20121219150826.GA23953@kroah.com>
-	<50D1E300.4000006@vflare.org>
-	<20121219161705.GA24251@kroah.com>
-	<50D1F799.4060800@vflare.org>
-	<CAKcLGm9eFRQrAc_Nm0Z658ct46psVemWt4c8NbpETjhMF3A+jQ@mail.gmail.com>
-Date: Thu, 20 Dec 2012 14:48:00 -0800
-Message-ID: <CAPkvG_dxPg2M1vcdWZOzpoTS=No8d34fgVKDP-wAevMR+Y-+7w@mail.gmail.com>
-Subject: Re: zram: fix invalid memory references during disk write
-From: Nitin Gupta <ngupta@vflare.org>
-To: Mitch Harder <mitch.harder@sabayonlinux.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 9:39 AM, Mitch Harder
-<mitch.harder@sabayonlinux.org> wrote:
-> On Wed, Dec 19, 2012 at 11:21 AM, Nitin Gupta <ngupta@vflare.org> wrote:
->> On 12/19/2012 08:17 AM, Greg KH wrote:
->>> On Wed, Dec 19, 2012 at 07:53:36AM -0800, Nitin Gupta wrote:
->>>> On 12/19/2012 07:08 AM, Greg KH wrote:
->>>>> On Tue, Dec 18, 2012 at 11:21:28PM -0800, Nitin Gupta wrote:
->>>>>> On 12/18/2012 07:49 PM, Greg KH wrote:
->>>>>>> On Tue, Dec 18, 2012 at 01:12:05PM -0800, Nitin Gupta wrote:
->>>>>>>> On Tue, Dec 11, 2012 at 10:27 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>>>>>>>> On Thu, Nov 29, 2012 at 10:45:09PM -0800, Nitin Gupta wrote:
->>>>>>>>>> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
->>>>>>>>>> of incompressible pages") which caused invalid memory references
->>>>>>>>>> during disk write. Invalid references could occur in two cases:
->>>>>>>>>>  - Incoming data expands on compression: In this case, reference was
->>>>>>>>>> made to kunmap()'ed bio page.
->>>>>>>>>>  - Partial (non PAGE_SIZE) write with incompressible data: In this
->>>>>>>>>> case, reference was made to a kfree()'ed buffer.
->>>>>>>>>>
->>>>>>>>>> Fixes bug 50081:
->>>>>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
->>>>>>>>>>
->>>>>>>>>> Upstream commit ID: c8f2f0d: zram: Fix handling of incompressible pages
->>>>>>>>>> Apply to versions: 3.6.5, 3.6.6, 3.6.7, 3.6.8
->>>>>>>>>>
->>>>>>>>>> Cc: <stable@vger.kernel.org> # staging-next: 37b51fd: zram: factor-out
->>>>>>>>>>                               # zram_decompress_page() function
->>>>>>>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->>>>>>>>>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
->>>>>>>>>> Reported-by: Tomas M <tomas@slax.org>
->>>>>>>>>> Reviewed-by: Minchan Kim <minchan@kernel.org>
->>>>>>>>>> ---
->>>>>>>>>>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
->>>>>>>>>>  1 file changed, 24 insertions(+), 15 deletions(-)
->>>>>>>>>
->>>>>>>>> This patch fails to apply to 3.6.10:
->>>>>>>>>
->>>>>>>>> patching file drivers/staging/zram/zram_drv.c
->>>>>>>>> Hunk #1 succeeded at 282 (offset 17 lines).
->>>>>>>>> Hunk #2 FAILED at 286.
->>>>>>>>> Hunk #3 succeeded at 319 (offset 17 lines).
->>>>>>>>> Hunk #4 succeeded at 340 (offset 17 lines).
->>>>>>>>> Hunk #5 succeeded at 353 (offset 17 lines).
->>>>>>>>> Hunk #6 succeeded at 368 (offset 17 lines).
->>>>>>>>> Hunk #7 succeeded at 385 (offset 17 lines).
->>>>>>>>> 1 out of 7 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
->>>>>>>>>
->>>>>>>>> Please redo this patch and resend it if you wish for it to be applied to
->>>>>>>>> the 3.6-stable tree.
->>>>>>>>>
->>>>>>>>>
->>>>>>>>
->>>>>>>> Please apply this patch to stable tree asap.
->>>>>>>
->>>>>>> 3.6 is now end-of-life, there will not be any more releases for that
->>>>>>> kernel series anymore, sorry.
->>>>>>>
->>>>>>
->>>>>> Then please apply to 3.7.
->>>>>
->>>>> That is impossible to do so, for the obvious reason.
->>>>>
->>>>
->>>> I meant to include it in whatever 3.7.x is released in future. Or put it
->>>> in staging, so it may eventually make it to mainline (by 3.8?).
->>>
->>> {sigh}
->>>
->>> Please think for a moment for how it would be impossible for me to add
->>> this patch to either the 3.7-stable tree, or the 3.8 tree, _again_.
->>>
->>
->> I'm simply not getting it, I'm sorry, I must be missing something
->> obvious -- what's really the problem with this: "whenever 3.8 is
->> released, sometime in the future, just make sure that this fix is
->> included in it" ?  Also, what's stopping it from staging, at least?
->>
->
-> Greg:
->
-> I think there is still some residual confusion from the mix of patches
-> sent out for this issue.
->
-> You appear to be saying that this patch as well as "37b51fd: zram:
-> factor-out  zram_decompress_page() function" have already been
-> applied.
->
-> But I do not see either patch in 3.7.0 or in your message for
-> "3.7.1-stable review"
->
-> I see the "37b51fd: zram: factor-out  zram_decompress_page() function"
-> patch in Linus' tree for 3.8_rc, but not the patch discussed in this
-> thread.
+On Thursday, December 20, 2012 02:13:15 PM Bjorn Helgaas wrote:
+> [+cc linux-pci, Myron]
+> 
+> On Mon, Dec 17, 2012 at 4:30 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > The ACPI handles of PCI root bridges need to be known to
+> > acpi_bind_one(), so that it can create the appropriate
+> > "firmware_node" and "physical_node" files for them, but currently
+> > the way it gets to know those handles is not exactly straightforward
+> > (to put it lightly).
+> >
+> > This is how it works, roughly:
+> >
+> >   1. acpi_bus_scan() finds the handle of a PCI root bridge,
+> >      creates a struct acpi_device object for it and passes that
+> >      object to acpi_pci_root_add().
+> >
+> >   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
+> >      populates its "device" field with its argument's address
+> >      (device->handle is the ACPI handle found in step 1).
+> >
+> >   3. The struct acpi_pci_root object created in step 2 is passed
+> >      to pci_acpi_scan_root() and used to get resources that are
+> >      passed to pci_create_root_bus().
+> >
+> >   4. pci_create_root_bus() creates a struct pci_host_bridge object
+> >      and passes its "dev" member to device_register().
+> >
+> >   5. platform_notify(), which for systems with ACPI is set to
+> >      acpi_platform_notify(), is called.
+> >
+> > So far, so good.  Now it starts to be "interesting".
+> >
+> >   6. acpi_find_bridge_device() is used to find the ACPI handle of
+> >      the given device (which is the PCI root bridge) and executes
+> >      acpi_pci_find_root_bridge(), among other things, for the
+> >      given device object.
+> >
+> >   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
+> >      device object to extract the segment and bus numbers of the PCI
+> >      root bridge and passes them to acpi_get_pci_rootbridge_handle().
+> >
+> >   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
+> >      root bridges and finds the one that matches the given segment
+> >      and bus numbers.  Its handle is then used to initialize the
+> >      ACPI handle of the PCI root bridge's device object by
+> >      acpi_bind_one().  However, this is *exactly* the ACPI handle we
+> >      started with in step 1.
+> >
+> > Needless to say, this is quite embarassing, but it may be avoided
+> > thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
+> > initialized in advance), which makes it possible to initialize the
+> > ACPI handle of a device before passing it to device_register().
+> 
+> This was a mess.  Thanks for cleaning it up.
+> 
+> > Accordingly, make pci_acpi_scan_root() pass the root bridge's ACPI
+> > handle to pci_create_root_bus() and make the latter set the ACPI
+> > handle in its struct pci_host_bridge object's "dev" member before
+> > passing it to device_register(), so that steps 6-8 above aren't
+> > necessary any more.
+> >
+> > To implement that, I decided to repurpose the 4th argument of
+> > pci_create_root_bus(), because that allowed me to avoid defining
+> > additional callbacks or similar things and didn't seem to impact
+> > architectures without ACPI substantially.
+> >
+> > All architectures using pci_create_root_bus() directly are updated
+> > as needed, but only x86 and ia64 are affected as far as the behavior
+> > is concerned (no one else uses ACPI).  There should be no changes in
+> > behavior resulting from this on the other architectures.
+> 
+> I'd like to converge all architectures on a single higher-level
+> interface, pci_scan_root_bus(), then deprecate and remove
+> pci_create_root_bus(), pci_scan_bus_parented(), and pci_scan_bus().
+> You're changing the underlying pci_create_root_bus(), but not the
+> higher-level interfaces that use it, which will make converging a bit
+> harder.
 
-Yes, both staging and linus' tree HEAD now contains the
-"37b51fd: zram: factor-out  zram_decompress_page() function" patch.
-So, all that's need to be done is to apply this patch only.
+Do you mean that pci_scan_root_bus() and friends should take a
+struct pci_root_sys_info pointer rather than (void *) as an argument?
+That's not too difficult to do on top of my patch.  I can do that if you
+want me to, no problem.
 
-Since this patch is really critical for zram, please let me know how to
-move forward and get it included.
+> Here's an alternate implementation strategy; see what you think:
+> 
+> - Add "struct acpi_dev_node acpi_node" to struct pci_sysdata (x86) and
+> struct pci_controller (ia64).  These are the only two arches that use
+> ACPI.
+> 
+> - Add an empty generic (weak) pcibios_create_root_ bus().
+
+Well, in my opinion things like that make following the code more difficult.
+If you were new to the code in question and wanted to understand what it was
+doing, you'd need to inspect all architectures to see (1) if they defined
+pcibios_create_root_bus() and (2) what was in there if so.
+
+> - Add pcibios_create_root_bus() for x86 and ia64 that does the
+> ACPI_HANDLE_SET().
+> 
+> It does add a pcibios callback, which you were trying to avoid, but it
+> does have the advantages that all the higher-level interfaces that use
+> pci_create_root_bus() will keep working and only the ACPI arches have
+> the acpi_dev_node member and associated code.
+
+All of the things that use pci_create_root_bus() are still working with my
+patch applied, hopefully. :-)
+
+You seem to would like the headers of all the involved functions, including
+pci_create_root_bus(), not to change.
 
 Thanks,
-Nitin
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
