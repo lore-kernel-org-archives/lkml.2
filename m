@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab2LTAfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 19:35:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39352 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475Ab2LTAfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 19:35:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,320,1355126400"; 
-   d="scan'208";a="259913252"
-Subject: [PATCH] n_gsm.c: add tx_lock in gsm_send
-From: Xiao Jin <jin.xiao@intel.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
-        william.douglas@intel.com, sboyd@codeaurora.org,
-        gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: vincentx.pillet@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Dec 2012 08:38:40 +0800
-Message-ID: <1355963920.9600.99.camel@xiaojin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752172Ab2LTAh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 19:37:27 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:49772 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2LTAhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 19:37:20 -0500
+X-Greylist: delayed 21400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 19:37:20 EST
+Date: Wed, 19 Dec 2012 16:37:05 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christophe TORDEUX <christophe@tordeux.net>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Tai-hwa Liang <avatar@sentelic.com>,
+        Oskari Saarenmaa <os@ohmu.fi>, Paul Fox <pgf@laptop.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 01/01] Input multitouch: fix horizontal
+ two-finger-scrolling on Sentelic touchpads
+Message-ID: <20121220003705.GA29672@core.coreip.homeip.net>
+References: <20121212012135.GA9043@sherka.no-ip.biz>
+ <20121219230945.GA25106@sherka.no-ip.biz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219230945.GA25106@sherka.no-ip.biz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiaojin <jin.xiao@intel.com>
-Date: Wed, 19 Dec 2012 11:53:43 +0800
-Subject: [PATCH] n_gsm.c: add tx_lock in gsm_send
+On Thu, Dec 20, 2012 at 12:09:45AM +0100, Christophe TORDEUX wrote:
+> From: Christophe TORDEUX <christophe@tordeux.net>
+> 
+> Apply the following change to the Sentelic touchpad driver:
+> report only the position of the first finger as absolute non-MT 
+> coordinates, instead of reporting both fingers alternatively. Actual MT 
+> events are unaffected.
+> 
+> Signed-off-by: Christophe TORDEUX <christophe@tordeux.net>
+> ----
+> 
+> This is a much simpler version of my patch. Basically, it makes little 
+> sense to report both fingers alternatively, as long as it's non-MT 
+> events. With this approach, storing coordinates of the previously 
+> reported touch is not necessary. This patch is against kernel version 
+> 3.7. Works with a touchpad version STL3888_C0, very probably works on 
+> all later version, and very probably does not impact any earlier 
+> version. This patch has two effects:
+> 1) fix horizontal and improve vertical scrolling, though maybe in a
+> coincidental way and 2) work towards making the non-MT absolute events
+> a purely legacy single finger fallback mode, without breaking anything.
 
-All the call to gsm->output should be in the tx_lock,
-that could avoid potential race from MUX level. But
-we have no tx_lock in gsm_send.
+OK, this makes a lot of sense and I will be applying this; thanks!
 
-This patch is to add tx_lock in gsm_send.
+> 
+> diff -uprN -X vanilla/linux-3.7-rc8/Documentation/dontdiff vanilla/linux-3.7/drivers/input/mouse/sentelic.c linux-3.7/drivers/input/mouse/sentelic.c
+> --- vanilla/linux-3.7/drivers/input/mouse/sentelic.c	2012-12-15 13:51:58.768136524 +0100
+> +++ linux-3.7/drivers/input/mouse/sentelic.c	2012-12-19 23:26:49.289517251 +0100
+> @@ -791,7 +791,7 @@ static psmouse_ret_t fsp_process_byte(st
+>  			fsp_set_slot(dev, 0, fgrs > 0, abs_x, abs_y);
+>  			fsp_set_slot(dev, 1, false, 0, 0);
+>  		}
+> -		if (fgrs > 0) {
+> +		if (fgrs ==1 || (fgrs == 2 && !(packet[0] & FSP_PB0_MFMC_FGR2))) {
+>  			input_report_abs(dev, ABS_X, abs_x);
+>  			input_report_abs(dev, ABS_Y, abs_y);
+>  		}
 
-Signed-off-by: xiaojin <jin.xiao@intel.com>
----
- drivers/tty/n_gsm.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index dcc0430..4572117 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -573,6 +573,7 @@ static void gsm_send(struct gsm_mux *gsm, int addr,
-int cr, int control)
- 	int len;
- 	u8 cbuf[10];
- 	u8 ibuf[3];
-+	unsigned long flags;
- 
- 	switch (gsm->encoding) {
- 	case 0:
-@@ -602,7 +603,9 @@ static void gsm_send(struct gsm_mux *gsm, int addr,
-int cr, int control)
- 		WARN_ON(1);
- 		return;
- 	}
-+	spin_lock_irqsave(&gsm->tx_lock, flags);
- 	gsm->output(gsm, cbuf, len);
-+	spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 	gsm_print_packet("-->", addr, cr, control, NULL, 0);
- }
- 
+
 -- 
-1.7.1
-
-
-
+Dmitry
