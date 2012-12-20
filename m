@@ -1,59 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab2LTQtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 11:49:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54554 "EHLO mail.zytor.com"
+	id S1751827Ab2LTQtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 11:49:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49020 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab2LTQtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 11:49:08 -0500
-Message-ID: <50D3415F.8010205@zytor.com>
-Date: Thu, 20 Dec 2012 08:48:31 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751324Ab2LTQt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 11:49:27 -0500
+Date: Thu, 20 Dec 2012 16:49:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: migrate_misplaced_transhuge_page: no page_count check?
+Message-ID: <20121220164923.GB13367@suse.de>
+References: <alpine.LNX.2.00.1212192011320.25992@eggly.anvils>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "jarkko.sakkinen@intel.com" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>
-Subject: Re: Why Linux kernel forced to enter X2APIC mode( just because of
- booting cpu has supported x2apic) without depending on BIOS' setting in MSR->x2apic
- enablement bit ?
-References: <92645B27BF79D04FBD2B0F8494FFD0F91F1CAF@G1W3649.americas.hpqcorp.net> <CAE9FiQUT0NZq=6JBAY4mFNx0eBxDr6fNDGQ0GW9OtxUMXJQ21w@mail.gmail.com> <92645B27BF79D04FBD2B0F8494FFD0F91F2222@G1W3649.americas.hpqcorp.net> <CAE9FiQVAPnc7P91AK8gdwgY-xFsXMM_MxYZAu2sRjsp3EdA96w@mail.gmail.com> <92645B27BF79D04FBD2B0F8494FFD0F91F2600@G1W3649.americas.hpqcorp.net> <CAE9FiQVRcGvaTJ6NrxnQuFbPT9OwB7j8xxhDe5kcYUpgAMkz1A@mail.gmail.com>
-In-Reply-To: <CAE9FiQVRcGvaTJ6NrxnQuFbPT9OwB7j8xxhDe5kcYUpgAMkz1A@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1212192011320.25992@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2012 08:46 AM, Yinghai Lu wrote:
-> On Thu, Dec 20, 2012 at 2:38 AM, Zhang, Lin-Bao (Linux Kernel R&D)
-> <linbao.zhang@hp.com> wrote:
->> I think current core argument is our BIOS did following judgement ,
->> but Linux kernel did not(Linux seems just judge BSP supports x2apic mode or not by CPUID method)
+On Wed, Dec 19, 2012 at 08:52:37PM -0800, Hugh Dickins wrote:
+> Mel, Ingo,
 > 
-> kernel checks that, if the BSP in x2apic mode, kernel will check if
-> intr-remapping can be enabled, otherwise
-> it will switch back to xapic mode.
-> 
->> Our BSP really supports x2apic mode, however,as this spec, our BIOS think some of configuration of server
->> could not meet x2apic conditions ,So didn't place local xAPICs into x2apic mode.
->> But linux kernel indeed enable x2apic mode(just believe BSP, didn't do above judgement) . so this is the conflict.
-> 
-> so your BIOS is wrong,  it does not enable intr-remapping.
+> I want to raise again a question I raised (in offline mail with Mel)
+> a couple of weeks ago.
 > 
 
-FWIW, I bought a *server* today and it didn't have interrupt remapping
-and x2APIC, I would consider it defective and return it.
+It's a good question and thanks for kicking me on this again because I
+had not followed up properly.
 
-	-hpa
+> I see only a page_mapcount check in migrate_misplaced_transhuge_page,
+> and don't understand how migration can be safe against the possibility
+> of an earlier call to get_user_pages or get_user_pages_fast (intended
+> to pin a part of the THP) without a page_count check.
+> 
 
+It would be hard to trigger bugs in relation to it but it's not fundamentally
+safe either and just happens to work due to limitations of THP as much as
+anything else. Adding Andrea to cc in case I'm lacking imagination. IMO,
+the GUP would need to be relatively long-lived to trigger a bug so the
+realistic candidate is direct IO.  it. It would look something like;
 
+1. pin for direct IO
+2. PTE scanner run, mark pte_numa
+3. Incur a fault on a remote node, migrate the page
+4. direct IO completes on old page and is lost
+
+Steps 1 and 2 can happen in either order. I am reasonably sure specjbb,
+autonumabench and friends are not exercising such paths so I would not
+have encountered it.
+
+The end result would look like a read or write corruption to the application
+but I also expect that applications that are accessing pages under direct
+IO are already buggy and it'd be hard to tell the difference.  It's a
+completely different situation than what khugepaged has to deal with.
+The migration concerns for base pages are also much more involvedi.
+
+> (I'm also still somewhat worried about unidentified attempts to
+> pin the page concurrently; but since I don't have an example to give,
+> and concurrent get_user_pages or get_user_pages_fast wouldn't get past
+> the pmd_numa, let's not worry too much about my unidentified anxiety ;)
+> 
+
+You are right to be worried.
+
+> migrate_page_move_mapping and migrate_huge_page_move_mapping check
+> page_count, but migrate_misplaced_transhuge_page doesn't use those.
+> __collapse_huge_page_isolate and khugepaged_scan_pmd (over in
+> huge_memory.c) take commented care to check page_count lest GUP.
+> 
+> I can see that page_count might often be raised by concurrent faults
+> on the same pmd_numa, waiting on the lock_page in do_huge_pmd_numa_page.
+> That's unfortunate, and maybe you can find a clever way to discount
+> those.  But safety must come first: don't we need to check page_count?
+> 
+
+We do and I'm not super-worried about the concurrent faults as a brief
+check indicated that only 2% of migration attempts failed due to parallel
+faults elevating the count when running autonumabench. The impact is that
+the migration is delayed until the next PTE scan which is bad, but not
+bad enough to delay the obvious safety fix first. How about this?
+
+---8<---
+mm: migrate: Check page_count of THP before migrating
+
+Hugh Dickins poined out that migrate_misplaced_transhuge_page() does not
+check page_count before migrating like base page migration and khugepage. He
+could not see why this was safe and he is right.
+
+It happens to work for the most part. The page_mapcount() check ensures that
+only a single address space is using this page and as THPs are typically
+private it should not be possible for another address space to fault it in
+parallel. If the address space has one associated task then it's difficult to
+have both a GUP pin and be referencing the page at the same time. If there
+are multiple tasks then a buggy scenario requires that another thread be
+accessing the page while the direct IO is in flight. This is dodgy behaviour
+as there is a possibility of corruption with or without THP migration. It
+would be difficult to identify the corruption as being a migration bug.
+
+While we happen to be ok for THP migration versus GUP it is shoddy to
+depend on such "safety" so this patch checks the page count similar to
+anonymous pages. Note that this does not mean that the page_mapcount()
+check can go away. If we were to remove the page_mapcount() check then
+the THP would have to be unmapped from all referencing PTEs, replaced with
+migration PTEs and restored properly afterwards.
+
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/migrate.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 3b676b0..7636b90 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1679,7 +1679,13 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	page_xchg_last_nid(new_page, page_last_nid(page));
+ 
+ 	isolated = numamigrate_isolate_page(pgdat, page);
+-	if (!isolated) {
++
++	/*
++	 * Failing to isolate or a GUP pin prevents migration. The expected
++	 * page count is 2. 1 for anonymous pages without a mapping and 1
++	 * for the callers pin
++	 */
++	if (!isolated || page_count(page) != 2) {
+ 		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+ 		put_page(new_page);
+ 		goto out_keep_locked;
