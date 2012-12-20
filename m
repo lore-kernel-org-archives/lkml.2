@@ -1,161 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab2LTMof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 07:44:35 -0500
-Received: from anubis.se.axis.com ([195.60.68.12]:40771 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab2LTMo2 (ORCPT
+	id S1752347Ab2LTMrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 07:47:19 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:43391 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab2LTMrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 07:44:28 -0500
-Date: Thu, 20 Dec 2012 13:44:25 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel@axis.com
-Subject: [GIT PULL] CRIS updates for 3.8
-Message-ID: <20121220124423.GT14172@axis.com>
+	Thu, 20 Dec 2012 07:47:13 -0500
+X-Greylist: delayed 132988 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 07:47:13 EST
+Date: Thu, 20 Dec 2012 13:47:10 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2] mm: limit mmu_gather batching to fix soft lockups on
+ !CONFIG_PREEMPT
+Message-ID: <20121220124710.GA31912@dhcp22.suse.cz>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+ <20121218140219.45867ddd.akpm@linux-foundation.org>
+ <20121218235042.GA10350@dhcp22.suse.cz>
+ <20121218160030.baf723aa.akpm@linux-foundation.org>
+ <20121219150423.GA12888@dhcp22.suse.cz>
+ <20121219131316.7d13fcb1.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121219131316.7d13fcb1.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed 19-12-12 13:13:16, Andrew Morton wrote:
+> On Wed, 19 Dec 2012 16:04:37 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+> > pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+> > are done.
+> > 
+> > This works just fine most of the time but we can get in troubles with
+> > non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
+> > on large machines where too aggressive batching might lead to soft
+> > lockups during process exit path (exit_mmap) because there are no
+> > scheduling points down the free_pages_and_swap_cache path and so the
+> > freeing can take long enough to trigger the soft lockup.
+> > 
+> > The lockup is harmless except when the system is setup to panic on
+> > softlockup which is not that unusual.
+> > 
+> > The simplest way to work around this issue is to limit the maximum
+> > number of batches in a single mmu_gather for !CONFIG_PREEMPT kernels.
+> > Let's use 1G of resident memory for the limit for now. This shouldn't
+> > make the batching less effective and it shouldn't trigger lockups as
+> > well because freeing 262144 should be OK.
+> > 
+> > ...
+> >
+> > diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+> > index ed6642a..5843f59 100644
+> > --- a/include/asm-generic/tlb.h
+> > +++ b/include/asm-generic/tlb.h
+> > @@ -78,6 +78,19 @@ struct mmu_gather_batch {
+> >  #define MAX_GATHER_BATCH	\
+> >  	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+> >  
+> > +/*
+> > + * Limit the maximum number of mmu_gather batches for non-preemptible kernels
+> > + * to reduce a risk of soft lockups on huge machines when a lot of memory is
+> > + * zapped during unmapping.
+> > + * 1GB of resident memory should be safe to free up at once even without
+> > + * explicit preemption point.
+> > + */
+> > +#if defined(CONFIG_PREEMPT_COUNT)
+> > +#define MAX_GATHER_BATCH_COUNT	(UINT_MAX)
+> > +#else
+> > +#define MAX_GATHER_BATCH_COUNT	(((1UL<<(30-PAGE_SHIFT))/MAX_GATHER_BATCH))
+> 
+> Geeze.  I spent waaaaay too long staring at that expression trying to
+> work out "how many pages is in a batch" and gave up.
+> 
+> Realistically, I don't think we need to worry about CONFIG_PREEMPT here
+> - if we just limit the thing to, say, 64k pages per batch then that
+> will be OK for preemptible and non-preemptible kernels. 
 
-Please pull for CRIS 3.8 updates.
+I wanted the fix to be as non-intrusive as possible so I didn't want to
+touch PREEMPT (which is default in many configs) at all. I am OK to a
+single limit of course.
 
-Thanks, och God Jul!
+> The performance difference between "64k" and "infinite" will be
+> miniscule and unmeasurable.
+> 
+> Also, the batch count should be independent of PAGE_SIZE.  Because
+> PAGE_SIZE can vary by a factor of 16 and you don't want to fix the
+> problem on 4k page size but leave it broken on 64k page size.
 
-The following changes since commit f01af9f85855e38fbd601e033a8eac204cc4cc1c:
+MAX_GATHER_BATCH depends on the page size so I didn't want to differ
+without a good reason.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2012-12-19 20:31:02 -0800)
+> Also, while the patch might prevent softlockup warnings, the kernel
+> will still exhibit large latency glitches and those are undesirable.
 
-are available in the git repository at:
+Not really. cond_resched is called per pmd. This patch just helps the
+case where there is enough free memory to batch too much and then soft
+lockup while flushing mmu_gather after the whole zapping is done because
+tlb_flush_mmu is called more often.
 
-  git://jni.nu/cris.git tags/cris-for-linus-3.8
+> Also, does this patch actually work?  It doesn't add a scheduling
+> point.  It assumes that by returning zero from tlb_next_batch(), the
+> process will back out to some point where it hits a cond_resched()?
 
-for you to fetch changes up to 77c8006d8df4d5bafeb1d15eafa0886ae96e9b17:
+No, as mentioned above. cond_resched is called per pmd independently
+on how much batching we do but then after free_pgtables is done we
+call tlb_finish_mmu and that one needs to free all the gathered
+pages. Without the limit we can have too many pages to free and that is
+what triggers soft lockup. My original patch was more obvious because it
+added the cond_resched but as you pointed out it could be problematic so
+this patch tries to eliminate the problem in the very beginning instead.
 
-  UAPI: Fix up empty files in arch/cris/ (2012-12-20 12:51:25 +0100)
+> So I'm thinking that to address both the softlockup-detector problem
+> and the large-latency-glitch problem we should do something like:
+> 
+> 	if (need_resched() && tlb->batch_count > 64k)
+> 		return 0;
 
-----------------------------------------------------------------
-CRIS changes for 3.8
+need_resched is not needed because of cond_resched in zap_pmd_range. I
+am OK with a fixed limit.
 
-----------------------------------------------------------------
-David Howells (4):
-      UAPI: (Scripted) Disintegrate arch/cris/include/arch-v10/arch
-      UAPI: (Scripted) Disintegrate arch/cris/include/arch-v32/arch
-      UAPI: (Scripted) Disintegrate arch/cris/include/asm
-      UAPI: Fix up empty files in arch/cris/
+> and then ensure that there's a cond_resched() at a safe point between
+> batches?
 
-James Hogan (1):
-      CRIS: use kbuild.h instead of defining macros in asm-offset.c
-
-Jesper Nilsson (1):
-      Merge tag 'disintegrate-cris-20121009' of git://git.infradead.org/users/dhowells/linux-headers into for-linus2
-
-Wei Yongjun (1):
-      CRIS: locking: fix the return value of arch_read_trylock()
-
- arch/cris/include/arch-v10/arch/Kbuild             |   5 +-
- arch/cris/include/arch-v32/arch/Kbuild             |   3 +-
- arch/cris/include/arch-v32/arch/cryptocop.h        | 116 +------
- arch/cris/include/arch-v32/arch/spinlock.h         |   2 +-
- arch/cris/include/asm/Kbuild                       |   5 -
- arch/cris/include/asm/ptrace.h                     |   5 +-
- arch/cris/include/asm/signal.h                     | 121 +-------
- arch/cris/include/asm/swab.h                       |   3 +-
- arch/cris/include/asm/termios.h                    |  43 +--
- arch/cris/include/asm/types.h                      |   5 +-
- arch/cris/include/asm/unistd.h                     | 342 +-------------------
- arch/cris/include/uapi/arch-v10/arch/Kbuild        |   4 +
- .../include/{ => uapi}/arch-v10/arch/sv_addr.agh   |   0
- .../include/{ => uapi}/arch-v10/arch/sv_addr_ag.h  |   0
- .../cris/include/{ => uapi}/arch-v10/arch/svinto.h |   0
- arch/cris/include/{ => uapi}/arch-v10/arch/user.h  |   0
- arch/cris/include/uapi/arch-v32/arch/Kbuild        |   2 +
- arch/cris/include/uapi/arch-v32/arch/cryptocop.h   | 122 ++++++++
- arch/cris/include/{ => uapi}/arch-v32/arch/user.h  |   0
- arch/cris/include/uapi/asm/Kbuild                  |  34 ++
- arch/cris/include/{ => uapi}/asm/auxvec.h          |   0
- arch/cris/include/{ => uapi}/asm/bitsperlong.h     |   0
- arch/cris/include/{ => uapi}/asm/byteorder.h       |   0
- arch/cris/include/{ => uapi}/asm/errno.h           |   0
- arch/cris/include/{ => uapi}/asm/ethernet.h        |   0
- arch/cris/include/{ => uapi}/asm/etraxgpio.h       |   0
- arch/cris/include/{ => uapi}/asm/fcntl.h           |   0
- arch/cris/include/{ => uapi}/asm/ioctl.h           |   0
- arch/cris/include/{ => uapi}/asm/ioctls.h          |   0
- arch/cris/include/{ => uapi}/asm/ipcbuf.h          |   0
- arch/cris/include/{ => uapi}/asm/mman.h            |   0
- arch/cris/include/{ => uapi}/asm/msgbuf.h          |   0
- arch/cris/include/{ => uapi}/asm/param.h           |   0
- arch/cris/include/{ => uapi}/asm/poll.h            |   0
- arch/cris/include/{ => uapi}/asm/posix_types.h     |   0
- arch/cris/include/uapi/asm/ptrace.h                |   1 +
- arch/cris/include/{ => uapi}/asm/resource.h        |   0
- arch/cris/include/{ => uapi}/asm/rs485.h           |   0
- arch/cris/include/{ => uapi}/asm/sembuf.h          |   0
- arch/cris/include/{ => uapi}/asm/setup.h           |   0
- arch/cris/include/{ => uapi}/asm/shmbuf.h          |   0
- arch/cris/include/{ => uapi}/asm/sigcontext.h      |   0
- arch/cris/include/{ => uapi}/asm/siginfo.h         |   0
- arch/cris/include/uapi/asm/signal.h                | 122 ++++++++
- arch/cris/include/{ => uapi}/asm/socket.h          |   0
- arch/cris/include/{ => uapi}/asm/sockios.h         |   0
- arch/cris/include/{ => uapi}/asm/stat.h            |   0
- arch/cris/include/{ => uapi}/asm/statfs.h          |   0
- arch/cris/include/uapi/asm/swab.h                  |   3 +
- arch/cris/include/{ => uapi}/asm/sync_serial.h     |   0
- arch/cris/include/{ => uapi}/asm/termbits.h        |   0
- arch/cris/include/uapi/asm/termios.h               |  45 +++
- arch/cris/include/uapi/asm/types.h                 |   1 +
- arch/cris/include/uapi/asm/unistd.h                | 344 +++++++++++++++++++++
- arch/cris/kernel/asm-offsets.c                     |   6 +-
- 55 files changed, 689 insertions(+), 645 deletions(-)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr.agh (100%)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr_ag.h (100%)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/svinto.h (100%)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/user.h (100%)
- create mode 100644 arch/cris/include/uapi/arch-v32/arch/cryptocop.h
- rename arch/cris/include/{ => uapi}/arch-v32/arch/user.h (100%)
- rename arch/cris/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/cris/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/cris/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/cris/include/{ => uapi}/asm/errno.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ethernet.h (100%)
- rename arch/cris/include/{ => uapi}/asm/etraxgpio.h (100%)
- rename arch/cris/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/mman.h (100%)
- rename arch/cris/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/param.h (100%)
- rename arch/cris/include/{ => uapi}/asm/poll.h (100%)
- rename arch/cris/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/ptrace.h
- rename arch/cris/include/{ => uapi}/asm/resource.h (100%)
- rename arch/cris/include/{ => uapi}/asm/rs485.h (100%)
- rename arch/cris/include/{ => uapi}/asm/sembuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/setup.h (100%)
- rename arch/cris/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/cris/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/signal.h
- rename arch/cris/include/{ => uapi}/asm/socket.h (100%)
- rename arch/cris/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/cris/include/{ => uapi}/asm/stat.h (100%)
- rename arch/cris/include/{ => uapi}/asm/statfs.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/swab.h
- rename arch/cris/include/{ => uapi}/asm/sync_serial.h (100%)
- rename arch/cris/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/termios.h
- create mode 100644 arch/cris/include/uapi/asm/types.h
- create mode 100644 arch/cris/include/uapi/asm/unistd.h
-/^JN - Jesper Nilsson
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Michal Hocko
+SUSE Labs
