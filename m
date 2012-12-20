@@ -1,69 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab2LTNXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 08:23:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628Ab2LTNW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 08:22:58 -0500
-Date: Thu, 20 Dec 2012 15:22:55 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
- dirty logging
-Message-ID: <20121220132255.GH17584@redhat.com>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121219213037.b234f9d4f187df2132e65576@gmail.com>
- <1355931777.3224.562.camel@bling.home>
- <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121220125946.GB7750@amt.cnet>
+	id S1752514Ab2LTNZz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 08:25:55 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10663 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab2LTNZt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 08:25:49 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 20 Dec 2012 05:24:11 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "marc.zyngier@arm.com" <marc.zyngier@arm.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 20 Dec 2012 14:25:44 +0100
+Subject: Re: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
+Thread-Topic: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
+Thread-Index: Ac3etYSablKZMgLfRJaR6dr9mUbnvg==
+Message-ID: <20121220.152544.2281355586046026239.hdoyu@nvidia.com>
+References: <50D2EFFB.8030702@arm.com><20121220.135758.1347753620353343245.hdoyu@nvidia.com><50D2FF19.4060600@arm.com>
+In-Reply-To: <50D2FF19.4060600@arm.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121220125946.GB7750@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 10:59:46AM -0200, Marcelo Tosatti wrote:
-> On Thu, Dec 20, 2012 at 02:02:32PM +0900, Takuya Yoshikawa wrote:
-> > On Wed, 19 Dec 2012 08:42:57 -0700
-> > Alex Williamson <alex.williamson@redhat.com> wrote:
-> > 
-> > > Please let me know if you can identify one of these as the culprit.
-> > > They're all very simple, but there's always a chance I've missed a hard
-> > > coding of slot numbers somewhere.  Thanks,
-> > 
-> > I identified the one:
-> >   commit b7f69c555ca430129b6cde81e9f0927531420c5c
-> >   KVM: Minor memory slot optimization
-> > 
-> > IIUC, the problem was that you did not care about the generation of
-> > slots which was updated by update_memslots():
-> > 
-> >   Your patch reused the old memory slots which was there before
-> >   doing the update for invalidating the slot, and badly, we did flush
-> >   shadow pages after that before doing the second update for finally
-> >   installing the new slot.  As a result, the generation did not change
-> >   from that of the invalidated one, although the ghc(gfn to hva cache)
-> >   might be stale.
-> > 
-> >   After that, kvm_write_guest_cached() checked if ghc should be
-> >   initialized by comparing ghc's generation with that old one,
-> >   resulting mark_page_dirty_in_slot() was called with the invalid
-> >   cache contents.
-> > 
-> > Although we can do something to correct the generation alone, I do not
-> > think such a trick is worth it because this is not a hot path.  Let's
-> > just revert the patch.
-> 
-> Agreed. No dependencies by the following patches on it?
-Heh, this generation management looks subtle. Would be easy to break by
-other changes to the code. I wounder can we make it less subtle somehow.
+Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 13:05:45 +0100:
 
---
-			Gleb.
+> On 20/12/12 11:57, Hiroshi Doyu wrote:
+> > Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 12:01:15 +0100:
+> > 
+> >> On 20/12/12 09:44, Hiroshi Doyu wrote:
+> >>> Add platform enabler for ARM arch_timer(TSC). TSC is more fine grained
+> >>> timer than TMR0. If it's available, it will be used for clock source
+> >>> and sched_clock. Otherwise, TMR0 is used. In any case TMR0 is
+> >>> necessary for clock event.
+> >>>
+> >>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> >>> ---
+> >>>  .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 ++++
+> >>>  drivers/clocksource/tegra20_timer.c                |   64 +++++++++++++++++++-
+> >>>  2 files changed, 74 insertions(+), 1 deletion(-)
+> >>>  create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> >>>
+> >>> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> >>> new file mode 100644
+> >>> index 0000000..9de936a
+> >>> --- /dev/null
+> >>> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> >>> @@ -0,0 +1,11 @@
+> >>> +NVIDIA Tegra Timer Stamp Counter(TSC)
+> >>> +
+> >>> +Required properties:
+> >>> +- compatible : "nvidia,tegra114-tsc
+> >>> +- reg : Should contain 1 register ranges(address and length)
+> >>> +
+> >>> +Example:
+> >>> +	tsc {
+> >>> +		compatible = "nvidia,tegra114-tsc";
+> >>> +		reg = <0x700f0000 0x20000>;
+> >>> +	};
+> >>> diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
+> >>> index 1d25de8..285a6f1 100644
+> >>> --- a/drivers/clocksource/tegra20_timer.c
+> >>> +++ b/drivers/clocksource/tegra20_timer.c
+> >>> @@ -30,6 +30,7 @@
+> >>>  #include <asm/mach/time.h>
+> >>>  #include <asm/smp_twd.h>
+> >>>  #include <asm/sched_clock.h>
+> >>> +#include <asm/arch_timer.h>
+> >>>  
+> >>>  #define RTC_SECONDS            0x08
+> >>>  #define RTC_SHADOW_SECONDS     0x0c
+> >>> @@ -271,10 +272,71 @@ static void __init tegra20_init_tmr(void)
+> >>>  	clockevents_register_device(&tegra_clockevent);
+> >>>  }
+> >>>  
+> >>> +#define TSC_CNTCR		0		/* TSC control registers */
+> >>> +#define TSC_CNTCR_ENABLE	(1 << 0)	/* Enable */
+> >>> +#define TSC_CNTCR_HDBG		(1 << 1)	/* Halt on debug */
+> >>> +
+> >>> +#define TSC_CNTCV0		0x8		/* TSC counter (LSW) */
+> >>> +#define TSC_CNTCV1		0xc		/* TSC counter (MSW) */
+> >>> +#define TSC_CNTFID0		0x20		/* TSC freq id 0 */
+> >>> +
+> >>> +static const struct of_device_id tegra_tsc_match[] __initconst = {
+> >>> +	{ .compatible = "nvidia,tegra114-tsc" },
+> >>> +	{}
+> >>> +};
+> >>> +
+> >>> +static int tegra_arch_timer_init(void)
+> >>> +{
+> >>> +	int err;
+> >>> +	struct device_node *np;
+> >>> +	struct clk *clk;
+> >>> +	void __iomem *tsc_base;
+> >>> +	u32 freq, val;
+> >>> +
+> >>> +	np = of_find_matching_node(NULL, tegra_tsc_match);
+> >>> +	if (!np)
+> >>> +		return -ENODEV;
+> >>> +
+> >>> +	tsc_base = of_iomap(np, 0);
+> >>> +	if (!tsc_base)
+> >>> +		return -ENODEV;
+> >>> +
+> >>> +	clk = clk_get_sys("clk_m", NULL);
+> >>> +	if (IS_ERR(clk)) {
+> >>> +		freq = 12000000;
+> >>> +		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
+> >>> +	} else {
+> >>> +		freq = clk_get_rate(clk);
+> >>> +		clk_put(clk);
+> >>> +	}
+> >>> +	writel_relaxed(freq, tsc_base + TSC_CNTFID0);
+> >>> +
+> >>> +	/* CNTFRQ */
+> >>> +	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
+> >>> +	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
+> >>> +	BUG_ON(val != freq);
+> >>
+> >> This is scary. CNTFRQ is only writable from secure mode, and will
+> >> explode in any other situation.
+> >>
+> >> Also, writing to CNTFRQ doesn't change the timer frequency! This is just
+> >> a way for secure mode to tell the rest of the world the frequency the
+> >> timer is ticking at. Unless you've wired the input clock to be able to
+> >> change the frequency?
+> > 
+> > ATM, our upstream kernel is expected in secure mode. This situation
+> > may be changed later, though....
+> 
+> I appreciate this. But I expect this kernel to be also used on the
+> non-secure side if someone tried to run KVM with it. And this would go
+> bang right away.
+
+What is the common way to make the above code selective at run
+time(secure or non-secure path)?
