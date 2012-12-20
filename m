@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab2LTRzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 12:55:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35908 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab2LTRzq (ORCPT
+	id S1751927Ab2LTR5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 12:57:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35030 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab2LTR4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 12:55:46 -0500
-Message-ID: <50D3511F.2090308@wwwdotorg.org>
-Date: Thu, 20 Dec 2012 10:55:43 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 12:56:55 -0500
+Date: Thu, 20 Dec 2012 17:56:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: torvalds@linux-foundation.org, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, maxime.ripard@free-electrons.com
+Subject: Re: [GIT PULL v2] ARM: arm-soc fixes for 3.8
+Message-ID: <20121220175639.GA14363@n2100.arm.linux.org.uk>
+References: <20121220163814.GA29557@quad.lixom.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de> <50C99677.6090306@nvidia.com> <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de> <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de> <50D2D792.1050401@nvidia.com> <50D34775.5010606@wwwdotorg.org> <50D34F00.4080308@nvidia.com>
-In-Reply-To: <50D34F00.4080308@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220163814.GA29557@quad.lixom.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2012 10:46 AM, Terje Bergström wrote:
-> On 20.12.2012 19:14, Stephen Warren wrote:
->> I'm not sure that sounds right. drvdata is something that a driver
->> should manage itself.
->>
->> What's wrong with just having each device ask the host1x (its parent)
->> for a pointer to the (dummy) tegradrm device. That seems extremely
->> simple, and doesn't require abusing existing stuff like drvdata for
->> non-standard purposes.
+On Thu, Dec 20, 2012 at 08:38:14AM -0800, Olof Johansson wrote:
+> One of the sunxi patches from the last pull request was misapplied (I
+> realized what happened -- git am -s didn't apply cleanly so I had done it
+> through regular patch, thus not catching the renames properly). Here's
+> a fresh version of the pull request with a couple more OMAP and Samsung
+> patches included.
 > 
-> This is tegradrm's own data, and it's tegradrm which accesses the
-> pointer. So it's entirely something that the driver takes care of itself.
+> There's a chance that a couple of the OMAP patches will also go in through
+> Russell, since my connectivity has been crap so far this trip and it
+> causes build breaks for the platform. It's a branch pull from Tony,
+> it should be a no-op either way.
 
-So it's fine for the tegradrm driver to manipulate the tegradrm
-(virtual) device's drvdata pointer.
+Olof,
 
-It's not fine for tegradrm to manipulate the drvdata pointer of other
-devices; the host1x children. The drvdata pointer for other devices is
-reserved for those devices' driver's use only.
+Not sure what's going on, but my recent pull from arm-soc for-next still
+hasn't solved the OMAP build failures in my kbuild - I'm still getting:
+
+arch/arm/mach-omap2/timer.c: In function 'omap_get_timer_dt':
+arch/arm/mach-omap2/timer.c:178:3: error: implicit declaration of function 'prom_add_property'
+arch/arm/mach-omap2/i2c.c: In function 'omap_pm_set_max_mpu_wakeup_lat_compat':
+arch/arm/mach-omap2/i2c.c:130:2: error: implicit declaration of function 'omap_pm_set_max_mpu_wakeup_lat'
+
+This is the top commit I have from you:
+
+commit aad05c3602ba5c42ff8d0e572b2f614f25779ede
+Merge: eccf4b3 f64d204
+Author: Olof Johansson <olof@lixom.net>
+Date:   Mon Dec 17 18:44:26 2012 -0800
+
+    Merge branch 'late/omap-cleanup' into for-next
+    
+    By Tony Lindgren (3) and others
+    via Tony Lindgren
+    * late/omap-cleanup:
+      arch/arm/mach-omap2/dpll3xxx.c: drop if around WARN_ON
+      OMAP2: Fix a typo - replace regist with register.
+      ARM/omap: use module_platform_driver macro
+      ARM: OMAP2+: PMU: Remove unused header
+      ARM: OMAP4: remove duplicated include from omap_hwmod_44xx_data.c
+      ARM: OMAP2+: omap2plus_defconfig: enable twl4030 SoC audio
+      ARM: OMAP2+: omap2plus_defconfig: Add tps65217 support
+      ARM: OMAP2+: enable devtmpfs and devtmpfs automount
+      ARM: OMAP2+: omap_twl: Change TWL4030_MODULE_PM_RECEIVER to TWL_MODULE_PM_RECEIVER
+      ARM: OMAP2+: Drop plat/cpu.h for omap2plus
+      ARM: OMAP: Split fb.c to remove last remaining cpu_is_omap usage
+      MAINTAINERS: Add an entry for omap related .dts files
 
