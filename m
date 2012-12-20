@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2LTSe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:34:57 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:48596 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab2LTSeM (ORCPT
+	id S1752202Ab2LTSfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:35:05 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:41176 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab2LTSeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:34:12 -0500
+	Thu, 20 Dec 2012 13:34:09 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 19/24] nohz: Move nohz load balancer selection into idle logic
-Date: Thu, 20 Dec 2012 19:33:06 +0100
-Message-Id: <1356028391-14427-20-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 18/24] sched: Update nohz rq clock before searching busiest group on load balancing
+Date: Thu, 20 Dec 2012 19:33:05 +0100
+Message-Id: <1356028391-14427-19-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
 References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
@@ -31,10 +31,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ ** BUGGY PATCH: I need to put more thinking into this ** ]
+While load balancing an rq target, we look for the busiest group.
+This operation may require an uptodate rq clock if we end up calling
+scale_rt_power(). To this end, update it manually if the target is
+running tickless.
 
-We want the nohz load balancer to be an idle CPU, thus
-move that selection to strict dyntick idle logic.
+DOUBT: don't we actually also need this in vanilla kernel, in case
+this_cpu is in dyntick-idle mode?
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -51,56 +54,34 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-[ added movement of calc_load_exit_idle() ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/time/tick-sched.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 73f339b..1b607bce 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -442,9 +442,6 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 		 * the scheduler tick in nohz_restart_sched_tick.
- 		 */
- 		if (!ts->tick_stopped) {
--			nohz_balance_enter_idle(cpu);
--			calc_load_enter_idle();
--
- 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
- 		}
-@@ -540,8 +537,11 @@ static void __tick_nohz_idle_enter(struct tick_sched *ts)
- 			ts->idle_expires = expires;
- 		}
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 291e225..b1b791d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4795,6 +4795,19 @@ static int load_balance(int this_cpu, struct rq *this_rq,
  
--		if (!was_stopped && ts->tick_stopped)
-+		if (!was_stopped && ts->tick_stopped) {
- 			ts->idle_jiffies = ts->last_jiffies;
-+			nohz_balance_enter_idle(cpu);
-+			calc_load_enter_idle();
-+		}
- 	}
- }
+ 	schedstat_inc(sd, lb_count[idle]);
  
-@@ -649,7 +649,6 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
- 	tick_do_update_jiffies64(now);
- 	update_cpu_load_nohz();
++	/*
++	 * find_busiest_group() may need an uptodate cpu clock
++	 * for find_busiest_group() (see scale_rt_power()). If
++	 * the CPU is nohz, it's clock may be stale.
++	 */
++	if (tick_nohz_full_cpu(this_cpu)) {
++		local_irq_save(flags);
++		raw_spin_lock(&this_rq->lock);
++		update_rq_clock(this_rq);
++		raw_spin_unlock(&this_rq->lock);
++		local_irq_restore(flags);
++	}
++
+ redo:
+ 	group = find_busiest_group(&env, balance);
  
--	calc_load_exit_idle();
- 	touch_softlockup_watchdog();
- 	/*
- 	 * Cancel the scheduled timer and restore the tick
-@@ -709,6 +708,8 @@ void tick_nohz_idle_exit(void)
- 		tick_nohz_stop_idle(cpu, now);
- 
- 	if (ts->tick_stopped) {
-+		nohz_balance_enter_idle(cpu);
-+		calc_load_exit_idle();
- 		tick_nohz_restart_sched_tick(ts, now);
- 		tick_nohz_account_idle_ticks(ts);
- 	}
 -- 
 1.7.5.4
 
