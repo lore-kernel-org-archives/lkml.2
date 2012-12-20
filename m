@@ -1,147 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab2LTSNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:13:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55902 "EHLO mga02.intel.com"
+	id S1752099Ab2LTSO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:14:57 -0500
+Received: from plane.gmane.org ([80.91.229.3]:58256 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab2LTSNB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:13:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,326,1355126400"; 
-   d="scan'208";a="237104391"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-Thread-Topic: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-Thread-Index: AQHN3QLhVtjs0vDJ0k+q6f3rVEfUDJgg0z6AgAB+x2CAADE/AIAAX08A//+oIYCAAF+MAP//tL4AgABddxA=
-Date: Thu, 20 Dec 2012 18:12:55 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924CFD6@BGSMSX101.gar.corp.intel.com>
-References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
- <1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
- <20121220054201.GE28007@kroah.com>
- <4D68720C2E767A4AA6A8796D42C8EB5924CB6C@BGSMSX101.gar.corp.intel.com>
- <20121220161202.GA29796@kroah.com>
- <4D68720C2E767A4AA6A8796D42C8EB5924CF1F@BGSMSX101.gar.corp.intel.com>
- <20121220163839.GA30120@kroah.com>
- <4D68720C2E767A4AA6A8796D42C8EB5924CF67@BGSMSX101.gar.corp.intel.com>
- <20121220175116.GB32061@kroah.com>
-In-Reply-To: <20121220175116.GB32061@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751274Ab2LTSOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 13:14:52 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Ben Widawsky <ben@bwidawsk.net>
+Subject: Re: [PATCH 00/13] Add gdb python scripts as kernel debugging helpers
+Date: Thu, 20 Dec 2012 17:59:15 +0000 (UTC)
+Message-ID: <loom.20121220T185741-139@post.gmane.org>
+References: <cover.1352131729.git.jan.kiszka@siemens.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 134.134.137.71 (Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, December 20, 2012 11:21 PM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> hongbo.zhang@linaro.org; wni@nvidia.com
-> Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+Jan Kiszka <jan.kiszka <at> siemens.com> writes:
+
 > 
-> On Thu, Dec 20, 2012 at 04:58:32PM +0000, R, Durgadoss wrote:
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Sent: Thursday, December 20, 2012 10:09 PM
-> > > To: R, Durgadoss
-> > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > > hongbo.zhang@linaro.org; wni@nvidia.com
-> > > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-> > >
-> > > On Thu, Dec 20, 2012 at 04:25:32PM +0000, R, Durgadoss wrote:
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > > > Sent: Thursday, December 20, 2012 9:42 PM
-> > > > > To: R, Durgadoss
-> > > > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-
-> kernel@vger.kernel.org;
-> > > > > hongbo.zhang@linaro.org; wni@nvidia.com
-> > > > > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-> > > > >
-> > > > > On Thu, Dec 20, 2012 at 07:52:03AM +0000, R, Durgadoss wrote:
-> > > > > > > On Tue, Dec 18, 2012 at 02:59:33PM +0530, Durgadoss R wrote:
-> > > > > > > > This patch adds a thermal_trip directory under
-> > > > > > > > /sys/class/thermal/zoneX. This directory contains
-> > > > > > > > the trip point values for sensors bound to this
-> > > > > > > > zone.
-> > > > > > >
-> > > > > > > Eeek, you just broke userspace tools that now can no longer see
-> > > these
-> > > > > > > entries :(
-> > > > > > >
-> > > > > > > Why do you need to create a subdirectory?  As you found out,
-> doing
-> > > so
-> > > > > > > isn't the easiest, right?  That is on purpose.
-> > > > > >
-> > > > > > Yes, I observed the complexity.
-> > > > > >
-> > > > > > >
-> > > > > > > I really wouldn't recommend doing this at all, please stick within
-> the
-> > > > > > > 'struct device' framework here, don't create new kobjects and
-> hang
-> > > sysfs
-> > > > > > > files off of them.
-> > > > > >
-> > > > > > But, we cannot put all _trip directly under ZoneX directory.
-> > > > >
-> > > > > Why not?  What is preventing this?
-> > > > >
-> > > > > > We can remove the thermal_trip directory, and put sensorY_trip
-> under
-> > > > > > /sys/class/thermal/zoneX/.  But this sensorY_trip needs to be a
-> > > > > > directory which has four sysfs nodes named, active, passive, crit,
-> > > > > > hot.
-> > > > > >
-> > > > > > Rui, What do you think about this ?
-> > > > > >
-> > > > > > The only other way I see, is directly put
-> > > > > sensorY_trip_[active/passive/hot/crit]
-> > > > > > which will create way too many nodes, under
-> > > /sys/class/thermal/zoneX/.
-> > > > >
-> > > > > What is "too many"?  20000?  50000?  How many are we talking about
-> > > here?
-> > > >
-> > > > Not in 1000's though..
-> > > >
-> > > > > What is the limiting factor that is preventing this from all going into
-> > > > > one directory?
-> > > >
-> > > > We support a MAX of 12 sensors per zone today, which will lead to
-> > > > 12 * 4, 48 nodes under this directory named
-> > > > sensorY_trip_[active/passive/hot/crit], besides the other nodes.
-> > >
-> > > That's fine, we can easily support that many files, have you tried this
-> > > already?
-> >
-> > Yes, in fact, this is sort of what was the old implementation..
-> > although with different sysfs nodes.
+> Version 2 of this series is a rebase over 3.7-rc4 to resolve some minor
+> collision in the top-level makefile. Moreover, this implements automatic
+> symbol loading for kernel modules using silent breakpoints. See patch 3
+> for details.
 > 
-> What "old" implementation, one that is in-kernel?  Are you changing the
-> user interface here?
+> Unless someone complains over this series or suggests a better workflow,
+> I'm planning to send a pull to Linus during the next merge window.
+> 
 
-Sorry, I should have used better wordings ;(
-[s/old/existing]
-There are other sysfs nodes following the correct convention under
-/sys/class/thermal/, which is what I was mentioning.
+I've been using lx-symbols for the last few days, and am pretty happy with it.
+Thanks for your work Jan.
 
-No, we are not changing the user interface, in these patches.
+Acked-by: Ben Widawsky <ben@bwidawsk.net>
 
-Thanks,
-Durga
