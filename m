@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab2LTJXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:23:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34369 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab2LTJXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:23:44 -0500
-Message-ID: <50D2D91B.8010203@ti.com>
-Date: Thu, 20 Dec 2012 10:23:39 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751855Ab2LTJ3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:29:49 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:62585 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab2LTJ3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 04:29:42 -0500
+Message-ID: <50D2DA7F.3030902@openvz.org>
+Date: Thu, 20 Dec 2012 13:29:35 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] gpio: twl4030: TODO comment to remove the PWMA/B
- (LEDA/B) handling
-References: <1354791127-20545-1-git-send-email-peter.ujfalusi@ti.com> <1354791127-20545-4-git-send-email-peter.ujfalusi@ti.com> <20121219170737.E5DB13E0C56@localhost>
-In-Reply-To: <20121219170737.E5DB13E0C56@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] mm/swap: add independed bio pool for swap
+References: <20121214110118.8387.66431.stgit@zurg> <alpine.LNX.2.00.1212172024500.5927@eggly.anvils> <20121219165343.ccb3a956.akpm@linux-foundation.org>
+In-Reply-To: <20121219165343.ccb3a956.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 06:07 PM, Grant Likely wrote:
-> On Thu, 6 Dec 2012 11:52:07 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> This GPIO driver should not configure anything else then GPIOs.
+Andrew Morton wrote:
+> On Mon, 17 Dec 2012 20:45:13 -0800 (PST)
+> Hugh Dickins<hughd@google.com>  wrote:
+>
+>> On Fri, 14 Dec 2012, Konstantin Khlebnikov wrote:
 >>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> 
-> I'm not sure if this is the right direction. I actually have no problem
-> with a single driver that registers itself with multiple interfaces (ie.
-> GPIO and PWM) if it makes sense for it to do so. I suspec that a lot of
-> the multifunction device drivers break things up more than is strictly
-> necessary.
+>>> This bio pool guarantees reclaiming progress for anonymous pages.
+>>> All avaliable bio in fs_bio_set may be borrowed by writeback which may
+>>> never ends, because disk too slow or broken. I have seen this situation in
+>>> real life in system where was a lot of bio requests to a loop device which
+>>> laying on top of special fuse-based filesystem.
+>>
+>> Hmm, perhaps, I'm not at all sure.
+>
+> It probably maybe perhaps makes sense.  Of course, you're screwed if
+> one of your swap devices is "disk too slow or broken".
+>
+> My crystal ball tells me that the 2015 kernel will have a bioset per
+> physical device...
+>
 
-We have PWM drivers for these IPs. As you remember this is the reason I
-started to work on the gpio-pwm driver so we can have cleaner, more generic
-way to map a PWM as a gpio. I really don't like the idea of having the same
-PWM code sitting in various places in the kernel just because it was easier to
-hack it like that rather then to make an effort for a clean implementation.
-The PWM handling in the gpio-twl4030 driver is a prime example of this IMHO.
-It is just a shortcut, nothing else.
-
-> I'll still apply this if you think it is the right direction, but I
-> wanted to throw that though out there for consideration.
-
--- 
-Péter
+I predict that they also will be per-cpu. Well... probably maybe we should
+just wait for this shining future. I leave this to your discretion...
