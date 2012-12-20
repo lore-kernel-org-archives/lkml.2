@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab2LTAKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 19:10:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34213 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab2LTAKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 19:10:30 -0500
-Date: Thu, 20 Dec 2012 01:10:27 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-Message-ID: <20121220001027.GQ24895@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-	Yinghai Lu <yinghai@kernel.org>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"Yu, Fenghua" <fenghua.yu@intel.com>,
-	"mingo@kernel.org" <mingo@kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"tglx@linutronix.de" <tglx@linutronix.de>,
-	"linux-tip-commits@vger.kernel.org" <linux-tip-commits@vger.kernel.org>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-References: <50CD04F1.8020902@zytor.com>
- <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com>
- <20121219220504.GA32212@jshin-Toonie>
- <50D23EE8.7030904@zytor.com>
- <20121219225155.GK24895@liondog.tnic>
- <20121219225941.GB2968@jshin-Toonie>
- <20121219230329.GM24895@liondog.tnic>
- <50D24C25.5050604@zytor.com>
- <20121219234012.GO24895@liondog.tnic>
- <50D25591.4030302@zytor.com>
+	id S1752040Ab2LTALd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 19:11:33 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33510 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab2LTALZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 19:11:25 -0500
+To: Milan Broz <mbroz@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, jgarzik@redhat.com,
+        JBottomley@Parallels.com
+Subject: Re: [PATCH] dm-crypt: never use write same (was Re: [v3.7 Regression] [SCSI] sd: Implement support for WRITE SAME)
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <50CB8C74.3090102@canonical.com>
+	<yq11uesdzya.fsf@sermon.lab.mkp.net> <50D0C971.1000907@canonical.com>
+	<yq1bodq7zdv.fsf@sermon.lab.mkp.net>
+	<20121219195801.GA14456@redhat.com> <50D22766.9090107@redhat.com>
+	<50D22C7F.2020201@redhat.com>
+Date: Wed, 19 Dec 2012 19:11:13 -0500
+In-Reply-To: <50D22C7F.2020201@redhat.com> (Milan Broz's message of "Wed, 19
+	Dec 2012 22:07:11 +0100")
+Message-ID: <yq1mwx960ri.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50D25591.4030302@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 04:02:25PM -0800, H. Peter Anvin wrote:
-> The goal should be to have this into -tip and -next by the middle of
-> January in order to make the 3.9 merge window, I think.
+>>>>> "Milan" == Milan Broz <mbroz@redhat.com> writes:
 
-...and an easy back-out strategy in case there are too many issues while
-testing. Maybe don't merge it into tip/master so that it can be removed
-easily, or something to that effect.
+Milan> dm-crypt: never use write same
+
+Milan> Ciphertext device is not compatible with WRITE SAME, disable it
+Milan> for all dmcrypt devices.
+
+Milan> Signed-off-by: Milan Broz <mbroz@redhat.com>
+
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Martin K. Petersen	Oracle Linux Engineering
