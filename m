@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab2LTUnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:43:16 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9603 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2LTUnE (ORCPT
+	id S1752116Ab2LTUn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:43:58 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:56835 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab2LTUny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:43:04 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=tjAbNFExH_XZehE1hscA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1356036181.5896.58.camel@gandalf.local.home>
-Subject: [ANNOUCE] 3.4.24-rt35
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 20 Dec 2012 15:43:01 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 15:43:54 -0500
+Date: Thu, 20 Dec 2012 12:43:52 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/sparse: don't check return value of alloc_bootmem
+ calls
+In-Reply-To: <50D376E9.9030507@oracle.com>
+Message-ID: <alpine.DEB.2.00.1212201238460.29839@chino.kir.corp.google.com>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-30-git-send-email-sasha.levin@oracle.com> <alpine.DEB.2.00.1212201218590.29839@chino.kir.corp.google.com> <50D376E9.9030507@oracle.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Dec 2012, Sasha Levin wrote:
 
-Dear RT Folks,
+> So what we really need is to update the documentation of __alloc_bootmem_node, I'll send
+> a patch that does that instead.
+> 
 
-Note, I have abandoned the original 3.4.22-rt34 release due to a
-reported bug in the -rc candidate. I will be applying a new rc release
-based off of this release.
+It panics iff slab is not available to allocate from yet, otherwise it's 
+just a wrapper around kmalloc().  This emits a warning to the kernel log, 
+though, so __alloc_bootmem_node() should certainly not be called that late 
+in the boot sequence.
 
-I'm pleased to announce the 3.4.24-rt35 stable release.
-
-
-This release is just an update to the new stable 3.4.24 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 3636684d50746ce56373ca20b438e3d2e7f9aca9
-
-
-Or to build 3.4.24-rt35 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.24.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.24-rt35.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+Since __alloc_bootmem_node_nopanic() is the way to avoid the panic, I 
+think the change that should be made here so to panic even when the 
+kmalloc() fails in __alloc_bootmem_node(), __alloc_bootmem_node_high(), 
+and __alloc_bootmem_low_node().
