@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2LTSjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:39:15 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47419 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2LTSjF (ORCPT
+	id S1752156Ab2LTSjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:39:24 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:47651 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab2LTSjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:39:05 -0500
+	Thu, 20 Dec 2012 13:39:15 -0500
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 13:39:14 EST
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +22,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 10/24] rcu: Restart the tick on non-responding full dynticks CPUs
-Date: Thu, 20 Dec 2012 19:32:57 +0100
-Message-Id: <1356028391-14427-11-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 17/24] sched: Update rq clock before idle balancing
+Date: Thu, 20 Dec 2012 19:33:04 +0100
+Message-Id: <1356028391-14427-18-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
 References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
@@ -31,9 +32,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU in full dynticks mode doesn't respond to complete
-a grace period, issue it a specific IPI so that it restarts
-the tick and chases a quiescent state.
+idle_balance() is called from schedule() right before we schedule the
+idle task. It needs to record the idle timestamp at that time and for
+this the rq clock must be accurate. If the CPU is running tickless
+we need to update the rq clock manually.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -50,46 +52,22 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/rcutree.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e441b77..302d360 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -53,6 +53,7 @@
- #include <linux/delay.h>
- #include <linux/stop_machine.h>
- #include <linux/random.h>
-+#include <linux/tick.h>
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 347dd3f..291e225 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5013,6 +5013,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	int pulled_task = 0;
+ 	unsigned long next_balance = jiffies + HZ;
  
- #include "rcutree.h"
- #include <trace/events/rcu.h>
-@@ -743,6 +744,12 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
- 	return (rdp->dynticks_snap & 0x1) == 0;
- }
++	update_nohz_rq_clock(this_rq);
+ 	this_rq->idle_stamp = this_rq->clock;
  
-+static void rcu_kick_nohz_cpu(int cpu)
-+{
-+	if (tick_nohz_full_cpu(cpu))
-+		smp_send_reschedule(cpu);
-+}
-+
- /*
-  * Return true if the specified CPU has passed through a quiescent
-  * state by virtue of being in or having passed through an dynticks
-@@ -790,6 +797,9 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 		rdp->offline_fqs++;
- 		return 1;
- 	}
-+
-+	rcu_kick_nohz_cpu(rdp->cpu);
-+
- 	return 0;
- }
- 
+ 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
 -- 
 1.7.5.4
 
