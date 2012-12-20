@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab2LTHEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 02:04:24 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:16332 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750781Ab2LTHER (ORCPT
+	id S1751298Ab2LTHIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 02:08:09 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46296 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2LTHH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 02:04:17 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al8LAAK40lB5LG3x/2dsb2JhbAA8CLdrhgcXc4IeAQEEAScTHCMFCwgDDgouFCUDIROIDQW4aRSMORYBhCwDlgmJToZ7gwiBUQ
-Date: Thu, 20 Dec 2012 18:03:23 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: Are there u32 atomic bitops? (or dealing w/ i_flags)
-Message-ID: <20121220070323.GU15182@dastard>
-References: <CALCETrXs15M-cJRGD_R7fXBxOXR=Pyqsh2dVC78DgShxwn60nA@mail.gmail.com>
- <20121218015705.GH4939@ZenIV.linux.org.uk>
- <CALCETrUHF40CJYi1=aWpqhW9qkxUDQNt9LAAGoWA57YXowdr_w@mail.gmail.com>
- <20121218213043.GF15182@dastard>
- <CALCETrV9fEfTVbiSzai2dvk6MWwDhsD_nAKs7Z1JP0ZkF-eruw@mail.gmail.com>
+	Thu, 20 Dec 2012 02:07:59 -0500
+X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
+   d="scan'208";a="15390898"
+Message-ID: <50D2B94D.10309@codeaurora.org>
+Date: Wed, 19 Dec 2012 23:07:57 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV9fEfTVbiSzai2dvk6MWwDhsD_nAKs7Z1JP0ZkF-eruw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+CC: Paul Walmsley <paul@pwsan.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: BUG: spinlock bad magic on CPU#0 on BeagleBone
+References: <B5906170F1614E41A8A28DE3B8D121433EC9A69C@DBDE01.ent.ti.com> <alpine.DEB.2.00.1212191650430.16873@utopia.booyaka.com> <50D2224E.4060300@codeaurora.org> <B5906170F1614E41A8A28DE3B8D121433EC9B6FE@DBDE01.ent.ti.com> <50D2AF54.7050402@codeaurora.org> <B5906170F1614E41A8A28DE3B8D121433EC9B964@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC9B964@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 02:20:06PM -0800, Andy Lutomirski wrote:
-> On Tue, Dec 18, 2012 at 1:30 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Mon, Dec 17, 2012 at 06:42:44PM -0800, Andy Lutomirski wrote:
-> >> On Mon, Dec 17, 2012 at 5:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >> > On Mon, Dec 17, 2012 at 05:10:21PM -0800, Andy Lutomirski wrote:
-> >> >> I want to change inode->i_flags access to be atomic -- there are some
-> >> >> locking oddities right now, I think, and I want to use a new inode
-> >> >> flag to signal mtime updates from page_mkwrite.  The problem is that
-> >> >> i_flags is an unsigned int, and making it an unsigned long seems like
-> >> >> a waste, but there aren't any u32 atomic bitops.
-> >> >
-> >> > ... and atomic accesses cost more.  A lot more on some architectures.
-> >> > FWIW, atomic_t *is* 32bit on 32bit architectures, which still doesn't
-> >> > make it a good idea.
-> >>
-> >> Are atomic_set_mask and atomic_clear_mask as fast as set_bit and
-> >> friends on all archs?
-> >>
-> >> In any case, i_flags looks like it's rarely written, so I find it a
-> >> bit hard to believe that making it atomic would hurt.  Isn't
-> >> atomic_read equivalent to non-atomic reads everywhere?
-> >>
-> >> I want page_mkwrite to set a flag (without taking i_mutex) but *not*
-> >> call file_update_time and then to have the writeback paths update the
-> >> inode time.
-> >
-> > Deadlocks ahoy!
-> >
-> > We don't currently take the i_mutex anywhere in the writeback path
-> > as the writeback path is nested inside the i_mutex. Hence this seems
-> > like an extremely dangerous thing to do...
-> 
-> Hmm.
-> 
-> This can all be made fs-specific: page_mkclean_file sets a bit in the
-> inode flags or inode state or address_space_flags.  (The latter might
-> be nice -- it's already atomic and I think there are plenty of bits
-> free.)  Then a filesystem could stop calling file_update_time in
-> ->page_mkwrite and instead test-clear that bit in ->writepage.
+On 12/19/2012 10:44 PM, Bedia, Vaibhav wrote:
+> On Thu, Dec 20, 2012 at 11:55:24, Stephen Boyd wrote:
+>> On 12/19/2012 8:48 PM, Bedia, Vaibhav wrote:
+>>> I tried out 3 variants of AM335x boards - 2 of these (BeagleBone and EVM) have DDR2
+>>> and 1 has DDR3 (EVM-SK). The BUG is triggered on all of these at the same point.
+>>>
+>>> With Stephen's change I don't see this on any of the board variants :)
+>>> New bootlog below.
+>> Great! Can I have your Tested-by then? I'll wrap it up into a patch. Is
+>> this is a new regression? From a glance at the code it looks to have
+>> existed for quite a while now.
+> I went back to a branch based off 3.7-rc4 and don't see the issue there. Not sure
+> what is triggering this now.
+>
+> Tested-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
 
-writepage happens with pages locked. There's a limit to what you can
-do in a filesystem while a page is locked, and you most certainly
-don't want to be taking the i_mutex at that point...
+Thanks. I was thrown off by the author date of this patch which
+introduced your problem
 
-> At that point, maybe the fs knows it's safe to mark the inode dirty
-> and update times.  (The actual time fields don't seem to be uniformly
-> protected by any lock.)  Can ext4_mark_inode_dirty be called from
-> ->writepage?
+commit 8823c079ba7136dc1948d6f6dcb5f8022bde438e
+Author:     Eric W. Biederman <ebiederm@xmission.com>
+AuthorDate: Sun Mar 7 18:49:36 2010 -0800
+Commit:     Eric W. Biederman <ebiederm@xmission.com>
+CommitDate: Mon Nov 19 05:59:18 2012 -0800
 
-Probably, but that's a filesystem internal function that has to be
-called from with a valid transaction handle.
+    vfs: Add setns support for the mount namespace
 
-The fact you are conerned about this function tells me something
-important - that you aren't having problems with i_mutex (show me
-where i_mutex is taken on the page_mkwrite path ;), but you are
-having latency problems with the ext4 .dirty_inode method starting a
-new transaction when it is called from mark_inode_dirty_sync().
 
-So, a filesystem specific problem, perhaps?
+It seems to have a 2 year gap between commit date and author date.
+Either way, it looks to be isolated to the 3.8 merge window but affects
+quite a few architectures. Patch to follow shortly.
 
-> Filesystems that haven't been converted can will continue to update
-> times in ->page_mkwrite.
-
-You don't need to change this at all. If you have ext4
-implement .update_timestamp to do whatever timestamp trickery you
-want and avoid ext4 starting a new transaction in .dirty_inode for
-pure timestamp updates, you can move the timestamp update into the
-ext4 writeback path. The ext4 writeback path is already quite
-special, so I'm sure people would welcome another weird behaviour
-being added to it :)
-
-IOWs, what you want to do doesn't seem to require any changes to the
-generic code.  Just make it do timestamp updates in a manner similar
-to XFS and btrfs, and you can handle it all completely internally to
-the filesystem...
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
