@@ -1,49 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641Ab2LTPip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:38:45 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:32820 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab2LTPij (ORCPT
+	id S1751432Ab2LTPm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:42:26 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50425 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab2LTPmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:38:39 -0500
-Subject: Re: [PATCH] net: ipv4: route: fix coding style issues net: ipv4:
- tcp: fix coding style issues
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefan Hasko <hasko.stevo@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1356013685-31649-1-git-send-email-hasko.stevo@gmail.com>
-References: <1356013685-31649-1-git-send-email-hasko.stevo@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Dec 2012 07:31:07 -0800
-Message-ID: <1356017467.21834.2838.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 10:42:19 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v4 02/18] perf/x86: improve sysfs event mapping with event string
+Date: Thu, 20 Dec 2012 16:41:32 +0100
+Message-Id: <1356018108-6081-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1356018108-6081-1-git-send-email-eranian@google.com>
+References: <1356018108-6081-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-20 at 15:28 +0100, Stefan Hasko wrote:
-> Fix a coding style issues.
-> 
-> Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
-> ---
->  net/ipv4/route.c |  119 ++++++++++++++++-------------
->  net/ipv4/tcp.c   |  218 +++++++++++++++++++++++++++++++-----------------------
->  2 files changed, 194 insertions(+), 143 deletions(-)
+This patch extends Jiri's changes to make generic
+events mapping visible via sysfs. The patch extends
+the mechanism to non-generic events by allowing
+the mappings to be hardcoded in strings.
 
+This mechanism will be used by the PEBS-LL patch
+later on.
 
-I Nack this patch and any such patches in net/core, net/ipv4 trees for a
-while.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   27 ++++++++++++---------------
+ arch/x86/kernel/cpu/perf_event.h |   23 +++++++++++++++++++++++
+ 2 files changed, 35 insertions(+), 15 deletions(-)
 
-We had too many recent changes and probably need a bunch of real fixes.
-
-Thanks
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 83f4c1a..f4057bb 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1316,20 +1316,22 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
+ };
+ 
+-struct perf_pmu_events_attr {
+-	struct device_attribute attr;
+-	u64 id;
+-};
+-
+ /*
+  * Remove all undefined events (x86_pmu.event_map(id) == 0)
+  * out of events_attr attributes.
+  */
+ static void __init filter_events(struct attribute **attrs)
+ {
++	struct device_attribute *d;
++	struct perf_pmu_events_attr *pmu_attr;
+ 	int i, j;
+ 
+ 	for (i = 0; attrs[i]; i++) {
++		d = (struct device_attribute *)attrs[i];
++		pmu_attr = container_of(d, struct perf_pmu_events_attr, attr);
++		/* str trumps id */
++		if (pmu_attr->event_str)
++			continue;
+ 		if (x86_pmu.event_map(i))
+ 			continue;
+ 
+@@ -1370,19 +1372,14 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
+ {
+ 	struct perf_pmu_events_attr *pmu_attr = \
+ 		container_of(attr, struct perf_pmu_events_attr, attr);
+-
+ 	u64 config = x86_pmu.event_map(pmu_attr->id);
+-	return x86_pmu.events_sysfs_show(page, config);
+-}
+ 
+-#define EVENT_VAR(_id)  event_attr_##_id
+-#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++	/* string trumps id */
++	if (pmu_attr->event_str)
++		return sprintf(page, "%s", pmu_attr->event_str);
+ 
+-#define EVENT_ATTR(_name, _id)					\
+-static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
+-	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
+-	.id   =  PERF_COUNT_HW_##_id,				\
+-};
++	return x86_pmu.events_sysfs_show(page, config);
++}
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 4170043..3f4380c 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -420,6 +420,29 @@ do {									\
+ #define ERF_NO_HT_SHARING	1
+ #define ERF_HAS_RSP_1		2
+ 
++#define EVENT_VAR(_id)  event_attr_##_id
++#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++
++#define EVENT_ATTR(_name, _id)					\
++static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
++	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
++	.id   =  PERF_COUNT_HW_##_id,				\
++	.event_str = NULL,					\
++};
++
++#define EVENT_ATTR_STR(_name, v, str)				  \
++static struct perf_pmu_events_attr event_attr_##v = {		  \
++	.attr      = __ATTR(_name, 0444, events_sysfs_show, NULL),\
++	.id        =  0,					  \
++	.event_str =  str,					  \
++};
++
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++	const char *event_str;
++};
++
+ extern struct x86_pmu x86_pmu __read_mostly;
+ 
+ DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+-- 
+1.7.9.5
 
