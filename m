@@ -1,123 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab2LTKdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 05:33:47 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35665 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2LTKdk (ORCPT
+	id S1752121Ab2LTKk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 05:40:29 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:48707 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab2LTKkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 05:33:40 -0500
-From: Juergen Beisert <jbe@pengutronix.de>
-Organization: Pengutronix - Linux Solutions for Science and Industry
-To: Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned divisors
-Date: Thu, 20 Dec 2012 11:30:38 +0100
-User-Agent: KMail/1.9.10
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-References: <1355928015-26212-1-git-send-email-linux@roeck-us.net> <20121219224122.GA26863@roeck-us.net> <20121220112202.3ead1fe1@endymion.delvare>
-In-Reply-To: <20121220112202.3ead1fe1@endymion.delvare>
+	Thu, 20 Dec 2012 05:40:22 -0500
+X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 05:40:21 EST
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212201130.39235.jbe@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: jbe@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <50D2E8BB.6000108@synopsys.com>
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com>
+	<1352720953-24321-15-git-send-email-vgupta@synopsys.com>
+	<201211121400.13046.arnd@arndb.de>
+	<50D2B75A.3000208@synopsys.com>
+	<50D2E8BB.6000108@synopsys.com>
+Date: Thu, 20 Dec 2012 11:34:58 +0100
+X-Google-Sender-Auth: S0Udctjg6KRPY90z-yjWCENd_rE
+Message-ID: <CAMuHMdWJF4rJ=CZ1wtLvbNKF8Pv-NvSie4zx+V2OC64pxHpBQQ@mail.gmail.com>
+Subject: Re: [RFC Patch v1 45/55] ARC: unaligned access emulation
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Jonathan Corbet <corbet@lwn.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-Jean Delvare wrote:
-> On Wed, 19 Dec 2012 14:41:22 -0800, Guenter Roeck wrote:
-> > On Wed, Dec 19, 2012 at 01:47:21PM -0800, Andrew Morton wrote:
-> > > The changelog didn't describe the end-user visible effects of the bug.
-> > > Please always include this information.  Because...
-> >
-> > One observed effect is that the s2c_hwmon driver reports a value of
-> > 4198403 instead of 0 if the ADC reads 0.
-> >
-> > Other impact is unpredictable. Problem is seen if the divisor is an
-> > unsigned variable or constant and the dividend is less than (divisor/2).
+On Thu, Dec 20, 2012 at 11:30 AM, Vineet Gupta
+<Vineet.Gupta1@synopsys.com> wrote:
+> Sorry for a naive patch submitter question (yes I've already read
+> SubmittingPatches and googled much already). A lot of times, I see the
+> "Cc: ..." lines, just below the "Signed-off-by:" lines in the patch -
+> e.g. https://lkml.org/lkml/2012/10/4/318
+> Are those added manually - because none of the xxx-cc options to
+> format-patch or send-email seem to be doing that - unless I missed some.
 >
-> Really? In my own testing, the problem only shows with dividend == 0,
-> and even then, only when dividend is signed and divisor is not.
-> DIV_ROUND_CLOSEST(5, 20U) returns 0 as expected, and so do
-> DIV_ROUND_CLOSEST(0 / 20), DIV_ROUND_CLOSEST(0U / 20) and
-> DIV_ROUND_CLOSEST(0U / 20U).
->
-> Are your observations different?
+> Context: I have the patch which touches ia64/parisc which I want to send
+> out and at the same time have those "Cc: lines for the maintainers too"
 
-I tried it with this simple user-land program to get an idea what's going 
-wrong in the s3c_hwmon.c ADC driver:
+I add them manually, either while committing, or by editing the patch after
+running "git format-patch".
 
-#define DIV_ROUND_CLOSEST(x, divisor)(			\
-{							\
-	typeof(x) __x = x;				\
-	typeof(divisor) __d = divisor;			\
-	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
-		(((__x) + ((__d) / 2)) / (__d)) :	\
-		(((__x) - ((__d) / 2)) / (__d));	\
-}							\
-)
+"git send-email" will pick them up and add the appropriate CCs when sending
+out the emails.
 
-int main(int argc, char *argv[])
-{
-	int x;
-	unsigned y;
+Gr{oetje,eeting}s,
 
-	printf("Constants\n");
+                        Geert
 
-	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(-1, 2));
-	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(-1, 1023));
-	printf("0 -> %d\n", DIV_ROUND_CLOSEST(0, 1023));
-	printf("0 -> %d\n", DIV_ROUND_CLOSEST(0, 2));
-	printf("1 -> %d\n", DIV_ROUND_CLOSEST(1, 2));
-	printf("1 -> %d\n", DIV_ROUND_CLOSEST(3300, 1023));
-	printf("2 -> %d\n", DIV_ROUND_CLOSEST(6600, 1023));
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-	printf("Variables\n");
-
-	x = -1; y = 2;
-	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(x, y));
-	x = -1; y = 1023;
-	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(x, y));
-	x = 0; y = 1023;
-	printf("0 -> %d\n", DIV_ROUND_CLOSEST(x, y));
-	x = 3300; y = 1023;
-	printf("3300 -> %d\n", DIV_ROUND_CLOSEST(3300, 1023));
-	x = 6600; y = 1023;
-	printf("6600 -> %d\n", DIV_ROUND_CLOSEST(6600, 1023));
-
-	return 0;
-}
-
-Result is on my x86 host (same on my ARM target):
-
-Constants
--1 -> -1
--1 -> 0
-0 -> 0
-0 -> 0
-1 -> 1
-1 -> 3
-2 -> 6
-Variables
--1 -> 2147483647
--1 -> 4198403
-0 -> 4198403
-3300 -> 3
-6600 -> 6
-
-Regards,
-Juergen
-
--- 
-Pengutronix e.K.                              | Juergen Beisert             |
-Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
