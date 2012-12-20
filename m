@@ -1,111 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab2LTC7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 21:59:11 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54324 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2LTC7C (ORCPT
+	id S1752500Ab2LTDDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 22:03:11 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42679 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab2LTDDA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 21:59:02 -0500
-X-AuditID: 9c930197-b7c5bae000000e31-6c-50d27ef581dd
-Date: Thu, 20 Dec 2012 11:59:01 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 07/14] perf ui/hist: Add support for event group view
-Message-ID: <20121220025901.GB3679@danjae>
-References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
- <1355726345-29553-8-git-send-email-namhyung@kernel.org>
- <20121218154710.GN1283@krava.brq.redhat.com>
+	Wed, 19 Dec 2012 22:03:00 -0500
+From: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "cpw@sgi.com" <cpw@sgi.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: RE: [PATCH v2] Add the values related to buddy system for filtering
+ free pages.
+Thread-Topic: [PATCH v2] Add the values related to buddy system for
+ filtering free pages.
+Thread-Index: AQHN1neGTOb6k8AnJEC/OwmL8lvOwJggS2MAgAAiH4CAAJ8AIA==
+Date: Thu, 20 Dec 2012 03:02:56 +0000
+Message-ID: <33710E6CAA200E4583255F4FB666C4E20AB2DEA3@G01JPEXMBYT03>
+References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
+ <20121219161856.e6aa984f.akpm@linux-foundation.org>
+ <20121220112103.d698c09a9d1f27a253a63d37@mxc.nes.nec.co.jp>
+In-Reply-To: <20121220112103.d698c09a9d1f27a253a63d37@mxc.nes.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.124.101.123]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121218154710.GN1283@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 04:47:10PM +0100, Jiri Olsa wrote:
-> On Mon, Dec 17, 2012 at 03:38:58PM +0900, Namhyung Kim wrote:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > Show group members' overhead also when showing the leader's if event
-> > group is enabled.  Use macro for defining hpp functions which looks
-> > almost identical.
-> 
-> SNIP
-> 
-> > -
-> > -static int hpp__color_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
-> > -				  struct perf_hpp *hpp, struct hist_entry *he)
-> > +static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
-> > +			      u64 (*get_field)(struct hist_entry *),
-> > +			      const char *fmt, hpp_snprint_fn print_fn)
-> 
-> it's hard to tell from diff, but the function looks like this (group part):
+> From: kexec-bounces@lists.infradead.org
+> [mailto:kexec-bounces@lists.infradead.org] On Behalf Of Atsushi Kumagai
+> Sent: Thursday, December 20, 2012 11:21 AM
 
-Exactly.
+> On Wed, 19 Dec 2012 16:18:56 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Mon, 10 Dec 2012 10:39:13 +0900
+> > Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp> wrote:
+> >
 
+> >
+> > We might change the PageBuddy() implementation at any time, and
+> > makedumpfile will break.  Or in this case, become less efficient.
+> >
+> > Is there any way in which we can move some of this logic into the
+> > kernel?  In this case, add some kernel code which uses PageBuddy() on
+> > behalf of makedumpfile, rather than replicating the PageBuddy() logic
+> > in userspace?
 > 
->         if (symbol_conf.event_group) {
->                 int prev_idx, idx_delta, i;
->                 struct perf_evsel *evsel = hists_to_evsel(hists);
->                 struct hist_entry *pair;
->                 int nr_members = evsel->nr_members;
+> In last month, Cliff Wickman proposed such idea:
 > 
->                 if (nr_members <= 1)
->                         return ret;
+>   [PATCH v2] makedumpfile: request the kernel do page scans
+>   http://lists.infradead.org/pipermail/kexec/2012-November/007318.html
 > 
->                 prev_idx = perf_evsel__group_idx(evsel);
+>   [PATCH] scan page tables for makedumpfile, 3.0.13 kernel
+>   http://lists.infradead.org/pipermail/kexec/2012-November/007319.html
 > 
->                 list_for_each_entry(pair, &he->pairs.head, pairs.node) {
->                         u64 period = get_field(pair);
->                         u64 total = pair->hists->stats.total_period;
+> In his idea, the kernel does page scans to distinguish unnecessary pages
+> (free pages and others) and returns the list of PFN's which should be
+> excluded for makedumpfile.
+> As a result, makedumpfile doesn't need to consider internal kernel
+> behavior.
 > 
->                         if (!total)
->                                 continue;
-> 
->                         evsel = hists_to_evsel(pair->hists);
->                         idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
-> 
->                         for (i = 0; i < idx_delta; i++) {
->                                 ret += print_fn(hpp->buf + ret, hpp->size - ret,
->                                                 fmt, 0.0);
->                         }
-> 
->                         ret += print_fn(hpp->buf + ret, hpp->size - ret,
->                                         fmt, 100.0 * period / total);
-> 
->                         prev_idx += 1 + idx_delta;
->                 }
-> 
->                 idx_delta = nr_members - prev_idx - 1;
-> 
->                 for (i = 0; i < idx_delta; i++) {
->                         ret += print_fn(hpp->buf + ret, hpp->size - ret,
->                                         fmt, 0.0);
->                 }
->         }
-> 
-> The temporary array (initial send) was more clear to me.. but if
-> this is the preffered way I wont object, since this is another place
-> that would benefit from hist_entries array linking.. when (and if)
-> there's ever patch for that ;-)
-> 
-> I think this code now suffers from mischosen data layer
+> I think it's a good idea from the viewpoint of maintainability and
+> performance.
 
-Yes, I admit that using array can make things simple.  But I also don't
-like a temporary array due to its runtime cost.  Linking hist entries by
-array can be a solution since it can be reused for output resorting and
-(multiple) hpp column(s).  In addition, it might have a smaller memory
-footprint than the list method for the leader-only sample feature since
-it'll make every hist entries to be linked IMHO.
+I also think wide part of his code can be reused in this work. But the bad
+performance is caused by a lot of ioremap, not a lot of copying. See my
+profiling result I posted some days ago. Two issues, ioremap one and filtering
+maintainability, should be considered separately. Even on ioremap issue,
+there is secondary one to consider in memory consumption on the 2nd kernel.
 
-Thanks,
-Namhyung
+Also, I have one question. Can we always think of 1st and 2nd kernels are same?
+If I understand correctly, kexec/kdump can use the 2nd kernel different
+from the 1st's. So, differnet kernels need to do the same thing as makedumpfile
+does. If assuming two are same, problem is mush simplified.
+
+Thanks.
+HATAYAMA, Daisuke
+
