@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab2LTSiD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:38:03 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61854 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2LTSh4 convert rfc822-to-8bit (ORCPT
+	id S1752088Ab2LTSjP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:39:15 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47419 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab2LTSjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:37:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355851688.1414.18.camel@x61.thuisdomein>
-References: <1355779884.1414.14.camel@x61.thuisdomein>
-	<50D0473D.9060106@vodafone.de>
-	<CADnq5_ORb_kdaehxR6y+P1S0eStiLEo7jFOYXhn4sMDw5b=bcw@mail.gmail.com>
-	<1355851688.1414.18.camel@x61.thuisdomein>
-Date: Thu, 20 Dec 2012 13:37:55 -0500
-Message-ID: <CADnq5_O_ezHcQPrW371_kJcgF==jc9NwmpN0tCy73eRPxgF9fg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] drm/radeon: return 0 on successful gpu reset
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Dec 2012 13:39:05 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 10/24] rcu: Restart the tick on non-responding full dynticks CPUs
+Date: Thu, 20 Dec 2012 19:32:57 +0100
+Message-Id: <1356028391-14427-11-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 12:28 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Tue, 2012-12-18 at 10:22 -0500, Alex Deucher wrote:
->> On Tue, Dec 18, 2012 at 5:36 AM, Christian König
->> <deathsimple@vodafone.de> wrote:
->> > On 17.12.2012 22:31, Paul Bolle wrote:
->> >> 1) Sent as an RFC because I do not understand why this laptop (almost
->> >> always) prints the "crtc 1" message on first resume. Note that another
->> >> workaround for this hang is simply booting with "radeon.tv=0".
->> >
->> > Alex should probably take a look into this, since he probably is the one
->> > with the deepest knowledge of the display engine. My best guess is that it
->> > is just some error while probing for an attached TV and actually isn't so
->> > bad after all.
->>
->> TV detection is always a bit flakey.  I suspect some register or gpio
->> related to TV out doesn't get restored properly on resume which
->> results in a false positive.  What asic is this?
->
-> It's an RV250, which makes the asic r200, doesn't it?
->
->> > You should definitely try Alex latest drm-fixes-3.8 branch
->> > (git://people.freedesktop.org/~agd5f/linux) since the possibility is quite
->> > high that we already have fixed that bug. If that doesn't helps then please
->> > open a bug report and leave me a note so that I can investigate further.
->>
->> I don't have a 3.8 fixes branch up just yet, but will soon.
->
-> I see. I'll watch that repository, but I would appreciate it if you
-> notify me if that branch pops up.
+When a CPU in full dynticks mode doesn't respond to complete
+a grace period, issue it a specific IPI so that it restarts
+the tick and chases a quiescent state.
 
-http://cgit.freedesktop.org/~agd5f/linux/log/?h=drm-fixes-3.8
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-Alex
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e441b77..302d360 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -53,6 +53,7 @@
+ #include <linux/delay.h>
+ #include <linux/stop_machine.h>
+ #include <linux/random.h>
++#include <linux/tick.h>
+ 
+ #include "rcutree.h"
+ #include <trace/events/rcu.h>
+@@ -743,6 +744,12 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
+ 	return (rdp->dynticks_snap & 0x1) == 0;
+ }
+ 
++static void rcu_kick_nohz_cpu(int cpu)
++{
++	if (tick_nohz_full_cpu(cpu))
++		smp_send_reschedule(cpu);
++}
++
+ /*
+  * Return true if the specified CPU has passed through a quiescent
+  * state by virtue of being in or having passed through an dynticks
+@@ -790,6 +797,9 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ 		rdp->offline_fqs++;
+ 		return 1;
+ 	}
++
++	rcu_kick_nohz_cpu(rdp->cpu);
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
 
->
->
-> Paul Bolle
->
