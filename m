@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab2LTDDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 22:03:11 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42679 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2LTDDA convert rfc822-to-8bit (ORCPT
+	id S1752491Ab2LTDH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 22:07:28 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:42516 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab2LTDHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 22:03:00 -0500
-From: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "cpw@sgi.com" <cpw@sgi.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: RE: [PATCH v2] Add the values related to buddy system for filtering
- free pages.
-Thread-Topic: [PATCH v2] Add the values related to buddy system for
- filtering free pages.
-Thread-Index: AQHN1neGTOb6k8AnJEC/OwmL8lvOwJggS2MAgAAiH4CAAJ8AIA==
-Date: Thu, 20 Dec 2012 03:02:56 +0000
-Message-ID: <33710E6CAA200E4583255F4FB666C4E20AB2DEA3@G01JPEXMBYT03>
-References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
- <20121219161856.e6aa984f.akpm@linux-foundation.org>
- <20121220112103.d698c09a9d1f27a253a63d37@mxc.nes.nec.co.jp>
-In-Reply-To: <20121220112103.d698c09a9d1f27a253a63d37@mxc.nes.nec.co.jp>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.124.101.123]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Dec 2012 22:07:22 -0500
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Dec 2012 22:07:22 EST
 MIME-Version: 1.0
+In-Reply-To: <1355968594.1415.4.camel@kernel-VirtualBox>
+References: <1354344987-28203-1-git-send-email-walken@google.com>
+	<20121203150110.39c204ff.akpm@linux-foundation.org>
+	<CANN689FfWVV4MyTUPKZQgQAWW9Dfdw9f0fqx98kc+USKj9g7TA@mail.gmail.com>
+	<20121203164322.b967d461.akpm@linux-foundation.org>
+	<20121204144820.GA13916@google.com>
+	<1355968594.1415.4.camel@kernel-VirtualBox>
+Date: Wed, 19 Dec 2012 19:01:30 -0800
+Message-ID: <CANN689FoSGMUi0mC6dzXe5tXo-BL_4eFZ1NF-De38x8mNhPXcg@mail.gmail.com>
+Subject: Re: [PATCH] mm: protect against concurrent vma expansion
+From: Michel Lespinasse <walken@google.com>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: kexec-bounces@lists.infradead.org
-> [mailto:kexec-bounces@lists.infradead.org] On Behalf Of Atsushi Kumagai
-> Sent: Thursday, December 20, 2012 11:21 AM
+Hi Simon,
 
-> On Wed, 19 Dec 2012 16:18:56 -0800
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Mon, 10 Dec 2012 10:39:13 +0900
-> > Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp> wrote:
-> >
+On Wed, Dec 19, 2012 at 5:56 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
+> One question.
+>
+> I found that mainly callsite of expand_stack() is #PF, but it holds
+> mmap_sem each time before call expand_stack(), how can hold a *shared*
+> mmap_sem happen?
 
-> >
-> > We might change the PageBuddy() implementation at any time, and
-> > makedumpfile will break.  Or in this case, become less efficient.
-> >
-> > Is there any way in which we can move some of this logic into the
-> > kernel?  In this case, add some kernel code which uses PageBuddy() on
-> > behalf of makedumpfile, rather than replicating the PageBuddy() logic
-> > in userspace?
-> 
-> In last month, Cliff Wickman proposed such idea:
-> 
->   [PATCH v2] makedumpfile: request the kernel do page scans
->   http://lists.infradead.org/pipermail/kexec/2012-November/007318.html
-> 
->   [PATCH] scan page tables for makedumpfile, 3.0.13 kernel
->   http://lists.infradead.org/pipermail/kexec/2012-November/007319.html
-> 
-> In his idea, the kernel does page scans to distinguish unnecessary pages
-> (free pages and others) and returns the list of PFN's which should be
-> excluded for makedumpfile.
-> As a result, makedumpfile doesn't need to consider internal kernel
-> behavior.
-> 
-> I think it's a good idea from the viewpoint of maintainability and
-> performance.
+the #PF handler calls down_read(&mm->mmap_sem) before calling expand_stack.
 
-I also think wide part of his code can be reused in this work. But the bad
-performance is caused by a lot of ioremap, not a lot of copying. See my
-profiling result I posted some days ago. Two issues, ioremap one and filtering
-maintainability, should be considered separately. Even on ioremap issue,
-there is secondary one to consider in memory consumption on the 2nd kernel.
+I think I'm just confusing you with my terminology; shared lock ==
+read lock == several readers might hold it at once (I'd say they share
+it)
 
-Also, I have one question. Can we always think of 1st and 2nd kernels are same?
-If I understand correctly, kexec/kdump can use the 2nd kernel different
-from the 1st's. So, differnet kernels need to do the same thing as makedumpfile
-does. If assuming two are same, problem is mush simplified.
-
-Thanks.
-HATAYAMA, Daisuke
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
