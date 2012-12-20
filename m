@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab2LTJqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:46:43 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14422 "EHLO
+	id S1752290Ab2LTJrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:47:14 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14435 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2LTJq0 (ORCPT
+	with ESMTP id S1751403Ab2LTJqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:46:26 -0500
+	Thu, 20 Dec 2012 04:46:31 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 20 Dec 2012 01:43:54 -0800
+	by hqnvupgp05.nvidia.com on Thu, 20 Dec 2012 01:46:25 -0800
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <linux-tegra@vger.kernel.org>
 CC: Hiroshi Doyu <hdoyu@nvidia.com>, Grant Likely <grant.likely@secretlab.ca>,
@@ -22,9 +22,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, Grant Likely <grant.likely@secretlab.ca>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 3/9] ARM: tegra: # of CPU cores detection w/ & w/o HAVE_ARM_SCU
-Date: Thu, 20 Dec 2012 11:44:01 +0200
-Message-ID: <1355996654-6579-4-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCH 8/9] ARM: dt: tegra114: Add new board, Pluto
+Date: Thu, 20 Dec 2012 11:44:06 +0200
+Message-ID: <1355996654-6579-9-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
 References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
@@ -34,83 +34,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The method to detect the number of CPU cores on Cortex-A9 MPCore and
-Cortex-A15 MPCore is different. On Cortex-A9 MPCore we can get this
-information from the Snoop Control Unit(SCU). On Cortex-A15 MPCore we
-have to read it from the system coprocessor(CP15), because the SCU on
-Cortex-A15 MPCore does not have software readable registers. This
-patch selects the correct method at runtime based on the CPU ID.
+Add a new evaluation board, Pluto for Tegra 114 family.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
- arch/arm/mach-tegra/platsmp.c |   31 ++++++++++++++++++++++++++++---
- 1 file changed, 28 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/Makefile           |    3 ++-
+ arch/arm/boot/dts/tegra114-pluto.dts |   21 +++++++++++++++++++++
+ 2 files changed, 23 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/tegra114-pluto.dts
 
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index 1b926df..68e76ef 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -23,6 +23,7 @@
- #include <asm/hardware/gic.h>
- #include <asm/mach-types.h>
- #include <asm/smp_scu.h>
-+#include <asm/cputype.h>
- 
- #include <mach/powergate.h>
- 
-@@ -34,9 +35,13 @@
- #include "common.h"
- #include "iomap.h"
- 
-+#define CPU_MASK		0xff0ffff0
-+#define CPU_CORTEX_A9		0x410fc090
-+#define CPU_CORTEX_A15		0x410fc0f0
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index b37f7c2..7e7fde0 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -144,7 +144,8 @@ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+ 	tegra20-whistler.dtb \
+ 	tegra30-cardhu-a02.dtb \
+ 	tegra30-cardhu-a04.dtb \
+-	tegra114-dalmore.dtb
++	tegra114-dalmore.dtb \
++	tegra114-pluto.dtb
+ dtb-$(CONFIG_ARCH_VEXPRESS) += vexpress-v2p-ca5s.dtb \
+ 	vexpress-v2p-ca9.dtb \
+ 	vexpress-v2p-ca15-tc1.dtb \
+diff --git a/arch/arm/boot/dts/tegra114-pluto.dts b/arch/arm/boot/dts/tegra114-pluto.dts
+new file mode 100644
+index 0000000..9bea8f5
+--- /dev/null
++++ b/arch/arm/boot/dts/tegra114-pluto.dts
+@@ -0,0 +1,21 @@
++/dts-v1/;
 +
- extern void tegra_secondary_startup(void);
- 
--static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
-+static void __iomem *scu_base;
- 
- #define EVP_CPU_RESET_VECTOR \
- 	(IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE) + 0x100)
-@@ -149,7 +154,26 @@ done:
-  */
- static void __init tegra_smp_init_cpus(void)
- {
--	unsigned int i, ncores = scu_get_core_count(scu_base);
-+	unsigned int i, cpu_id, ncores;
-+	u32 l2ctlr;
-+	phys_addr_t pa;
++/include/ "tegra114.dtsi"
 +
-+	cpu_id = read_cpuid(CPUID_ID) & CPU_MASK;
-+	switch (cpu_id) {
-+	case CPU_CORTEX_A15:
-+		asm("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
-+		ncores = ((l2ctlr >> 24) & 3) + 1;
-+		break;
-+	case CPU_CORTEX_A9:
-+		/* Get SCU physical base */
-+		asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (pa));
-+		scu_base = IO_ADDRESS(pa);
-+		ncores = scu_get_core_count(scu_base);
-+		break;
-+	default:
-+		BUG();
-+		break;
-+	}
- 
- 	if (ncores > nr_cpu_ids) {
- 		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-@@ -166,7 +190,8 @@ static void __init tegra_smp_init_cpus(void)
- static void __init tegra_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	tegra_cpu_reset_handler_init();
--	scu_enable(scu_base);
-+	if (scu_base)
-+		scu_enable(scu_base);
- }
- 
- struct smp_operations tegra_smp_ops __initdata = {
++/ {
++	model = "NVIDIA Tegra114 Pluto evaluation board";
++	compatible = "nvidia,pluto", "nvidia,tegra114";
++
++	memory {
++		reg = <0x80000000 0x40000000>;
++	};
++
++	serial@70006300 {
++		status = "okay";
++		clock-frequency = <408000000>;
++	};
++
++	pmc {
++		nvidia,invert-interrupt;
++	};
++};
 -- 
 1.7.9.5
 
