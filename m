@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab2LTRb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 12:31:29 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:54943 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab2LTRbW (ORCPT
+	id S1751933Ab2LTRgC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 12:36:02 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:22475 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751228Ab2LTRf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 12:31:22 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Ravishankar N <cyberax82@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: Re: [PATCH RESEND 1/1] fat:fix incorrect function comment
-References: <1356019896-22655-1-git-send-email-cyberax82@gmail.com>
-Date: Fri, 21 Dec 2012 02:31:17 +0900
-In-Reply-To: <1356019896-22655-1-git-send-email-cyberax82@gmail.com>
-	(Ravishankar N.'s message of "Thu, 20 Dec 2012 21:41:36 +0530")
-Message-ID: <87r4mkocka.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Thu, 20 Dec 2012 12:35:56 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+mFvzumeLCuFwEe51gNzYj
+Date: Thu, 20 Dec 2012 09:35:49 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        maxime.ripard@free-electrons.com
+Subject: Re: [GIT PULL v2] ARM: arm-soc fixes for 3.8
+Message-ID: <20121220173548.GB4989@atomide.com>
+References: <20121220163814.GA29557@quad.lixom.net>
+ <CA+55aFxL47wxTyTzLdnoFV=trnrMAz=_7rhsQFjb+K_mvTCa9w@mail.gmail.com>
+ <CAOesGMiZTF4gogCkU7eSaOydkX82wfWywkKBgCJo_-ZW0Ox4kw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMiZTF4gogCkU7eSaOydkX82wfWywkKBgCJo_-ZW0Ox4kw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ravishankar N <cyberax82@gmail.com> writes:
+* Olof Johansson <olof@lixom.net> [121220 09:30]:
+> [proper reply-to-all this time]
+> 
+> On Thu, Dec 20, 2012 at 8:49 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Thu, Dec 20, 2012 at 8:38 AM, Olof Johansson <olof@lixom.net> wrote:
+> >>
+> >> One of the sunxi patches from the last pull request was misapplied (I
+> >> realized what happened -- git am -s didn't apply cleanly so I had done it
+> >> through regular patch, thus not catching the renames properly). Here's
+> >> a fresh version of the pull request with a couple more OMAP and Samsung
+> >> patches included.
+> >
+> > Argh!
+> >
+> > I pulled your earlier branch due to Tony's ack, and now you're
+> > re-created that branch with new pulls (effectively rebasing it).
+> >
+> > Don't do things like this to me.
+> 
+> Yeah, sorry about that -- I wanted to replace the broken patch, and
+> Tony's branch was based on a newer version of your tree so I brought
+> everything forward as I had to rebase anyway.
+> 
+> I'll rebuild on top of what you've pulled, and send a fresh request of
+> just the delta. Sorry about the race condition here.
 
-> fat_search_long() returns 0 on success, -ENOENT/ENOMEM on failure.Change
-> the function comment accordingly.
->
-> While at it, fix some trivial typos.
+Sorry for me adding to the confusion too.
 
-Looks good. Thanks.
+Looks like Linus already applied "ARM: OMAP: Fix build breakage due
+to missing include in i2c.c" that I had queued earlier.
 
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Olof, I suggest you just merge my pull request up to the other commit
+c16acf12 (ARM: OMAP2+: Fix compillation error in mach-omap2/timer.c).
+Or just pick it whichever works better for you.
 
-> v2 changes:add a FIXME note according to review comment.
-> 	modified:   fs/fat/dir.c
-> 	modified:   fs/fat/inode.c
-> 	modified:   fs/fat/misc.c
->
-> Signed-off-by: Ravishankar N <cyberax82@gmail.com>
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  fs/fat/dir.c   |    5 ++---
->  fs/fat/inode.c |    2 +-
->  fs/fat/misc.c  |    4 ++++
->  3 files changed, 7 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
-> index 2a18234..58bf744 100644
-> --- a/fs/fat/dir.c
-> +++ b/fs/fat/dir.c
-> @@ -461,8 +461,7 @@ static int fat_parse_short(struct super_block *sb,
->  }
->  
->  /*
-> - * Return values: negative -> error, 0 -> not found, positive -> found,
-> - * value is the total amount of slots, including the shortname entry.
-> + * Return values: negative -> error/not found, 0 -> found.
->   */
->  int fat_search_long(struct inode *inode, const unsigned char *name,
->  		    int name_len, struct fat_slot_info *sinfo)
-> @@ -1255,7 +1254,7 @@ int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
->  
->  	sinfo->nr_slots = nr_slots;
->  
-> -	/* First stage: search free direcotry entries */
-> +	/* First stage: search free directory entries */
->  	free_slots = nr_bhs = 0;
->  	bh = prev = NULL;
->  	pos = 0;
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index 3580681..f8f4916 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -1344,7 +1344,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
->  	sbi->dir_entries = get_unaligned_le16(&b->dir_entries);
->  	if (sbi->dir_entries & (sbi->dir_per_block - 1)) {
->  		if (!silent)
-> -			fat_msg(sb, KERN_ERR, "bogus directroy-entries per block"
-> +			fat_msg(sb, KERN_ERR, "bogus directory-entries per block"
->  			       " (%u)", sbi->dir_entries);
->  		brelse(bh);
->  		goto out_invalid;
-> diff --git a/fs/fat/misc.c b/fs/fat/misc.c
-> index 5eb600d..359d307 100644
-> --- a/fs/fat/misc.c
-> +++ b/fs/fat/misc.c
-> @@ -135,6 +135,10 @@ int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster)
->  		}
->  		if (ret < 0)
->  			return ret;
-> +		/*
-> +		 * FIXME:Although we can add this cache, fat_cache_add() is
-> +		 * assuming to be called after linear search with fat_cache_id.
-> +		 */
->  //		fat_cache_add(inode, new_fclus, new_dclus);
->  	} else {
->  		MSDOS_I(inode)->i_start = new_dclus;
+Regards,
 
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Tony
