@@ -1,82 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab2LTXQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 18:16:44 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:45644 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab2LTXQj (ORCPT
+	id S1751956Ab2LTXfa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:35:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53443 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2LTXf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 18:16:39 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC PATCH 0/4] Rework mtime and ctime updates on mmaped writes
-Date: Thu, 20 Dec 2012 15:10:08 -0800
-Message-Id: <cover.1356043686.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
-References: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
+	Thu, 20 Dec 2012 18:35:26 -0500
+Date: Thu, 20 Dec 2012 15:35:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Nazarewicz <mpn@google.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] cma: use unsigned type for count argument
+Message-Id: <20121220153525.97841100.akpm@linux-foundation.org>
+In-Reply-To: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com>
+References: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writes via mmap currently update mtime and ctime in ->page_mkwrite.
-This is unfortunate from a performance and a correctness point of view.
-The file times should be updated after writes, not before (so that every
-write eventually results in a fresh timestamp).  More importantly
-(for me), ->page_mkwrite is called periodically even on mlocked pages,
-and some filesystems can sleep in mark_inode_dirty.
+On Wed, 19 Dec 2012 18:44:40 +0100
+Michal Nazarewicz <mpn@google.com> wrote:
 
-This patchset attempts to fix both issues at once.  It adds a new
-address_space flag AS_CMTIME that is set atomically whenever the system
-transfers a pte dirty bit to a struct page backed by the address_space.
-This can happen with various locks held and when low on memory.
+> From: Michal Nazarewicz <mina86@mina86.com>
+> 
+> Specifying negative size of buffer makes no sense and thus this commit
+> changes the type of the count argument to unsigned.
+> 
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -1038,9 +1038,9 @@ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size,
+>  					  gfp_t gfp, struct dma_attrs *attrs)
+>  {
+>  	struct page **pages;
+> -	int count = size >> PAGE_SHIFT;
+> -	int array_size = count * sizeof(struct page *);
+> -	int i = 0;
+> +	unsigned int count = size >> PAGE_SHIFT;
+> +	unsigned int array_size = count * sizeof(struct page *);
+> +	unsigned int i = 0;
 
-Later on, whenever syncing an inode (which happens indirectly in msync)
-or whenever a vma is torn down, if AS_CMTIME is set, then the file times
-are updated.  This happens in a context from which (I think) it's safe
-to dirty inodes.
+C programmers expect a variable called `i' to have type `int'.  It
+would be clearer to find a new name for this.  `idx', perhaps.
 
-One nice property of this approach is that it requires no fs-specific
-work.  It's actually quite a bit simpler than I expected.
+Also, we later do
 
-I've tested this, and mtime and ctime are updated on munmap, exit, MS_SYNC,
-and fsync after writing via mmap.  The times are also updated 30 seconds
-after writing, all by themselves :)  Lockdep has no complaints.
+	int j;
+	..
+	pages[i + j] ...
 
-NB: I am not at all an expert in anything fs or pagecache related.  Please
-help me find things that may be wrong with these patches.
+So `j' should also be converted to unsigned.  And perhaps renamed, but
+`j' isn't as egregious as `i'.
 
-Andy Lutomirski (4):
-  mm: Explicitly track when the page dirty bit is transferred from a
-    pte
-  mm: Update file times when inodes are written after mmaped writes
-  Remove file_update_time from all mkwrite paths
-  ext4: Fix an incorrect comment about i_mutex
+>  	if (array_size <= PAGE_SIZE)
+>  		pages = kzalloc(array_size, gfp);
+> @@ -1102,9 +1102,9 @@ error:
+>  static int __iommu_free_buffer(struct device *dev, struct page **pages,
+>  			       size_t size, struct dma_attrs *attrs)
+>  {
+> -	int count = size >> PAGE_SHIFT;
+> -	int array_size = count * sizeof(struct page *);
+> -	int i;
+> +	unsigned int count = size >> PAGE_SHIFT;
+> +	unsigned int array_size = count * sizeof(struct page *);
+> +	unsigned int i;
 
- fs/9p/vfs_file.c        |  3 ---
- fs/btrfs/inode.c        |  4 +---
- fs/buffer.c             |  6 ------
- fs/ceph/addr.c          |  3 ---
- fs/ext4/fsync.c         |  2 --
- fs/ext4/inode.c         |  1 -
- fs/gfs2/file.c          |  3 ---
- fs/inode.c              | 37 +++++++++++++++++++++++++++++++++++++
- fs/nilfs2/file.c        |  1 -
- fs/sysfs/bin.c          |  2 --
- include/linux/fs.h      |  1 +
- include/linux/mm.h      |  1 +
- include/linux/pagemap.h |  3 +++
- mm/filemap.c            |  1 -
- mm/memory-failure.c     |  4 +---
- mm/memory.c             |  5 +----
- mm/mmap.c               |  4 ++++
- mm/page-writeback.c     | 42 ++++++++++++++++++++++++++++++++++++++++--
- mm/rmap.c               |  9 ++++++---
- 19 files changed, 95 insertions(+), 37 deletions(-)
+ditto.
 
--- 
-1.7.11.7
+
+--- a/arch/arm/mm/dma-mapping.c~cma-use-unsigned-type-for-count-argument-fix
++++ a/arch/arm/mm/dma-mapping.c
+@@ -1040,7 +1040,7 @@ static struct page **__iommu_alloc_buffe
+ 	struct page **pages;
+ 	unsigned int count = size >> PAGE_SHIFT;
+ 	unsigned int array_size = count * sizeof(struct page *);
+-	unsigned int i = 0;
++	unsigned int idx = 0;
+ 
+ 	if (array_size <= PAGE_SIZE)
+ 		pages = kzalloc(array_size, gfp);
+@@ -1049,8 +1049,7 @@ static struct page **__iommu_alloc_buffe
+ 	if (!pages)
+ 		return NULL;
+ 
+-	if (dma_get_attr(DMA_ATTR_FORCE_CONTIGUOUS, attrs))
+-	{
++	if (dma_get_attr(DMA_ATTR_FORCE_CONTIGUOUS, attrs)) {
+ 		unsigned long order = get_order(size);
+ 		struct page *page;
+ 
+@@ -1060,38 +1059,39 @@ static struct page **__iommu_alloc_buffe
+ 
+ 		__dma_clear_buffer(page, size);
+ 
+-		for (i = 0; i < count; i++)
+-			pages[i] = page + i;
++		for (idx = 0; idx < count; idx++)
++			pages[i] = page + idx;
+ 
+ 		return pages;
+ 	}
+ 
+ 	while (count) {
+-		int j, order = __fls(count);
++		unsigned int j;
++		unnsigned int order = __fls(count);
+ 
+-		pages[i] = alloc_pages(gfp | __GFP_NOWARN, order);
+-		while (!pages[i] && order)
+-			pages[i] = alloc_pages(gfp | __GFP_NOWARN, --order);
+-		if (!pages[i])
++		pages[idx] = alloc_pages(gfp | __GFP_NOWARN, order);
++		while (!pages[idx] && order)
++			pages[idx] = alloc_pages(gfp | __GFP_NOWARN, --order);
++		if (!pages[idx])
+ 			goto error;
+ 
+ 		if (order) {
+-			split_page(pages[i], order);
++			split_page(pages[idx], order);
+ 			j = 1 << order;
+ 			while (--j)
+-				pages[i + j] = pages[i] + j;
++				pages[idx + j] = pages[idx] + j;
+ 		}
+ 
+-		__dma_clear_buffer(pages[i], PAGE_SIZE << order);
+-		i += 1 << order;
++		__dma_clear_buffer(pages[idx], PAGE_SIZE << order);
++		idx += 1 << order;
+ 		count -= 1 << order;
+ 	}
+ 
+ 	return pages;
+ error:
+-	while (i--)
+-		if (pages[i])
+-			__free_pages(pages[i], 0);
++	while (idx--)
++		if (pages[idx])
++			__free_pages(pages[idx], 0);
+ 	if (array_size <= PAGE_SIZE)
+ 		kfree(pages);
+ 	else
+@@ -1104,14 +1104,15 @@ static int __iommu_free_buffer(struct de
+ {
+ 	unsigned int count = size >> PAGE_SHIFT;
+ 	unsigned int array_size = count * sizeof(struct page *);
+-	unsigned int i;
+ 
+ 	if (dma_get_attr(DMA_ATTR_FORCE_CONTIGUOUS, attrs)) {
+ 		dma_release_from_contiguous(dev, pages[0], count);
+ 	} else {
+-		for (i = 0; i < count; i++)
+-			if (pages[i])
+-				__free_pages(pages[i], 0);
++		unsigned int idx;
++
++		for (idx = 0; idx < count; idx++)
++			if (pages[idx])
++				__free_pages(pages[idx], 0);
+ 	}
+ 
+ 	if (array_size <= PAGE_SIZE)
+diff -puN drivers/base/dma-contiguous.c~cma-use-unsigned-type-for-count-argument-fix drivers/base/dma-contiguous.c
+diff -puN include/linux/dma-contiguous.h~cma-use-unsigned-type-for-count-argument-fix include/linux/dma-contiguous.h
+_
 
