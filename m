@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab2LTPm0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:42:26 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50425 "EHLO
+	id S1751681Ab2LTPmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:42:40 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50379 "EHLO
 	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab2LTPmT (ORCPT
+	with ESMTP id S1750972Ab2LTPm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:42:19 -0500
+	Thu, 20 Dec 2012 10:42:29 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v4 02/18] perf/x86: improve sysfs event mapping with event string
-Date: Thu, 20 Dec 2012 16:41:32 +0100
-Message-Id: <1356018108-6081-3-git-send-email-eranian@google.com>
+Subject: [PATCH v4 05/18] perf: add minimal support for PERF_SAMPLE_WEIGHT
+Date: Thu, 20 Dec 2012 16:41:35 +0100
+Message-Id: <1356018108-6081-6-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1356018108-6081-1-git-send-email-eranian@google.com>
 References: <1356018108-6081-1-git-send-email-eranian@google.com>
@@ -21,111 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends Jiri's changes to make generic
-events mapping visible via sysfs. The patch extends
-the mechanism to non-generic events by allowing
-the mappings to be hardcoded in strings.
-
-This mechanism will be used by the PEBS-LL patch
-later on.
+Ensure we grab the weight from  raw sample struct
+and that we can dump it via perf report -D.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   27 ++++++++++++---------------
- arch/x86/kernel/cpu/perf_event.h |   23 +++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 15 deletions(-)
+ tools/perf/util/event.h   |    1 +
+ tools/perf/util/evsel.c   |    5 +++++
+ tools/perf/util/session.c |    3 +++
+ 3 files changed, 9 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 83f4c1a..f4057bb 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1316,20 +1316,22 @@ static struct attribute_group x86_pmu_format_group = {
- 	.attrs = NULL,
- };
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 0d573ff..cf52977 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -90,6 +90,7 @@ struct perf_sample {
+ 	u64 period;
+ 	u32 cpu;
+ 	u32 raw_size;
++	u64 weight;
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
+ 	struct branch_stack *branch_stack;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1b16dd1..4374c07 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1058,6 +1058,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		}
+ 	}
  
--struct perf_pmu_events_attr {
--	struct device_attribute attr;
--	u64 id;
--};
--
- /*
-  * Remove all undefined events (x86_pmu.event_map(id) == 0)
-  * out of events_attr attributes.
-  */
- static void __init filter_events(struct attribute **attrs)
- {
-+	struct device_attribute *d;
-+	struct perf_pmu_events_attr *pmu_attr;
- 	int i, j;
- 
- 	for (i = 0; attrs[i]; i++) {
-+		d = (struct device_attribute *)attrs[i];
-+		pmu_attr = container_of(d, struct perf_pmu_events_attr, attr);
-+		/* str trumps id */
-+		if (pmu_attr->event_str)
-+			continue;
- 		if (x86_pmu.event_map(i))
- 			continue;
- 
-@@ -1370,19 +1372,14 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
- {
- 	struct perf_pmu_events_attr *pmu_attr = \
- 		container_of(attr, struct perf_pmu_events_attr, attr);
--
- 	u64 config = x86_pmu.event_map(pmu_attr->id);
--	return x86_pmu.events_sysfs_show(page, config);
--}
- 
--#define EVENT_VAR(_id)  event_attr_##_id
--#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
-+	/* string trumps id */
-+	if (pmu_attr->event_str)
-+		return sprintf(page, "%s", pmu_attr->event_str);
- 
--#define EVENT_ATTR(_name, _id)					\
--static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
--	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
--	.id   =  PERF_COUNT_HW_##_id,				\
--};
-+	return x86_pmu.events_sysfs_show(page, config);
-+}
- 
- EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
- EVENT_ATTR(instructions,		INSTRUCTIONS		);
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 4170043..3f4380c 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -420,6 +420,29 @@ do {									\
- #define ERF_NO_HT_SHARING	1
- #define ERF_HAS_RSP_1		2
- 
-+#define EVENT_VAR(_id)  event_attr_##_id
-+#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++	if (type & PERF_SAMPLE_WEIGHT) {
++		data->weight= *array;
++		array++;
++	}
 +
-+#define EVENT_ATTR(_name, _id)					\
-+static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
-+	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
-+	.id   =  PERF_COUNT_HW_##_id,				\
-+	.event_str = NULL,					\
-+};
-+
-+#define EVENT_ATTR_STR(_name, v, str)				  \
-+static struct perf_pmu_events_attr event_attr_##v = {		  \
-+	.attr      = __ATTR(_name, 0444, events_sysfs_show, NULL),\
-+	.id        =  0,					  \
-+	.event_str =  str,					  \
-+};
-+
-+struct perf_pmu_events_attr {
-+	struct device_attribute attr;
-+	u64 id;
-+	const char *event_str;
-+};
-+
- extern struct x86_pmu x86_pmu __read_mostly;
+ 	return 0;
+ }
  
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ce6f511..117983e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1006,6 +1006,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	if (sample_type & PERF_SAMPLE_STACK_USER)
+ 		stack_user__printf(&sample->user_stack);
++
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		printf(" ... weight: %"PRIu64"\n", sample->weight);
+ }
+ 
+ static struct machine *
 -- 
 1.7.9.5
 
