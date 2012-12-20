@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2LTCZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 21:25:50 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42269 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab2LTCZn (ORCPT
+	id S1752444Ab2LTCfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 21:35:04 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61352 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab2LTCe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 21:25:43 -0500
-Message-ID: <50D27707.7060309@oracle.com>
-Date: Wed, 19 Dec 2012 21:25:11 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 19 Dec 2012 21:34:57 -0500
+X-AuditID: 9c930197-b7c5bae000000e31-3e-50d2794cde7a
+Date: Thu, 20 Dec 2012 11:34:52 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 07/14] perf ui/hist: Add support for event group view
+Message-ID: <20121220023452.GA3679@danjae>
+References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
+ <1355726345-29553-8-git-send-email-namhyung@kernel.org>
+ <20121218193015.GA2639@ghostprotocols.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/15] mm/huge_memory: use new hashtable implementation
-References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com> <1355756497-15834-4-git-send-email-sasha.levin@oracle.com> <alpine.DEB.2.00.1212191416410.32757@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1212191416410.32757@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121218193015.GA2639@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 05:26 PM, David Rientjes wrote:
-> This used to be dynamically allocated and would save the 8KB that you 
-> statically allocate if transparent hugepages cannot be used.  The generic 
-> hashtable implementation does not support dynamic allocation?
+On Tue, Dec 18, 2012 at 04:30:15PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Dec 17, 2012 at 03:38:58PM +0900, Namhyung Kim escreveu:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > Show group members' overhead also when showing the leader's if event
+> > group is enabled.  Use macro for defining hpp functions which looks
+> > almost identical.
+> > 
+> > Thanks to Arnaldo for suggesting a better way to print group members
+> > without allocating temporary array.
+> 
+> I applied up to the previous patch (6/14), doing minor changes in some
+> due to clashes with other patches, but then this one isn't applying, can
+> you take a look?
 
-No, currently the hashtable only handles statically allocated hashtables.
+Of course.  It's because, as I mentioned in the cover letter, this patch
+set was based on Jiri's multi-diff series which contains a couple of
+changes in hpp side.  I somehow thought you wanted to apply his change
+before mine. ;-)
 
-In this case, the downside is that you'll waste 8KB if hugepages aren't available,
-but the upside is that you'll have one less dereference when accessing the
-hashtable.
+> 
+> I left what I did on the perf/group, so you can continue from there.
 
-If the 8KB saving is preferable here I'll drop the patch and come back when
-dynamic hashtable is supported.
-
+I rebased it on the perf/group branch and pushed to perf/group-v8 on my
+tree.  Please take a look, or I can resend it to the list if you want.
 
 Thanks,
-Sasha
+Namhyung
