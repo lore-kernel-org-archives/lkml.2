@@ -1,33 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab2LTNOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 08:14:30 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55198 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2LTNOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 08:14:23 -0500
-Date: Thu, 20 Dec 2012 13:20:59 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Christian Bahls - gmx.de" <christian.bahls@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Encrypted block devices and suspend to ram
-Message-ID: <20121220132059.3cc85cfd@pyramind.ukuu.org.uk>
-In-Reply-To: <CAALC5YGq=DL1LWCb6QjqkACJLo6Z8SgwjNYoMXtvFF7a9KGhDg@mail.gmail.com>
-References: <CAALC5YGq=DL1LWCb6QjqkACJLo6Z8SgwjNYoMXtvFF7a9KGhDg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752510Ab2LTNXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 08:23:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751628Ab2LTNW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 08:22:58 -0500
+Date: Thu, 20 Dec 2012 15:22:55 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
+ dirty logging
+Message-ID: <20121220132255.GH17584@redhat.com>
+References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
+ <20121219213037.b234f9d4f187df2132e65576@gmail.com>
+ <1355931777.3224.562.camel@bling.home>
+ <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
+ <20121220125946.GB7750@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220125946.GB7750@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This would thwart all sorts of social and physical attacks on the device.
+On Thu, Dec 20, 2012 at 10:59:46AM -0200, Marcelo Tosatti wrote:
+> On Thu, Dec 20, 2012 at 02:02:32PM +0900, Takuya Yoshikawa wrote:
+> > On Wed, 19 Dec 2012 08:42:57 -0700
+> > Alex Williamson <alex.williamson@redhat.com> wrote:
+> > 
+> > > Please let me know if you can identify one of these as the culprit.
+> > > They're all very simple, but there's always a chance I've missed a hard
+> > > coding of slot numbers somewhere.  Thanks,
+> > 
+> > I identified the one:
+> >   commit b7f69c555ca430129b6cde81e9f0927531420c5c
+> >   KVM: Minor memory slot optimization
+> > 
+> > IIUC, the problem was that you did not care about the generation of
+> > slots which was updated by update_memslots():
+> > 
+> >   Your patch reused the old memory slots which was there before
+> >   doing the update for invalidating the slot, and badly, we did flush
+> >   shadow pages after that before doing the second update for finally
+> >   installing the new slot.  As a result, the generation did not change
+> >   from that of the invalidated one, although the ghc(gfn to hva cache)
+> >   might be stale.
+> > 
+> >   After that, kvm_write_guest_cached() checked if ghc should be
+> >   initialized by comparing ghc's generation with that old one,
+> >   resulting mark_page_dirty_in_slot() was called with the invalid
+> >   cache contents.
+> > 
+> > Although we can do something to correct the generation alone, I do not
+> > think such a trick is worth it because this is not a hot path.  Let's
+> > just revert the patch.
 > 
-> Has something like this ever been attempted?
+> Agreed. No dependencies by the following patches on it?
+Heh, this generation management looks subtle. Would be easy to break by
+other changes to the code. I wounder can we make it less subtle somehow.
 
-man cryptsetup
-
-Alan
+--
+			Gleb.
