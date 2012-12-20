@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab2LTJOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:14:32 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:62778 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab2LTJO0 (ORCPT
+	id S1751841Ab2LTJR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:17:29 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:45500 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab2LTJRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:14:26 -0500
-Message-ID: <50D2D6E6.2080609@windriver.com>
-Date: Thu, 20 Dec 2012 17:14:14 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 04:17:20 -0500
 MIME-Version: 1.0
-To: Tabi Timur-B04825 <B04825@freescale.com>
-CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] powerpc/book3e: load critical/machine/debug exception
- stack
-References: <1351147410-17452-1-git-send-email-tiejun.chen@windriver.com> <6AE080B68D46FC4BA2D2769E68D765B7081D305D@039-SN2MPN1-023.039d.mgd.msft.net>
-In-Reply-To: <6AE080B68D46FC4BA2D2769E68D765B7081D305D@039-SN2MPN1-023.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.178.22]
+In-Reply-To: <20121220075010.GD2691@gmail.com>
+References: <1355928161-8082-1-git-send-email-linus.walleij@stericsson.com>
+	<20121220013218.A55E93E0AD7@localhost>
+	<20121220075010.GD2691@gmail.com>
+Date: Thu, 20 Dec 2012 10:17:17 +0100
+Message-ID: <CACRpkdZwaTRDD9ZsOcPx+=TfNT0m=5-t6w32195k3Kp=PqvnFA@mail.gmail.com>
+Subject: Re: [PATCH] mfd: db8500-prcmu: fix irqdomain usage
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Anmar Oueja <anmar.oueja@linaro.org>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 06:10 AM, Tabi Timur-B04825 wrote:
-> On Thu, Oct 25, 2012 at 1:43 AM, Tiejun Chen <tiejun.chen@windriver.com> wrote:
->> We always alloc critical/machine/debug check exceptions. This is
->> different from the normal exception. So we should load these exception
->> stack properly like we did for booke.
+On Thu, Dec 20, 2012 at 8:50 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 20 Dec 2012, Grant Likely wrote:
+>>
+>> This looks wrong. It probably works at the moment, but calling
+>> irq_create_mapping when trying to process an IRQ is backwards. There
+>> certainly shouldn't be any processing of an irq that isn't already
+>> mapped. irq_find_mapping() should be used instead.
 >
-> Tiejun,
->
-> I'm a little confused by these patches, because the actual critical
-> exception handlers are still commented out:
->
-> /* Critical Input Interrupt */
-> 	START_EXCEPTION(critical_input);
-> 	CRIT_EXCEPTION_PROLOG(0x100, BOOKE_INTERRUPT_CRITICAL,
-> 			      PROLOG_ADDITION_NONE)
-> //	EXCEPTION_COMMON(0x100, PACA_EXCRIT, INTS_DISABLE)
-> //	bl	special_reg_save_crit
-> //	CHECK_NAPPING();
-> //	addi	r3,r1,STACK_FRAME_OVERHEAD
-> //	bl	.critical_exception
-> //	b	ret_from_crit_except
-> 	b	.
->
-> Are you working on fixing this?  I'm trying to fix it, too, but I
+> But irq_create_mapping() calls irq_find_mapping() if the irq is
+> already mapped? Or are you saying that if it isn't already mapped
+> then there is an issue somewhere else earlier in the code?
 
-No, I have no approach to Crit/MC and currently I'm focus only on Debug so 
-please do this as you expect :)
+I've submitted a v2 patch making the changes I think Grant is
+fishing for..
 
-BTW, I send next version just now since there are something needed to 
-correct/improve.
+Basically irq_create_mapping() should be in slowpath and
+irq_find_mapping() in fastpath with the semantics that
+the former has to be called at least once before the other
+is ever called.
 
-Tiejun
+This is not quite trivial to use ... irqdomain seems like it
+will bite us repeatedly for the next few years.
+
+Yours,
+Linus Walleij
