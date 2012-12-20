@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab2LTA5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 19:57:21 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:48077 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2LTA5O (ORCPT
+	id S1752278Ab2LTA6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 19:58:33 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:42254 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab2LTA6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 19:57:14 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        linux-mm@kvack.org
-References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
-	<20121219161856.e6aa984f.akpm@linux-foundation.org>
-Date: Wed, 19 Dec 2012 16:57:03 -0800
-In-Reply-To: <20121219161856.e6aa984f.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 19 Dec 2012 16:18:56 -0800")
-Message-ID: <878v8ty200.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 19 Dec 2012 19:58:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/cI2Nn1cGWIsa3inVCwSSeURdeomrZjcU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0013]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2] Add the values related to buddy system for filtering free pages.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <CAPnjgZ30MQS1OT3GOFLG9HntoD8NrzNw6bB_d1fiJEgHcMDGUA@mail.gmail.com>
+References: <1355464254-12768-1-git-send-email-ch.naveen@samsung.com>
+ <1355464254-12768-2-git-send-email-ch.naveen@samsung.com> <20121219123201.B636A3E0AD7@localhost>
+ <20121219171423.GW4985@opensource.wolfsonmicro.com> <CAPnjgZ30MQS1OT3GOFLG9HntoD8NrzNw6bB_d1fiJEgHcMDGUA@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 20 Dec 2012 00:58:05 +0000
+X-Google-Sender-Auth: 5LJEdpugLqoTnTjGo2e65atRn90
+Message-ID: <CACxGe6vyK80pvV1CE=zu7LNEmeKDZg3cpQ5PKZjaVjvL+gc2yg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] i2c-core: Add gpio based bus arbitration implementation
+To: Simon Glass <sjg@chromium.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        lk <linux-kernel@vger.kernel.org>, linux-samsung-soc@vger.kernel.org,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Naveen Krishna <naveen@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Thu, Dec 20, 2012 at 12:17 AM, Simon Glass <sjg@chromium.org> wrote:
+> On Wed, Dec 19, 2012 at 9:14 AM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>> On Wed, Dec 19, 2012 at 12:32:01PM +0000, Grant Likely wrote:
+>>
+>>> I'm not convinced on the design of this protocol. It won't scale beyond
+>>> 2 bus masters and it seems very specific to the design of a specific
+>>> piece of hardware. I don't think it is mature enough to bake into the
+>>
+>> I ought to point out that the original patch would've baked this into
+>> the Samsung I2C driver but I asked for it to be split out as it's
+>> nothing to do with the controller really and I'm sure I've seen it
+>> before.
+>
+> Grant your idea looks nice to me. I only worry if we should wait until
+> we have a second user before going so far with it. But it is certainly
+> a nice general solution.
+>
+> The scaling beyond two bus masters would require the code to be
+> changed to check more input lines from other masters. Best avoided for
+> now I think until we have a use for it.
 
-> On Mon, 10 Dec 2012 10:39:13 +0900
-> Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp> wrote:
->
->> This patch adds the values related to buddy system to vmcoreinfo data
->> so that makedumpfile (dump filtering command) can filter out all free
->> pages with the new logic.
->> It's faster than the current logic because it can distinguish free page
->> by analyzing page structure at the same time as filtering for other
->> unnecessary pages (e.g. anonymous page).
->> OTOH, the current logic has to trace free_list to distinguish free 
->> pages while analyzing page structure to filter out other unnecessary
->> pages.
->> 
->> The new logic uses the fact that buddy page is marked by _mapcount == 
->> PAGE_BUDDY_MAPCOUNT_VALUE. But, _mapcount shares its memory with other
->> fields for SLAB/SLUB when PG_slab is set, so we need to check if PG_slab
->> is set or not before looking up _mapcount value.
->> And we can get the order of buddy system from private field.
->> To sum it up, the values below are required for this logic.
->> 
->> Required values:
->>   - OFFSET(page._mapcount)
->>   - OFFSET(page.private)
->>   - NUMBER(PG_slab)
->>   - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
->> 
->> Changelog from v1 to v2:
->> 1. remove SIZE(pageflags)
->>   The new logic was changed after I sent v1 patch.  
->>   Accordingly, SIZE(pageflags) has been unnecessary for makedumpfile.
->> 
->> What's makedumpfile:
->>   makedumpfile creates a small dumpfile by excluding unnecessary pages
->>   for the analysis. To distinguish unnecessary pages, makedumpfile gets
->>   the vmcoreinfo data which has the minimum debugging information only
->>   for dump filtering.
->
-> Gee, this info is getting highly dependent upon deep internal kernel
-> behaviour.
->
->> index 5e4bd78..b27efe4 100644
->> --- a/kernel/kexec.c
->> +++ b/kernel/kexec.c
->> @@ -1490,6 +1490,8 @@ static int __init crash_save_vmcoreinfo_init(void)
->> 	VMCOREINFO_OFFSET(page, _count);
->> 	VMCOREINFO_OFFSET(page, mapping);
->> 	VMCOREINFO_OFFSET(page, lru);
->> +	VMCOREINFO_OFFSET(page, _mapcount);
->> +	VMCOREINFO_OFFSET(page, private);
->> 	VMCOREINFO_OFFSET(pglist_data, node_zones);
->> 	VMCOREINFO_OFFSET(pglist_data, nr_zones);
->>  #ifdef CONFIG_FLAT_NODE_MEM_MAP
->> @@ -1512,6 +1514,8 @@ static int __init crash_save_vmcoreinfo_init(void)
->> 	VMCOREINFO_NUMBER(PG_lru);
->> 	VMCOREINFO_NUMBER(PG_private);
->> 	VMCOREINFO_NUMBER(PG_swapcache);
->> +	VMCOREINFO_NUMBER(PG_slab);
->> +	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
->
-> We might change the PageBuddy() implementation at any time, and
-> makedumpfile will break.  Or in this case, become less efficient.
->
-> Is there any way in which we can move some of this logic into the
-> kernel?  In this case, add some kernel code which uses PageBuddy() on
-> behalf of makedumpfile, rather than replicating the PageBuddy() logic
-> in userspace?
+There is two parts to this; the design of the binding, and the
+implementation. Of the two, the binding is the most difficult to
+change, so it is important to get something we can live with long term
+sorted out now. The implementation can start somewhat naive, with a
+plan for how to extend it.
 
-All that exists when makedumpfile runs is a core file.  So it would have
-to be something like a share library that builds with the kernel and
-then makedumpfile loads.
+Regarding the scaling to multiple devices, it is a much smaller issue
+(if an issue at all) if the arbitration back end is pluggable. Then it
+becomes easy to support hardware with a different arbitration
+protocol. If it gets baked into the core i2c code, then we've got a
+problem and a lot more scrutiny needs to be put into this specific
+protocol.
 
-Eric
-
+g.
