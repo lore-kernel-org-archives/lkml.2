@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab2LTB5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 20:57:13 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:38313 "EHLO hydra.sisk.pl"
+	id S1752688Ab2LTB5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 20:57:18 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38307 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400Ab2LTBzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 20:55:52 -0500
+	id S1752425Ab2LTBzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 20:55:54 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
         LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH 3/16] ACPI: Make acpi_bus_add() and acpi_bus_start() visibly different
-Date: Thu, 20 Dec 2012 02:49:23 +0100
-Message-ID: <2142403.Kbj784bOTj@vostro.rjw.lan>
+Subject: [PATCH 0/16] ACPI: Rework ACPI namespace scanning for devices
+Date: Thu, 20 Dec 2012 02:45:31 +0100
+Message-ID: <1855256.SyhOJGYMIh@vostro.rjw.lan>
 User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1855256.SyhOJGYMIh@vostro.rjw.lan>
-References: <8498184.VilrUmatxI@vostro.rjw.lan> <4082842.31rfDviYHK@vostro.rjw.lan> <1855256.SyhOJGYMIh@vostro.rjw.lan>
+In-Reply-To: <4082842.31rfDviYHK@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <1355789297.18964.334.camel@misato.fc.hp.com> <4082842.31rfDviYHK@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,127 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi all,
 
-The current ACPI namespace scanning code suggests that acpi_bus_add()
-and acpi_bus_start() share some code.  In fact, however, they are
-completely different code paths (except for the initial checks), so
-refactor the code to make that distinction visibly clear.
+I've finally cut the patches removing acpi_pci_bind() and acpi_pci_unbind(),
+so I'm kind of ready to post the entire series reworking the ACPI namespace
+scanning code.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/acpi/scan.c |   63 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 35 insertions(+), 28 deletions(-)
+Patches [1-6/16] are essentially these ones:
 
-Index: linux/drivers/acpi/scan.c
-===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -1623,10 +1623,9 @@ static acpi_status acpi_bus_check_add(ac
- 	return AE_OK;
- }
- 
--static acpi_status acpi_bus_probe_start(acpi_handle handle, u32 lvl,
--					void *context, void **not_used)
-+static acpi_status acpi_bus_device_attach(acpi_handle handle, u32 lvl_not_used,
-+					  void *not_used, void **ret_not_used)
- {
--	struct acpi_bus_ops *ops = context;
- 	acpi_status status = AE_OK;
- 	struct acpi_device *device;
- 	unsigned long long sta_not_used;
-@@ -1642,16 +1641,11 @@ static acpi_status acpi_bus_probe_start(
- 	if (acpi_bus_get_device(handle, &device))
- 		return AE_CTRL_DEPTH;
- 
--	if (ops->acpi_op_add) {
--		if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
--			/* This is a known good platform device. */
--			acpi_create_platform_device(device);
--		} else if (device_attach(&device->dev)) {
--			status = AE_CTRL_DEPTH;
--		}
--	} else if (ops->acpi_op_start) {
--		if (ACPI_FAILURE(acpi_start_single_object(device)))
--			status = AE_CTRL_DEPTH;
-+	if (!acpi_match_device_ids(device, acpi_platform_device_ids)) {
-+		/* This is a known good platform device. */
-+		acpi_create_platform_device(device);
-+	} else if (device_attach(&device->dev)) {
-+		status = AE_CTRL_DEPTH;
- 	}
- 	return status;
- }
-@@ -1672,10 +1666,10 @@ static int acpi_bus_scan(acpi_handle han
- 		goto out;
- 
- 	ret = 0;
--	status = acpi_bus_probe_start(handle, 0, ops, NULL);
-+	status = acpi_bus_device_attach(handle, 0, NULL, NULL);
- 	if (ACPI_SUCCESS(status))
- 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
--				    acpi_bus_probe_start, NULL, ops, NULL);
-+				    acpi_bus_device_attach, NULL, NULL, NULL);
- 
-  out:
- 	if (child)
-@@ -1700,31 +1694,44 @@ int
- acpi_bus_add(struct acpi_device **child,
- 	     struct acpi_device *parent, acpi_handle handle, int type)
- {
--	struct acpi_bus_ops ops;
--
--	memset(&ops, 0, sizeof(ops));
--	ops.acpi_op_add = 1;
-+	struct acpi_bus_ops ops = { .acpi_op_add = 1, };
- 
- 	return acpi_bus_scan(handle, &ops, child);
- }
- EXPORT_SYMBOL(acpi_bus_add);
- 
--int acpi_bus_start(struct acpi_device *device)
-+static acpi_status acpi_bus_start_device(acpi_handle handle, u32 lvl,
-+					 void *not_used, void **ret_not_used)
- {
--	struct acpi_bus_ops ops;
--	int result;
-+	struct acpi_device *device;
-+	unsigned long long sta_not_used;
-+	int type_not_used;
- 
-+	/*
-+	 * Ignore errors ignored by acpi_bus_check_add() to avoid terminating
-+	 * namespace walks prematurely.
-+	 */
-+	if (acpi_bus_type_and_status(handle, &type_not_used, &sta_not_used))
-+		return AE_OK;
-+
-+	if (acpi_bus_get_device(handle, &device))
-+		return AE_CTRL_DEPTH;
-+
-+	return acpi_start_single_object(device);
-+}
-+
-+int acpi_bus_start(struct acpi_device *device)
-+{
- 	if (!device)
- 		return -EINVAL;
- 
--	memset(&ops, 0, sizeof(ops));
--	ops.acpi_op_start = 1;
--
--	result = acpi_bus_scan(device->handle, &ops, NULL);
-+	if (ACPI_SUCCESS(acpi_start_single_object(device)))
-+		acpi_walk_namespace(ACPI_TYPE_ANY, device->handle,
-+				    ACPI_UINT32_MAX, acpi_bus_start_device,
-+				    NULL, NULL, NULL);
- 
- 	acpi_update_all_gpes();
--
--	return result;
-+	return 0;
- }
- EXPORT_SYMBOL(acpi_bus_start);
- 
+https://patchwork.kernel.org/patch/1889821/
+https://patchwork.kernel.org/patch/1876481/
+https://patchwork.kernel.org/patch/1876531/
+https://patchwork.kernel.org/patch/1876571/
+https://patchwork.kernel.org/patch/1876511/
+https://patchwork.kernel.org/patch/1876401/
 
+but [2-6/16] have been rebased on top of the first one.
+
+Patches [7-12/16] are essentially these:
+
+https://patchwork.kernel.org/patch/1884721/
+https://patchwork.kernel.org/patch/1884701/
+https://patchwork.kernel.org/patch/1884761/
+https://patchwork.kernel.org/patch/1884731/
+https://patchwork.kernel.org/patch/1884751/
+https://patchwork.kernel.org/patch/1884661/
+
+but they have been rebased on top of https://patchwork.kernel.org/patch/1889821/.
+I added Yinghai's ACKs to them tentatively, although they are a bit different
+from the previous versions.  The difference is not too important, however,
+because the following patches finally remove the acpi_pci_bind()/acpi_pci_unbind()
+stuff:
+
+[13/16] Add .setup() and .cleanup() callbacks to struct acpi_bus_type.
+[14/16] Rework the setup and cleanup of ACPI/PCI device wakeup.
+[15/16] Move the _PRT setup and cleanup code to pci-acpi.c.
+[16/16] Drop ACPI device .bind() and .unbind() callbacks.
+
+This is done a bit differently than I thought it would be, mostly because the
+_PRT-related operations require the "subordinate" pointers of bridges to be
+populated.  I think it may be possible to simplify this further if that
+requirement can be removed (I haven't looked into that).
+
+In fact, patches [13-15/16] do not essentially depend on [1-12/16], only the
+last one does.
+
+The patches are on top of my master branch and I'm going to rebase them when
+v3.8-rc1 is out.
+
+There is a git tree you can pull them from at:
+
+http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=summary acpi-scan-temp-new
+
+It's v3.7 with my master branch merged and the new patches on top.
+
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
