@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab2LTTAi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:00:38 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41023 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab2LTTAd (ORCPT
+	id S1752271Ab2LTTDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:03:30 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:40949 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab2LTTDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 14:00:33 -0500
+	Thu, 20 Dec 2012 14:03:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121220184525.GC21056@atomide.com>
-References: <20121220163814.GA29557@quad.lixom.net> <20121220175639.GA14363@n2100.arm.linux.org.uk>
- <CAOesGMgxXmXUW2RP_5AxJ6Z5sRBhFJ2CQz4S12MwXAb3=ibYOA@mail.gmail.com> <20121220184525.GC21056@atomide.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 20 Dec 2012 11:00:11 -0800
-X-Google-Sender-Auth: O6mdLNxjukE968yedXPs8hTfUYk
-Message-ID: <CA+55aFyiRPk0Qta35PBqMFqn+GkKaugqKJM3WHCT0JEJ1YohWw@mail.gmail.com>
-Subject: Re: [GIT PULL v2] ARM: arm-soc fixes for 3.8
-To: Tony Lindgren <tony@atomide.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        maxime.ripard@free-electrons.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>
+In-Reply-To: <CAD=FV=UeAN103KVLb_z-oF8AXu7m00uZs6jw_BOHTz9RExK4SA@mail.gmail.com>
+References: <1355841786-13307-1-git-send-email-gautam.vivek@samsung.com>
+	<1355841786-13307-2-git-send-email-gautam.vivek@samsung.com>
+	<CAD=FV=Ved4TSr7v413u5_o2cBrfegGrpKe1V2qKwQ36v-MQTHA@mail.gmail.com>
+	<CAFp+6iEGhrSh+oFnv1s_Tqdzxh_nhy=NEhCetVF20KVehy3PLw@mail.gmail.com>
+	<CAD=FV=UeAN103KVLb_z-oF8AXu7m00uZs6jw_BOHTz9RExK4SA@mail.gmail.com>
+Date: Fri, 21 Dec 2012 00:33:19 +0530
+Message-ID: <CAFp+6iHcF44BWxq-1avHJM8BvU6c0oSMk=-SRTGHCLNT9-DwrQ@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] ARM: EXYNOS: Update & move usb-phy types to
+ generic include layer
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
+        yulgon.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        Praveen Paneri <p.paneri@samsung.com>, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        balbi@ti.com, kishon@ti.com, Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 10:45 AM, Tony Lindgren <tony@atomide.com> wrote:
->
-> I'm seeing the "BUG: spinlock bad magic on CPU#0" issue
-> reported and fixed here:
->
-> http://marc.info/?l=linux-arm-kernel&m=135594868503683&w=2
->
-> But that's probably been already posted as a proper patch
-> somewhere?
+Hi Doug,
 
-Hmm. The patch there looks better than any alternative I can think of.
-It uses the same spinlock name for the whole array, but I think it's
-only used for lockdep printouts, so that should be fine.
+On Thu, Dec 20, 2012 at 10:23 PM, Doug Anderson <dianders@chromium.org> wrote:
+> Vivek,
+>
+> On Wed, Dec 19, 2012 at 9:51 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+>> Hi Doug,
+>>
+>>
+>> On Thu, Dec 20, 2012 at 3:18 AM, Doug Anderson <dianders@chromium.org> wrote:
+>>> Vivek,
+>>>
+>>> Since you're changing the name, I would have expected to see a removal
+>>> of the old enum type in this patch.  I don't see it.  After applying
+>>> all of your patches I find that S5P_USB_PHY_HOST and
+>>> S5P_USB_PHY_DEVICE are still defined and used.
+>>>
+>>
+>> True that we should have removed the earlier defined enums, infact i
+>> did the same
+>> in patchset v4 for this series. But since in this patchset i separated
+>> out drivers and
+>> architecture part, i thought it would be easier to remove them in one
+>> shot in a latter commit
+>> which will actually touch upon all architecture related code
+>> (mach-exynos/setup-usb-phy.c,
+>> mach-s5pv210/setup-usb-phy.c, and include/plat/usb-phy.h) once this
+>> approach is accepted.
+>>
+>>> $ git grep S5P_USB_PHY_HOST
+>>> arch/arm/mach-exynos/setup-usb-phy.c:   else if (type == S5P_USB_PHY_HOST)
+>>> arch/arm/mach-exynos/setup-usb-phy.c:   else if (type == S5P_USB_PHY_HOST)
+>>> arch/arm/plat-samsung/include/plat/usb-phy.h:   S5P_USB_PHY_HOST,
+>>>
+>>> I believe that those usages of the old enum should also be switched
+>>> over and the old enum removed.
+>>>
+>> Sure, those enums need to be removed.
+>> If you say i will submit a patch for the same.
+>
+> It would be nice to add it to the patch series in the next version.  Thanks!
+>
 
-Send me the patch with signed-off and tested-by, and perhaps have a
-few more people test it. The powerpc and sparc people both use it in
-their 32-bit versions and have responsible maintainers, so it might be
-worth it double-checking with BenH and DaveM about it, just in case.
-Added to the Cc.
+Sure i shall add the same to the arch patches in the next version, or
+if needed will send a separate patch for this.
 
-                Linus
+> -Doug
+
+
+
+-- 
+Thanks & Regards
+Vivek
