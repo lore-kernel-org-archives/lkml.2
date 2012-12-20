@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751030Ab2LTG6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:58:12 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:55634 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab2LTG6G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:58:06 -0500
+	id S1751087Ab2LTG7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:59:39 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:54779 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843Ab2LTG7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 01:59:34 -0500
+Message-ID: <50D2B741.3090709@ti.com>
+Date: Thu, 20 Dec 2012 12:29:13 +0530
+From: x0172184 <x0172184@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Thu, 20 Dec 2012 12:22:29 +0530
-Message-ID: <CAO_48GEePPaGtEsSZR+e1TDULqSmoHe5S0=+wHu8A=hYj9hMMA@mail.gmail.com>
-Subject: [GIT PULL]: dma-buf updates for 3.8
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
-        linux-media@vger.kernel.org
-Cc: Jesse Barker <jesse.barker@linaro.org>, akpm@linux-foundation.org,
-        Daniel Vetter <daniel@ffwll.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Dave Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Korsgaard <jacmet@sunsite.dk>
+CC: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        amoderator list <lsa-devel@alsa-project.org>,
+        open list <linux-kernel@vger.kernel.org>, Hari <harik@ti.com>,
+        Mukund <navada@ti.com>
+Subject: Re: [PATCH 1/2] ASoC: tlv320aic326x: Support for TI TLV320AIC3262
+ audio driver
+References: <1355233109-14489-1-git-send-email-mehar.bajwa@ti.com> <874nji3usr.fsf@dell.be.48ers.dk>
+In-Reply-To: <874nji3usr.fsf@dell.be.48ers.dk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wednesday 19 December 2012 09:20 PM, Peter Korsgaard wrote:
 
-A fairly small dma-buf pull request for 3.8 - only 2 patches. Could
-you please pull?
+> Hi,
+>
+>   Mehar> TI TLV320AIC3262 is a flexible, low-power, low-voltage stereo
+>   Mehar> audio codec with digital microphone inputs and programmable
+>   Mehar> outputs. It includes powertune capabilities, enhanced
+>   Mehar> fully-programmable miniDSP, fixed predefined and parameterizable
+>   Mehar> signal processing blocks, integrated PLL and flexible digital
+>   Mehar> interfaces.
+>
+>   Mehar> +	file = devm_kzalloc(codec->dev, PAGE_SIZE, GFP_KERNEL);
+>   Mehar> +	if (file == NULL)
+>   Mehar> +		return -ENOMEM;
+>   Mehar> +
+>   Mehar> +	snprintf(file, PAGE_SIZE, "%s_fw_v%d.bin", ps_state->dev_name,
+>   Mehar> +				ps_state->version);
+>   Mehar> +	file[PAGE_SIZE - 1] = '\0';
+>   Mehar> +
+>   Mehar> +	ret = request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
+>   Mehar> +				file, codec->dev,
+>   Mehar> +				GFP_KERNEL, codec, aic3262_firmware_load);
+>
+> What is this firmware, where can it be found and what is it's license?
 
-Thanks!
-~Sumit.
-
-The following changes since commit f01af9f85855e38fbd601e033a8eac204cc4cc1c:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc
-(2012-12-19 20:31:02 -0800)
-
-are available in the git repository at:
+* Firmware is the flattened representation of 'struct aic_project'
+   data structure in aic3xxx_cfw.h
+* We will release a default firmware for all family of AIC CODECs under GPL
+* Any other firmware created by other tools using the
+   data structure information in aic3xxx_cfw.h file will be licensed appropriately
+   by the creator of such firmware.
 
 
-  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
-tags/tag-for-linus-3.8
+>
+> You seem to be leaking file here.
+>
+>   Mehar> +	if (ret < 0) {
+>   Mehar> +		dev_err(codec->dev, "Firmware request failed\n");
+>   Mehar> +		goto firm_err;
+>   Mehar> +	}
+>   Mehar> +
+>   Mehar> +	return 0;
+>   Mehar> +firm_err:
+>   Mehar> +	if (irq_ret)
+>   Mehar> +		aic3xxx_free_irq(aic3xxx,
+>   Mehar> +				 AIC3XXX_IRQ_HEADSET_DETECT, codec);
+>   Mehar> +	destroy_workqueue(aic3262->workqueue);
+>   Mehar> +work_err:
+>   Mehar> +	kfree(aic3262->cfw_p);
+>   Mehar> +	return ret;
+>   Mehar> +}
+>
+Thanks for you comments,
 
-for you to fetch changes up to ada65c74059f8c104f1b467c126205471634c435:
+I will fix File Leaking.
 
-  dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER (2012-12-20
-12:05:06 +0530)
 
-----------------------------------------------------------------
-3.8: dma-buf minor updates
-
-----------------------------------------------------------------
-Maarten Lankhorst (1):
-      dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-
-Rob Clark (1):
-      dma-buf: might_sleep() in dma_buf_unmap_attachment()
-
- drivers/base/dma-buf.c  |    2 +
- include/linux/dma-buf.h |   99 -----------------------------------------------
- 2 files changed, 2 insertions(+), 99 deletions(-)
+Regards,
+Mehar
