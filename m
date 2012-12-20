@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab2LTXkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 18:40:47 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35197 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2LTXkj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 18:40:39 -0500
-Date: Thu, 20 Dec 2012 23:40:11 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jon Hunter <jon-hunter@ti.com>
-Cc: Pratik Patel <pratikp@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
-        "david.rusling@linaro.org" <david.rusling@linaro.org>,
-        "arve@android.com" <arve@android.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "d-deao@ti.com" <d-deao@ti.com>,
-        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: CoreSight framework and drivers
-Message-ID: <20121220234011.GE14363@n2100.arm.linux.org.uk>
-References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org> <20121219112314.GA26329@mudshark.cambridge.arm.com> <50D1F37E.6000804@ti.com> <20121219212431.GC23594@pratikp-linux.qualcomm.com> <50D34EE5.8090407@ti.com> <20121220195127.GA14877@pratikp-linux.qualcomm.com> <50D3972E.4030607@ti.com>
+	id S1752099Ab2LTXm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:42:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33156 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab2LTXmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 18:42:51 -0500
+Date: Fri, 21 Dec 2012 00:42:49 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [RFC PATCH 4/4] ext4: Fix an incorrect comment about i_mutex
+Message-ID: <20121220234249.GA13474@quack.suse.cz>
+References: <cover.1356043686.git.luto@amacapital.net>
+ <30dd429015418a31f6412fd1106a2df12d2922dd.1356043686.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50D3972E.4030607@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <30dd429015418a31f6412fd1106a2df12d2922dd.1356043686.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 04:54:38PM -0600, Jon Hunter wrote:
-> On 12/20/2012 01:51 PM, Pratik Patel wrote:
-> > Ok, so are you referring to making CoreSight devices register
-> > with AMBA bus instead of platform bus keeping everything else
-> > intact?
+On Thu 20-12-12 15:10:12, Andy Lutomirski wrote:
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
+
+  BTW: The right person for this patch is ext4 maintainer:
+"Theodore Ts'o" <tytso@mit.edu>
+  Since this is completely independent of anything else in this series,
+just submit the patch to him. Thanks!
+
+								Honza
+> ---
+>  fs/ext4/fsync.c | 2 --
+>  1 file changed, 2 deletions(-)
 > 
-> Yes exactly. However, please note I am not saying that we should do
-> this, and I asking what direction does the community want us to take
-> here? Platform bus or AMBA bus?
-
-One of the issues which worries me about mixing peripheral drivers on
-random different buses is... what happens when we end up with a SoC
-which gates the APB clock at bus level (there are SoCs which gate the
-APB clock at peripheral level.)  In other words, an APB bus only gets
-clocked upon request.
-
-We can deal with that with the infrastructure we have in place in the
-AMBA bus layer, but not with the platform bus - we'd have to teach the
-platform bus driver about the special APB clock instead of having it
-handled primerily at the bus layer.
-
-At least the coresight ETM peripherals make use of the APB bus.  They
-have a whole pile of registers on the APB bus, and they have the
-primecell IDs stored in the last words of the peripheral, again just
-like the other primecell devices we have using the AMBA bus layer.
-
-What I'd say is... why stick it on a different bus type from the other
-peripherals which might make things harder in the future?
+> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+> index be1d89f..8c15642 100644
+> --- a/fs/ext4/fsync.c
+> +++ b/fs/ext4/fsync.c
+> @@ -113,8 +113,6 @@ static int __sync_inode(struct inode *inode, int datasync)
+>   *
+>   * What we do is just kick off a commit and wait on it.  This will snapshot the
+>   * inode to disk.
+> - *
+> - * i_mutex lock is held when entering and exiting this function
+>   */
+>  
+>  int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+> -- 
+> 1.7.11.7
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
