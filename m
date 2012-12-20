@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab2LTGD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:03:56 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17069 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab2LTGDt (ORCPT
+	id S1751706Ab2LTGEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:04:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21217 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750838Ab2LTGEI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:03:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 19 Dec 2012 22:01:20 -0800
-Message-ID: <50D2AA43.8050106@nvidia.com>
-Date: Thu, 20 Dec 2012 11:33:47 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "baohua.song@csr.com" <baohua.song@csr.com>,
+	Thu, 20 Dec 2012 01:04:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
+   d="scan'208";a="234343460"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "jonas.gorski@gmail.com" <jonas.gorski@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2] spi: remove check for bits_per_word on transfer from
- low level driver
-References: <1355820943-25228-1-git-send-email-ldewangan@nvidia.com> <20121219162433.1E1E43E0BCF@localhost>
-In-Reply-To: <20121219162433.1E1E43E0BCF@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 2/8] Thermal: Create zone level APIs
+Thread-Topic: [PATCH 2/8] Thermal: Create zone level APIs
+Thread-Index: AQHN3QLeFpdg6ZOjSUaJifj4WR1pyJgeD94AgAMlJJA=
+Date: Thu, 20 Dec 2012 06:02:36 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924C5D9@BGSMSX101.gar.corp.intel.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+	 <1355822977-4804-3-git-send-email-durgadoss.r@intel.com>
+ <1355830214.19706.39.camel@joe-AO722>
+In-Reply-To: <1355830214.19706.39.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 December 2012 09:54 PM, Grant Likely wrote:
-> On Tue, 18 Dec 2012 14:25:43 +0530, Laxman Dewangan<ldewangan@nvidia.com>  wrote:
->> The spi core make sure that each transfer structure have the proper
->> setting for bits_per_word before calling low level transfer APIs.
->>
->> Hence it is no more require to check again in low level driver for
->> this field whether this is set correct or not. Removing such code
->> from low level driver.
->>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> [...]
->> */
->>
->>   		if (prev_speed_hz != speed_hz
->> @@ -316,9 +315,8 @@ static int txx9spi_transfer(struct spi_device *spi, struct spi_message *m)
->>   	/* check each transfer's parameters */
->>   	list_for_each_entry (t,&m->transfers, transfer_list) {
->>   		u32 speed_hz = t->speed_hz ? : spi->max_speed_hz;
->> -		u8 bits_per_word = t->bits_per_word ? : spi->bits_per_word;
->> +		u8 bits_per_word = t->bits_per_word;
->>
->> -		bits_per_word = bits_per_word ? : 8;
-> Have you verified here that bits_per_word can never be '0' here? What is
-> the path that ensures spi->bits_per_word (and hence t->bits_per_word) is
-> set to 8 here?
->
-> Otherwise the patch looks good. Thanks for doing this work.
+Hi Joe,
 
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Tuesday, December 18, 2012 5:00 PM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 2/8] Thermal: Create zone level APIs
+> 
+> On Tue, 2012-12-18 at 14:59 +0530, Durgadoss R wrote:
+> > This patch adds a new thermal_zone structure to
+> > thermal.h. Also, adds zone level APIs to the thermal
+> > framework.
+> 
+> []
+> 
+> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> 
+> > +#define GET_INDEX(tz, ptr, indx, type)			\
+> > +	do {						\
+> > +		int i;					\
+> > +		indx = -EINVAL;				\
+> > +		if (!tz || !ptr)			\
+> > +			break;				\
+> > +		mutex_lock(&type##_list_lock);		\
+> > +		for (i = 0; i < tz->type##_indx; i++) {	\
+> > +			if (tz->type##s[i] == ptr) {	\
+> > +				indx = i;		\
+> > +				break;			\
+> > +			}				\
+> > +		}					\
+> > +		mutex_unlock(&type##_list_lock);	\
+> > +	} while (0)
+> 
+> A statement expression macro returning int would be
+> more kernel style like and better to use.
+> 
 
-When we do the spi_add_device(), the spi_setup() get called.
-In spi_setup, it make  sure that spi->bits_per_word is not zero.
+Yes, makes sense. Will fix this in next rev.
 
-in spi_setup(spi.c)
+Thanks,
+Durga
 
-if (!spi->bits_per_word)
-                 spi->bits_per_word = 8;
-
+> (sorry about the whitespace, evolution 3.6 is crappy)
+> 
+> #define GET_INDEX(tx, ptr, type)				\
+> ({								\
+> 	int rtn = -EINVAL;					\
+> 	do {							\
+> 		int i;						\
+> 		if (!tz || !ptr)				\
+> 			break;					\
+> 		mutex_lock(&type##_list_lock);			\
+> 		for (i = 0; i < tz->type##_indx; i++) {		\
+> 			if (tz->type##s[i] == ptr) {		\
+> 				rtn = i;			\
+> 				break;				\
+> 			}					\
+> 		}						\
+> 		mutex_unlock(&type##_list_lock);		\
+> 	} while (0);						\
+> 	rtn;							\
+> })
+> 
+> 
+> > +static void remove_sensor_from_zone(struct thermal_zone *tz,
+> > +				struct thermal_sensor *ts)
+> > +{
+> > +	int j, indx;
+> > +
+> > +	GET_INDEX(tz, ts, indx, sensor);
+> 
+> This becomes
+> 
+> 	indx = GET_INDEX(tx, ts, sensor);
+> 
+> > +	if (indx < 0)
+> > +		return;
+> 
 
