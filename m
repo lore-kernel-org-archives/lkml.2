@@ -1,208 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab2LTOsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 09:48:05 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55568 "EHLO e9.ny.us.ibm.com"
+	id S1751496Ab2LTOzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 09:55:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52519 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618Ab2LTOoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 09:44:23 -0500
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, david@fromorbit.com,
-        dave@jikos.cz, darrick.wong@oracle.com, andi@firstfloor.org,
-        hch@infradead.org, linuxram@linux.vnet.ibm.com, zwu.kernel@gmail.com,
-        wuzhy@linux.vnet.ibm.com
-Subject: [PATCH RESEND v1 04/16] vfs: add two map arrays
-Date: Thu, 20 Dec 2012 22:43:23 +0800
-Message-Id: <1356014615-15073-5-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
-References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12122014-7182-0000-0000-000003EDEA10
+	id S1751031Ab2LTOzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 09:55:46 -0500
+Message-ID: <1356015343.10845.16.camel@ul30vt.home>
+Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
+ dirty logging
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 20 Dec 2012 07:55:43 -0700
+In-Reply-To: <20121220233545.95378d066b2ce61a76106a88@gmail.com>
+References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	 <20121219213037.b234f9d4f187df2132e65576@gmail.com>
+	 <1355931777.3224.562.camel@bling.home>
+	 <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	 <20121220125946.GB7750@amt.cnet> <20121220132255.GH17584@redhat.com>
+	 <1356010887.10845.11.camel@ul30vt.home>
+	 <20121220233545.95378d066b2ce61a76106a88@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Thu, 2012-12-20 at 23:35 +0900, Takuya Yoshikawa wrote:
+> On Thu, 20 Dec 2012 06:41:27 -0700
+> Alex Williamson <alex.williamson@redhat.com> wrote:
+> 
+> > Hmm, isn't the fix as simple as:
+> > 
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -847,7 +847,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
+> >                                 GFP_KERNEL);
+> >                 if (!slots)
+> >                         goto out_free;
+> > -       }
+> > +       } else
+> > +               slots->generation = kvm->memslots->generation;
+> >  
+> >         /* map new memory slot into the iommu */
+> >         if (npages) {
+> > 
+> > Or even just slots->generation++ since we're holding the lock across all
+> > of this.
+> 
+> Yes, the fix should work, but I do not want to update the
+> generation from outside of update_memslots().
 
-  Adds two map arrays which contains
-a lot of list and is used to efficiently
-look up the data temperature of a file or its
-ranges.
-  In each list of map arrays, the array node
-will keep track of temperature info.
+Ok, then:
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/hot_tracking.c            |   67 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/hot_tracking.h |   17 ++++++++++
- 2 files changed, 84 insertions(+), 0 deletions(-)
-
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 6f587fa..5f164c8 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -58,6 +58,7 @@ static void hot_range_item_init(struct hot_range_item *hr, loff_t start,
- 	hr->hot_inode = he;
- 	kref_init(&hr->hot_range.refs);
- 	spin_lock_init(&hr->hot_range.lock);
-+	INIT_LIST_HEAD(&hr->hot_range.n_list);
- 	hr->hot_range.hot_freq_data.avg_delta_reads = (u64) -1;
- 	hr->hot_range.hot_freq_data.avg_delta_writes = (u64) -1;
- 	hr->hot_range.hot_freq_data.flags = FREQ_DATA_TYPE_RANGE;
-@@ -89,9 +90,20 @@ static void hot_range_item_free(struct kref *kref)
- 		struct hot_comm_item, refs);
- 	struct hot_range_item *hr = container_of(comm_item,
- 		struct hot_range_item, hot_range);
-+	struct hot_info *root = container_of(
-+			hr->hot_inode->hot_inode_tree,
-+		struct hot_info, hot_inode_tree);
-+
-+	spin_lock(&hr->hot_range.lock);
-+	if (!list_empty(&hr->hot_range.n_list)) {
-+		list_del_init(&hr->hot_range.n_list);
-+		root->hot_map_nr--;
-+	}
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 87089dd..c7b5061 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -413,7 +413,8 @@ void kvm_exit(void);
  
- 	rb_erase(&hr->hot_range.rb_node,
- 		&hr->hot_inode->hot_range_tree.map);
-+	spin_unlock(&hr->hot_range.lock);
-+
- 	kmem_cache_free(hot_range_item_cachep, hr);
+ void kvm_get_kvm(struct kvm *kvm);
+ void kvm_put_kvm(struct kvm *kvm);
+-void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new);
++void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
++                     u64 last_generation);
+ 
+ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+ {
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index c4c8ec1..06961ea 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -667,7 +667,8 @@ static void sort_memslots(struct kvm_memslots *slots)
+ 		slots->id_to_index[slots->memslots[i].id] = i;
  }
  
-@@ -128,6 +140,15 @@ static void hot_inode_item_free(struct kref *kref)
- 			struct hot_comm_item, refs);
- 	struct hot_inode_item *he = container_of(comm_item,
- 			struct hot_inode_item, hot_inode);
-+	struct hot_info *root = container_of(he->hot_inode_tree,
-+		struct hot_info, hot_inode_tree);
-+
-+	spin_lock(&he->hot_inode.lock);
-+	if (!list_empty(&he->hot_inode.n_list)) {
-+		list_del_init(&he->hot_inode.n_list);
-+		root->hot_map_nr--;
-+	}
-+	spin_unlock(&he->hot_inode.lock);
- 
- 	hot_range_tree_free(he);
- 	spin_lock(&he->hot_inode.lock);
-@@ -294,6 +315,50 @@ static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
- }
- 
- /*
-+ * Initialize inode and range map info.
-+ */
-+static void hot_map_init(struct hot_info *root)
-+{
-+	int i;
-+	for (i = 0; i < HEAT_MAP_SIZE; i++) {
-+		INIT_LIST_HEAD(&root->heat_inode_map[i].node_list);
-+		INIT_LIST_HEAD(&root->heat_range_map[i].node_list);
-+		root->heat_inode_map[i].temp = i;
-+		root->heat_range_map[i].temp = i;
-+		spin_lock_init(&root->heat_inode_map[i].lock);
-+		spin_lock_init(&root->heat_range_map[i].lock);
-+	}
-+}
-+
-+static void hot_map_list_free(struct list_head *node_list,
-+				struct hot_info *root)
-+{
-+	struct list_head *pos, *next;
-+	struct hot_comm_item *node;
-+
-+	list_for_each_safe(pos, next, node_list) {
-+		node = list_entry(pos, struct hot_comm_item, n_list);
-+		list_del_init(&node->n_list);
-+		root->hot_map_nr--;
-+	}
-+
-+}
-+
-+/* Free inode and range map info */
-+static void hot_map_exit(struct hot_info *root)
-+{
-+	int i;
-+	for (i = 0; i < HEAT_MAP_SIZE; i++) {
-+		spin_lock(&root->heat_inode_map[i].lock);
-+		hot_map_list_free(&root->heat_inode_map[i].node_list, root);
-+		spin_unlock(&root->heat_inode_map[i].lock);
-+		spin_lock(&root->heat_range_map[i].lock);
-+		hot_map_list_free(&root->heat_range_map[i].node_list, root);
-+		spin_unlock(&root->heat_range_map[i].lock);
-+	}
-+}
-+
-+/*
-  * Initialize kmem cache for hot_inode_item and hot_range_item.
-  */
- void __init hot_cache_init(void)
-@@ -384,6 +449,7 @@ int hot_track_init(struct super_block *sb)
+-void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
++void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
++                     u64 last_generation)
+ {
+ 	if (new) {
+ 		int id = new->id;
+@@ -679,7 +680,7 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
+ 			sort_memslots(slots);
  	}
  
- 	hot_inode_tree_init(root);
-+	hot_map_init(root);
+-	slots->generation++;
++	slots->generation = last_generation + 1;
+ }
  
- 	sb->s_hot_root = root;
+ static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
+@@ -814,7 +815,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 		slot = id_to_memslot(slots, mem->slot);
+ 		slot->flags |= KVM_MEMSLOT_INVALID;
  
-@@ -397,6 +463,7 @@ void hot_track_exit(struct super_block *sb)
- {
- 	struct hot_info *root = sb->s_hot_root;
+-		update_memslots(slots, NULL);
++		update_memslots(slots, NULL, kvm->memslots->generation);
  
-+	hot_map_exit(root);
- 	hot_inode_tree_exit(root);
- 	sb->s_hot_root = NULL;
- 	kfree(root);
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index d555046..23edad92 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -20,6 +20,9 @@
- #include <linux/kref.h>
- #include <linux/fs.h>
+ 		old_memslots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+@@ -862,7 +863,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 		memset(&new.arch, 0, sizeof(new.arch));
+ 	}
  
-+#define HEAT_MAP_BITS 8
-+#define HEAT_MAP_SIZE (1 << HEAT_MAP_BITS)
-+
- struct hot_rb_tree {
- 	struct rb_root map;
- };
-@@ -40,12 +43,20 @@ struct hot_freq_data {
- 	u32 last_temp;
- };
- 
-+/* List heads in hot map array */
-+struct hot_map_head {
-+	struct list_head node_list;
-+	u8 temp;
-+	spinlock_t lock;
-+};
-+
- /* The common info for both following structures */
- struct hot_comm_item {
- 	struct rb_node rb_node; /* rbtree index */
- 	struct hot_freq_data hot_freq_data;  /* frequency data */
- 	spinlock_t lock; /* protects object data */
- 	struct kref refs;  /* prevents kfree */
-+	struct list_head n_list; /* list node index */
- };
- 
- /* An item representing an inode and its access frequency */
-@@ -71,6 +82,12 @@ struct hot_range_item {
- struct hot_info {
- 	struct hot_rb_tree hot_inode_tree;
- 	spinlock_t lock; /*protect inode tree */
-+
-+	/* map of inode temperature */
-+	struct hot_map_head heat_inode_map[HEAT_MAP_SIZE];
-+	/* map of range temperature */
-+	struct hot_map_head heat_range_map[HEAT_MAP_SIZE];
-+	unsigned int hot_map_nr;
- };
- 
- extern void __init hot_cache_init(void);
--- 
-1.7.6.5
+-	update_memslots(slots, &new);
++	update_memslots(slots, &new, kvm->memslots->generation);
+ 	old_memslots = kvm->memslots;
+ 	rcu_assign_pointer(kvm->memslots, slots);
+ 	synchronize_srcu_expedited(&kvm->srcu);
+
+> > The original patch can be reverted, there are no following dependencies,
+> > but the idea was that we're making the memslot array larger, so there
+> > could be more pressure in allocating it, so let's not trivially do extra
+> > frees and allocs.  Thanks,
+> 
+> I agree that the current set_memory_region() is not good for frequent updates.
+> But the alloc/free is not a major factor at the moment: flushing shadows should
+> be more problematic.
+
+I don't understand why we'd throw away even a minor optimization that's
+so easy to fix.  We're not only removing a free/alloc, but we're being
+more friendly to the cache by avoiding the extra memcpy.  The above also
+makes the generation management a bit more explicit.  Thanks,
+
+Alex
 
