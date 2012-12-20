@@ -1,104 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2LTBo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 20:44:27 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:47595 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab2LTBoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 20:44:21 -0500
-Date: Wed, 19 Dec 2012 17:44:29 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Petr Holasek <pholasek@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] ksm: make rmap walks more scalable
-In-Reply-To: <alpine.LNX.2.00.1212191735530.25409@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1212191742440.25409@eggly.anvils>
-References: <alpine.LNX.2.00.1212191735530.25409@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752398Ab2LTBzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 20:55:52 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38293 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab2LTBzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 20:55:45 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing0307@gmail.com>, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH 16/16] ACPI: Drop ACPI device .bind() and .unbind() callbacks
+Date: Thu, 20 Dec 2012 03:00 +0100
+Message-ID: <2326457.ZgAhayTgyl@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1855256.SyhOJGYMIh@vostro.rjw.lan>
+References: <8498184.VilrUmatxI@vostro.rjw.lan> <4082842.31rfDviYHK@vostro.rjw.lan> <1855256.SyhOJGYMIh@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rmap walks in ksm.c are like those in rmap.c:
-they can safely be done with anon_vma_lock_read().
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Drop the .bind() and .unbind() that have no more users from
+struct acpi_device_ops and remove all of the code referring to
+them from drivers/acpi/scan.c.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
+ drivers/acpi/scan.c     |   22 ----------------------
+ include/acpi/acpi_bus.h |    2 --
+ 2 files changed, 24 deletions(-)
 
- mm/ksm.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Index: linux/drivers/acpi/scan.c
+===================================================================
+--- linux.orig/drivers/acpi/scan.c
++++ linux/drivers/acpi/scan.c
+@@ -1426,29 +1426,11 @@ static int acpi_bus_remove(struct acpi_d
+ 	if (!rmdevice)
+ 		return 0;
+ 
+-	/*
+-	 * unbind _ADR-Based Devices when hot removal
+-	 */
+-	if (dev->flags.bus_address) {
+-		if ((dev->parent) && (dev->parent->ops.unbind))
+-			dev->parent->ops.unbind(dev);
+-	}
+ 	acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
+ 
+ 	return 0;
+ }
+ 
+-/*
+- * acpi_hot_add_bind - Bind _ADR-based devices on hot-add.
+- * @device: ACPI device node to bind.
+- */
+-static void acpi_hot_add_bind(struct acpi_device *device)
+-{
+-	if (device->flags.bus_address
+-	    && device->parent && device->parent->ops.bind)
+-		device->parent->ops.bind(device);
+-}
+-
+ static int acpi_add_single_object(struct acpi_device **child,
+ 				  acpi_handle handle, int type,
+ 				  unsigned long long sta, bool match_driver)
+@@ -1520,9 +1502,6 @@ static int acpi_add_single_object(struct
+ 	device->flags.match_driver = match_driver;
+ 	result = acpi_device_register(device);
+ 
+-	if (device->flags.match_driver)
+-		acpi_hot_add_bind(device);
+-
+ end:
+ 	if (!result) {
+ 		acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+@@ -1625,7 +1604,6 @@ static acpi_status acpi_bus_check_add(ac
+ 		return AE_CTRL_DEPTH;
+ 
+ 	device->flags.match_driver = true;
+-	acpi_hot_add_bind(device);
+ 
+  out:
+ 	if (!*return_value)
+Index: linux/include/acpi/acpi_bus.h
+===================================================================
+--- linux.orig/include/acpi/acpi_bus.h
++++ linux/include/acpi/acpi_bus.h
+@@ -99,8 +99,6 @@ struct acpi_device_ops {
+ 	acpi_op_add add;
+ 	acpi_op_remove remove;
+ 	acpi_op_start start;
+-	acpi_op_bind bind;
+-	acpi_op_unbind unbind;
+ 	acpi_op_notify notify;
+ };
+ 
 
---- 3.7+git/mm/ksm.c	2012-12-16 16:35:08.752441527 -0800
-+++ linux/mm/ksm.c	2012-12-19 16:58:05.292145790 -0800
-@@ -1624,7 +1624,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		anon_vma_lock_write(anon_vma);
-+		anon_vma_lock_read(anon_vma);
- 		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
- 					       0, ULONG_MAX) {
- 			vma = vmac->vma;
-@@ -1648,7 +1648,7 @@ again:
- 			if (!search_new_forks || !mapcount)
- 				break;
- 		}
--		anon_vma_unlock(anon_vma);
-+		anon_vma_unlock_read(anon_vma);
- 		if (!mapcount)
- 			goto out;
- 	}
-@@ -1678,7 +1678,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		anon_vma_lock_write(anon_vma);
-+		anon_vma_lock_read(anon_vma);
- 		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
- 					       0, ULONG_MAX) {
- 			vma = vmac->vma;
-@@ -1697,11 +1697,11 @@ again:
- 			ret = try_to_unmap_one(page, vma,
- 					rmap_item->address, flags);
- 			if (ret != SWAP_AGAIN || !page_mapped(page)) {
--				anon_vma_unlock(anon_vma);
-+				anon_vma_unlock_read(anon_vma);
- 				goto out;
- 			}
- 		}
--		anon_vma_unlock(anon_vma);
-+		anon_vma_unlock_read(anon_vma);
- 	}
- 	if (!search_new_forks++)
- 		goto again;
-@@ -1731,7 +1731,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		anon_vma_lock_write(anon_vma);
-+		anon_vma_lock_read(anon_vma);
- 		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
- 					       0, ULONG_MAX) {
- 			vma = vmac->vma;
-@@ -1749,11 +1749,11 @@ again:
- 
- 			ret = rmap_one(page, vma, rmap_item->address, arg);
- 			if (ret != SWAP_AGAIN) {
--				anon_vma_unlock(anon_vma);
-+				anon_vma_unlock_read(anon_vma);
- 				goto out;
- 			}
- 		}
--		anon_vma_unlock(anon_vma);
-+		anon_vma_unlock_read(anon_vma);
- 	}
- 	if (!search_new_forks++)
- 		goto again;
