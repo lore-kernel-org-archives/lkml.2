@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab2LTUaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:30:12 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:55553 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab2LTUaJ (ORCPT
+	id S1751947Ab2LTUas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:30:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38454 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2LTUam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:30:09 -0500
-X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 15:30:08 EST
-Date: Thu, 20 Dec 2012 12:23:38 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/sparse: don't check return value of alloc_bootmem
- calls
-In-Reply-To: <1356030701-16284-30-git-send-email-sasha.levin@oracle.com>
-Message-ID: <alpine.DEB.2.00.1212201218590.29839@chino.kir.corp.google.com>
-References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-30-git-send-email-sasha.levin@oracle.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 20 Dec 2012 15:30:42 -0500
+Message-ID: <50D37549.4010107@oracle.com>
+Date: Thu, 20 Dec 2012 15:30:01 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/15] mm/huge_memory: use new hashtable implementation
+References: <1355756497-15834-1-git-send-email-sasha.levin@oracle.com> <1355756497-15834-4-git-send-email-sasha.levin@oracle.com> <alpine.DEB.2.00.1212191416410.32757@chino.kir.corp.google.com> <50D27707.7060309@oracle.com> <alpine.DEB.2.00.1212201224190.29839@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1212201224190.29839@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Dec 2012, Sasha Levin wrote:
+On 12/20/2012 03:28 PM, David Rientjes wrote:
+> On Wed, 19 Dec 2012, Sasha Levin wrote:
+> 
+>> In this case, the downside is that you'll waste 8KB if hugepages aren't available,
+>> but the upside is that you'll have one less dereference when accessing the
+>> hashtable.
+>>
+>> If the 8KB saving is preferable here I'll drop the patch and come back when
+>> dynamic hashtable is supported.
+>>
+> 
+> If a distro releases with CONFIG_TRANSPARNET_HUGEPAGE=y and a user is 
+> running on a processor that does not support pse then this just cost them 
+> 8KB for no reason.  The overhead by simply enabling 
+> CONFIG_TRANSPARENT_HUGEPAGE is worse in this scenario, but this is whole 
+> reason for having the dynamic allocation in the original code.  If there's 
+> a compelling reason for why we want this change, then that fact should at 
+> least be documented.
+> 
+> Could you propose a v2 that includes fixes for the other problems that 
+> were mentioned?
+> 
 
-> diff --git a/mm/sparse.c b/mm/sparse.c
-> index 6b5fb76..ae64d6e 100644
-> --- a/mm/sparse.c
-> +++ b/mm/sparse.c
-> @@ -403,15 +403,13 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
->  	size = PAGE_ALIGN(size);
->  	map = __alloc_bootmem_node_high(NODE_DATA(nodeid), size * map_count,
->  					 PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
-> -	if (map) {
-> -		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-> -			if (!present_section_nr(pnum))
-> -				continue;
-> -			map_map[pnum] = map;
-> -			map += size;
-> -		}
-> -		return;
-> +	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-> +		if (!present_section_nr(pnum))
-> +			continue;
-> +		map_map[pnum] = map;
-> +		map += size;
->  	}
-> +	return;
->  
->  	/* fallback */
->  	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+Sure, will do.
 
-That's not true when slab_is_available() and why would you possibly add a 
-return statement right before fallback code in such cases?
+
+Thanks,
+Sasha
