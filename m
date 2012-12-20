@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab2LTUiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:38:17 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50263 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab2LTUiN (ORCPT
+	id S1752135Ab2LTUlF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:41:05 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41387 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab2LTUk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:38:13 -0500
-Message-ID: <50D376E9.9030507@oracle.com>
-Date: Thu, 20 Dec 2012 15:36:57 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 15:40:57 -0500
+Date: Thu, 20 Dec 2012 20:35:14 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] net/smsc911x: Provide common clock functionality
+Message-ID: <20121220203514.GN2691@gmail.com>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
+ <1355937587-31730-4-git-send-email-lee.jones@linaro.org>
+ <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
+ <20121220192441.GC14363@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/sparse: don't check return value of alloc_bootmem
- calls
-References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-30-git-send-email-sasha.levin@oracle.com> <alpine.DEB.2.00.1212201218590.29839@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1212201218590.29839@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121220192441.GC14363@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2012 03:23 PM, David Rientjes wrote:
-> On Thu, 20 Dec 2012, Sasha Levin wrote:
+On Thu, 20 Dec 2012, Russell King - ARM Linux wrote:
+
+> On Thu, Dec 20, 2012 at 08:12:08PM +0100, Linus Walleij wrote:
+> > On Wed, Dec 19, 2012 at 6:19 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > 
+> > > Some platforms provide clocks which require enabling before the
+> > > SMSC911x chip will power on. This patch uses the new common clk
+> > > framework to do just that. If no clock is provided, it will just
+> > > be ignored and the driver will continue to assume that no clock
+> > > is required for the chip to run successfully.
+> > >
+> > > Cc: Steve Glendinning <steve.glendinning@shawell.net>
+> > > Cc: netdev@vger.kernel.org
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > Seems to me like it'll do the trick.
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
 > 
->> diff --git a/mm/sparse.c b/mm/sparse.c
->> index 6b5fb76..ae64d6e 100644
->> --- a/mm/sparse.c
->> +++ b/mm/sparse.c
->> @@ -403,15 +403,13 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
->>  	size = PAGE_ALIGN(size);
->>  	map = __alloc_bootmem_node_high(NODE_DATA(nodeid), size * map_count,
->>  					 PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
->> -	if (map) {
->> -		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
->> -			if (!present_section_nr(pnum))
->> -				continue;
->> -			map_map[pnum] = map;
->> -			map += size;
->> -		}
->> -		return;
->> +	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
->> +		if (!present_section_nr(pnum))
->> +			continue;
->> +		map_map[pnum] = map;
->> +		map += size;
->>  	}
->> +	return;
->>  
->>  	/* fallback */
->>  	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+> This looks fairly dangerous.  What about those platforms which use this
+> driver, but don't provide a clock for it?
 > 
-> That's not true when slab_is_available() and why would you possibly add a 
-> return statement right before fallback code in such cases?
+> It looks like this will result in those platforms losing their ethernet
+> support.  There's at least a bunch of the ARM evaluation boards which
+> make use of this driver...
 
-So what we really need is to update the documentation of __alloc_bootmem_node, I'll send
-a patch that does that instead.
+Right, but nothing should regress. If no clock is provided the driver
+moves on during the request and will refuse to prepare, enable and
+disable there after. 
 
-I've dragged the 'return' out of the if(map) condition, I should have removed the fallback
-as well and so the return would also be gone, but that's irrelevant now.
+Unless I've made a mistake somewhere? If so, I'd be happy to fixup.
 
-
-Thanks,
-Sasha
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
