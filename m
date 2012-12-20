@@ -1,76 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab2LTLsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 06:48:35 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44466 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab2LTLs2 (ORCPT
+	id S1752272Ab2LTL6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 06:58:15 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7366 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab2LTL6D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 06:48:28 -0500
-Date: Thu, 20 Dec 2012 12:48:20 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        lm-sensors@lm-sensors.org, Juergen Beisert <jbe@pengutronix.de>
-Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
-  divisors
-Message-ID: <20121220124820.0069aa66@endymion.delvare>
-In-Reply-To: <20121219230144.GB26863@roeck-us.net>
-References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
-	<20121219232115.727a2e91@endymion.delvare>
-	<20121219230144.GB26863@roeck-us.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
+	Thu, 20 Dec 2012 06:58:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 20 Dec 2012 03:56:25 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "marc.zyngier@arm.com" <marc.zyngier@arm.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 20 Dec 2012 12:57:58 +0100
+Subject: Re: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
+Thread-Topic: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
+Thread-Index: Ac3eqUFUasxyVRUmRIySlYjIEBeCLQ==
+Message-ID: <20121220.135758.1347753620353343245.hdoyu@nvidia.com>
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-6-git-send-email-hdoyu@nvidia.com><50D2EFFB.8030702@arm.com>
+In-Reply-To: <50D2EFFB.8030702@arm.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 15:01:44 -0800, Guenter Roeck wrote:
-> On Wed, Dec 19, 2012 at 11:21:15PM +0100, Jean Delvare wrote:
-> > Hi Guenter,
+Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 12:01:15 +0100:
+
+> On 20/12/12 09:44, Hiroshi Doyu wrote:
+> > Add platform enabler for ARM arch_timer(TSC). TSC is more fine grained
+> > timer than TMR0. If it's available, it will be used for clock source
+> > and sched_clock. Otherwise, TMR0 is used. In any case TMR0 is
+> > necessary for clock event.
 > > 
-> > On Wed, 19 Dec 2012 06:40:15 -0800, Guenter Roeck wrote:
-> > > Commit 263a523 fixes a warning seen with W=1 due to change in
-> > > DIV_ROUND_CLOSEST. Unfortunately, the C compiler converts divide operations
-> > > with unsigned divisors to unsigned, even if the dividend is signed and
-> > > negative (for example, -10 / 5U = 858993457). The C standard says "If one
-> > > operand has unsigned int type, the other operand is converted to unsigned
-> > > int", so the compiler is not to blame.
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > ---
+> >  .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 ++++
+> >  drivers/clocksource/tegra20_timer.c                |   64 +++++++++++++++++++-
+> >  2 files changed, 74 insertions(+), 1 deletion(-)
+> >  create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
 > > 
-> > This is surprising to say the least. But if the C standard says so...
->
-> Agreed, but it is how it is.
+> > diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> > new file mode 100644
+> > index 0000000..9de936a
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> > @@ -0,0 +1,11 @@
+> > +NVIDIA Tegra Timer Stamp Counter(TSC)
+> > +
+> > +Required properties:
+> > +- compatible : "nvidia,tegra114-tsc
+> > +- reg : Should contain 1 register ranges(address and length)
+> > +
+> > +Example:
+> > +	tsc {
+> > +		compatible = "nvidia,tegra114-tsc";
+> > +		reg = <0x700f0000 0x20000>;
+> > +	};
+> > diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
+> > index 1d25de8..285a6f1 100644
+> > --- a/drivers/clocksource/tegra20_timer.c
+> > +++ b/drivers/clocksource/tegra20_timer.c
+> > @@ -30,6 +30,7 @@
+> >  #include <asm/mach/time.h>
+> >  #include <asm/smp_twd.h>
+> >  #include <asm/sched_clock.h>
+> > +#include <asm/arch_timer.h>
+> >  
+> >  #define RTC_SECONDS            0x08
+> >  #define RTC_SHADOW_SECONDS     0x0c
+> > @@ -271,10 +272,71 @@ static void __init tegra20_init_tmr(void)
+> >  	clockevents_register_device(&tegra_clockevent);
+> >  }
+> >  
+> > +#define TSC_CNTCR		0		/* TSC control registers */
+> > +#define TSC_CNTCR_ENABLE	(1 << 0)	/* Enable */
+> > +#define TSC_CNTCR_HDBG		(1 << 1)	/* Halt on debug */
+> > +
+> > +#define TSC_CNTCV0		0x8		/* TSC counter (LSW) */
+> > +#define TSC_CNTCV1		0xc		/* TSC counter (MSW) */
+> > +#define TSC_CNTFID0		0x20		/* TSC freq id 0 */
+> > +
+> > +static const struct of_device_id tegra_tsc_match[] __initconst = {
+> > +	{ .compatible = "nvidia,tegra114-tsc" },
+> > +	{}
+> > +};
+> > +
+> > +static int tegra_arch_timer_init(void)
+> > +{
+> > +	int err;
+> > +	struct device_node *np;
+> > +	struct clk *clk;
+> > +	void __iomem *tsc_base;
+> > +	u32 freq, val;
+> > +
+> > +	np = of_find_matching_node(NULL, tegra_tsc_match);
+> > +	if (!np)
+> > +		return -ENODEV;
+> > +
+> > +	tsc_base = of_iomap(np, 0);
+> > +	if (!tsc_base)
+> > +		return -ENODEV;
+> > +
+> > +	clk = clk_get_sys("clk_m", NULL);
+> > +	if (IS_ERR(clk)) {
+> > +		freq = 12000000;
+> > +		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
+> > +	} else {
+> > +		freq = clk_get_rate(clk);
+> > +		clk_put(clk);
+> > +	}
+> > +	writel_relaxed(freq, tsc_base + TSC_CNTFID0);
+> > +
+> > +	/* CNTFRQ */
+> > +	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
+> > +	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
+> > +	BUG_ON(val != freq);
 > 
-> > I wouldn't be surprised if there are bugs because of this in the kernel
-> > and in other projects.
->
-> Might easily be. This might make a good interview question - I suspect many
-> if not most engineers would fail it. At least I would have until yesterday :).
+> This is scary. CNTFRQ is only writable from secure mode, and will
+> explode in any other situation.
+> 
+> Also, writing to CNTFRQ doesn't change the timer frequency! This is just
+> a way for secure mode to tell the rest of the world the frequency the
+> timer is ticking at. Unless you've wired the input clock to be able to
+> change the frequency?
 
-Neither did I. And I'm not sure I'll remember it in one year from now.
-
-> > (...)
-> > Thinking a bit more about this... Documenting the non-working cases is
-> > great, however I don't really expect all developers to pay attention. I
-> > can also imagine variable types changing from signed to unsigned later,
-> > and never thinking this can introduce a bug.
-> > 
-> > So, is there nothing we can do to spot at least the second issue at
-> > build time? For regular division there's nothing we can do (although I
-> > don't understand why gcc doesn't warn...) but here we get the
-> > opportunity to report the issue, let's take it.
-> > 
-> > And given that the divisor is almost always a constant,
-> > maybe we can check for negative divisors too, this would be safer and
-> > the code size increase would probably be very small in practice.
-> > Opinions?
->
-> Agreed, though we should fix the problem now and think about reporting
-> afterwards.
-
-Yes, that's a good plan.
-
--- 
-Jean Delvare
+ATM, our upstream kernel is expected in secure mode. This situation
+may be changed later, though....
