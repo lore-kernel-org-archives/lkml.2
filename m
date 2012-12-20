@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab2LTPmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:42:54 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51340 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab2LTPmg (ORCPT
+	id S1751842Ab2LTPnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:43:18 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:58051 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab2LTPm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:42:36 -0500
+	Thu, 20 Dec 2012 10:42:57 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v4 07/18] perf: add generic memory sampling interface
-Date: Thu, 20 Dec 2012 16:41:37 +0100
-Message-Id: <1356018108-6081-8-git-send-email-eranian@google.com>
+Subject: [PATCH v4 14/18] perf tools: add new mem command for memory access profiling
+Date: Thu, 20 Dec 2012 16:41:44 +0100
+Message-Id: <1356018108-6081-15-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1356018108-6081-1-git-send-email-eranian@google.com>
 References: <1356018108-6081-1-git-send-email-eranian@google.com>
@@ -21,162 +21,331 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds PERF_SAMPLE_COST and PERF_SAMPLE_DSRC.
-The first collects a cost associated with the sampled
-event. In case of memory access, the cost would be
-the latency of the load, otherwise it defaults to
-the sampling period.
+This new command is a wrapper on top of perf record and
+perf report to make it easier to configure for memory
+access profiling.
 
-PERF_SAMPLE_DSRC collects the data source, i.e., where
-did the data associated with the sampled instruction
-come from. Information is stored in a perf_mem_dsrc
-structure. It contains opcode, mem level, tlb, snoop,
-lock information, subject to availability in hardware.
+To record loads:
+$ perf mem -t load rec .....
+
+To record stores:
+$ perf mem -t store rec .....
+
+To get the report:
+$ perf mem -t load rep
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |   69 +++++++++++++++++++++++++++++++++++++--
- kernel/events/core.c            |    6 ++++
- 3 files changed, 75 insertions(+), 2 deletions(-)
+ tools/perf/Makefile         |    1 +
+ tools/perf/builtin-mem.c    |  238 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/builtin.h        |    1 +
+ tools/perf/command-list.txt |    1 +
+ tools/perf/perf.c           |    1 +
+ tools/perf/util/hist.c      |    1 +
+ 6 files changed, 243 insertions(+)
+ create mode 100644 tools/perf/builtin-mem.c
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index bb2429d..8fe4610 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -579,6 +579,7 @@ struct perf_sample_data {
- 		u32	reserved;
- 	}				cpu_entry;
- 	u64				period;
-+	union  perf_mem_dsrc		dsrc;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-@@ -599,6 +600,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->dsrc.val = 0;
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 994f0f6..be8f4697 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -505,6 +505,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+ BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
++BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index c52caab..b2a78bb 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_DSRC			= 1U << 15,
+ PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
  
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
--
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
- };
- 
- /*
-@@ -591,6 +591,8 @@ enum perf_event_type {
- 	 * 	{ u64			size;
- 	 * 	  char			data[size];
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
-+	 *
-+	 *	{ u64			dsrc;  } && PERF_SAMPLE_DSRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -616,4 +618,67 @@ enum perf_callchain_context {
- #define PERF_FLAG_FD_OUTPUT		(1U << 1)
- #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
- 
-+union perf_mem_dsrc {
-+	__u64 val;
-+	struct {
-+		__u64   mem_op:5,	/* type of opcode */
-+			mem_lvl:14,	/* memory hierarchy level */
-+			mem_snoop:5,	/* snoop mode */
-+			mem_lock:2,	/* lock instr */
-+			mem_dtlb:7,	/* tlb access */
-+			mem_rsvd:31;
-+	};
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+new file mode 100644
+index 0000000..c2980b8
+--- /dev/null
++++ b/tools/perf/builtin-mem.c
+@@ -0,0 +1,238 @@
++#include "builtin.h"
++#include "perf.h"
++
++#include "util/parse-options.h"
++#include "util/trace-event.h"
++#include "util/tool.h"
++#include "util/session.h"
++
++#define MEM_OPERATION_LOAD	"load"
++#define MEM_OPERATION_STORE	"store"
++
++static const char	*mem_operation		= MEM_OPERATION_LOAD;
++
++struct perf_mem {
++	struct perf_tool	tool;
++	char const		*input_name;
++	symbol_filter_t		annotate_init;
++	bool			hide_unresolved;
++	bool			dump_raw;
++	const char		*cpu_list;
++	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
 +};
 +
-+/* type of opcode (load/store/prefetch,code) */
-+#define PERF_MEM_OP_NA		0x01 /* not available */
-+#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
-+#define PERF_MEM_OP_STORE	0x04 /* store instruction */
-+#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
-+#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
-+#define PERF_MEM_OP_SHIFT	0
++static const char * const mem_usage[] = {
++	"perf mem [<options>] {record <command> |report}",
++	NULL
++};
 +
-+/* memory hierarchy (memory level, hit or miss) */
-+#define PERF_MEM_LVL_NA		0x01  /* not available */
-+#define PERF_MEM_LVL_HIT	0x02  /* hit level */
-+#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
-+#define PERF_MEM_LVL_L1		0x08  /* L1 */
-+#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
-+#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
-+#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
-+#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
-+#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
-+#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
-+#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
-+#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
-+#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
-+#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
-+#define PERF_MEM_LVL_SHIFT	5
++static int __cmd_record(int argc, const char **argv)
++{
++	int rec_argc, i = 0, j;
++	const char **rec_argv;
++	char event[64];
++	int ret;
 +
-+/* snoop mode */
-+#define PERF_MEM_SNOOP_NA	0x01 /* not available */
-+#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
-+#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
-+#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
-+#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
-+#define PERF_MEM_SNOOP_SHIFT	19
++	rec_argc = argc + 4;
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++	if (!rec_argv)
++		return -1;
 +
-+/* locked instruction */
-+#define PERF_MEM_LOCK_NA	0x01 /* not available */
-+#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
-+#define PERF_MEM_LOCK_SHIFT	24
++	rec_argv[i++] = strdup("record");
++	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
++		rec_argv[i++] = strdup("-l");
++	rec_argv[i++] = strdup("-d");
++	rec_argv[i++] = strdup("-e");
 +
-+/* TLB access */
-+#define PERF_MEM_TLB_NA		0x01 /* not available */
-+#define PERF_MEM_TLB_HIT	0x02 /* hit level */
-+#define PERF_MEM_TLB_MISS	0x04 /* miss level */
-+#define PERF_MEM_TLB_L1		0x08 /* L1 */
-+#define PERF_MEM_TLB_L2		0x10 /* L2 */
-+#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
-+#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
-+#define PERF_MEM_TLB_SHIFT	26
++	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
++		sprintf(event, "cpu/mem-stores/pp");
++	else
++		sprintf(event, "cpu/mem-loads/pp");
 +
-+#define PERF_MEM_S(a, s) \
-+	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
++	rec_argv[i++] = strdup(event);
++	for (j = 1; j < argc; j++, i++)
++		rec_argv[i] = argv[j];
 +
- #endif /* _UAPI_LINUX_PERF_EVENT_H */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 236c58e..3366f89 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -958,6 +958,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
++	ret = cmd_record(i, rec_argv, NULL);
++	free(rec_argv);
++	return ret;
++}
++
++static int
++dump_raw_samples(struct perf_tool *tool,
++		 union perf_event *event,
++		 struct perf_sample *sample,
++		 struct perf_evsel *evsel __maybe_unused,
++		 struct machine *machine)
++{
++	struct perf_mem *mem = container_of(tool, struct perf_mem, tool);
++	struct addr_location al;
++	const char *fmt;
++
++	if (perf_event__preprocess_sample(event, machine, &al, sample,
++				mem->annotate_init) < 0) {
++		fprintf(stderr, "problem processing %d event, skipping it.\n",
++				event->header.type);
++		return -1;
++	}
++
++	if (al.filtered || (mem->hide_unresolved && al.sym == NULL))
++		return 0;
++
++	if (al.map != NULL)
++		al.map->dso->hit = 1;
++
++	if (symbol_conf.field_sep) {
++		fmt = "%d%s%d%s0x%"PRIx64"%s0x%"PRIx64"%s%"PRIu64
++		      "%s0x%"PRIx64"%s%s:%s\n";
++	} else {
++		fmt = "%5d%s%5d%s0x%016"PRIx64"%s0x016%"PRIx64
++		      "%s%5"PRIu64"%s0x%06"PRIx64"%s%s:%s\n";
++		symbol_conf.field_sep = " ";
++	}
++
++	printf( fmt,
++		sample->pid,
++		symbol_conf.field_sep,
++		sample->tid,
++		symbol_conf.field_sep,
++		event->ip.ip,
++		symbol_conf.field_sep,
++		sample->addr,
++		symbol_conf.field_sep,
++		sample->weight,
++		symbol_conf.field_sep,
++		sample->dsrc,
++		symbol_conf.field_sep,
++		al.map ? (al.map->dso ? al.map->dso->long_name : "???") : "???",
++		al.sym ? al.sym->name : "???");
++
++	return 0;
++}
++
++static int process_sample_event(struct perf_tool *tool,
++				union perf_event *event,
++				struct perf_sample *sample,
++                                struct perf_evsel *evsel,
++				struct machine *machine)
++{
++	return dump_raw_samples(tool, event, sample, evsel, machine);
++}
++
++static int report_raw_events(struct perf_mem *mem)
++{
++	int err = -EINVAL;
++	int ret;
++	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
++							 0, false, &mem->tool);
++
++	if (session == NULL)
++		return -ENOMEM;
++
++	if (mem->cpu_list) {
++		ret = perf_session__cpu_bitmap(session, mem->cpu_list,
++					       mem->cpu_bitmap);
++		if (ret)
++			goto out_delete;
++	}
++
++	if (symbol__init() < 0)
++		return -1;
++
++	printf("# PID, TID, IP, ADDR, COST, DSRC, SYMBOL\n");
++
++	err = perf_session__process_events(session, &mem->tool);
++	if (err)
++		return err;
++
++	return 0;
++
++out_delete:
++	perf_session__delete(session);
++	return err;
++}
++
++static int report_events(int argc, const char **argv, struct perf_mem *mem)
++{
++	const char **rep_argv;
++	int ret, i = 0, j, rep_argc;
++
++	if (mem->dump_raw)
++		return report_raw_events(mem);
++
++	rep_argc = argc + 3;
++	rep_argv = calloc(rep_argc + 1, sizeof(char *));
++	if (!rep_argv)
++		return -1;
++
++	rep_argv[i++] = strdup("report");
++	rep_argv[i++] = strdup("--mem-mode");
++	rep_argv[i++] = strdup("-n"); /* display number of samples */
++
++	/*
++	 * there is no cost associated with stores, so don't print
++	 * the column
++	 */
++	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
++		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,dso_daddr,tlb,locked");
++
++	for (j = 1; j < argc; j++, i++)
++		rep_argv[i] = argv[j];
++
++	ret = cmd_report(i, rep_argv, NULL);
++	free(rep_argv);
++	return ret;
++}
++
++int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
++{
++	struct stat st;
++	struct perf_mem mem = {
++		.tool = {
++			.sample		= process_sample_event,
++			.mmap		= perf_event__process_mmap,
++			.comm		= perf_event__process_comm,
++			.lost		= perf_event__process_lost,
++			.fork		= perf_event__process_fork,
++			.build_id	= perf_event__process_build_id,
++			.ordered_samples= true,
++		},
++		.input_name		 = "perf.data",
++	};
++	const struct option mem_options[] = {
++		OPT_STRING('t', "type", &mem_operation,
++			   "type", "memory operations(load/store)"),
++		OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
++			    "dump raw samples in ASCII"),
++		OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
++			    "Only display entries resolved to a symbol"),
++		OPT_STRING('i', "input", &input_name, "file", "input file name"),
++		OPT_STRING('C', "cpu", &mem.cpu_list, "cpu", "list of cpus to profile"),
++		OPT_STRING('x', "field-separator", &symbol_conf.field_sep, "separator",
++			   "separator for columns, no spaces will be added between "
++			   "columns '.' is reserved."),
++		OPT_END()
++	};
++
++	argc = parse_options(argc, argv, mem_options, mem_usage,
++                        PARSE_OPT_STOP_AT_NON_OPTION);
++
++	if (!argc || !(strncmp(argv[0], "rec", 3) || mem_operation))
++		usage_with_options(mem_usage, mem_options);
++
++	if (!mem.input_name || !strlen(mem.input_name)) {
++		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
++			mem.input_name = "-";
++		else
++			mem.input_name = "perf.data";
++	}
++
++        if (!strncmp(argv[0], "rec", 3))
++		return __cmd_record(argc, argv);
++	else if (!strncmp(argv[0], "rep", 3))
++		return report_events(argc, argv, &mem);
++	else
++		usage_with_options(mem_usage, mem_options);
++
++	return 0;
++}
+diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+index 08143bd..b210d62 100644
+--- a/tools/perf/builtin.h
++++ b/tools/perf/builtin.h
+@@ -36,6 +36,7 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
+ extern int cmd_test(int argc, const char **argv, const char *prefix);
+ extern int cmd_trace(int argc, const char **argv, const char *prefix);
+ extern int cmd_inject(int argc, const char **argv, const char *prefix);
++extern int cmd_mem(int argc, const char **argv, const char *prefix);
  
-+	if (sample_type & PERF_SAMPLE_DSRC)
-+		size += sizeof(data->dsrc.val);
-+
- 	event->header_size = size;
+ extern int find_scripts(char **scripts_array, char **scripts_path_array);
+ #endif
+diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
+index 3e86bbd..2c5b621 100644
+--- a/tools/perf/command-list.txt
++++ b/tools/perf/command-list.txt
+@@ -24,3 +24,4 @@ perf-kmem			mainporcelain common
+ perf-lock			mainporcelain common
+ perf-kvm			mainporcelain common
+ perf-test			mainporcelain common
++perf-mem			mainporcelain common
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 0f661fb..682340e 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -60,6 +60,7 @@ static struct cmd_struct commands[] = {
+ 	{ "trace",	cmd_trace,	0 },
+ #endif
+ 	{ "inject",	cmd_inject,	0 },
++	{ "mem",	cmd_mem,	0 },
+ };
+ 
+ struct pager_config {
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 4b95510..efd9929 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -473,6 +473,7 @@ hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
+ void hist_entry__free(struct hist_entry *he)
+ {
+ 	free(he->branch_info);
++	free(he->mem_info);
+ 	free(he);
  }
  
-@@ -4175,6 +4178,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
-+
-+	if (sample_type & PERF_SAMPLE_DSRC)
-+		perf_output_put(handle, data->dsrc.val);
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
 -- 
 1.7.9.5
 
