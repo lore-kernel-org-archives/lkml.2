@@ -1,153 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab2LTMGC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 07:06:02 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:58620 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab2LTMFw convert rfc822-to-8bit (ORCPT
+	id S1752491Ab2LTMNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 07:13:43 -0500
+Received: from mga09.intel.com ([134.134.136.24]:46162 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab2LTMNg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 07:05:52 -0500
-Message-ID: <50D2FF19.4060600@arm.com>
-Date: Thu, 20 Dec 2012 12:05:45 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Thu, 20 Dec 2012 07:13:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
+   d="scan'208";a="260162948"
+From: "Xiao, Jin" <jin.xiao@intel.com>
+To: "'Alan Cox'" <alan@lxorguk.ukuu.org.uk>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-6-git-send-email-hdoyu@nvidia.com><50D2EFFB.8030702@arm.com> <20121220.135758.1347753620353343245.hdoyu@nvidia.com>
-In-Reply-To: <20121220.135758.1347753620353343245.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 20 Dec 2012 12:05:46.0832 (UTC) FILETIME=[58263D00:01CDDEAA]
-X-MC-Unique: 112122012054906401
-Content-Type: text/plain; charset=WINDOWS-1252
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "Douglas, William" <william.douglas@intel.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "Pillet, VincentX" <vincentx.pillet@intel.com>
+Subject: RE: [PATCH] n_gsm.c: add tx_lock in gsm_send
+Thread-Topic: [PATCH] n_gsm.c: add tx_lock in gsm_send
+Thread-Index: AQHN3qaFjVB5R+A/+kOn8SV2u93iopghk0QA
+Date: Thu, 20 Dec 2012 12:13:07 +0000
+Message-ID: <375E373B4157DC49B89CEAE588F836F50FE455C5@SHSMSX102.ccr.corp.intel.com>
+References: <1355963920.9600.99.camel@xiaojin>
+ <20121220114411.4dcc81bb@pyramind.ukuu.org.uk>
+In-Reply-To: <20121220114411.4dcc81bb@pyramind.ukuu.org.uk>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/12/12 11:57, Hiroshi Doyu wrote:
-> Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 12:01:15 +0100:
+Alan, 
+
+Thanks. But the comment makes me confused. As we see, gsm->output is called by gsm_data_kick too, and it's in the tx_lock...
+
+Best regards,
+Jin Xiao
+
+
+> From: xiaojin <jin.xiao@intel.com>
+> Date: Wed, 19 Dec 2012 11:53:43 +0800
+> Subject: [PATCH] n_gsm.c: add tx_lock in gsm_send
 > 
->> On 20/12/12 09:44, Hiroshi Doyu wrote:
->>> Add platform enabler for ARM arch_timer(TSC). TSC is more fine grained
->>> timer than TMR0. If it's available, it will be used for clock source
->>> and sched_clock. Otherwise, TMR0 is used. In any case TMR0 is
->>> necessary for clock event.
->>>
->>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
->>> ---
->>>  .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 ++++
->>>  drivers/clocksource/tegra20_timer.c                |   64 +++++++++++++++++++-
->>>  2 files changed, 74 insertions(+), 1 deletion(-)
->>>  create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
->>> new file mode 100644
->>> index 0000000..9de936a
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
->>> @@ -0,0 +1,11 @@
->>> +NVIDIA Tegra Timer Stamp Counter(TSC)
->>> +
->>> +Required properties:
->>> +- compatible : "nvidia,tegra114-tsc
->>> +- reg : Should contain 1 register ranges(address and length)
->>> +
->>> +Example:
->>> +	tsc {
->>> +		compatible = "nvidia,tegra114-tsc";
->>> +		reg = <0x700f0000 0x20000>;
->>> +	};
->>> diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
->>> index 1d25de8..285a6f1 100644
->>> --- a/drivers/clocksource/tegra20_timer.c
->>> +++ b/drivers/clocksource/tegra20_timer.c
->>> @@ -30,6 +30,7 @@
->>>  #include <asm/mach/time.h>
->>>  #include <asm/smp_twd.h>
->>>  #include <asm/sched_clock.h>
->>> +#include <asm/arch_timer.h>
->>>  
->>>  #define RTC_SECONDS            0x08
->>>  #define RTC_SHADOW_SECONDS     0x0c
->>> @@ -271,10 +272,71 @@ static void __init tegra20_init_tmr(void)
->>>  	clockevents_register_device(&tegra_clockevent);
->>>  }
->>>  
->>> +#define TSC_CNTCR		0		/* TSC control registers */
->>> +#define TSC_CNTCR_ENABLE	(1 << 0)	/* Enable */
->>> +#define TSC_CNTCR_HDBG		(1 << 1)	/* Halt on debug */
->>> +
->>> +#define TSC_CNTCV0		0x8		/* TSC counter (LSW) */
->>> +#define TSC_CNTCV1		0xc		/* TSC counter (MSW) */
->>> +#define TSC_CNTFID0		0x20		/* TSC freq id 0 */
->>> +
->>> +static const struct of_device_id tegra_tsc_match[] __initconst = {
->>> +	{ .compatible = "nvidia,tegra114-tsc" },
->>> +	{}
->>> +};
->>> +
->>> +static int tegra_arch_timer_init(void)
->>> +{
->>> +	int err;
->>> +	struct device_node *np;
->>> +	struct clk *clk;
->>> +	void __iomem *tsc_base;
->>> +	u32 freq, val;
->>> +
->>> +	np = of_find_matching_node(NULL, tegra_tsc_match);
->>> +	if (!np)
->>> +		return -ENODEV;
->>> +
->>> +	tsc_base = of_iomap(np, 0);
->>> +	if (!tsc_base)
->>> +		return -ENODEV;
->>> +
->>> +	clk = clk_get_sys("clk_m", NULL);
->>> +	if (IS_ERR(clk)) {
->>> +		freq = 12000000;
->>> +		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
->>> +	} else {
->>> +		freq = clk_get_rate(clk);
->>> +		clk_put(clk);
->>> +	}
->>> +	writel_relaxed(freq, tsc_base + TSC_CNTFID0);
->>> +
->>> +	/* CNTFRQ */
->>> +	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
->>> +	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
->>> +	BUG_ON(val != freq);
->>
->> This is scary. CNTFRQ is only writable from secure mode, and will
->> explode in any other situation.
->>
->> Also, writing to CNTFRQ doesn't change the timer frequency! This is just
->> a way for secure mode to tell the rest of the world the frequency the
->> timer is ticking at. Unless you've wired the input clock to be able to
->> change the frequency?
+> All the call to gsm->output should be in the tx_lock, that could avoid 
+> potential race from MUX level. But we have no tx_lock in gsm_send.
 > 
-> ATM, our upstream kernel is expected in secure mode. This situation
-> may be changed later, though....
+> This patch is to add tx_lock in gsm_send.
 
-I appreciate this. But I expect this kernel to be also used on the
-non-secure side if someone tried to run KVM with it. And this would go
-bang right away.
+gsm->output calls the transmit method of the underlying tty driver. We
+can't do that with interrupts off as some drivers expect to be able to sleep in their output paths.
 
-	M.
-
--- 
-Jazz is not dead. It just smells funny...
-
+Alan
