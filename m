@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2LTSkV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:40:21 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:49042 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab2LTSj7 (ORCPT
+	id S1752230Ab2LTSk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:40:28 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:46974 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab2LTSjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:39:59 -0500
+	Thu, 20 Dec 2012 13:39:49 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 22/24] nohz: Don't turn off the tick if rcu needs it
-Date: Thu, 20 Dec 2012 19:33:09 +0100
-Message-Id: <1356028391-14427-23-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 12/24] sched: Update rq clock on nohz CPU before migrating tasks
+Date: Thu, 20 Dec 2012 19:32:59 +0100
+Message-Id: <1356028391-14427-13-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
 References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
@@ -31,19 +31,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If RCU is waiting for the current CPU to complete a grace
-period, don't turn off the tick. Unlike dynctik-idle, we
-are not necessarily going to enter into rcu extended quiescent
-state, so we may need to keep the tick to note current CPU's
-quiescent states.
-
-[added build fix from Zen Lin]
-
-CHECKME: OTOH we don't want to handle a locally started
-grace period, this should be offloaded for rcu_nocb CPUs.
-What we want is to be kicked if we stay dynticks in the kernel
-for too long (ie: to report a quiescent state).
-rcu_pending() is perhaps an overkill just for that.
+Because the sched_class::put_prev_task() callback of rt and fair
+classes are referring to the rq clock to update their runtime
+statistics. A CPU running in tickless mode may carry a stale value.
+We need to update it there.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -60,60 +51,53 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/rcupdate.h |    1 +
- kernel/rcutree.c         |    3 +--
- kernel/time/tick-sched.c |    3 +++
- 3 files changed, 5 insertions(+), 2 deletions(-)
+ kernel/sched/core.c  |    6 ++++++
+ kernel/sched/sched.h |    7 +++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 829312e..2ebadac 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -211,6 +211,7 @@ static inline int rcu_preempt_depth(void)
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
- extern void rcu_check_callbacks(int cpu, int user);
-+extern int rcu_pending(int cpu);
- struct notifier_block;
- extern void rcu_idle_enter(void);
- extern void rcu_idle_exit(void);
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e9e0ffa..6ba3e02 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -232,7 +232,6 @@ module_param(jiffies_till_next_fqs, ulong, 0644);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 02bd005..5d9060a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4832,6 +4832,12 @@ static void migrate_tasks(unsigned int dead_cpu)
+ 	 */
+ 	rq->stop = NULL;
  
- static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
- static void force_quiescent_state(struct rcu_state *rsp);
--static int rcu_pending(int cpu);
- 
- /*
-  * Return the number of RCU-sched batches processed thus far for debug & stats.
-@@ -2521,7 +2520,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-  * by the current CPU, returning 1 if so.  This function is part of the
-  * RCU implementation; it is -not- an exported member of the RCU API.
-  */
--static int rcu_pending(int cpu)
-+int rcu_pending(int cpu)
- {
- 	struct rcu_state *rsp;
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 2808e02..0c9281a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -594,6 +594,9 @@ static bool can_stop_full_tick(int cpu)
- 	if (!rcu_is_nocb_cpu(cpu))
- 		return false;
- 
-+	if (rcu_pending(cpu))
-+		return false;
++	/*
++	 * ->put_prev_task() need to have an up-to-date value
++	 * of rq->clock[_task]
++	 */
++	update_nohz_rq_clock(rq);
 +
- 	return true;
- }
- #endif
+ 	for ( ; ; ) {
+ 		/*
+ 		 * There's this thread running, bail when that's the only
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 5eca173..db3d4df 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -3,6 +3,7 @@
+ #include <linux/mutex.h>
+ #include <linux/spinlock.h>
+ #include <linux/stop_machine.h>
++#include <linux/tick.h>
+ 
+ #include "cpupri.h"
+ 
+@@ -951,6 +952,12 @@ static inline void dec_nr_running(struct rq *rq)
+ 
+ extern void update_rq_clock(struct rq *rq);
+ 
++static inline void update_nohz_rq_clock(struct rq *rq)
++{
++	if (tick_nohz_full_cpu(cpu_of(rq)))
++		update_rq_clock(rq);
++}
++
+ extern void activate_task(struct rq *rq, struct task_struct *p, int flags);
+ extern void deactivate_task(struct rq *rq, struct task_struct *p, int flags);
+ 
 -- 
 1.7.5.4
 
