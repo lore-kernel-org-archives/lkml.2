@@ -1,112 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab2LTL0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 06:26:47 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2671 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab2LTL0j convert rfc822-to-8bit (ORCPT
+	id S1752341Ab2LTL2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 06:28:33 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48004 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab2LTL20 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 06:26:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 20 Dec 2012 03:24:09 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "marc.zyngier@arm.com" <marc.zyngier@arm.com>
+	Thu, 20 Dec 2012 06:28:26 -0500
+Message-ID: <50D2F61E.10900@arm.com>
+Date: Thu, 20 Dec 2012 11:27:26 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Hiroshi Doyu <hdoyu@nvidia.com>
 CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, John Stultz <johnstul@us.ibm.com>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 20 Dec 2012 12:26:33 +0100
-Subject: Re: [PATCH 3/9] ARM: tegra: # of CPU cores detection w/ & w/o
- HAVE_ARM_SCU
-Thread-Topic: [PATCH 3/9] ARM: tegra: # of CPU cores detection w/ & w/o
- HAVE_ARM_SCU
-Thread-Index: Ac3epN5BCKGWXJJ9Ssi+gobDfK79VQ==
-Message-ID: <20121220.132633.1909466776701611516.hdoyu@nvidia.com>
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-4-git-send-email-hdoyu@nvidia.com><50D2F3B4.3040302@arm.com>
-In-Reply-To: <50D2F3B4.3040302@arm.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+Subject: Re: [PATCH 6/9] ARM: dt: tegra114: Add new SoC base, Tegra 114 SoC
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com> <1355996654-6579-7-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1355996654-6579-7-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 20 Dec 2012 11:27:26.0941 (UTC) FILETIME=[FD4EB8D0:01CDDEA4]
+X-MC-Unique: 112122011272802401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc Zyngier <marc.zyngier@arm.com> wrote @ Thu, 20 Dec 2012 12:17:08 +0100:
-
-> On 20/12/12 09:44, Hiroshi Doyu wrote:
-> > The method to detect the number of CPU cores on Cortex-A9 MPCore and
-> > Cortex-A15 MPCore is different. On Cortex-A9 MPCore we can get this
-> > information from the Snoop Control Unit(SCU). On Cortex-A15 MPCore we
-> > have to read it from the system coprocessor(CP15), because the SCU on
-> > Cortex-A15 MPCore does not have software readable registers. This
-> > patch selects the correct method at runtime based on the CPU ID.
-> > 
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > ---
-> >  arch/arm/mach-tegra/platsmp.c |   31 ++++++++++++++++++++++++++++---
-> >  1 file changed, 28 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-> > index 1b926df..68e76ef 100644
-> > --- a/arch/arm/mach-tegra/platsmp.c
-> > +++ b/arch/arm/mach-tegra/platsmp.c
-> > @@ -23,6 +23,7 @@
-> >  #include <asm/hardware/gic.h>
-> >  #include <asm/mach-types.h>
-> >  #include <asm/smp_scu.h>
-> > +#include <asm/cputype.h>
-> >  
-> >  #include <mach/powergate.h>
-> >  
-> > @@ -34,9 +35,13 @@
-> >  #include "common.h"
-> >  #include "iomap.h"
-> >  
-> > +#define CPU_MASK		0xff0ffff0
-> > +#define CPU_CORTEX_A9		0x410fc090
-> > +#define CPU_CORTEX_A15		0x410fc0f0
-> > +
-> >  extern void tegra_secondary_startup(void);
-> >  
-> > -static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
-> > +static void __iomem *scu_base;
-> >  
-> >  #define EVP_CPU_RESET_VECTOR \
-> >  	(IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE) + 0x100)
-> > @@ -149,7 +154,26 @@ done:
-> >   */
-> >  static void __init tegra_smp_init_cpus(void)
-> >  {
-> > -	unsigned int i, ncores = scu_get_core_count(scu_base);
-> > +	unsigned int i, cpu_id, ncores;
-> > +	u32 l2ctlr;
-> > +	phys_addr_t pa;
-> > +
-> > +	cpu_id = read_cpuid(CPUID_ID) & CPU_MASK;
-> > +	switch (cpu_id) {
-> > +	case CPU_CORTEX_A15:
-> > +		asm("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
-> > +		ncores = ((l2ctlr >> 24) & 3) + 1;
+On 20/12/12 09:44, Hiroshi Doyu wrote:
+> Initial support for Tegra 114 SoC. This is expected to be included in
+> the board DTS files, Tegra 114 SoC based evaluation board family.
 > 
-> Please, do not do that. It doesn't scale to multiple clusters. Instead,
-> you can now rely on arm_dt_init_cpu_maps() to do the right thing as long
-> as your device tree exposes all the cpu nodes.
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 
-Ok, this could be the answer why DT for cpu is necessary even when
-it's got from CP15?
+You definitely need to add some cpu nodes here, or get someone to merge
+the NR_CPUS=0 patch: https://lkml.org/lkml/2012/3/31/131
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/137989.html
+;-)
+
+> ---
+>  arch/arm/boot/dts/tegra114.dtsi |   89 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 89 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/tegra114.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+> new file mode 100644
+> index 0000000..a5b7330
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/tegra114.dtsi
+> @@ -0,0 +1,89 @@
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +	compatible = "nvidia,tegra114";
+> +	interrupt-parent = <&gic>;
+> +
+> +	gic: interrupt-controller {
+> +		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
+> +		reg = <0x50041000 0x1000
+> +		       0x50042000 0x1000>;
+
+If this is indeed an A15 GIC, how about adding the GICH and GICV
+regions, as well as the VGIC maintenance interrupt?
+
+> +		interrupt-controller;
+> +		#interrupt-cells = <3>;
+> +	};
+> +
+> +	timer@60005000 {
+> +		compatible = "nvidia,tegra114-timer", "nvidia,tegra20-timer";
+> +		reg = <0x60005000 0x400>;
+> +		interrupts = <0 0 0x04
+> +			      0 1 0x04
+> +			      0 41 0x04
+> +			      0 42 0x04
+> +			      0 121 0x04
+> +			      0 122 0x04>;
+> +	};
+> +
+> +	serial@70006000 {
+> +		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006000 0x40>;
+> +		reg-shift = <2>;
+> +		interrupts = <0 36 0x04>;
+> +		status = "disabled";
+> +	};
+> +
+> +	serial@70006040 {
+> +		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006040 0x40>;
+> +		reg-shift = <2>;
+> +		interrupts = <0 37 0x04>;
+> +		status = "disabled";
+> +	};
+> +
+> +	serial@70006200 {
+> +		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006200 0x100>;
+> +		reg-shift = <2>;
+> +		interrupts = <0 46 0x04>;
+> +		status = "disabled";
+> +	};
+> +
+> +	serial@70006300 {
+> +		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006300 0x100>;
+> +		reg-shift = <2>;
+> +		interrupts = <0 90 0x04>;
+> +		status = "disabled";
+> +	};
+> +
+> +	serial@70006400 {
+> +		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
+> +		reg = <0x70006400 0x100>;
+> +		reg-shift = <2>;
+> +		interrupts = <0 91 0x04>;
+> +		status = "disabled";
+> +	};
+> +
+> +	rtc {
+> +		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
+> +		reg = <0x7000e000 0x100>;
+> +		interrupts = <0 2 0x04>;
+> +	};
+> +
+> +	pmc {
+> +		compatible = "nvidia,tegra114-pmc", "nvidia,tegra20-pmc";
+> +		reg = <0x7000e400 0x400>;
+> +	};
+> +
+> +	tsc {
+> +		compatible = "nvidia,tegra114-tsc";
+> +		reg = <0x700f0000 0x20000>;
+> +	};
+> +
+> +	timer {
+> +		compatible = "arm,armv7-timer";
+> +		interrupts = <1 13 0xf08>,
+> +			     <1 14 0xf08>,
+> +			     <1 11 0xf08>,
+> +			     <1 10 0xf08>;
+> +	};
+> +};
+> 
+
+
+-- 
+Jazz is not dead. It just smells funny...
+
