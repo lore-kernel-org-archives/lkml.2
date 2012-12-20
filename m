@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab2LTLVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 06:21:33 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:56042 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab2LTLVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 06:21:24 -0500
-Message-ID: <50D2F4B6.9040108@parallels.com>
-Date: Thu, 20 Dec 2012 15:21:26 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752306Ab2LTLWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 06:22:24 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5352 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2LTLWR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 06:22:17 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 20 Dec 2012 03:19:10 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 20 Dec 2012 12:21:36 +0100
+Subject: Re: [PATCH 3/9] ARM: tegra: # of CPU cores detection w/ & w/o
+ HAVE_ARM_SCU
+Thread-Topic: [PATCH 3/9] ARM: tegra: # of CPU cores detection w/ & w/o
+ HAVE_ARM_SCU
+Thread-Index: Ac3epC0DxhYC0RTfSv2egeg09FC5vw==
+Message-ID: <20121220.132136.1599315430686323669.hdoyu@nvidia.com>
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-4-git-send-email-hdoyu@nvidia.com><20121220100625.GB24693@arwen.pp.htv.fi>
+In-Reply-To: <20121220100625.GB24693@arwen.pp.htv.fi>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <xfs@oss.sgi.com>
-Subject: Re: [PATCH 09/19] list_lru: per-node list infrastructure
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <1354058086-27937-10-git-send-email-david@fromorbit.com>
-In-Reply-To: <1354058086-27937-10-git-send-email-david@fromorbit.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 03:14 AM, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+Felipe Balbi <balbi@ti.com> wrote @ Thu, 20 Dec 2012 11:06:25 +0100:
+...
+> > @@ -149,7 +154,26 @@ done:
+> >   */
+> >  static void __init tegra_smp_init_cpus(void)
+> >  {
+> > -	unsigned int i, ncores = scu_get_core_count(scu_base);
+> > +	unsigned int i, cpu_id, ncores;
+> > +	u32 l2ctlr;
+> > +	phys_addr_t pa;
+> > +
+> > +	cpu_id = read_cpuid(CPUID_ID) & CPU_MASK;
+> > +	switch (cpu_id) {
+> > +	case CPU_CORTEX_A15:
+> > +		asm("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
+> > +		ncores = ((l2ctlr >> 24) & 3) + 1;
+> > +		break;
+> > +	case CPU_CORTEX_A9:
+> > +		/* Get SCU physical base */
+> > +		asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (pa));
+> > +		scu_base = IO_ADDRESS(pa);
+> > +		ncores = scu_get_core_count(scu_base);
+> > +		break;
+> > +	default:
+> > +		BUG();
 > 
-> Now that we have an LRU list API, we can start to enhance the
-> implementation.  This splits the single LRU list into per-node lists
-> and locks to enhance scalability. Items are placed on lists
-> according to the node the memory belongs to. To make scanning the
-> lists efficient, also track whether the per-node lists have entries
-> in them in a active nodemask.
-> 
+> instead of bugging out, how about setting ncores to 1 instead ?
 
-I think it is safe to assume that these functions could benefit from
-having more metadata available for them when they run.
-
-Let's say for instance that a hypothetical person, for some unknown
-reasons, comes with the idea of replicating those lists transparently
-per memcg.
-
-In this case, it is very useful to know which memcg drives the current
-call. In general, the struct shrink_control already contains a lot of
-data that we use to drive the process. Wouldn't it make sense to also
-pass shrink_control as data to those lists as well?
-
-The only drawback of this, is that it would tie it to the shrinking
-process. I am not sure if this is a concern, but it if is, maybe we
-could replace things like :
-
-+static long
-+list_lru_walk_node(
-+	struct list_lru		*lru,
-+	int			nid,
-+	list_lru_walk_cb	isolate,
-+	void			*cb_arg,
-+	long			*nr_to_walk)
-+{
-
-with
-
-+static long
-+list_lru_walk_node(
-+	struct list_lru		*lru,
-+       struct something_like_shrink_control_not_shrink_control *a)
-+{
-
-This way we can augment the data available for the interface, for
-instance, passing the memcg context, without going patching all the callers.
-
+Maybe that would be useful in the case of adding new ARM core in the
+future.
