@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab2LTRtl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 12:49:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab2LTRte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 12:49:34 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, FlorianSchandinat@gmx.de, tomi.valkeinen@ti.com,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] UAPI disintegration for fbdev
-Date: Thu, 20 Dec 2012 17:49:17 +0000
-Message-ID: <1565.1356025757@warthog.procyon.org.uk>
+	id S1752055Ab2LTRv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 12:51:26 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:18928 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2LTRvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 12:51:17 -0500
+Message-ID: <50D35013.9020106@atmel.com>
+Date: Thu, 20 Dec 2012 18:51:15 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Erwin Rol <mailinglists@erwinrol.com>
+CC: <linux-kernel@vger.kernel.org>, Havard Skinnemoen <havard@skinnemoen.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <matteo.fortini@sadel.it>, netdev <netdev@vger.kernel.org>
+Subject: Re: at91sam9260 MACB problem with IP fragmentation
+References: <50C08233.9030905@erwinrol.com> <50C09D2E.8050608@atmel.com> <50D2D7BD.3030801@erwinrol.com>
+In-Reply-To: <50D2D7BD.3030801@erwinrol.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/20/2012 10:17 AM, Erwin Rol :
+> Hallo Nicolas,
+> 
+> On 6-12-2012 14:27, Nicolas Ferre wrote:
+>> Erwin,
+>>
+>> On 12/06/2012 12:32 PM, Erwin Rol :
+>>> Hello Nicolas, Havard, all,
+>>>
+>>> I have a very obscure problem with a at91sam9260 board (almost 1 to 1
+>>> copy of the Atmel EK).
+>>>
+>>> The MACB seems to stall when I use large (>2 * MTU) UDP datagrams. The
+>>> test case is that a udp echo client (PC) sends datagrams with increasing
+>>> length to the AT91 until the max length of the UDP datagram is reached.
+>>> When there is no IP fragmentation everything is fine, but when the
+>>> datagrams are starting to get fragmented the AT91 will not reply
+>>> anymore. But as soon as some network traffic happens it goes on again,
+>>> and non of the data is lost.
+> 
+> <snip>
+> 
+>>> I tried several kernels including the test version from Nicolas that he
+>>> posted on LKML in October. They all show the same effect.
+>>
+>> [..]
+>>
+>> It seems that Matteo has the same behavior: check here:
+>> http://www.spinics.net/lists/netdev/msg218951.html
+> 
+> I tried Matteo's patch and it seems to work. But I don't know if the
+> patch is really the right solution. I checked again with wireshark and
+> it really seems the sending that stalls not the receiving. But as soon
+> as a ethernet frame is received the sending "un-stalls". So maybe the
+> patch just causes an MACB IRQ at certain moments that causes the sending
+> to continue?
 
-Hi Linus,
+Any digging is interesting for me.
 
-Could you consider pulling my UAPI disintegration for fbdev branch please?
-The maintainer (Florian Tobias Schandinat) said he didn't mind if I wanted to
-push it forward.
 
-David
----
-The following changes since commit 1800098549fc310cffffefdcb3722adaad0edda8:
+>> I am working on the macb driver right now, so I will try to reproduce
+>> and track this issue on my side.
+> 
+> Any luck reproducing it ?
 
-  ARM: OMAP: Fix build breakage due to missing include in i2c.c (2012-12-20 08:43:25 -0800)
+Yes, I see unexpected things happening but as I am connected to a whole
+company network so maybe some broadcast packets are unlocking the
+interface...
+Anyway, I am continuing to investigate.
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-fbdev-20121220
-
-for you to fetch changes up to b889fcf63cb62e7fdb7816565e28f44dbe4a76a5:
-
-  UAPI: (Scripted) Disintegrate include/video (2012-12-20 17:14:26 +0000)
-
-----------------------------------------------------------------
-UAPI disintegration 2012-12-20
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/video
-
- include/uapi/video/Kbuild    |   3 +
- include/uapi/video/edid.h    |   9 ++
- include/uapi/video/sisfb.h   | 209 +++++++++++++++++++++++++++++++++++++++++++
- include/uapi/video/uvesafb.h |  60 +++++++++++++
- include/video/Kbuild         |   3 -
- include/video/edid.h         |   7 +-
- include/video/sisfb.h        | 189 +-------------------------------------
- include/video/uvesafb.h      |  58 +-----------
- 8 files changed, 284 insertions(+), 254 deletions(-)
- create mode 100644 include/uapi/video/edid.h
- create mode 100644 include/uapi/video/sisfb.h
- create mode 100644 include/uapi/video/uvesafb.h
+Best regards,--
+Nicolas Ferre
