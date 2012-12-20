@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab2LUCvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 21:51:24 -0500
-Received: from mga01.intel.com ([192.55.52.88]:14512 "EHLO mga01.intel.com"
+	id S1752464Ab2LUCvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 21:51:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:49854 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215Ab2LUCus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 21:50:48 -0500
+	id S1752222Ab2LUCut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 21:50:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,327,1355126400"; 
-   d="scan'208";a="265338768"
+   d="scan'208";a="265338772"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Thomas Gleixner" <tglx@linutronix.de>,
@@ -19,9 +19,9 @@ To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Borislav Petkov" <borislav.petkov@amd.com>,
         "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v4 10/11] x86/mm/init.c: Copy ucode from initrd image to kernel memory
-Date: Thu, 20 Dec 2012 11:48:12 -0800
-Message-Id: <1356032893-2730-11-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v4 11/11] x86/Kconfig: Configurations to enable/disable the feature
+Date: Thu, 20 Dec 2012 11:48:13 -0800
+Message-Id: <1356032893-2730-12-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1356032893-2730-1-git-send-email-fenghua.yu@intel.com>
 References: <1356032893-2730-1-git-send-email-fenghua.yu@intel.com>
@@ -31,43 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Before initrd image is freed, copy valid ucode patches from initrd image
-to kernel memory. The saved ucode will be used to update AP in resume
-or hotplug.
+MICROCODE_INTEL_LIB, MICROCODE_INTEL_EARLY, and MICROCODE_EARLY are three new
+configurations to enable or disable the feature.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/mm/init.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/Kconfig | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 5f59473..36bad16 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -16,6 +16,7 @@
- #include <asm/tlb.h>
- #include <asm/proto.h>
- #include <asm/dma.h>		/* for MAX_DMA_PFN */
-+#include <asm/microcode.h>
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 97f8c5a..7f63084 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1030,6 +1030,24 @@ config MICROCODE_OLD_INTERFACE
+ 	def_bool y
+ 	depends on MICROCODE
  
- #include "mm_internal.h"
- 
-@@ -555,6 +556,15 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void __init free_initrd_mem(unsigned long start, unsigned long end)
- {
-+#ifdef CONFIG_MICROCODE_EARLY
-+	/*
-+	 * Remember, initrd memory may contain microcode or other useful things.
-+	 * Before we lose initrd mem, we need to find a place to hold them
-+	 * now that normal virtual memory is enabled.
-+	 */
-+	save_microcode_in_initrd();
-+#endif
++config MICROCODE_INTEL_LIB
++	def_bool y
++	depends on MICROCODE_INTEL
 +
- 	/*
- 	 * end could be not aligned, and We can not align that,
- 	 * decompresser could be confused by aligned initrd_end
++config MICROCODE_INTEL_EARLY
++	bool "Early load microcode"
++	depends on MICROCODE_INTEL && BLK_DEV_INITRD
++	default y
++	help
++	  This option provides functionality to read additional microcode data
++	  at the beginning of initrd image. The data tells kernel to load
++	  microcode to CPU's as early as possible. No functional change if no
++	  microcode data is glued to the initrd, therefore it's safe to say Y.
++
++config MICROCODE_EARLY
++	def_bool y
++	depends on MICROCODE_INTEL_EARLY
++
+ config X86_MSR
+ 	tristate "/dev/cpu/*/msr - Model-specific register support"
+ 	---help---
 -- 
 1.8.0.1
 
