@@ -1,129 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab2LTIK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 03:10:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13642 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab2LTIKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 03:10:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
-   d="asc'?scan'208";a="234404305"
-Message-ID: <1355991091.4106.64.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBI changes for 3.8-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Dec 2012 10:11:31 +0200
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-idqWTdFJ4Wz2A44gfrt5"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1751515Ab2LTIMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 03:12:37 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:35427 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2LTIM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 03:12:29 -0500
+Message-ID: <50D2C78B.4060109@synopsys.com>
+Date: Thu, 20 Dec 2012 13:38:43 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>
+Subject: Re: [RFC Patch v1 45/55] ARC: unaligned access emulation
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <1352720953-24321-15-git-send-email-vgupta@synopsys.com> <201211121400.13046.arnd@arndb.de>
+In-Reply-To: <201211121400.13046.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 12 November 2012 07:30 PM, Arnd Bergmann wrote:
+> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+>> +
+>> +config ARC_MISALIGN_ACCESS
+>> +       bool "Emulate unaligned memory access (userspace only)"
+>> +       default N
+>> +       help
+>> +         This enables misaligned 16 & 32 bit memory access from user space.
+>> +         Use ONLY-IF-ABS-NECESSARY as it will be very slow and also can hide
+>> +         potential bugs in code
+> 
+> parisc and ia64 both have the same feature, and they use sysctl to configure
+> it at run-time. Maybe you should pick one of the two sysctl implementations
+> and hook that up to your implementation as well.
 
---=-idqWTdFJ4Wz2A44gfrt5
-Content-Type: multipart/mixed; boundary="=-iCT7nJabTiKRDAkOsVlT"
+Spoke too soon ! The only caveat to removing the Kconfig option is that
+it will pull-in unaligned emulation code as well as the dependent
+in-kernel disassembler unconditionally into the build.
 
+Are you OK if we keep this support build time - provided that once it is
+build time enabled - we have the additional runtime sysctl based
+toggle-ability as you suggested.
 
---=-iCT7nJabTiKRDAkOsVlT
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Only one of our customers need this feature and this gives people
+reasons to moan about the kernel .text size and such.
 
-Hi Linus,
-
-please, pull UBI changes.
-
-The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556=
-:
-
-  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-ubi.git tags/upstream-3.8-rc1
-
-for you to fetch changes up to eab737722ed6a5638f6251e83f0d293c2ffe549f:
-
-  UBI: embed ubi_debug_info field in ubi_device struct (2012-12-10 13:38:59=
- +0200)
-
-----------------------------------------------------------------
-Nothing exciting, just clean-ups and nicification. Oh, and one small
-optimization which makes UBI to use less RAM.
-
-----------------------------------------------------------------
-Artem Bityutskiy (1):
-      UBI: do not allocate the memory unnecessarily
-
-Ezequiel Garcia (5):
-      UBI: gluebi: rename misleading variables
-      UBI: remove spurious comment
-      UBI: replace memcpy with struct assignment
-      UBI: introduce helpers dbg_chk_{io, gen}
-      UBI: embed ubi_debug_info field in ubi_device struct
-
-Wei Yongjun (1):
-      UBI: use list_move_tail instead of list_del/list_add_tail
-
- drivers/mtd/ubi/attach.c  |   23 +++++++++--------------
- drivers/mtd/ubi/build.c   |   12 ++----------
- drivers/mtd/ubi/debug.c   |   34 ++++------------------------------
- drivers/mtd/ubi/debug.h   |   57 +++++++++++++----------------------------=
-----------------
- drivers/mtd/ubi/fastmap.c |    6 ++----
- drivers/mtd/ubi/gluebi.c  |   28 ++++++++++++++--------------
- drivers/mtd/ubi/io.c      |   14 +++++++-------
- drivers/mtd/ubi/ubi.h     |   40 +++++++++++++++++++++++++++++++++++++++-
- drivers/mtd/ubi/upd.c     |    6 ++----
- drivers/mtd/ubi/vmt.c     |    4 ++--
- drivers/mtd/ubi/vtbl.c    |    2 +-
- drivers/mtd/ubi/wl.c      |    7 +++----
- 12 files changed, 98 insertions(+), 135 deletions(-)
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-iCT7nJabTiKRDAkOsVlT
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Disposition: inline
-Content-Transfer-Encoding: base64
-
-X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fDQpM
-aW51eCBNVEQgZGlzY3Vzc2lvbiBtYWlsaW5nIGxpc3QNCmh0dHA6Ly9saXN0cy5pbmZyYWRlYWQu
-b3JnL21haWxtYW4vbGlzdGluZm8vbGludXgtbXRkLw0K
-
-
---=-iCT7nJabTiKRDAkOsVlT--
-
---=-idqWTdFJ4Wz2A44gfrt5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQ0sgzAAoJECmIfjd9wqK0lCIQAKyll3GsxQHb5YqKcFihaf3C
-MHsKQ0OSfMnzIZxqKe+rqSxf+uV0v8HZgvKbw9K/zM6l3Eo22PxtqRlN1YEXbo4u
-WVQ82mCD/vBmWKCKifFuu7x7wO8rPuaAtCR62RsJECRH2hg/JPCpurNyDLUQGH95
-4URUwHMz2H8fB5FvMdpA9AUoFfTaC+TZjBOB4nQl/XmP7JWxKzEiaIDsA+w/C6N6
-fBNhdNYmPlC5tuluRMdu3/JEiRfapwFxlPVd6Njs5TG+9hMf9li7uyx3oZbvK2mY
-loNGnwQefuTJnsWeVhzBnUhHguR8nNlS+Qmq/KXyoUVafwOLZxCRvOGbU0qhhfxD
-Y26DvOuNzBaKvrZy8MkwB91vvokwmndduts6mvRzOZYLYcSpw3KIhBVvKDKl1ag6
-ylPGJ+cTiFmx+PKyX0DzsZh5z3LXuzoFuo55TT+QxNmjZ3ujoEXXrCRAr5HeRX4P
-NLrXxc/9O1m3phydbRuxw5l0X4W084Ty4IPrxoIaiu+hadZ1kJoeheddqFEKwEEi
-Yy2BsLYTx8PBB2BiFEGNzJZnCmDbb9Myn6y/MNl1YBKz4U8fBYeqHmVQmZIfdCge
-dBLK08O6wGzltv4eTekR7Lf1jljYb4U+SXMFMjfthDUNRZIlXNULhEbg7rMSUha/
-Ax/OCKU6+IzpEKjR7T6z
-=BJMn
------END PGP SIGNATURE-----
-
---=-idqWTdFJ4Wz2A44gfrt5--
+Thanks,
+Vineet
 
