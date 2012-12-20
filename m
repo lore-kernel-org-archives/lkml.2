@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2LTNll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 08:41:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36018 "EHLO mx1.redhat.com"
+	id S1752645Ab2LTNmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 08:42:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63221 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab2LTNlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 08:41:32 -0500
-Message-ID: <1356010887.10845.11.camel@ul30vt.home>
-Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
- dirty logging
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Dec 2012 06:41:27 -0700
-In-Reply-To: <20121220132255.GH17584@redhat.com>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	 <20121219213037.b234f9d4f187df2132e65576@gmail.com>
-	 <1355931777.3224.562.camel@bling.home>
-	 <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	 <20121220125946.GB7750@amt.cnet> <20121220132255.GH17584@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751794Ab2LTNma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 08:42:30 -0500
+Date: Thu, 20 Dec 2012 14:42:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
+	offline from atomic context
+Message-ID: <20121220134203.GB10813@redhat.com>
+References: <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <50D0CCB3.10105@linux.vnet.ibm.com> <20121219163900.GA18516@redhat.com> <50D2047A.1040606@linux.vnet.ibm.com> <20121219191436.GA25829@redhat.com> <50D21A5F.4040604@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D21A5F.4040604@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-20 at 15:22 +0200, Gleb Natapov wrote:
-> On Thu, Dec 20, 2012 at 10:59:46AM -0200, Marcelo Tosatti wrote:
-> > On Thu, Dec 20, 2012 at 02:02:32PM +0900, Takuya Yoshikawa wrote:
-> > > On Wed, 19 Dec 2012 08:42:57 -0700
-> > > Alex Williamson <alex.williamson@redhat.com> wrote:
-> > > 
-> > > > Please let me know if you can identify one of these as the culprit.
-> > > > They're all very simple, but there's always a chance I've missed a hard
-> > > > coding of slot numbers somewhere.  Thanks,
-> > > 
-> > > I identified the one:
-> > >   commit b7f69c555ca430129b6cde81e9f0927531420c5c
-> > >   KVM: Minor memory slot optimization
-> > > 
-> > > IIUC, the problem was that you did not care about the generation of
-> > > slots which was updated by update_memslots():
-> > > 
-> > >   Your patch reused the old memory slots which was there before
-> > >   doing the update for invalidating the slot, and badly, we did flush
-> > >   shadow pages after that before doing the second update for finally
-> > >   installing the new slot.  As a result, the generation did not change
-> > >   from that of the invalidated one, although the ghc(gfn to hva cache)
-> > >   might be stale.
-> > > 
-> > >   After that, kvm_write_guest_cached() checked if ghc should be
-> > >   initialized by comparing ghc's generation with that old one,
-> > >   resulting mark_page_dirty_in_slot() was called with the invalid
-> > >   cache contents.
-> > > 
-> > > Although we can do something to correct the generation alone, I do not
-> > > think such a trick is worth it because this is not a hot path.  Let's
-> > > just revert the patch.
-> > 
-> > Agreed. No dependencies by the following patches on it?
-> Heh, this generation management looks subtle. Would be easy to break by
-> other changes to the code. I wounder can we make it less subtle somehow.
+On 12/20, Srivatsa S. Bhat wrote:
+>
+> On 12/20/2012 12:44 AM, Oleg Nesterov wrote:
+> >
+> > We need 2 helpers for writer, the 1st one does synchronize_sched() and the
+> > 2nd one takes rwlock. A generic percpu_write_lock() simply calls them both.
+> >
+>
+> Ah, that's the problem no? Users of reader-writer locks expect to run in
+> atomic context (ie., they don't want to sleep).
 
-Hmm, isn't the fix as simple as:
+Ah, I misunderstood.
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -847,7 +847,8 @@ int __kvm_set_memory_region(struct kvm *kvm,
-                                GFP_KERNEL);
-                if (!slots)
-                        goto out_free;
--       }
-+       } else
-+               slots->generation = kvm->memslots->generation;
- 
-        /* map new memory slot into the iommu */
-        if (npages) {
+Sure, percpu_write_lock() should be might_sleep(), and this is not
+symmetric to percpu_read_lock().
 
-Or even just slots->generation++ since we're holding the lock across all
-of this.
+> We can't expose an API that
+> can make the task go to sleep under the covers!
 
-The original patch can be reverted, there are no following dependencies,
-but the idea was that we're making the memslot array larger, so there
-could be more pressure in allocating it, so let's not trivially do extra
-frees and allocs.  Thanks,
+Why? Just this should be documented. However I would not worry until we
+find another user. Until then we do not even need to add percpu_write_lock
+or try to generalize this code too much.
 
-Alex
+> > To me, the main question is: can we use synchronize_sched() in cpu_down?
+> > It is slow.
+> >
+>
+> Haha :-) So we don't want smp_mb() in the reader,
+
+We need mb() + rmb(). Plust cli/sti unless this arch has optimized
+this_cpu_add() like x86 (as you pointed out).
+
+> *and* also don't want
+> synchronize_sched() in the writer! Sounds like saying we want to have the cake
+> and eat it too ;-) :P
+
+Personally I'd vote for synchronize_sched() but I am not sure. And I do
+not really understand the problem space.
+
+> And moreover, since I'm still not convinced about the writer API part if use
+> synchronize_sched(), I'd rather avoid synchronize_sched().)
+
+Understand.
+
+And yes, synchronize_sched() adds more problems. For example, where should
+we call it? I do not this _cpu_down() should do this, in this case, say,
+disable_nonboot_cpus() needs num_online_cpus() synchronize_sched's.
+
+So probably cpu_down() should call it before cpu_maps_update_begin(), this
+makes the locking even less obvious.
+
+In short. What I am trying to say is, don't ask me I do not know ;)
+
+Oleg.
 
