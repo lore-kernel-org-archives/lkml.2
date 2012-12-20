@@ -1,60 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2LTSIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:08:46 -0500
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:38402 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2LTSIn (ORCPT
+	id S1752080Ab2LTSNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:13:06 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55902 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751274Ab2LTSNB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:08:43 -0500
+	Thu, 20 Dec 2012 13:13:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,326,1355126400"; 
+   d="scan'208";a="237104391"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+Thread-Topic: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+Thread-Index: AQHN3QLhVtjs0vDJ0k+q6f3rVEfUDJgg0z6AgAB+x2CAADE/AIAAX08A//+oIYCAAF+MAP//tL4AgABddxA=
+Date: Thu, 20 Dec 2012 18:12:55 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924CFD6@BGSMSX101.gar.corp.intel.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+ <1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
+ <20121220054201.GE28007@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CB6C@BGSMSX101.gar.corp.intel.com>
+ <20121220161202.GA29796@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CF1F@BGSMSX101.gar.corp.intel.com>
+ <20121220163839.GA30120@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB5924CF67@BGSMSX101.gar.corp.intel.com>
+ <20121220175116.GB32061@kroah.com>
+In-Reply-To: <20121220175116.GB32061@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [95.195.142.226]
-In-Reply-To: <20121220175639.GA14363@n2100.arm.linux.org.uk>
-References: <20121220163814.GA29557@quad.lixom.net>
-	<20121220175639.GA14363@n2100.arm.linux.org.uk>
-Date: Thu, 20 Dec 2012 10:08:42 -0800
-Message-ID: <CAOesGMgxXmXUW2RP_5AxJ6Z5sRBhFJ2CQz4S12MwXAb3=ibYOA@mail.gmail.com>
-Subject: Re: [GIT PULL v2] ARM: arm-soc fixes for 3.8
-From: Olof Johansson <olof@lixom.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: torvalds@linux-foundation.org, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, maxime.ripard@free-electrons.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 9:56 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Dec 20, 2012 at 08:38:14AM -0800, Olof Johansson wrote:
->> One of the sunxi patches from the last pull request was misapplied (I
->> realized what happened -- git am -s didn't apply cleanly so I had done it
->> through regular patch, thus not catching the renames properly). Here's
->> a fresh version of the pull request with a couple more OMAP and Samsung
->> patches included.
->>
->> There's a chance that a couple of the OMAP patches will also go in through
->> Russell, since my connectivity has been crap so far this trip and it
->> causes build breaks for the platform. It's a branch pull from Tony,
->> it should be a no-op either way.
->
-> Olof,
->
-> Not sure what's going on, but my recent pull from arm-soc for-next still
-> hasn't solved the OMAP build failures in my kbuild - I'm still getting:
->
-> arch/arm/mach-omap2/timer.c: In function 'omap_get_timer_dt':
-> arch/arm/mach-omap2/timer.c:178:3: error: implicit declaration of function 'prom_add_property'
-> arch/arm/mach-omap2/i2c.c: In function 'omap_pm_set_max_mpu_wakeup_lat_compat':
-> arch/arm/mach-omap2/i2c.c:130:2: error: implicit declaration of function 'omap_pm_set_max_mpu_wakeup_lat'
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, December 20, 2012 11:21 PM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> 
+> On Thu, Dec 20, 2012 at 04:58:32PM +0000, R, Durgadoss wrote:
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Thursday, December 20, 2012 10:09 PM
+> > > To: R, Durgadoss
+> > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > hongbo.zhang@linaro.org; wni@nvidia.com
+> > > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> > >
+> > > On Thu, Dec 20, 2012 at 04:25:32PM +0000, R, Durgadoss wrote:
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > > > Sent: Thursday, December 20, 2012 9:42 PM
+> > > > > To: R, Durgadoss
+> > > > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-
+> kernel@vger.kernel.org;
+> > > > > hongbo.zhang@linaro.org; wni@nvidia.com
+> > > > > Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
+> > > > >
+> > > > > On Thu, Dec 20, 2012 at 07:52:03AM +0000, R, Durgadoss wrote:
+> > > > > > > On Tue, Dec 18, 2012 at 02:59:33PM +0530, Durgadoss R wrote:
+> > > > > > > > This patch adds a thermal_trip directory under
+> > > > > > > > /sys/class/thermal/zoneX. This directory contains
+> > > > > > > > the trip point values for sensors bound to this
+> > > > > > > > zone.
+> > > > > > >
+> > > > > > > Eeek, you just broke userspace tools that now can no longer see
+> > > these
+> > > > > > > entries :(
+> > > > > > >
+> > > > > > > Why do you need to create a subdirectory?  As you found out,
+> doing
+> > > so
+> > > > > > > isn't the easiest, right?  That is on purpose.
+> > > > > >
+> > > > > > Yes, I observed the complexity.
+> > > > > >
+> > > > > > >
+> > > > > > > I really wouldn't recommend doing this at all, please stick within
+> the
+> > > > > > > 'struct device' framework here, don't create new kobjects and
+> hang
+> > > sysfs
+> > > > > > > files off of them.
+> > > > > >
+> > > > > > But, we cannot put all _trip directly under ZoneX directory.
+> > > > >
+> > > > > Why not?  What is preventing this?
+> > > > >
+> > > > > > We can remove the thermal_trip directory, and put sensorY_trip
+> under
+> > > > > > /sys/class/thermal/zoneX/.  But this sensorY_trip needs to be a
+> > > > > > directory which has four sysfs nodes named, active, passive, crit,
+> > > > > > hot.
+> > > > > >
+> > > > > > Rui, What do you think about this ?
+> > > > > >
+> > > > > > The only other way I see, is directly put
+> > > > > sensorY_trip_[active/passive/hot/crit]
+> > > > > > which will create way too many nodes, under
+> > > /sys/class/thermal/zoneX/.
+> > > > >
+> > > > > What is "too many"?  20000?  50000?  How many are we talking about
+> > > here?
+> > > >
+> > > > Not in 1000's though..
+> > > >
+> > > > > What is the limiting factor that is preventing this from all going into
+> > > > > one directory?
+> > > >
+> > > > We support a MAX of 12 sensors per zone today, which will lead to
+> > > > 12 * 4, 48 nodes under this directory named
+> > > > sensorY_trip_[active/passive/hot/crit], besides the other nodes.
+> > >
+> > > That's fine, we can easily support that many files, have you tried this
+> > > already?
+> >
+> > Yes, in fact, this is sort of what was the old implementation..
+> > although with different sysfs nodes.
+> 
+> What "old" implementation, one that is in-kernel?  Are you changing the
+> user interface here?
 
-Yep, I forgot to bring the fixes branch into our for-next. Try again
-once it mirrors out, I just pushed out a rebuild of it. New top commit
-should be e691d77e8825054376b31e79a9b5f9fa79fe764d.
+Sorry, I should have used better wordings ;(
+[s/old/existing]
+There are other sysfs nodes following the correct convention under
+/sys/class/thermal/, which is what I was mentioning.
 
-I'm doing a "build all defconfigs" run before sending the incremental
-pull request of fixes to Linus.
+No, we are not changing the user interface, in these patches.
 
-
--Olof
+Thanks,
+Durga
