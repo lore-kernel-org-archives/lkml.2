@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab2LTGZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:25:32 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:35364 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2LTGZ0 (ORCPT
+	id S1752602Ab2LTGZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:25:48 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:33773 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LTGZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:25:26 -0500
-X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
-   d="scan'208";a="15485822"
-Message-ID: <50D2AF54.7050402@codeaurora.org>
-Date: Wed, 19 Dec 2012 22:25:24 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 20 Dec 2012 01:25:38 -0500
+Message-ID: <50D2AE9F.2080001@synopsys.com>
+Date: Thu, 20 Dec 2012 11:52:23 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-CC: Paul Walmsley <paul@pwsan.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: spinlock bad magic on CPU#0 on BeagleBone
-References: <B5906170F1614E41A8A28DE3B8D121433EC9A69C@DBDE01.ent.ti.com> <alpine.DEB.2.00.1212191650430.16873@utopia.booyaka.com> <50D2224E.4060300@codeaurora.org> <B5906170F1614E41A8A28DE3B8D121433EC9B6FE@DBDE01.ent.ti.com>
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC9B6FE@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC Patch v1 38/55] ARC: Low level event capture/logging
+References: <1352720953-24321-1-git-send-email-vgupta@synopsys.com> <201211121355.23947.arnd@arndb.de> <50A4C6B5.9010500@synopsys.com> <201211151204.13203.arnd@arndb.de>
+In-Reply-To: <201211151204.13203.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 8:48 PM, Bedia, Vaibhav wrote:
-> I tried out 3 variants of AM335x boards - 2 of these (BeagleBone and EVM) have DDR2
-> and 1 has DDR3 (EVM-SK). The BUG is triggered on all of these at the same point.
+On Thursday 15 November 2012 05:34 PM, Arnd Bergmann wrote:
+> On Thursday 15 November 2012, Vineet Gupta wrote:
+>> On Monday 12 November 2012 07:25 PM, Arnd Bergmann wrote:
+>>> On Monday 12 November 2012, Vineet.Gupta1@synopsys.com wrote:
+>>>> +EXPORT_SYMBOL(take_snap);
+>>>> +
+>>>> ...
+>>>> +EXPORT_SYMBOL(take_snap2);
+>>> Where are these functions called?
+>> These are called from various parts of ARCH code, such as before
+>> handling signal or TLB flush etc.
+>>
+>>> Shouldn't this all just be part of the perf module?
+>> These are for low level ARCH specific event snapshotting. Maybe
+>> perf/ftrace already have some of these in the generic code which
+>> eventually call the ARCH APIs. Our current perf support is just husk of
+>> an implementation. Once we have the full perf / ftrace support this
+>> module - except for the even t capture part could just go away.
+>> OTOH, I've not seen much usage of this from loadable modules - so if you
+>> deem correct, I can even remove the export.
+>>
+>>> If not, can you make the exports GPL-only?
+>> Am I right in understanding that this is more related to discouraging
+>> non GPL modules "in general" than having to do with port itself.
+> Mostly yes. I understand that there are some reasons why people want
+> to mark symbols as generally available, e.g. for standard interfaces
+> that have traditionally been available to every module. My rule is
+> usually that any newly introduced symbols should be EXPORT_SYMBOL_GPL
+> by default, unless there is a (documented) reason to use EXPORT_SYMBOL
+> instead. This is particularly true for low-level interfaces like the
+> one here.
 >
-> With Stephen's change I don't see this on any of the board variants :)
-> New bootlog below.
+> If you can just remove the export, that is probably the best solution.
 
-Great! Can I have your Tested-by then? I'll wrap it up into a patch. Is
-this is a new regression? From a glance at the code it looks to have
-existed for quite a while now.
+Will do !
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> On a related note, any global symbol (exported or not) should normally
+> have a prefix that identifies the subsystem it belongs to. A global
+> identifier like "take_snap" can potentially conflict with symbols in
+> other parts of the kernel.
+
+Agreed - this contraption anyways was a quick hack to debug the "rooky"
+issues we had initially - things are pretty stable now - so I'm planning
+to drop this patch entirely. When we do something like LTTng etc we'll
+revisit the low level instrumentation.
+
+Thx,
+-Vineet
 
