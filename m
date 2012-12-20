@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab2LTV4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 16:56:47 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:38607 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2LTV4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 16:56:40 -0500
+	id S1752016Ab2LTV7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 16:59:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58597 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab2LTV7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 16:59:12 -0500
+Date: Thu, 20 Dec 2012 22:59:09 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: andreas@biessmann.de, ckeepax@opensource.wolfsonmicro.com,
+        pawel.moll@arm.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild changes for v3.8-rc1
+Message-ID: <20121220215909.GA24643@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <50D384AF.40002@intel.com>
-References: <1355881933-15182-1-git-send-email-david.a.cohen@intel.com>
- <1355881933-15182-2-git-send-email-david.a.cohen@intel.com>
- <20121220011812.98B003E0AD7@localhost> <50D384AF.40002@intel.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 20 Dec 2012 21:56:17 +0000
-X-Google-Sender-Auth: o3_gXgriL0RKdiZwjTFCCO92I5M
-Message-ID: <CACxGe6veF7tn=eOcmV2BVyvmUhjXqsJDigpZumT2q7fK5ozc3Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] gpio-langwell: cleanup driver
-To: David Cohen <david.a.cohen@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 9:35 PM, David Cohen <david.a.cohen@intel.com> wrote:
-> On 12/19/2012 05:18 PM, Grant Likely wrote:
->> On Tue, 18 Dec 2012 17:52:11 -0800, David Cohen <david.a.cohen@intel.com>
->>>   @@ -215,19 +217,14 @@ static int lnw_irq_type(struct irq_data *d,
->>> unsigned type)
->>>         return 0;
->>>   }
->>>   -static void lnw_irq_unmask(struct irq_data *d)
->>> -{
->>> -}
->>> -
->>> -static void lnw_irq_mask(struct irq_data *d)
->>> -{
->>> -}
->>> +static void lnw_irq_noop(struct irq_data *d) {}
->>
->> Umm, this looks entirely wrong. There needs to be either mask/unmask or
->> enable/disable ops for irq_chips. Yes I see that this patch is just
->> consolidating two empty functions, but they are two empty functions that
->> appear to be completely wrong.
->
->
-> I see your point. The solution does not belong to a clean up patch,
-> so I'll just remove it from here.
+Hi Linus,
 
-Right, that is appropriate.
+the kbuild changes are minimal this time:
+* scripts/pnmlogo fix for some newer format
+* minor top-level Makefile cleanup
+* fix for a v3.5 regression with make clean M=<directory>
 
->>>     static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
->>> @@ -349,7 +327,7 @@ static int __devinit lnw_gpio_probe(struct pci_dev
->>> *pdev,
->>>         retval = pci_request_regions(pdev, "langwell_gpio");
->>>         if (retval) {
->>>                 dev_err(&pdev->dev, "error requesting resources\n");
->>> -               goto err2;
->>> +               goto err;
->>
->> Renaming the labels just increases the noise in the diff. I prefer to
->> see labels in the form "err-what-i-just-tried-to-do:" so they don't need
->> to get reshuffled every time the code logic changes.
->>
->> There is no good reason for this change. Please drop it.
->
->
-> Maybe instead of drop it I'd prefer to fix the labels. They
-> are wrong currently.
+Please pull for v3.8-rc1, thanks.
 
-If there is real breakage here, then split it off into a separate bug
-fix patch. Otherwise I really wouldn't bother.
+Michal
 
-g.
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+Andreas Bieﬂmann (1):
+      scripts/pnmtologo: fix for plain PBM
+
+Charles Keepax (1):
+      kbuild: Remove reference to uninitialised variable
+
+Pawel Moll (1):
+      kbuild: Do not remove vmlinux when cleaning external module
+
+ Makefile            |   10 ++++++----
+ scripts/pnmtologo.c |    7 +++++++
+ 2 files changed, 13 insertions(+), 4 deletions(-)
