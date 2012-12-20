@@ -1,125 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab2LTLBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 06:01:16 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:37877 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab2LTLBJ (ORCPT
+	id S1752153Ab2LTLBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 06:01:35 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53601 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab2LTLB1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 06:01:09 -0500
-Date: Thu, 20 Dec 2012 12:00:58 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Juergen Beisert <jbe@pengutronix.de>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v2] linux/kernel.h: Fix DIV_ROUND_CLOSEST with unsigned
- divisors
-Message-ID: <20121220120058.48fb7c28@endymion.delvare>
-In-Reply-To: <201212201130.39235.jbe@pengutronix.de>
-References: <1355928015-26212-1-git-send-email-linux@roeck-us.net>
-	<20121219224122.GA26863@roeck-us.net>
-	<20121220112202.3ead1fe1@endymion.delvare>
-	<201212201130.39235.jbe@pengutronix.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 06:01:27 -0500
+Message-ID: <50D2EFFB.8030702@arm.com>
+Date: Thu, 20 Dec 2012 11:01:15 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, John Stultz <johnstul@us.ibm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com> <1355996654-6579-6-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1355996654-6579-6-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 20 Dec 2012 11:01:15.0966 (UTC) FILETIME=[54EEF5E0:01CDDEA1]
+X-MC-Unique: 112122011011800301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juergen,
+On 20/12/12 09:44, Hiroshi Doyu wrote:
+> Add platform enabler for ARM arch_timer(TSC). TSC is more fine grained
+> timer than TMR0. If it's available, it will be used for clock source
+> and sched_clock. Otherwise, TMR0 is used. In any case TMR0 is
+> necessary for clock event.
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> ---
+>  .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 ++++
+>  drivers/clocksource/tegra20_timer.c                |   64 +++++++++++++++++++-
+>  2 files changed, 74 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> new file mode 100644
+> index 0000000..9de936a
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+> @@ -0,0 +1,11 @@
+> +NVIDIA Tegra Timer Stamp Counter(TSC)
+> +
+> +Required properties:
+> +- compatible : "nvidia,tegra114-tsc
+> +- reg : Should contain 1 register ranges(address and length)
+> +
+> +Example:
+> +	tsc {
+> +		compatible = "nvidia,tegra114-tsc";
+> +		reg = <0x700f0000 0x20000>;
+> +	};
+> diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
+> index 1d25de8..285a6f1 100644
+> --- a/drivers/clocksource/tegra20_timer.c
+> +++ b/drivers/clocksource/tegra20_timer.c
+> @@ -30,6 +30,7 @@
+>  #include <asm/mach/time.h>
+>  #include <asm/smp_twd.h>
+>  #include <asm/sched_clock.h>
+> +#include <asm/arch_timer.h>
+>  
+>  #define RTC_SECONDS            0x08
+>  #define RTC_SHADOW_SECONDS     0x0c
+> @@ -271,10 +272,71 @@ static void __init tegra20_init_tmr(void)
+>  	clockevents_register_device(&tegra_clockevent);
+>  }
+>  
+> +#define TSC_CNTCR		0		/* TSC control registers */
+> +#define TSC_CNTCR_ENABLE	(1 << 0)	/* Enable */
+> +#define TSC_CNTCR_HDBG		(1 << 1)	/* Halt on debug */
+> +
+> +#define TSC_CNTCV0		0x8		/* TSC counter (LSW) */
+> +#define TSC_CNTCV1		0xc		/* TSC counter (MSW) */
+> +#define TSC_CNTFID0		0x20		/* TSC freq id 0 */
+> +
+> +static const struct of_device_id tegra_tsc_match[] __initconst = {
+> +	{ .compatible = "nvidia,tegra114-tsc" },
+> +	{}
+> +};
+> +
+> +static int tegra_arch_timer_init(void)
+> +{
+> +	int err;
+> +	struct device_node *np;
+> +	struct clk *clk;
+> +	void __iomem *tsc_base;
+> +	u32 freq, val;
+> +
+> +	np = of_find_matching_node(NULL, tegra_tsc_match);
+> +	if (!np)
+> +		return -ENODEV;
+> +
+> +	tsc_base = of_iomap(np, 0);
+> +	if (!tsc_base)
+> +		return -ENODEV;
+> +
+> +	clk = clk_get_sys("clk_m", NULL);
+> +	if (IS_ERR(clk)) {
+> +		freq = 12000000;
+> +		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
+> +	} else {
+> +		freq = clk_get_rate(clk);
+> +		clk_put(clk);
+> +	}
+> +	writel_relaxed(freq, tsc_base + TSC_CNTFID0);
+> +
+> +	/* CNTFRQ */
+> +	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
+> +	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
+> +	BUG_ON(val != freq);
 
-On Thu, 20 Dec 2012 11:30:38 +0100, Juergen Beisert wrote:
-> Hi Jean,
-> 
-> Jean Delvare wrote:
-> > On Wed, 19 Dec 2012 14:41:22 -0800, Guenter Roeck wrote:
-> > > One observed effect is that the s2c_hwmon driver reports a value of
-> > > 4198403 instead of 0 if the ADC reads 0.
-> > >
-> > > Other impact is unpredictable. Problem is seen if the divisor is an
-> > > unsigned variable or constant and the dividend is less than (divisor/2).
-> >
-> > Really? In my own testing, the problem only shows with dividend == 0,
-> > and even then, only when dividend is signed and divisor is not.
-> > DIV_ROUND_CLOSEST(5, 20U) returns 0 as expected, and so do
-> > DIV_ROUND_CLOSEST(0 / 20), DIV_ROUND_CLOSEST(0U / 20) and
-> > DIV_ROUND_CLOSEST(0U / 20U).
-> >
-> > Are your observations different?
-> 
-> I tried it with this simple user-land program to get an idea what's going 
-> wrong in the s3c_hwmon.c ADC driver:
-> 
-> #define DIV_ROUND_CLOSEST(x, divisor)(			\
-> {							\
-> 	typeof(x) __x = x;				\
-> 	typeof(divisor) __d = divisor;			\
-> 	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
-> 		(((__x) + ((__d) / 2)) / (__d)) :	\
-> 		(((__x) - ((__d) / 2)) / (__d));	\
-> }							\
-> )
-> 
-> int main(int argc, char *argv[])
-> {
-> 	int x;
-> 	unsigned y;
-> 
-> 	printf("Constants\n");
-> 
-> 	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(-1, 2));
-> 	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(-1, 1023));
-> 	printf("0 -> %d\n", DIV_ROUND_CLOSEST(0, 1023));
-> 	printf("0 -> %d\n", DIV_ROUND_CLOSEST(0, 2));
-> 	printf("1 -> %d\n", DIV_ROUND_CLOSEST(1, 2));
-> 	printf("1 -> %d\n", DIV_ROUND_CLOSEST(3300, 1023));
-> 	printf("2 -> %d\n", DIV_ROUND_CLOSEST(6600, 1023));
+This is scary. CNTFRQ is only writable from secure mode, and will
+explode in any other situation.
 
-This all works properly, because everything is signed here.
- 
-> 	printf("Variables\n");
-> 
-> 	x = -1; y = 2;
-> 	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(x, y));
-> 	x = -1; y = 1023;
-> 	printf("-1 -> %d\n", DIV_ROUND_CLOSEST(x, y));
-> 	x = 0; y = 1023;
-> 	printf("0 -> %d\n", DIV_ROUND_CLOSEST(x, y));
-> 	x = 3300; y = 1023;
-> 	printf("3300 -> %d\n", DIV_ROUND_CLOSEST(3300, 1023));
-> 	x = 6600; y = 1023;
-> 	printf("6600 -> %d\n", DIV_ROUND_CLOSEST(6600, 1023));
+Also, writing to CNTFRQ doesn't change the timer frequency! This is just
+a way for secure mode to tell the rest of the world the frequency the
+timer is ticking at. Unless you've wired the input clock to be able to
+change the frequency?
 
-I don't think variables vs. constants make any difference. What makes a
-difference is signed vs. unsigned. You see failures here because y is
-unsigned. You'd see the same with the constants above by changing 2 to
-2U and 1023 to 1023U.
-
-> 
-> 	return 0;
-> }
-> 
-> Result is on my x86 host (same on my ARM target):
-> 
-> Constants
-> -1 -> -1
-> -1 -> 0
-> 0 -> 0
-> 0 -> 0
-> 1 -> 1
-> 1 -> 3
-> 2 -> 6
-> Variables
-> -1 -> 2147483647
-> -1 -> 4198403
-> 0 -> 4198403
-> 3300 -> 3
-> 6600 -> 6
-
-I see the same here with your test program.
-
+	M.
 -- 
-Jean Delvare
+Jazz is not dead. It just smells funny...
+
