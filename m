@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab2LTUsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 15:48:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52738 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2LTUrx (ORCPT
+	id S1751506Ab2LTUvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 15:51:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35147 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2LTUva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 15:47:53 -0500
-Date: Thu, 20 Dec 2012 12:47:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: <serge.hallyn@canonical.com>, <ebiederm@xmission.com>,
-        <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>, <jmorris@namei.org>,
-        <cmetcalf@tilera.com>, <joe.korty@ccur.com>, <dhowells@redhat.com>,
-        <dledford@redhat.com>, <viro@zeniv.linux.org.uk>,
-        <kosaki.motohiro@jp.fujitsu.com>, <linux-api@vger.kernel.org>,
-        <serue@us.ibm.com>, <tglx@linutronix.de>, <paulmck@linux.vnet.ibm.com>,
-        <devel@openvz.org>, <mtk.manpages@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [RFC PATCH v8 0/5] IPC: checkpoint/restore in userspace
- enhancements
-Message-Id: <20121220124751.d7ccbd8e.akpm@linux-foundation.org>
-In-Reply-To: <50D28EC8.7000708@parallels.com>
-References: <20121024151555.5642.79086.stgit@localhost.localdomain>
-	<20121218123601.113a29c0.akpm@linux-foundation.org>
-	<50D28EC8.7000708@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 15:51:30 -0500
+Date: Thu, 20 Dec 2012 20:51:13 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] net/smsc911x: Provide common clock functionality
+Message-ID: <20121220205113.GD14363@n2100.arm.linux.org.uk>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org> <1355937587-31730-4-git-send-email-lee.jones@linaro.org> <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com> <20121220192441.GC14363@n2100.arm.linux.org.uk> <20121220203514.GN2691@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220203514.GN2691@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Dec 2012 08:06:32 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-
-> 19.12.2012 00:36, Andrew Morton __________:
-> > On Wed, 24 Oct 2012 19:34:51 +0400
-> > Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> >
-> >> This respin of the patch set was significantly reworked. Most part of new API
-> >> was replaced by sysctls (by one per messages, semaphores and shared memory),
-> >> allowing to preset desired id for next new IPC object.
-> >>
-> >> This patch set is aimed to provide additional functionality for all IPC
-> >> objects, which is required for migration of these objects by user-space
-> >> checkpoint/restore utils (CRIU).
-> >>
-> >> The main problem here was impossibility to set up object id. This patch set
-> >> solves the problem by adding new sysctls for preset of desired id for new IPC
-> >> object.
-> >>
-> >> Another problem was to peek messages from queues without deleting them.
-> >> This was achived by introducing of new MSG_COPY flag for sys_msgrcv(). If
-> >> MSG_COPY flag is set, then msgtyp is interpreted as message number.
-> > According to my extensive records, Sasha hit a bug in
-> > ipc-message-queue-copy-feature-introduced.patch and Fengguang found a
-> > bug in
-> > ipc-message-queue-copy-feature-introduced-cleanup-do_msgrcv-aroung-msg_copy-feature.patch
-> >
-> > It's not obvious (to me) that these things have been identified and
-> > fixed.  What's the status, please?
+On Thu, Dec 20, 2012 at 08:35:14PM +0000, Lee Jones wrote:
+> On Thu, 20 Dec 2012, Russell King - ARM Linux wrote:
 > 
-> Hello, Andrew.
-> Fengguang's issue was solved by "ipc: simplify message copying" I sent you.
-> But I can't find Sasha's issue. As I remember, there was some problem in 
-> early
-> version of the patch set. But I believe its fixed now.
+> > On Thu, Dec 20, 2012 at 08:12:08PM +0100, Linus Walleij wrote:
+> > > On Wed, Dec 19, 2012 at 6:19 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > > 
+> > > > Some platforms provide clocks which require enabling before the
+> > > > SMSC911x chip will power on. This patch uses the new common clk
+> > > > framework to do just that. If no clock is provided, it will just
+> > > > be ignored and the driver will continue to assume that no clock
+> > > > is required for the chip to run successfully.
+> > > >
+> > > > Cc: Steve Glendinning <steve.glendinning@shawell.net>
+> > > > Cc: netdev@vger.kernel.org
+> > > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > 
+> > > Seems to me like it'll do the trick.
+> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > This looks fairly dangerous.  What about those platforms which use this
+> > driver, but don't provide a clock for it?
+> > 
+> > It looks like this will result in those platforms losing their ethernet
+> > support.  There's at least a bunch of the ARM evaluation boards which
+> > make use of this driver...
+> 
+> Right, but nothing should regress. If no clock is provided the driver
+> moves on during the request and will refuse to prepare, enable and
+> disable there after. 
+> 
+> Unless I've made a mistake somewhere? If so, I'd be happy to fixup.
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1210.3/01710.html
-
-Subject: "ipc, msgqueue: NULL ptr deref in msgrcv"
+No, but... don't use NULL for that.  Use IS_ERR(pdata->clk) instead.
