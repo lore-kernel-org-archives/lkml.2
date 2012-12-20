@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab2LTFJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 00:09:40 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:18545 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1749667Ab2LTFJg (ORCPT
+	id S1751510Ab2LTFZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 00:25:43 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49981 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2LTFZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 00:09:36 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432I4015Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
-X-WSS-ID: 0MFBCZQ-02-5JK-02
-X-M-MSG: 
-Date: Wed, 19 Dec 2012 23:09:27 -0600
-From: Jacob Shin <jacob.shin@amd.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: <linux-kernel@vger.kernel.org>, <Boris.Ostrovsky@amd.com>
-Subject: Re: AMD microcode site (amd64.org) down for a while now
-Message-ID: <20121220050927.GA28438@jshin-Toonie>
-References: <20121220011108.GB17761@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20121220011108.GB17761@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 20 Dec 2012 00:25:35 -0500
+X-AuditID: 9c930197-b7c5bae000000e31-16-50d2a14c780f
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH] compaction: fix build error in CMA && !COMPACTION
+Date: Thu, 20 Dec 2012 14:25:30 +0900
+Message-Id: <1355981130-2382-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 11:11:09PM -0200, Henrique de Moraes Holschuh wrote:
-> Jacob,
-> 
-> Since you seem to be dealing with AMD microcode, do you know anything about
-> the amd64.org demise?  Where do we get the microcode update data, now?
+isolate_freepages_block and isolate_migratepages_range is used for CMA
+as well as compaction so it breaks build for CONFIG_CMA &&
+!CONFIG_COMPACTION.
 
-Hi,
+This patch fixes it.
 
-Yes, the server amd64.org was hosted on is down at the moment, sorry
-about that. We are hoping to get it back up soon. But eventually we
-are planning to push the microcode patch update files to kernel.org
-linux-firmware git repository.
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/compaction.c |   26 ++++++++++++++++++++------
+ 1 file changed, 20 insertions(+), 6 deletions(-)
 
-Thanks,
-
--Jacob
-
-> 
-> -- 
->   "One disk to rule them all, One disk to find them. One disk to bring
->   them all and in the darkness grind them. In the Land of Redmond
->   where the shadows lie." -- The Silicon Valley Tarot
->   Henrique Holschuh
-> 
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 5ad7f4f..70f4443 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -17,6 +17,21 @@
+ #include <linux/balloon_compaction.h>
+ #include "internal.h"
+ 
++#ifdef CONFIG_COMPACTION
++static inline void count_compact_event(enum vm_event_item item)
++{
++	count_vm_event(item);
++}
++
++static inline void count_compact_events(enum vm_event_item item, long delta)
++{
++	count_vm_events(item, delta);
++}
++#else
++#define count_compact_event(item)
++#define count_compact_events(item, delta)
++#endif
++
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+ 
+ #define CREATE_TRACE_POINTS
+@@ -303,10 +318,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	if (blockpfn == end_pfn)
+ 		update_pageblock_skip(cc, valid_page, total_isolated, false);
+ 
+-	count_vm_events(COMPACTFREE_SCANNED, nr_scanned);
++	count_compact_events(COMPACTFREE_SCANNED, nr_scanned);
+ 	if (total_isolated)
+-		count_vm_events(COMPACTISOLATED, total_isolated);
+-
++		count_compact_events(COMPACTISOLATED, total_isolated);
+ 	return total_isolated;
+ }
+ 
+@@ -613,9 +627,9 @@ next_pageblock:
+ 
+ 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+ 
+-	count_vm_events(COMPACTMIGRATE_SCANNED, nr_scanned);
++	count_compact_events(COMPACTMIGRATE_SCANNED, nr_scanned);
+ 	if (nr_isolated)
+-		count_vm_events(COMPACTISOLATED, nr_isolated);
++		count_compact_events(COMPACTISOLATED, nr_isolated);
+ 
+ 	return low_pfn;
+ }
+@@ -1110,7 +1124,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 	if (!order || !may_enter_fs || !may_perform_io)
+ 		return rc;
+ 
+-	count_vm_event(COMPACTSTALL);
++	count_compact_event(COMPACTSTALL);
+ 
+ #ifdef CONFIG_CMA
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+-- 
+1.7.9.5
 
