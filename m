@@ -1,100 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab2LTBVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 20:21:36 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:60147 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab2LTBVc (ORCPT
+	id S1752419Ab2LTBX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 20:23:28 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29214 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752207Ab2LTBXV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 20:21:32 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        linux-mm@kvack.org
-References: <20121210103913.020858db777e2f48c59713b6@mxc.nes.nec.co.jp>
-	<20121219161856.e6aa984f.akpm@linux-foundation.org>
-	<878v8ty200.fsf@xmission.com>
-	<20121219170038.f7b260c3.akpm@linux-foundation.org>
-Date: Wed, 19 Dec 2012 17:20:42 -0800
-In-Reply-To: <20121219170038.f7b260c3.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 19 Dec 2012 17:00:38 -0800")
-Message-ID: <87ip7xwmc5.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 19 Dec 2012 20:23:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,320,1355126400"; 
+   d="scan'208";a="259934155"
+From: "Xu, Dongxiao" <dongxiao.xu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@suse.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
+ for map_sg hook
+Thread-Topic: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
+ for map_sg hook
+Thread-Index: AQHN3iS3Yq7YP+NEuUuBhS1jhpm+BJgg4xjQ
+Date: Thu, 20 Dec 2012 01:23:17 +0000
+Message-ID: <40776A41FC278F40B59438AD47D147A90FECC3EC@SHSMSX102.ccr.corp.intel.com>
+References: <1354799322-6000-1-git-send-email-dongxiao.xu@intel.com>
+ <20121207140852.GC3140@phenom.dumpdata.com>
+ <40776A41FC278F40B59438AD47D147A90FEBE741@SHSMSX102.ccr.corp.intel.com>
+ <20121211170653.GG9347@localhost.localdomain>
+ <40776A41FC278F40B59438AD47D147A90FEBFB64@SHSMSX102.ccr.corp.intel.com>
+ <50C85E9F02000078000AFD65@nat28.tlf.novell.com>
+ <20121219200904.GG15037@phenom.dumpdata.com>
+In-Reply-To: <20121219200904.GG15037@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+uTuB+loBUxYg/h9wmBemOru1GJg/SAj8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0004]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2] Add the values related to buddy system for filtering free pages.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+> -----Original Message-----
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Thursday, December 20, 2012 4:09 AM
+> To: Jan Beulich
+> Cc: Xu, Dongxiao; xen-devel@lists.xen.org; linux-kernel@vger.kernel.org
+> Subject: Re: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
+> for map_sg hook
+> 
+> On Wed, Dec 12, 2012 at 09:38:23AM +0000, Jan Beulich wrote:
+> > >>> On 12.12.12 at 02:03, "Xu, Dongxiao" <dongxiao.xu@intel.com> wrote:
+> > >> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com] On Tue,
+> > >> Dec 11, 2012 at 06:39:35AM +0000, Xu, Dongxiao wrote:
+> > >> > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> > >> > > What if this check was done in the routines that provide the
+> > >> > > software static buffers and there try to provide a nice DMA
+> > >> > > contingous
+> > >> swatch of pages?
+> > >> >
+> > >> > Yes, this approach also came to our mind, which needs to modify
+> > >> > the driver
+> > >> itself.
+> > >> > If so, it requires driver not using such static buffers (e.g.,
+> > >> > from
+> > > kmalloc) to do
+> > >> DMA even if the buffer is continuous in native.
+> > >>
+> > >> I am bit loss here.
+> > >>
+> > >> Is the issue you found only with drivers that do not use DMA API?
+> > >> Can you perhaps point me to the code that triggered this fix in the
+> > >> first
+> > > place?
+> > >
+> > > Yes, we met this issue on a specific SAS device/driver, and it calls
+> > > into libata-core code, you can refer to function ata_dev_read_id()
+> > > called from
+> > > ata_dev_reread_id() in drivers/ata/libata-core.c.
+> > >
+> > > In the above function, the target buffer is (void
+> > > *)dev->link->ap->sector_buf, which is 512 bytes static buffer and
+> > > unfortunately it across the page boundary.
+> >
+> > I wonder whether such use of sg_init_one()/sg_set_buf() is correct in
+> > the first place. While there aren't any restrictions documented for
+> > its use, one clearly can't pass in whatever one wants (a pointer into
+> > vmalloc()-ed memory, for instance, won't work afaict).
+> >
+> > I didn't go through all other users of it, but quite a few of the uses
+> > elsewhere look similarly questionable.
+> >
+> > >> I am still not completely clear on what you had in mind. The one
+> > >> method I thought about that might help in this is to have
+> > >> Xen-SWIOTLB track which memory ranges were exchanged (so
+> > >> xen_swiotlb_fixup would save the *buf and the size for each call to
+> > >> xen_create_contiguous_region in a list or
+> > > array).
+> > >>
+> > >> When xen_swiotlb_map/xen_swiotlb_map_sg_attrs care called they
+> > >> would consult said array/list to see if the region they retrieved
+> > >> crosses said 2MB chunks. If so.. and here I am unsure of what would
+> > >> be the best way to
+> > > proceed.
+> 
+> And from finally looking at the code I misunderstood your initial description.
+> 
+> > >
+> > > We thought we can solve the issue in several ways:
+> > >
+> > > 1) Like the previous patch I sent out, we check the DMA region in
+> > > xen_swiotlb_map_page() and xen_swiotlb_map_sg_attr(), and if DMA
+> > > region crosses page boundary, we exchange the memory and copy the
+> > > content. However it has race condition that when copying the memory
+> > > content (we introduced two memory copies in the patch), some other
+> > > code may also visit the page, which may encounter incorrect values.
+> >
+> > That's why, after mapping a buffer (or SG list) one has to call the
+> > sync functions before looking at data. Any race as described by you is
+> > therefore a programming error.
+> 
+> I am with Jan here. It looks like the libata is depending on the dma_unmap to
+> do this. But it is unclear to me when the ata_qc_complete is actually called to
+> unmap the buffer (and hence sync it).
 
-> On Wed, 19 Dec 2012 16:57:03 -0800
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
->
->> Andrew Morton <akpm@linux-foundation.org> writes:
->> 
->> > Is there any way in which we can move some of this logic into the
->> > kernel?  In this case, add some kernel code which uses PageBuddy() on
->> > behalf of makedumpfile, rather than replicating the PageBuddy() logic
->> > in userspace?
->> 
->> All that exists when makedumpfile runs is a core file.  So it would have
->> to be something like a share library that builds with the kernel and
->> then makedumpfile loads.
->
-> Can we omit free pages from that core file?
->
-> And/or add a section to that core file which flags free pages?
+Sorry, maybe I am still not describing this issue clearly.
 
-Ommitting pages is what makedumpfile does.
+Take the libata case as an example, the static DMA buffer locates (dev->link->ap->sector_buf , here we use Data Structure B in the graph) in the following structure:
 
-Very loosely shortly after boot when things are running fine /sbin/kexec
-runs.
+-------------------------------------Page boundary
+<Data Structure A>
+<Data Structure B>
+-------------------------------------Page boundary
+<Data Structure B (cross page)>
+<Data Structure C>
+-------------------------------------Page boundary
 
-/sbin/kexec constructs a set of elf headers that describe where the
-memory is and load the crashdump kernel an initrd and those elf headers
-into memory.
+Where Structure B is our DMA target.
 
-Years later when the running kernel calls panic.
-panic calls machine_kexec
-machine_kexec jmps to the preloaded crashdump kernel.
+For Data Structure B, we didn't care about the simultaneous access, either lock or sync function will take care of it.
+What we are not sure is "read/write of A and C from other processor". As we will have memory copy for the pages, and at the same time, other CPU may access A/C.
 
-I think it is /proc/vmcore that reads the elf headers out of memory and
-presents them to userspace.
-
-Then we have options.
-vmcore-to-dmesg will just read the dmesg ring buffer so we have that.
-
-makedumpfile reads the kernel data structures and filters out the free
-pages for people who don't want to write everything to disk.
-
-So the basic interface is strongly kernel version agnostic.  The
-challenge is how to filter out undesirable pages from the core dump
-quickly and reliably.
-
-Right now what we have are a set of ELF notes that describe struct page.
-
-For my uses I have either had enough disk space that saving everything
-didn't matter or so little disk space that all I could afford was
-getting out the dmesg ring buffer.  So I don't know how robust the
-solution adopted by makedumpfile is.
-
-Eric
+Thanks,
+Dongxiao
+> 
+> >
+> > Jan
+> >
+> >
