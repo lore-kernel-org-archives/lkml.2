@@ -1,151 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab2LTBX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 20:23:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:29214 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab2LTBXV convert rfc822-to-8bit (ORCPT
+	id S1752229Ab2LTB05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 20:26:57 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:50851 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215Ab2LTB0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 20:23:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,320,1355126400"; 
-   d="scan'208";a="259934155"
-From: "Xu, Dongxiao" <dongxiao.xu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
- for map_sg hook
-Thread-Topic: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
- for map_sg hook
-Thread-Index: AQHN3iS3Yq7YP+NEuUuBhS1jhpm+BJgg4xjQ
-Date: Thu, 20 Dec 2012 01:23:17 +0000
-Message-ID: <40776A41FC278F40B59438AD47D147A90FECC3EC@SHSMSX102.ccr.corp.intel.com>
-References: <1354799322-6000-1-git-send-email-dongxiao.xu@intel.com>
- <20121207140852.GC3140@phenom.dumpdata.com>
- <40776A41FC278F40B59438AD47D147A90FEBE741@SHSMSX102.ccr.corp.intel.com>
- <20121211170653.GG9347@localhost.localdomain>
- <40776A41FC278F40B59438AD47D147A90FEBFB64@SHSMSX102.ccr.corp.intel.com>
- <50C85E9F02000078000AFD65@nat28.tlf.novell.com>
- <20121219200904.GG15037@phenom.dumpdata.com>
-In-Reply-To: <20121219200904.GG15037@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 19 Dec 2012 20:26:52 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 3/3] gpio-langwell: implement irq shutdown interface
+To: David Cohen <david.a.cohen@intel.com>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
+        "Li, Ning" <ning.li@intel.com>, David Cohen <david.a.cohen@intel.com>
+In-Reply-To: <1355881933-15182-4-git-send-email-david.a.cohen@intel.com>
+References: <1355881933-15182-1-git-send-email-david.a.cohen@intel.com> <1355881933-15182-4-git-send-email-david.a.cohen@intel.com>
+Date: Thu, 20 Dec 2012 01:26:46 +0000
+Message-Id: <20121220012646.E54AE3E0AD7@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> Sent: Thursday, December 20, 2012 4:09 AM
-> To: Jan Beulich
-> Cc: Xu, Dongxiao; xen-devel@lists.xen.org; linux-kernel@vger.kernel.org
-> Subject: Re: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
-> for map_sg hook
+On Tue, 18 Dec 2012 17:52:13 -0800, David Cohen <david.a.cohen@intel.com> wrote:
+> From: "Li, Ning" <ning.li@intel.com>
 > 
-> On Wed, Dec 12, 2012 at 09:38:23AM +0000, Jan Beulich wrote:
-> > >>> On 12.12.12 at 02:03, "Xu, Dongxiao" <dongxiao.xu@intel.com> wrote:
-> > >> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com] On Tue,
-> > >> Dec 11, 2012 at 06:39:35AM +0000, Xu, Dongxiao wrote:
-> > >> > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > >> > > What if this check was done in the routines that provide the
-> > >> > > software static buffers and there try to provide a nice DMA
-> > >> > > contingous
-> > >> swatch of pages?
-> > >> >
-> > >> > Yes, this approach also came to our mind, which needs to modify
-> > >> > the driver
-> > >> itself.
-> > >> > If so, it requires driver not using such static buffers (e.g.,
-> > >> > from
-> > > kmalloc) to do
-> > >> DMA even if the buffer is continuous in native.
-> > >>
-> > >> I am bit loss here.
-> > >>
-> > >> Is the issue you found only with drivers that do not use DMA API?
-> > >> Can you perhaps point me to the code that triggered this fix in the
-> > >> first
-> > > place?
-> > >
-> > > Yes, we met this issue on a specific SAS device/driver, and it calls
-> > > into libata-core code, you can refer to function ata_dev_read_id()
-> > > called from
-> > > ata_dev_reread_id() in drivers/ata/libata-core.c.
-> > >
-> > > In the above function, the target buffer is (void
-> > > *)dev->link->ap->sector_buf, which is 512 bytes static buffer and
-> > > unfortunately it across the page boundary.
-> >
-> > I wonder whether such use of sg_init_one()/sg_set_buf() is correct in
-> > the first place. While there aren't any restrictions documented for
-> > its use, one clearly can't pass in whatever one wants (a pointer into
-> > vmalloc()-ed memory, for instance, won't work afaict).
-> >
-> > I didn't go through all other users of it, but quite a few of the uses
-> > elsewhere look similarly questionable.
-> >
-> > >> I am still not completely clear on what you had in mind. The one
-> > >> method I thought about that might help in this is to have
-> > >> Xen-SWIOTLB track which memory ranges were exchanged (so
-> > >> xen_swiotlb_fixup would save the *buf and the size for each call to
-> > >> xen_create_contiguous_region in a list or
-> > > array).
-> > >>
-> > >> When xen_swiotlb_map/xen_swiotlb_map_sg_attrs care called they
-> > >> would consult said array/list to see if the region they retrieved
-> > >> crosses said 2MB chunks. If so.. and here I am unsure of what would
-> > >> be the best way to
-> > > proceed.
+> Signed-off-by: David Cohen <david.a.cohen@intel.com>
+> Signed-off-by: Li, Ning <ning.li@intel.com>
+
+I could use some help interpreting this patch since it doesn't have any
+commit text describing why this patch is needed, nor does it have any
+comments in the code describing what it is doing.
+
+Having good commit text is important. Use it to tell me and future
+readers why this patch is important. What it does and how it was tested.
+Otherwise I end up trying to read your mind.
+
+(The patch does actually look fine to me, but it isn't okay to neglect
+a patch descirption on anything other than the most trivial of
+patches... and even then it triggers severe eyebrow raising)
+
+g.
+
+> ---
+>  drivers/gpio/gpio-langwell.c |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
 > 
-> And from finally looking at the code I misunderstood your initial description.
+> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+> index dc534a9..c702d3d 100644
+> --- a/drivers/gpio/gpio-langwell.c
+> +++ b/drivers/gpio/gpio-langwell.c
+> @@ -219,12 +219,30 @@ static int lnw_irq_type(struct irq_data *d, unsigned type)
+>  
+>  static void lnw_irq_noop(struct irq_data *d) {}
+>  
+> +static void lnw_irq_shutdown(struct irq_data *d)
+> +{
+> +	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
+> +	u32 gpio = irqd_to_hwirq(d);
+> +	unsigned long flags;
+> +	u32 value;
+> +	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
+> +	void __iomem *gfer = gpio_reg(&lnw->chip, gpio, GFER);
+> +
+> +	spin_lock_irqsave(&lnw->lock, flags);
+> +	value = readl(grer) & ~BIT(gpio % 32);
+> +	writel(value, grer);
+> +	value = readl(gfer) & ~BIT(gpio % 32);
+> +	writel(value, gfer);
+> +	spin_unlock_irqrestore(&lnw->lock, flags);
+> +};
+> +
+>  static struct irq_chip lnw_irqchip = {
+>  	.name		= "LNW-GPIO",
+>  	.irq_mask	= lnw_irq_noop,
+>  	.irq_unmask	= lnw_irq_noop,
+>  	.irq_set_type	= lnw_irq_type,
+>  	.irq_ack	= lnw_irq_noop,
+> +	.irq_shutdown	= lnw_irq_shutdown,
+>  };
+>  
+>  static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {   /* pin number */
+> -- 
+> 1.7.10.4
 > 
-> > >
-> > > We thought we can solve the issue in several ways:
-> > >
-> > > 1) Like the previous patch I sent out, we check the DMA region in
-> > > xen_swiotlb_map_page() and xen_swiotlb_map_sg_attr(), and if DMA
-> > > region crosses page boundary, we exchange the memory and copy the
-> > > content. However it has race condition that when copying the memory
-> > > content (we introduced two memory copies in the patch), some other
-> > > code may also visit the page, which may encounter incorrect values.
-> >
-> > That's why, after mapping a buffer (or SG list) one has to call the
-> > sync functions before looking at data. Any race as described by you is
-> > therefore a programming error.
-> 
-> I am with Jan here. It looks like the libata is depending on the dma_unmap to
-> do this. But it is unclear to me when the ata_qc_complete is actually called to
-> unmap the buffer (and hence sync it).
 
-Sorry, maybe I am still not describing this issue clearly.
-
-Take the libata case as an example, the static DMA buffer locates (dev->link->ap->sector_buf , here we use Data Structure B in the graph) in the following structure:
-
--------------------------------------Page boundary
-<Data Structure A>
-<Data Structure B>
--------------------------------------Page boundary
-<Data Structure B (cross page)>
-<Data Structure C>
--------------------------------------Page boundary
-
-Where Structure B is our DMA target.
-
-For Data Structure B, we didn't care about the simultaneous access, either lock or sync function will take care of it.
-What we are not sure is "read/write of A and C from other processor". As we will have memory copy for the pages, and at the same time, other CPU may access A/C.
-
-Thanks,
-Dongxiao
-> 
-> >
-> > Jan
-> >
-> >
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
