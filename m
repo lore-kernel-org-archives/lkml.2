@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab2LTPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:49:25 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:57303 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab2LTPtA (ORCPT
+	id S1751832Ab2LTPtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:49:50 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:41101 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab2LTPtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:49:00 -0500
+	Thu, 20 Dec 2012 10:49:35 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v4 16/18] perf tools: detect data vs. text mappings
-Date: Thu, 20 Dec 2012 16:41:46 +0100
-Message-Id: <1356018108-6081-17-git-send-email-eranian@google.com>
+Subject: [PATCH v4 01/18] perf, x86: Support CPU specific sysfs events
+Date: Thu, 20 Dec 2012 16:41:31 +0100
+Message-Id: <1356018108-6081-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1356018108-6081-1-git-send-email-eranian@google.com>
 References: <1356018108-6081-1-git-send-email-eranian@google.com>
@@ -21,46 +21,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverages the PERF_RECORD_MISC_MMAP_DATA bit in
-the RECORD_MMAP record header. When the bit is set
-then the mapping type is set to MAP__VARIABLE.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Add a way for the CPU initialization code to register additional events,
+and merge them into the events attribute directory. Used in the next
+patch.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/machine.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |    1 +
+ 2 files changed, 30 insertions(+)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 1f09d05..d1c3e48 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -379,6 +379,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread;
- 	struct map *map;
-+	enum map_type type;
- 	int ret = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4428fd1..83f4c1a 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1341,6 +1341,30 @@ static void __init filter_events(struct attribute **attrs)
+ 	}
+ }
  
- 	if (dump_trace)
-@@ -395,10 +396,17 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 	thread = machine__findnew_thread(machine, event->mmap.pid);
- 	if (thread == NULL)
- 		goto out_problem;
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a,
++					    struct attribute **b)
++{
++	struct attribute **new;
++	int j, i;
 +
-+	if (event->header.misc & PERF_RECORD_MISC_MMAP_DATA)
-+		type = MAP__VARIABLE;
-+	else
-+		type = MAP__FUNCTION;
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return a;
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++	return new;
++}
 +
- 	map = map__new(&machine->user_dsos, event->mmap.start,
- 			event->mmap.len, event->mmap.pgoff,
- 			event->mmap.pid, event->mmap.filename,
--			MAP__FUNCTION);
-+			type);
-+
- 	if (map == NULL)
- 		goto out_problem;
+ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1482,6 +1506,11 @@ static int __init init_hw_perf_events(void)
+ 	else
+ 		filter_events(x86_pmu_events_group.attrs);
  
++	if (x86_pmu.cpu_events)
++		x86_pmu_events_group.attrs =
++			merge_attr(x86_pmu_events_group.attrs,
++				   x86_pmu.cpu_events);
++
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..4170043 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -355,6 +355,7 @@ struct x86_pmu {
+ 	struct attribute **format_attrs;
+ 
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++	struct attribute **cpu_events;
+ 
+ 	/*
+ 	 * CPU Hotplug hooks
 -- 
 1.7.9.5
 
