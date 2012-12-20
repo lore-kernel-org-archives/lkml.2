@@ -1,73 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2LTXH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 18:07:56 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6428 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab2LTXHr (ORCPT
+	id S1751825Ab2LTXKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:10:41 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36000 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2LTXKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 18:07:47 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=kMKUP9VcE-gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ErkLabmjQQoA:10 a=kJ3d0gFlza_WgqKZI2YA:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1356044865.5896.78.camel@gandalf.local.home>
-Subject: Re: [PATCH] sched/rt: Move cpu rq properties from "struct rt_rq" to
- "struct rq"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Thu, 20 Dec 2012 18:07:45 -0500
-In-Reply-To: <401821356041818@web4f.yandex.ru>
-References: <4807701355857948@web19f.yandex.ru>
-	 <alpine.LFD.2.02.1212201852060.3148@ionos>
-	 <401821356041818@web4f.yandex.ru>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Dec 2012 18:10:31 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC PATCH 1/4] mm: Explicitly track when the page dirty bit is transferred from a pte
+Date: Thu, 20 Dec 2012 15:10:09 -0800
+Message-Id: <b1a66234223b0686e3d199dbba483d5695a2d59f.1356043686.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <cover.1356043686.git.luto@amacapital.net>
+References: <CALCETrUxFHHVPO=EC0jmV9SSKJiOm-mc-xwsd6Ruk3p5nC4fFQ@mail.gmail.com>
+ <cover.1356043686.git.luto@amacapital.net>
+In-Reply-To: <cover.1356043686.git.luto@amacapital.net>
+References: <cover.1356043686.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-21 at 02:16 +0400, Kirill Tkhai wrote:
-> 20.12.2012, 21:53, "Thomas Gleixner" <tglx@linutronix.de>:
-> > On Tue, 18 Dec 2012, Kirill Tkhai wrote:
-> >
-> >>  The members rt_nr_total, rt_nr_migratory, overloaded and pushable_tasks are
-> >>  properties of cpu runqueue, not group rt_rq.
-> >
-> > Why?
-> 
-> Because, they depend on number and properties of all processes of rq, not of nested rt_rq.
-> 
+This is a slight cleanup, but, more importantly, it will let us
+easily detect writes via mmap when the process is done writing
+(e.g. munmaps, msyncs, fsyncs, or dies).
 
-You're answer is still confusing.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ include/linux/mm.h  |  1 +
+ mm/memory-failure.c |  4 +---
+ mm/page-writeback.c | 16 ++++++++++++++--
+ mm/rmap.c           |  9 ++++++---
+ 4 files changed, 22 insertions(+), 8 deletions(-)
 
-	struct rq {
-		[...]
-		struct rt_rq rt;
-
-
-rt_rq is just a part of rq. What's the point?
-
-	rq = container_of(rt_rq, struct rt_rq, rt);
-
-As the comment above struct rt_rq says:
-
-/* Real-Time classes' related field in a runqueue: */
-
-Those look like fields related to the Real-Time class. I don't see them
-used outside of kernel/sched/rt.c
-
--- Steve
-
-> >
-> > Thanks,
-> >
-> >         tglx
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index a44aa00..4c7e49b 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1037,6 +1037,7 @@ int redirty_page_for_writepage(struct writeback_control *wbc,
+ void account_page_dirtied(struct page *page, struct address_space *mapping);
+ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
++int set_page_dirty_from_pte(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
+ 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 8b20278..ab5c3f4 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -892,9 +892,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	mapping = page_mapping(hpage);
+ 	if (!(flags & MF_MUST_KILL) && !PageDirty(hpage) && mapping &&
+ 	    mapping_cap_writeback_dirty(mapping)) {
+-		if (page_mkclean(hpage)) {
+-			SetPageDirty(hpage);
+-		} else {
++		if (!page_mkclean(hpage)) {
+ 			kill = 0;
+ 			ttu |= TTU_IGNORE_HWPOISON;
+ 			printk(KERN_INFO
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 830893b..cdea11a 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2109,6 +2109,19 @@ int set_page_dirty(struct page *page)
+ EXPORT_SYMBOL(set_page_dirty);
+ 
+ /*
++ * Dirty a page due to the page table dirty bit.
++ *
++ * For pages with a mapping this should be done under the page lock.
++ * This does set_page_dirty plus extra work to account for the fact that
++ * the kernel was not notified when the actual write was done.
++ */
++int set_page_dirty_from_pte(struct page *page)
++{
++	/* Doesn't do anything interesting yet. */
++	return set_page_dirty(page);
++}
++
++/*
+  * set_page_dirty() is racy if the caller has no reference against
+  * page->mapping->host, and if the page is unlocked.  This is because another
+  * CPU could truncate the page off the mapping and then free the mapping.
+@@ -2175,8 +2188,7 @@ int clear_page_dirty_for_io(struct page *page)
+ 		 * as a serialization point for all the different
+ 		 * threads doing their things.
+ 		 */
+-		if (page_mkclean(page))
+-			set_page_dirty(page);
++		page_mkclean(page);
+ 		/*
+ 		 * We carefully synchronise fault handlers against
+ 		 * installing a dirty pte and marking the page dirty
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 2ee1ef0..b8fe00e 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -931,6 +931,9 @@ int page_mkclean(struct page *page)
+ 			ret = page_mkclean_file(mapping, page);
+ 	}
+ 
++	if (ret)
++		set_page_dirty_from_pte(page);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(page_mkclean);
+@@ -1151,7 +1154,7 @@ void page_remove_rmap(struct page *page)
+ 	 */
+ 	if (mapping && !mapping_cap_account_dirty(mapping) &&
+ 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+-		set_page_dirty(page);
++		set_page_dirty_from_pte(page);
+ 	/*
+ 	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+ 	 * and not charged by memcg for now.
+@@ -1229,7 +1232,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 
+ 	/* Move the dirty bit to the physical page now the pte is gone. */
+ 	if (pte_dirty(pteval))
+-		set_page_dirty(page);
++		set_page_dirty_from_pte(page);
+ 
+ 	/* Update high watermark before we lower rss */
+ 	update_hiwater_rss(mm);
+@@ -1423,7 +1426,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 
+ 		/* Move the dirty bit to the physical page now the pte is gone. */
+ 		if (pte_dirty(pteval))
+-			set_page_dirty(page);
++			set_page_dirty_from_pte(page);
+ 
+ 		page_remove_rmap(page);
+ 		page_cache_release(page);
+-- 
+1.7.11.7
 
