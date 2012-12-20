@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab2LTJqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:46:12 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17578 "EHLO
+	id S1752195Ab2LTJqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:46:25 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17630 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab2LTJp4 (ORCPT
+	with ESMTP id S1750956Ab2LTJqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:45:56 -0500
+	Thu, 20 Dec 2012 04:46:07 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 20 Dec 2012 01:45:52 -0800
+	by hqnvupgp07.nvidia.com on Thu, 20 Dec 2012 01:43:34 -0800
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <linux-tegra@vger.kernel.org>
 CC: Hiroshi Doyu <hdoyu@nvidia.com>, Grant Likely <grant.likely@secretlab.ca>,
@@ -22,9 +22,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, Grant Likely <grant.likely@secretlab.ca>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 5/9] clocksource: tegra: Enable ARM arch_timer with TSC
-Date: Thu, 20 Dec 2012 11:44:03 +0200
-Message-ID: <1355996654-6579-6-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCH 6/9] ARM: dt: tegra114: Add new SoC base, Tegra 114 SoC
+Date: Thu, 20 Dec 2012 11:44:04 +0200
+Message-ID: <1355996654-6579-7-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
 References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
@@ -34,120 +34,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add platform enabler for ARM arch_timer(TSC). TSC is more fine grained
-timer than TMR0. If it's available, it will be used for clock source
-and sched_clock. Otherwise, TMR0 is used. In any case TMR0 is
-necessary for clock event.
+Initial support for Tegra 114 SoC. This is expected to be included in
+the board DTS files, Tegra 114 SoC based evaluation board family.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
- .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 ++++
- drivers/clocksource/tegra20_timer.c                |   64 +++++++++++++++++++-
- 2 files changed, 74 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+ arch/arm/boot/dts/tegra114.dtsi |   89 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+ create mode 100644 arch/arm/boot/dts/tegra114.dtsi
 
-diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
 new file mode 100644
-index 0000000..9de936a
+index 0000000..a5b7330
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
-@@ -0,0 +1,11 @@
-+NVIDIA Tegra Timer Stamp Counter(TSC)
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -0,0 +1,89 @@
++/include/ "skeleton.dtsi"
 +
-+Required properties:
-+- compatible : "nvidia,tegra114-tsc
-+- reg : Should contain 1 register ranges(address and length)
++/ {
++	compatible = "nvidia,tegra114";
++	interrupt-parent = <&gic>;
 +
-+Example:
++	gic: interrupt-controller {
++		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
++		reg = <0x50041000 0x1000
++		       0x50042000 0x1000>;
++		interrupt-controller;
++		#interrupt-cells = <3>;
++	};
++
++	timer@60005000 {
++		compatible = "nvidia,tegra114-timer", "nvidia,tegra20-timer";
++		reg = <0x60005000 0x400>;
++		interrupts = <0 0 0x04
++			      0 1 0x04
++			      0 41 0x04
++			      0 42 0x04
++			      0 121 0x04
++			      0 122 0x04>;
++	};
++
++	serial@70006000 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006000 0x40>;
++		reg-shift = <2>;
++		interrupts = <0 36 0x04>;
++		status = "disabled";
++	};
++
++	serial@70006040 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006040 0x40>;
++		reg-shift = <2>;
++		interrupts = <0 37 0x04>;
++		status = "disabled";
++	};
++
++	serial@70006200 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006200 0x100>;
++		reg-shift = <2>;
++		interrupts = <0 46 0x04>;
++		status = "disabled";
++	};
++
++	serial@70006300 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006300 0x100>;
++		reg-shift = <2>;
++		interrupts = <0 90 0x04>;
++		status = "disabled";
++	};
++
++	serial@70006400 {
++		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
++		reg = <0x70006400 0x100>;
++		reg-shift = <2>;
++		interrupts = <0 91 0x04>;
++		status = "disabled";
++	};
++
++	rtc {
++		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
++		reg = <0x7000e000 0x100>;
++		interrupts = <0 2 0x04>;
++	};
++
++	pmc {
++		compatible = "nvidia,tegra114-pmc", "nvidia,tegra20-pmc";
++		reg = <0x7000e400 0x400>;
++	};
++
 +	tsc {
 +		compatible = "nvidia,tegra114-tsc";
 +		reg = <0x700f0000 0x20000>;
 +	};
-diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
-index 1d25de8..285a6f1 100644
---- a/drivers/clocksource/tegra20_timer.c
-+++ b/drivers/clocksource/tegra20_timer.c
-@@ -30,6 +30,7 @@
- #include <asm/mach/time.h>
- #include <asm/smp_twd.h>
- #include <asm/sched_clock.h>
-+#include <asm/arch_timer.h>
- 
- #define RTC_SECONDS            0x08
- #define RTC_SHADOW_SECONDS     0x0c
-@@ -271,10 +272,71 @@ static void __init tegra20_init_tmr(void)
- 	clockevents_register_device(&tegra_clockevent);
- }
- 
-+#define TSC_CNTCR		0		/* TSC control registers */
-+#define TSC_CNTCR_ENABLE	(1 << 0)	/* Enable */
-+#define TSC_CNTCR_HDBG		(1 << 1)	/* Halt on debug */
 +
-+#define TSC_CNTCV0		0x8		/* TSC counter (LSW) */
-+#define TSC_CNTCV1		0xc		/* TSC counter (MSW) */
-+#define TSC_CNTFID0		0x20		/* TSC freq id 0 */
-+
-+static const struct of_device_id tegra_tsc_match[] __initconst = {
-+	{ .compatible = "nvidia,tegra114-tsc" },
-+	{}
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 13 0xf08>,
++			     <1 14 0xf08>,
++			     <1 11 0xf08>,
++			     <1 10 0xf08>;
++	};
 +};
-+
-+static int tegra_arch_timer_init(void)
-+{
-+	int err;
-+	struct device_node *np;
-+	struct clk *clk;
-+	void __iomem *tsc_base;
-+	u32 freq, val;
-+
-+	np = of_find_matching_node(NULL, tegra_tsc_match);
-+	if (!np)
-+		return -ENODEV;
-+
-+	tsc_base = of_iomap(np, 0);
-+	if (!tsc_base)
-+		return -ENODEV;
-+
-+	clk = clk_get_sys("clk_m", NULL);
-+	if (IS_ERR(clk)) {
-+		freq = 12000000;
-+		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
-+	} else {
-+		freq = clk_get_rate(clk);
-+		clk_put(clk);
-+	}
-+	writel_relaxed(freq, tsc_base + TSC_CNTFID0);
-+
-+	/* CNTFRQ */
-+	asm("mcr p15, 0, %0, c14, c0, 0\n" : : "r" (freq));
-+	asm("mrc p15, 0, %0, c14, c0, 0\n" : "=r" (val));
-+	BUG_ON(val != freq);
-+
-+	val = readl_relaxed(tsc_base + TSC_CNTCR);
-+	val |= TSC_CNTCR_ENABLE | TSC_CNTCR_HDBG;
-+	writel_relaxed(val, tsc_base + TSC_CNTCR);
-+
-+	err = arch_timer_of_register();
-+	if (!err)
-+		err = arch_timer_sched_clock_init();
-+	if (err)
-+		pr_err("Failed to register ARM arch_timer(TSC)\n");
-+	return err;
-+}
-+
- static void __init tegra20_init_timer(void)
- {
-+	int err = -ENODEV;
-+
- 	tegra20_init_tmr();
--	setup_sched_clock(tegra_read_sched_clock, 32, 1000000);
-+	if (IS_ENABLED(CONFIG_ARM_ARCH_TIMER))
-+		err = tegra_arch_timer_init();
-+	if (err)
-+		setup_sched_clock(tegra_read_sched_clock, 32, 1000000);
- 	tegra20_init_rtc();
- #ifdef CONFIG_HAVE_ARM_TWD
- 	twd_local_timer_of_register();
 -- 
 1.7.9.5
 
