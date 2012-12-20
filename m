@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab2LTWzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 17:55:32 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:39045 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab2LTWzZ (ORCPT
+	id S1751944Ab2LTXEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 18:04:06 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49456 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2LTXD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 17:55:25 -0500
-Date: Thu, 20 Dec 2012 14:55:22 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [patch] mm, mempolicy: Introduce spinlock to read shared policy
- tree
-In-Reply-To: <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1212201440250.7807@chino.kir.corp.google.com>
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org> <1353624594-1118-19-git-send-email-mingo@kernel.org> <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com> <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 20 Dec 2012 18:03:59 -0500
+Date: Thu, 20 Dec 2012 15:04:00 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com
+Subject: [GIT PULL] ARM: arm-soc fixes for 3.8, part 2
+Message-ID: <20121220230400.GA16877@quad.lixom.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Dec 2012, Linus Torvalds wrote:
+Hi Linus,
 
-> Going through some old emails before -rc1 rlease..
-> 
-> What is the status of this patch? The patch that is reported to cause
-> the problem hasn't been merged, but that mpol_misplaced() thing did
-> happen in commit 771fb4d806a9. And it looks like it's called from
-> numa_migrate_prep() under the pte map lock. Or am I missing something?
+Here is the incremental pull request of fixes from earlier today,
+based on the portions you pulled in this morning.
 
-Andrew pinged both Ingo and I about it privately two weeks ago.  It 
-probably doesn't trigger right now because there's no pte_mknuma() on 
-shared pages (yet) but will eventually be needed for correctness.  So it's 
-not required for -rc1 as it sits in the tree today but will be needed 
-later (and hopefully not forgotten about until Sasha fuzzes again).
 
-> See commit 9532fec118d ("mm: numa: Migrate pages handled during a
-> pmd_numa hinting fault").
-> 
-> Am I missing something? Mel, please take another look.
-> 
-> I despise these kinds of dual-locking models, and am wondering if we
-> can't have *just* the spinlock?
-> 
+Thanks,
 
-Adding KOSAKI to the cc.
+-Olof
 
-This is probably worth discussing now to see if we can't revert 
-b22d127a39dd ("mempolicy: fix a race in shared_policy_replace()"), keep it 
-only as a spinlock as you suggest, and do what KOSAKI suggested in 
-http://marc.info/?l=linux-kernel&m=133940650731255 instead.  I don't think 
-it's worth trying to optimize this path at the cost of having both a 
-spinlock and mutex.
+The following changes since commit 1800098549fc310cffffefdcb3722adaad0edda8:
+
+  ARM: OMAP: Fix build breakage due to missing include in i2c.c (2012-12-20 08:43:25 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes2
+
+for you to fetch changes up to 2727da8595d6a134502ce576b812f0bb0e3c14ed:
+
+  ARM: OMAP2+: Fix compillation error in mach-omap2/timer.c (2012-12-20 09:45:03 -0800)
+
+----------------------------------------------------------------
+Axel Lin (1):
+      pinctrl: exynos5440/samsung: Staticize pcfgs
+
+Dongjin Kim (1):
+      ARM: EXYNOS: Fix MSHC clocks instance names
+
+Kukjin Kim (3):
+      ARM: EXYNOS: fix build error when MFC is not selected
+      ARM: EXYNOS: fix GIC using for EXYNOS5440
+      ARM: EXYNOS: fix skip scu_enable() for EXYNOS5440
+
+Michael Spang (1):
+      ARM: SAMSUNG: Add missing include guard to gpio-core.h
+
+Olof Johansson (3):
+      ARM: sunxi: rename device tree source files
+      Merge branch 'v3.8-samsung-fixes-1' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+      Merge branch 'v3.8-samsung-fixes-audio' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+
+Padmavathi Venna (5):
+      ARM: S3C64XX: Add I2S clkdev support
+      ARM: S5PC100: Add I2S clkdev support
+      ARM: S5P64X0: Add I2S clkdev support
+      ARM: S5PV210: Avoid passing the clks through platform data
+      ARM: EXYNOS: Avoid passing the clks through platform data
+
+Peter Ujfalusi (1):
+      ARM: OMAP2+: Fix compillation error in mach-omap2/timer.c
+
+Sachin Kamat (4):
+      pinctrl: samsung: Fix a typo in pinctrl-samsung.h
+      ARM: EXYNOS: Fix NULL pointer dereference bug in Origen
+      ARM: EXYNOS: Fix NULL pointer dereference bug in SMDK4X12
+      ARM: EXYNOS: Fix NULL pointer dereference bug in SMDKV310
+
+ ...n4i-cubieboard.dts => sun4i-a10-cubieboard.dts} |   0
+ arch/arm/boot/dts/{sun4i.dtsi => sun4i-a10.dtsi}   |   0
+ ...sun5i-olinuxino.dts => sun5i-a13-olinuxino.dts} |   0
+ arch/arm/boot/dts/{sun5i.dtsi => sun5i-a13.dtsi}   |   0
+ arch/arm/mach-exynos/clock-exynos4.c               |   4 +-
+ arch/arm/mach-exynos/common.c                      |   3 +-
+ arch/arm/mach-exynos/dev-audio.c                   |  12 --
+ arch/arm/mach-exynos/mach-exynos5-dt.c             |   2 +
+ arch/arm/mach-exynos/mach-origen.c                 |   4 +-
+ arch/arm/mach-exynos/mach-smdk4x12.c               |   4 +-
+ arch/arm/mach-exynos/mach-smdkv310.c               |   4 +-
+ arch/arm/mach-exynos/platsmp.c                     |   2 +-
+ arch/arm/mach-omap2/timer.c                        |   2 +-
+ arch/arm/mach-s3c64xx/clock.c                      | 126 +++++++++++++--------
+ arch/arm/mach-s3c64xx/dev-audio.c                  |  11 --
+ arch/arm/mach-s5p64x0/clock-s5p6440.c              |  49 +++++---
+ arch/arm/mach-s5p64x0/clock-s5p6450.c              |  61 ++++++----
+ arch/arm/mach-s5p64x0/dev-audio.c                  |  12 --
+ arch/arm/mach-s5pc100/clock.c                      |  48 +++++---
+ arch/arm/mach-s5pc100/dev-audio.c                  |  16 ---
+ arch/arm/mach-s5pv210/dev-audio.c                  |  16 ---
+ arch/arm/plat-samsung/include/plat/gpio-core.h     |   5 +
+ drivers/pinctrl/pinctrl-exynos5440.c               |   2 +-
+ drivers/pinctrl/pinctrl-samsung.c                  |   2 +-
+ drivers/pinctrl/pinctrl-samsung.h                  |   2 +-
+ 25 files changed, 204 insertions(+), 183 deletions(-)
+ rename arch/arm/boot/dts/{sun4i-cubieboard.dts => sun4i-a10-cubieboard.dts} (100%)
+ rename arch/arm/boot/dts/{sun4i.dtsi => sun4i-a10.dtsi} (100%)
+ rename arch/arm/boot/dts/{sun5i-olinuxino.dts => sun5i-a13-olinuxino.dts} (100%)
+ rename arch/arm/boot/dts/{sun5i.dtsi => sun5i-a13.dtsi} (100%)
