@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab2LTGVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:21:49 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:49242 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab2LTGVn (ORCPT
+	id S1752572Ab2LTGZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:25:32 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:35364 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab2LTGZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:21:43 -0500
-Subject: Re: resend--[PATCH]  improve read ahead in kernel
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: xtu4 <xiaobing.tu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-tip-commits@vger.kernel.org, linux-mm@kvack.org,
-        di.zhang@intel.com
-In-Reply-To: <20121216021508.GA3629@dcvr.yhbt.net>
-References: <50C4B4E7.60601@intel.com> <50C6AB45.606@intel.com>
-	 <20121216021508.GA3629@dcvr.yhbt.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Dec 2012 01:20:35 -0500
-Message-ID: <1355984435.1374.3.camel@kernel-VirtualBox>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Thu, 20 Dec 2012 01:25:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,322,1355126400"; 
+   d="scan'208";a="15485822"
+Message-ID: <50D2AF54.7050402@codeaurora.org>
+Date: Wed, 19 Dec 2012 22:25:24 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+CC: Paul Walmsley <paul@pwsan.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: spinlock bad magic on CPU#0 on BeagleBone
+References: <B5906170F1614E41A8A28DE3B8D121433EC9A69C@DBDE01.ent.ti.com> <alpine.DEB.2.00.1212191650430.16873@utopia.booyaka.com> <50D2224E.4060300@codeaurora.org> <B5906170F1614E41A8A28DE3B8D121433EC9B6FE@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC9B6FE@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-12-16 at 02:15 +0000, Eric Wong wrote:
-> xtu4 <xiaobing.tu@intel.com> wrote:
-> > resend it, due to format error
-> > 
-> > Subject: [PATCH] when system in low memory scenario, imaging there is a mp3
-> >  play, ora video play, we need to read mp3 or video file
-> >  from memory to page cache,but when system lack of memory,
-> >  page cache of mp3 or video file will be reclaimed.once read
-> >  in memory, then reclaimed, it will cause audio or video
-> >  glitch,and it will increase the io operation at the same
-> >  time.
-> 
-> To me, this basically describes how POSIX_FADV_NOREUSE should work.
+On 12/19/2012 8:48 PM, Bedia, Vaibhav wrote:
+> I tried out 3 variants of AM335x boards - 2 of these (BeagleBone and EVM) have DDR2
+> and 1 has DDR3 (EVM-SK). The BUG is triggered on all of these at the same point.
+>
+> With Stephen's change I don't see this on any of the board variants :)
+> New bootlog below.
 
-Hi Eric,
+Great! Can I have your Tested-by then? I'll wrap it up into a patch. Is
+this is a new regression? From a glance at the code it looks to have
+existed for quite a while now.
 
-But why fadvise POSIX_FADV_NOREUSE almost do nothing? Why not set some
-flag or other things for these use once data?
-
-> I would like to have this ability via fadvise (and not CONFIG_).
-> 
-> Also, I think your patch has too many #ifdefs to be accepted.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
