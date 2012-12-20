@@ -1,115 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab2LTOpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 09:45:11 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36038 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2LTOok (ORCPT
+	id S1751890Ab2LTOpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 09:45:20 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55044 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2LTOpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 09:44:40 -0500
+	Thu, 20 Dec 2012 09:45:06 -0500
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, david@fromorbit.com,
         dave@jikos.cz, darrick.wong@oracle.com, andi@firstfloor.org,
         hch@infradead.org, linuxram@linux.vnet.ibm.com, zwu.kernel@gmail.com,
         wuzhy@linux.vnet.ibm.com
-Subject: [PATCH RESEND v1 07/16] vfs: add map info update function
-Date: Thu, 20 Dec 2012 22:43:26 +0800
-Message-Id: <1356014615-15073-8-git-send-email-zwu.kernel@gmail.com>
+Subject: [PATCH RESEND v1 11/16] vfs: register one shrinker
+Date: Thu, 20 Dec 2012 22:43:30 +0800
+Message-Id: <1356014615-15073-12-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
 References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12122014-2398-0000-0000-00000F3D42A3
+x-cbid: 12122014-3620-0000-0000-000000B09125
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
+  Register a shrinker to control the amount of
+memory that is used in tracking hot regions - if we are throwing
+inodes out of memory due to memory pressure, we most definitely are
+going to need to reduce the amount of memory the tracking code is
+using, even if it means losing useful information (i.e. the shrinker
+accelerates the aging process).
+
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_tracking.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 67 insertions(+), 0 deletions(-)
+ fs/hot_tracking.c            |   63 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hot_tracking.h |    1 +
+ 2 files changed, 64 insertions(+), 0 deletions(-)
 
 diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index ba4decf..6a5ef53 100644
+index 07a2a81..a59521c 100644
 --- a/fs/hot_tracking.c
 +++ b/fs/hot_tracking.c
-@@ -389,6 +389,73 @@ static u32 hot_temp_calc(struct hot_freq_data *freq_data)
+@@ -643,6 +643,63 @@ err:
  }
+ EXPORT_SYMBOL_GPL(hot_cache_init);
  
- /*
-+ * Calculate a new temperature and, if necessary,
-+ * move the list_head corresponding to this inode or range
-+ * to the proper list with the new temperature
-+ */
-+static void hot_map_update(struct hot_freq_data *freq_data,
-+				struct hot_info *root)
++static int hot_track_prune_map(struct hot_map_head *map_head,
++				bool type, int nr)
 +{
-+	struct hot_map_head *buckets, *cur_bucket;
-+	struct hot_comm_item *comm_item;
-+	struct hot_inode_item *he;
-+	struct hot_range_item *hr;
-+	u32 temp = hot_temp_calc(freq_data);
-+	u8 a_temp = (u8)hot_raw_shift((u64)temp, (32 - HEAT_MAP_BITS), false);
-+	u8 b_temp = (u8)hot_raw_shift((u64)freq_data->last_temp,
-+					(32 - HEAT_MAP_BITS), false);
++	struct hot_comm_item *node;
++	int i;
 +
-+	comm_item = container_of(freq_data,
-+			struct hot_comm_item, hot_freq_data);
++	for (i = 0; i < HEAT_MAP_SIZE; i++) {
++		spin_lock(&(map_head + i)->lock);
++		while (!list_empty(&(map_head + i)->node_list)) {
++			if (nr-- <= 0)
++				break;
 +
-+	if (freq_data->flags & FREQ_DATA_TYPE_INODE) {
-+		he = container_of(comm_item,
-+			struct hot_inode_item, hot_inode);
-+		buckets = root->heat_inode_map;
-+
-+		if (he == NULL)
-+			return;
-+
-+		spin_lock(&he->hot_inode.lock);
-+		if (list_empty(&he->hot_inode.n_list) || (a_temp != b_temp)) {
-+			if (!list_empty(&he->hot_inode.n_list)) {
-+				list_del_init(&he->hot_inode.n_list);
-+				root->hot_map_nr--;
++			node = list_first_entry(&(map_head + i)->node_list,
++					struct hot_comm_item, n_list);
++			if (type) {
++				struct hot_inode_item *hot_inode =
++					container_of(node,
++					struct hot_inode_item, hot_inode);
++				hot_inode_item_put(hot_inode);
++			} else {
++				struct hot_range_item *hot_range =
++					container_of(node,
++					struct hot_range_item, hot_range);
++				hot_range_item_put(hot_range);
 +			}
-+
-+			cur_bucket = buckets + a_temp;
-+			list_add_tail(&he->hot_inode.n_list,
-+					&cur_bucket->node_list);
-+			root->hot_map_nr++;
-+			freq_data->last_temp = temp;
 +		}
-+		spin_unlock(&he->hot_inode.lock);
-+	} else if (freq_data->flags & FREQ_DATA_TYPE_RANGE) {
-+		hr = container_of(comm_item,
-+			struct hot_range_item, hot_range);
-+		buckets = root->heat_range_map;
-+
-+		if (hr == NULL)
-+			return;
-+
-+		spin_lock(&hr->hot_range.lock);
-+		if (list_empty(&hr->hot_range.n_list) || (a_temp != b_temp)) {
-+			if (!list_empty(&hr->hot_range.n_list)) {
-+				list_del_init(&hr->hot_range.n_list);
-+				root->hot_map_nr--;
-+			}
-+
-+			cur_bucket = buckets + a_temp;
-+			list_add_tail(&hr->hot_range.n_list,
-+					&cur_bucket->node_list);
-+			root->hot_map_nr++;
-+			freq_data->last_temp = temp;
-+		}
-+		spin_unlock(&hr->hot_range.lock);
++		spin_unlock(&(map_head + i)->lock);
 +	}
++
++	return nr;
 +}
 +
-+/*
-  * Initialize inode and range map info.
++/* The shrinker callback function */
++static int hot_track_prune(struct shrinker *shrink,
++			struct shrink_control *sc)
++{
++	struct hot_info *root =
++		container_of(shrink, struct hot_info, hot_shrink);
++	int ret;
++
++	if (sc->nr_to_scan == 0)
++		return root->hot_map_nr;
++
++	if (!(sc->gfp_mask & __GFP_FS))
++		return -1;
++
++	ret = hot_track_prune_map(root->heat_range_map,
++				false, sc->nr_to_scan);
++	if (ret > 0)
++		ret = hot_track_prune_map(root->heat_inode_map,
++					true, ret);
++	if (ret > 0)
++		root->hot_map_nr -= (sc->nr_to_scan - ret);
++
++	return root->hot_map_nr;
++}
++
+ /*
+  * Main function to update access frequency from read/writepage(s) hooks
   */
- static void hot_map_init(struct hot_info *root)
+@@ -739,6 +796,11 @@ int hot_track_init(struct super_block *sb)
+ 	queue_delayed_work(root->update_wq, &root->update_work,
+ 		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
+ 
++	/* Register a shrinker callback */
++	root->hot_shrink.shrink = hot_track_prune;
++	root->hot_shrink.seeks = DEFAULT_SEEKS;
++	register_shrinker(&root->hot_shrink);
++
+ 	sb->s_hot_root = root;
+ 
+ 	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
+@@ -757,6 +819,7 @@ void hot_track_exit(struct super_block *sb)
+ {
+ 	struct hot_info *root = sb->s_hot_root;
+ 
++	unregister_shrinker(&root->hot_shrink);
+ 	cancel_delayed_work_sync(&root->update_work);
+ 	destroy_workqueue(root->update_wq);
+ 	hot_map_exit(root);
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index 003af47..36dac41 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -110,6 +110,7 @@ struct hot_info {
+ 	struct workqueue_struct *update_wq;
+ 	struct delayed_work update_work;
+ 	struct hot_type *hot_type;
++	struct shrinker hot_shrink;
+ };
+ 
+ extern void __init hot_cache_init(void);
 -- 
 1.7.6.5
 
