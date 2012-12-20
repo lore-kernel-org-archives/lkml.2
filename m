@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab2LTSB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:01:58 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15008 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2LTSBx (ORCPT
+	id S1752069Ab2LTSCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:02:11 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24621 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab2LTSCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:01:53 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 20 Dec 2012 09:59:15 -0800
-Message-ID: <50D35287.3040509@nvidia.com>
-Date: Thu, 20 Dec 2012 20:01:43 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de> <50C99677.6090306@nvidia.com> <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de> <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de> <50D2D792.1050401@nvidia.com> <50D34775.5010606@wwwdotorg.org> <50D34F00.4080308@nvidia.com> <50D3511F.2090308@wwwdotorg.org>
-In-Reply-To: <50D3511F.2090308@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 20 Dec 2012 13:02:05 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=r9gpABO-FZcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ih1sZ2JY46UA:10 a=iGmb2HFwAAAA:8 a=pGLkceISAAAA:8 a=DL_eQ94TJHWsBH-GoIgA:9 a=PUjeQqilurYA:10 a=dqk98ENcwZsA:10 a=MSl-tDqOz04A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1356026521.5896.55.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH RT] rtmutex: Use raw_spin_trylock() in
+ rt_mutex_slowlock() to ease possible live locks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: RT <linux-rt-users@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Carsten Emde <cbe@osadl.org>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>
+Date: Thu, 20 Dec 2012 13:02:01 -0500
+In-Reply-To: <1355967118.5896.52.camel@gandalf.local.home>
+References: <1355967118.5896.52.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.12.2012 19:55, Stephen Warren wrote:
-> So it's fine for the tegradrm driver to manipulate the tegradrm
-> (virtual) device's drvdata pointer.
+On Wed, 2012-12-19 at 20:31 -0500, Steven Rostedt wrote:
+
+Talking with Thomas, the proper solution is:
+
+> Then we have this lovely code:
 > 
-> It's not fine for tegradrm to manipulate the drvdata pointer of other
-> devices; the host1x children. The drvdata pointer for other devices is
-> reserved for those devices' driver's use only.
+> block/blk-ioc.c: put_io_context_active()
+> 
+> retry:
+>         spin_lock_irqsave_nested(&ioc->lock, flags, 1);
+>         hlist_for_each_entry(icq, n, &ioc->icq_list, ioc_node) {
+>                 if (icq->flags & ICQ_EXITED)
+>                         continue;
+>                 if (spin_trylock(icq->q->queue_lock)) {
+>                         ioc_exit_icq(icq);
+>                         spin_unlock(icq->q->queue_lock);
+>                 } else {
+>                         spin_unlock_irqrestore(&ioc->lock, flags);
+>                         cpu_relax();
 
-They're all tegradrm drivers, so tegradrm can manipulate its drvdata.
-The other simple way is global pointer. Let's aim now for a simple
-solution, and if later we find out it causes problems, let's fix it then.
+s/cpu_relax/cpu_chill/
 
-Terje
+-- Steve
+
+>                         goto retry;
+>                 }
+>         }
+> 
+
+
