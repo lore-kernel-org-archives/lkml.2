@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2LTGgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 01:36:15 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:16335 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2LTGgH (ORCPT
+	id S1752743Ab2LTGgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 01:36:47 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:23027 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab2LTGgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 01:36:07 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-b1-50d2b1d609c5
+	Thu, 20 Dec 2012 01:36:40 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-cf-50d2b1f67e95
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000901cdde7b$db4f6690$91ee33b0$%han@samsung.com>
-In-reply-to: <000901cdde7b$db4f6690$91ee33b0$%han@samsung.com>
-Subject: [PATCH 6/6] backlight: s6e63m0: reorder inclusions of <linux/xxx.h>
-Date: Thu, 20 Dec 2012 15:36:06 +0900
-Message-id: <000e01cdde7c$49f0ef10$ddd2cd30$%han@samsung.com>
+Subject: [PATCH 1/5] backlight: ld9040: use sleep instead of delay
+Date: Thu, 20 Dec 2012 15:36:38 +0900
+Message-id: <000f01cdde7c$5d4e83b0$17eb8b10$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3ee9s5WLGjeuuhRceS0Ez4r5xE9AAAF6iw
+Thread-index: Ac3efF04bK/W++SuRFi0yIAkd2rsTA==
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t8zA91rGy8FGLQ9krS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ2x7kFizjrTi05gVLA2MTdxcjJ4eEgIlEY+91NghbTOLCvfVA
-	NheHkMAyRolzO7awwxRN/P0FKjGdUaLtSiczhDObSeLQjAmsIFVsAmoSX74cBusQEYiQaJ4x
-	C6iIg4NZwEdi8yxNkLCQgK3EncX/WEBsTgE7icYPu8HKhYFKtp88yQRiswioStw/cQ3M5gWq
-	P7BsCwuELSjxY/I9MJtZQEti/c7jTBC2vMTmNW/BVkkIqEs8+qsLYooIGEl8Pa0CUSEise/F
-	O0aI6QIS3yYfYoGolpXYdADsEQmBeewSHxYugHpXUuLgihssExglZiFZPAvJ4llIFs9CsmIB
-	I8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjJCokt7BuKrB4hCjAAejEg/vommXAoRYE8uK
-	K3MPMUpwMCuJ8C68dTFAiDclsbIqtSg/vqg0J7X4EKMP0OUTmaVEk/OBEZ9XEm9obGxiZmJq
-	Ym5pam6KQ1hJnLfZIyVASCA9sSQ1OzW1ILUIZhwTB6dUA6PcOsVJqfU7uP6sPjEpZZ7L3GdX
-	3x9jF/62bam0utif+4qrDiTmbAn6M+2h2E5VI+XN4s1feFdsi1o8wfvdzGyHyt+/J18Lrd37
-	6d95Ic+PXzO+7skLiPcWcjmWtGBmSlhZtugp/56ULV+8NldtUVvExHWsbLMPT/GTrXxzmORV
-	ja5s9PZsX5SkxFKckWioxVxUnAgA9gVigtcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jQd1rGy8FGOybIWpxedccNgdGj8+b
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zA91vGy8FGDy/Ym1xedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyNl61K2jnrfjbuY61gXELVxcjJ4eEgInE/d0zWCBsMYkL99az
+	dTFycQgJLGOUWLj5HCNM0ZN3B1ggEtMZJaZNfssO4cxmknjz7wcTSBWbgJrEly+H2UFsEYEI
+	ieYZs5i7GDk4mAV8JDbP0gQJCws4SWxf0Ac2lEVAVWLLxV1grbwCthIXF/1jg7AFJX5Mvgd2
+	EbOAlsT6nceZIGx5ic1r3oKNlBBQl3j0Vxdik57E9N8trBAlIhL7XryDGi8g8W3yIRaIclmJ
+	TQeYQS6WEGhnl9i94jgrxF+SEgdX3GCZwCg2C8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6Xn
+	GuoVJ+YWl+al6yXn525ihMSJ1A7GlQ0WhxgFOBiVeHgXTbsUIMSaWFZcmXuIUYKDWUmEd+Gt
+	iwFCvCmJlVWpRfnxRaU5qcWHGH2ALp/ILCWanA+M4bySeENjYxMzE1MTc0tTc1McwkrivM0e
+	KQFCAumJJanZqakFqUUw45g4OKUaGBkrFhXayllmbxeJm8adVxfdeuk3I5N+8K7XpnxLLLue
+	V1pf5i6v21zy6Kv0ee/9M132Fba9sI7cWynVMHFjdvTHxom69dNrev8/ZX6wlm2yppPx+yDB
+	6Io5XN/9/rtMV4wLY/i9+UjUhGrVJJvqG4dvzci4U+bc85P1w91uO16NVwX1pS9/KrEUZyQa
+	ajEXFScCAPDKKWnAAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd1vGy8FGFx6YWZxedccNgdGj8+b
 	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM7Y9yC1YxltxaM0LlgbG
-	Ju4uRk4OCQETiYm/v7BB2GISF+6tB7K5OIQEpjNKtF3pZIZwZjNJHJoxgRWkik1ATeLLl8Ps
-	ILaIQIRE84xZQEUcHMwCPhKbZ2mChIUEbCXuLP7HAmJzCthJNH7YDVYuDFSy/eRJJhCbRUBV
-	4v6Ja2A2L1D9gWVbWCBsQYkfk++B2cwCWhLrdx5ngrDlJTaveQu2SkJAXeLRX10QU0TASOLr
-	aRWIChGJfS/eMU5gFJqFZNAsJINmIRk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5
-	mxjBMftMegfjqgaLQ4wCHIxKPLyLpl0KEGJNLCuuzD3EKMHBrCTCu/DWxQAh3pTEyqrUovz4
-	otKc1OJDjD5Af05klhJNzgemk7ySeENjEzMjSyMzCyMTc3McwkrivM0eKQFCAumJJanZqakF
-	qUUw45g4OKUaGG1zt/7zVQl6/fC2a5OWXfS+uU0SqSY76j0ZBC01lOW1Ls73WZ6xhOFCBUPb
-	x38tGgpvkz0PPWi06bFPdhf9d/aby80nvb91j12abOQyZX/tzanPnpy80Vr61MPwhXd30qmT
-	J9bvVl5RXN1/Qe5A1+1fBS/5BFV5Ha/GMG1eqeZqwZ7pvs/RSomlOCPRUIu5qDgRAFX1IEYG	AwAA
+	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYMzZetSto563427mOtYFx
+	C1cXIyeHhICJxJN3B1ggbDGJC/fWs3UxcnEICUxnlJg2+S07hDObSeLNvx9MIFVsAmoSX74c
+	ZgexRQQiJJpnzGLuYuTgYBbwkdg8SxMkLCzgJLF9QR8jiM0ioCqx5eIusFZeAVuJi4v+sUHY
+	ghI/Jt8DW8wsoCWxfudxJghbXmLzmrdgIyUE1CUe/dWF2KQnMf13CytEiYjEvhfvGCcwCsxC
+	MmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgKHwmtYNxZYPFIUYB
+	DkYlHt5F0y4FCLEmlhVX5h5ilOBgVhLhXXjrYoAQb0piZVVqUX58UWlOavEhRh+gRycyS4km
+	5wMTRF5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjGb70q5p
+	75OObJ1g6dmQumD7m9IZgjdE3Zp+86/55f+gb16T1LGJVwXLSlz28UYVGHdt66tcbCtYUeDR
+	vuzU9iscLWUzD/jfXZ19rf7l/U6hu8ZWcx+v9I71ffx3Pu9ryxu837i+zRE6efNE/lsegwqX
+	v1ZL1/ztXam2Jrf+9/zWYpF/gjmN2UosxRmJhlrMRcWJAAJfkVzvAgAA
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch reorders inclusions of <linux/xxx.h> for redability,
-according to alphabetical ordering. Also, unnecessary header
-comments are removed.
+This patch replaces mdelay with msleep to remove the busy loop
+waiting.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/s6e63m0.c |   19 +++++--------------
- 1 files changed, 5 insertions(+), 14 deletions(-)
+ drivers/video/backlight/ld9040.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
-index 92e53e2..0969a4048 100644
---- a/drivers/video/backlight/s6e63m0.c
-+++ b/drivers/video/backlight/s6e63m0.c
-@@ -9,28 +9,19 @@
-  * under the terms of the GNU General Public License as published by the
-  * Free Software Foundation; either version 2 of the License, or (at your
-  * option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License along
-- * with this program; if not, write to the Free Software Foundation, Inc.,
-- * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  */
+diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
+index 1cb3524..a52a6a7 100644
+--- a/drivers/video/backlight/ld9040.c
++++ b/drivers/video/backlight/ld9040.c
+@@ -78,7 +78,7 @@ static void ld9040_regulator_enable(struct ld9040 *lcd)
  
--#include <linux/wait.h>
--#include <linux/fb.h>
-+#include <linux/backlight.h>
- #include <linux/delay.h>
-+#include <linux/fb.h>
- #include <linux/gpio.h>
--#include <linux/spi/spi.h>
--#include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/lcd.h>
--#include <linux/backlight.h>
- #include <linux/module.h>
-+#include <linux/spi/spi.h>
-+#include <linux/wait.h>
+ 		lcd->enabled = true;
+ 	}
+-	mdelay(pd->power_on_delay);
++	msleep(pd->power_on_delay);
+ out:
+ 	mutex_unlock(&lcd->lock);
+ }
+@@ -474,8 +474,9 @@ static int ld9040_panel_send_sequence(struct ld9040 *lcd,
+ 			ret = ld9040_spi_write(lcd, wbuf[i], wbuf[i+1]);
+ 			if (ret)
+ 				break;
+-		} else
+-			udelay(wbuf[i+1]*1000);
++		} else {
++			msleep(wbuf[i+1]);
++		}
+ 		i += 2;
+ 	}
  
- #include "s6e63m0_gamma.h"
+@@ -539,7 +540,7 @@ static int ld9040_ldi_init(struct ld9040 *lcd)
+ 	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
+ 		ret = ld9040_panel_send_sequence(lcd, init_seq[i]);
+ 		/* workaround: minimum delay time for transferring CMD */
+-		udelay(300);
++		usleep_range(300, 310);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -584,7 +585,7 @@ static int ld9040_power_on(struct ld9040 *lcd)
+ 		return -EFAULT;
+ 	} else {
+ 		pd->reset(lcd->ld);
+-		mdelay(pd->reset_delay);
++		msleep(pd->reset_delay);
+ 	}
  
+ 	ret = ld9040_ldi_init(lcd);
+@@ -619,7 +620,7 @@ static int ld9040_power_off(struct ld9040 *lcd)
+ 		return -EIO;
+ 	}
+ 
+-	mdelay(pd->power_off_delay);
++	msleep(pd->power_off_delay);
+ 
+ 	/* lcd power off */
+ 	ld9040_regulator_disable(lcd);
 -- 
 1.7.2.5
 
