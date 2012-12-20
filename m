@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2LTV7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 16:59:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58597 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab2LTV7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 16:59:12 -0500
-Date: Thu, 20 Dec 2012 22:59:09 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: andreas@biessmann.de, ckeepax@opensource.wolfsonmicro.com,
-        pawel.moll@arm.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild changes for v3.8-rc1
-Message-ID: <20121220215909.GA24643@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752029Ab2LTWHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 17:07:04 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:50631 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab2LTWG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 17:06:57 -0500
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 17:06:56 EST
+From: Mikhail Kshevetskiy <mikhail.kshevetskiy@gmail.com>
+To: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH] arm/davinci/musb: fix mispint introduced by commit 032ec49f5351e9cb242b1a1c367d14415043ab95
+Date: Fri, 21 Dec 2012 01:59:06 +0400
+Message-Id: <1356040747-15105-1-git-send-email-mikhail.kshevetskiy@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Signed-off-by: Mikhail Kshevetskiy <mikhail.kshevetskiy@gmail.com>
+---
+ drivers/usb/musb/da8xx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-the kbuild changes are minimal this time:
-* scripts/pnmlogo fix for some newer format
-* minor top-level Makefile cleanup
-* fix for a v3.5 regression with make clean M=<directory>
+diff --git a/drivers/usb/musb/da8xx.c b/drivers/usb/musb/da8xx.c
+index 8bc44b7..0ed24a6 100644
+--- a/drivers/usb/musb/da8xx.c
++++ b/drivers/usb/musb/da8xx.c
+@@ -327,7 +327,7 @@ static irqreturn_t da8xx_musb_interrupt(int irq, void *hci)
+ 		u8 devctl = musb_readb(mregs, MUSB_DEVCTL);
+ 		int err;
+ 
+-		err = musb->int_usb & USB_INTR_VBUSERROR;
++		err = musb->int_usb & MUSB_INTR_VBUSERROR;
+ 		if (err) {
+ 			/*
+ 			 * The Mentor core doesn't debounce VBUS as needed
+-- 
+1.7.10.4
 
-Please pull for v3.8-rc1, thanks.
-
-Michal
-
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
-
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
-
-Andreas Bieﬂmann (1):
-      scripts/pnmtologo: fix for plain PBM
-
-Charles Keepax (1):
-      kbuild: Remove reference to uninitialised variable
-
-Pawel Moll (1):
-      kbuild: Do not remove vmlinux when cleaning external module
-
- Makefile            |   10 ++++++----
- scripts/pnmtologo.c |    7 +++++++
- 2 files changed, 13 insertions(+), 4 deletions(-)
